@@ -95,21 +95,24 @@ bool init(IOState &io, const char *pref_path) {
 
 SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path) {
     // TODO Hacky magic numbers.
-    assert((strcmp(path, "tty0:") == 0) || (strncmp(path, "app0:/", 6) == 0) || (strncmp(path, "ux0:/", 5) == 0));
+    assert((strcmp(path, "tty0:") == 0) || (strncmp(path, "app0:", 5) == 0) || (strncmp(path, "ux0:", 4) == 0));
 
     if (strcmp(path, "tty0:") == 0) {
         assert(flags >= 0);
         assert(flags <= SCE_O_RDWR);
 
         return io.next_fd++;
-    } else if (strncmp(path, "app0:/", 6) == 0) {
+    } else if (strncmp(path, "app0:", 5) == 0) {
         assert(flags == SCE_O_RDONLY);
 
         if (!io.vpk) {
             return -1;
         }
 
-        const ZipFilePtr file = open_zip(*io.vpk, &path[6]);
+        int i = 5;
+        if (path[5] == '/') i++;
+        const ZipFilePtr file = open_zip(*io.vpk, &path[i]);
+		
         if (!file) {
             return -1;
         }
@@ -118,10 +121,13 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         io.zip_files.emplace(fd, file);
 
         return fd;
-    } else if (strncmp(path, "ux0:/", 5) == 0) {
+    } else if (strncmp(path, "ux0:", 4) == 0) {
         std::string file_path = pref_path;
         file_path += "ux0/";
-        file_path += &path[5];
+		
+        int i = 4;
+        if (path[4] == '/') i++;
+        file_path += &path[i];
 
         const char *const open_mode = translate_open_mode(flags);
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
