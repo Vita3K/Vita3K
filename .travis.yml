@@ -2,6 +2,7 @@ language: cpp
 os: osx
 osx_image: xcode9.2
 script:
+- export VITA3K_VERSION=$TRAVIS_TAG
 - "./gen.sh"
 - cd build-macos/
 - xcodebuild -target emulator -configuration Release
