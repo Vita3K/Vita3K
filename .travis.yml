@@ -3,9 +3,10 @@ os: osx
 osx_image: xcode9.2
 script:
 - export VITA3K_VERSION=$TRAVIS_TAG
-- "./gen.sh"
-- cd build-macos/
-- xcodebuild -target emulator -configuration Release
+- mkdir build
+- cd build/
+- cmake -DCMAKE_BUILD_TYPE=Release ../src
+- make
 before_deploy:
 - cd emulator/Release/
 - zip -r Vita3K.zip Vita3K.app
@@ -13,7 +14,7 @@ deploy:
   provider: releases
   api_key:
     secure: AVdvPWfT+et4PADyqPdq8/Ex6WCtgSVSEk7u79+MjA1ozq0w6SZrRUkS1RumONwhV8zLdKWBCGPvsKx5U+lai2aWaIYgg/j15qjzcs3vxGzBcpR52lGRZpRIBtZABrbZD2l+xD35/EdCA8GUH0Ks98lrFS4Wo3nSfkEiemVDNSzHrW800BfOqgFZJ3VOkpDgOkvaRmSAwCbzwXtiovD7yopfBjpTWZQPe+JQCkoaE966XQWOU0G7BnQqdYJxY3E7CoDrtFY61RGQ6VlJn4s9bDRjfYOMS5NvsLtAdACmp9oJmZax2FHNLuA+cizYMVfBdR5JjSQjT14boyWvOufFwUKf+xDJq8/43qAtBR7aD6h0cw2ycMxvUv+igL2McoKgaKycBO0NaR397ppoG+SKRPsLECWEKGGMi/xIEltVFNJU3TrfXg4hYcZye2ZG+H0YepxvmL6kmS+rt7qaWrkuIk6OEGToBc9XutSk4YuPGsT7unc/mfquamjd6MtLw/6oOHNnVNTXF5th7/XVuC6oxWU1RHkQC0Ej/5RreqQT4EbwHPrih70A1Ly+DsvMY4eIi7UWBLnVYmDFnfjjKwtDX7p82loHXiPmLK1dnZDDRZsqBVcxLSjy29B6zpr0E9Ix/sNvbOwv7bGnIB13/xWqI0z0pfmdZbI3YeCQEBy4cxo=
-  file: build-macos/emulator/Release/Vita3K.zip
+  file: build/emulator/Release/Vita3K.zip
   skip_cleanup: true
   on:
     repo: Vita3K/Vita3K
