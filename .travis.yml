@@ -16,4 +16,4 @@ deploy:
   skip_cleanup: true
   on:
     repo: Vita3K/Vita3K
-    branch: travis
+    tags: true
