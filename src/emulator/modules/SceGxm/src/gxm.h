@@ -28,9 +28,11 @@ namespace emu {
         uint16_t height;
         Ptr<const void> data;
         Ptr<void> palette;
+        GLenum min_filter;
+        GLenum mag_filter;
     };
 
-    static_assert(sizeof(SceGxmTexture) == 16, "Incorrect size.");
+    static_assert(sizeof(SceGxmTexture) == 24, "Incorrect size.");
 
     struct SceGxmColorSurface {
         uint32_t pbeSidebandWord;
