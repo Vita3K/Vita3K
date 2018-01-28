@@ -1,0 +1,3 @@
+add_library(SceSblUpdateMgr STATIC include/SceSblUpdateMgr/exports.h src/SceSblSsUpdateMgr.cpp)
+target_include_directories(SceSblUpdateMgr PUBLIC include)
+target_link_libraries(SceSblUpdateMgr PRIVATE module)

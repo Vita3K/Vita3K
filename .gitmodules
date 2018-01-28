@@ -1,0 +1,24 @@
+[submodule "src/external/elfio"]
+	path = src/external/elfio
+	url = https://github.com/serge1/ELFIO.git
+[submodule "src/external/capstone"]
+	path = src/external/capstone
+	url = https://github.com/aquynh/capstone.git
+[submodule "src/external/vita-headers"]
+	path = src/external/vita-headers
+	url = https://github.com/vitasdk/vita-headers.git
+[submodule "src/external/glbinding"]
+	path = src/external/glbinding
+	url = https://github.com/cginternals/glbinding.git
+[submodule "src/external/yaml-cpp"]
+	path = src/external/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp
+[submodule "src/external/vita-toolchain"]
+	path = src/external/vita-toolchain
+	url = https://github.com/vitasdk/vita-toolchain
+[submodule "src/external/microprofile"]
+	path = src/external/microprofile
+	url = https://github.com/jonasmr/microprofile.git
+[submodule "src/external/sdl2-cmake-scripts"]
+	path = src/external/sdl2-cmake-scripts
+	url = https://github.com/tcbrindle/sdl2-cmake-scripts.git

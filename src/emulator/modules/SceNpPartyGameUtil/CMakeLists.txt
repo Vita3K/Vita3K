@@ -1,0 +1,3 @@
+add_library(SceNpPartyGameUtil STATIC include/SceNpPartyGameUtil/exports.h src/SceNpPartyGameUtil.cpp)
+target_include_directories(SceNpPartyGameUtil PUBLIC include)
+target_link_libraries(SceNpPartyGameUtil PRIVATE module)

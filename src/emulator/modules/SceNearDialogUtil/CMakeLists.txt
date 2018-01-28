@@ -1,0 +1,3 @@
+add_library(SceNearDialogUtil STATIC include/SceNearDialogUtil/exports.h src/SceNearDialogUtil.cpp)
+target_include_directories(SceNearDialogUtil PUBLIC include)
+target_link_libraries(SceNearDialogUtil PRIVATE module)

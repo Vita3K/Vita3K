@@ -1,0 +1,3 @@
+add_library(SceUsbstorVStorDriver STATIC include/SceUsbstorVStorDriver/exports.h src/SceUsbstorVStor.cpp)
+target_include_directories(SceUsbstorVStorDriver PUBLIC include)
+target_link_libraries(SceUsbstorVStorDriver PRIVATE module)
