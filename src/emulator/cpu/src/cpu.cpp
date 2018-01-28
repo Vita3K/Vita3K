@@ -24,6 +24,7 @@
 #include <unicorn/unicorn.h>
 
 #include <cassert>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 

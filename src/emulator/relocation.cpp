@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <cstring>
 
 enum Code {
     None = 0,

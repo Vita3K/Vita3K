@@ -28,6 +28,7 @@
 #include <self.h>
 
 #include <assert.h>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 

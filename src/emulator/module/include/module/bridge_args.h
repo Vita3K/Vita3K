@@ -99,7 +99,7 @@ struct ArgLayout {
 // Complex case - at least one argument has spilled onto stack.
 template <typename R0, typename R1, typename R2, typename R3, typename StackHead, typename... StackTail>
 struct ArgLayout<R0, R1, R2, R3, StackHead, StackTail...> {
-    using StackLayout = StackLayout<StackType<StackHead>, StackType<StackTail>...>;
+    using StackLayout2 = StackLayout<StackType<StackHead>, StackType<StackTail>...>;
 
     template <typename T, size_t index>
         static typename std::enable_if < index<4, T>::type read(CPUState &cpu, const MemState &mem) {
@@ -111,7 +111,7 @@ struct ArgLayout<R0, R1, R2, R3, StackHead, StackTail...> {
     static typename std::enable_if<index >= 4, T>::type read(CPUState &cpu, const MemState &mem) {
         using StackType = StackType<T>;
 
-        constexpr size_t offset_on_stack = StackLayout::template offset<index - 4>();
+        constexpr size_t offset_on_stack = StackLayout2::template offset<index - 4>();
         const Address sp = read_sp(cpu);
         const Address address = static_cast<Address>(sp + offset_on_stack);
         const Ptr<StackType> ptr(address);
