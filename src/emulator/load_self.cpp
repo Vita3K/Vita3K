@@ -38,10 +38,6 @@ using namespace ELFIO;
 
 static const bool LOG_IMPORTS = false;
 
-typedef std::vector<uint8_t> Buffer;
-
-
-
 static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const MemState &mem) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
