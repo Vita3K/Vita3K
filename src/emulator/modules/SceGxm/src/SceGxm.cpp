@@ -297,6 +297,13 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(colorSurface != nullptr);
     assert(depthStencil != nullptr);
 
+    if (context->isInScene){
+        return SCE_GXM_ERROR_WITHIN_SCENE;
+    }
+    if (depthStencil == nullptr && colorSurface == nullptr){
+        return SCE_GXM_ERROR_INVALID_VALUE;
+    }
+    
     // TODO This may not be right.
     context->fragment_ring_buffer_used = 0;
     context->vertex_ring_buffer_used = 0;
@@ -590,6 +597,10 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     assert(indexData != nullptr);
     assert(indexCount > 0);
 
+    if (!context->isInScene){
+        return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
+    }
+    
     GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, indexData);
@@ -615,6 +626,10 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     assert(vertexNotification == nullptr);
     assert(fragmentNotification == nullptr);
 
+    if (!context->isInScene){
+        return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
+    }
+    
     const GLsizei width = context->color_surface.pbeEmitWords[0];
     const GLsizei height = context->color_surface.pbeEmitWords[1];
     const GLsizei stride_in_pixels = context->color_surface.pbeEmitWords[2];
