@@ -313,6 +313,21 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     
     glBindFramebuffer(GL_FRAMEBUFFER, renderTarget->framebuffer[0]);
 
+    // Re-load GL machine settings for multiple contexts support
+    switch (context->cull_mode){
+    case SCE_GXM_CULL_CCW:
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        break;
+    case SCE_GXM_CULL_CW:
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        break;
+    case SCE_GXM_CULL_NONE:
+        glDisable(GL_CULL_FACE);
+        break;
+    }
+    
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
 
