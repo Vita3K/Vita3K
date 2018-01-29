@@ -27,6 +27,10 @@
 #include <psp2/kernel/threadmgr.h>
 
 struct Semaphore {
+    std::shared_ptr<SDL_semaphore> sema = nullptr;
+    Semaphore(int initVal){
+        sema = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(initVal), SDL_DestroySemaphore);
+    }
 };
 
 struct ThreadParams {
@@ -744,11 +748,11 @@ EXPORT(int, sceKernelCreateRWLock) {
 EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, SceKernelSemaOptParam *option) {
     assert(name != nullptr);
     assert(attr == 0);
-    assert(initVal == 0);
+    assert(initVal <= maxVal);
     assert(maxVal == 1);
     assert(option == nullptr);
 
-    const SemaphorePtr semaphore = std::make_shared<Semaphore>();
+    const SemaphorePtr semaphore = std::make_shared<Semaphore>(initVal);
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host.kernel.semaphores.emplace(uid, semaphore);
