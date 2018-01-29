@@ -260,6 +260,25 @@ static GLenum translate_format(SceGxmTextureFormat src) {
     }
 }
 
+static GLenum translate_primitive(SceGxmPrimitiveType primType){
+    switch (primType){
+    case SCE_GXM_PRIMITIVE_TRIANGLES:
+        return GL_TRIANGLES;
+    case SCE_GXM_PRIMITIVE_TRIANGLE_STRIP:
+        return GL_TRIANGLE_STRIP;
+    case SCE_GXM_PRIMITIVE_TRIANGLE_FAN:
+        return GL_TRIANGLE_FAN;
+    case SCE_GXM_PRIMITIVE_LINES:
+        return GL_LINES;
+    case SCE_GXM_PRIMITIVE_POINTS:
+        return GL_POINTS;
+    case SCE_GXM_PRIMITIVE_TRIANGLE_EDGES: // Todo: Implement this
+    default:
+        return GL_TRIANGLES;
+        break;
+    }
+}
+
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return unimplemented("sceGxmAddRazorGpuCaptureBuffer");
 }
@@ -282,7 +301,9 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     context->fragment_ring_buffer_used = 0;
     context->vertex_ring_buffer_used = 0;
     context->color_surface = *colorSurface;
-
+    
+    context->isInScene = true;
+    
     glBindFramebuffer(GL_FRAMEBUFFER, renderTarget->framebuffer[0]);
 
     // TODO This is just for debugging.
@@ -566,12 +587,10 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
 
 EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, unsigned int indexCount) {
     assert(context != nullptr);
-    assert((primType == SCE_GXM_PRIMITIVE_TRIANGLES) || (primType == SCE_GXM_PRIMITIVE_TRIANGLE_STRIP));
-    assert(indexType == SCE_GXM_INDEX_FORMAT_U16);
     assert(indexData != nullptr);
     assert(indexCount > 0);
 
-    const GLenum mode = primType == SCE_GXM_PRIMITIVE_TRIANGLES ? GL_TRIANGLES : GL_TRIANGLE_STRIP;
+    GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, indexData);
 
@@ -605,6 +624,8 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     flip_vertically(pixels, width, height, stride_in_pixels);
 
+    context->isInScene = false;
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return 0;
@@ -1042,8 +1063,22 @@ EXPORT(int, sceGxmSetBackVisibilityTestOp) {
     return unimplemented("sceGxmSetBackVisibilityTestOp");
 }
 
-EXPORT(int, sceGxmSetCullMode) {
-    return unimplemented("sceGxmSetCullMode");
+EXPORT(int, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
+    context->cull_mode = mode;
+    switch (mode){
+    case SCE_GXM_CULL_CCW:
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        break;
+    case SCE_GXM_CULL_CW:
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        break;
+    case SCE_GXM_CULL_NONE:
+        glDisable(GL_CULL_FACE);
+        break;
+    }
+    return 0;
 }
 
 EXPORT(int, sceGxmSetDefaultRegionClipAndViewport) {
@@ -1083,9 +1118,9 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, const SceGxmFragm
 
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const emu::SceGxmTexture *texture) {
     assert(context != nullptr);
-    assert(textureIndex == 0);
     assert(texture != nullptr);
-
+	
+    glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
     glBindTexture(GL_TEXTURE_2D, context->texture[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
@@ -1686,8 +1721,12 @@ EXPORT(int, sceGxmTextureInitTiled) {
     return unimplemented("sceGxmTextureInitTiled");
 }
 
-EXPORT(int, sceGxmTextureSetData) {
-    return unimplemented("sceGxmTextureSetData");
+EXPORT(int, sceGxmTextureSetData, emu::SceGxmTexture *texture, Ptr<const void> data) {
+    assert(texture != nullptr);
+    assert(data);
+    
+    texture->data = data;
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetFormat) {
@@ -1698,8 +1737,11 @@ EXPORT(int, sceGxmTextureSetGammaMode) {
     return unimplemented("sceGxmTextureSetGammaMode");
 }
 
-EXPORT(int, sceGxmTextureSetHeight) {
-    return unimplemented("sceGxmTextureSetHeight");
+EXPORT(int, sceGxmTextureSetHeight, emu::SceGxmTexture *texture, unsigned int height) {
+    assert(texture != nullptr);
+    
+    texture->height = height;
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetLodBias) {
@@ -1752,8 +1794,11 @@ EXPORT(int, sceGxmTextureSetVAddrMode) {
     return unimplemented("sceGxmTextureSetVAddrMode");
 }
 
-EXPORT(int, sceGxmTextureSetWidth) {
-    return unimplemented("sceGxmTextureSetWidth");
+EXPORT(int, sceGxmTextureSetWidth, emu::SceGxmTexture *texture, unsigned int width) {
+    assert(texture != nullptr);
+    
+    texture->width = width;
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureValidate) {
