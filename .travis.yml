@@ -8,7 +8,7 @@ script:
 - cmake -DCMAKE_BUILD_TYPE=Release ../src
 - make
 before_deploy:
-- cd emulator/Release/
+- cd emulator/
 - zip -r Vita3K.zip Vita3K.app
 deploy:
   provider: releases
@@ -18,4 +18,3 @@ deploy:
   skip_cleanup: true
   on:
     repo: Vita3K/Vita3K
-    tags: true
