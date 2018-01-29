@@ -78,16 +78,23 @@ const char *translate_open_mode(int flags) {
 
 bool init(IOState &io, const char *pref_path) {
     std::string ux0 = pref_path;
+    std::string uma0 = pref_path;
     ux0 += "ux0";
+    uma0 += "uma0";
     const std::string ux0_data = ux0 + "/data";
+    const std::string uma0_data = uma0 + "/data";
 
 #ifdef WIN32
     CreateDirectoryA(ux0.c_str(), nullptr);
     CreateDirectoryA(ux0_data.c_str(), nullptr);
+    CreateDirectoryA(uma0.c_str(), nullptr);
+    CreateDirectoryA(uma0_data.c_str(), nullptr);
 #else
     const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     mkdir(ux0.c_str(), mode);
     mkdir(ux0_data.c_str(), mode);
+    mkdir(uma0.c_str(), mode);
+    mkdir(uma0_data.c_str(), mode);
 #endif
 
     return true;
@@ -95,7 +102,7 @@ bool init(IOState &io, const char *pref_path) {
 
 SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path) {
     // TODO Hacky magic numbers.
-    assert((strcmp(path, "tty0:") == 0) || (strncmp(path, "app0:", 5) == 0) || (strncmp(path, "ux0:", 4) == 0));
+    assert((strcmp(path, "tty0:") == 0) || (strncmp(path, "app0:", 5) == 0) || (strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
 
     if (strcmp(path, "tty0:") == 0) {
         assert(flags >= 0);
@@ -127,6 +134,24 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
 		
         int i = 4;
         if (path[4] == '/') i++;
+        file_path += &path[i];
+
+        const char *const open_mode = translate_open_mode(flags);
+        const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
+        if (!file) {
+            return -1;
+        }
+
+        const SceUID fd = io.next_fd++;
+        io.std_files.emplace(fd, file);
+
+        return fd;
+    } else if (strncmp(path, "uma0:", 5) == 0) {
+        std::string file_path = pref_path;
+        file_path += "uma0/";
+		
+        int i = 5;
+        if (path[5] == '/') i++;
         file_path += &path[i];
 
         const char *const open_mode = translate_open_mode(flags);
