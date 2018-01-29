@@ -20,6 +20,7 @@
 #include <audio/state.h>
 
 #include <cassert>
+#include <cstring>
 
 static const int stream_put_granularity = 512;
 

@@ -23,6 +23,7 @@
 #include <util/resource.h>
 
 #include <cassert>
+#include <cstring>
 
 ThreadStatePtr init_thread(Ptr<const void> entry_point, size_t stack_size, bool log_code, MemState &mem, CallImport call_import) {
     const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {

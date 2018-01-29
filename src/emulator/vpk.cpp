@@ -22,6 +22,7 @@
 #include <io/state.h>
 
 #include <cassert>
+#include <cstring>
 #include <vector>
 
 typedef std::vector<uint8_t> Buffer;

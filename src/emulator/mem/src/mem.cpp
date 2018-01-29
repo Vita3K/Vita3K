@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <cmath>
 
 #ifdef WIN32
