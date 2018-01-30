@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <cassert>
 #include <string>
+#include <iostream>
 
 static ZipFilePtr open_zip(mz_zip_archive &zip, const char *entry_path) {
     const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
@@ -106,9 +107,18 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
 
     if (strcmp(path, "tty0:") == 0) {
         assert(flags >= 0);
-        assert(flags <= SCE_O_RDWR);
 
-        return io.next_fd++;
+        TtyType type;
+        if(flags==SCE_O_RDONLY){
+            type = TTY_IN;
+        } else if (flags==SCE_O_WRONLY) {
+            type = TTY_OUT;
+        }
+
+        const SceUID fd = io.next_fd++;
+        io.tty_files.emplace(fd, type);
+
+        return fd;
     } else if (strncmp(path, "app0:", 5) == 0) {
         assert(flags == SCE_O_RDONLY);
 
@@ -184,6 +194,15 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
         return fread(data, 1, size, file->second.get());
     }
 
+    const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
+    if (tty_file != io.tty_files.end()) {
+        if(tty_file->second == TTY_IN){
+            std::cin.read(reinterpret_cast<char *>(data), size);
+            return size;
+        }
+        return -1;
+    }
+
     return -1;
 }
 
@@ -193,12 +212,22 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
     assert(size >= 0);
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
-    assert(file != io.std_files.end());
-    if (file == io.std_files.end()) {
+    if (file != io.std_files.end()) {
+        return fwrite(data, 1, size, file->second.get());
+    }
+
+    const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
+    if (tty_file != io.tty_files.end()) {
+        if(tty_file->second == TTY_OUT){
+            std::string s(reinterpret_cast<char const*>(data),size);
+            std::cout << s;
+            return size;
+        }
+
         return -1;
     }
 
-    return fwrite(data, 1, size, file->second.get());
+    return -1;
 }
 
 int seek_file(SceUID fd, int offset, int whence, const IOState &io) {
@@ -236,6 +265,7 @@ int seek_file(SceUID fd, int offset, int whence, const IOState &io) {
 void close_file(IOState &io, SceUID fd) {
     assert(fd >= 0);
 
+    io.tty_files.erase(fd);
     io.std_files.erase(fd);
     io.zip_files.erase(fd);
 }
