@@ -873,17 +873,21 @@ EXPORT(int, sceKernelGetProcessTime) {
     return unimplemented("sceKernelGetProcessTime");
 }
 
-EXPORT(int, sceKernelGetProcessTimeLow) {
-    return unimplemented("sceKernelGetProcessTimeLow");
-}
-
-EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
+static SceUInt64 _sceKernelGetProcessTimeWide(){
     constexpr SceUInt64 scale = 1000000 / CLOCKS_PER_SEC;
     static_assert((CLOCKS_PER_SEC * scale) == 1000000, "CLOCKS_PER_SEC doesn't scale easily to Vita's.");
 
     const clock_t clocks = clock();
 
     return clocks * scale;
+}
+
+EXPORT(SceUInt32, sceKernelGetProcessTimeLow) {
+    return (SceUInt32)(_sceKernelGetProcessTimeWide());
+}
+
+EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
+    return _sceKernelGetProcessTimeWide();
 }
 
 EXPORT(int, sceKernelGetRWLockInfo) {
