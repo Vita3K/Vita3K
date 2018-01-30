@@ -882,8 +882,8 @@ static SceUInt64 _sceKernelGetProcessTimeWide(){
     return clocks * scale;
 }
 
-EXPORT(int, sceKernelGetProcessTimeLow) {
-    return (int)(_sceKernelGetProcessTimeWide());
+EXPORT(SceUInt32, sceKernelGetProcessTimeLow) {
+    return (SceUInt32)(_sceKernelGetProcessTimeWide());
 }
 
 EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
