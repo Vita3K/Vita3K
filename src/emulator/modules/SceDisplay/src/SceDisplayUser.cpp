@@ -48,14 +48,22 @@ EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDis
     typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
 
     const MemState &mem = host.mem;
-    assert(pParam != nullptr);
-    assert(pParam->size == sizeof(emu::SceDisplayFrameBuf));
-    assert(pParam->base);
-    assert(pParam->pitch >= pParam->width);
-    assert(pParam->pixelformat == SCE_DISPLAY_PIXELFORMAT_A8B8G8R8);
-    assert(pParam->width == 960);
-    assert(pParam->height == 544);
-    assert(sync == SCE_DISPLAY_SETBUF_NEXTFRAME);
+    assert(pParam != nullptr); // Todo: pParam can be NULL, in that case black screen is shown
+    if (pParam->size != sizeof(emu::SceDisplayFrameBuf)){
+        return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_VALUE);
+    }
+    if (!pParam->base){
+        return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_ADDR);
+    }
+    if (pParam->pitch < pParam->width){
+        return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_PITCH);
+    }
+    if (pParam->pixelformat != SCE_DISPLAY_PIXELFORMAT_A8B8G8R8){
+        return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_PIXELFORMAT);
+    }
+    if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE){
+        return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
+    }
 
     SDL_Window *const prev_gl_window = SDL_GL_GetCurrentWindow();
     const SDL_GLContext prev_gl_context = SDL_GL_GetCurrentContext();

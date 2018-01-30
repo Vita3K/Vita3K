@@ -328,9 +328,9 @@ EXPORT(int, sceIoMkdir) {
 }
 
 EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
-    assert(file != nullptr);
-    assert((mode == 0) || (mode == 0666) || (mode == 0777));
-
+    if (file == nullptr){
+        return error("sceIoOpen", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+    }
     return open_file(host.io, file, flags, host.pref_path.c_str());
 }
 
@@ -742,12 +742,10 @@ EXPORT(int, sceKernelCreateRWLock) {
 }
 
 EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, SceKernelSemaOptParam *option) {
-    assert(name != nullptr);
-    assert(attr == 0);
-    assert(initVal == 0);
-    assert(maxVal == 1);
-    assert(option == nullptr);
-
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)){
+        return error("sceKernelCreateSema", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+    
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
@@ -761,14 +759,10 @@ EXPORT(int, sceKernelCreateSimpleEvent) {
 }
 
 EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, int cpuAffinityMask, const SceKernelThreadOptParam *option) {
-    assert(name != nullptr);
-    assert(entry);
-    assert(initPriority == 0x10000100);
-    assert(stackSize == 65536);
-    assert(attr == 0);
-    assert(cpuAffinityMask == 0);
-    assert(option == nullptr);
-
+    if (cpuAffinityMask > 0x70000){
+        return error("sceKernelCreateThread", SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
+    }
+    
     WaitingThreadState waiting;
     waiting.name = name;
 
@@ -780,7 +774,7 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
     const bool log_code = false;
     const ThreadStatePtr thread = init_thread(entry.cast<const void>(), stackSize, log_code, host.mem, call_import);
     if (!thread) {
-        return SCE_KERNEL_ERROR_ERROR;
+        return error("sceKernelCreateThread", SCE_KERNEL_ERROR_ERROR);
     }
 
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
@@ -1083,7 +1077,7 @@ EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
 
     const WaitingThreadStates::const_iterator waiting = host.kernel.waiting_threads.find(thid);
     if (waiting == host.kernel.waiting_threads.end()) {
-        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+        return error("sceKernelStartThread", SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
 
     const ThreadStatePtr thread = find(thid, host.kernel.threads);
@@ -1106,7 +1100,7 @@ EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
 
     const ThreadPtr running_thread(SDL_CreateThread(&thread_function, waiting->second.name.c_str(), &params), delete_thread);
     if (!running_thread) {
-        return SCE_KERNEL_ERROR_THREAD_ERROR;
+        return error("sceKernelStartThread", SCE_KERNEL_ERROR_THREAD_ERROR);
     }
 
     host.kernel.waiting_threads.erase(waiting);
@@ -1204,7 +1198,7 @@ EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
     if (!semaphore) {
-        return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
+        return error("sceKernelWaitSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);

@@ -40,3 +40,18 @@ int unimplemented(const char *name) {
 
     return 0;
 }
+
+int error(const char *name, int error) {
+    bool inserted = false;
+
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        inserted = logged.insert(name).second;
+    }
+
+    if (inserted) {
+        std::cerr << ">>> " << name << " <<< returned 0x" << std::hex << std::uppercase << error << std::endl;
+    }
+
+    return error;
+}
