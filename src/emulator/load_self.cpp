@@ -139,7 +139,7 @@ bool load_self(Ptr<const void> &entry_point, MemState &mem, const void *self) {
     }
 
     const Ptr<const uint8_t> module_info_segment_address = segment_addrs[module_info_segment_index].cast<const uint8_t>();
-    const uint8_t *const module_info_segment_bytes = module_info_segment_address.get(mem) + module_info_segment.p_offset;
+    const uint8_t *const module_info_segment_bytes = module_info_segment_address.get(mem);
     const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module_info_segment_bytes + module_info_offset);
 
     entry_point = module_info_segment_address + module_info->module_start;
