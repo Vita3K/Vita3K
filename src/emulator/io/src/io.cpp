@@ -22,6 +22,8 @@
 
 #include <psp2/io/fcntl.h>
 
+#include <psp2/io/stat.h>
+
 #ifdef WIN32
 # define WIN32_LEAN_AND_MEAN
 # include <Windows.h>
@@ -349,4 +351,51 @@ int remove_dir(const char *dir, const char *pref_path){
     } else {
         return -1;
     }
+}
+
+int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
+    // TODO Hacky magic numbers.
+    assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
+	assert(statp != NULL);
+
+	memset(statp, '\0', sizeof(SceIoStat));
+
+	std::string file_path = pref_path;
+
+	if (strncmp(file, "ux0:", 4) == 0) {
+        file_path += "ux0/";
+
+        int i = 4;
+        if (file[4] == '/') i++;
+        file_path += &file[i];
+    } else if (strncmp(file, "uma0:", 5) == 0) {
+        std::string file_path = pref_path;
+        file_path += "uma0/";
+
+        int i = 5;
+        if (file[5] == '/') i++;
+        file_path += &file[i];
+    } else {
+        return -1;
+    }
+
+#ifdef WIN32
+	// TODO
+#else
+	struct stat sb;
+	if (stat(file_path.c_str(), &sb) < 0) {
+		return -1;
+	}
+
+	statp->st_mode = 0x777;
+	statp->st_size = sb.st_size;
+
+	if (S_ISREG(sb.st_mode)) {
+		statp->st_mode = SCE_S_IFREG;
+	} else if (S_ISDIR(sb.st_mode)) {
+		statp->st_mode = SCE_S_IFDIR;
+	}
+
+	return 0;
+#endif
 }
