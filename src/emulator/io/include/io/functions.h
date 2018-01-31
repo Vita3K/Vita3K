@@ -21,6 +21,7 @@
 
 struct IOState;
 struct SceIoStat;
+struct SceIoDirent;
 
 bool init(IOState &io, const char *pref_path);
 SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path);
@@ -33,3 +34,7 @@ int remove_file(const char *file, const char *pref_path);
 int create_dir(const char *dir, int mode, const char *pref_path);
 int remove_dir(const char *dir, const char *pref_path);
 int stat_file(const char* file, SceIoStat* stat, const char *pref_path);
+
+int open_dir(IOState &io, const char *path, const char *pref_path);
+int read_dir(IOState &io, SceUID fd, SceIoDirent *dent);
+int close_dir(IOState &io, SceUID fd);

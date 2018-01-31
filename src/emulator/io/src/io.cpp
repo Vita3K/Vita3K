@@ -17,12 +17,13 @@
 
 #include <io/functions.h>
 
+#include <psp2/io/stat.h>
+#include <psp2/io/dirent.h>
+
 #include <io/state.h>
 #include <util/log.h>
 
 #include <psp2/io/fcntl.h>
-
-#include <psp2/io/stat.h>
 
 #ifdef WIN32
 # define WIN32_LEAN_AND_MEAN
@@ -30,6 +31,7 @@
 #else
 # include <unistd.h>
 # include <sys/stat.h>
+#include <dirent.h>
 #endif
 
 #include <algorithm>
@@ -55,6 +57,12 @@ static void delete_file(FILE *file) {
     if (file != nullptr) {
         fclose(file);
     }
+}
+
+static void delete_dir(DIR* dir) {
+	if (dir != nullptr) {
+		closedir((DIR*)dir);
+	}
 }
 
 const char *translate_open_mode(int flags) {
@@ -387,7 +395,6 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
 		return -1;
 	}
 
-	statp->st_mode = 0x777;
 	statp->st_size = sb.st_size;
 
 	if (S_ISREG(sb.st_mode)) {
@@ -398,4 +405,75 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
 
 	return 0;
 #endif
+}
+
+int open_dir(IOState &io, const char *path, const char *pref_path) {
+	// TODO Hacky magic numbers.
+	assert((strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
+
+	if (strncmp(path, "ux0:", 4) == 0) {
+		std::string file_path = pref_path;
+		file_path += "ux0/";
+
+		int i = 4;
+		if (path[4] == '/') i++;
+		file_path += &path[i];
+
+		const DirPtr dir(opendir(file_path.c_str()), delete_dir);
+		if (!dir) {
+			return -1;
+		}
+
+		const SceUID fd = io.next_fd++;
+		io.dir_entries.emplace(fd, dir);
+
+		return fd;
+	} else if (strncmp(path, "uma0:", 5) == 0) {
+		std::string file_path = pref_path;
+		file_path += "uma0/";
+
+		int i = 5;
+		if (path[5] == '/') i++;
+		file_path += &path[i];
+
+		const DirPtr dir(opendir(file_path.c_str()), delete_dir);
+		if (!dir) {
+			return -1;
+		}
+
+		const SceUID fd = io.next_fd++;
+		io.dir_entries.emplace(fd, dir);
+
+		return fd;
+	} else {
+		return -1;
+	}
+}
+
+int read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
+	assert(dent != nullptr);
+	assert(fd >= 0);
+
+	const DirEntries::const_iterator dir = io.dir_entries.find(fd);
+	if (dir != io.dir_entries.end()) {
+		dirent* d = readdir((DIR*)(dir->second.get()));
+		if (!d) {
+			return 0;
+		}
+
+		memcpy(dent->d_name, d->d_name, sizeof(dent->d_name));
+		dent->d_stat = {};
+		dent->d_stat.st_mode = d->d_type == DT_DIR ? SCE_S_IFDIR : SCE_S_IFREG;
+		return 1;
+	}
+
+	return 0;
+}
+
+int close_dir(IOState &io, SceUID fd) {
+	assert(fd >= 0);
+
+	io.dir_entries.erase(fd);
+
+	return 1;
 }

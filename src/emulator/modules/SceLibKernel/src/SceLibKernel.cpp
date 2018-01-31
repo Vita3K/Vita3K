@@ -26,6 +26,7 @@
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/io/stat.h>
+#include <psp2/io/dirent.h>
 
 struct Semaphore {
 };
@@ -300,12 +301,12 @@ EXPORT(int, sceIoDevctl) {
     return unimplemented("sceIoDevctl");
 }
 
-EXPORT(int, sceIoDopen) {
-    return unimplemented("sceIoDopen");
+EXPORT(int, sceIoDopen, const char *dir) {
+    return open_dir(host.io, dir, host.pref_path.c_str());
 }
 
-EXPORT(int, sceIoDread) {
-    return unimplemented("sceIoDread");
+EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
+    return read_dir(host.io, fd, dir);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
