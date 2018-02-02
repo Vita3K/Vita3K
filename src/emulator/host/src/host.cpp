@@ -96,7 +96,6 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
     }
 
     ImportFn *const fn = resolve_import(nid);
-    assert(fn != nullptr);
     if (fn != nullptr) {
         (*fn)(host, thread_id);
     }
