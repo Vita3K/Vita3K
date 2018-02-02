@@ -6,7 +6,7 @@ script:
 - mkdir build
 - cd build/
 - cmake -DCMAKE_BUILD_TYPE=Release ..
-- make
+- make -j4
 before_deploy:
 - cd src/emulator/
 - zip -r Vita3K.zip Vita3K.app
