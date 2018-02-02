@@ -486,7 +486,6 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, emu::SceGxmDepthStencilSurface *surfa
     assert(surfaceType == SCE_GXM_DEPTH_STENCIL_SURFACE_TILED);
     assert(strideInSamples > 0);
     assert(depthData);
-    assert(!stencilData);
 
     // TODO What to do here?
     memset(surface, 0, sizeof(*surface));
