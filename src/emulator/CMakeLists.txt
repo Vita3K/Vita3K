@@ -37,7 +37,6 @@ add_subdirectory(util)
 add_executable(
 emulator
 MACOSX_BUNDLE
-shaders
 load_self.cpp
 load_self.h
 main.cpp
@@ -48,11 +47,14 @@ vpk.h
 )
 
 target_link_libraries(emulator PRIVATE cpu elfio host modules nids vita-toolchain)
-set_target_properties(emulator PROPERTIES
-	OUTPUT_NAME Vita3K
-	RESOURCE shaders)
+set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K)
 
-if(WIN32)
+if(APPLE)
+	add_custom_command(
+		TARGET emulator
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders" "$<TARGET_FILE_DIR:emulator>/../Resources/shaders")
+elseif(WIN32)
 	add_custom_command(
 		TARGET emulator
 		POST_BUILD
