@@ -273,10 +273,9 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType){
     case SCE_GXM_PRIMITIVE_POINTS:
         return GL_POINTS;
     case SCE_GXM_PRIMITIVE_TRIANGLE_EDGES: // Todo: Implement this
-    default:
         return GL_TRIANGLES;
-        break;
     }
+    return GL_TRIANGLES;
 }
 
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
@@ -297,7 +296,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(colorSurface != nullptr);
     assert(depthStencil != nullptr);
 
-    if (context->isInScene){
+    if (host.gxm.isInScene){
         return SCE_GXM_ERROR_WITHIN_SCENE;
     }
     if (depthStencil == nullptr && colorSurface == nullptr){
@@ -309,7 +308,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     context->vertex_ring_buffer_used = 0;
     context->color_surface = *colorSurface;
     
-    context->isInScene = true;
+    host.gxm.isInScene = true;
     
     glBindFramebuffer(GL_FRAMEBUFFER, renderTarget->framebuffer[0]);
 
@@ -612,11 +611,11 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     assert(indexData != nullptr);
     assert(indexCount > 0);
 
-    if (!context->isInScene){
+    if (!host.gxm.isInScene){
         return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
     }
     
-    GLenum mode = translate_primitive(primType);
+    static GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, indexData);
 
@@ -641,7 +640,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     assert(vertexNotification == nullptr);
     assert(fragmentNotification == nullptr);
 
-    if (!context->isInScene){
+    if (!host.gxm.isInScene){
         return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
     }
     
@@ -654,7 +653,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     flip_vertically(pixels, width, height, stride_in_pixels);
 
-    context->isInScene = false;
+    host.gxm.isInScene = false;
     
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
