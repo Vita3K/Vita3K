@@ -34,7 +34,7 @@ EXPORT(int, sceAudioOutGetRestSample) {
 }
 
 EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, SceAudioOutMode mode) {
-    if (type < SCE_AUDIO_OUT_PORT_TYPE_MAIN && type > SCE_AUDIO_OUT_PORT_TYPE_VOICE){
+    if (type < SCE_AUDIO_OUT_PORT_TYPE_MAIN || type > SCE_AUDIO_OUT_PORT_TYPE_VOICE){
         return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_PORT_TYPE);
     }
     if (type == SCE_AUDIO_OUT_PORT_TYPE_MAIN && freq != 48000){
