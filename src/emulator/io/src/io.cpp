@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <cassert>
 #include <string>
+#include <iostream>
 
 static ZipFilePtr open_zip(mz_zip_archive &zip, const char *entry_path) {
     const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
@@ -78,16 +79,23 @@ const char *translate_open_mode(int flags) {
 
 bool init(IOState &io, const char *pref_path) {
     std::string ux0 = pref_path;
+    std::string uma0 = pref_path;
     ux0 += "ux0";
+    uma0 += "uma0";
     const std::string ux0_data = ux0 + "/data";
+    const std::string uma0_data = uma0 + "/data";
 
 #ifdef WIN32
     CreateDirectoryA(ux0.c_str(), nullptr);
     CreateDirectoryA(ux0_data.c_str(), nullptr);
+    CreateDirectoryA(uma0.c_str(), nullptr);
+    CreateDirectoryA(uma0_data.c_str(), nullptr);
 #else
     const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     mkdir(ux0.c_str(), mode);
     mkdir(ux0_data.c_str(), mode);
+    mkdir(uma0.c_str(), mode);
+    mkdir(uma0_data.c_str(), mode);
 #endif
 
     return true;
@@ -95,21 +103,33 @@ bool init(IOState &io, const char *pref_path) {
 
 SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path) {
     // TODO Hacky magic numbers.
-    assert((strcmp(path, "tty0:") == 0) || (strncmp(path, "app0:/", 6) == 0) || (strncmp(path, "ux0:/", 5) == 0));
+    assert((strcmp(path, "tty0:") == 0) || (strncmp(path, "app0:", 5) == 0) || (strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
 
     if (strcmp(path, "tty0:") == 0) {
         assert(flags >= 0);
-        assert(flags <= SCE_O_RDWR);
 
-        return io.next_fd++;
-    } else if (strncmp(path, "app0:/", 6) == 0) {
+        TtyType type;
+        if(flags==SCE_O_RDONLY){
+            type = TTY_IN;
+        } else if (flags==SCE_O_WRONLY) {
+            type = TTY_OUT;
+        }
+
+        const SceUID fd = io.next_fd++;
+        io.tty_files.emplace(fd, type);
+
+        return fd;
+    } else if (strncmp(path, "app0:", 5) == 0) {
         assert(flags == SCE_O_RDONLY);
 
         if (!io.vpk) {
             return -1;
         }
 
-        const ZipFilePtr file = open_zip(*io.vpk, &path[6]);
+        int i = 5;
+        if (path[5] == '/') i++;
+        const ZipFilePtr file = open_zip(*io.vpk, &path[i]);
+		
         if (!file) {
             return -1;
         }
@@ -118,10 +138,31 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         io.zip_files.emplace(fd, file);
 
         return fd;
-    } else if (strncmp(path, "ux0:/", 5) == 0) {
+    } else if (strncmp(path, "ux0:", 4) == 0) {
         std::string file_path = pref_path;
         file_path += "ux0/";
-        file_path += &path[5];
+		
+        int i = 4;
+        if (path[4] == '/') i++;
+        file_path += &path[i];
+
+        const char *const open_mode = translate_open_mode(flags);
+        const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
+        if (!file) {
+            return -1;
+        }
+
+        const SceUID fd = io.next_fd++;
+        io.std_files.emplace(fd, file);
+
+        return fd;
+    } else if (strncmp(path, "uma0:", 5) == 0) {
+        std::string file_path = pref_path;
+        file_path += "uma0/";
+		
+        int i = 5;
+        if (path[5] == '/') i++;
+        file_path += &path[i];
 
         const char *const open_mode = translate_open_mode(flags);
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
@@ -153,6 +194,15 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
         return fread(data, 1, size, file->second.get());
     }
 
+    const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
+    if (tty_file != io.tty_files.end()) {
+        if(tty_file->second == TTY_IN){
+            std::cin.read(reinterpret_cast<char *>(data), size);
+            return size;
+        }
+        return -1;
+    }
+
     return -1;
 }
 
@@ -162,12 +212,22 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
     assert(size >= 0);
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
-    assert(file != io.std_files.end());
-    if (file == io.std_files.end()) {
+    if (file != io.std_files.end()) {
+        return fwrite(data, 1, size, file->second.get());
+    }
+
+    const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
+    if (tty_file != io.tty_files.end()) {
+        if(tty_file->second == TTY_OUT){
+            std::string s(reinterpret_cast<char const*>(data),size);
+            std::cout << s;
+            return size;
+        }
+
         return -1;
     }
 
-    return fwrite(data, 1, size, file->second.get());
+    return -1;
 }
 
 int seek_file(SceUID fd, int offset, int whence, const IOState &io) {
@@ -205,6 +265,7 @@ int seek_file(SceUID fd, int offset, int whence, const IOState &io) {
 void close_file(IOState &io, SceUID fd) {
     assert(fd >= 0);
 
+    io.tty_files.erase(fd);
     io.std_files.erase(fd);
     io.zip_files.erase(fd);
 }
