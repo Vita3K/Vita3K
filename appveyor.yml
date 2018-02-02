@@ -26,7 +26,7 @@ build:
   
 after_build:
  - ps: | # Package artifact
-    7z a -m0=LZMA2 -mx9 $env:BUILD .\build-windows\src\emulator\Release\*
+    7z a -m0=LZMA2 -mx9 $env:BUILD .\build-windows\bin\Release\*
 
 test: off
 
