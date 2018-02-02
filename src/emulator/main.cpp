@@ -24,6 +24,7 @@
 
 #include <SDL.h>
 
+#include <algorithm> // find_if_not
 #include <cassert>
 #include <iostream>
 
@@ -38,6 +39,10 @@ enum ExitCode {
     InitThreadFailed,
     RunThreadFailed
 };
+
+static bool is_macos_process_arg(const char *arg) {
+    return strncmp(arg, "-psn_", 5) == 0;
+}
 
 static void error(const char *message, SDL_Window *window) {
     if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message, window) < 0) {
@@ -54,7 +59,8 @@ static void term_sdl(const void *succeeded) {
 int main(int argc, char *argv[]) {
     std::cout << window_title << std::endl;
 
-    if (argc < 2) {
+    const char *const *const path = std::find_if_not(&argv[1], &argv[argc], is_macos_process_arg);
+    if (path == &argv[argc]) {
         std::string message = "Usage: ";
         message += argv[0];
         message += " <path to VPK file>";
@@ -75,10 +81,9 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    const char *const path = argv[1];
-    if (!load_vpk(entry_point, host.io, host.mem, path)) {
+    if (!load_vpk(entry_point, host.io, host.mem, *path)) {
         std::string message = "Failed to load \"";
-        message += path;
+        message += *path;
         message += "\".";
         error(message.c_str(), host.window.get());
         return ModuleLoadFailed;
