@@ -18,6 +18,7 @@
 #include <io/functions.h>
 
 #include <io/state.h>
+#include <util/log.h>
 
 #include <psp2/io/fcntl.h>
 
@@ -141,7 +142,7 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         int i = 5;
         if (path[5] == '/') i++;
         const ZipFilePtr file = open_zip(*io.vpk, &path[i]);
-		
+
         if (!file) {
             return -1;
         }
@@ -165,7 +166,6 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         return fd;
     } else if (strncmp(path, "uma0:", 5) == 0) {
         std::string file_path = translate_path("uma0", path, pref_path);
-
         const char *const open_mode = translate_open_mode(flags);
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
         if (!file) {
@@ -222,7 +222,7 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
     if (tty_file != io.tty_files.end()) {
         if(tty_file->second == TTY_OUT){
             std::string s(reinterpret_cast<char const*>(data),size);
-            std::cout << s;
+            LOG_INFO("*** TTY: {}", s);
             return size;
         }
 

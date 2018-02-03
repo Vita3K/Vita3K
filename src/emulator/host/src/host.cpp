@@ -27,6 +27,7 @@
 #include <kernel/thread_state.h>
 #include <nids/functions.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
 
 #include <SDL_events.h>
 #include <SDL_filesystem.h>
@@ -58,7 +59,7 @@ bool init(HostState &state) {
     const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
     const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
 
-    const ResumeThread resume_thread = [&state](SceUID thread_id) {
+    const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::unique_lock<std::mutex> lock(thread->mutex);
         assert(thread->to_do == ThreadToDo::wait);
@@ -91,8 +92,7 @@ bool handle_events(HostState &host) {
 void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
     if (LOG_IMPORT_CALLS) {
         const char *const name = import_name(nid);
-        const char prev_fill = std::cout.fill();
-        std::cout << "NID " << std::hex << std::setw(8) << std::setfill('0') << nid << std::setfill(prev_fill) << std::dec << " (" << name << ") called." << std::endl;
+		LOG_TRACE("NID {:#08x} ({})) called", nid, name);
     }
 
     ImportFn *const fn = resolve_import(nid);

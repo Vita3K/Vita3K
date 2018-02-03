@@ -18,6 +18,7 @@
 #include <SceGxm/exports.h>
 
 #include "gxm.h"
+#include <util/log.h>
 
 #include <glbinding/Binding.h>
 
@@ -57,7 +58,9 @@ static void before_callback(const FunctionCall &fn) {
 static void after_callback(const FunctionCall &fn) {
     MICROPROFILE_LEAVE();
     for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
-        std::cerr << "OpenGL: " << fn.function->name() << " set error " << error << "." << std::endl;
+        std::stringstream gl_error;
+        gl_error << error;
+        LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
         assert(false);
     }
 }
@@ -78,7 +81,7 @@ static bool compile_shader(GLuint shader, const GLchar *source) {
         log.resize(log_length);
         glGetShaderInfoLog(shader, log_length, nullptr, &log.front());
 
-        std::cerr << &log.front() << std::endl;
+        LOG_ERROR("{}", log.front());
     }
 
     GLboolean is_compiled = GL_FALSE;
@@ -97,7 +100,7 @@ static bool compile_shader(GLuint shader, const SceGxmProgram *program, const ch
 
     std::ifstream is(path.str());
     if (is.fail()) {
-        std::cerr << "Couldn't open '" << path.str() << "' for reading." << std::endl;
+        LOG_ERROR("Couldn't open '{}' for reading.", path.str());
         return false;
     }
 
@@ -445,8 +448,8 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
 #endif // MICROPROFILE_ENABLED
     setAfterCallback(after_callback);
 
-    std::cout << "GL_VERSION = " << glGetString(GL_VERSION) << std::endl;
-    std::cout << "GL_SHADING_LANGUAGE_VERSION = " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+    LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
+	LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
@@ -1433,7 +1436,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         log.resize(log_length);
         glGetProgramInfoLog(fp->program.get(), log_length, nullptr, &log.front());
 
-        std::cerr << &log.front() << std::endl;
+		LOG_ERROR("{}", log.front());
     }
 
     GLboolean is_linked = GL_FALSE;
