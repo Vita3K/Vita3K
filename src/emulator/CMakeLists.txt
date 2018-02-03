@@ -1,18 +1,10 @@
 set(VITA3K_ORG_NAME "Vita3K")
 set(VITA3K_APP_NAME "Vita3K")
-set(VITA3K_VERSION $ENV{VITA3K_VERSION})
+
+set(VITA3K_VERSION $ENV{TRAVIS_BRANCH})
 
 if(VITA3K_VERSION STREQUAL "")
-	execute_process(
-		COMMAND git log -1 --format=%H
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-		OUTPUT_VARIABLE GIT_HASH
-		OUTPUT_STRIP_TRAILING_WHITESPACE)
-	if(GIT_HASH STREQUAL "")
-		set(VITA3K_VERSION "development version")
-	else()
-		set(VITA3K_VERSION "(git ${GIT_HASH})")
-	endif()
+	set(VITA3K_VERSION "development version")
 endif()
 
 set(CMAKE_CXX_STANDARD 14)

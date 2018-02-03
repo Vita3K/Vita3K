@@ -2,7 +2,6 @@ language: cpp
 os: osx
 osx_image: xcode9.2
 script:
-- export VITA3K_VERSION=$TRAVIS_TAG
 - mkdir build
 - cd build/
 - cmake -DCMAKE_BUILD_TYPE=Release ..
