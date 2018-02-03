@@ -1,18 +1,10 @@
 set(VITA3K_ORG_NAME "Vita3K")
 set(VITA3K_APP_NAME "Vita3K")
-set(VITA3K_VERSION "")
+
+set(VITA3K_VERSION $ENV{TRAVIS_BRANCH})
 
 if(VITA3K_VERSION STREQUAL "")
-	execute_process(
-		COMMAND git log -1 --format=%H
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-		OUTPUT_VARIABLE GIT_HASH
-		OUTPUT_STRIP_TRAILING_WHITESPACE)
-	if(GIT_HASH STREQUAL "")
-		set(VITA3K_VERSION "development version")
-	else()
-		set(VITA3K_VERSION "(git ${GIT_HASH})")
-	endif()
+	set(VITA3K_VERSION "development version")
 endif()
 
 set(CMAKE_CXX_STANDARD 14)
@@ -37,7 +29,6 @@ add_subdirectory(util)
 add_executable(
 emulator
 MACOSX_BUNDLE
-shaders
 load_self.cpp
 load_self.h
 main.cpp
@@ -48,11 +39,15 @@ vpk.h
 )
 
 target_link_libraries(emulator PRIVATE cpu elfio host modules nids vita-toolchain)
-set_target_properties(emulator PROPERTIES
-	OUTPUT_NAME Vita3K
-	RESOURCE shaders)
+set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K)
 
-if(WIN32)
+if(APPLE)
+	add_custom_command(
+		TARGET emulator
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders" "$<TARGET_FILE_DIR:emulator>/../Resources/shaders"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/src/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:emulator>/../Frameworks/SDL2.framework")
+elseif(WIN32)
 	add_custom_command(
 		TARGET emulator
 		POST_BUILD
