@@ -59,19 +59,33 @@ static void term_sdl(const void *succeeded) {
 int main(int argc, char *argv[]) {
     std::cout << window_title << std::endl;
 
-    const char *const *const path = std::find_if_not(&argv[1], &argv[argc], is_macos_process_arg);
-    if (path == &argv[argc]) {
+    const SDLPtr sdl(reinterpret_cast<const void *>(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) >= 0), term_sdl);
+    if (!sdl) {
+        error("SDL initialisation failed.", nullptr);
+        return SDLInitFailed;
+    }
+
+    const char *const *const path_arg = std::find_if_not(&argv[1], &argv[argc], is_macos_process_arg);
+    std::string path;
+    if (path_arg != &argv[argc]) {
+        path = *path_arg;
+    } else {
+        SDL_Event ev;
+        while (SDL_PollEvent(&ev)) {
+            if (ev.type == SDL_DROPFILE) {
+                path = ev.drop.file;
+                SDL_free(ev.drop.file);
+                break;
+            }
+        }
+    }
+
+    if (path.empty()) {
         std::string message = "Usage: ";
         message += argv[0];
         message += " <path to VPK file>";
         error(message.c_str(), nullptr);
         return IncorrectArgs;
-    }
-
-    const SDLPtr sdl(reinterpret_cast<const void *>(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) >= 0), term_sdl);
-    if (!sdl) {
-        error("SDL initialisation failed.", nullptr);
-        return SDLInitFailed;
     }
 
     HostState host;
@@ -81,9 +95,9 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    if (!load_vpk(entry_point, host.io, host.mem, *path)) {
+    if (!load_vpk(entry_point, host.io, host.mem, path.c_str())) {
         std::string message = "Failed to load \"";
-        message += *path;
+        message += path;
         message += "\".";
         error(message.c_str(), host.window.get());
         return ModuleLoadFailed;
