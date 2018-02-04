@@ -58,7 +58,7 @@ bool init(HostState &state) {
     const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
     const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
 
-    const ResumeThread resume_thread = [&state](SceUID thread_id) {
+    const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::unique_lock<std::mutex> lock(thread->mutex);
         assert(thread->to_do == ThreadToDo::wait);

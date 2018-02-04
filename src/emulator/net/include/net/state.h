@@ -17,28 +17,37 @@
 
 #pragma once
 
-#include <audio/state.h>
-#include <ctrl/state.h>
-#include <gxm/state.h>
-#include <io/state.h>
-#include <kernel/state.h>
-#include <net/state.h>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <vector>
 
-struct SDL_Window;
+#include <net/functions.h>
 
-typedef std::shared_ptr<SDL_Window> WindowPtr;
+#include <psp2/types.h>
 
-struct HostState {
-    std::string base_path;
-    std::string pref_path;
-    size_t frame_count = 0;
-    uint32_t t1 = 0;
-    WindowPtr window;
-    MemState mem;
-    CtrlState ctrl;
-    KernelState kernel;
-    AudioState audio;
-    GxmState gxm;
-    IOState io;
-    NetState net;
+#ifdef _MSC_VER
+# define NOMINMAX
+# define WIN32_LEAN_AND_MEAN
+# define _WINSOCK_DEPRECATED_NO_WARNINGS
+# include <winsock2.h>
+# include <Ws2tcpip.h>
+# define abs_socket SOCKET
+#else
+# include <sys/socket.h>
+# include <netinet/in.h>
+# include <netdb.h>
+# include <arpa/inet.h>
+# define abs_socket uint32_t
+# define closesocket(x) close(x)
+#endif
+
+typedef std::map<int, abs_socket> sockets;
+
+struct NetState {
+	bool inited = false;
+	int next_id = 0;
+    sockets socks;
 };

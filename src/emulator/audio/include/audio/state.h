@@ -29,7 +29,7 @@
 #include <SDL_audio.h>
 
 typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
-typedef std::function<void(SceUID)> ResumeThread;
+typedef std::function<void(SceUID)> ResumeAudioThread;
 
 struct AudioOutput {
     const uint8_t *buf = nullptr;
@@ -62,7 +62,7 @@ typedef std::shared_ptr<void> AudioDevicePtr;
 
 struct ReadOnlyAudioState {
     SDL_AudioSpec spec;
-    ResumeThread resume_thread;
+    ResumeAudioThread resume_thread;
 };
 
 struct AudioCallbackState {
