@@ -259,6 +259,11 @@ EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
 }
 
 EXPORT(int, sceNetInit, SceNetInitParam *param) {
+#ifdef _MSC_VER
+	WORD versionWanted = MAKEWORD(2, 2);
+	WSADATA wsaData;
+	WSAStartup(versionWanted, &wsaData);
+#endif
     host.net.inited = true;
     return 0;
 }
@@ -408,6 +413,9 @@ EXPORT(int, sceNetSocketClose, int s) {
 }
 
 EXPORT(int, sceNetTerm) {
+#ifdef _MSC_VER
+	WSACleanup();
+#endif  
     host.net.inited = false;
     return 0;
 }
