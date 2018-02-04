@@ -138,7 +138,7 @@ int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *add
             return -1;
         }
 #else
-        if (new_socket >= 0){
+        if (new_socket > 0){
             convertPosixSockaddrToSce(&addr, name);
             const int id = net.next_id++;
             net.socks.emplace(id, new_socket);
@@ -147,6 +147,14 @@ int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *add
             return (int)new_socket;
         }
 #endif
+    }
+	return -1;
+}
+
+int listen_socket(NetState &net, int id, int backlog){
+    const sockets::const_iterator socket = net.socks.find(id);
+    if (socket != net.socks.end()) {
+        return listen(socket->second, backlog);
     }
 	return -1;
 }

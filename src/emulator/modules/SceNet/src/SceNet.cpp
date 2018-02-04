@@ -260,16 +260,21 @@ EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
 
 EXPORT(int, sceNetInit, SceNetInitParam *param) {
 #ifdef _MSC_VER
-	WORD versionWanted = MAKEWORD(2, 2);
-	WSADATA wsaData;
-	WSAStartup(versionWanted, &wsaData);
+    WORD versionWanted = MAKEWORD(2, 2);
+    WSADATA wsaData;
+    WSAStartup(versionWanted, &wsaData);
 #endif
     host.net.inited = true;
     return 0;
 }
 
-EXPORT(int, sceNetListen) {
-    return unimplemented("sceNetListen");
+EXPORT(int, sceNetListen, int s, int backlog) {
+    int res = listen_socket(host.net, s, backlog);
+    if (res < 0){
+        return error("sceNetListen", translate_errorcode(res));   
+    }else{
+        return res;
+    }
 }
 
 EXPORT(unsigned int, sceNetNtohl, unsigned int n) {
@@ -414,7 +419,7 @@ EXPORT(int, sceNetSocketClose, int s) {
 
 EXPORT(int, sceNetTerm) {
 #ifdef _MSC_VER
-	WSACleanup();
+    WSACleanup();
 #endif  
     host.net.inited = false;
     return 0;

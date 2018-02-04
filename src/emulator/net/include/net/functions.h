@@ -34,3 +34,4 @@ int get_socket_address(NetState &net, int s, SceNetSockaddr *name, unsigned int 
 int set_socket_options(NetState &net, int s, int level, int optname, const void *optval, unsigned int optlen);
 int connect_socket(NetState &net, int s, const SceNetSockaddr *name, unsigned int namelen);
 int accept_socket(NetState &net, int s, SceNetSockaddr *addr, unsigned int *addrlen);
+int listen_socket(NetState &net, int s, int backlog);
