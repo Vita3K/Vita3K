@@ -35,7 +35,9 @@
 # include <winsock2.h>
 # include <Ws2tcpip.h>
 # define abs_socket SOCKET
+# define socklen_t int
 #else
+# include <unistd.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <netdb.h>

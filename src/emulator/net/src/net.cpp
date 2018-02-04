@@ -83,7 +83,7 @@ int recv_packet(NetState &net, int id, void *buf, unsigned int len, int flags, S
     if (socket != net.socks.end()) {
         if (from != NULL){
             struct sockaddr addr;
-            int res = recvfrom(socket->second, (char*)buf, len, flags, &addr, (int*)fromlen);
+            int res = recvfrom(socket->second, (char*)buf, len, flags, &addr, (socklen_t*)fromlen);
             convertPosixSockaddrToSce(&addr, from);
             return res;
         }else{
@@ -98,7 +98,7 @@ int get_socket_address(NetState &net, int id, SceNetSockaddr *name, unsigned int
     if (socket != net.socks.end()) {
         struct sockaddr addr;
         convertSceSockaddrToPosix(name, &addr);
-        int res = getsockname(socket->second, &addr, (int*)namelen);
+        int res = getsockname(socket->second, &addr, (socklen_t*)namelen);
         convertPosixSockaddrToSce(&addr, name);
         return res;
     }
@@ -127,7 +127,7 @@ int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *add
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         struct sockaddr addr;
-        abs_socket new_socket = accept(socket->second, &addr, (int*)addrlen);
+        abs_socket new_socket = accept(socket->second, &addr, (socklen_t*)addrlen);
 #ifdef _MSC_VER
         if (new_socket != INVALID_SOCKET){
             convertPosixSockaddrToSce(&addr, name);
