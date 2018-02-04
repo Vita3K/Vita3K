@@ -28,6 +28,8 @@ after_build:
  - ps: | # Package artifact
     7z a -m0=LZMA2 -mx9 $env:BUILD .\build-windows\src\emulator\Release\*
 
+test: off
+
 artifacts:
  - path: $(BUILD)
    name: Vita3K
