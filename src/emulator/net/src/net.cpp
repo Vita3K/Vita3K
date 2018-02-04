@@ -51,7 +51,7 @@ int close_socket(NetState &net, int id){
 		net.socks.erase(id);
 		return 0;
     }
-	return -1;
+    return -1;
 }
 
 int bind_socket(NetState &net,int id, const SceNetSockaddr *name, unsigned int addrlen){
@@ -61,7 +61,7 @@ int bind_socket(NetState &net,int id, const SceNetSockaddr *name, unsigned int a
         convertSceSockaddrToPosix((SceNetSockaddr*)name, &addr);
 		return bind(socket->second, &addr, addrlen);
     }
-	return -1;
+    return -1;
 }
 
 int send_packet(NetState &net, int id, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen){
@@ -75,7 +75,7 @@ int send_packet(NetState &net, int id, const void *msg, unsigned int len, int fl
             return send(socket->second, (const char*)msg, len, flags);
         }
     }
-	return -1;
+    return -1;
 }
 
 int recv_packet(NetState &net, int id, void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen){
@@ -90,7 +90,7 @@ int recv_packet(NetState &net, int id, void *buf, unsigned int len, int flags, S
             return recv(socket->second, (char*)buf, len, flags);
         }
     }
-	return -1;
+    return -1;
 }
 
 int get_socket_address(NetState &net, int id, SceNetSockaddr *name, unsigned int *namelen){
@@ -102,7 +102,7 @@ int get_socket_address(NetState &net, int id, SceNetSockaddr *name, unsigned int
         convertPosixSockaddrToSce(&addr, name);
         return res;
     }
-	return -1;
+    return -1;
 }
 
 int set_socket_options(NetState &net, int id, int level, int optname, const void *optval, unsigned int optlen){
@@ -110,7 +110,7 @@ int set_socket_options(NetState &net, int id, int level, int optname, const void
     if (socket != net.socks.end()) {
         return setsockopt(socket->second, level, optname, (const char*)optval, optlen);
     }
-	return -1;
+    return -1;
 }
 
 int connect_socket(NetState &net, int id, const SceNetSockaddr *name, unsigned int namelen){
@@ -120,7 +120,7 @@ int connect_socket(NetState &net, int id, const SceNetSockaddr *name, unsigned i
         convertSceSockaddrToPosix((SceNetSockaddr*)name, &addr);
         return connect(socket->second, &addr, namelen);
     }
-	return -1;
+    return -1;
 }
 
 int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *addrlen){
@@ -148,7 +148,7 @@ int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *add
         }
 #endif
     }
-	return -1;
+    return -1;
 }
 
 int listen_socket(NetState &net, int id, int backlog){
@@ -156,5 +156,5 @@ int listen_socket(NetState &net, int id, int backlog){
     if (socket != net.socks.end()) {
         return listen(socket->second, backlog);
     }
-	return -1;
+    return -1;
 }

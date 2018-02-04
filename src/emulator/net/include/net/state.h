@@ -49,7 +49,7 @@
 typedef std::map<int, abs_socket> sockets;
 
 struct NetState {
-	bool inited = false;
-	int next_id = 0;
+    bool inited = false;
+    int next_id = 0;
     sockets socks;
 };
