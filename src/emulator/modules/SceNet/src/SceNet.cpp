@@ -21,15 +21,18 @@
 
 #include <net/functions.h>
 
+#ifndef WIN32
+# include <errno.h>
+#endif
+
 #define ERROR_CASE(errname) case(errname): return SCE_NET_ERROR_##errname;
 
 static int translate_errorcode(){
 #ifdef WIN32
-    errorcode = WSAGetLastError();
+    switch(WSAGetLastError()){
 #else
-    errorcode = errno;
+    switch(errno){
 #endif
-    switch (errorcode){
     ERROR_CASE(EPERM)
     ERROR_CASE(ENOENT)
     ERROR_CASE(ESRCH)
@@ -241,18 +244,19 @@ EXPORT(Ptr<const char>, sceNetInetNtop, int af, const void *src, Ptr<char> dst, 
 #else
     const char *res = inet_ntop(af, src, dst_ptr, size);
 #endif
-    if (res == nullptr){
-        return error("sceNetInetNtop", translate_errorcode()); 
-    }
     return dst;
 }
 
 EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
 #ifdef WIN32
-    return InetPton(af, src, dst);
+    int res = InetPton(af, src, dst);
 #else
-    return inet_pton(af, src, dst);
+    int res = inet_pton(af, src, dst);
 #endif
+    if (res < 0){
+        return error("sceNetInetPton", translate_errorcode()); 
+    }
+    return res;
 }
 
 EXPORT(int, sceNetInit, SceNetInitParam *param) {
