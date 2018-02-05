@@ -28,12 +28,11 @@
 typedef SOCKET abs_socket;
 typedef int socklen_t;
 #else
-# include <unistd.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <netdb.h>
 # include <arpa/inet.h>
-typedef uint32_t abs_socket;
+typedef int abs_socket;
 #endif
 
 typedef std::map<int, abs_socket> sockets;

@@ -17,6 +17,9 @@
 
 #include <SceAppUtil/exports.h>
 
+#include <psp2/apputil.h>
+#include <psp2/system_param.h>
+
 EXPORT(int, sceAppUtilAddCookieWebBrowser) {
     return unimplemented("sceAppUtilAddCookieWebBrowser");
 }
@@ -181,8 +184,13 @@ EXPORT(int, sceAppUtilSystemParamGetInt) {
     return unimplemented("sceAppUtilSystemParamGetInt");
 }
 
-EXPORT(int, sceAppUtilSystemParamGetString) {
-    return unimplemented("sceAppUtilSystemParamGetString");
+EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize) {
+    switch (paramId){
+    case SCE_SYSTEM_PARAM_ID_USERNAME:
+        strcpy_s((char*)buf, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE, "VITA3K");
+        break;
+    }
+    return 0;
 }
 
 BRIDGE_IMPL(sceAppUtilAddCookieWebBrowser)

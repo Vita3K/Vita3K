@@ -254,6 +254,10 @@ EXPORT(Ptr<const char>, sceNetInetNtop, int af, const void *src, Ptr<char> dst, 
 #else
     const char *res = inet_ntop(af, src, dst_ptr, size);
 #endif
+    if (res == nullptr){
+        error("sceNetInetNtop", 0x0);
+        return Ptr<char>();
+    }
     return dst;
 }
 
