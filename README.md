@@ -21,6 +21,10 @@ The emulator currently runs a few homebrew programs in .vpk format. No commercia
 ## Licence
 Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
 
+## Binaries
+
+Vita3K binaries for Windows can be downloaded on [AppVeyor](https://ci.appveyor.com/project/Nicba1010/vita3k/branch/master/artifacts)
+
 ## Building
 ### Prerequisites
 [CMake](https://cmake.org/) is used to generate Visual Studio and Xcode project files. It is assumed that you have CMake installed and on your path. Other dependencies are provided as Git submodules or as prebuilt binaries.
