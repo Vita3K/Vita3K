@@ -28,6 +28,7 @@
 typedef SOCKET abs_socket;
 typedef int socklen_t;
 #else
+# include <unistd.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <netdb.h>
