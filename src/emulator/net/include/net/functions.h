@@ -17,12 +17,8 @@
 
 #pragma once
 
-#include <psp2/types.h>
-#include <psp2/net/net.h>
-
-#include <functional>
-
 struct NetState;
+struct SceNetSockaddr;
 
 bool init(NetState &state);
 int open_socket(NetState &net, int domain, int type, int protocol);

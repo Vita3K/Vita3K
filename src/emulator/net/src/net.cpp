@@ -19,10 +19,11 @@
 
 #include <net/state.h>
 
-#include <cassert>
 #include <cstring>
 
-static void convertSceSockaddrToPosix(struct SceNetSockaddr *src, struct sockaddr *dst){
+#include <psp2/net/net.h>
+
+static void convertSceSockaddrToPosix(const struct SceNetSockaddr *src, struct sockaddr *dst){
     dst->sa_family = src->sa_family;
     memcpy(&dst->sa_data, &src->sa_data, 14);
 }
@@ -47,7 +48,11 @@ int open_socket(NetState &net, int domain, int type, int protocol) {
 int close_socket(NetState &net, int id){
 	const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
+#ifdef WIN32
 		closesocket(socket->second);
+#else
+        close(socket->second);
+#endif
 		net.socks.erase(id);
 		return 0;
     }
@@ -58,7 +63,7 @@ int bind_socket(NetState &net,int id, const SceNetSockaddr *name, unsigned int a
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         struct sockaddr addr;
-        convertSceSockaddrToPosix((SceNetSockaddr*)name, &addr);
+        convertSceSockaddrToPosix(name, &addr);
 		return bind(socket->second, &addr, addrlen);
     }
     return -1;
@@ -117,7 +122,7 @@ int connect_socket(NetState &net, int id, const SceNetSockaddr *name, unsigned i
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         struct sockaddr addr;
-        convertSceSockaddrToPosix((SceNetSockaddr*)name, &addr);
+        convertSceSockaddrToPosix(name, &addr);
         return connect(socket->second, &addr, namelen);
     }
     return -1;
@@ -128,7 +133,7 @@ int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *add
     if (socket != net.socks.end()) {
         struct sockaddr addr;
         abs_socket new_socket = accept(socket->second, &addr, (socklen_t*)addrlen);
-#ifdef _MSC_VER
+#ifdef WIN32
         if (new_socket != INVALID_SOCKET){
             convertPosixSockaddrToSce(&addr, name);
             const int id = net.next_id++;

@@ -17,12 +17,14 @@
 
 #include <SceNet/exports.h>
 
+#include <net/functions.h>
+
 #include <psp2/net/net.h>
 
 #define ERROR_CASE(errname) case(errname): return SCE_NET_ERROR_##errname;
 
 static int translate_errorcode(int errorcode){
-#ifdef _MSC_VER
+#ifdef WIN32
     errorcode = WSAGetLastError();
 #endif
     switch (errorcode){
@@ -219,14 +221,7 @@ EXPORT(int, sceNetGetsockopt) {
 }
 
 EXPORT(unsigned int, sceNetHtonl, unsigned int n) {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return (((((unsigned long)(n) & 0xFF)) << 24) |
-        ((((unsigned long)(n) & 0xFF00)) << 8) |
-        ((((unsigned long)(n) & 0xFF0000)) >> 8) |
-        ((((unsigned long)(n) & 0xFF000000)) >> 24));
-#else
-    return n;
-#endif
+    return htonl(n);
 }
 
 EXPORT(int, sceNetHtonll) {
@@ -234,16 +229,11 @@ EXPORT(int, sceNetHtonll) {
 }
 
 EXPORT(unsigned short int, sceNetHtons, unsigned short int n) {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return (((((unsigned short)(n) & 0xFF)) << 8) |
-        (((unsigned short)(n) & 0xFF00) >> 8));
-#else
-    return n;
-#endif
+    return htons(n);
 }
 
 EXPORT(const char*, sceNetInetNtop, int af, const void *src, char *dst, unsigned int size) {
-#ifdef _MSC_VER
+#ifdef WIN32
     return InetNtop(af, src, dst, size);
 #else
     return inet_ntop(af, src, dst, size);
@@ -251,7 +241,7 @@ EXPORT(const char*, sceNetInetNtop, int af, const void *src, char *dst, unsigned
 }
 
 EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
-#ifdef _MSC_VER
+#ifdef WIN32
     return InetPton(af, src, dst);
 #else
     return inet_pton(af, src, dst);
@@ -259,7 +249,7 @@ EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
 }
 
 EXPORT(int, sceNetInit, SceNetInitParam *param) {
-#ifdef _MSC_VER
+#ifdef WIN32
     WORD versionWanted = MAKEWORD(2, 2);
     WSADATA wsaData;
     WSAStartup(versionWanted, &wsaData);
@@ -278,14 +268,7 @@ EXPORT(int, sceNetListen, int s, int backlog) {
 }
 
 EXPORT(unsigned int, sceNetNtohl, unsigned int n) {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return (((((unsigned long)(n) & 0xFF)) << 24) |
-        ((((unsigned long)(n) & 0xFF00)) << 8) |
-        ((((unsigned long)(n) & 0xFF0000)) >> 8) |
-        ((((unsigned long)(n) & 0xFF000000)) >> 24));
-#else
-    return n;
-#endif
+    return ntohl(n);
 }
 
 EXPORT(int, sceNetNtohll) {
@@ -293,16 +276,11 @@ EXPORT(int, sceNetNtohll) {
 }
 
 EXPORT(unsigned short int, sceNetNtohs, unsigned short int n) {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return (((((unsigned short)(n) & 0xFF)) << 8) |
-        (((unsigned short)(n) & 0xFF00) >> 8));
-#else
-    return n;
-#endif
+    return ntohs(n);
 }
 
 EXPORT(int, sceNetRecv, int s, void *buf, unsigned int len, int flags) {
-    int res = recv_packet(host.net, s, buf, len, flags, NULL, 0);
+    int res = recv_packet(host.net, s, buf, len, flags, nullptr, 0);
     if (res < 0){
         return error("sceNetRecv", translate_errorcode(res));   
     }else{
@@ -352,7 +330,7 @@ EXPORT(int, sceNetResolverStartNtoa, int rid, const char *hostname, SceNetInAddr
 }
 
 EXPORT(int, sceNetSend, int s, const void *msg, unsigned int len, int flags) {
-    int res = send_packet(host.net, s, msg, len, flags, NULL, 0);
+    int res = send_packet(host.net, s, msg, len, flags, nullptr, 0);
     if (res < 0){
         return error("sceNetSend", translate_errorcode(res));   
     }else{
@@ -421,7 +399,7 @@ EXPORT(int, sceNetSocketClose, int s) {
 }
 
 EXPORT(int, sceNetTerm) {
-#ifdef _MSC_VER
+#ifdef WIN32
     WSACleanup();
 #endif  
     host.net.inited = false;

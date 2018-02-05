@@ -17,33 +17,22 @@
 
 #pragma once
 
-#include <functional>
 #include <map>
 #include <memory>
-#include <mutex>
-#include <queue>
 #include <vector>
 
-#include <net/functions.h>
-
-#include <psp2/types.h>
-
-#ifdef _MSC_VER
-# define NOMINMAX
-# define WIN32_LEAN_AND_MEAN
-# define _WINSOCK_DEPRECATED_NO_WARNINGS
+#ifdef WIN32
 # include <winsock2.h>
 # include <Ws2tcpip.h>
-# define abs_socket SOCKET
-# define socklen_t int
+typedef SOCKET abs_socket;
+typedef int socklen_t;
 #else
 # include <unistd.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <netdb.h>
 # include <arpa/inet.h>
-# define abs_socket uint32_t
-# define closesocket(x) close(x)
+typedef uint32_t abs_socket;
 #endif
 
 typedef std::map<int, abs_socket> sockets;
