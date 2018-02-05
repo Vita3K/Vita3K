@@ -46,15 +46,15 @@ int open_socket(NetState &net, int domain, int type, int protocol) {
 }
 
 int close_socket(NetState &net, int id){
-	const sockets::const_iterator socket = net.socks.find(id);
+    const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
 #ifdef WIN32
-		closesocket(socket->second);
+        closesocket(socket->second);
 #else
         close(socket->second);
 #endif
-		net.socks.erase(id);
-		return 0;
+        net.socks.erase(id);
+        return 0;
     }
     return -1;
 }
