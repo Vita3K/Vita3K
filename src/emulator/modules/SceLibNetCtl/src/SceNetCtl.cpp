@@ -17,6 +17,10 @@
 
 #include <SceLibNetCtl/exports.h>
 
+#ifdef WIN32
+# undef s_addr
+# define s_addr s_addr
+#endif
 #include <psp2/net/netctl.h>
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {

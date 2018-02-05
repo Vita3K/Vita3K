@@ -18,10 +18,11 @@
 #pragma once
 
 #include <map>
-#include <memory>
-#include <vector>
 
 #ifdef WIN32
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 # include <winsock2.h>
 # include <Ws2tcpip.h>
 typedef SOCKET abs_socket;
