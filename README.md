@@ -1,6 +1,6 @@
 # Vita3K
 [![Build Status](https://travis-ci.org/Vita3K/Vita3K.svg?branch=master)](https://travis-ci.org/Vita3K/Vita3K)
-[![Build status](https://ci.appveyor.com/api/projects/status/xllgsqg9iedm3kmp/branch/master?svg=true)](https://ci.appveyor.com/project/Nicba1010/vita3k/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/tlvkwrsj13vq3gor/branch/master?svg=true)](https://ci.appveyor.com/project/Vita3K/vita3k/branch/master)
 ## Introduction
 Vita3K is an experimental PlayStation Vita emulator for Windows and macOS.
 
@@ -20,6 +20,10 @@ The emulator currently runs a few homebrew programs in .vpk format. No commercia
 
 ## Licence
 Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
+
+## Binaries
+
+Vita3K binaries for Windows can be downloaded on [AppVeyor](https://ci.appveyor.com/project/Vita3K/vita3k/branch/master/artifacts).
 
 ## Building
 ### Prerequisites
