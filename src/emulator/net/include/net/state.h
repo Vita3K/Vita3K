@@ -20,6 +20,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <mem/ptr.h>
 
 #ifdef WIN32
 # include <winsock2.h>
@@ -41,4 +42,5 @@ struct NetState {
     bool inited = false;
     int next_id = 0;
     sockets socks;
+    Ptr<const char *> inet_ntop_ptr;
 };

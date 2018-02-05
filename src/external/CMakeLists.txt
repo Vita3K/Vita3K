@@ -57,7 +57,7 @@ if(WIN32)
 	find_library(WSOCK32 wsock32)
 	find_library(WS2_32 ws2_32)
 	target_link_libraries(winsock INTERFACE WSOCK32 WS2_32)
-	target_compile_definitions(winsock PRIVATE NOMINMAX=1 WIN32_LEAN_AND_MEAN=1 _WINSOCK_DEPRECATED_NO_WARNINGS=1)
+	target_compile_definitions(winsock INTERFACE NOMINMAX=1 WIN32_LEAN_AND_MEAN=1 _WINSOCK_DEPRECATED_NO_WARNINGS=1)
 endif()
 
 add_library(unicorn INTERFACE)

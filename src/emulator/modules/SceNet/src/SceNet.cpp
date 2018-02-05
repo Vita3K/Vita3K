@@ -17,9 +17,9 @@
 
 #include <SceNet/exports.h>
 
-#include <net/functions.h>
-
 #include <psp2/net/net.h>
+
+#include <net/functions.h>
 
 #define ERROR_CASE(errname) case(errname): return SCE_NET_ERROR_##errname;
 
@@ -232,12 +232,14 @@ EXPORT(unsigned short int, sceNetHtons, unsigned short int n) {
     return htons(n);
 }
 
-EXPORT(const char*, sceNetInetNtop, int af, const void *src, char *dst, unsigned int size) {
+EXPORT(Ptr<const char *>, sceNetInetNtop, int af, const void *src, char *dst, unsigned int size) {
+    char *res_ptr = reinterpret_cast<char *>(host.net.inet_ntop_ptr.get(host.mem));
 #ifdef WIN32
-    return InetNtop(af, src, dst, size);
+    res_ptr = InetNtop(af, src, dst, size);
 #else
-    return inet_ntop(af, src, dst, size);
+    res_ptr = inet_ntop(af, src, dst, size);
 #endif
+    return host.net.inet_ntop_ptr;
 }
 
 EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
@@ -249,11 +251,15 @@ EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
 }
 
 EXPORT(int, sceNetInit, SceNetInitParam *param) {
+    if (host.net.inited){
+        return error("sceNetInit", SCE_NET_ERROR_EINTERNAL);
+    }
 #ifdef WIN32
     WORD versionWanted = MAKEWORD(2, 2);
     WSADATA wsaData;
     WSAStartup(versionWanted, &wsaData);
 #endif
+    host.net.inet_ntop_ptr = alloc<const char *>(host.mem, __FUNCTION__);
     host.net.inited = true;
     return 0;
 }
@@ -399,9 +405,13 @@ EXPORT(int, sceNetSocketClose, int s) {
 }
 
 EXPORT(int, sceNetTerm) {
+    if (!host.net.inited){
+        return error("sceNetTerm", SCE_NET_ERROR_ENOTINIT);
+    }
 #ifdef WIN32
     WSACleanup();
-#endif  
+#endif
+    free(host.mem, host.net.inet_ntop_ptr);  
     host.net.inited = false;
     return 0;
 }

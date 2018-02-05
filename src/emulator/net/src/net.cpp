@@ -15,13 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <psp2/net/net.h>
+
 #include <net/functions.h>
 
 #include <net/state.h>
 
 #include <cstring>
-
-#include <psp2/net/net.h>
 
 static void convertSceSockaddrToPosix(const struct SceNetSockaddr *src, struct sockaddr *dst){
     dst->sa_family = src->sa_family;
