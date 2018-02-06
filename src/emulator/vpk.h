@@ -17,9 +17,11 @@
 
 #pragma once
 
+#include <string>
+
 struct IOState;
 struct MemState;
 template <class T>
 class Ptr;
 
-bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const char *path);
+bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const std::wstring& path);
