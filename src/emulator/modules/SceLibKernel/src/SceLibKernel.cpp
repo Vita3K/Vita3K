@@ -323,8 +323,8 @@ EXPORT(int, sceIoLseek) {
     return unimplemented("sceIoLseek");
 }
 
-EXPORT(int, sceIoMkdir) {
-    return unimplemented("sceIoMkdir");
+EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
+    return create_dir(dir, mode, host.pref_path.c_str());
 }
 
 EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {

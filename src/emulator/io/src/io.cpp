@@ -77,6 +77,18 @@ const char *translate_open_mode(int flags) {
     }
 }
 
+std::string translate_path(const char *part_name, const char *path, const char* pref_path){
+    std::string res = pref_path;
+    res += part_name;
+    int i = strlen(part_name);
+    res += "/";
+	
+    if (path[i+1] == '/') i++;
+    res += &path[i+1];
+    
+    return res;
+}
+
 bool init(IOState &io, const char *pref_path) {
     std::string ux0 = pref_path;
     std::string uma0 = pref_path;
@@ -139,12 +151,7 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
 
         return fd;
     } else if (strncmp(path, "ux0:", 4) == 0) {
-        std::string file_path = pref_path;
-        file_path += "ux0/";
-		
-        int i = 4;
-        if (path[4] == '/') i++;
-        file_path += &path[i];
+        std::string file_path = translate_path("ux0", path, pref_path);
 
         const char *const open_mode = translate_open_mode(flags);
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
@@ -157,12 +164,7 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
 
         return fd;
     } else if (strncmp(path, "uma0:", 5) == 0) {
-        std::string file_path = pref_path;
-        file_path += "uma0/";
-		
-        int i = 5;
-        if (path[5] == '/') i++;
-        file_path += &path[i];
+        std::string file_path = translate_path("uma0", path, pref_path);
 
         const char *const open_mode = translate_open_mode(flags);
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
@@ -268,4 +270,30 @@ void close_file(IOState &io, SceUID fd) {
     io.tty_files.erase(fd);
     io.std_files.erase(fd);
     io.zip_files.erase(fd);
+}
+
+int create_dir(const char *dir, int mode, const char *pref_path){
+    // TODO Hacky magic numbers.
+    assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
+    if (strncmp(dir, "ux0:", 4) == 0) {
+        std::string dir_path = translate_path("ux0", dir, pref_path);
+
+#ifdef WIN32
+        CreateDirectoryA(dir_path.c_str(), nullptr);
+        return 0;
+#else
+        return mkdir(dir_path.c_str(), mode);
+#endif 
+    } else if (strncmp(dir, "uma0:", 5) == 0) {
+        std::string dir_path = translate_path("uma0", dir, pref_path);
+        
+#ifdef WIN32
+        CreateDirectoryA(dir_path.c_str(), nullptr);
+        return 0;
+#else
+        return mkdir(dir_path.c_str(), mode);
+#endif 
+    } else {
+        return -1;
+    }
 }
