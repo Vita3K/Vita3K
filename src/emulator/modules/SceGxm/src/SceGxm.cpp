@@ -614,7 +614,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
     }
     
-    static GLenum mode = translate_primitive(primType);
+    const GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, indexData);
 
