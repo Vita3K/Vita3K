@@ -319,8 +319,8 @@ EXPORT(int, sceIoIoctl) {
     return unimplemented("sceIoIoctl");
 }
 
-EXPORT(int, sceIoLseek) {
-    return unimplemented("sceIoLseek");
+EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
+    return seek_file(fd, offset, whence, host.io);
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
@@ -334,24 +334,32 @@ EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
     return open_file(host.io, file, flags, host.pref_path.c_str());
 }
 
-EXPORT(int, sceIoPread) {
-    return unimplemented("sceIoPread");
+EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
+    seek_file(fd, offset, SEEK_SET, host.io);
+    return read_file(data, host.io, fd, size);
 }
 
-EXPORT(int, sceIoPwrite) {
-    return unimplemented("sceIoPwrite");
+EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
+    seek_file(fd, offset, SEEK_SET, host.io);
+    return write_file(fd, data, size, host.io);
 }
 
-EXPORT(int, sceIoRemove) {
-    return unimplemented("sceIoRemove");
+EXPORT(int, sceIoRemove, const char *path) {
+    if (path == nullptr){
+        return error("sceIoRemove", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+    }
+    return remove_file(path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoRename) {
     return unimplemented("sceIoRename");
 }
 
-EXPORT(int, sceIoRmdir) {
-    return unimplemented("sceIoRmdir");
+EXPORT(int, sceIoRmdir, const char *path) {
+    if (path == nullptr){
+        return error("sceIoRmdir", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+    }
+    return remove_dir(path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoSync) {

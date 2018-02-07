@@ -272,6 +272,32 @@ void close_file(IOState &io, SceUID fd) {
     io.zip_files.erase(fd);
 }
 
+int remove_file(const char *file, const char *pref_path){
+    // TODO Hacky magic numbers.
+    assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
+    if (strncmp(file, "ux0:", 4) == 0) {
+        std::string file_path = translate_path("ux0", file, pref_path);
+
+#ifdef WIN32
+        DeleteFileA(file_path.c_str());
+        return 0;
+#else
+        return unlink(file_path.c_str());
+#endif
+    } else if (strncmp(file, "uma0:", 5) == 0) {
+        std::string file_path = translate_path("uma0", file, pref_path);
+        
+#ifdef WIN32
+        DeleteFileA(file_path.c_str());
+        return 0;
+#else
+        return unlink(file_path.c_str());
+#endif 
+    } else {
+        return -1;
+    }
+}
+
 int create_dir(const char *dir, int mode, const char *pref_path){
     // TODO Hacky magic numbers.
     assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
@@ -292,6 +318,32 @@ int create_dir(const char *dir, int mode, const char *pref_path){
         return 0;
 #else
         return mkdir(dir_path.c_str(), mode);
+#endif 
+    } else {
+        return -1;
+    }
+}
+
+int remove_dir(const char *dir, const char *pref_path){
+    // TODO Hacky magic numbers.
+    assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
+    if (strncmp(dir, "ux0:", 4) == 0) {
+        std::string dir_path = translate_path("ux0", dir, pref_path);
+
+#ifdef WIN32
+        RemoveDirectoryA(dir_path.c_str());
+        return 0;
+#else
+        return rmdir(dir_path.c_str());
+#endif
+    } else if (strncmp(dir, "uma0:", 5) == 0) {
+        std::string dir_path = translate_path("uma0", dir, pref_path);
+        
+#ifdef WIN32
+        RemoveDirectoryA(dir_path.c_str());
+        return 0;
+#else
+        return rmdir(dir_path.c_str());
 #endif 
     } else {
         return -1;
