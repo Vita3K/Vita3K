@@ -23,13 +23,17 @@
 BRIDGE_DECL(sceAppUtilAddCookieWebBrowser)
 BRIDGE_DECL(sceAppUtilAddcontMount)
 BRIDGE_DECL(sceAppUtilAddcontUmount)
+BRIDGE_DECL(sceAppUtilAppEventParseGameCustomData)
 BRIDGE_DECL(sceAppUtilAppEventParseIncomingDialog)
 BRIDGE_DECL(sceAppUtilAppEventParseLiveArea)
 BRIDGE_DECL(sceAppUtilAppEventParseNearGift)
+BRIDGE_DECL(sceAppUtilAppEventParseNpActivity)
 BRIDGE_DECL(sceAppUtilAppEventParseNpAppDataMessage)
 BRIDGE_DECL(sceAppUtilAppEventParseNpBasicJoinablePresence)
 BRIDGE_DECL(sceAppUtilAppEventParseNpInviteMessage)
 BRIDGE_DECL(sceAppUtilAppEventParseScreenShotNotification)
+BRIDGE_DECL(sceAppUtilAppEventParseSessionInvitation)
+BRIDGE_DECL(sceAppUtilAppEventParseTeleport)
 BRIDGE_DECL(sceAppUtilAppEventParseTriggerUtil)
 BRIDGE_DECL(sceAppUtilAppEventParseWebBrowser)
 BRIDGE_DECL(sceAppUtilAppParamGetInt)
@@ -65,3 +69,7 @@ BRIDGE_DECL(sceAppUtilSystemParamGetString)
 
 // SceAppUtilCache
 BRIDGE_DECL(sceAppUtilCacheMount)
+
+// SceAppUtilExt
+BRIDGE_DECL(sceAppUtilExtVideoMount)
+BRIDGE_DECL(sceAppUtilExtVideoUmount)

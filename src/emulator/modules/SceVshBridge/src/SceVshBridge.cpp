@@ -25,6 +25,10 @@ EXPORT(int, _vshAppMgrBgdlSetQueueStatus) {
     return unimplemented("_vshAppMgrBgdlSetQueueStatus");
 }
 
+EXPORT(int, _vshAppMgrCheckPfsMounted) {
+    return unimplemented("_vshAppMgrCheckPfsMounted");
+}
+
 EXPORT(int, _vshAppMgrCloudDataCreateHeader) {
     return unimplemented("_vshAppMgrCloudDataCreateHeader");
 }
@@ -53,12 +57,36 @@ EXPORT(int, _vshAppMgrCloudDataVerifyHeader) {
     return unimplemented("_vshAppMgrCloudDataVerifyHeader");
 }
 
+EXPORT(int, _vshAppMgrFakeSaveDataCreateMount) {
+    return unimplemented("_vshAppMgrFakeSaveDataCreateMount");
+}
+
 EXPORT(int, _vshAppMgrIsExclusiveProcessRunning) {
     return unimplemented("_vshAppMgrIsExclusiveProcessRunning");
 }
 
+EXPORT(int, _vshAppMgrLocalBackupGetOfflineId) {
+    return unimplemented("_vshAppMgrLocalBackupGetOfflineId");
+}
+
+EXPORT(int, _vshAppMgrLocalBackupVerifyOfflineHeader) {
+    return unimplemented("_vshAppMgrLocalBackupVerifyOfflineHeader");
+}
+
 EXPORT(int, _vshAppMgrRegisterPath) {
     return unimplemented("_vshAppMgrRegisterPath");
+}
+
+EXPORT(int, _vshAppMgrSaveDataLocalBackupTargetGetList) {
+    return unimplemented("_vshAppMgrSaveDataLocalBackupTargetGetList");
+}
+
+EXPORT(int, _vshAppMgrSaveDataLocalBackupTargetRemoveItem) {
+    return unimplemented("_vshAppMgrSaveDataLocalBackupTargetRemoveItem");
+}
+
+EXPORT(int, _vshAppMgrSaveDataNotifyBackupFinished) {
+    return unimplemented("_vshAppMgrSaveDataNotifyBackupFinished");
 }
 
 EXPORT(int, _vshAppMgrSystemParamDateTimeSetConf) {
@@ -95,6 +123,14 @@ EXPORT(int, _vshCoredumpCafSegmentTransform) {
 
 EXPORT(int, _vshCoredumpCreateDump) {
     return unimplemented("_vshCoredumpCreateDump");
+}
+
+EXPORT(int, _vshDisplayGetActualViewportConf) {
+    return unimplemented("_vshDisplayGetActualViewportConf");
+}
+
+EXPORT(int, _vshDisplaySetViewportConf) {
+    return unimplemented("_vshDisplaySetViewportConf");
 }
 
 EXPORT(int, _vshEventLogPut) {
@@ -389,8 +425,20 @@ EXPORT(int, vshDisplayRegisterFrameBufCallback) {
     return unimplemented("vshDisplayRegisterFrameBufCallback");
 }
 
+EXPORT(int, vshDisplaySetInvertColors) {
+    return unimplemented("vshDisplaySetInvertColors");
+}
+
 EXPORT(int, vshHdmiCecCmdForcedPollingMsg) {
     return unimplemented("vshHdmiCecCmdForcedPollingMsg");
+}
+
+EXPORT(int, vshHdmiDisableCec) {
+    return unimplemented("vshHdmiDisableCec");
+}
+
+EXPORT(int, vshHdmiEnableCec) {
+    return unimplemented("vshHdmiEnableCec");
 }
 
 EXPORT(int, vshIdStorageCreateLeaf) {
@@ -493,6 +541,14 @@ EXPORT(int, vshKernelCheckModelCapability) {
     return unimplemented("vshKernelCheckModelCapability");
 }
 
+EXPORT(int, vshKernelDisableAutoClockDown) {
+    return unimplemented("vshKernelDisableAutoClockDown");
+}
+
+EXPORT(int, vshKernelEnableAutoClockDown) {
+    return unimplemented("vshKernelEnableAutoClockDown");
+}
+
 EXPORT(int, vshKernelSendSysEvent) {
     return unimplemented("vshKernelSendSysEvent");
 }
@@ -503,6 +559,14 @@ EXPORT(int, vshMemoryCardEnableSlowMode) {
 
 EXPORT(int, vshMemoryCardGetCardInsertState) {
     return unimplemented("vshMemoryCardGetCardInsertState");
+}
+
+EXPORT(int, vshMotionNoiseFilterIsAvailable) {
+    return unimplemented("vshMotionNoiseFilterIsAvailable");
+}
+
+EXPORT(int, vshMsifGetMsInfo) {
+    return unimplemented("vshMsifGetMsInfo");
 }
 
 EXPORT(int, vshNpDrmIsLooseAccountBind) {
@@ -685,8 +749,16 @@ EXPORT(int, vshSblUtMgrHasComTestFlag) {
     return unimplemented("vshSblUtMgrHasComTestFlag");
 }
 
+EXPORT(int, vshSblUtMgrHasNpTestFlag) {
+    return unimplemented("vshSblUtMgrHasNpTestFlag");
+}
+
 EXPORT(int, vshSblUtMgrHasStoreFlag) {
     return unimplemented("vshSblUtMgrHasStoreFlag");
+}
+
+EXPORT(int, vshSdGetCardInfo) {
+    return unimplemented("vshSdGetCardInfo");
 }
 
 EXPORT(int, vshSysconBeginConfigstorageTransaction) {
@@ -707,6 +779,10 @@ EXPORT(int, vshSysconEnableHibernateIO) {
 
 EXPORT(int, vshSysconEndConfigstorageTransaction) {
     return unimplemented("vshSysconEndConfigstorageTransaction");
+}
+
+EXPORT(int, vshSysconGetBatteryCalibData) {
+    return unimplemented("vshSysconGetBatteryCalibData");
 }
 
 EXPORT(int, vshSysconGetLogInfo) {
@@ -767,6 +843,7 @@ EXPORT(int, vshSysconVerifyConfigstorageScript) {
 
 BRIDGE_IMPL(_vshAppMgrAcInstGetAcdirParam)
 BRIDGE_IMPL(_vshAppMgrBgdlSetQueueStatus)
+BRIDGE_IMPL(_vshAppMgrCheckPfsMounted)
 BRIDGE_IMPL(_vshAppMgrCloudDataCreateHeader)
 BRIDGE_IMPL(_vshAppMgrCloudDataDstCreateMount)
 BRIDGE_IMPL(_vshAppMgrCloudDataGetMcId)
@@ -774,8 +851,14 @@ BRIDGE_IMPL(_vshAppMgrCloudDataSetMcId)
 BRIDGE_IMPL(_vshAppMgrCloudDataSetupKey)
 BRIDGE_IMPL(_vshAppMgrCloudDataSrcMount)
 BRIDGE_IMPL(_vshAppMgrCloudDataVerifyHeader)
+BRIDGE_IMPL(_vshAppMgrFakeSaveDataCreateMount)
 BRIDGE_IMPL(_vshAppMgrIsExclusiveProcessRunning)
+BRIDGE_IMPL(_vshAppMgrLocalBackupGetOfflineId)
+BRIDGE_IMPL(_vshAppMgrLocalBackupVerifyOfflineHeader)
 BRIDGE_IMPL(_vshAppMgrRegisterPath)
+BRIDGE_IMPL(_vshAppMgrSaveDataLocalBackupTargetGetList)
+BRIDGE_IMPL(_vshAppMgrSaveDataLocalBackupTargetRemoveItem)
+BRIDGE_IMPL(_vshAppMgrSaveDataNotifyBackupFinished)
 BRIDGE_IMPL(_vshAppMgrSystemParamDateTimeSetConf)
 BRIDGE_IMPL(_vshAppMgrUpdateRifInfo)
 BRIDGE_IMPL(_vshCoredumpCafCreateIv)
@@ -785,6 +868,8 @@ BRIDGE_IMPL(_vshCoredumpCafSegmentFinal)
 BRIDGE_IMPL(_vshCoredumpCafSegmentInit)
 BRIDGE_IMPL(_vshCoredumpCafSegmentTransform)
 BRIDGE_IMPL(_vshCoredumpCreateDump)
+BRIDGE_IMPL(_vshDisplayGetActualViewportConf)
+BRIDGE_IMPL(_vshDisplaySetViewportConf)
 BRIDGE_IMPL(_vshEventLogPut)
 BRIDGE_IMPL(_vshIdStorageCreateAtomicLeaves)
 BRIDGE_IMPL(_vshIoChstat)
@@ -858,7 +943,10 @@ BRIDGE_IMPL(vshCtrlSetTurnOffInterval)
 BRIDGE_IMPL(vshCtrlSetVibrationSetting)
 BRIDGE_IMPL(vshCtrlUnregisterNotifyCallBack)
 BRIDGE_IMPL(vshDisplayRegisterFrameBufCallback)
+BRIDGE_IMPL(vshDisplaySetInvertColors)
 BRIDGE_IMPL(vshHdmiCecCmdForcedPollingMsg)
+BRIDGE_IMPL(vshHdmiDisableCec)
+BRIDGE_IMPL(vshHdmiEnableCec)
 BRIDGE_IMPL(vshIdStorageCreateLeaf)
 BRIDGE_IMPL(vshIdStorageDeleteLeaf)
 BRIDGE_IMPL(vshIdStorageFlush)
@@ -884,9 +972,13 @@ BRIDGE_IMPL(vshIoGetProcessDefaultPriorityForSystem)
 BRIDGE_IMPL(vshIoSetProcessDefaultPriorityForSystem)
 BRIDGE_IMPL(vshIoUmount)
 BRIDGE_IMPL(vshKernelCheckModelCapability)
+BRIDGE_IMPL(vshKernelDisableAutoClockDown)
+BRIDGE_IMPL(vshKernelEnableAutoClockDown)
 BRIDGE_IMPL(vshKernelSendSysEvent)
 BRIDGE_IMPL(vshMemoryCardEnableSlowMode)
 BRIDGE_IMPL(vshMemoryCardGetCardInsertState)
+BRIDGE_IMPL(vshMotionNoiseFilterIsAvailable)
+BRIDGE_IMPL(vshMsifGetMsInfo)
 BRIDGE_IMPL(vshNpDrmIsLooseAccountBind)
 BRIDGE_IMPL(vshNpDrmUpdateAccountId)
 BRIDGE_IMPL(vshNpDrmUpdateDebugSettings)
@@ -932,12 +1024,15 @@ BRIDGE_IMPL(vshSblQafMgrIsAllowShowTitleUpgradeInfo)
 BRIDGE_IMPL(vshSblQafMgrIsAllowSystemAppDebug)
 BRIDGE_IMPL(vshSblSsIsDevelopmentMode)
 BRIDGE_IMPL(vshSblUtMgrHasComTestFlag)
+BRIDGE_IMPL(vshSblUtMgrHasNpTestFlag)
 BRIDGE_IMPL(vshSblUtMgrHasStoreFlag)
+BRIDGE_IMPL(vshSdGetCardInfo)
 BRIDGE_IMPL(vshSysconBeginConfigstorageTransaction)
 BRIDGE_IMPL(vshSysconClearTemperatureLog)
 BRIDGE_IMPL(vshSysconCommitConfigstorageTransaction)
 BRIDGE_IMPL(vshSysconEnableHibernateIO)
 BRIDGE_IMPL(vshSysconEndConfigstorageTransaction)
+BRIDGE_IMPL(vshSysconGetBatteryCalibData)
 BRIDGE_IMPL(vshSysconGetLogInfo)
 BRIDGE_IMPL(vshSysconHasWWAN)
 BRIDGE_IMPL(vshSysconIduModeClear)

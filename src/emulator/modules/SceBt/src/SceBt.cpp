@@ -53,6 +53,10 @@ EXPORT(int, sceBtGetConnectingInfo) {
     return unimplemented("sceBtGetConnectingInfo");
 }
 
+EXPORT(int, sceBtGetDeviceId) {
+    return unimplemented("sceBtGetDeviceId");
+}
+
 EXPORT(int, sceBtGetDeviceName) {
     return unimplemented("sceBtGetDeviceName");
 }
@@ -73,10 +77,6 @@ EXPORT(int, sceBtGetStatusForTest) {
     return unimplemented("sceBtGetStatusForTest");
 }
 
-EXPORT(int, sceBtGetVidPid) {
-    return unimplemented("sceBtGetVidPid");
-}
-
 EXPORT(int, sceBtHfpGetCurrentPhoneNumber) {
     return unimplemented("sceBtHfpGetCurrentPhoneNumber");
 }
@@ -91,6 +91,38 @@ EXPORT(int, sceBtHidGetReportDescriptor) {
 
 EXPORT(int, sceBtHidTransfer) {
     return unimplemented("sceBtHidTransfer");
+}
+
+EXPORT(int, sceBtHidVuGetReportFeature) {
+    return unimplemented("sceBtHidVuGetReportFeature");
+}
+
+EXPORT(int, sceBtHidVuGetReportInput) {
+    return unimplemented("sceBtHidVuGetReportInput");
+}
+
+EXPORT(int, sceBtHidVuReadEvent) {
+    return unimplemented("sceBtHidVuReadEvent");
+}
+
+EXPORT(int, sceBtHidVuRegisterCallback) {
+    return unimplemented("sceBtHidVuRegisterCallback");
+}
+
+EXPORT(int, sceBtHidVuSetInterruptOutput) {
+    return unimplemented("sceBtHidVuSetInterruptOutput");
+}
+
+EXPORT(int, sceBtHidVuSetReportFeature) {
+    return unimplemented("sceBtHidVuSetReportFeature");
+}
+
+EXPORT(int, sceBtHidVuSetReportOutput) {
+    return unimplemented("sceBtHidVuSetReportOutput");
+}
+
+EXPORT(int, sceBtHidVuUnregisterCallback) {
+    return unimplemented("sceBtHidVuUnregisterCallback");
 }
 
 EXPORT(int, sceBtPairingOOB) {
@@ -210,16 +242,24 @@ BRIDGE_IMPL(sceBtDeleteRegisteredInfo)
 BRIDGE_IMPL(sceBtFreqAudio)
 BRIDGE_IMPL(sceBtGetConfiguration)
 BRIDGE_IMPL(sceBtGetConnectingInfo)
+BRIDGE_IMPL(sceBtGetDeviceId)
 BRIDGE_IMPL(sceBtGetDeviceName)
 BRIDGE_IMPL(sceBtGetInfoForTest)
 BRIDGE_IMPL(sceBtGetLastError)
 BRIDGE_IMPL(sceBtGetRegisteredInfo)
 BRIDGE_IMPL(sceBtGetStatusForTest)
-BRIDGE_IMPL(sceBtGetVidPid)
 BRIDGE_IMPL(sceBtHfpGetCurrentPhoneNumber)
 BRIDGE_IMPL(sceBtHfpRequest)
 BRIDGE_IMPL(sceBtHidGetReportDescriptor)
 BRIDGE_IMPL(sceBtHidTransfer)
+BRIDGE_IMPL(sceBtHidVuGetReportFeature)
+BRIDGE_IMPL(sceBtHidVuGetReportInput)
+BRIDGE_IMPL(sceBtHidVuReadEvent)
+BRIDGE_IMPL(sceBtHidVuRegisterCallback)
+BRIDGE_IMPL(sceBtHidVuSetInterruptOutput)
+BRIDGE_IMPL(sceBtHidVuSetReportFeature)
+BRIDGE_IMPL(sceBtHidVuSetReportOutput)
+BRIDGE_IMPL(sceBtHidVuUnregisterCallback)
 BRIDGE_IMPL(sceBtPairingOOB)
 BRIDGE_IMPL(sceBtPushBip)
 BRIDGE_IMPL(sceBtPushOpp)

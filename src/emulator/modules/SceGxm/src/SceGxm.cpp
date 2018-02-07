@@ -776,6 +776,10 @@ EXPORT(int, sceGxmPadHeartbeat, const emu::SceGxmColorSurface *displaySurface, S
     return 0;
 }
 
+EXPORT(int, sceGxmPadTriggerGpuPaTrace) {
+    return unimplemented("sceGxmPadTriggerGpuPaTrace");
+}
+
 EXPORT(int, sceGxmPopUserMarker) {
     return unimplemented("sceGxmPopUserMarker");
 }
@@ -806,6 +810,10 @@ EXPORT(int, sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer) {
 
 EXPORT(int, sceGxmPrecomputedFragmentStateInit) {
     return unimplemented("sceGxmPrecomputedFragmentStateInit");
+}
+
+EXPORT(int, sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces) {
+    return unimplemented("sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces");
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetAllTextures) {
@@ -1026,6 +1034,10 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     return 0;
 }
 
+EXPORT(int, sceGxmRenderTargetGetHostMem) {
+    return unimplemented("sceGxmRenderTargetGetHostMem");
+}
+
 EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
     assert(context != nullptr);
     assert(uniformBuffer != nullptr);
@@ -1041,6 +1053,10 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     context->vertex_ring_buffer_used = next_used;
 
     return 0;
+}
+
+EXPORT(int, sceGxmSetAuxiliarySurface) {
+    return unimplemented("sceGxmSetAuxiliarySurface");
 }
 
 EXPORT(int, sceGxmSetBackDepthBias) {
@@ -1282,6 +1298,10 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
 
 EXPORT(int, sceGxmSetUserMarker) {
     return unimplemented("sceGxmSetUserMarker");
+}
+
+EXPORT(int, sceGxmSetValidationEnable) {
+    return unimplemented("sceGxmSetValidationEnable");
 }
 
 EXPORT(int, sceGxmSetVertexDefaultUniformBuffer) {
@@ -1589,6 +1609,10 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
     return 0;
 }
 
+EXPORT(int, sceGxmShaderPatcherSetAuxiliarySurface) {
+    return unimplemented("sceGxmShaderPatcherSetAuxiliarySurface");
+}
+
 EXPORT(int, sceGxmShaderPatcherSetUserData) {
     return unimplemented("sceGxmShaderPatcherSetUserData");
 }
@@ -1633,6 +1657,10 @@ EXPORT(int, sceGxmTextureGetData, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
 
     return texture->data.address();
+}
+
+EXPORT(int, sceGxmTextureGetAnisoMode) {
+    return unimplemented("sceGxmTextureGetAnisoMode");
 }
 
 EXPORT(int, sceGxmTextureGetFormat, const emu::SceGxmTexture *texture) {
@@ -1755,6 +1783,10 @@ EXPORT(int, sceGxmTextureSetData, emu::SceGxmTexture *texture, Ptr<const void> d
     
     texture->data = data;
     return 0;
+}
+
+EXPORT(int, sceGxmTextureSetAnisoMode) {
+    return unimplemented("sceGxmTextureSetAnisoMode");
 }
 
 EXPORT(int, sceGxmTextureSetFormat) {
@@ -1951,6 +1983,7 @@ BRIDGE_IMPL(sceGxmMapVertexUsseMemory)
 BRIDGE_IMPL(sceGxmMidSceneFlush)
 BRIDGE_IMPL(sceGxmNotificationWait)
 BRIDGE_IMPL(sceGxmPadHeartbeat)
+BRIDGE_IMPL(sceGxmPadTriggerGpuPaTrace)
 BRIDGE_IMPL(sceGxmPopUserMarker)
 BRIDGE_IMPL(sceGxmPrecomputedDrawInit)
 BRIDGE_IMPL(sceGxmPrecomputedDrawSetAllVertexStreams)
@@ -1959,6 +1992,7 @@ BRIDGE_IMPL(sceGxmPrecomputedDrawSetParamsInstanced)
 BRIDGE_IMPL(sceGxmPrecomputedDrawSetVertexStream)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateInit)
+BRIDGE_IMPL(sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateSetAllTextures)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateSetAllUniformBuffers)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer)
@@ -2003,8 +2037,10 @@ BRIDGE_IMPL(sceGxmProgramParameterIsSamplerCube)
 BRIDGE_IMPL(sceGxmPushUserMarker)
 BRIDGE_IMPL(sceGxmRemoveRazorGpuCaptureBuffer)
 BRIDGE_IMPL(sceGxmRenderTargetGetDriverMemBlock)
+BRIDGE_IMPL(sceGxmRenderTargetGetHostMem)
 BRIDGE_IMPL(sceGxmReserveFragmentDefaultUniformBuffer)
 BRIDGE_IMPL(sceGxmReserveVertexDefaultUniformBuffer)
+BRIDGE_IMPL(sceGxmSetAuxiliarySurface)
 BRIDGE_IMPL(sceGxmSetBackDepthBias)
 BRIDGE_IMPL(sceGxmSetBackDepthFunc)
 BRIDGE_IMPL(sceGxmSetBackDepthWriteEnable)
@@ -2044,6 +2080,7 @@ BRIDGE_IMPL(sceGxmSetRegionClip)
 BRIDGE_IMPL(sceGxmSetTwoSidedEnable)
 BRIDGE_IMPL(sceGxmSetUniformDataF)
 BRIDGE_IMPL(sceGxmSetUserMarker)
+BRIDGE_IMPL(sceGxmSetValidationEnable)
 BRIDGE_IMPL(sceGxmSetVertexDefaultUniformBuffer)
 BRIDGE_IMPL(sceGxmSetVertexProgram)
 BRIDGE_IMPL(sceGxmSetVertexStream)
@@ -2076,11 +2113,13 @@ BRIDGE_IMPL(sceGxmShaderPatcherGetVertexUsseMemAllocated)
 BRIDGE_IMPL(sceGxmShaderPatcherRegisterProgram)
 BRIDGE_IMPL(sceGxmShaderPatcherReleaseFragmentProgram)
 BRIDGE_IMPL(sceGxmShaderPatcherReleaseVertexProgram)
+BRIDGE_IMPL(sceGxmShaderPatcherSetAuxiliarySurface)
 BRIDGE_IMPL(sceGxmShaderPatcherSetUserData)
 BRIDGE_IMPL(sceGxmShaderPatcherUnregisterProgram)
 BRIDGE_IMPL(sceGxmSyncObjectCreate)
 BRIDGE_IMPL(sceGxmSyncObjectDestroy)
 BRIDGE_IMPL(sceGxmTerminate)
+BRIDGE_IMPL(sceGxmTextureGetAnisoMode)
 BRIDGE_IMPL(sceGxmTextureGetData)
 BRIDGE_IMPL(sceGxmTextureGetFormat)
 BRIDGE_IMPL(sceGxmTextureGetGammaMode)
@@ -2105,6 +2144,7 @@ BRIDGE_IMPL(sceGxmTextureInitLinearStrided)
 BRIDGE_IMPL(sceGxmTextureInitSwizzled)
 BRIDGE_IMPL(sceGxmTextureInitSwizzledArbitrary)
 BRIDGE_IMPL(sceGxmTextureInitTiled)
+BRIDGE_IMPL(sceGxmTextureSetAnisoMode)
 BRIDGE_IMPL(sceGxmTextureSetData)
 BRIDGE_IMPL(sceGxmTextureSetFormat)
 BRIDGE_IMPL(sceGxmTextureSetGammaMode)

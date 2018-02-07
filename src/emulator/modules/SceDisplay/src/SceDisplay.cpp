@@ -21,12 +21,48 @@
 
 #include <psp2/display.h>
 
+EXPORT(int, _sceDisplayGetFrameBuf) {
+    return unimplemented("_sceDisplayGetFrameBuf");
+}
+
+EXPORT(int, _sceDisplayGetFrameBufInternal) {
+    return unimplemented("_sceDisplayGetFrameBufInternal");
+}
+
+EXPORT(int, _sceDisplayGetMaximumFrameBufResolution) {
+    return unimplemented("_sceDisplayGetMaximumFrameBufResolution");
+}
+
+EXPORT(int, _sceDisplayGetResolutionInfoInternal) {
+    return unimplemented("_sceDisplayGetResolutionInfoInternal");
+}
+
+EXPORT(int, _sceDisplaySetFrameBuf) {
+    return unimplemented("_sceDisplaySetFrameBuf");
+}
+
+EXPORT(int, _sceDisplaySetFrameBufForCompat) {
+    return unimplemented("_sceDisplaySetFrameBufForCompat");
+}
+
+EXPORT(int, _sceDisplaySetFrameBufInternal) {
+    return unimplemented("_sceDisplaySetFrameBufInternal");
+}
+
+EXPORT(int, sceDisplayGetPrimaryHead) {
+    return unimplemented("sceDisplayGetPrimaryHead");
+}
+
 EXPORT(int, sceDisplayGetRefreshRate) {
     return unimplemented("sceDisplayGetRefreshRate");
 }
 
 EXPORT(int, sceDisplayGetVcount) {
     return unimplemented("sceDisplayGetVcount");
+}
+
+EXPORT(int, sceDisplayGetVcountInternal) {
+    return unimplemented("sceDisplayGetVcountInternal");
 }
 
 EXPORT(int, sceDisplayRegisterVblankStartCallback) {
@@ -71,8 +107,17 @@ EXPORT(int, sceDisplayWaitVblankStartMultiCB) {
     return unimplemented("sceDisplayWaitVblankStartMultiCB");
 }
 
+BRIDGE_IMPL(_sceDisplayGetFrameBuf)
+BRIDGE_IMPL(_sceDisplayGetFrameBufInternal)
+BRIDGE_IMPL(_sceDisplayGetMaximumFrameBufResolution)
+BRIDGE_IMPL(_sceDisplayGetResolutionInfoInternal)
+BRIDGE_IMPL(_sceDisplaySetFrameBuf)
+BRIDGE_IMPL(_sceDisplaySetFrameBufForCompat)
+BRIDGE_IMPL(_sceDisplaySetFrameBufInternal)
+BRIDGE_IMPL(sceDisplayGetPrimaryHead)
 BRIDGE_IMPL(sceDisplayGetRefreshRate)
 BRIDGE_IMPL(sceDisplayGetVcount)
+BRIDGE_IMPL(sceDisplayGetVcountInternal)
 BRIDGE_IMPL(sceDisplayRegisterVblankStartCallback)
 BRIDGE_IMPL(sceDisplayUnregisterVblankStartCallback)
 BRIDGE_IMPL(sceDisplayWaitSetFrameBuf)

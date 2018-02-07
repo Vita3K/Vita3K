@@ -137,6 +137,22 @@ EXPORT(int, sceNpTusGetDataVUserAsync) {
     return unimplemented("sceNpTusGetDataVUserAsync");
 }
 
+EXPORT(int, sceNpTusGetFriendsDataStatus) {
+    return unimplemented("sceNpTusGetFriendsDataStatus");
+}
+
+EXPORT(int, sceNpTusGetFriendsDataStatusAsync) {
+    return unimplemented("sceNpTusGetFriendsDataStatusAsync");
+}
+
+EXPORT(int, sceNpTusGetFriendsVariable) {
+    return unimplemented("sceNpTusGetFriendsVariable");
+}
+
+EXPORT(int, sceNpTusGetFriendsVariableAsync) {
+    return unimplemented("sceNpTusGetFriendsVariableAsync");
+}
+
 EXPORT(int, sceNpTusGetMultiSlotDataStatus) {
     return unimplemented("sceNpTusGetMultiSlotDataStatus");
 }
@@ -299,6 +315,10 @@ BRIDGE_IMPL(sceNpTusGetData)
 BRIDGE_IMPL(sceNpTusGetDataAsync)
 BRIDGE_IMPL(sceNpTusGetDataVUser)
 BRIDGE_IMPL(sceNpTusGetDataVUserAsync)
+BRIDGE_IMPL(sceNpTusGetFriendsDataStatus)
+BRIDGE_IMPL(sceNpTusGetFriendsDataStatusAsync)
+BRIDGE_IMPL(sceNpTusGetFriendsVariable)
+BRIDGE_IMPL(sceNpTusGetFriendsVariableAsync)
 BRIDGE_IMPL(sceNpTusGetMultiSlotDataStatus)
 BRIDGE_IMPL(sceNpTusGetMultiSlotDataStatusAsync)
 BRIDGE_IMPL(sceNpTusGetMultiSlotDataStatusVUser)
