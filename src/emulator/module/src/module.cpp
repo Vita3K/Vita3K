@@ -27,6 +27,7 @@ static std::mutex mutex;
 static NameSet logged;
 
 int unimplemented(const char *name) {
+#ifndef VERBOSE    
     bool inserted = false;
 
     {
@@ -34,7 +35,9 @@ int unimplemented(const char *name) {
         inserted = logged.insert(name).second;
     }
 
-    if (inserted) {
+    if (inserted)
+#endif
+    {
         std::cerr << ">>> " << name << " <<< Unimplemented import called." << std::endl;
     }
 
@@ -42,16 +45,7 @@ int unimplemented(const char *name) {
 }
 
 int error(const char *name, int error) {
-    bool inserted = false;
-
-    {
-        const std::lock_guard<std::mutex> lock(mutex);
-        inserted = logged.insert(name).second;
-    }
-
-    if (inserted) {
-        std::cerr << ">>> " << name << " <<< returned 0x" << std::hex << std::uppercase << error << std::endl;
-    }
+    std::cerr << ">>> " << name << " <<< returned 0x" << std::hex << std::uppercase << error << std::endl;
 
     return error;
 }
