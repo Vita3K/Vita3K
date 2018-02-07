@@ -45,6 +45,22 @@ EXPORT(int, _sceNpDrmPackageUninstallStarted) {
     return unimplemented("_sceNpDrmPackageUninstallStarted");
 }
 
+EXPORT(int, _sceNpDrmSaveDataFormatFinished) {
+    return unimplemented("_sceNpDrmSaveDataFormatFinished");
+}
+
+EXPORT(int, _sceNpDrmSaveDataFormatStarted) {
+    return unimplemented("_sceNpDrmSaveDataFormatStarted");
+}
+
+EXPORT(int, _sceNpDrmSaveDataInstallFinished) {
+    return unimplemented("_sceNpDrmSaveDataInstallFinished");
+}
+
+EXPORT(int, _sceNpDrmSaveDataInstallStarted) {
+    return unimplemented("_sceNpDrmSaveDataInstallStarted");
+}
+
 EXPORT(int, sceNpDrmPackageInstallOngoing) {
     return unimplemented("sceNpDrmPackageInstallOngoing");
 }
@@ -57,6 +73,14 @@ EXPORT(int, sceNpDrmPackageUninstallOngoing) {
     return unimplemented("sceNpDrmPackageUninstallOngoing");
 }
 
+EXPORT(int, sceNpDrmSaveDataFormatOngoing) {
+    return unimplemented("sceNpDrmSaveDataFormatOngoing");
+}
+
+EXPORT(int, sceNpDrmSaveDataInstallOngoing) {
+    return unimplemented("sceNpDrmSaveDataInstallOngoing");
+}
+
 BRIDGE_IMPL(_sceNpDrmPackageCheck)
 BRIDGE_IMPL(_sceNpDrmPackageDecrypt)
 BRIDGE_IMPL(_sceNpDrmPackageInstallFinished)
@@ -64,6 +88,12 @@ BRIDGE_IMPL(_sceNpDrmPackageInstallStarted)
 BRIDGE_IMPL(_sceNpDrmPackageTransform)
 BRIDGE_IMPL(_sceNpDrmPackageUninstallFinished)
 BRIDGE_IMPL(_sceNpDrmPackageUninstallStarted)
+BRIDGE_IMPL(_sceNpDrmSaveDataFormatFinished)
+BRIDGE_IMPL(_sceNpDrmSaveDataFormatStarted)
+BRIDGE_IMPL(_sceNpDrmSaveDataInstallFinished)
+BRIDGE_IMPL(_sceNpDrmSaveDataInstallStarted)
 BRIDGE_IMPL(sceNpDrmPackageInstallOngoing)
 BRIDGE_IMPL(sceNpDrmPackageIsGameExist)
 BRIDGE_IMPL(sceNpDrmPackageUninstallOngoing)
+BRIDGE_IMPL(sceNpDrmSaveDataFormatOngoing)
+BRIDGE_IMPL(sceNpDrmSaveDataInstallOngoing)

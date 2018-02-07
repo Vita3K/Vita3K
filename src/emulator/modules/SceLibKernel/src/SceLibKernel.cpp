@@ -323,8 +323,16 @@ EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
     return seek_file(fd, offset, whence, host.io);
 }
 
+EXPORT(int, sceIoIoctlAsync) {
+    return unimplemented("sceIoIoctlAsync");
+}
+
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
     return create_dir(dir, mode, host.pref_path.c_str());
+}
+
+EXPORT(int, sceIoLseekAsync) {
+    return unimplemented("sceIoLseekAsync");
 }
 
 EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
@@ -337,6 +345,14 @@ EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
 EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
     seek_file(fd, offset, SEEK_SET, host.io);
     return read_file(data, host.io, fd, size);
+}
+
+EXPORT(int, sceIoOpenAsync) {
+    return unimplemented("sceIoOpenAsync");
+}
+
+EXPORT(int, sceIoPread) {
+    return unimplemented("sceIoPread");
 }
 
 EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
@@ -1311,9 +1327,12 @@ BRIDGE_IMPL(sceIoDread)
 BRIDGE_IMPL(sceIoGetstat)
 BRIDGE_IMPL(sceIoGetstatByFd)
 BRIDGE_IMPL(sceIoIoctl)
+BRIDGE_IMPL(sceIoIoctlAsync)
 BRIDGE_IMPL(sceIoLseek)
+BRIDGE_IMPL(sceIoLseekAsync)
 BRIDGE_IMPL(sceIoMkdir)
 BRIDGE_IMPL(sceIoOpen)
+BRIDGE_IMPL(sceIoOpenAsync)
 BRIDGE_IMPL(sceIoPread)
 BRIDGE_IMPL(sceIoPwrite)
 BRIDGE_IMPL(sceIoRemove)

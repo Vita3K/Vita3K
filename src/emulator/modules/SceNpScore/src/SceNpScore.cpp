@@ -57,6 +57,14 @@ EXPORT(int, sceNpScoreGetBoardInfoAsync) {
     return unimplemented("sceNpScoreGetBoardInfoAsync");
 }
 
+EXPORT(int, sceNpScoreGetFriendsRanking) {
+    return unimplemented("sceNpScoreGetFriendsRanking");
+}
+
+EXPORT(int, sceNpScoreGetFriendsRankingAsync) {
+    return unimplemented("sceNpScoreGetFriendsRankingAsync");
+}
+
 EXPORT(int, sceNpScoreGetGameData) {
     return unimplemented("sceNpScoreGetGameData");
 }
@@ -147,6 +155,8 @@ BRIDGE_IMPL(sceNpScoreDeleteRequest)
 BRIDGE_IMPL(sceNpScoreDeleteTitleCtx)
 BRIDGE_IMPL(sceNpScoreGetBoardInfo)
 BRIDGE_IMPL(sceNpScoreGetBoardInfoAsync)
+BRIDGE_IMPL(sceNpScoreGetFriendsRanking)
+BRIDGE_IMPL(sceNpScoreGetFriendsRankingAsync)
 BRIDGE_IMPL(sceNpScoreGetGameData)
 BRIDGE_IMPL(sceNpScoreGetGameDataAsync)
 BRIDGE_IMPL(sceNpScoreGetRankingByNpId)

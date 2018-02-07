@@ -1,0 +1,3 @@
+add_library(SceLibMp4Recorder STATIC include/SceLibMp4Recorder/exports.h src/SceLibMp4Recorder.cpp)
+target_include_directories(SceLibMp4Recorder PUBLIC include)
+target_link_libraries(SceLibMp4Recorder PRIVATE module)

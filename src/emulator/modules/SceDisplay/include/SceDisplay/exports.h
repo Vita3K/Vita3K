@@ -20,8 +20,17 @@
 #include <module/module.h>
 
 // SceDisplay
+BRIDGE_DECL(_sceDisplayGetFrameBuf)
+BRIDGE_DECL(_sceDisplayGetFrameBufInternal)
+BRIDGE_DECL(_sceDisplayGetMaximumFrameBufResolution)
+BRIDGE_DECL(_sceDisplayGetResolutionInfoInternal)
+BRIDGE_DECL(_sceDisplaySetFrameBuf)
+BRIDGE_DECL(_sceDisplaySetFrameBufForCompat)
+BRIDGE_DECL(_sceDisplaySetFrameBufInternal)
+BRIDGE_DECL(sceDisplayGetPrimaryHead)
 BRIDGE_DECL(sceDisplayGetRefreshRate)
 BRIDGE_DECL(sceDisplayGetVcount)
+BRIDGE_DECL(sceDisplayGetVcountInternal)
 BRIDGE_DECL(sceDisplayRegisterVblankStartCallback)
 BRIDGE_DECL(sceDisplayUnregisterVblankStartCallback)
 BRIDGE_DECL(sceDisplayWaitSetFrameBuf)
@@ -35,4 +44,9 @@ BRIDGE_DECL(sceDisplayWaitVblankStartMultiCB)
 
 // SceDisplayUser
 BRIDGE_DECL(sceDisplayGetFrameBuf)
+BRIDGE_DECL(sceDisplayGetFrameBufInternal)
+BRIDGE_DECL(sceDisplayGetMaximumFrameBufResolution)
+BRIDGE_DECL(sceDisplayGetResolutionInfoInternal)
 BRIDGE_DECL(sceDisplaySetFrameBuf)
+BRIDGE_DECL(sceDisplaySetFrameBufForCompat)
+BRIDGE_DECL(sceDisplaySetFrameBufInternal)

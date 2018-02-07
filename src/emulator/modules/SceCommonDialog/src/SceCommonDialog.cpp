@@ -53,6 +53,26 @@ EXPORT(int, sceCommonDialogUpdate) {
     return unimplemented("sceCommonDialogUpdate");
 }
 
+EXPORT(int, sceCompanionUtilDialogAbort) {
+    return unimplemented("sceCompanionUtilDialogAbort");
+}
+
+EXPORT(int, sceCompanionUtilDialogGetResult) {
+    return unimplemented("sceCompanionUtilDialogGetResult");
+}
+
+EXPORT(int, sceCompanionUtilDialogGetStatus) {
+    return unimplemented("sceCompanionUtilDialogGetStatus");
+}
+
+EXPORT(int, sceCompanionUtilDialogInit) {
+    return unimplemented("sceCompanionUtilDialogInit");
+}
+
+EXPORT(int, sceCompanionUtilDialogTerm) {
+    return unimplemented("sceCompanionUtilDialogTerm");
+}
+
 EXPORT(int, sceCrossControllerDialogAbort) {
     return unimplemented("sceCrossControllerDialogAbort");
 }
@@ -151,6 +171,26 @@ EXPORT(int, sceNetCheckDialogInit) {
 
 EXPORT(int, sceNetCheckDialogTerm) {
     return unimplemented("sceNetCheckDialogTerm");
+}
+
+EXPORT(int, sceNpFriendList2DialogAbort) {
+    return unimplemented("sceNpFriendList2DialogAbort");
+}
+
+EXPORT(int, sceNpFriendList2DialogGetResult) {
+    return unimplemented("sceNpFriendList2DialogGetResult");
+}
+
+EXPORT(int, sceNpFriendList2DialogGetStatus) {
+    return unimplemented("sceNpFriendList2DialogGetStatus");
+}
+
+EXPORT(int, sceNpFriendList2DialogInit) {
+    return unimplemented("sceNpFriendList2DialogInit");
+}
+
+EXPORT(int, sceNpFriendList2DialogTerm) {
+    return unimplemented("sceNpFriendList2DialogTerm");
 }
 
 EXPORT(int, sceNpFriendListDialogAbort) {
@@ -313,6 +353,26 @@ EXPORT(int, scePspSaveDataDialogTerm) {
     return unimplemented("scePspSaveDataDialogTerm");
 }
 
+EXPORT(int, sceRemoteOSKDialogAbort) {
+    return unimplemented("sceRemoteOSKDialogAbort");
+}
+
+EXPORT(int, sceRemoteOSKDialogGetResult) {
+    return unimplemented("sceRemoteOSKDialogGetResult");
+}
+
+EXPORT(int, sceRemoteOSKDialogGetStatus) {
+    return unimplemented("sceRemoteOSKDialogGetStatus");
+}
+
+EXPORT(int, sceRemoteOSKDialogInit) {
+    return unimplemented("sceRemoteOSKDialogInit");
+}
+
+EXPORT(int, sceRemoteOSKDialogTerm) {
+    return unimplemented("sceRemoteOSKDialogTerm");
+}
+
 EXPORT(int, sceSaveDataDialogAbort) {
     return unimplemented("sceSaveDataDialogAbort");
 }
@@ -413,6 +473,26 @@ EXPORT(int, sceTwLoginDialogTerm) {
     return unimplemented("sceTwLoginDialogTerm");
 }
 
+EXPORT(int, sceVideoImportDialogAbort) {
+    return unimplemented("sceVideoImportDialogAbort");
+}
+
+EXPORT(int, sceVideoImportDialogGetResult) {
+    return unimplemented("sceVideoImportDialogGetResult");
+}
+
+EXPORT(int, sceVideoImportDialogGetStatus) {
+    return unimplemented("sceVideoImportDialogGetStatus");
+}
+
+EXPORT(int, sceVideoImportDialogInit) {
+    return unimplemented("sceVideoImportDialogInit");
+}
+
+EXPORT(int, sceVideoImportDialogTerm) {
+    return unimplemented("sceVideoImportDialogTerm");
+}
+
 BRIDGE_IMPL(sceCameraImportDialogAbort)
 BRIDGE_IMPL(sceCameraImportDialogGetResult)
 BRIDGE_IMPL(sceCameraImportDialogGetStatus)
@@ -422,6 +502,11 @@ BRIDGE_IMPL(sceCommonDialogGetWorkerThreadId)
 BRIDGE_IMPL(sceCommonDialogIsRunning)
 BRIDGE_IMPL(sceCommonDialogSetConfigParam)
 BRIDGE_IMPL(sceCommonDialogUpdate)
+BRIDGE_IMPL(sceCompanionUtilDialogAbort)
+BRIDGE_IMPL(sceCompanionUtilDialogGetResult)
+BRIDGE_IMPL(sceCompanionUtilDialogGetStatus)
+BRIDGE_IMPL(sceCompanionUtilDialogInit)
+BRIDGE_IMPL(sceCompanionUtilDialogTerm)
 BRIDGE_IMPL(sceCrossControllerDialogAbort)
 BRIDGE_IMPL(sceCrossControllerDialogGetResult)
 BRIDGE_IMPL(sceCrossControllerDialogGetStatus)
@@ -447,6 +532,11 @@ BRIDGE_IMPL(sceNetCheckDialogGetResult)
 BRIDGE_IMPL(sceNetCheckDialogGetStatus)
 BRIDGE_IMPL(sceNetCheckDialogInit)
 BRIDGE_IMPL(sceNetCheckDialogTerm)
+BRIDGE_IMPL(sceNpFriendList2DialogAbort)
+BRIDGE_IMPL(sceNpFriendList2DialogGetResult)
+BRIDGE_IMPL(sceNpFriendList2DialogGetStatus)
+BRIDGE_IMPL(sceNpFriendList2DialogInit)
+BRIDGE_IMPL(sceNpFriendList2DialogTerm)
 BRIDGE_IMPL(sceNpFriendListDialogAbort)
 BRIDGE_IMPL(sceNpFriendListDialogGetResult)
 BRIDGE_IMPL(sceNpFriendListDialogGetStatus)
@@ -487,6 +577,11 @@ BRIDGE_IMPL(scePspSaveDataDialogContinue)
 BRIDGE_IMPL(scePspSaveDataDialogGetResult)
 BRIDGE_IMPL(scePspSaveDataDialogInit)
 BRIDGE_IMPL(scePspSaveDataDialogTerm)
+BRIDGE_IMPL(sceRemoteOSKDialogAbort)
+BRIDGE_IMPL(sceRemoteOSKDialogGetResult)
+BRIDGE_IMPL(sceRemoteOSKDialogGetStatus)
+BRIDGE_IMPL(sceRemoteOSKDialogInit)
+BRIDGE_IMPL(sceRemoteOSKDialogTerm)
 BRIDGE_IMPL(sceSaveDataDialogAbort)
 BRIDGE_IMPL(sceSaveDataDialogContinue)
 BRIDGE_IMPL(sceSaveDataDialogFinish)
@@ -512,3 +607,8 @@ BRIDGE_IMPL(sceTwLoginDialogAbort)
 BRIDGE_IMPL(sceTwLoginDialogGetResult)
 BRIDGE_IMPL(sceTwLoginDialogGetStatus)
 BRIDGE_IMPL(sceTwLoginDialogTerm)
+BRIDGE_IMPL(sceVideoImportDialogAbort)
+BRIDGE_IMPL(sceVideoImportDialogGetResult)
+BRIDGE_IMPL(sceVideoImportDialogGetStatus)
+BRIDGE_IMPL(sceVideoImportDialogInit)
+BRIDGE_IMPL(sceVideoImportDialogTerm)

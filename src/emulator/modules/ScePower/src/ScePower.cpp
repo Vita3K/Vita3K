@@ -59,6 +59,14 @@ EXPORT(int, scePowerGetBatteryRemainCapacity) {
     return unimplemented("scePowerGetBatteryRemainCapacity");
 }
 
+EXPORT(int, scePowerGetBatteryRemainLevel) {
+    return unimplemented("scePowerGetBatteryRemainLevel");
+}
+
+EXPORT(int, scePowerGetBatteryRemainMaxLevel) {
+    return unimplemented("scePowerGetBatteryRemainMaxLevel");
+}
+
 EXPORT(int, scePowerGetBatterySOH) {
     return unimplemented("scePowerGetBatterySOH");
 }
@@ -101,6 +109,14 @@ EXPORT(int, scePowerIsBatteryExist) {
 
 EXPORT(int, scePowerIsLowBattery) {
     return unimplemented("scePowerIsLowBattery");
+}
+
+EXPORT(int, scePowerIsLowBatteryInhibitUpdateDownload) {
+    return unimplemented("scePowerIsLowBatteryInhibitUpdateDownload");
+}
+
+EXPORT(int, scePowerIsLowBatteryInhibitUpdateReboot) {
+    return unimplemented("scePowerIsLowBatteryInhibitUpdateReboot");
 }
 
 EXPORT(int, scePowerIsPowerOnline) {
@@ -181,6 +197,8 @@ BRIDGE_IMPL(scePowerGetBatteryFullCapacity)
 BRIDGE_IMPL(scePowerGetBatteryLifePercent)
 BRIDGE_IMPL(scePowerGetBatteryLifeTime)
 BRIDGE_IMPL(scePowerGetBatteryRemainCapacity)
+BRIDGE_IMPL(scePowerGetBatteryRemainLevel)
+BRIDGE_IMPL(scePowerGetBatteryRemainMaxLevel)
 BRIDGE_IMPL(scePowerGetBatterySOH)
 BRIDGE_IMPL(scePowerGetBatteryTemp)
 BRIDGE_IMPL(scePowerGetBatteryVolt)
@@ -192,6 +210,8 @@ BRIDGE_IMPL(scePowerGetUsingWireless)
 BRIDGE_IMPL(scePowerIsBatteryCharging)
 BRIDGE_IMPL(scePowerIsBatteryExist)
 BRIDGE_IMPL(scePowerIsLowBattery)
+BRIDGE_IMPL(scePowerIsLowBatteryInhibitUpdateDownload)
+BRIDGE_IMPL(scePowerIsLowBatteryInhibitUpdateReboot)
 BRIDGE_IMPL(scePowerIsPowerOnline)
 BRIDGE_IMPL(scePowerIsRequest)
 BRIDGE_IMPL(scePowerIsSuspendRequired)
