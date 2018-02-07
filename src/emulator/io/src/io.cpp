@@ -22,10 +22,11 @@
 #include <psp2/io/fcntl.h>
 
 #ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+# define WIN32_LEAN_AND_MEAN
+# include <Windows.h>
 #else
-#include <sys/stat.h>
+# include <unistd.h>
+# include <sys/stat.h>
 #endif
 
 #include <algorithm>
