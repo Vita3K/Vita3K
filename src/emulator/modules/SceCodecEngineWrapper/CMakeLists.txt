@@ -1,0 +1,3 @@
+add_library(SceCodecEngineWrapper STATIC include/SceCodecEngineWrapper/exports.h src/SceCodecEngineWrapper.cpp)
+target_include_directories(SceCodecEngineWrapper PUBLIC include)
+target_link_libraries(SceCodecEngineWrapper PRIVATE module)

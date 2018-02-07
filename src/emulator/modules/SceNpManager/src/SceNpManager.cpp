@@ -17,6 +17,22 @@
 
 #include <SceNpManager/exports.h>
 
+EXPORT(int, sceNpAuthAbortOAuthRequest) {
+    return unimplemented("sceNpAuthAbortOAuthRequest");
+}
+
+EXPORT(int, sceNpAuthCreateOAuthRequest) {
+    return unimplemented("sceNpAuthCreateOAuthRequest");
+}
+
+EXPORT(int, sceNpAuthDeleteOAuthRequest) {
+    return unimplemented("sceNpAuthDeleteOAuthRequest");
+}
+
+EXPORT(int, sceNpAuthGetAuthorizationCode) {
+    return unimplemented("sceNpAuthGetAuthorizationCode");
+}
+
 EXPORT(int, sceNpCheckCallback) {
     return unimplemented("sceNpCheckCallback");
 }
@@ -61,6 +77,10 @@ EXPORT(int, sceNpUnregisterServiceStateCallback) {
     return unimplemented("sceNpUnregisterServiceStateCallback");
 }
 
+BRIDGE_IMPL(sceNpAuthAbortOAuthRequest)
+BRIDGE_IMPL(sceNpAuthCreateOAuthRequest)
+BRIDGE_IMPL(sceNpAuthDeleteOAuthRequest)
+BRIDGE_IMPL(sceNpAuthGetAuthorizationCode)
 BRIDGE_IMPL(sceNpCheckCallback)
 BRIDGE_IMPL(sceNpGetServiceState)
 BRIDGE_IMPL(sceNpInit)

@@ -49,6 +49,14 @@ EXPORT(int, sceNetDumpRead) {
     return unimplemented("sceNetDumpRead");
 }
 
+EXPORT(int, sceNetEmulationGet) {
+    return unimplemented("sceNetEmulationGet");
+}
+
+EXPORT(int, sceNetEmulationSet) {
+    return unimplemented("sceNetEmulationSet");
+}
+
 EXPORT(int, sceNetEpollAbort) {
     return unimplemented("sceNetEpollAbort");
 }
@@ -249,6 +257,8 @@ BRIDGE_IMPL(sceNetDumpAbort)
 BRIDGE_IMPL(sceNetDumpCreate)
 BRIDGE_IMPL(sceNetDumpDestroy)
 BRIDGE_IMPL(sceNetDumpRead)
+BRIDGE_IMPL(sceNetEmulationGet)
+BRIDGE_IMPL(sceNetEmulationSet)
 BRIDGE_IMPL(sceNetEpollAbort)
 BRIDGE_IMPL(sceNetEpollControl)
 BRIDGE_IMPL(sceNetEpollCreate)

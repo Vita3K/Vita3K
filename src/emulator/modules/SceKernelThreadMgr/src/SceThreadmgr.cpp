@@ -39,6 +39,10 @@ EXPORT(int, sceKernelChangeThreadPriority) {
     return unimplemented("sceKernelChangeThreadPriority");
 }
 
+EXPORT(int, sceKernelChangeThreadPriority2) {
+    return unimplemented("sceKernelChangeThreadPriority2");
+}
+
 EXPORT(int, sceKernelChangeThreadVfpException) {
     return unimplemented("sceKernelChangeThreadVfpException");
 }
@@ -115,8 +119,16 @@ EXPORT(int, sceKernelDelayThread, SceUInt delay) {
     return SCE_KERNEL_OK;
 }
 
+EXPORT(int, sceKernelDelayThread200) {
+    return unimplemented("sceKernelDelayThread200");
+}
+
 EXPORT(int, sceKernelDelayThreadCB) {
     return unimplemented("sceKernelDelayThreadCB");
+}
+
+EXPORT(int, sceKernelDelayThreadCB200) {
+    return unimplemented("sceKernelDelayThreadCB200");
 }
 
 EXPORT(int, sceKernelDeleteCallback) {
@@ -323,6 +335,7 @@ BRIDGE_IMPL(sceKernelCancelCallback)
 BRIDGE_IMPL(sceKernelChangeActiveCpuMask)
 BRIDGE_IMPL(sceKernelChangeThreadCpuAffinityMask)
 BRIDGE_IMPL(sceKernelChangeThreadPriority)
+BRIDGE_IMPL(sceKernelChangeThreadPriority2)
 BRIDGE_IMPL(sceKernelChangeThreadVfpException)
 BRIDGE_IMPL(sceKernelCheckCallback)
 BRIDGE_IMPL(sceKernelCheckWaitableStatus)
@@ -339,7 +352,9 @@ BRIDGE_IMPL(sceKernelCloseTimer)
 BRIDGE_IMPL(sceKernelCreateCallback)
 BRIDGE_IMPL(sceKernelCreateThreadForUser)
 BRIDGE_IMPL(sceKernelDelayThread)
+BRIDGE_IMPL(sceKernelDelayThread200)
 BRIDGE_IMPL(sceKernelDelayThreadCB)
+BRIDGE_IMPL(sceKernelDelayThreadCB200)
 BRIDGE_IMPL(sceKernelDeleteCallback)
 BRIDGE_IMPL(sceKernelDeleteCond)
 BRIDGE_IMPL(sceKernelDeleteEventFlag)

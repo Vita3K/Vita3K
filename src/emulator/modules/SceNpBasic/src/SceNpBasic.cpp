@@ -97,6 +97,10 @@ EXPORT(int, sceNpBasicRegisterHandler) {
     return unimplemented("sceNpBasicRegisterHandler");
 }
 
+EXPORT(int, sceNpBasicRegisterInGameDataMessageHandler) {
+    return unimplemented("sceNpBasicRegisterInGameDataMessageHandler");
+}
+
 EXPORT(int, sceNpBasicRegisterJoinGameAckHandler) {
     return unimplemented("sceNpBasicRegisterJoinGameAckHandler");
 }
@@ -115,6 +119,10 @@ EXPORT(int, sceNpBasicTerm) {
 
 EXPORT(int, sceNpBasicUnregisterHandler) {
     return unimplemented("sceNpBasicUnregisterHandler");
+}
+
+EXPORT(int, sceNpBasicUnregisterInGameDataMessageHandler) {
+    return unimplemented("sceNpBasicUnregisterInGameDataMessageHandler");
 }
 
 EXPORT(int, sceNpBasicUnregisterJoinGameAckHandler) {
@@ -145,10 +153,12 @@ BRIDGE_IMPL(sceNpBasicInit)
 BRIDGE_IMPL(sceNpBasicJoinGameAckResponseSend)
 BRIDGE_IMPL(sceNpBasicRecordPlaySessionLog)
 BRIDGE_IMPL(sceNpBasicRegisterHandler)
+BRIDGE_IMPL(sceNpBasicRegisterInGameDataMessageHandler)
 BRIDGE_IMPL(sceNpBasicRegisterJoinGameAckHandler)
 BRIDGE_IMPL(sceNpBasicSendInGameDataMessage)
 BRIDGE_IMPL(sceNpBasicSetInGamePresence)
 BRIDGE_IMPL(sceNpBasicTerm)
 BRIDGE_IMPL(sceNpBasicUnregisterHandler)
+BRIDGE_IMPL(sceNpBasicUnregisterInGameDataMessageHandler)
 BRIDGE_IMPL(sceNpBasicUnregisterJoinGameAckHandler)
 BRIDGE_IMPL(sceNpBasicUnsetInGamePresence)
