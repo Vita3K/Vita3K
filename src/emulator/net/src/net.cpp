@@ -49,13 +49,11 @@ bool init(NetState &state) {
 
 int open_socket(NetState &net, int domain, int type, int protocol) {
     abs_socket sock = socket(domain, type, protocol);
-    if (sock >= 0){
-#ifdef WIN32        
+    if (sock >= 0){     
         if (protocol == SCE_NET_IPPROTO_UDP){
             bool _true = true;
             setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (const char *)&_true, 1);
         }
-#endif
         const int id = net.next_id++;
         net.socks.emplace(id, sock);
         return id;
@@ -131,13 +129,17 @@ int get_socket_address(NetState &net, int id, SceNetSockaddr *name, unsigned int
 int set_socket_options(NetState &net, int id, int level, int optname, const void *optval, unsigned int optlen){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
-#ifdef WIN32
         if (optname == SCE_NET_SO_NBIO){
+#ifdef WIN32
             u_long mode;
             memcpy(&mode, optval, optlen);
             return ioctlsocket(socket->second, FIONBIO, &mode);
-        }
+#else
+            int mode;
+            memcpy(&mode, optval, optlen);
+            return ioctl(socket->second, FIONBIO, &mode);
 #endif
+        }
         return setsockopt(socket->second, level, optname, (const char*)optval, optlen);
     }
     return -1;

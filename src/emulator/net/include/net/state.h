@@ -30,6 +30,7 @@ typedef int socklen_t;
 #else
 # include <unistd.h>
 # include <sys/socket.h>
+# include <sys/ioctl.h>
 # include <netinet/in.h>
 # include <netdb.h>
 # include <arpa/inet.h>
