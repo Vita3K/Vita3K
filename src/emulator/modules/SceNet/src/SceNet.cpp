@@ -415,7 +415,12 @@ EXPORT(int, sceNetSocket, const char *name, int domain, int type, int protocol) 
     if (type < SCE_NET_SOCK_STREAM || type > SCE_NET_SOCK_RAW){ // TODO: P2P type support
         return error("sceNetSocket", SCE_NET_ERROR_EINVAL);
     }
-    return open_socket(host.net, domain, type, protocol);
+    int res = open_socket(host.net, domain, type, protocol);
+    if (res < 0){
+        return error("sceNetSocket", translate_errorcode());   
+    }else{
+        return res;
+    }
 }
 
 EXPORT(int, sceNetSocketAbort) {

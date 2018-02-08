@@ -195,6 +195,8 @@ EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf,
         strcpy((char*)buf, devname);
 #endif
         break;
+    default:
+        return error("sceAppUtilSystemParamGetString", SCE_APPUTIL_ERROR_PARAMETER);
     }
     return 0;
 }

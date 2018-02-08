@@ -105,7 +105,7 @@ int recv_packet(NetState &net, int id, void *buf, unsigned int len, int flags, S
         if (from != nullptr){
             struct sockaddr addr;
             int res = recvfrom(socket->second, (char*)buf, len, flags, &addr, (socklen_t*)fromlen);
-            convertPosixSockaddrToSce(&addr, from);
+            if (res >= 0) convertPosixSockaddrToSce(&addr, from);
             return res;
         }else{
             return recv(socket->second, (char*)buf, len, flags);
@@ -120,7 +120,7 @@ int get_socket_address(NetState &net, int id, SceNetSockaddr *name, unsigned int
         struct sockaddr addr;
         convertSceSockaddrToPosix(name, &addr);
         int res = getsockname(socket->second, &addr, (socklen_t*)namelen);
-        convertPosixSockaddrToSce(&addr, name);
+        if (res >= 0) convertPosixSockaddrToSce(&addr, name);
         return res;
     }
     return -1;
