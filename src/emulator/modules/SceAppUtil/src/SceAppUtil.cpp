@@ -185,12 +185,14 @@ EXPORT(int, sceAppUtilSystemParamGetInt) {
 }
 
 EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize) {
+    char devname[80];
     switch (paramId){
     case SCE_SYSTEM_PARAM_ID_USERNAME:
+        gethostname(devname, 80);
 #ifdef WIN32
-        strcpy_s((char*)buf, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE, "VITA3K");
+        strcpy_s((char*)buf, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE, devname);
 #else
-        strcpy((char*)buf, "VITA3K");
+        strcpy((char*)buf, devname);
 #endif
         break;
     }
