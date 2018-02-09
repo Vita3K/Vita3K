@@ -80,7 +80,7 @@ int bind_socket(NetState &net,int id, const SceNetSockaddr *name, unsigned int a
     if (socket != net.socks.end()) {
         struct sockaddr addr;
         convertSceSockaddrToPosix(name, &addr);
-		return bind(socket->second, &addr, addrlen);
+		return bind(socket->second, &addr, sizeof(struct sockaddr_in));
     }
     return -1;
 }
@@ -91,7 +91,7 @@ int send_packet(NetState &net, int id, const void *msg, unsigned int len, int fl
         if (to != nullptr){
             struct sockaddr addr;
             convertSceSockaddrToPosix((SceNetSockaddr*)to, &addr);
-            return sendto(socket->second, (const char*)msg, len, flags, &addr, tolen);
+            return sendto(socket->second, (const char*)msg, len, flags, &addr, sizeof(struct sockaddr_in));
         }else{
             return send(socket->second, (const char*)msg, len, flags);
         }
@@ -104,8 +104,11 @@ int recv_packet(NetState &net, int id, void *buf, unsigned int len, int flags, S
     if (socket != net.socks.end()) {
         if (from != nullptr){
             struct sockaddr addr;
-            int res = recvfrom(socket->second, (char*)buf, len, flags, &addr, (socklen_t*)fromlen);
-            if (res >= 0) convertPosixSockaddrToSce(&addr, from);
+            int res = recvfrom(socket->second, (char *)buf, len, flags, &addr, (socklen_t*)fromlen);
+            if (res >= 0){
+                convertPosixSockaddrToSce(&addr, from);
+                *fromlen = sizeof(SceNetSockaddrIn);
+            }
             return res;
         }else{
             return recv(socket->second, (char*)buf, len, flags);
@@ -119,8 +122,14 @@ int get_socket_address(NetState &net, int id, SceNetSockaddr *name, unsigned int
     if (socket != net.socks.end()) {
         struct sockaddr addr;
         convertSceSockaddrToPosix(name, &addr);
+        if (name != nullptr){
+            *namelen = sizeof(sockaddr_in);
+        }
         int res = getsockname(socket->second, &addr, (socklen_t*)namelen);
-        if (res >= 0) convertPosixSockaddrToSce(&addr, name);
+        if (res >= 0){
+            convertPosixSockaddrToSce(&addr, name);
+            *namelen = sizeof(SceNetSockaddrIn);
+        }
         return res;
     }
     return -1;
@@ -150,7 +159,7 @@ int connect_socket(NetState &net, int id, const SceNetSockaddr *name, unsigned i
     if (socket != net.socks.end()) {
         struct sockaddr addr;
         convertSceSockaddrToPosix(name, &addr);
-        return connect(socket->second, &addr, namelen);
+        return connect(socket->second, &addr, sizeof(struct sockaddr_in));
     }
     return -1;
 }
@@ -162,6 +171,7 @@ int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *add
         abs_socket new_socket = accept(socket->second, &addr, (socklen_t*)addrlen);
         if (new_socket >= 0){
             convertPosixSockaddrToSce(&addr, name);
+            *addrlen = sizeof(SceNetSockaddrIn);
             const int id = net.next_id++;
             net.socks.emplace(id, new_socket);
             return id;
