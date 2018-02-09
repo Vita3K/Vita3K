@@ -4,7 +4,7 @@
 ## Introduction
 Vita3K is an experimental PlayStation Vita emulator for Windows and macOS.
 
-* [Website](https://Vita3K.github.io/)
+* [Website](https://Vita3K.github.io/) (not done yet)
 * [Discord](https://discord.gg/6aGwQzh)
 * IRC `#vita3k` on **freenode** ([Web-based IRC client](https://webchat.freenode.net/?channels=%23vita3k))
 * [Patreon](https://www.patreon.com/Vita3K)
