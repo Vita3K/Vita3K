@@ -21,6 +21,10 @@ EXPORT(int, sceNpActivityInit) {
     return unimplemented("sceNpActivityInit");
 }
 
+EXPORT(int, sceNpActivityPostAppStartupStatus) {
+    return unimplemented("sceNpActivityPostAppStartupStatus");
+}
+
 EXPORT(int, sceNpActivityPostStatus) {
     return unimplemented("sceNpActivityPostStatus");
 }
@@ -30,5 +34,6 @@ EXPORT(int, sceNpActivityTerm) {
 }
 
 BRIDGE_IMPL(sceNpActivityInit)
+BRIDGE_IMPL(sceNpActivityPostAppStartupStatus)
 BRIDGE_IMPL(sceNpActivityPostStatus)
 BRIDGE_IMPL(sceNpActivityTerm)

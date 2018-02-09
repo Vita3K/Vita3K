@@ -260,6 +260,24 @@ static GLenum translate_format(SceGxmTextureFormat src) {
     }
 }
 
+static GLenum translate_primitive(SceGxmPrimitiveType primType){
+    switch (primType){
+    case SCE_GXM_PRIMITIVE_TRIANGLES:
+        return GL_TRIANGLES;
+    case SCE_GXM_PRIMITIVE_TRIANGLE_STRIP:
+        return GL_TRIANGLE_STRIP;
+    case SCE_GXM_PRIMITIVE_TRIANGLE_FAN:
+        return GL_TRIANGLE_FAN;
+    case SCE_GXM_PRIMITIVE_LINES:
+        return GL_LINES;
+    case SCE_GXM_PRIMITIVE_POINTS:
+        return GL_POINTS;
+    case SCE_GXM_PRIMITIVE_TRIANGLE_EDGES: // Todo: Implement this
+        return GL_TRIANGLES;
+    }
+    return GL_TRIANGLES;
+}
+
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return unimplemented("sceGxmAddRazorGpuCaptureBuffer");
 }
@@ -278,13 +296,37 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(colorSurface != nullptr);
     assert(depthStencil != nullptr);
 
+    if (host.gxm.isInScene){
+        return SCE_GXM_ERROR_WITHIN_SCENE;
+    }
+    if (depthStencil == nullptr && colorSurface == nullptr){
+        return SCE_GXM_ERROR_INVALID_VALUE;
+    }
+    
     // TODO This may not be right.
     context->fragment_ring_buffer_used = 0;
     context->vertex_ring_buffer_used = 0;
     context->color_surface = *colorSurface;
-
+    
+    host.gxm.isInScene = true;
+    
     glBindFramebuffer(GL_FRAMEBUFFER, renderTarget->framebuffer[0]);
 
+    // Re-load GL machine settings for multiple contexts support
+    switch (context->cull_mode){
+    case SCE_GXM_CULL_CCW:
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        break;
+    case SCE_GXM_CULL_CW:
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        break;
+    case SCE_GXM_CULL_NONE:
+        glDisable(GL_CULL_FACE);
+        break;
+    }
+    
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -565,12 +607,14 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
 
 EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, unsigned int indexCount) {
     assert(context != nullptr);
-    assert((primType == SCE_GXM_PRIMITIVE_TRIANGLES) || (primType == SCE_GXM_PRIMITIVE_TRIANGLE_STRIP));
-    assert(indexType == SCE_GXM_INDEX_FORMAT_U16);
     assert(indexData != nullptr);
     assert(indexCount > 0);
 
-    const GLenum mode = primType == SCE_GXM_PRIMITIVE_TRIANGLES ? GL_TRIANGLES : GL_TRIANGLE_STRIP;
+    if (!host.gxm.isInScene){
+        return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
+    }
+    
+    const GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, indexData);
 
@@ -595,6 +639,10 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     assert(vertexNotification == nullptr);
     assert(fragmentNotification == nullptr);
 
+    if (!host.gxm.isInScene){
+        return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
+    }
+    
     const GLsizei width = context->color_surface.pbeEmitWords[0];
     const GLsizei height = context->color_surface.pbeEmitWords[1];
     const GLsizei stride_in_pixels = context->color_surface.pbeEmitWords[2];
@@ -604,6 +652,8 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     flip_vertically(pixels, width, height, stride_in_pixels);
 
+    host.gxm.isInScene = false;
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return 0;
@@ -726,6 +776,10 @@ EXPORT(int, sceGxmPadHeartbeat, const emu::SceGxmColorSurface *displaySurface, S
     return 0;
 }
 
+EXPORT(int, sceGxmPadTriggerGpuPaTrace) {
+    return unimplemented("sceGxmPadTriggerGpuPaTrace");
+}
+
 EXPORT(int, sceGxmPopUserMarker) {
     return unimplemented("sceGxmPopUserMarker");
 }
@@ -756,6 +810,10 @@ EXPORT(int, sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer) {
 
 EXPORT(int, sceGxmPrecomputedFragmentStateInit) {
     return unimplemented("sceGxmPrecomputedFragmentStateInit");
+}
+
+EXPORT(int, sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces) {
+    return unimplemented("sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces");
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetAllTextures) {
@@ -976,6 +1034,10 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     return 0;
 }
 
+EXPORT(int, sceGxmRenderTargetGetHostMem) {
+    return unimplemented("sceGxmRenderTargetGetHostMem");
+}
+
 EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
     assert(context != nullptr);
     assert(uniformBuffer != nullptr);
@@ -991,6 +1053,10 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     context->vertex_ring_buffer_used = next_used;
 
     return 0;
+}
+
+EXPORT(int, sceGxmSetAuxiliarySurface) {
+    return unimplemented("sceGxmSetAuxiliarySurface");
 }
 
 EXPORT(int, sceGxmSetBackDepthBias) {
@@ -1041,8 +1107,22 @@ EXPORT(int, sceGxmSetBackVisibilityTestOp) {
     return unimplemented("sceGxmSetBackVisibilityTestOp");
 }
 
-EXPORT(int, sceGxmSetCullMode) {
-    return unimplemented("sceGxmSetCullMode");
+EXPORT(int, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
+    context->cull_mode = mode;
+    switch (mode){
+    case SCE_GXM_CULL_CCW:
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        break;
+    case SCE_GXM_CULL_CW:
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        break;
+    case SCE_GXM_CULL_NONE:
+        glDisable(GL_CULL_FACE);
+        break;
+    }
+    return 0;
 }
 
 EXPORT(int, sceGxmSetDefaultRegionClipAndViewport) {
@@ -1082,9 +1162,9 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, const SceGxmFragm
 
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const emu::SceGxmTexture *texture) {
     assert(context != nullptr);
-    assert(textureIndex == 0);
     assert(texture != nullptr);
-
+	
+    glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
     glBindTexture(GL_TEXTURE_2D, context->texture[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
@@ -1218,6 +1298,10 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
 
 EXPORT(int, sceGxmSetUserMarker) {
     return unimplemented("sceGxmSetUserMarker");
+}
+
+EXPORT(int, sceGxmSetValidationEnable) {
+    return unimplemented("sceGxmSetValidationEnable");
 }
 
 EXPORT(int, sceGxmSetVertexDefaultUniformBuffer) {
@@ -1525,6 +1609,10 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
     return 0;
 }
 
+EXPORT(int, sceGxmShaderPatcherSetAuxiliarySurface) {
+    return unimplemented("sceGxmShaderPatcherSetAuxiliarySurface");
+}
+
 EXPORT(int, sceGxmShaderPatcherSetUserData) {
     return unimplemented("sceGxmShaderPatcherSetUserData");
 }
@@ -1569,6 +1657,10 @@ EXPORT(int, sceGxmTextureGetData, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
 
     return texture->data.address();
+}
+
+EXPORT(int, sceGxmTextureGetAnisoMode) {
+    return unimplemented("sceGxmTextureGetAnisoMode");
 }
 
 EXPORT(int, sceGxmTextureGetFormat, const emu::SceGxmTexture *texture) {
@@ -1685,8 +1777,16 @@ EXPORT(int, sceGxmTextureInitTiled) {
     return unimplemented("sceGxmTextureInitTiled");
 }
 
-EXPORT(int, sceGxmTextureSetData) {
-    return unimplemented("sceGxmTextureSetData");
+EXPORT(int, sceGxmTextureSetData, emu::SceGxmTexture *texture, Ptr<const void> data) {
+    assert(texture != nullptr);
+    assert(data);
+    
+    texture->data = data;
+    return 0;
+}
+
+EXPORT(int, sceGxmTextureSetAnisoMode) {
+    return unimplemented("sceGxmTextureSetAnisoMode");
 }
 
 EXPORT(int, sceGxmTextureSetFormat) {
@@ -1697,8 +1797,11 @@ EXPORT(int, sceGxmTextureSetGammaMode) {
     return unimplemented("sceGxmTextureSetGammaMode");
 }
 
-EXPORT(int, sceGxmTextureSetHeight) {
-    return unimplemented("sceGxmTextureSetHeight");
+EXPORT(int, sceGxmTextureSetHeight, emu::SceGxmTexture *texture, unsigned int height) {
+    assert(texture != nullptr);
+    
+    texture->height = height;
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetLodBias) {
@@ -1751,8 +1854,11 @@ EXPORT(int, sceGxmTextureSetVAddrMode) {
     return unimplemented("sceGxmTextureSetVAddrMode");
 }
 
-EXPORT(int, sceGxmTextureSetWidth) {
-    return unimplemented("sceGxmTextureSetWidth");
+EXPORT(int, sceGxmTextureSetWidth, emu::SceGxmTexture *texture, unsigned int width) {
+    assert(texture != nullptr);
+    
+    texture->width = width;
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureValidate) {
@@ -1877,6 +1983,7 @@ BRIDGE_IMPL(sceGxmMapVertexUsseMemory)
 BRIDGE_IMPL(sceGxmMidSceneFlush)
 BRIDGE_IMPL(sceGxmNotificationWait)
 BRIDGE_IMPL(sceGxmPadHeartbeat)
+BRIDGE_IMPL(sceGxmPadTriggerGpuPaTrace)
 BRIDGE_IMPL(sceGxmPopUserMarker)
 BRIDGE_IMPL(sceGxmPrecomputedDrawInit)
 BRIDGE_IMPL(sceGxmPrecomputedDrawSetAllVertexStreams)
@@ -1885,6 +1992,7 @@ BRIDGE_IMPL(sceGxmPrecomputedDrawSetParamsInstanced)
 BRIDGE_IMPL(sceGxmPrecomputedDrawSetVertexStream)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateInit)
+BRIDGE_IMPL(sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateSetAllTextures)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateSetAllUniformBuffers)
 BRIDGE_IMPL(sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer)
@@ -1929,8 +2037,10 @@ BRIDGE_IMPL(sceGxmProgramParameterIsSamplerCube)
 BRIDGE_IMPL(sceGxmPushUserMarker)
 BRIDGE_IMPL(sceGxmRemoveRazorGpuCaptureBuffer)
 BRIDGE_IMPL(sceGxmRenderTargetGetDriverMemBlock)
+BRIDGE_IMPL(sceGxmRenderTargetGetHostMem)
 BRIDGE_IMPL(sceGxmReserveFragmentDefaultUniformBuffer)
 BRIDGE_IMPL(sceGxmReserveVertexDefaultUniformBuffer)
+BRIDGE_IMPL(sceGxmSetAuxiliarySurface)
 BRIDGE_IMPL(sceGxmSetBackDepthBias)
 BRIDGE_IMPL(sceGxmSetBackDepthFunc)
 BRIDGE_IMPL(sceGxmSetBackDepthWriteEnable)
@@ -1970,6 +2080,7 @@ BRIDGE_IMPL(sceGxmSetRegionClip)
 BRIDGE_IMPL(sceGxmSetTwoSidedEnable)
 BRIDGE_IMPL(sceGxmSetUniformDataF)
 BRIDGE_IMPL(sceGxmSetUserMarker)
+BRIDGE_IMPL(sceGxmSetValidationEnable)
 BRIDGE_IMPL(sceGxmSetVertexDefaultUniformBuffer)
 BRIDGE_IMPL(sceGxmSetVertexProgram)
 BRIDGE_IMPL(sceGxmSetVertexStream)
@@ -2002,11 +2113,13 @@ BRIDGE_IMPL(sceGxmShaderPatcherGetVertexUsseMemAllocated)
 BRIDGE_IMPL(sceGxmShaderPatcherRegisterProgram)
 BRIDGE_IMPL(sceGxmShaderPatcherReleaseFragmentProgram)
 BRIDGE_IMPL(sceGxmShaderPatcherReleaseVertexProgram)
+BRIDGE_IMPL(sceGxmShaderPatcherSetAuxiliarySurface)
 BRIDGE_IMPL(sceGxmShaderPatcherSetUserData)
 BRIDGE_IMPL(sceGxmShaderPatcherUnregisterProgram)
 BRIDGE_IMPL(sceGxmSyncObjectCreate)
 BRIDGE_IMPL(sceGxmSyncObjectDestroy)
 BRIDGE_IMPL(sceGxmTerminate)
+BRIDGE_IMPL(sceGxmTextureGetAnisoMode)
 BRIDGE_IMPL(sceGxmTextureGetData)
 BRIDGE_IMPL(sceGxmTextureGetFormat)
 BRIDGE_IMPL(sceGxmTextureGetGammaMode)
@@ -2031,6 +2144,7 @@ BRIDGE_IMPL(sceGxmTextureInitLinearStrided)
 BRIDGE_IMPL(sceGxmTextureInitSwizzled)
 BRIDGE_IMPL(sceGxmTextureInitSwizzledArbitrary)
 BRIDGE_IMPL(sceGxmTextureInitTiled)
+BRIDGE_IMPL(sceGxmTextureSetAnisoMode)
 BRIDGE_IMPL(sceGxmTextureSetData)
 BRIDGE_IMPL(sceGxmTextureSetFormat)
 BRIDGE_IMPL(sceGxmTextureSetGammaMode)

@@ -16,4 +16,5 @@ namespace emu {
 
 struct GxmState {
     emu::SceGxmInitializeParams params;
+    bool isInScene = false;
 };

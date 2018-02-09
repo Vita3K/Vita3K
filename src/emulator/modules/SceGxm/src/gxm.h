@@ -65,6 +65,7 @@ struct SceGxmContext {
     emu::SceGxmColorSurface color_surface;
     const SceGxmVertexProgram *vertex_program = nullptr;
     GLObjectArray<1> texture;
+    SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
 };
 
 namespace emu {

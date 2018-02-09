@@ -17,6 +17,10 @@
 
 #include <SceSmart/exports.h>
 
+EXPORT(int, sceSmartCreateInstantImageTarget) {
+    return unimplemented("sceSmartCreateInstantImageTarget");
+}
+
 EXPORT(int, sceSmartCreateLearnedImageTarget) {
     return unimplemented("sceSmartCreateLearnedImageTarget");
 }
@@ -113,8 +117,16 @@ EXPORT(int, sceSmartSceneMappingSaveMap) {
     return unimplemented("sceSmartSceneMappingSaveMap");
 }
 
+EXPORT(int, sceSmartSceneMappingSetCustomListener) {
+    return unimplemented("sceSmartSceneMappingSetCustomListener");
+}
+
 EXPORT(int, sceSmartSceneMappingSetDenseMapMode) {
     return unimplemented("sceSmartSceneMappingSetDenseMapMode");
+}
+
+EXPORT(int, sceSmartSceneMappingSetDispatchMode) {
+    return unimplemented("sceSmartSceneMappingSetDispatchMode");
 }
 
 EXPORT(int, sceSmartSceneMappingStart) {
@@ -139,6 +151,10 @@ EXPORT(int, sceSmartTargetTrackingGetResults) {
 
 EXPORT(int, sceSmartTargetTrackingQuery) {
     return unimplemented("sceSmartTargetTrackingQuery");
+}
+
+EXPORT(int, sceSmartTargetTrackingQuery2) {
+    return unimplemented("sceSmartTargetTrackingQuery2");
 }
 
 EXPORT(int, sceSmartTargetTrackingRegisterTarget) {
@@ -177,6 +193,7 @@ EXPORT(int, sceSmartTargetTrackingUnregisterTarget) {
     return unimplemented("sceSmartTargetTrackingUnregisterTarget");
 }
 
+BRIDGE_IMPL(sceSmartCreateInstantImageTarget)
 BRIDGE_IMPL(sceSmartCreateLearnedImageTarget)
 BRIDGE_IMPL(sceSmartDestroyTarget)
 BRIDGE_IMPL(sceSmartGetTargetInfo)
@@ -201,13 +218,16 @@ BRIDGE_IMPL(sceSmartSceneMappingReset)
 BRIDGE_IMPL(sceSmartSceneMappingRun)
 BRIDGE_IMPL(sceSmartSceneMappingRunCore)
 BRIDGE_IMPL(sceSmartSceneMappingSaveMap)
+BRIDGE_IMPL(sceSmartSceneMappingSetCustomListener)
 BRIDGE_IMPL(sceSmartSceneMappingSetDenseMapMode)
+BRIDGE_IMPL(sceSmartSceneMappingSetDispatchMode)
 BRIDGE_IMPL(sceSmartSceneMappingStart)
 BRIDGE_IMPL(sceSmartSceneMappingStop)
 BRIDGE_IMPL(sceSmartSceneMappingUnregisterTarget)
 BRIDGE_IMPL(sceSmartTargetTrackingDispatchAndQuery)
 BRIDGE_IMPL(sceSmartTargetTrackingGetResults)
 BRIDGE_IMPL(sceSmartTargetTrackingQuery)
+BRIDGE_IMPL(sceSmartTargetTrackingQuery2)
 BRIDGE_IMPL(sceSmartTargetTrackingRegisterTarget)
 BRIDGE_IMPL(sceSmartTargetTrackingReset)
 BRIDGE_IMPL(sceSmartTargetTrackingRun)

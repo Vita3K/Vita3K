@@ -29,6 +29,10 @@ EXPORT(int, sceAudioencCreateEncoderExternal) {
     return unimplemented("sceAudioencCreateEncoderExternal");
 }
 
+EXPORT(int, sceAudioencCreateEncoderResident) {
+    return unimplemented("sceAudioencCreateEncoderResident");
+}
+
 EXPORT(int, sceAudioencDeleteEncoder) {
     return unimplemented("sceAudioencDeleteEncoder");
 }
@@ -37,8 +41,16 @@ EXPORT(int, sceAudioencDeleteEncoderExternal) {
     return unimplemented("sceAudioencDeleteEncoderExternal");
 }
 
+EXPORT(int, sceAudioencDeleteEncoderResident) {
+    return unimplemented("sceAudioencDeleteEncoderResident");
+}
+
 EXPORT(int, sceAudioencEncode) {
     return unimplemented("sceAudioencEncode");
+}
+
+EXPORT(int, sceAudioencEncodeNFrames) {
+    return unimplemented("sceAudioencEncodeNFrames");
 }
 
 EXPORT(int, sceAudioencGetContextSize) {
@@ -64,9 +76,12 @@ EXPORT(int, sceAudioencTermLibrary) {
 BRIDGE_IMPL(sceAudioencClearContext)
 BRIDGE_IMPL(sceAudioencCreateEncoder)
 BRIDGE_IMPL(sceAudioencCreateEncoderExternal)
+BRIDGE_IMPL(sceAudioencCreateEncoderResident)
 BRIDGE_IMPL(sceAudioencDeleteEncoder)
 BRIDGE_IMPL(sceAudioencDeleteEncoderExternal)
+BRIDGE_IMPL(sceAudioencDeleteEncoderResident)
 BRIDGE_IMPL(sceAudioencEncode)
+BRIDGE_IMPL(sceAudioencEncodeNFrames)
 BRIDGE_IMPL(sceAudioencGetContextSize)
 BRIDGE_IMPL(sceAudioencGetInternalError)
 BRIDGE_IMPL(sceAudioencGetOptInfo)

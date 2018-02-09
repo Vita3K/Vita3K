@@ -41,6 +41,10 @@ EXPORT(int, sceKernelGetSystemSwVersion) {
     return unimplemented("sceKernelGetSystemSwVersion");
 }
 
+EXPORT(int, sceKernelInhibitLoadingModule) {
+    return unimplemented("sceKernelInhibitLoadingModule");
+}
+
 EXPORT(int, sceKernelIsCalledFromSysModule) {
     return unimplemented("sceKernelIsCalledFromSysModule");
 }
@@ -51,4 +55,5 @@ BRIDGE_IMPL(sceKernelGetModuleIdByAddr)
 BRIDGE_IMPL(sceKernelGetModuleInfo)
 BRIDGE_IMPL(sceKernelGetModuleList)
 BRIDGE_IMPL(sceKernelGetSystemSwVersion)
+BRIDGE_IMPL(sceKernelInhibitLoadingModule)
 BRIDGE_IMPL(sceKernelIsCalledFromSysModule)

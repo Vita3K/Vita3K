@@ -21,5 +21,6 @@
 
 // SceNpActivity
 BRIDGE_DECL(sceNpActivityInit)
+BRIDGE_DECL(sceNpActivityPostAppStartupStatus)
 BRIDGE_DECL(sceNpActivityPostStatus)
 BRIDGE_DECL(sceNpActivityTerm)

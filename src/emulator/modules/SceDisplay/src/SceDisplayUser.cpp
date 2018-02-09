@@ -44,6 +44,18 @@ EXPORT(int, sceDisplayGetFrameBuf) {
     return unimplemented("sceDisplayGetFrameBuf");
 }
 
+EXPORT(int, sceDisplayGetFrameBufInternal) {
+    return unimplemented("sceDisplayGetFrameBufInternal");
+}
+
+EXPORT(int, sceDisplayGetMaximumFrameBufResolution) {
+    return unimplemented("sceDisplayGetMaximumFrameBufResolution");
+}
+
+EXPORT(int, sceDisplayGetResolutionInfoInternal) {
+    return unimplemented("sceDisplayGetResolutionInfoInternal");
+}
+
 EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync) {
     typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
 
@@ -103,5 +115,18 @@ EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDis
     return SCE_DISPLAY_ERROR_OK;
 }
 
+EXPORT(int, sceDisplaySetFrameBufForCompat) {
+    return unimplemented("sceDisplaySetFrameBufForCompat");
+}
+
+EXPORT(int, sceDisplaySetFrameBufInternal) {
+    return unimplemented("sceDisplaySetFrameBufInternal");
+}
+
 BRIDGE_IMPL(sceDisplayGetFrameBuf)
+BRIDGE_IMPL(sceDisplayGetFrameBufInternal)
+BRIDGE_IMPL(sceDisplayGetMaximumFrameBufResolution)
+BRIDGE_IMPL(sceDisplayGetResolutionInfoInternal)
 BRIDGE_IMPL(sceDisplaySetFrameBuf)
+BRIDGE_IMPL(sceDisplaySetFrameBufForCompat)
+BRIDGE_IMPL(sceDisplaySetFrameBufInternal)

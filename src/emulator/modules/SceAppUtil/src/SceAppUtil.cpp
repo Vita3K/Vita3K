@@ -32,6 +32,10 @@ EXPORT(int, sceAppUtilAddcontUmount) {
     return unimplemented("sceAppUtilAddcontUmount");
 }
 
+EXPORT(int, sceAppUtilAppEventParseGameCustomData) {
+    return unimplemented("sceAppUtilAppEventParseGameCustomData");
+}
+
 EXPORT(int, sceAppUtilAppEventParseIncomingDialog) {
     return unimplemented("sceAppUtilAppEventParseIncomingDialog");
 }
@@ -42,6 +46,10 @@ EXPORT(int, sceAppUtilAppEventParseLiveArea) {
 
 EXPORT(int, sceAppUtilAppEventParseNearGift) {
     return unimplemented("sceAppUtilAppEventParseNearGift");
+}
+
+EXPORT(int, sceAppUtilAppEventParseNpActivity) {
+    return unimplemented("sceAppUtilAppEventParseNpActivity");
 }
 
 EXPORT(int, sceAppUtilAppEventParseNpAppDataMessage) {
@@ -58,6 +66,14 @@ EXPORT(int, sceAppUtilAppEventParseNpInviteMessage) {
 
 EXPORT(int, sceAppUtilAppEventParseScreenShotNotification) {
     return unimplemented("sceAppUtilAppEventParseScreenShotNotification");
+}
+
+EXPORT(int, sceAppUtilAppEventParseSessionInvitation) {
+    return unimplemented("sceAppUtilAppEventParseSessionInvitation");
+}
+
+EXPORT(int, sceAppUtilAppEventParseTeleport) {
+    return unimplemented("sceAppUtilAppEventParseTeleport");
 }
 
 EXPORT(int, sceAppUtilAppEventParseTriggerUtil) {
@@ -204,13 +220,17 @@ EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf,
 BRIDGE_IMPL(sceAppUtilAddCookieWebBrowser)
 BRIDGE_IMPL(sceAppUtilAddcontMount)
 BRIDGE_IMPL(sceAppUtilAddcontUmount)
+BRIDGE_IMPL(sceAppUtilAppEventParseGameCustomData)
 BRIDGE_IMPL(sceAppUtilAppEventParseIncomingDialog)
 BRIDGE_IMPL(sceAppUtilAppEventParseLiveArea)
 BRIDGE_IMPL(sceAppUtilAppEventParseNearGift)
+BRIDGE_IMPL(sceAppUtilAppEventParseNpActivity)
 BRIDGE_IMPL(sceAppUtilAppEventParseNpAppDataMessage)
 BRIDGE_IMPL(sceAppUtilAppEventParseNpBasicJoinablePresence)
 BRIDGE_IMPL(sceAppUtilAppEventParseNpInviteMessage)
 BRIDGE_IMPL(sceAppUtilAppEventParseScreenShotNotification)
+BRIDGE_IMPL(sceAppUtilAppEventParseSessionInvitation)
+BRIDGE_IMPL(sceAppUtilAppEventParseTeleport)
 BRIDGE_IMPL(sceAppUtilAppEventParseTriggerUtil)
 BRIDGE_IMPL(sceAppUtilAppEventParseWebBrowser)
 BRIDGE_IMPL(sceAppUtilAppParamGetInt)

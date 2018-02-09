@@ -29,6 +29,10 @@ EXPORT(int, sceAudiodecCreateDecoderExternal) {
     return unimplemented("sceAudiodecCreateDecoderExternal");
 }
 
+EXPORT(int, sceAudiodecCreateDecoderResident) {
+    return unimplemented("sceAudiodecCreateDecoderResident");
+}
+
 EXPORT(int, sceAudiodecDecode) {
     return unimplemented("sceAudiodecDecode");
 }
@@ -49,6 +53,10 @@ EXPORT(int, sceAudiodecDeleteDecoderExternal) {
     return unimplemented("sceAudiodecDeleteDecoderExternal");
 }
 
+EXPORT(int, sceAudiodecDeleteDecoderResident) {
+    return unimplemented("sceAudiodecDeleteDecoderResident");
+}
+
 EXPORT(int, sceAudiodecGetContextSize) {
     return unimplemented("sceAudiodecGetContextSize");
 }
@@ -61,6 +69,10 @@ EXPORT(int, sceAudiodecInitLibrary) {
     return unimplemented("sceAudiodecInitLibrary");
 }
 
+EXPORT(int, sceAudiodecPartlyDecode) {
+    return unimplemented("sceAudiodecPartlyDecode");
+}
+
 EXPORT(int, sceAudiodecTermLibrary) {
     return unimplemented("sceAudiodecTermLibrary");
 }
@@ -68,12 +80,15 @@ EXPORT(int, sceAudiodecTermLibrary) {
 BRIDGE_IMPL(sceAudiodecClearContext)
 BRIDGE_IMPL(sceAudiodecCreateDecoder)
 BRIDGE_IMPL(sceAudiodecCreateDecoderExternal)
+BRIDGE_IMPL(sceAudiodecCreateDecoderResident)
 BRIDGE_IMPL(sceAudiodecDecode)
 BRIDGE_IMPL(sceAudiodecDecodeNFrames)
 BRIDGE_IMPL(sceAudiodecDecodeNStreams)
 BRIDGE_IMPL(sceAudiodecDeleteDecoder)
 BRIDGE_IMPL(sceAudiodecDeleteDecoderExternal)
+BRIDGE_IMPL(sceAudiodecDeleteDecoderResident)
 BRIDGE_IMPL(sceAudiodecGetContextSize)
 BRIDGE_IMPL(sceAudiodecGetInternalError)
 BRIDGE_IMPL(sceAudiodecInitLibrary)
+BRIDGE_IMPL(sceAudiodecPartlyDecode)
 BRIDGE_IMPL(sceAudiodecTermLibrary)

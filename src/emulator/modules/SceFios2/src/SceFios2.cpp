@@ -49,6 +49,50 @@ EXPORT(int, sceFiosArchiveUnmountSync) {
     return unimplemented("sceFiosArchiveUnmountSync");
 }
 
+EXPORT(int, sceFiosCacheContainsFileRangeSync) {
+    return unimplemented("sceFiosCacheContainsFileRangeSync");
+}
+
+EXPORT(int, sceFiosCacheContainsFileSync) {
+    return unimplemented("sceFiosCacheContainsFileSync");
+}
+
+EXPORT(int, sceFiosCacheFlushFileRangeSync) {
+    return unimplemented("sceFiosCacheFlushFileRangeSync");
+}
+
+EXPORT(int, sceFiosCacheFlushFileSync) {
+    return unimplemented("sceFiosCacheFlushFileSync");
+}
+
+EXPORT(int, sceFiosCacheFlushSync) {
+    return unimplemented("sceFiosCacheFlushSync");
+}
+
+EXPORT(int, sceFiosCachePrefetchFH) {
+    return unimplemented("sceFiosCachePrefetchFH");
+}
+
+EXPORT(int, sceFiosCachePrefetchFHRange) {
+    return unimplemented("sceFiosCachePrefetchFHRange");
+}
+
+EXPORT(int, sceFiosCachePrefetchFHRangeSync) {
+    return unimplemented("sceFiosCachePrefetchFHRangeSync");
+}
+
+EXPORT(int, sceFiosCachePrefetchFHSync) {
+    return unimplemented("sceFiosCachePrefetchFHSync");
+}
+
+EXPORT(int, sceFiosCachePrefetchFile) {
+    return unimplemented("sceFiosCachePrefetchFile");
+}
+
+EXPORT(int, sceFiosCachePrefetchFileRange) {
+    return unimplemented("sceFiosCachePrefetchFileRange");
+}
+
 EXPORT(int, sceFiosCancelAllOps) {
     return unimplemented("sceFiosCancelAllOps");
 }
@@ -111,6 +155,10 @@ EXPORT(int, sceFiosDateToComponents) {
 
 EXPORT(int, sceFiosDateToSceDateTime) {
     return unimplemented("sceFiosDateToSceDateTime");
+}
+
+EXPORT(int, sceFiosDeallocatePassthruFH) {
+    return unimplemented("sceFiosDeallocatePassthruFH");
 }
 
 EXPORT(int, sceFiosDebugDumpDH) {
@@ -305,6 +353,10 @@ EXPORT(int, sceFiosFHTell) {
     return unimplemented("sceFiosFHTell");
 }
 
+EXPORT(int, sceFiosFHToFileno) {
+    return unimplemented("sceFiosFHToFileno");
+}
+
 EXPORT(int, sceFiosFHTruncate) {
     return unimplemented("sceFiosFHTruncate");
 }
@@ -375,6 +427,10 @@ EXPORT(int, sceFiosFileWrite) {
 
 EXPORT(int, sceFiosFileWriteSync) {
     return unimplemented("sceFiosFileWriteSync");
+}
+
+EXPORT(int, sceFiosFilenoToFH) {
+    return unimplemented("sceFiosFilenoToFH");
 }
 
 EXPORT(int, sceFiosGetAllDHs) {
@@ -489,6 +545,10 @@ EXPORT(int, sceFiosOpReschedule) {
     return unimplemented("sceFiosOpReschedule");
 }
 
+EXPORT(int, sceFiosOpRescheduleWithPriority) {
+    return unimplemented("sceFiosOpRescheduleWithPriority");
+}
+
 EXPORT(int, sceFiosOpSyncWait) {
     return unimplemented("sceFiosOpSyncWait");
 }
@@ -581,6 +641,18 @@ EXPORT(int, sceFiosStatSync) {
     return unimplemented("sceFiosStatSync");
 }
 
+EXPORT(int, sceFiosStatisticsGet) {
+    return unimplemented("sceFiosStatisticsGet");
+}
+
+EXPORT(int, sceFiosStatisticsPrint) {
+    return unimplemented("sceFiosStatisticsPrint");
+}
+
+EXPORT(int, sceFiosStatisticsReset) {
+    return unimplemented("sceFiosStatisticsReset");
+}
+
 EXPORT(int, sceFiosSuspend) {
     return unimplemented("sceFiosSuspend");
 }
@@ -625,6 +697,17 @@ BRIDGE_IMPL(sceFiosArchiveMountSync)
 BRIDGE_IMPL(sceFiosArchiveSetDecompressorThreadCount)
 BRIDGE_IMPL(sceFiosArchiveUnmount)
 BRIDGE_IMPL(sceFiosArchiveUnmountSync)
+BRIDGE_IMPL(sceFiosCacheContainsFileRangeSync)
+BRIDGE_IMPL(sceFiosCacheContainsFileSync)
+BRIDGE_IMPL(sceFiosCacheFlushFileRangeSync)
+BRIDGE_IMPL(sceFiosCacheFlushFileSync)
+BRIDGE_IMPL(sceFiosCacheFlushSync)
+BRIDGE_IMPL(sceFiosCachePrefetchFH)
+BRIDGE_IMPL(sceFiosCachePrefetchFHRange)
+BRIDGE_IMPL(sceFiosCachePrefetchFHRangeSync)
+BRIDGE_IMPL(sceFiosCachePrefetchFHSync)
+BRIDGE_IMPL(sceFiosCachePrefetchFile)
+BRIDGE_IMPL(sceFiosCachePrefetchFileRange)
 BRIDGE_IMPL(sceFiosCancelAllOps)
 BRIDGE_IMPL(sceFiosChangeStat)
 BRIDGE_IMPL(sceFiosChangeStatSync)
@@ -641,6 +724,7 @@ BRIDGE_IMPL(sceFiosDateFromSceDateTime)
 BRIDGE_IMPL(sceFiosDateGetCurrent)
 BRIDGE_IMPL(sceFiosDateToComponents)
 BRIDGE_IMPL(sceFiosDateToSceDateTime)
+BRIDGE_IMPL(sceFiosDeallocatePassthruFH)
 BRIDGE_IMPL(sceFiosDebugDumpDH)
 BRIDGE_IMPL(sceFiosDebugDumpDate)
 BRIDGE_IMPL(sceFiosDebugDumpError)
@@ -689,6 +773,7 @@ BRIDGE_IMPL(sceFiosFHStatSync)
 BRIDGE_IMPL(sceFiosFHSync)
 BRIDGE_IMPL(sceFiosFHSyncSync)
 BRIDGE_IMPL(sceFiosFHTell)
+BRIDGE_IMPL(sceFiosFHToFileno)
 BRIDGE_IMPL(sceFiosFHTruncate)
 BRIDGE_IMPL(sceFiosFHTruncateSync)
 BRIDGE_IMPL(sceFiosFHWrite)
@@ -707,6 +792,7 @@ BRIDGE_IMPL(sceFiosFileTruncate)
 BRIDGE_IMPL(sceFiosFileTruncateSync)
 BRIDGE_IMPL(sceFiosFileWrite)
 BRIDGE_IMPL(sceFiosFileWriteSync)
+BRIDGE_IMPL(sceFiosFilenoToFH)
 BRIDGE_IMPL(sceFiosGetAllDHs)
 BRIDGE_IMPL(sceFiosGetAllFHs)
 BRIDGE_IMPL(sceFiosGetAllOps)
@@ -735,6 +821,7 @@ BRIDGE_IMPL(sceFiosOpGetRequestCount)
 BRIDGE_IMPL(sceFiosOpIsCancelled)
 BRIDGE_IMPL(sceFiosOpIsDone)
 BRIDGE_IMPL(sceFiosOpReschedule)
+BRIDGE_IMPL(sceFiosOpRescheduleWithPriority)
 BRIDGE_IMPL(sceFiosOpSyncWait)
 BRIDGE_IMPL(sceFiosOpSyncWaitForIO)
 BRIDGE_IMPL(sceFiosOpWait)
@@ -758,6 +845,9 @@ BRIDGE_IMPL(sceFiosSetGlobalDefaultOpAttr)
 BRIDGE_IMPL(sceFiosShutdownAndCancelOps)
 BRIDGE_IMPL(sceFiosStat)
 BRIDGE_IMPL(sceFiosStatSync)
+BRIDGE_IMPL(sceFiosStatisticsGet)
+BRIDGE_IMPL(sceFiosStatisticsPrint)
+BRIDGE_IMPL(sceFiosStatisticsReset)
 BRIDGE_IMPL(sceFiosSuspend)
 BRIDGE_IMPL(sceFiosSync)
 BRIDGE_IMPL(sceFiosSyncSync)

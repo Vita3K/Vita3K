@@ -319,12 +319,20 @@ EXPORT(int, sceIoIoctl) {
     return unimplemented("sceIoIoctl");
 }
 
+EXPORT(int, sceIoIoctlAsync) {
+    return unimplemented("sceIoIoctlAsync");
+}
+
 EXPORT(int, sceIoLseek) {
     return unimplemented("sceIoLseek");
 }
 
-EXPORT(int, sceIoMkdir) {
-    return unimplemented("sceIoMkdir");
+EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
+    return create_dir(dir, mode, host.pref_path.c_str());
+}
+
+EXPORT(int, sceIoLseekAsync) {
+    return unimplemented("sceIoLseekAsync");
 }
 
 EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
@@ -332,6 +340,10 @@ EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
         return error("sceIoOpen", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     return open_file(host.io, file, flags, host.pref_path.c_str());
+}
+
+EXPORT(int, sceIoOpenAsync) {
+    return unimplemented("sceIoOpenAsync");
 }
 
 EXPORT(int, sceIoPread) {
@@ -1303,9 +1315,12 @@ BRIDGE_IMPL(sceIoDread)
 BRIDGE_IMPL(sceIoGetstat)
 BRIDGE_IMPL(sceIoGetstatByFd)
 BRIDGE_IMPL(sceIoIoctl)
+BRIDGE_IMPL(sceIoIoctlAsync)
 BRIDGE_IMPL(sceIoLseek)
+BRIDGE_IMPL(sceIoLseekAsync)
 BRIDGE_IMPL(sceIoMkdir)
 BRIDGE_IMPL(sceIoOpen)
+BRIDGE_IMPL(sceIoOpenAsync)
 BRIDGE_IMPL(sceIoPread)
 BRIDGE_IMPL(sceIoPwrite)
 BRIDGE_IMPL(sceIoRemove)

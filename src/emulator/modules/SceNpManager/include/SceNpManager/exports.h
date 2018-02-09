@@ -20,6 +20,10 @@
 #include <module/module.h>
 
 // SceNpManager
+BRIDGE_DECL(sceNpAuthAbortOAuthRequest)
+BRIDGE_DECL(sceNpAuthCreateOAuthRequest)
+BRIDGE_DECL(sceNpAuthDeleteOAuthRequest)
+BRIDGE_DECL(sceNpAuthGetAuthorizationCode)
 BRIDGE_DECL(sceNpCheckCallback)
 BRIDGE_DECL(sceNpGetServiceState)
 BRIDGE_DECL(sceNpInit)

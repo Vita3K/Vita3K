@@ -51,6 +51,7 @@ static const KeyBinding key_bindings[] = {
     { SDL_SCANCODE_C, SCE_CTRL_CIRCLE },
     { SDL_SCANCODE_X, SCE_CTRL_CROSS },
     { SDL_SCANCODE_Z, SCE_CTRL_SQUARE },
+    { SDL_SCANCODE_H, SCE_CTRL_PSBUTTON },
 };
 
 static const size_t key_binding_count = sizeof(key_bindings) / sizeof(key_bindings[0]);
@@ -68,6 +69,7 @@ static const ControllerBinding controller_bindings[] = {
     { SDL_CONTROLLER_BUTTON_B, SCE_CTRL_CIRCLE },
     { SDL_CONTROLLER_BUTTON_A, SCE_CTRL_CROSS },
     { SDL_CONTROLLER_BUTTON_X, SCE_CTRL_SQUARE },
+    { SDL_CONTROLLER_BUTTON_GUIDE, SCE_CTRL_PSBUTTON },
 };
 
 static const size_t controller_binding_count = sizeof(controller_bindings) / sizeof(controller_bindings[0]);
