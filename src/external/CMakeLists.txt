@@ -27,6 +27,10 @@ set(capstone_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/capstone/include" PARENT_
 add_library(elfio INTERFACE)
 target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio")
 
+add_library(spdlog INTERFACE)
+target_include_directories(spdlog INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include")
+target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1)
+
 option(BUILD_SHARED_LIBS "Build shared instead of static libraries." OFF)
 option(OPTION_BUILD_TESTS "Build tests." OFF)
 option(OPTION_BUILD_GPU_TESTS "Build tests that require an OpenGL context." OFF)

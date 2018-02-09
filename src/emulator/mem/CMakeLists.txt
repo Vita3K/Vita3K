@@ -7,3 +7,4 @@ add_library(
 )
 
 target_include_directories(mem PUBLIC include)
+target_link_libraries(mem PUBLIC util spdlog)

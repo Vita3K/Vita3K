@@ -18,6 +18,7 @@
 #include <audio/functions.h>
 
 #include <audio/state.h>
+#include <util/log.h>
 
 #include <cassert>
 #include <cstring>
