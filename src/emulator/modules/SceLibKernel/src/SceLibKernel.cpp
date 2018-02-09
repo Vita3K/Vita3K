@@ -319,12 +319,12 @@ EXPORT(int, sceIoIoctl) {
     return unimplemented("sceIoIoctl");
 }
 
-EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
-    return seek_file(fd, offset, whence, host.io);
-}
-
 EXPORT(int, sceIoIoctlAsync) {
     return unimplemented("sceIoIoctlAsync");
+}
+
+EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
+    return seek_file(fd, offset, whence, host.io);
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
@@ -342,17 +342,13 @@ EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
     return open_file(host.io, file, flags, host.pref_path.c_str());
 }
 
-EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
-    seek_file(fd, offset, SEEK_SET, host.io);
-    return read_file(data, host.io, fd, size);
-}
-
 EXPORT(int, sceIoOpenAsync) {
     return unimplemented("sceIoOpenAsync");
 }
 
-EXPORT(int, sceIoPread) {
-    return unimplemented("sceIoPread");
+EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
+    seek_file(fd, offset, SEEK_SET, host.io);
+    return read_file(data, host.io, fd, size);
 }
 
 EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
