@@ -104,8 +104,9 @@ int main(int argc, char *argv[]) {
     if (!load_vpk(entry_point, host.io, host.mem, path)) {
         std::string message = "Failed to load \"";
         message += wide_to_utf(path);
-        message += "\".";
-        error(message, host.window.get());
+        message += "\"";
+        message += "\nSee console output for details.";
+        error(message.c_str(), host.window.get());
         return ModuleLoadFailed;
     }
 

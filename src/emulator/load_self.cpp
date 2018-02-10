@@ -86,6 +86,15 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
 bool load_self(Ptr<const void> &entry_point, MemState &mem, const void *self) {
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
+
+    // assumes little endian host
+    // TODO: do it in a better way, perhaps with user-defined literals that do the conversion automatically (magic != "SCE\0"_u32)
+    if (!memcmp(&self_header.magic, "\0ECS", 4))
+    {
+        LOG_CRITICAL("(S)ELF is corrupt or encrypted. Decryption not yet supported.");
+        return false;
+    }
+
     const uint8_t *const elf_bytes = self_bytes + self_header.elf_offset;
     const Elf32_Ehdr &elf = *reinterpret_cast<const Elf32_Ehdr *>(elf_bytes);
     const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
