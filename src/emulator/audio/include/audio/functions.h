@@ -23,6 +23,6 @@
 
 struct AudioState;
 
-typedef std::function<void(SceUID)> ResumeThread;
+typedef std::function<void(SceUID)> ResumeAudioThread;
 
-bool init(AudioState &state, ResumeThread resume_thread);
+bool init(AudioState &state, ResumeAudioThread resume_thread);
