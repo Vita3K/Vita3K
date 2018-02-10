@@ -38,14 +38,14 @@ int unimplemented(const char *name) {
     if (inserted)
 #endif
     {
-        std::cerr << ">>> " << name << " <<< Unimplemented import called." << std::endl;
+        LOG_WARN(">>> {} <<< Unimplemented import called.", name);
     }
 
     return 0;
 }
 
 int error(const char *name, int error) {
-    std::cerr << ">>> " << name << " <<< returned 0x" << std::hex << std::uppercase << error << std::endl;
+    LOG_ERROR(">>> {} <<< returned {0:#X}", name, error);
 
     return error;
 }
