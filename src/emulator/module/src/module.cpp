@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <module/module.h>
+#include <util/log.h>
 
 #include <iostream>
 #include <mutex>
@@ -29,7 +30,6 @@ static NameSet logged;
 int unimplemented(const char *name) {
 #ifndef VERBOSE    
     bool inserted = false;
-
     {
         const std::lock_guard<std::mutex> lock(mutex);
         inserted = logged.insert(name).second;
@@ -46,6 +46,6 @@ int unimplemented(const char *name) {
 
 int error(const char *name, int error) {
     LOG_ERROR(">>> {} <<< returned {0:#X}", name, error);
-
+  
     return error;
 }
