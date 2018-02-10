@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "relocation.h"
+#include <util/log.h>
 
 #include <assert.h>
 #include <iostream>
@@ -192,7 +193,7 @@ static bool relocate(void *data, Code code, uint32_t s, uint32_t a, uint32_t p) 
         return true;
     }
 
-    std::cerr << "Unhandled relocation code " << code << "." << std::endl;
+    LOG_WARN("Unhandled relocation code {}.", code);
 
     return true;
 }

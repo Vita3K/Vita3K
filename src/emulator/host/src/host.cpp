@@ -27,6 +27,7 @@
 #include <kernel/thread_state.h>
 #include <nids/functions.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
 
 #include <SDL_events.h>
 #include <SDL_filesystem.h>
@@ -91,8 +92,7 @@ bool handle_events(HostState &host) {
 void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
     if (LOG_IMPORT_CALLS) {
         const char *const name = import_name(nid);
-        const char prev_fill = std::cout.fill();
-        std::cout << "NID " << std::hex << std::setw(8) << std::setfill('0') << nid << std::setfill(prev_fill) << std::dec << " (" << name << ") called." << std::endl;
+		LOG_TRACE("NID {:#08x} ({})) called", nid, name);
     }
 
     ImportFn *const fn = resolve_import(nid);
