@@ -167,7 +167,11 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         std::string file_path = translate_path("ux0", path, pref_path);
 
         const char *const open_mode = translate_open_mode(flags);
+#ifdef WIN32
+        const FilePtr file(_wfopen(utf_to_wide(file_path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
+#else
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
+#endif
         if (!file) {
             return -1;
         }
@@ -179,7 +183,11 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
     } else if (strncmp(path, "uma0:", 5) == 0) {
         std::string file_path = translate_path("uma0", path, pref_path);
         const char *const open_mode = translate_open_mode(flags);
+#ifdef WIN32
+        const FilePtr file(_wfopen(utf_to_wide(file_path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
+#else
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
+#endif
         if (!file) {
             return -1;
         }
