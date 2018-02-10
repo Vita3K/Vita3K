@@ -25,12 +25,11 @@
 
 #include <psp2/io/fcntl.h>
 
-#include <dirent.h>
-
 #ifdef WIN32
 # define WIN32_LEAN_AND_MEAN
 # include <Windows.h>
 #include <util/string_convert.h>
+#include <dirent.h>
 #else
 # include <unistd.h>
 # include <sys/stat.h>
@@ -444,9 +443,8 @@ int open_dir(IOState &io, const char *path, const char *pref_path) {
 
 int read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
     assert(dent != nullptr);
-    assert(fd >= 0);
 
-    dent = {0};
+    memset(dent->d_name, '\0', sizeof(dent->d_name));
 
     const DirEntries::const_iterator dir = io.dir_entries.find(fd);
     if (dir != io.dir_entries.end()) {
@@ -466,6 +464,11 @@ int read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
 #else
         strncpy(dent->d_name, d->d_name, sizeof(dent->d_name));
 #endif
+        if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) {
+            // Skip . and .. folders
+            return read_dir(io, fd, dent);
+        }
+
         dent->d_stat.st_mode = d->d_type == DT_DIR ? SCE_S_IFDIR : SCE_S_IFREG;
 
         return 1;
@@ -475,8 +478,6 @@ int read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
 }
 
 int close_dir(IOState &io, SceUID fd) {
-    assert(fd >= 0);
-
     io.dir_entries.erase(fd);
 
     return 1;
