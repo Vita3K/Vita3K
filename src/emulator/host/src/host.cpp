@@ -18,6 +18,7 @@
 #include <host/functions.h>
 
 #include <host/import_fn.h>
+#include <host/rtc.h>
 #include <host/state.h>
 #include <host/version.h>
 
@@ -72,6 +73,8 @@ bool init(HostState &state) {
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, pref_path.get())) {
         return false;
     }
+
+    state.kernel.base_tick = { rtc_base_ticks() };
 
     return true;
 }
