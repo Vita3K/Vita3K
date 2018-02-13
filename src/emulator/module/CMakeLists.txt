@@ -11,4 +11,3 @@ add_library(
 
 target_include_directories(module PUBLIC include)
 target_link_libraries(module PUBLIC host microprofile)
-target_link_libraries(module PRIVATE util)

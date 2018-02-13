@@ -20,6 +20,7 @@
 #include <disasm/functions.h>
 #include <disasm/state.h>
 #include <mem/ptr.h>
+#include <util/log.h>
 
 #include <unicorn/unicorn.h>
 
@@ -35,6 +36,7 @@ struct CPUState {
     CallSVC call_svc;
     DisasmState disasm;
     UnicornPtr uc;
+    Address entry_point;
 };
 
 static const bool LOG_CODE = true;
@@ -59,12 +61,12 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const size_t buffer_size = GB(4) - address;
     const bool thumb = is_thumb_mode(uc);
     const std::string disassembly = disassemble(state.disasm, code, buffer_size, address, thumb);
-    std::cout << std::hex << std::setw(8) << address << std::dec << " " << disassembly << std::endl;
+    LOG_TRACE("{:#08x} {}", address, disassembly);
 }
 
 static void log_memory_access(const char *type, Address address, int size, int64_t value, const MemState &mem) {
     const char *const name = mem_name(address, mem);
-    std::cout << type << " " << size << " bytes, address 0x" << std::hex << address << " (" << name << "), value 0x" << value << std::dec << std::endl;
+    LOG_TRACE("{} {} bytes, address {:#08x} ( {} ), value {:#x}", type, size, address, name, value);
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -128,6 +130,7 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
     state->call_svc = call_svc;
+    state->entry_point = pc;
 
     if (!init(state->disasm)) {
         return CPUStatePtr();
@@ -164,6 +167,11 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     assert(err == UC_ERR_OK);
 
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_PC, &pc);
+
+    assert(err == UC_ERR_OK);
+
+    err = uc_reg_write(state->uc.get(), UC_ARM_REG_LR, &pc);
+
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(state->uc.get());
@@ -171,16 +179,18 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     return state;
 }
 
-bool run(CPUState &state) {
+bool run(CPUState &state, bool callback) {
     uint64_t pc = 0;
     uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &pc);
     assert(err == UC_ERR_OK);
-
-    if (is_thumb_mode(state.uc.get())) {
+    const bool thumb_mode = is_thumb_mode(state.uc.get());
+    if (thumb_mode) {
         pc |= 1;
     }
-
-    err = uc_emu_start(state.uc.get(), pc, 0, 0, 0);
+    if (callback) {
+        uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &state.entry_point);
+    }
+    err = uc_emu_start(state.uc.get(), pc, callback ? state.entry_point & 0xfffffffe : 0, 0, 0);
     assert(err == UC_ERR_OK);
 
     return true;
@@ -210,6 +220,14 @@ uint32_t read_sp(CPUState &state) {
     return value;
 }
 
+uint32_t read_pc(CPUState &state) {
+    uint32_t value = 0;
+    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &value);
+    assert(err == UC_ERR_OK);
+
+    return value;
+}
+
 void write_reg(CPUState &state, size_t index, uint32_t value) {
     assert(index >= 0);
     assert(index <= 1);
@@ -220,5 +238,10 @@ void write_reg(CPUState &state, size_t index, uint32_t value) {
 
 void write_pc(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_PC, &value);
+    assert(err == UC_ERR_OK);
+}
+
+void write_lr(CPUState &state, uint32_t value) {
+    const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &value);
     assert(err == UC_ERR_OK);
 }

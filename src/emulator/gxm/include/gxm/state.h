@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mem/ptr.h>
+#include <threads/queue.h>
 
 namespace emu {
     typedef void SceGxmDisplayQueueCallback(Ptr<const void> callbackData);
@@ -14,7 +15,15 @@ namespace emu {
     };
 }
 
+struct DisplayCallback {
+    Address pc;
+    Address data;
+    Address old_buffer;
+    Address new_buffer;
+};
+
 struct GxmState {
     emu::SceGxmInitializeParams params;
     bool isInScene = false;
+    Queue<DisplayCallback> display_queue;
 };

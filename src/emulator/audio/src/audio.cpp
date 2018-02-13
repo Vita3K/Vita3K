@@ -18,13 +18,14 @@
 #include <audio/functions.h>
 
 #include <audio/state.h>
+#include <util/log.h>
 
 #include <cassert>
 #include <cstring>
 
 static const int stream_put_granularity = 512;
 
-static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOutPort &port, const ResumeThread &resume_thread) {
+static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
     int available_to_get = SDL_AudioStreamAvailable(port.callback.stream.get());
     assert(available_to_get >= 0);
 
@@ -86,7 +87,7 @@ static void close_audio(void *) {
     SDL_CloseAudio();
 }
 
-bool init(AudioState &state, ResumeThread resume_thread) {
+bool init(AudioState &state, ResumeAudioThread resume_thread) {
     state.ro.resume_thread = resume_thread;
 
     SDL_AudioSpec desired = {};

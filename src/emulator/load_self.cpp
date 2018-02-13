@@ -20,6 +20,7 @@
 #include "relocation.h"
 
 #include <nids/functions.h>
+#include <util/log.h>
 
 #include <elfio/elf_types.hpp>
 #define SCE_ELF_DEFS_TARGET
@@ -45,8 +46,7 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
 
         if (LOG_IMPORTS) {
             const char *const name = import_name(nid);
-            const char prev_fill = std::cout.fill();
-            std::cout << "\tNID " << std::hex << std::setw(8) << std::setfill('0') << nid << std::setfill(prev_fill) << " (" << name << ") at 0x" << entry.address() << std::dec << std::endl;
+			LOG_DEBUG( "\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
         }
 
         uint32_t *const stub = entry.get(mem);
@@ -66,7 +66,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     for (const sce_module_imports_raw *imports = imports_begin; imports < imports_end; imports = reinterpret_cast<const sce_module_imports_raw *>(reinterpret_cast<const uint8_t *>(imports) + imports->size)) {
         if (LOG_IMPORTS) {
             const char *const lib_name = Ptr<const char>(imports->module_name).get(mem);
-            std::cout << "Loading imports from " << lib_name << std::endl;
+            LOG_INFO("Loading imports from {}", lib_name);
         }
 
         assert(imports->version == 1);
@@ -86,12 +86,20 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
 bool load_self(Ptr<const void> &entry_point, MemState &mem, const void *self) {
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
+
+    // assumes little endian host
+    // TODO: do it in a better way, perhaps with user-defined literals that do the conversion automatically (magic != "SCE\0"_u32)
+    if (!memcmp(&self_header.magic, "\0ECS", 4))
+    {
+        LOG_CRITICAL("(S)ELF is corrupt or encrypted. Decryption not yet supported.");
+        return false;
+    }
+
     const uint8_t *const elf_bytes = self_bytes + self_header.elf_offset;
     const Elf32_Ehdr &elf = *reinterpret_cast<const Elf32_Ehdr *>(elf_bytes);
     const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
     const uint32_t module_info_offset = elf.e_entry & 0x3fffffff;
     const Elf32_Phdr *const segments = reinterpret_cast<const Elf32_Phdr *>(self_bytes + self_header.phdr_offset);
-    const Elf32_Phdr &module_info_segment = segments[module_info_segment_index];
 
     const segment_info *const segment_infos = reinterpret_cast<const segment_info *>(self_bytes + self_header.section_info_offset);
 
@@ -104,7 +112,7 @@ bool load_self(Ptr<const void> &entry_point, MemState &mem, const void *self) {
         if (src.p_type == PT_LOAD) {
             const Ptr<void> address(alloc(mem, src.p_memsz, "segment"));
             if (!address) {
-                std::cerr << "Failed to allocate memory for segment." << std::endl;
+                LOG_ERROR("Failed to allocate memory for segment.");
                 return false;
             }
 

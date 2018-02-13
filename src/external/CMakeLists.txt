@@ -24,8 +24,26 @@ option(CAPSTONE_X86_SUPPORT "x86 support" OFF)
 add_subdirectory(capstone EXCLUDE_FROM_ALL)
 set(capstone_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/capstone/include" PARENT_SCOPE)
 
+add_library(crypto-algorithms STATIC crypto-algorithms/sha256.c crypto-algorithms/sha256.h
+                                     crypto-algorithms/base64.c crypto-algorithms/base64.h)
+
+target_include_directories(crypto-algorithms PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/crypto-algorithms")
+
+add_library(dirent INTERFACE)
+
+add_library(tiny-aes STATIC tiny-AES-c/aes.hpp tiny-AES-c/aes.c)
+target_include_directories(tiny-aes PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/tiny-AES-c")
+
+if(WIN32)
+    target_include_directories(dirent INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/dirent/include")
+endif()
+
 add_library(elfio INTERFACE)
 target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio")
+
+add_library(spdlog INTERFACE)
+target_include_directories(spdlog INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include")
+target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1)
 
 option(BUILD_SHARED_LIBS "Build shared instead of static libraries." OFF)
 option(OPTION_BUILD_TESTS "Build tests." OFF)
@@ -52,13 +70,23 @@ add_library(sdl2 INTERFACE)
 target_include_directories(sdl2 INTERFACE "${SDL2_INCLUDE_DIR}")
 target_link_libraries(sdl2 INTERFACE "${SDL2_LIBRARY}")
 
+if(WIN32)
+	add_library(winsock INTERFACE)
+	find_library(WSOCK32 wsock32)
+	find_library(WS2_32 ws2_32)
+	target_link_libraries(winsock INTERFACE WSOCK32 WS2_32)
+endif()
+
 add_library(unicorn INTERFACE)
 if(APPLE)
 	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/macos/include")
 	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/macos/lib/libunicorn.a")
 elseif(WIN32)
 	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/windows/include")
-	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/windows/unicorn.lib")
+        target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/windows/unicorn.lib")
+elseif(UNIX)
+        target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/unix/include")
+        target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/unix/lib/libunicorn.a")
 else()
 	find_package(PkgConfig)
 	pkg_check_modules(UNICORN REQUIRED unicorn)

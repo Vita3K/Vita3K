@@ -16,11 +16,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <mem/mem.h>
+#include <util/log.h>
 
 #include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <cmath>
+#include <functional>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -81,6 +83,7 @@ bool init(MemState &state) {
     state.memory = Memory(static_cast<uint8_t *>(mmap(addr, length, prot, flags, fd, offset)), delete_memory);
 #endif
     if (!state.memory) {
+        LOG_CRITICAL("VirtualAlloc failed");
         return false;
     }
 
@@ -88,7 +91,10 @@ bool init(MemState &state) {
     const Address null_address = alloc(state, 1, "NULL");
     assert(null_address == 0);
 #ifdef WIN32
-    const BOOL res = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, nullptr);
+    DWORD old_protect = 0;
+    const BOOL res = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
+    if (!res)
+        LOG_WARN("VirtualProtect failed: {:#08X}", res);
 #else
     mprotect(state.memory.get(), state.page_size, PROT_NONE);
 #endif
@@ -120,7 +126,7 @@ void free(MemState &state, Address address) {
     const Generation generation = state.allocated_pages[page];
     assert(generation != 0);
 
-    const std::binder1st<std::not_equal_to<Generation>> different_generation = std::bind1st(std::not_equal_to<Generation>(), generation);
+    const auto different_generation = std::bind(std::not_equal_to<Generation>(), generation, std::placeholders::_1);
     const Allocated::iterator first_page = state.allocated_pages.begin() + page;
     const Allocated::iterator last_page = std::find_if(first_page, state.allocated_pages.end(), different_generation);
     std::fill(first_page, last_page, 0);

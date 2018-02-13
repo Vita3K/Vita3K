@@ -16,20 +16,33 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "vpk.h"
+#include "sfo.h"
+#include "pkg.h"
 
 #include <host/functions.h>
 #include <host/state.h>
 #include <host/version.h>
 #include <kernel/thread_functions.h>
+#include <util/find.h>
+#include <util/log.h>
+
+#include <io/vfs.h>
 #include <util/string_convert.h>
 
 #include <SDL.h>
+#include <glutil/gl.h>
 
 #include <algorithm> // find_if_not
 #include <cassert>
 #include <iostream>
+#include <sstream>
+
+#include <experimental/filesystem>
+
+namespace fs = std::experimental::filesystem;
 
 typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
+typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
 
 enum ExitCode {
     Success = 0,
@@ -41,13 +54,18 @@ enum ExitCode {
     RunThreadFailed
 };
 
+enum VitaFileType {
+	Vpk = 0,
+	Pkg = 1
+};
+
 static bool is_macos_process_arg(const char *arg) {
     return strncmp(arg, "-psn_", 5) == 0;
 }
 
-static void error(const std::string& message, SDL_Window *window = nullptr) {
+static void error(const std::string &message, SDL_Window *window = nullptr) {
     if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window) < 0) {
-        std::cerr << message << std::endl;
+        LOG_ERROR("SDL Error: {}", message);
     }
 }
 
@@ -57,8 +75,28 @@ static void term_sdl(const void *succeeded) {
     SDL_Quit();
 }
 
+VitaFileType file_type(const char* path) {
+	FILE* temp = fopen(path, "rb");
+
+	int magic;
+	fread(&magic, sizeof(int), 1, temp);
+	fclose(temp);
+
+	if (magic == 0x474b507f) {
+		return Pkg;
+	}
+
+	return Vpk;
+}
+
 int main(int argc, char *argv[]) {
-    std::cout << window_title << std::endl;
+    init_logging();
+
+<<<<<<< HEAD
+	LOG_INFO("{}", window_title);    
+=======
+    LOG_INFO("{}", window_title);
+>>>>>>> 13df4e2... Threads refactoring (#80)
 
     ProgramArgsWide argv_wide = process_args(argc, argv);
 
@@ -67,6 +105,8 @@ int main(int argc, char *argv[]) {
         error("SDL initialisation failed.");
         return SDLInitFailed;
     }
+
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     const char *const *const path_arg = std::find_if_not(&argv[1], &argv[argc], is_macos_process_arg);
     std::wstring path;
@@ -98,37 +138,131 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    if (!load_vpk(entry_point, host.io, host.mem, path)) {
-        std::string message = "Failed to load \"";
-        message += wide_to_utf(path);
-        message += "\".";
-        error(message, host.window.get());
-        return ModuleLoadFailed;
-    }
 
-    // TODO This is hacky. Belongs in kernel?
-    const SceUID main_thread_id = host.kernel.next_uid++;
+	VitaFileType type = file_type(wide_to_utf(path).c_str());
 
-    const CallImport call_import = [&host, main_thread_id](uint32_t nid) {
+	if (type == Vpk) {
+		if (!load_vpk(entry_point, host.io, host.mem, host.game_title, host.title_id, path)) {
+			std::string message = "Failed to load \"";
+			message += wide_to_utf(path);
+			message += "\"";
+			message += "\nSee console output for details.";
+			error(message.c_str(), host.window.get());
+			return ModuleLoadFailed;
+		}
+	}
+	else {
+		if (!load_pkg(entry_point, host.io, host.mem, host.game_title, host.title_id, path)) {
+			std::string message = "Failed to load \"";
+			message += wide_to_utf(path);
+			message += "\"";
+			message += "\nSee console output for details.";
+			error(message.c_str(), host.window.get());
+			return ModuleLoadFailed;
+		}
+
+		return 0;
+	}
+
+    const CallImport call_import = [&host](uint32_t nid, SceUID main_thread_id) {
         ::call_import(host, nid, main_thread_id);
     };
 
     const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
-    const bool log_code = false;
-    const ThreadStatePtr main_thread = init_thread(entry_point, stack_size, log_code, host.mem, call_import);
-    if (!main_thread) {
+
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main", stack_size, call_import, false);
+    if (main_thread_id < 0) {
         error("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
     }
 
-    // TODO Move this to kernel.
-    host.kernel.threads.emplace(main_thread_id, main_thread);
+    const SceUID display_thread_id = create_thread(entry_point, host.kernel, host.mem, "display", stack_size, call_import, false);
 
-    host.t1 = SDL_GetTicks();
-    if (!run_thread(*main_thread)) {
+    if (display_thread_id < 0) {
+        error("Failed to init display thread.", host.window.get());
+        return InitThreadFailed;
+    }
+
+    const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
+
+    if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
         error("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }
 
+    const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
+
+    GLuint TextureID = 0;
+    host.t1 = SDL_GetTicks();
+    while (handle_events(host)) {
+        if (!TextureID) {
+            glGenTextures(1, &TextureID);
+            glClearColor(1.0, 0.0, 0.5, 1.0);
+            glClearDepth(1.0f);
+            glViewport(0, 0, 960, 544);
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+            glOrtho(0, 960, 544, 0, 1, -1);
+            glMatrixMode(GL_MODELVIEW);
+            glEnable(GL_TEXTURE_2D);
+            glLoadIdentity();
+        }
+
+        // Clear back buffer
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glLoadIdentity();
+
+        {
+            if (host.display.width > 0) {
+                glBindTexture(GL_TEXTURE_2D, TextureID);
+                void *const pixels = host.display.base.cast<void>().get(host.mem);
+
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, host.display.pitch);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, host.display.width, host.display.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glBindTexture(GL_TEXTURE_2D, TextureID);
+
+                // For Ortho mode, of course
+                const int X = 0;
+                const int Y = 0;
+                const int Width = 960;
+                const int Height = 544;
+
+                glBegin(GL_TRIANGLE_FAN);
+                glTexCoord2f(0, 0);
+                glVertex3f(X, Y, 0);
+                glTexCoord2f(1, 0);
+                glVertex3f(X + Width, Y, 0);
+                glTexCoord2f(1, 1);
+                glVertex3f(X + Width, Y + Height, 0);
+                glTexCoord2f(0, 1);
+                glVertex3f(X, Y + Height, 0);
+                glEnd();
+            }
+        }
+
+        SDL_GL_SwapWindow(host.window.get());
+
+        {
+            host.display.condvar.notify_all();
+        }
+
+        const uint32_t t2 = SDL_GetTicks();
+        const uint32_t ms = t2 - host.t1;
+        if (ms >= 1000 && host.frame_count > 0) {
+            const uint32_t fps = (host.frame_count * 1000) / ms;
+            const uint32_t ms_per_frame = ms / host.frame_count;
+            std::ostringstream title;
+            title << window_title << " - " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
+            SDL_SetWindowTitle(host.window.get(),  (title.str() + " | " + host.game_title + " (" + host.title_id + ")").c_str());
+            host.t1 = t2;
+            host.frame_count = 0;
+        }
+    }
     return Success;
 }

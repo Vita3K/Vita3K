@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <mem/mem.h> // Address.
 #include <condition_variable>
+#include <mem/mem.h> // Address.
 #include <mutex>
 
 struct CPUState;

@@ -22,3 +22,15 @@
 [submodule "src/external/sdl2-cmake-scripts"]
 	path = src/external/sdl2-cmake-scripts
 	url = https://github.com/tcbrindle/sdl2-cmake-scripts.git
+[submodule "src/external/spdlog"]
+	path = src/external/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "src/external/dirent"]
+	path = src/external/dirent
+	url = https://github.com/tronkko/dirent
+[submodule "src/external/crypto-algorithms"]
+	path = src/external/crypto-algorithms
+	url = https://github.com/B-Con/crypto-algorithms.git
+[submodule "src/external/tiny-AES-c"]
+	path = src/external/tiny-AES-c
+	url = https://github.com/kokke/tiny-AES-c/

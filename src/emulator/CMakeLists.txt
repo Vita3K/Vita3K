@@ -19,16 +19,22 @@ else()
 	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}")
 endif()
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_COMPILER_IS_GNUCXX)
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
+endif()
+
 add_subdirectory(audio)
 add_subdirectory(cpu)
+add_subdirectory(crypto)
 add_subdirectory(ctrl)
 add_subdirectory(disasm)
 add_subdirectory(glutil)
 add_subdirectory(gxm)
+add_subdirectory(net)
 add_subdirectory(host)
 add_subdirectory(io)
 add_subdirectory(kernel)
@@ -37,6 +43,7 @@ add_subdirectory(module)
 add_subdirectory(modules)
 add_subdirectory(nids)
 add_subdirectory(util)
+add_subdirectory(threads)
 
 add_executable(
 emulator
@@ -46,26 +53,53 @@ load_self.h
 main.cpp
 relocation.cpp
 relocation.h
-resource.h
-VIta3K.ico
-Vita3K.rc
 vpk.cpp
 vpk.h
+sfo.h
+sfo.cpp
+pkg.h
+pkg.cpp
 )
 
-target_link_libraries(emulator PRIVATE cpu elfio host modules nids vita-toolchain util)
+target_link_libraries(emulator PRIVATE cpu elfio glutil host modules nids crypto-algorithms tiny-aes vita-toolchain util)
+
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+   target_link_libraries(emulator PRIVATE stdc++fs)
+endif()
+
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 if(APPLE)
 	add_custom_command(
+		OUTPUT Vita3K.icns
+		COMMAND mkdir -p Vita3K.iconset
+		COMMAND sips -z 16 16     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_16x16.png
+		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_16x16@2x.png
+		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_32x32.png
+		COMMAND sips -z 64 64     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_32x32@2x.png
+		COMMAND sips -z 128 128   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_128x128.png
+		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_128x128@2x.png
+		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_256x256.png
+		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_256x256@2x.png
+		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_512x512.png
+		COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" Vita3K.iconset/icon_512x512@2x.png
+		COMMAND iconutil -c icns Vita3K.iconset
+		COMMAND rm -r Vita3K.iconset
+		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png")
+	set_source_files_properties(Vita3K.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
+	add_custom_command(
 		TARGET emulator
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders" "$<TARGET_FILE_DIR:emulator>/../Resources/shaders"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/src/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:emulator>/../Frameworks/SDL2.framework")
-    set_target_properties(emulator PROPERTIES LINK_FLAGS "-rpath @executable_path/../Frameworks/")
+	set_target_properties(emulator PROPERTIES LINK_FLAGS "-rpath @executable_path/../Frameworks/")
+	target_sources(emulator PRIVATE Vita3K.icns)
+	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
 elseif(WIN32)
+	target_sources(emulator PRIVATE resource.h Vita3K.ico Vita3K.rc)
 	add_custom_command(
 		TARGET emulator
 		POST_BUILD
