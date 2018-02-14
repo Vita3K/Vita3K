@@ -48,7 +48,7 @@ main.cpp
 relocation.cpp
 relocation.h
 resource.h
-VIta3K.ico
+Vita3K.ico
 Vita3K.rc
 vpk.cpp
 vpk.h

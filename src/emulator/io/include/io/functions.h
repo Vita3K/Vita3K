@@ -27,4 +27,6 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io);
 int seek_file(SceUID fd, int offset, int whence, const IOState &io);
 void close_file(IOState &io, SceUID fd);
+int remove_file(const char *file, const char *pref_path);
 int create_dir(const char *dir, int mode, const char *pref_path);
+int remove_dir(const char *dir, const char *pref_path);

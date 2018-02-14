@@ -113,7 +113,7 @@ ProgramArgsWide process_args(int argc, char* argv[])
 
     if (nullptr == wide_arg_list)
     {
-        std::cerr << "CommandLineToArgvW failed\n";
+        LOG_ERROR("CommandLineToArgvW failed\n");
         return {};
     }
 

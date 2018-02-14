@@ -50,7 +50,7 @@ int error(const char *name, int error) {
     }
 
     if (inserted) {
-		LOG_ERROR(">>> {} <<< returned {0:#X}", name, error);
+		    LOG_ERROR(">>> {} <<< returned {:#X}", name, error);
     }
 
     return error;
