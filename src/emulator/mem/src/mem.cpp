@@ -21,6 +21,7 @@
 #include <cassert>
 #include <cstring>
 #include <cmath>
+#include "util/log.h"
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -81,6 +82,7 @@ bool init(MemState &state) {
     state.memory = Memory(static_cast<uint8_t *>(mmap(addr, length, prot, flags, fd, offset)), delete_memory);
 #endif
     if (!state.memory) {
+        LOG_CRITICAL("VirtualAlloc failed");
         return false;
     }
 
@@ -88,7 +90,10 @@ bool init(MemState &state) {
     const Address null_address = alloc(state, 1, "NULL");
     assert(null_address == 0);
 #ifdef WIN32
-    const BOOL res = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, nullptr);
+    DWORD old_protect = 0;
+    const BOOL res = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
+    if (!res)
+        LOG_WARN("VirtualProtect failed: {:#08X}", res);
 #else
     mprotect(state.memory.get(), state.page_size, PROT_NONE);
 #endif
