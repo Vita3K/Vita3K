@@ -17,8 +17,6 @@
 
 #include <ScePower/exports.h>
 
-#include <psp2/power.h>
-
 EXPORT(int, scePowerBatteryUpdateInfo) {
     return unimplemented("scePowerBatteryUpdateInfo");
 }
@@ -28,7 +26,7 @@ EXPORT(int, scePowerCancelRequest) {
 }
 
 EXPORT(int, scePowerGetArmClockFrequency) {
-    return 444;
+    return unimplemented("scePowerGetArmClockFrequency");
 }
 
 EXPORT(int, scePowerGetBatteryChargingStatus) {
@@ -80,7 +78,7 @@ EXPORT(int, scePowerGetBatteryVolt) {
 }
 
 EXPORT(int, scePowerGetBusClockFrequency) {
-    return 222;
+    return unimplemented("scePowerGetBusClockFrequency");
 }
 
 EXPORT(int, scePowerGetCaseTemp) {
@@ -88,11 +86,11 @@ EXPORT(int, scePowerGetCaseTemp) {
 }
 
 EXPORT(int, scePowerGetGpuClockFrequency) {
-    return 222;
+    return unimplemented("scePowerGetGpuClockFrequency");
 }
 
 EXPORT(int, scePowerGetGpuXbarClockFrequency) {
-    return 166;
+    return unimplemented("scePowerGetGpuXbarClockFrequency");
 }
 
 EXPORT(int, scePowerGetUsingWireless) {
@@ -155,50 +153,32 @@ EXPORT(int, scePowerRequestSuspend) {
     return unimplemented("scePowerRequestSuspend");
 }
 
-EXPORT(int, scePowerSetArmClockFrequency, int freq) {
-    if (freq < 0){
-        return SCE_POWER_ERROR_INVALID_VALUE;
-    }
-    return 0;
+EXPORT(int, scePowerSetArmClockFrequency) {
+    return unimplemented("scePowerSetArmClockFrequency");
 }
 
-EXPORT(int, scePowerSetBusClockFrequency, int freq) {
-    if (freq < 0){
-        return SCE_POWER_ERROR_INVALID_VALUE;
-    }
-    return 0;
+EXPORT(int, scePowerSetBusClockFrequency) {
+    return unimplemented("scePowerSetBusClockFrequency");
 }
 
-EXPORT(int, scePowerSetConfigurationMode, int mode) {
-    if (mode != 0x80 && mode != 0x800 && mode != 0x10880){
-        return SCE_POWER_ERROR_INVALID_VALUE;
-    }
-    return 0;
+EXPORT(int, scePowerSetConfigurationMode) {
+    return unimplemented("scePowerSetConfigurationMode");
 }
 
-EXPORT(int, scePowerSetGpuClockFrequency, int freq) {
-    if (freq < 0){
-        return SCE_POWER_ERROR_INVALID_VALUE;
-    }
-    return 0;
+EXPORT(int, scePowerSetGpuClockFrequency) {
+    return unimplemented("scePowerSetGpuClockFrequency");
 }
 
-EXPORT(int, scePowerSetGpuXbarClockFrequency, int freq) {
-    if (freq < 0){
-        return SCE_POWER_ERROR_INVALID_VALUE;
-    }
-    return 0;
+EXPORT(int, scePowerSetGpuXbarClockFrequency) {
+    return unimplemented("scePowerSetGpuXbarClockFrequency");
 }
 
 EXPORT(int, scePowerSetIdleTimerCount) {
     return unimplemented("scePowerSetIdleTimerCount");
 }
 
-EXPORT(int, scePowerSetUsingWireless, SceBool enabled) {
-    if (enabled != SCE_TRUE && enabled != SCE_FALSE){
-        return SCE_POWER_ERROR_INVALID_VALUE;
-    }
-    return 0;
+EXPORT(int, scePowerSetUsingWireless) {
+    return unimplemented("scePowerSetUsingWireless");
 }
 
 EXPORT(int, scePowerUnregisterCallback) {

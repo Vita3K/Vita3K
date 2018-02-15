@@ -17,10 +17,6 @@
 
 #include <SceRtc/exports.h>
 
-#include <psp2/rtc.h>
-
-#include <ctime>
-
 EXPORT(int, sceRtcCheckValid) {
     return unimplemented("sceRtcCheckValid");
 }
@@ -65,13 +61,8 @@ EXPORT(int, sceRtcGetCurrentNetworkTick) {
     return unimplemented("sceRtcGetCurrentNetworkTick");
 }
 
-EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
-    assert(tick != nullptr);
-
-    // TODO Assumes game handles varying CLOCKS_PER_SEC.
-    tick->tick = clock();
-
-    return 0;
+EXPORT(int, sceRtcGetCurrentTick) {
+    return unimplemented("sceRtcGetCurrentTick");
 }
 
 EXPORT(int, sceRtcGetDayOfWeek) {
@@ -102,9 +93,8 @@ EXPORT(int, sceRtcGetTick) {
     return unimplemented("sceRtcGetTick");
 }
 
-EXPORT(unsigned int, sceRtcGetTickResolution) {
-    // TODO Check the Vita's value.
-    return CLOCKS_PER_SEC;
+EXPORT(int, sceRtcGetTickResolution) {
+    return unimplemented("sceRtcGetTickResolution");
 }
 
 EXPORT(int, sceRtcGetTime64_t) {

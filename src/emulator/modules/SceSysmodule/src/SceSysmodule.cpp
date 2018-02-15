@@ -17,18 +17,16 @@
 
 #include <SceSysmodule/exports.h>
 
-#include <psp2/sysmodule.h>
-
-EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId id) {
-    return SCE_SYSMODULE_LOADED;
+EXPORT(int, sceSysmoduleIsLoaded) {
+    return unimplemented("sceSysmoduleIsLoaded");
 }
 
 EXPORT(int, sceSysmoduleIsLoadedInternal) {
     return unimplemented("sceSysmoduleIsLoadedInternal");
 }
 
-EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId id) {
-    return SCE_SYSMODULE_LOADED;
+EXPORT(int, sceSysmoduleLoadModule) {
+    return unimplemented("sceSysmoduleLoadModule");
 }
 
 EXPORT(int, sceSysmoduleLoadModuleInternal) {

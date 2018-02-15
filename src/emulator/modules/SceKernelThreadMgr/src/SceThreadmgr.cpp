@@ -17,12 +17,6 @@
 
 #include <SceKernelThreadMgr/exports.h>
 
-#include <host/functions.h>
-#include <kernel/functions.h>
-
-#include <SDL_timer.h>
-#include <psp2/kernel/error.h>
-
 EXPORT(int, sceKernelCancelCallback) {
     return unimplemented("sceKernelCancelCallback");
 }
@@ -103,20 +97,8 @@ EXPORT(int, sceKernelCreateThreadForUser) {
     return unimplemented("sceKernelCreateThreadForUser");
 }
 
-EXPORT(int, sceKernelDelayThread, SceUInt delay) {
-    const uint32_t delay_ms = delay / 1000;
-    const uint32_t t1 = SDL_GetTicks();
-    uint32_t elapsed;
-    do {
-        if (handle_events(host)) {
-            const uint32_t t2 = SDL_GetTicks();
-            elapsed = t2 - t1;
-        } else {
-            elapsed = delay_ms;
-        }
-    } while (elapsed < delay_ms);
-
-    return SCE_KERNEL_OK;
+EXPORT(int, sceKernelDelayThread) {
+    return unimplemented("sceKernelDelayThread");
 }
 
 EXPORT(int, sceKernelDelayThread200) {
@@ -195,8 +177,8 @@ EXPORT(int, sceKernelGetThreadStackFreeSize) {
     return unimplemented("sceKernelGetThreadStackFreeSize");
 }
 
-EXPORT(Ptr<void>, sceKernelGetThreadTLSAddr, SceUID thid, int key) {
-    return get_thread_tls_addr(host.kernel, host.mem, thid, key);
+EXPORT(int, sceKernelGetThreadTLSAddr) {
+    return unimplemented("sceKernelGetThreadTLSAddr");
 }
 
 EXPORT(int, sceKernelGetThreadmgrUIDClass) {

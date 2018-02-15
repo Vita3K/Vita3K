@@ -17,9 +17,6 @@
 
 #include <SceProcessmgr/exports.h>
 
-#include <psp2/kernel/error.h>
-#include <psp2/kernel/processmgr.h>
-
 EXPORT(int, sceKernelGetStderr) {
     return unimplemented("sceKernelGetStderr");
 }
@@ -68,8 +65,8 @@ EXPORT(int, sceKernelPowerLock) {
     return unimplemented("sceKernelPowerLock");
 }
 
-EXPORT(int, sceKernelPowerTick, SceKernelPowerTickType type) {
-    return SCE_KERNEL_OK;
+EXPORT(int, sceKernelPowerTick) {
+    return unimplemented("sceKernelPowerTick");
 }
 
 EXPORT(int, sceKernelPowerUnlock) {
