@@ -1,285 +1,161 @@
-add_subdirectory(SceAVConfig)
-add_subdirectory(SceAppMgr)
-add_subdirectory(SceAppUtil)
-add_subdirectory(SceAtrac)
-add_subdirectory(SceAudio)
-add_subdirectory(SceAudioIn)
-add_subdirectory(SceAudiodec)
-add_subdirectory(SceAudioenc)
-add_subdirectory(SceAvPlayer)
-add_subdirectory(SceAvcodec)
-add_subdirectory(SceAvcodecUser)
-add_subdirectory(SceBt)
-add_subdirectory(SceCamera)
-add_subdirectory(SceClipboard)
-add_subdirectory(SceCodecEngine)
-add_subdirectory(SceCodecEnginePerf)
-add_subdirectory(SceCodecEngineWrapper)
-add_subdirectory(SceCommonDialog)
-add_subdirectory(SceCompat)
-add_subdirectory(SceCoredump)
-add_subdirectory(SceCtrl)
-add_subdirectory(SceDTrace)
-add_subdirectory(SceDbg)
-add_subdirectory(SceDeci4p)
-add_subdirectory(SceDeflt)
-add_subdirectory(SceDisplay)
-add_subdirectory(SceFace)
-add_subdirectory(SceFiber)
-add_subdirectory(SceFios2)
-add_subdirectory(SceFpu)
-add_subdirectory(SceGameUpdate)
-add_subdirectory(SceGpuEs4)
-add_subdirectory(SceGxm)
-add_subdirectory(SceHandwriting)
-add_subdirectory(SceHeap)
-add_subdirectory(SceHid)
-add_subdirectory(SceHmac)
-add_subdirectory(SceHttp)
-add_subdirectory(SceIme)
-add_subdirectory(SceIofilemgr)
-add_subdirectory(SceJpeg)
-add_subdirectory(SceJpegEnc)
-add_subdirectory(SceKernelDmacMgr)
-add_subdirectory(SceKernelModulemgr)
-add_subdirectory(SceKernelThreadMgr)
-add_subdirectory(SceLibJson)
-add_subdirectory(SceLibKernel)
-add_subdirectory(SceLibMonoBridge)
-add_subdirectory(SceLibMp4Recorder)
-add_subdirectory(SceLibXml)
-add_subdirectory(SceLibc)
-add_subdirectory(SceLiveArea)
-add_subdirectory(SceLocation)
-add_subdirectory(SceLocationExtension)
-add_subdirectory(SceLsdb)
-add_subdirectory(SceMd5)
-add_subdirectory(SceMotion)
-add_subdirectory(SceMotionDev)
-add_subdirectory(SceMt19937)
-add_subdirectory(SceMtpIfDriver)
-add_subdirectory(SceMusicExport)
-add_subdirectory(SceNearDialogUtil)
-add_subdirectory(SceNearUtil)
-add_subdirectory(SceNet)
-add_subdirectory(SceNetAdhocMatching)
-add_subdirectory(SceNetCtl)
-add_subdirectory(SceNgs)
-add_subdirectory(SceNpActivity)
-add_subdirectory(SceNpBasic)
-add_subdirectory(SceNpCommerce2)
-add_subdirectory(SceNpCommon)
-add_subdirectory(SceNpDrm)
-add_subdirectory(SceNpManager)
-add_subdirectory(SceNpMatching2)
-add_subdirectory(SceNpMessage)
-add_subdirectory(SceNpParty)
-add_subdirectory(SceNpScore)
-add_subdirectory(SceNpSignaling)
-add_subdirectory(SceNpSnsFacebook)
-add_subdirectory(SceNpTrophy)
-add_subdirectory(SceNpTus)
-add_subdirectory(SceNpUtility)
-add_subdirectory(SceNpWebApi)
-add_subdirectory(ScePaf)
-add_subdirectory(ScePerf)
-add_subdirectory(ScePgf)
-add_subdirectory(ScePhotoExport)
-add_subdirectory(ScePower)
-add_subdirectory(SceProcessmgr)
-add_subdirectory(ScePromoterUtil)
-add_subdirectory(ScePspnetAdhoc)
-add_subdirectory(ScePvf)
-add_subdirectory(SceRazorCapture)
-add_subdirectory(SceRazorHud)
-add_subdirectory(SceRegistryMgr)
-add_subdirectory(SceRtc)
-add_subdirectory(SceRudp)
-add_subdirectory(SceSas)
-add_subdirectory(SceSblUpdateMgr)
-add_subdirectory(SceScreenShot)
-add_subdirectory(SceSfmt11213)
-add_subdirectory(SceSfmt1279)
-add_subdirectory(SceSfmt132049)
-add_subdirectory(SceSfmt19937)
-add_subdirectory(SceSfmt216091)
-add_subdirectory(SceSfmt2281)
-add_subdirectory(SceSfmt4253)
-add_subdirectory(SceSfmt44497)
-add_subdirectory(SceSfmt607)
-add_subdirectory(SceSfmt86243)
-add_subdirectory(SceSha0)
-add_subdirectory(SceSha1)
-add_subdirectory(SceSha224)
-add_subdirectory(SceSha256)
-add_subdirectory(SceSha384)
-add_subdirectory(SceSha512)
-add_subdirectory(SceSha512t)
-add_subdirectory(SceShellSvc)
-add_subdirectory(SceShutterSound)
-add_subdirectory(SceSmart)
-add_subdirectory(SceSqlite)
-add_subdirectory(SceSsl)
-add_subdirectory(SceStdio)
-add_subdirectory(SceSulpha)
-add_subdirectory(SceSysmem)
-add_subdirectory(SceSysmodule)
-add_subdirectory(SceSystemGesture)
-add_subdirectory(SceTeleportClient)
-add_subdirectory(SceTeleportServer)
-add_subdirectory(SceTouch)
-add_subdirectory(SceUdcd)
-add_subdirectory(SceUlt)
-add_subdirectory(SceUsbPspcm)
-add_subdirectory(SceUsbSerial)
-add_subdirectory(SceUsbd)
-add_subdirectory(SceUsbstorVStorDriver)
-add_subdirectory(SceVideoExport)
-add_subdirectory(SceVideodec)
-add_subdirectory(SceVoice)
-add_subdirectory(SceVoiceQoS)
-add_subdirectory(SceVshBridge)
-
-add_library(modules INTERFACE)
-target_link_libraries(modules INTERFACE
-SceAVConfig
-SceAppMgr
-SceAppUtil
-SceAtrac
-SceAudio
-SceAudioIn
-SceAudiodec
-SceAudioenc
-SceAvPlayer
-SceAvcodec
-SceAvcodecUser
-SceBt
-SceCamera
-SceClipboard
-SceCodecEngine
-SceCodecEnginePerf
-SceCodecEngineWrapper
-SceCommonDialog
-SceCompat
-SceCoredump
-SceCtrl
-SceDTrace
-SceDbg
-SceDeci4p
-SceDeflt
-SceDisplay
-SceFace
-SceFiber
-SceFios2
-SceFpu
-SceGameUpdate
-SceGpuEs4
-SceGxm
-SceHandwriting
-SceHeap
-SceHid
-SceHmac
-SceHttp
-SceIme
-SceIofilemgr
-SceJpeg
-SceJpegEnc
-SceKernelDmacMgr
-SceKernelModulemgr
-SceKernelThreadMgr
-SceLibJson
-SceLibKernel
-SceLibMonoBridge
-SceLibMp4Recorder
-SceLibXml
-SceLibc
-SceLiveArea
-SceLocation
-SceLocationExtension
-SceLsdb
-SceMd5
-SceMotion
-SceMotionDev
-SceMt19937
-SceMtpIfDriver
-SceMusicExport
-SceNearDialogUtil
-SceNearUtil
-SceNet
-SceNetAdhocMatching
-SceNetCtl
-SceNgs
-SceNpActivity
-SceNpBasic
-SceNpCommerce2
-SceNpCommon
-SceNpDrm
-SceNpManager
-SceNpMatching2
-SceNpMessage
-SceNpParty
-SceNpScore
-SceNpSignaling
-SceNpSnsFacebook
-SceNpTrophy
-SceNpTus
-SceNpUtility
-SceNpWebApi
-ScePaf
-ScePerf
-ScePgf
-ScePhotoExport
-ScePower
-SceProcessmgr
-ScePromoterUtil
-ScePspnetAdhoc
-ScePvf
-SceRazorCapture
-SceRazorHud
-SceRegistryMgr
-SceRtc
-SceRudp
-SceSas
-SceSblUpdateMgr
-SceScreenShot
-SceSfmt11213
-SceSfmt1279
-SceSfmt132049
-SceSfmt19937
-SceSfmt216091
-SceSfmt2281
-SceSfmt4253
-SceSfmt44497
-SceSfmt607
-SceSfmt86243
-SceSha0
-SceSha1
-SceSha224
-SceSha256
-SceSha384
-SceSha512
-SceSha512t
-SceShellSvc
-SceShutterSound
-SceSmart
-SceSqlite
-SceSsl
-SceStdio
-SceSulpha
-SceSysmem
-SceSysmodule
-SceSystemGesture
-SceTeleportClient
-SceTeleportServer
-SceTouch
-SceUdcd
-SceUlt
-SceUsbPspcm
-SceUsbSerial
-SceUsbd
-SceUsbstorVStorDriver
-SceVideoExport
-SceVideodec
-SceVoice
-SceVoiceQoS
-SceVshBridge)
+add_library(modules STATIC
+	SceAVConfig/SceAVConfig.cpp SceAVConfig/SceAVConfig.h
+	SceAppMgr/SceAppMgr.cpp SceAppMgr/SceAppMgr.h
+	SceAppMgr/SceAppMgrUser.cpp SceAppMgr/SceAppMgrUser.h
+	SceAppMgr/SceSharedFb.cpp SceAppMgr/SceSharedFb.h
+	SceAppUtil/SceAppUtil.cpp SceAppUtil/SceAppUtil.h
+	SceAppUtil/SceAppUtilCache.cpp SceAppUtil/SceAppUtilCache.h
+	SceAppUtil/SceAppUtilExt.cpp SceAppUtil/SceAppUtilExt.h
+	SceAtrac/SceAtrac.cpp SceAtrac/SceAtrac.h
+	SceAudio/SceAudio.cpp SceAudio/SceAudio.h
+	SceAudioIn/SceAudioIn.cpp SceAudioIn/SceAudioIn.h
+	SceAudiodec/SceAudiodecUser.cpp SceAudiodec/SceAudiodecUser.h
+	SceAudioenc/SceAudioencUser.cpp SceAudioenc/SceAudioencUser.h
+	SceAvPlayer/SceAvPlayer.cpp SceAvPlayer/SceAvPlayer.h
+	SceAvcodec/SceAvcodec.cpp SceAvcodec/SceAvcodec.h
+	SceAvcodecUser/SceVideoencUser.cpp SceAvcodecUser/SceVideoencUser.h
+	SceBt/SceBt.cpp SceBt/SceBt.h
+	SceCamera/SceCamera.cpp SceCamera/SceCamera.h
+	SceClipboard/SceClipboard.cpp SceClipboard/SceClipboard.h
+	SceCodecEngine/SceCodecEngineUser.cpp SceCodecEngine/SceCodecEngineUser.h
+	SceCodecEnginePerf/SceCodecEnginePerf.cpp SceCodecEnginePerf/SceCodecEnginePerf.h
+	SceCodecEngineWrapper/SceCodecEngineWrapper.cpp SceCodecEngineWrapper/SceCodecEngineWrapper.h
+	SceCommonDialog/SceCommonDialog.cpp SceCommonDialog/SceCommonDialog.h
+	SceCommonDialog/SceNpWebApiCommonDialog.cpp SceCommonDialog/SceNpWebApiCommonDialog.h
+	SceCompat/SceCompat.cpp SceCompat/SceCompat.h
+	SceCoredump/SceCoredump.cpp SceCoredump/SceCoredump.h
+	SceCoredump/SceCoredumpNounlink.cpp SceCoredump/SceCoredumpNounlink.h
+	SceCtrl/SceCtrl.cpp SceCtrl/SceCtrl.h
+	SceDTrace/SceDTrace.cpp SceDTrace/SceDTrace.h
+	SceDbg/SceDbg.cpp SceDbg/SceDbg.h
+	SceDeci4p/SceDeci4pUserp.cpp SceDeci4p/SceDeci4pUserp.h
+	SceDeflt/SceDeflt.cpp SceDeflt/SceDeflt.h
+	SceDisplay/SceDisplay.cpp SceDisplay/SceDisplay.h
+	SceDisplay/SceDisplayUser.cpp SceDisplay/SceDisplayUser.h
+	SceFace/SceFace.cpp SceFace/SceFace.h
+	SceFiber/SceFiber.cpp SceFiber/SceFiber.h
+	SceFios2/SceFios2.cpp SceFios2/SceFios2.h
+	SceFpu/SceFpu.cpp SceFpu/SceFpu.h
+	SceGameUpdate/SceGameUpdate.cpp SceGameUpdate/SceGameUpdate.h
+	SceGpuEs4/SceGpuEs4ForUser.cpp SceGpuEs4/SceGpuEs4ForUser.h
+	SceGxm/SceGxm.cpp SceGxm/SceGxm.h
+	SceHandwriting/SceHandwriting.cpp SceHandwriting/SceHandwriting.h
+	SceHeap/SceHeap.cpp SceHeap/SceHeap.h
+	SceHid/SceHid.cpp SceHid/SceHid.h
+	SceHmac/SceHmac.cpp SceHmac/SceHmac.h
+	SceHttp/SceHttp.cpp SceHttp/SceHttp.h
+	SceIme/SceIme.cpp SceIme/SceIme.h
+	SceIofilemgr/SceIofilemgr.cpp SceIofilemgr/SceIofilemgr.h
+	SceJpeg/SceJpegUser.cpp SceJpeg/SceJpegUser.h
+	SceJpegEnc/SceJpegEncUser.cpp SceJpegEnc/SceJpegEncUser.h
+	SceKernelDmacMgr/SceDmacmgr.cpp SceKernelDmacMgr/SceDmacmgr.h
+	SceKernelModulemgr/SceModulemgr.cpp SceKernelModulemgr/SceModulemgr.h
+	SceKernelThreadMgr/SceDebugLed.cpp SceKernelThreadMgr/SceDebugLed.h
+	SceKernelThreadMgr/SceDipsw.cpp SceKernelThreadMgr/SceDipsw.h
+	SceKernelThreadMgr/SceThreadmgr.cpp SceKernelThreadMgr/SceThreadmgr.h
+	SceKernelThreadMgr/SceThreadmgrCoredumpTime.cpp SceKernelThreadMgr/SceThreadmgrCoredumpTime.h
+	SceLibJson/SceLibJson.cpp SceLibJson/SceLibJson.h
+	SceLibKernel/SceLibKernel.cpp SceLibKernel/SceLibKernel.h
+	SceLibKernel/SceLibRng.cpp SceLibKernel/SceLibRng.h
+	SceLibMonoBridge/SceLibMonoBridge.cpp SceLibMonoBridge/SceLibMonoBridge.h
+	SceLibMp4Recorder/SceLibMp4Recorder.cpp SceLibMp4Recorder/SceLibMp4Recorder.h
+	SceLibXml/SceLibXml.cpp SceLibXml/SceLibXml.h
+	SceLibc/SceLibc.cpp SceLibc/SceLibc.h
+	SceLibc/SceLibm.cpp SceLibc/SceLibm.h
+	SceLibc/SceLibstdcxx.cpp SceLibc/SceLibstdcxx.h
+	SceLiveArea/SceLiveAreaUtil.cpp SceLiveArea/SceLiveAreaUtil.h
+	SceLocation/SceLibLocation.cpp SceLocation/SceLibLocation.h
+	SceLocationExtension/SceLibLocationExtension.cpp SceLocationExtension/SceLibLocationExtension.h
+	SceLsdb/SceLsdb.cpp SceLsdb/SceLsdb.h
+	SceMd5/SceMd5.cpp SceMd5/SceMd5.h
+	SceMotion/SceMotion.cpp SceMotion/SceMotion.h
+	SceMotionDev/SceMotionDev.cpp SceMotionDev/SceMotionDev.h
+	SceMt19937/SceMt19937.cpp SceMt19937/SceMt19937.h
+	SceMtpIfDriver/SceMtpIf.cpp SceMtpIfDriver/SceMtpIf.h
+	SceMusicExport/SceMusicExport.cpp SceMusicExport/SceMusicExport.h
+	SceNearDialogUtil/SceNearDialogUtil.cpp SceNearDialogUtil/SceNearDialogUtil.h
+	SceNearUtil/SceNearUtil.cpp SceNearUtil/SceNearUtil.h
+	SceNet/SceNet.cpp SceNet/SceNet.h
+	SceNetAdhocMatching/SceNetAdhocMatching.cpp SceNetAdhocMatching/SceNetAdhocMatching.h
+	SceNetCtl/SceNetCtl.cpp SceNetCtl/SceNetCtl.h
+	SceNgs/SceNgs.cpp SceNgs/SceNgs.h
+	SceNpActivity/SceNpActivity.cpp SceNpActivity/SceNpActivity.h
+	SceNpBasic/SceNpBasic.cpp SceNpBasic/SceNpBasic.h
+	SceNpCommerce2/SceNpCommerce2.cpp SceNpCommerce2/SceNpCommerce2.h
+	SceNpCommon/SceNpCommon.cpp SceNpCommon/SceNpCommon.h
+	SceNpDrm/SceNpDrm.cpp SceNpDrm/SceNpDrm.h
+	SceNpDrm/SceNpDrmPackage.cpp SceNpDrm/SceNpDrmPackage.h
+	SceNpManager/SceNpManager.cpp SceNpManager/SceNpManager.h
+	SceNpMatching2/SceNpMatching2.cpp SceNpMatching2/SceNpMatching2.h
+	SceNpMessage/SceNpMessage.cpp SceNpMessage/SceNpMessage.h
+	SceNpParty/SceNpPartyGameUtil.cpp SceNpParty/SceNpPartyGameUtil.h
+	SceNpScore/SceNpScore.cpp SceNpScore/SceNpScore.h
+	SceNpSignaling/SceNpSignaling.cpp SceNpSignaling/SceNpSignaling.h
+	SceNpSnsFacebook/SceNpSnsFacebook.cpp SceNpSnsFacebook/SceNpSnsFacebook.h
+	SceNpTrophy/SceNpTrophy.cpp SceNpTrophy/SceNpTrophy.h
+	SceNpTus/SceNpTus.cpp SceNpTus/SceNpTus.h
+	SceNpUtility/SceNpUtility.cpp SceNpUtility/SceNpUtility.h
+	SceNpWebApi/SceNpWebApi.cpp SceNpWebApi/SceNpWebApi.h
+	ScePaf/ScePafStdc.cpp ScePaf/ScePafStdc.h
+	ScePerf/ScePerf.cpp ScePerf/ScePerf.h
+	ScePgf/ScePgf.cpp ScePgf/ScePgf.h
+	ScePhotoExport/ScePhotoExport.cpp ScePhotoExport/ScePhotoExport.h
+	ScePower/ScePower.cpp ScePower/ScePower.h
+	SceProcessmgr/SceProcessmgr.cpp SceProcessmgr/SceProcessmgr.h
+	ScePromoterUtil/ScePromoterUtil.cpp ScePromoterUtil/ScePromoterUtil.h
+	ScePspnetAdhoc/ScePspnetAdhoc.cpp ScePspnetAdhoc/ScePspnetAdhoc.h
+	ScePvf/ScePvf.cpp ScePvf/ScePvf.h
+	SceRazorCapture/SceRazorCapture.cpp SceRazorCapture/SceRazorCapture.h
+	SceRazorHud/SceRazorHud.cpp SceRazorHud/SceRazorHud.h
+	SceRegistryMgr/SceRegMgr.cpp SceRegistryMgr/SceRegMgr.h
+	SceRegistryMgr/SceRegMgrForGame.cpp SceRegistryMgr/SceRegMgrForGame.h
+	SceRegistryMgr/SceRegMgrForSDK.cpp SceRegistryMgr/SceRegMgrForSDK.h
+	SceRegistryMgr/SceRegMgrService.cpp SceRegistryMgr/SceRegMgrService.h
+	SceRtc/SceRtc.cpp SceRtc/SceRtc.h
+	SceRtc/SceRtcUser.cpp SceRtc/SceRtcUser.h
+	SceRudp/SceLibRudp.cpp SceRudp/SceLibRudp.h
+	SceSas/SceSas.cpp SceSas/SceSas.h
+	SceSblUpdateMgr/SceSblSsUpdateMgr.cpp SceSblUpdateMgr/SceSblSsUpdateMgr.h
+	SceScreenShot/SceScreenShot.cpp SceScreenShot/SceScreenShot.h
+	SceSfmt11213/SceSfmt11213.cpp SceSfmt11213/SceSfmt11213.h
+	SceSfmt1279/SceSfmt1279.cpp SceSfmt1279/SceSfmt1279.h
+	SceSfmt132049/SceSfmt132049.cpp SceSfmt132049/SceSfmt132049.h
+	SceSfmt19937/SceSfmt19937.cpp SceSfmt19937/SceSfmt19937.h
+	SceSfmt216091/SceSfmt216091.cpp SceSfmt216091/SceSfmt216091.h
+	SceSfmt2281/SceSfmt2281.cpp SceSfmt2281/SceSfmt2281.h
+	SceSfmt4253/SceSfmt4253.cpp SceSfmt4253/SceSfmt4253.h
+	SceSfmt44497/SceSfmt44497.cpp SceSfmt44497/SceSfmt44497.h
+	SceSfmt607/SceSfmt607.cpp SceSfmt607/SceSfmt607.h
+	SceSfmt86243/SceSfmt86243.cpp SceSfmt86243/SceSfmt86243.h
+	SceSha0/SceSha0.cpp SceSha0/SceSha0.h
+	SceSha1/SceSha1.cpp SceSha1/SceSha1.h
+	SceSha224/SceSha224.cpp SceSha224/SceSha224.h
+	SceSha256/SceSha256.cpp SceSha256/SceSha256.h
+	SceSha384/SceSha384.cpp SceSha384/SceSha384.h
+	SceSha512/SceSha512.cpp SceSha512/SceSha512.h
+	SceSha512t/SceSha512t.cpp SceSha512t/SceSha512t.h
+	SceShellSvc/SceShellUtil.cpp SceShellSvc/SceShellUtil.h
+	SceShutterSound/SceShutterSound.cpp SceShutterSound/SceShutterSound.h
+	SceSmart/SceSmart.cpp SceSmart/SceSmart.h
+	SceSqlite/SceSqlite.cpp SceSqlite/SceSqlite.h
+	SceSsl/SceSsl.cpp SceSsl/SceSsl.h
+	SceStdio/SceStdio.cpp SceStdio/SceStdio.h
+	SceSulpha/SceSulpha.cpp SceSulpha/SceSulpha.h
+	SceSysmem/SceSysmem.cpp SceSysmem/SceSysmem.h
+	SceSysmodule/SceSysmodule.cpp SceSysmodule/SceSysmodule.h
+	SceSystemGesture/SceSystemGesture.cpp SceSystemGesture/SceSystemGesture.h
+	SceTeleportClient/SceTeleportClient.cpp SceTeleportClient/SceTeleportClient.h
+	SceTeleportServer/SceTeleportServer.cpp SceTeleportServer/SceTeleportServer.h
+	SceTouch/SceTouch.cpp SceTouch/SceTouch.h
+	SceUdcd/SceUdcd.cpp SceUdcd/SceUdcd.h
+	SceUlt/SceUlt.cpp SceUlt/SceUlt.h
+	SceUsbPspcm/SceUsbPspcm.cpp SceUsbPspcm/SceUsbPspcm.h
+	SceUsbSerial/SceUsbSerial.cpp SceUsbSerial/SceUsbSerial.h
+	SceUsbd/SceUsbdForUser.cpp SceUsbd/SceUsbdForUser.h
+	SceUsbstorVStorDriver/SceUsbstorVStor.cpp SceUsbstorVStorDriver/SceUsbstorVStor.h
+	SceVideoExport/SceVideoExport.cpp SceVideoExport/SceVideoExport.h
+	SceVideodec/SceVideodecUser.cpp SceVideodec/SceVideodecUser.h
+	SceVoice/SceVoice.cpp SceVoice/SceVoice.h
+	SceVoiceQoS/SceVoiceQoS.cpp SceVoiceQoS/SceVoiceQoS.h
+	SceVshBridge/SceVshBridge.cpp SceVshBridge/SceVshBridge.h)
+target_link_libraries(modules PRIVATE module)

@@ -1,3 +1,0 @@
-add_library(SceLibMonoBridge STATIC include/SceLibMonoBridge/exports.h src/SceLibMonoBridge.cpp)
-target_include_directories(SceLibMonoBridge PUBLIC include)
-target_link_libraries(SceLibMonoBridge PRIVATE module)
