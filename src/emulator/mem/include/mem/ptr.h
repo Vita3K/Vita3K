@@ -79,12 +79,6 @@ bool operator<(const Ptr<T> &a, const Ptr<U> &b) {
 
 template <class T>
 Ptr<T> construct(MemState &mem, const Address address) {
-    Ptr<T> ptr(address);
-    
-    if (!ptr) {
-        return;
-    }
-    
     const Ptr<T> ptr(address);
     if (!ptr) {
         return ptr;
