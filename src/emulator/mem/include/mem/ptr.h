@@ -78,7 +78,8 @@ bool operator<(const Ptr<T> &a, const Ptr<U> &b) {
 }
 
 template <class T>
-Ptr<T> construct(MemState &mem, const Address address) {
+Ptr<T> alloc(MemState &mem, const char *name) {
+    const Address address = alloc(mem, sizeof(T), name);
     const Ptr<T> ptr(address);
     if (!ptr) {
         return ptr;
@@ -91,18 +92,7 @@ Ptr<T> construct(MemState &mem, const Address address) {
 }
 
 template <class T>
-void destruct(MemState &mem, const Ptr<T> &ptr) {
-    ptr.get(mem)->~T();
-}
-
-template <class T>
-Ptr<T> alloc(MemState &mem, const char *name) {
-    const Address address = alloc(mem, sizeof(T), name);
-    return construct(mem, address)
-}
-
-template <class T>
 void free(MemState &mem, const Ptr<T> &ptr) {
-    destruct(mem, ptr);
+    ptr.get(mem)->~T();
     free(mem, ptr.address());
 }

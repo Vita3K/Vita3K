@@ -17,15 +17,31 @@
 
 #pragma once
 
-#include <stddef.h>
+#include <cstdint>
 
-class MersenneTwister {  
-    int arr[];
+class MersenneTwister {
+    enum {
+    	MT_SIZE = 624,
+	MT_M = 397,
+	MT_A = 0x9908B0DF,
+	MT_B = 0x9D2C5680,
+	MT_C = 0xEFC60000,
+	MT_F = 1812433253,
+	MT_R = 31,
+	MT_U = 11,
+	MT_S = 7,
+	MT_T = 15,
+	MT_L = 18,
+	MT_MASK_LOWER = (1u << 31) - 1,
+	MT_MASK_UPPER = 1u << 31
+    };
+  
+    int mt[MT_SIZE];
     int index;
-    
+
     void twist();
 public:
-    MersenneTwister(const int seed);
+    MersenneTwister(const uint32_t seed);
     
     uint32_t gen32();
-}
+};

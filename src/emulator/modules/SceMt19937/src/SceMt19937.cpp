@@ -16,13 +16,26 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <SceMt19937/exports.h>
+#include <rand/prng.h>
 
-EXPORT(int, sceMt19937Init) {
-    return unimplemented("sceMt19937Init");
+EXPORT(int, sceMt19937Init, Ptr<MersenneTwister> mt, unsigned int seed) {
+    if (!mt) {
+	return -1;    
+    }
+
+    MersenneTwister *const mtc =  mt.get(host.mem);
+
+    new (mtc) MersenneTwister(seed);
+    return 0;
 }
 
-EXPORT(int, sceMt19937UInt) {
-    return unimplemented("sceMt19937UInt");
+EXPORT(unsigned int, sceMt19937UInt, Ptr<MersenneTwister> mt) {
+    if (!mt) {
+    	return -1;
+    }
+
+    MersenneTwister *const mtc = mt.get(host.mem);
+    return mtc->gen32();
 }
 
 BRIDGE_IMPL(sceMt19937Init)
