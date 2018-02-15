@@ -17,6 +17,10 @@
 
 #include "SceDisplay.h"
 
+#include <host/functions.h>
+
+#include <psp2/display.h>
+
 EXPORT(int, _sceDisplayGetFrameBuf) {
     return unimplemented("_sceDisplayGetFrameBuf");
 }
@@ -86,7 +90,9 @@ EXPORT(int, sceDisplayWaitSetFrameBufMultiCB) {
 }
 
 EXPORT(int, sceDisplayWaitVblankStart) {
-    return unimplemented("sceDisplayWaitVblankStart");
+    handle_events(host);
+
+    return SCE_DISPLAY_ERROR_OK;
 }
 
 EXPORT(int, sceDisplayWaitVblankStartCB) {

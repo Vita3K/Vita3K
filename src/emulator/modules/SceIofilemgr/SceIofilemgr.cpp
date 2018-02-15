@@ -17,12 +17,15 @@
 
 #include "SceIofilemgr.h"
 
+#include <io/functions.h>
+
 EXPORT(int, sceIoCancel) {
     return unimplemented("sceIoCancel");
 }
 
-EXPORT(int, sceIoClose) {
-    return unimplemented("sceIoClose");
+EXPORT(int, sceIoClose, SceUID fd) {
+    close_file(host.io, fd);
+    return 0;
 }
 
 EXPORT(int, sceIoCloseAsync) {
@@ -53,12 +56,12 @@ EXPORT(int, sceIoGetThreadDefaultPriority) {
     return unimplemented("sceIoGetThreadDefaultPriority");
 }
 
-EXPORT(int, sceIoLseek32) {
-    return unimplemented("sceIoLseek32");
+EXPORT(int, sceIoLseek32, SceUID fd, int offset, int whence) {
+    return seek_file(fd, offset, whence, host.io);
 }
 
-EXPORT(int, sceIoRead) {
-    return unimplemented("sceIoRead");
+EXPORT(int, sceIoRead, SceUID fd, void *data, SceSize size) {
+    return read_file(data, host.io, fd, size);
 }
 
 EXPORT(int, sceIoReadAsync) {
@@ -93,8 +96,8 @@ EXPORT(int, sceIoSyncByFdAsync) {
     return unimplemented("sceIoSyncByFdAsync");
 }
 
-EXPORT(int, sceIoWrite) {
-    return unimplemented("sceIoWrite");
+EXPORT(int, sceIoWrite, SceUID fd, const void *data, SceSize size) {
+    return write_file(fd, data, size, host.io);
 }
 
 EXPORT(int, sceIoWriteAsync) {

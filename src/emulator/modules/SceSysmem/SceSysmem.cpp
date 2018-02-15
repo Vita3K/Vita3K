@@ -17,8 +17,32 @@
 
 #include "SceSysmem.h"
 
-EXPORT(int, sceKernelAllocMemBlock) {
-    return unimplemented("sceKernelAllocMemBlock");
+#include <psp2/kernel/error.h>
+#include <psp2/kernel/sysmem.h>
+
+namespace emu {
+    struct SceKernelAllocMemBlockOpt;
+}
+
+using namespace emu;
+
+EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, int size, emu::SceKernelAllocMemBlockOpt *optp) {
+    MemState &mem = host.mem;
+    assert(name != nullptr);
+    assert(type != 0);
+    assert(size != 0);
+    assert(optp == nullptr);
+
+    const Ptr<void> address(alloc(mem, size, name));
+    if (!address) {
+        return SCE_KERNEL_ERROR_NO_MEMORY;
+    }
+
+    KernelState *const state = &host.kernel;
+    const SceUID uid = state->next_uid++;
+    state->blocks.insert(Blocks::value_type(uid, address));
+
+    return uid;
 }
 
 EXPORT(int, sceKernelAllocMemBlockForVM) {
@@ -45,8 +69,17 @@ EXPORT(int, sceKernelFindMemBlockByAddr) {
     return unimplemented("sceKernelFindMemBlockByAddr");
 }
 
-EXPORT(int, sceKernelFreeMemBlock) {
-    return unimplemented("sceKernelFreeMemBlock");
+EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
+    assert(uid >= 0);
+
+    KernelState *const state = &host.kernel;
+    const Blocks::const_iterator block = state->blocks.find(uid);
+    assert(block != state->blocks.end());
+
+    free(host.mem, block->second.address());
+    state->blocks.erase(block);
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelFreeMemBlockForVM) {
@@ -57,8 +90,20 @@ EXPORT(int, sceKernelGetFreeMemorySize) {
     return unimplemented("sceKernelGetFreeMemorySize");
 }
 
-EXPORT(int, sceKernelGetMemBlockBase) {
-    return unimplemented("sceKernelGetMemBlockBase");
+EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
+    assert(uid >= 0);
+    assert(basep != nullptr);
+
+    const KernelState *const state = &host.kernel;
+    const Blocks::const_iterator block = state->blocks.find(uid);
+    if (block == state->blocks.end()) {
+        // TODO Write address?
+        return SCE_KERNEL_ERROR_INVALID_UID;
+    }
+
+    *basep = block->second;
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelGetMemBlockInfoByAddr) {

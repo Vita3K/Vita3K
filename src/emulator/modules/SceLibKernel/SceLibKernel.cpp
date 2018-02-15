@@ -17,6 +17,44 @@
 
 #include "SceLibKernel.h"
 
+#include <host/functions.h>
+#include <io/functions.h>
+#include <kernel/functions.h>
+#include <kernel/thread_functions.h>
+
+#include <SDL_thread.h>
+#include <psp2/kernel/error.h>
+#include <psp2/kernel/threadmgr.h>
+
+struct Semaphore {
+};
+
+struct ThreadParams {
+    HostState *host = nullptr;
+    SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    SceSize arglen = 0;
+    Ptr<void> argp;
+    std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
+};
+
+static int SDLCALL thread_function(void *data) {
+    assert(data != nullptr);
+
+    const ThreadParams params = *static_cast<const ThreadParams *>(data);
+    SDL_SemPost(params.host_may_destroy_params.get());
+
+    const ThreadStatePtr thread = lock_and_find(params.thid, params.host->kernel.threads, params.host->kernel.mutex);
+    write_reg(*thread->cpu, 0, params.arglen);
+    write_reg(*thread->cpu, 0, params.argp.address());
+
+    const bool succeeded = run_thread(*thread);
+    assert(succeeded);
+
+    const uint32_t r0 = read_reg(*thread->cpu, 0);
+
+    return r0;
+}
+
 EXPORT(int, SceKernelStackChkGuard) {
     return unimplemented("SceKernelStackChkGuard");
 }
@@ -285,44 +323,55 @@ EXPORT(int, sceIoIoctlAsync) {
     return unimplemented("sceIoIoctlAsync");
 }
 
-EXPORT(int, sceIoLseek) {
-    return unimplemented("sceIoLseek");
+EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
+    return seek_file(fd, offset, whence, host.io);
+}
+
+EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
+    return create_dir(dir, mode, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoLseekAsync) {
     return unimplemented("sceIoLseekAsync");
 }
 
-EXPORT(int, sceIoMkdir) {
-    return unimplemented("sceIoMkdir");
-}
-
-EXPORT(int, sceIoOpen) {
-    return unimplemented("sceIoOpen");
+EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
+    if (file == nullptr){
+        return error("sceIoOpen", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+    }
+    return open_file(host.io, file, flags, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoOpenAsync) {
     return unimplemented("sceIoOpenAsync");
 }
 
-EXPORT(int, sceIoPread) {
-    return unimplemented("sceIoPread");
+EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
+    seek_file(fd, offset, SEEK_SET, host.io);
+    return read_file(data, host.io, fd, size);
 }
 
-EXPORT(int, sceIoPwrite) {
-    return unimplemented("sceIoPwrite");
+EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
+    seek_file(fd, offset, SEEK_SET, host.io);
+    return write_file(fd, data, size, host.io);
 }
 
-EXPORT(int, sceIoRemove) {
-    return unimplemented("sceIoRemove");
+EXPORT(int, sceIoRemove, const char *path) {
+    if (path == nullptr){
+        return error("sceIoRemove", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+    }
+    return remove_file(path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoRename) {
     return unimplemented("sceIoRename");
 }
 
-EXPORT(int, sceIoRmdir) {
-    return unimplemented("sceIoRmdir");
+EXPORT(int, sceIoRmdir, const char *path) {
+    if (path == nullptr){
+        return error("sceIoRmdir", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+    }
+    return remove_dir(path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoSync) {
@@ -689,7 +738,14 @@ EXPORT(int, sceKernelCreateLwCond) {
     return unimplemented("sceKernelCreateLwCond");
 }
 
-EXPORT(int, sceKernelCreateLwMutex) {
+EXPORT(int, sceKernelCreateLwMutex, SceKernelLwMutexWork *pWork, const char *pName, unsigned int attr, int initCount, const SceKernelLwMutexOptParam *pOptParam) {
+    assert(pWork != nullptr);
+    assert(pName != nullptr);
+    assert((attr == 0) || (attr == 2));
+    assert(initCount >= 0);
+    assert(initCount <= 1);
+    assert(pOptParam == nullptr);
+
     return unimplemented("sceKernelCreateLwMutex");
 }
 
@@ -705,16 +761,47 @@ EXPORT(int, sceKernelCreateRWLock) {
     return unimplemented("sceKernelCreateRWLock");
 }
 
-EXPORT(int, sceKernelCreateSema) {
-    return unimplemented("sceKernelCreateSema");
+EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, SceKernelSemaOptParam *option) {
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)){
+        return error("sceKernelCreateSema", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+    
+    const SemaphorePtr semaphore = std::make_shared<Semaphore>();
+    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    const SceUID uid = host.kernel.next_uid++;
+    host.kernel.semaphores.emplace(uid, semaphore);
+
+    return uid;
 }
 
 EXPORT(int, sceKernelCreateSimpleEvent) {
     return unimplemented("sceKernelCreateSimpleEvent");
 }
 
-EXPORT(int, sceKernelCreateThread) {
-    return unimplemented("sceKernelCreateThread");
+EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, int cpuAffinityMask, const SceKernelThreadOptParam *option) {
+    if (cpuAffinityMask > 0x70000){
+        return error("sceKernelCreateThread", SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
+    }
+    
+    WaitingThreadState waiting;
+    waiting.name = name;
+
+    const SceUID thid = host.kernel.next_uid++;
+    const CallImport call_import = [&host, thid](uint32_t nid) {
+        ::call_import(host, nid, thid);
+    };
+
+    const bool log_code = false;
+    const ThreadStatePtr thread = init_thread(entry.cast<const void>(), stackSize, log_code, host.mem, call_import);
+    if (!thread) {
+        return error("sceKernelCreateThread", SCE_KERNEL_ERROR_ERROR);
+    }
+
+    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    host.kernel.threads.emplace(thid, thread);
+    host.kernel.waiting_threads.emplace(thid, waiting);
+
+    return thid;
 }
 
 EXPORT(int, sceKernelCreateTimer) {
@@ -729,8 +816,11 @@ EXPORT(int, sceKernelDeleteLwMutex) {
     return unimplemented("sceKernelDeleteLwMutex");
 }
 
-EXPORT(int, sceKernelExitProcess) {
-    return unimplemented("sceKernelExitProcess");
+EXPORT(int, sceKernelExitProcess, int res) {
+    // TODO Handle exit code?
+    stop_all_threads(host.kernel);
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelGetCallbackInfo) {
@@ -797,12 +887,21 @@ EXPORT(int, sceKernelGetProcessTime) {
     return unimplemented("sceKernelGetProcessTime");
 }
 
-EXPORT(int, sceKernelGetProcessTimeLow) {
-    return unimplemented("sceKernelGetProcessTimeLow");
+static SceUInt64 _sceKernelGetProcessTimeWide(){
+    constexpr SceUInt64 scale = 1000000 / CLOCKS_PER_SEC;
+    static_assert((CLOCKS_PER_SEC * scale) == 1000000, "CLOCKS_PER_SEC doesn't scale easily to Vita's.");
+
+    const clock_t clocks = clock();
+
+    return clocks * scale;
 }
 
-EXPORT(int, sceKernelGetProcessTimeWide) {
-    return unimplemented("sceKernelGetProcessTimeWide");
+EXPORT(SceUInt32, sceKernelGetProcessTimeLow) {
+    return (SceUInt32)(_sceKernelGetProcessTimeWide());
+}
+
+EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
+    return _sceKernelGetProcessTimeWide();
 }
 
 EXPORT(int, sceKernelGetRWLockInfo) {
@@ -817,8 +916,8 @@ EXPORT(int, sceKernelGetSystemInfo) {
     return unimplemented("sceKernelGetSystemInfo");
 }
 
-EXPORT(int, sceKernelGetTLSAddr) {
-    return unimplemented("sceKernelGetTLSAddr");
+EXPORT(Ptr<Ptr<void>>, sceKernelGetTLSAddr, int key) {
+    return get_thread_tls_addr(host.kernel, host.mem, thread_id, key);
 }
 
 EXPORT(int, sceKernelGetThreadCpuAffinityMask) {
@@ -834,7 +933,7 @@ EXPORT(int, sceKernelGetThreadExitStatus) {
 }
 
 EXPORT(int, sceKernelGetThreadId) {
-    return unimplemented("sceKernelGetThreadId");
+    return thread_id;
 }
 
 EXPORT(int, sceKernelGetThreadInfo) {
@@ -869,7 +968,11 @@ EXPORT(int, sceKernelLoadStartModule) {
     return unimplemented("sceKernelLoadStartModule");
 }
 
-EXPORT(int, sceKernelLockLwMutex) {
+EXPORT(int, sceKernelLockLwMutex, SceKernelLwMutexWork *pWork, int lockCount, unsigned int *pTimeout) {
+    assert(pWork != nullptr);
+    assert(lockCount == 1);
+    assert(pTimeout == nullptr);
+
     return unimplemented("sceKernelLockLwMutex");
 }
 
@@ -989,8 +1092,43 @@ EXPORT(int, sceKernelStartModule) {
     return unimplemented("sceKernelStartModule");
 }
 
-EXPORT(int, sceKernelStartThread) {
-    return unimplemented("sceKernelStartThread");
+EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
+    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+
+    const WaitingThreadStates::const_iterator waiting = host.kernel.waiting_threads.find(thid);
+    if (waiting == host.kernel.waiting_threads.end()) {
+        return error("sceKernelStartThread", SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    }
+
+    const ThreadStatePtr thread = find(thid, host.kernel.threads);
+    assert(thread);
+
+    ThreadParams params;
+    params.host = &host;
+    params.thid = thid;
+    params.arglen = arglen;
+    params.argp = argp;
+
+    const std::function<void(SDL_Thread *)> delete_thread = [thread](SDL_Thread *running_thread) {
+        {
+            const std::unique_lock<std::mutex> lock(thread->mutex);
+            thread->to_do = ThreadToDo::exit;
+        }
+        thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+        SDL_WaitThread(running_thread, nullptr);
+    };
+
+    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, waiting->second.name.c_str(), &params), delete_thread);
+    if (!running_thread) {
+        return error("sceKernelStartThread", SCE_KERNEL_ERROR_THREAD_ERROR);
+    }
+
+    host.kernel.waiting_threads.erase(waiting);
+    host.kernel.running_threads.emplace(thid, running_thread);
+
+    SDL_SemWait(params.host_may_destroy_params.get());
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelStopModule) {
@@ -1025,7 +1163,10 @@ EXPORT(int, sceKernelUnloadModule) {
     return unimplemented("sceKernelUnloadModule");
 }
 
-EXPORT(int, sceKernelUnlockLwMutex) {
+EXPORT(int, sceKernelUnlockLwMutex, SceKernelLwMutexWork *pWork, int unlockCount) {
+    assert(pWork != nullptr);
+    assert(unlockCount == 1);
+
     return unimplemented("sceKernelUnlockLwMutex");
 }
 
@@ -1069,8 +1210,27 @@ EXPORT(int, sceKernelWaitMultipleEventsCB) {
     return unimplemented("sceKernelWaitMultipleEventsCB");
 }
 
-EXPORT(int, sceKernelWaitSema) {
-    return unimplemented("sceKernelWaitSema");
+EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
+    assert(semaid >= 0);
+    assert(signal == 1);
+    assert(timeout == nullptr);
+
+    // TODO Don't lock twice.
+    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
+    if (!semaphore) {
+        return error("sceKernelWaitSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    }
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    {
+        const std::unique_lock<std::mutex> lock(thread->mutex);
+        assert(thread->to_do == ThreadToDo::run);
+        thread->to_do = ThreadToDo::wait;
+    }
+    stop(*thread->cpu);
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelWaitSemaCB) {
