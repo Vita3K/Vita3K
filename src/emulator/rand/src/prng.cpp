@@ -18,21 +18,21 @@
 #include <rand/prng.h>
 
 void MersenneTwister::twist() {
-	for (uint32_t i=0; i<MT_SIZE-MT_M-1; i++) {
+	for (uint32_t i=0; i<MT_SIZE-MT_M; i++) {
 		mt[i]=mt[i+MT_M] ^ (((mt[i] & MT_MASK_UPPER) |
-		     (mt[i+1] & MT_MASK_LOWER)) << 1) ^
-		     (-(mt[i+1] & 1) & MT_A);
+		     (mt[i+1] & MT_MASK_LOWER)) >> 1) ^
+		     ((-(mt[i+1] & 1)) & MT_A);
 	};
 
 	for (uint32_t i=MT_SIZE-MT_M; i<MT_SIZE-1; i++) {
 		mt[i]=mt[i+(MT_M-MT_SIZE)] ^ (((mt[i] & MT_MASK_UPPER) |
-		     (mt[i+1] & MT_MASK_LOWER)) << 1) ^
-		     (-(mt[i+1] & 1) & MT_A);	
+		     (mt[i+1] & MT_MASK_LOWER)) >> 1) ^
+		     ((-(mt[i+1] & 1)) & MT_A);	
 	}; 
 
-	mt[MT_SIZE-1]=mt[MT_M-1] ^ (((mt[MT_SIZE-2] & MT_MASK_UPPER) |
-		     (mt[MT_SIZE-1] & MT_MASK_LOWER)) << 1) ^
-		     (-(mt[MT_SIZE-1] & 1) & MT_A);
+	mt[MT_SIZE-1]=mt[MT_M-1] ^ (((mt[MT_SIZE-1] & MT_MASK_UPPER) |
+		     (mt[0] & MT_MASK_LOWER)) >> 1) ^
+		     ((-(mt[0] & 1)) & MT_A);
 
 	index=0;
 }
@@ -40,8 +40,9 @@ void MersenneTwister::twist() {
 MersenneTwister::MersenneTwister(const uint32_t seed) {
 	mt[0] = seed;
 	for (uint32_t i = 1; i < MT_SIZE; i++) {
-		mt[i] = MT_F*(mt[i-1] ^ (mt[i-1] << 30)) + i; 	
+		mt[i] = MT_F*(mt[i-1] ^ (mt[i-1] >> 30)) + i; 	
 	}
+
 	index = MT_SIZE;
 }
 
@@ -56,12 +57,10 @@ uint32_t MersenneTwister::gen32() {
 	uint32_t res {0};
 
 	res = mt[i]; index = i+1;
-	res = res ^ (res >> MT_U);
+	res = res ^ (mt[i] >> MT_U);
 	res = res ^ ((res << MT_S) & MT_B);
 	res = res ^ ((res << MT_T) & MT_C);  
 	res = res ^ (res >> MT_L);
 
 	return res;
 }
-
-

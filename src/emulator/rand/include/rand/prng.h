@@ -36,8 +36,8 @@ class MersenneTwister {
 	MT_MASK_UPPER = 1u << 31
     };
   
-    int mt[MT_SIZE];
-    int index;
+    uint32_t mt[MT_SIZE];
+    uint32_t index;
 
     void twist();
 public:
