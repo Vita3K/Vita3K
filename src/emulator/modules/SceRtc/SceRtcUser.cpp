@@ -17,9 +17,9 @@
 
 #include "SceRtcUser.h"
 
-#include <psp2/rtc.h>
+#include <host/rtc.h>
 
-#include <ctime>
+#include <chrono>
 
 EXPORT(int, sceRtcCheckValid) {
     return unimplemented("sceRtcCheckValid");
@@ -65,11 +65,12 @@ EXPORT(int, sceRtcGetCurrentNetworkTick) {
     return unimplemented("sceRtcGetCurrentNetworkTick");
 }
 
-EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
-    assert(tick != nullptr);
 
-    // TODO Assumes game handles varying CLOCKS_PER_SEC.
-    tick->tick = clock();
+EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
+    if (tick == nullptr)
+        error("sceRtcGetCurrentTick", SCE_RTC_ERROR_INVALID_POINTER);
+
+    tick->tick = rtc_get_ticks(host);
 
     return 0;
 }
@@ -103,8 +104,7 @@ EXPORT(int, sceRtcGetTick) {
 }
 
 EXPORT(unsigned int, sceRtcGetTickResolution) {
-    // TODO Check the Vita's value.
-    return CLOCKS_PER_SEC;
+    return VITA_CLOCKS_PER_SEC;
 }
 
 EXPORT(int, sceRtcGetTime64_t) {
