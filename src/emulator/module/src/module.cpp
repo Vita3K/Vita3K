@@ -35,7 +35,9 @@ int unimplemented(const char *name) {
         inserted = logged.insert(name).second;
     }
 
-    if (inserted) {
+    if (inserted)
+#endif    
+    {
         LOG_WARN(">>> {} <<< Unimplemented import called.", name);
     }
 
