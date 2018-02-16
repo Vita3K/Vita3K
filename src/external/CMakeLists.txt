@@ -56,6 +56,13 @@ add_library(sdl2 INTERFACE)
 target_include_directories(sdl2 INTERFACE "${SDL2_INCLUDE_DIR}")
 target_link_libraries(sdl2 INTERFACE "${SDL2_LIBRARY}")
 
+if(WIN32)
+	add_library(winsock INTERFACE)
+	find_library(WSOCK32 wsock32)
+	find_library(WS2_32 ws2_32)
+	target_link_libraries(winsock INTERFACE WSOCK32 WS2_32)
+endif()
+
 add_library(unicorn INTERFACE)
 if(APPLE)
 	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/macos/include")

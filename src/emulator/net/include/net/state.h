@@ -15,43 +15,32 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/module.h>
-#include <util/log.h>
+#pragma once
 
-#include <iostream>
-#include <mutex>
-#include <set>
+#include <map>
 
-typedef std::set<std::string> NameSet;
+#ifdef WIN32
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+# include <winsock2.h>
+# include <Ws2tcpip.h>
+typedef SOCKET abs_socket;
+typedef int socklen_t;
+#else
+# include <unistd.h>
+# include <sys/socket.h>
+# include <sys/ioctl.h>
+# include <netinet/in.h>
+# include <netdb.h>
+# include <arpa/inet.h>
+typedef int abs_socket;
+#endif
 
-static std::mutex mutex;
-static NameSet logged;
+typedef std::map<int, abs_socket> sockets;
 
-int unimplemented(const char *name) {
-    bool inserted = false;
-    {
-        const std::lock_guard<std::mutex> lock(mutex);
-        inserted = logged.insert(name).second;
-    }
-
-    if (inserted) {
-        LOG_WARN(">>> {} <<< Unimplemented import called.", name);
-    }
-
-    return 0;
-}
-
-int error(const char *name, int error) {
-    bool inserted = false;
-
-    {
-        const std::lock_guard<std::mutex> lock(mutex);
-        inserted = logged.insert(name).second;
-    }
-
-    if (inserted) {
-		    LOG_ERROR(">>> {} <<< returned {:#X}", name, error);
-    }
-
-    return error;
-}
+struct NetState {
+    bool inited = false;
+    int next_id = 0;
+    sockets socks;
+};
