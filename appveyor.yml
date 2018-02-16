@@ -37,3 +37,4 @@ artifacts:
 on_finish:
  - ps: | # Bump AppVeyor Version
     update-appveyorbuild -version $env:AVVER
+

@@ -15,28 +15,33 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <SceMt19937/exports.h>
-#include <rand/prng.h>
+#pragma once
 
-EXPORT(int, sceMt19937Init, Ptr<MersenneTwister> mt, unsigned int seed) {
-    if (!mt) {
-	return -1;    
-    }
+#include <cstdint>
 
-    MersenneTwister *const mtc =  mt.get(host.mem);
+class MersenneTwister {
+    enum {
+    	MT_SIZE = 624,
+	MT_M = 397,
+	MT_A = 0x9908B0DF,
+	MT_B = 0x9D2C5680,
+	MT_C = 0xEFC60000,
+	MT_F = 1812433253,
+	MT_R = 31,
+	MT_U = 11,
+	MT_S = 7,
+	MT_T = 15,
+	MT_L = 18,
+	MT_MASK_LOWER = (1u << 31) - 1,
+	MT_MASK_UPPER = 1u << 31
+    };
+  
+    uint32_t mt[MT_SIZE];
+    uint32_t index;
 
-    new (mtc) MersenneTwister(seed);
-    return 0;
-}
-
-EXPORT(unsigned int, sceMt19937UInt, Ptr<MersenneTwister> mt) {
-    if (!mt) {
-    	return -1;
-    }
-
-    MersenneTwister *const mtc = mt.get(host.mem);
-    return mtc->gen32();
-}
-
-BRIDGE_IMPL(sceMt19937Init)
-BRIDGE_IMPL(sceMt19937UInt)
+    void twist();
+public:
+    MersenneTwister(const uint32_t seed);
+    
+    uint32_t gen32();
+};

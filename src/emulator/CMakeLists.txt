@@ -38,6 +38,7 @@ add_subdirectory(module)
 add_subdirectory(modules)
 add_subdirectory(nids)
 add_subdirectory(util)
+add_subdirectory(rand)
 
 add_executable(
 emulator
