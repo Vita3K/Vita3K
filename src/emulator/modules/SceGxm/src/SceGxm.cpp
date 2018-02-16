@@ -167,6 +167,19 @@ static void bind_attribute_locations(GLuint gl_program, const SceGxmProgram *pro
     }
 }
 
+static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
+    GXM_PROFILE(__FUNCTION__);
+
+    uint32_t *row1 = &pixels[0];
+    uint32_t *row2 = &pixels[(height - 1) * stride_in_pixels];
+
+    while (row1 < row2) {
+        std::swap_ranges(&row1[0], &row1[width], &row2[0]);
+        row1 += stride_in_pixels;
+        row2 -= stride_in_pixels;
+    }
+}
+
 static GLenum translate_blend_func(SceGxmBlendFunc src) {
     GXM_PROFILE(__FUNCTION__);
 
@@ -589,6 +602,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
     glPixelStorei(GL_PACK_ROW_LENGTH, stride_in_pixels); // TODO Reset to 0?
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    flip_vertically(pixels, width, height, stride_in_pixels);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
