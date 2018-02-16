@@ -18,6 +18,7 @@
 #include <SceLibKernel/exports.h>
 
 #include <host/functions.h>
+#include <host/rtc.h>
 #include <io/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread_functions.h>
@@ -889,21 +890,12 @@ EXPORT(int, sceKernelGetProcessTime) {
     return unimplemented("sceKernelGetProcessTime");
 }
 
-static SceUInt64 _sceKernelGetProcessTimeWide(){
-    constexpr SceUInt64 scale = 1000000 / CLOCKS_PER_SEC;
-    static_assert((CLOCKS_PER_SEC * scale) == 1000000, "CLOCKS_PER_SEC doesn't scale easily to Vita's.");
-
-    const clock_t clocks = clock();
-
-    return clocks * scale;
-}
-
 EXPORT(SceUInt32, sceKernelGetProcessTimeLow) {
-    return (SceUInt32)(_sceKernelGetProcessTimeWide());
+    return static_cast<SceUInt32>(rtc_get_ticks(host));
 }
 
 EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
-    return _sceKernelGetProcessTimeWide();
+    return rtc_get_ticks(host);
 }
 
 EXPORT(int, sceKernelGetRWLockInfo) {
