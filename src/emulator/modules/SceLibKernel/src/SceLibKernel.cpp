@@ -25,6 +25,8 @@
 #include <SDL_thread.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
+#include <psp2/io/stat.h>
+#include <psp2/io/dirent.h>
 
 struct Semaphore {
 };
@@ -299,16 +301,16 @@ EXPORT(int, sceIoDevctl) {
     return unimplemented("sceIoDevctl");
 }
 
-EXPORT(int, sceIoDopen) {
-    return unimplemented("sceIoDopen");
+EXPORT(int, sceIoDopen, const char *dir) {
+    return open_dir(host.io, dir, host.pref_path.c_str());
 }
 
-EXPORT(int, sceIoDread) {
-    return unimplemented("sceIoDread");
+EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
+    return read_dir(host.io, fd, dir);
 }
 
-EXPORT(int, sceIoGetstat) {
-    return unimplemented("sceIoGetstat");
+EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
+    return stat_file(file, stat, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoGetstatByFd) {
@@ -765,7 +767,7 @@ EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal,
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)){
         return error("sceKernelCreateSema", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
-    
+
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
@@ -782,7 +784,7 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
     if (cpuAffinityMask > 0x70000){
         return error("sceKernelCreateThread", SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
-    
+
     WaitingThreadState waiting;
     waiting.name = name;
 
