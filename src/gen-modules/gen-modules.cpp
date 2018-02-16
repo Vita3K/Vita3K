@@ -112,25 +112,9 @@ static void gen_nids_h(const Modules &modules) {
     }
 }
 
-static void gen_exports_header(std::ostream &dst, const Module &module) {
+static void gen_library_cpp(std::ostream &dst, const Library &library) {
     gen_license_comment(dst);
-    dst << "#pragma once" << std::endl;
-    dst << std::endl;
-    dst << "#include <module/module.h>" << std::endl;
-
-    for (const Library &library : module.second) {
-        dst << std::endl;
-        dst << "// " << library.first << std::endl;
-
-        for (const auto &function : library.second) {
-            dst << "BRIDGE_DECL(" << function.first << ")" << std::endl;
-        }
-    }
-}
-
-static void gen_library_cpp(std::ostream &dst, const char *module, const Library &library) {
-    gen_license_comment(dst);
-    dst << "#include <" << module << "/exports.h>" << std::endl;
+    dst << "#include \"" << library.first << ".h\"" << std::endl;
 
     for (const Function &function : library.second) {
         dst << std::endl;
@@ -145,68 +129,53 @@ static void gen_library_cpp(std::ostream &dst, const char *module, const Library
     }
 }
 
-static void gen_module_cmakelists(std::ostream &dst, const Module &module) {
-    dst << "add_library(" << module.first << " STATIC include/" << module.first << "/exports.h";
-    for (const Library &library : module.second) {
-        dst << " src/" << library.first << ".cpp";
+static void gen_library_h(std::ostream &dst, const Library &library) {
+    gen_license_comment(dst);
+    dst << "#pragma once" << std::endl;
+    dst << std::endl;
+    dst << "#include <module/module.h>" << std::endl;
+    dst << std::endl;
+    
+    for (const auto &function : library.second) {
+        dst << "BRIDGE_DECL(" << function.first << ")" << std::endl;
     }
-    dst << ")" << std::endl;
-    dst << "target_include_directories(" << module.first << " PUBLIC include)" << std::endl;
-    dst << "target_link_libraries(" << module.first << " PRIVATE module)" << std::endl;
 }
 
 static void gen_module_stubs(const Modules &modules) {
     for (const Module &module : modules) {
-        std::string dir_path = "src/emulator/modules/";
-        dir_path += module.first;
-        const std::string include_path_1 = dir_path + "/include";
-        const std::string include_path_2 = include_path_1 + "/" + module.first;
-        const std::string src_path = dir_path + "/src";
+        const std::string module_path = "src/emulator/modules/" + module.first;
 
 #ifdef WIN32
-        CreateDirectoryA(dir_path.c_str(), nullptr);
-        CreateDirectoryA(include_path_1.c_str(), nullptr);
-        CreateDirectoryA(include_path_2.c_str(), nullptr);
-        CreateDirectoryA(src_path.c_str(), nullptr);
+        CreateDirectoryA(module_path.c_str(), nullptr);
 #else
         const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-        mkdir(dir_path.c_str(), mode);
-        mkdir(include_path_1.c_str(), mode);
-        mkdir(include_path_2.c_str(), mode);
-        mkdir(src_path.c_str(), mode);
+        mkdir(module_path.c_str(), mode);
 #endif
-
-        const std::string exports_header_path = include_path_2 + "/exports.h";
-        std::ofstream exports_header(exports_header_path.c_str());
-        gen_exports_header(exports_header, module);
-
+        
         for (const Library &library : module.second) {
-            const std::string library_cpp_path = src_path + "/" + library.first + ".cpp";
+            const std::string library_cpp_path = module_path + "/" + library.first + ".cpp";
+            const std::string library_h_path = module_path + "/" + library.first + ".h";
             std::ofstream library_cpp(library_cpp_path.c_str());
-            gen_library_cpp(library_cpp, module.first.c_str(), library);
+            gen_library_cpp(library_cpp, library);
+            std::ofstream library_h(library_h_path.c_str());
+            gen_library_h(library_h, library);
         }
-
-        const std::string module_cmakelists_path = dir_path + "/CMakeLists.txt";
-        std::ofstream module_cmakelists(module_cmakelists_path.c_str());
-        gen_module_cmakelists(module_cmakelists, module);
     }
 }
 
 static void gen_modules_cmakelists(const Modules &modules) {
     std::ofstream out("src/emulator/modules/CMakeLists.txt");
+    out << "add_library(modules STATIC";
 
     for (const Module &module : modules) {
-        out << "add_subdirectory(" << module.first << ")" << std::endl;
+        for (const Library &library : module.second) {
+            out << "\n\t" << module.first << "/" << library.first << ".cpp";
+            out << " " << module.first << "/" << library.first << ".h";
+        }
     }
 
-    out << std::endl;
-    out << "add_library(modules INTERFACE)" << std::endl;
-    out << "target_link_libraries(modules INTERFACE";
-    for (const Module &module : modules) {
-        out << std::endl
-            << module.first;
-    }
     out << ")" << std::endl;
+    out << "target_link_libraries(modules PRIVATE module)" << std::endl;
 }
 
 int main(int argc, const char *argv[]) {
