@@ -4,13 +4,16 @@
 ## Introduction
 Vita3K is an experimental PlayStation Vita emulator for Windows and macOS.
 
-* [Website](https://Vita3K.github.io/)
+* [Website](https://Vita3K.github.io/) (information for users)
+* [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
 * [Discord](https://discord.gg/6aGwQzh)
 * IRC `#vita3k` on **freenode** ([Web-based IRC client](https://webchat.freenode.net/?channels=%23vita3k))
 * [Patreon](https://www.patreon.com/Vita3K)
 
 ## Compatibility
 The emulator currently runs a few homebrew programs in .vpk format. No commercial games are playable.
+
+- [Homebrew compatibility database](https://github.com/Vita3K/homebrew-compatibility/issues)
 
 [vitaQuake](https://github.com/Rinnegatamante/vitaQuake) by **Rinnegatamante**
 ![](docs/screenshots/vitaQuake.png)

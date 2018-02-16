@@ -21,6 +21,8 @@
 #include <host/state.h>
 #include <host/version.h>
 #include <kernel/thread_functions.h>
+#include <util/string_convert.h>
+#include <util/log.h>
 
 #include <SDL.h>
 
@@ -44,9 +46,9 @@ static bool is_macos_process_arg(const char *arg) {
     return strncmp(arg, "-psn_", 5) == 0;
 }
 
-static void error(const char *message, SDL_Window *window) {
-    if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message, window) < 0) {
-        std::cerr << message << std::endl;
+static void error(const std::string& message, SDL_Window *window = nullptr) {
+    if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window) < 0) {
+        LOG_ERROR("SDL Error: {}", message);
     }
 }
 
@@ -57,23 +59,27 @@ static void term_sdl(const void *succeeded) {
 }
 
 int main(int argc, char *argv[]) {
-    std::cout << window_title << std::endl;
+	init_logging();
+
+	LOG_INFO("{}", window_title);
+
+    ProgramArgsWide argv_wide = process_args(argc, argv);
 
     const SDLPtr sdl(reinterpret_cast<const void *>(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) >= 0), term_sdl);
     if (!sdl) {
-        error("SDL initialisation failed.", nullptr);
+        error("SDL initialisation failed.");
         return SDLInitFailed;
     }
 
     const char *const *const path_arg = std::find_if_not(&argv[1], &argv[argc], is_macos_process_arg);
-    std::string path;
+    std::wstring path;
     if (path_arg != &argv[argc]) {
-        path = *path_arg;
+        path = utf_to_wide(*path_arg);
     } else {
         SDL_Event ev;
         while (SDL_PollEvent(&ev)) {
             if (ev.type == SDL_DROPFILE) {
-                path = ev.drop.file;
+                path = utf_to_wide(ev.drop.file);
                 SDL_free(ev.drop.file);
                 break;
             }
@@ -84,7 +90,7 @@ int main(int argc, char *argv[]) {
         std::string message = "Usage: ";
         message += argv[0];
         message += " <path to VPK file>";
-        error(message.c_str(), nullptr);
+        error(message);
         return IncorrectArgs;
     }
 
@@ -95,10 +101,11 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    if (!load_vpk(entry_point, host.io, host.mem, path.c_str())) {
+    if (!load_vpk(entry_point, host.io, host.mem, path)) {
         std::string message = "Failed to load \"";
-        message += path;
-        message += "\".";
+        message += wide_to_utf(path);
+        message += "\"";
+        message += "\nSee console output for details.";
         error(message.c_str(), host.window.get());
         return ModuleLoadFailed;
     }

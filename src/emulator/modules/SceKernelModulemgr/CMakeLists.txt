@@ -1,3 +1,0 @@
-add_library(SceKernelModulemgr STATIC include/SceKernelModulemgr/exports.h src/SceModulemgr.cpp)
-target_include_directories(SceKernelModulemgr PUBLIC include)
-target_link_libraries(SceKernelModulemgr PRIVATE module)

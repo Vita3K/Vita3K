@@ -20,6 +20,7 @@
 #include <mem/ptr.h>
 
 #include <psp2/types.h>
+#include <psp2/rtc.h>
 
 #include <map>
 #include <mutex>
@@ -59,4 +60,5 @@ struct KernelState {
     ThreadStatePtrs threads;
     ThreadPtrs running_threads;
     WaitingThreadStates waiting_threads;
+    SceRtcTick base_tick;
 };

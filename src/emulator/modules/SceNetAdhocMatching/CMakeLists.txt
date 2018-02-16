@@ -1,3 +1,0 @@
-add_library(SceNetAdhocMatching STATIC include/SceNetAdhocMatching/exports.h src/SceNetAdhocMatching.cpp)
-target_include_directories(SceNetAdhocMatching PUBLIC include)
-target_link_libraries(SceNetAdhocMatching PRIVATE module)

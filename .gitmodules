@@ -22,3 +22,9 @@
 [submodule "src/external/sdl2-cmake-scripts"]
 	path = src/external/sdl2-cmake-scripts
 	url = https://github.com/tcbrindle/sdl2-cmake-scripts.git
+[submodule "src/external/spdlog"]
+	path = src/external/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "src/external/dirent"]
+	path = src/external/dirent
+	url = https://github.com/tronkko/dirent
