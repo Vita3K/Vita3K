@@ -25,6 +25,8 @@
 #include <SDL_thread.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
+#include <psp2/io/stat.h>
+#include <psp2/io/dirent.h>
 
 struct Semaphore {
 };
@@ -299,16 +301,16 @@ EXPORT(int, sceIoDevctl) {
     return unimplemented("sceIoDevctl");
 }
 
-EXPORT(int, sceIoDopen) {
-    return unimplemented("sceIoDopen");
+EXPORT(int, sceIoDopen, const char *dir) {
+    return open_dir(host.io, dir, host.pref_path.c_str());
 }
 
-EXPORT(int, sceIoDread) {
-    return unimplemented("sceIoDread");
+EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
+    return read_dir(host.io, fd, dir);
 }
 
-EXPORT(int, sceIoGetstat) {
-    return unimplemented("sceIoGetstat");
+EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
+    return stat_file(file, stat, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoGetstatByFd) {
@@ -323,8 +325,8 @@ EXPORT(int, sceIoIoctlAsync) {
     return unimplemented("sceIoIoctlAsync");
 }
 
-EXPORT(int, sceIoLseek) {
-    return unimplemented("sceIoLseek");
+EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
+    return seek_file(fd, offset, whence, host.io);
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
@@ -346,24 +348,32 @@ EXPORT(int, sceIoOpenAsync) {
     return unimplemented("sceIoOpenAsync");
 }
 
-EXPORT(int, sceIoPread) {
-    return unimplemented("sceIoPread");
+EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
+    seek_file(fd, offset, SEEK_SET, host.io);
+    return read_file(data, host.io, fd, size);
 }
 
-EXPORT(int, sceIoPwrite) {
-    return unimplemented("sceIoPwrite");
+EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
+    seek_file(fd, offset, SEEK_SET, host.io);
+    return write_file(fd, data, size, host.io);
 }
 
-EXPORT(int, sceIoRemove) {
-    return unimplemented("sceIoRemove");
+EXPORT(int, sceIoRemove, const char *path) {
+    if (path == nullptr){
+        return error("sceIoRemove", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+    }
+    return remove_file(path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoRename) {
     return unimplemented("sceIoRename");
 }
 
-EXPORT(int, sceIoRmdir) {
-    return unimplemented("sceIoRmdir");
+EXPORT(int, sceIoRmdir, const char *path) {
+    if (path == nullptr){
+        return error("sceIoRmdir", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+    }
+    return remove_dir(path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoSync) {
@@ -757,7 +767,7 @@ EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal,
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)){
         return error("sceKernelCreateSema", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
-    
+
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
@@ -774,7 +784,7 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
     if (cpuAffinityMask > 0x70000){
         return error("sceKernelCreateThread", SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
-    
+
     WaitingThreadState waiting;
     waiting.name = name;
 

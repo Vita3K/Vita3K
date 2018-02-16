@@ -29,6 +29,7 @@ add_subdirectory(ctrl)
 add_subdirectory(disasm)
 add_subdirectory(glutil)
 add_subdirectory(gxm)
+add_subdirectory(net)
 add_subdirectory(host)
 add_subdirectory(io)
 add_subdirectory(kernel)
@@ -47,7 +48,7 @@ main.cpp
 relocation.cpp
 relocation.h
 resource.h
-VIta3K.ico
+Vita3K.ico
 Vita3K.rc
 vpk.cpp
 vpk.h

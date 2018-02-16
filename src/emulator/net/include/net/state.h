@@ -15,27 +15,32 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/bridge_return.h>
+#pragma once
 
-#include <cpu/functions.h>
+#include <map>
 
-template <>
-void bridge_return<uint16_t>(CPUState &cpu, uint16_t ret) {
-    write_reg(cpu, 0, ret);
-}
+#ifdef WIN32
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+# include <winsock2.h>
+# include <Ws2tcpip.h>
+typedef SOCKET abs_socket;
+typedef int socklen_t;
+#else
+# include <unistd.h>
+# include <sys/socket.h>
+# include <sys/ioctl.h>
+# include <netinet/in.h>
+# include <netdb.h>
+# include <arpa/inet.h>
+typedef int abs_socket;
+#endif
 
-template <>
-void bridge_return<int32_t>(CPUState &cpu, int32_t ret) {
-    write_reg(cpu, 0, ret);
-}
+typedef std::map<int, abs_socket> sockets;
 
-template <>
-void bridge_return<uint32_t>(CPUState &cpu, uint32_t ret) {
-    write_reg(cpu, 0, ret);
-}
-
-template <>
-void bridge_return<uint64_t>(CPUState &cpu, uint64_t ret) {
-    write_reg(cpu, 0, ret & UINT32_MAX);
-    write_reg(cpu, 1, ret >> 32);
-}
+struct NetState {
+    bool inited = false;
+    int next_id = 0;
+    sockets socks;
+};
