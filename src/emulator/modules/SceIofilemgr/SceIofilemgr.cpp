@@ -36,8 +36,8 @@ EXPORT(int, sceIoComplete) {
     return unimplemented("sceIoComplete");
 }
 
-EXPORT(int, sceIoDclose) {
-    return unimplemented("sceIoDclose");
+EXPORT(int, sceIoDclose, SceUID fd) {
+    return close_dir(host.io, fd);
 }
 
 EXPORT(int, sceIoFlockForSystem) {

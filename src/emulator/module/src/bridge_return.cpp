@@ -20,6 +20,11 @@
 #include <cpu/functions.h>
 
 template <>
+void bridge_return<uint16_t>(CPUState &cpu, uint16_t ret) {
+    write_reg(cpu, 0, ret);
+}
+
+template <>
 void bridge_return<int32_t>(CPUState &cpu, int32_t ret) {
     write_reg(cpu, 0, ret);
 }
