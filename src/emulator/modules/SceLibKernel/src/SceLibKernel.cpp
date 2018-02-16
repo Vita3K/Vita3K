@@ -18,6 +18,7 @@
 #include <SceLibKernel/exports.h>
 
 #include <host/functions.h>
+#include <host/rtc.h>
 #include <io/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread_functions.h>
@@ -25,7 +26,6 @@
 #include <SDL_thread.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
-#include "host/rtc.h"
 
 struct Semaphore {
 };
