@@ -16,12 +16,12 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <mem/mem.h>
+#include <util/log.h>
 
 #include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <cmath>
-#include "util/log.h"
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
