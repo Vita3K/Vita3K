@@ -1288,7 +1288,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
         break;
 
     case 16:
-        glUniformMatrix4fv(location, 1, GL_TRUE, sourceData);
+        glUniformMatrix4fv(location, 1, GL_FALSE, sourceData);
         break;
 
     default:
