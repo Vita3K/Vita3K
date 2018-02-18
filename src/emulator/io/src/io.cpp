@@ -79,13 +79,13 @@ const char *translate_open_mode(int flags) {
             if (flags & SCE_O_CREAT) {
                 if (flags & SCE_O_APPEND) {
                     return "ab+";
+                } else {
+                    return "wb+";
                 }
 
-                return "wb+";
+            } else {
+            	return "rb+";
             }
-
-            return "rb+";
-
         } else {
             if (flags & SCE_O_APPEND) {
                 return "ab";
@@ -235,8 +235,6 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
 }
 
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
-	LOG_INFO("Trying to write fd = {}", fd);
-
     assert(data != nullptr);
     assert(fd >= 0);
     assert(size >= 0);
