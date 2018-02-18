@@ -44,6 +44,13 @@ Vita3K binaries for Windows can be downloaded on [AppVeyor](https://ci.appveyor.
 3. When prompted to create schemes, create one for the `emulator` target only. The project builds many targets, so it will make your life easier if you create schemes as needed.
 4. Build.
 
+### Linux
+1. Get [SDL](https://wiki.libsdl.org/Installation#Linux.2FUnix) (2.0.7+) and [unicorn](http://www.unicorn-engine.org)
+2. `git submodule init && git submodule update`
+3. `mkdir build-linux && cd build-linux`
+4. `cmake ../src/`
+5. `make`
+
 ## Running
 The emulator does not yet have a front end. Please specify the path to a .vpk file as the first command line argument.
 
