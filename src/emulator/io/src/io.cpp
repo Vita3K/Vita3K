@@ -40,18 +40,25 @@
 #include <string>
 #include <iostream>
 
-static ZipFilePtr open_zip(mz_zip_archive &zip, const char *entry_path) {
-    const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
-    if (index < 0) {
-        return ZipFilePtr();
-    }
+static ReadOnlyInMemFile open_zip(mz_zip_archive &zip, const char *entry_path) {
+	const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
+	   
+	if (index < 0) {
+		return ReadOnlyInMemFile();
+	}
 
-    const ZipFilePtr zip_file(mz_zip_reader_extract_iter_new(&zip, index, 0), mz_zip_reader_extract_iter_free);
-    if (!zip_file) {
-        return ZipFilePtr();
-    }
+	const auto zip_file = mz_zip_reader_extract_iter_new(&zip, index, 0);
+	
+	if (!zip_file) {
+		return ReadOnlyInMemFile();	
+	}   
 
-    return zip_file;
+	ReadOnlyInMemFile res; char* data = res.alloc_data(zip_file->file_stat.m_uncomp_size);
+
+	mz_zip_reader_extract_iter_read(zip_file, data, zip_file->file_stat.m_uncomp_size);
+	mz_zip_reader_extract_iter_free(zip_file);
+
+	return res;
 }
 
 static void delete_file(FILE *file) {
@@ -72,12 +79,13 @@ const char *translate_open_mode(int flags) {
             if (flags & SCE_O_CREAT) {
                 if (flags & SCE_O_APPEND) {
                     return "ab+";
-                } else {
-                    return "wb+";
                 }
-            } else {
-                return "rb+";
+
+                return "wb+";
             }
+
+            return "rb+";
+
         } else {
             if (flags & SCE_O_APPEND) {
                 return "ab";
@@ -153,14 +161,11 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
 
         int i = 5;
         if (path[5] == '/') i++;
-        const ZipFilePtr file = open_zip(*io.vpk, &path[i]);
-
-        if (!file) {
-            return -1;
-        }
+        
+        const ReadOnlyInMemFile file = open_zip(*io.vpk, &path[i]);
 
         const SceUID fd = io.next_fd++;
-        io.zip_files.emplace(fd, file);
+        io.app_files.emplace(fd, file);
 
         return fd;
     } else if (strncmp(path, "ux0:", 4) == 0) {
@@ -206,9 +211,10 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
     assert(fd >= 0);
     assert(size >= 0);
 
-    const ZipFiles::const_iterator zip_file = io.zip_files.find(fd);
-    if (zip_file != io.zip_files.end()) {
-        return mz_zip_reader_extract_iter_read(zip_file->second.get(), data, size);
+    AppFiles::iterator app_file = io.app_files.find(fd);
+    if (app_file != io.app_files.end()) {
+        auto is =  app_file->second.read(data, size);
+        return is;
     }
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
@@ -229,6 +235,8 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
 }
 
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
+	LOG_INFO("Trying to write fd = {}", fd);
+
     assert(data != nullptr);
     assert(fd >= 0);
     assert(size >= 0);
@@ -252,13 +260,16 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
     return -1;
 }
 
-int seek_file(SceUID fd, int offset, int whence, const IOState &io) {
+int seek_file(SceUID fd, int offset, int whence, IOState &io) {
     assert(fd >= 0);
     assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
 
-    const StdFiles::const_iterator file = io.std_files.find(fd);
-    assert(file != io.std_files.end());
-    if (file == io.std_files.end()) {
+    const StdFiles::const_iterator std_file = io.std_files.find(fd);
+    AppFiles::iterator app_file = io.app_files.find(fd);
+  
+    assert(std_file != io.std_files.end() || app_file != io.app_files.end());
+
+    if (std_file == io.std_files.end() && app_file == io.app_files.end()) {
         return -1;
     }
 
@@ -275,12 +286,23 @@ int seek_file(SceUID fd, int offset, int whence, const IOState &io) {
         break;
     }
 
-    const int ret = fseek(file->second.get(), offset, base);
+    int ret = 0; long pos = 0;
+
+    if (std_file != io.std_files.end()) {
+        ret = fseek(std_file->second.get(), offset, base);
+    } else {
+        ret = !(app_file->second.seek(offset, whence));
+    }
+
     if (ret != 0) {
         return -1;
     }
 
-    const long pos = ftell(file->second.get());
+    if (std_file != io.std_files.end()) {
+    	pos = ftell(std_file->second.get());
+    } else {
+        pos = app_file->second.tell();
+    }
     return pos;
 }
 
@@ -289,7 +311,7 @@ void close_file(IOState &io, SceUID fd) {
 
     io.tty_files.erase(fd);
     io.std_files.erase(fd);
-    io.zip_files.erase(fd);
+    io.app_files.erase(fd);
 }
 
 int remove_file(const char *file, const char *pref_path){

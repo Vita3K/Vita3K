@@ -2,8 +2,10 @@ add_library(
 	io
 	STATIC
 	src/io.cpp
+	src/file.cpp
 	include/io/functions.h
 	include/io/state.h
+	include/io/file.h
 )
 
 target_include_directories(io PUBLIC include)
