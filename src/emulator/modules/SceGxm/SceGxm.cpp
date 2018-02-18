@@ -1561,8 +1561,12 @@ EXPORT(int, sceGxmShaderPatcherGetHostMemAllocated) {
     return unimplemented("sceGxmShaderPatcherGetHostMemAllocated");
 }
 
-EXPORT(int, sceGxmShaderPatcherGetProgramFromId) {
-    return unimplemented("sceGxmShaderPatcherGetProgramFromId");
+EXPORT(Ptr<const SceGxmProgram>, sceGxmShaderPatcherGetProgramFromId, emu::SceGxmShaderPatcherId programId) {
+    if (!programId) {
+        return Ptr<const SceGxmProgram>();
+    }
+    
+    return programId.get(host.mem)->program;
 }
 
 EXPORT(int, sceGxmShaderPatcherGetUserData) {
