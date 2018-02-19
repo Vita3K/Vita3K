@@ -112,6 +112,15 @@ static bool compile_shader(GLuint shader, const SceGxmProgram *program, const ch
     std::ifstream is(path.str());
     if (is.fail()) {
         LOG_ERROR("Couldn't open '{}' for reading.", path.str());
+        
+        // Dump missing shader binary.
+        std::ostringstream gxp_path;
+        gxp_path << hash << ".gxp";
+        std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
+        if (!gxp.fail()) {
+            gxp.write(reinterpret_cast<const char *>(program), program->size);
+        }
+        
         return false;
     }
 
