@@ -10,4 +10,4 @@ add_library(
 )
 
 target_include_directories(module PUBLIC include)
-target_link_libraries(module PUBLIC glutil host microprofile util)
+target_link_libraries(module PUBLIC crypto-algorithms glutil host microprofile util)

@@ -21,6 +21,9 @@
 #include <util/log.h>
 
 #include <glbinding/Binding.h>
+extern "C" {
+#include <sha256.h>
+}
 
 #include <algorithm>
 #include <fstream>
@@ -32,20 +35,26 @@ using namespace glbinding;
 
 #define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
 
-// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1a_hash
-static uint64_t fnv1a(const void *data, size_t size) {
+static void sha256(char (&dst)[65], const void *data, size_t size) {
     GXM_PROFILE(__FUNCTION__);
 
-    const uint8_t *const begin = static_cast<const uint8_t *>(data);
-    const uint8_t *const end = begin + size;
-    uint64_t result = 0xcbf29ce484222325;
-
-    for (const uint8_t *p = begin; p != end; ++p) {
-        result ^= *p;
-        result *= 0x100000001b3;
+    // Generate hash as bytes.
+    uint8_t hash[SHA256_BLOCK_SIZE] = {};
+    SHA256_CTX sha_ctx = {};
+    sha256_init(&sha_ctx);
+    sha256_update(&sha_ctx, static_cast<const uint8_t *>(data), size);
+    sha256_final(&sha_ctx, &hash[0]);
+    
+    // Encode hash bytes as hex string.
+    const char hex[17] = "0123456789abcdef";
+    std::fill_n(&dst[0], 65, '\0');
+    for (size_t i = 0, j = 0; i < 32; ++i) {
+        const uint8_t byte = hash[i];
+        const char hi = hex[byte >> 4];
+        const char lo = hex[byte & 0xf];
+        dst[j++] = hi;
+        dst[j++] = lo;
     }
-
-    return result;
 }
 
 #if MICROPROFILE_ENABLED != 0
@@ -94,7 +103,9 @@ static bool compile_shader(GLuint shader, const GLchar *source) {
 static bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *base_path) {
     GXM_PROFILE(__FUNCTION__);
 
-    const uint64_t hash = fnv1a(program, program->size);
+    char hash[65] = {};
+    sha256(hash, program, program->size);
+    
     std::ostringstream path;
     path << base_path << "shaders/" << hash << ".glsl";
 
