@@ -18,12 +18,11 @@
 #include "SceGxm.h"
 
 #include "gxm.h"
+
+#include <crypto/hash.h>
 #include <util/log.h>
 
 #include <glbinding/Binding.h>
-extern "C" {
-#include <sha256.h>
-}
 
 #include <algorithm>
 #include <fstream>
@@ -34,28 +33,6 @@ using namespace emu;
 using namespace glbinding;
 
 #define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
-
-static void sha256(char (&dst)[65], const void *data, size_t size) {
-    GXM_PROFILE(__FUNCTION__);
-
-    // Generate hash as bytes.
-    uint8_t hash[SHA256_BLOCK_SIZE] = {};
-    SHA256_CTX sha_ctx = {};
-    sha256_init(&sha_ctx);
-    sha256_update(&sha_ctx, static_cast<const uint8_t *>(data), size);
-    sha256_final(&sha_ctx, &hash[0]);
-    
-    // Encode hash bytes as hex string.
-    const char hex[17] = "0123456789abcdef";
-    std::fill_n(&dst[0], 65, '\0');
-    for (size_t i = 0, j = 0; i < 32; ++i) {
-        const uint8_t byte = hash[i];
-        const char hi = hex[byte >> 4];
-        const char lo = hex[byte & 0xf];
-        dst[j++] = hi;
-        dst[j++] = lo;
-    }
-}
 
 #if MICROPROFILE_ENABLED != 0
 static void before_callback(const FunctionCall &fn) {
@@ -103,11 +80,11 @@ static bool compile_shader(GLuint shader, const GLchar *source) {
 static bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *base_path) {
     GXM_PROFILE(__FUNCTION__);
 
-    char hash[65] = {};
-    sha256(hash, program, program->size);
+    const Sha256Hash hash_bytes = sha256(program, program->size);
+    const std::array<char, 65> hash_text = hex(hash_bytes);
     
     std::ostringstream path;
-    path << base_path << "shaders/" << hash << ".glsl";
+    path << base_path << "shaders/" << hash_text.data() << ".glsl";
 
     std::ifstream is(path.str());
     if (is.fail()) {
@@ -115,7 +92,7 @@ static bool compile_shader(GLuint shader, const SceGxmProgram *program, const ch
         
         // Dump missing shader binary.
         std::ostringstream gxp_path;
-        gxp_path << hash << ".gxp";
+        gxp_path << hash_text.data() << ".gxp";
         std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
         if (!gxp.fail()) {
             gxp.write(reinterpret_cast<const char *>(program), program->size);
