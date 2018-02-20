@@ -23,6 +23,7 @@
 #include <kernel/thread_functions.h>
 #include <util/string_convert.h>
 #include <util/log.h>
+#include <util/types.h>
 
 #include <SDL.h>
 
@@ -58,7 +59,7 @@ static void term_sdl(const void *succeeded) {
     SDL_Quit();
 }
 
-int main(int argc, char *argv[]) {
+s32 main(s32 argc, char *argv[]) {
 	init_logging();
 
 	LOG_INFO("{}", window_title);
@@ -113,7 +114,7 @@ int main(int argc, char *argv[]) {
     // TODO This is hacky. Belongs in kernel?
     const SceUID main_thread_id = host.kernel.next_uid++;
 
-    const CallImport call_import = [&host, main_thread_id](uint32_t nid) {
+    const CallImport call_import = [&host, main_thread_id](u32 nid) {
         ::call_import(host, nid, main_thread_id);
     };
 

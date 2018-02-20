@@ -17,17 +17,19 @@
 
 #pragma once
 
+#include <util/types.h>
+
 struct NetState;
 struct SceNetSockaddr;
 
 bool init(NetState &state);
-int open_socket(NetState &net, int domain, int type, int protocol);
-int close_socket(NetState &net, int id);
-int bind_socket(NetState &net,int s, const SceNetSockaddr *name, unsigned int addrlen);
-int send_packet(NetState &net, int s, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen);
-int recv_packet(NetState &net, int s, void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen);
-int get_socket_address(NetState &net, int s, SceNetSockaddr *name, unsigned int *namelen);
-int set_socket_options(NetState &net, int s, int level, int optname, const void *optval, unsigned int optlen);
-int connect_socket(NetState &net, int s, const SceNetSockaddr *name, unsigned int namelen);
-int accept_socket(NetState &net, int s, SceNetSockaddr *addr, unsigned int *addrlen);
-int listen_socket(NetState &net, int s, int backlog);
+s32 open_socket(NetState &net, s32 domain, s32 type, s32 protocol);
+s32 close_socket(NetState &net, s32 id);
+s32 bind_socket(NetState &net,s32 s, const SceNetSockaddr *name, u32 addrlen);
+s32 send_packet(NetState &net, s32 s, const void *msg, u32 len, s32 flags, const SceNetSockaddr *to, u32 tolen);
+s32 recv_packet(NetState &net, s32 s, void *buf, u32 len, s32 flags, SceNetSockaddr *from, u32 *fromlen);
+s32 get_socket_address(NetState &net, s32 s, SceNetSockaddr *name, u32 *namelen);
+s32 set_socket_options(NetState &net, s32 s, s32 level, s32 optname, const void *optval, u32 optlen);
+s32 connect_socket(NetState &net, s32 s, const SceNetSockaddr *name, u32 namelen);
+s32 accept_socket(NetState &net, s32 s, SceNetSockaddr *addr, u32 *addrlen);
+s32 listen_socket(NetState &net, s32 s, s32 backlog);

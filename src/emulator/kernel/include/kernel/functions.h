@@ -18,11 +18,12 @@
 #pragma once
 
 #include <psp2/types.h>
+#include <util/types.h>
 
 template <class T>
 class Ptr;
 struct KernelState;
 struct MemState;
 
-Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key);
+Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, s32 key);
 void stop_all_threads(KernelState &kernel);

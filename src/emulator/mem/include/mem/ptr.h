@@ -68,7 +68,7 @@ private:
 static_assert(sizeof(Ptr<const void>) == 4, "Size of Ptr isn't 4 bytes.");
 
 template <class T>
-Ptr<T> operator+(const Ptr<T> &base, int32_t offset) {
+Ptr<T> operator+(const Ptr<T> &base, s32 offset) {
     return Ptr<T>(base.address() + (offset * sizeof(T)));
 }
 

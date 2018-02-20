@@ -18,23 +18,24 @@
 #pragma once
 
 #include <psp2/types.h>
+#include <util/types.h>
 
 struct IOState;
 struct SceIoStat;
 struct SceIoDirent;
 
 bool init(IOState &io, const char *pref_path);
-SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path);
-int read_file(void *data, IOState &io, SceUID fd, SceSize size);
-int write_file(SceUID fd, const void *data, SceSize size, const IOState &io);
-int seek_file(SceUID fd, int offset, int whence, const IOState &io);
+SceUID open_file(IOState &io, const char *path, s32 flags, const char *pref_path);
+s32 read_file(void *data, IOState &io, SceUID fd, SceSize size);
+s32 write_file(SceUID fd, const void *data, SceSize size, const IOState &io);
+s32 seek_file(SceUID fd, s32 offset, s32 whence, const IOState &io);
 void close_file(IOState &io, SceUID fd);
-int create_dir(const char *dir, int mode, const char *pref_path);
-int remove_file(const char *file, const char *pref_path);
-int create_dir(const char *dir, int mode, const char *pref_path);
-int remove_dir(const char *dir, const char *pref_path);
-int stat_file(const char* file, SceIoStat* stat, const char *pref_path);
+s32 create_dir(const char *dir, s32 mode, const char *pref_path);
+s32 remove_file(const char *file, const char *pref_path);
+s32 create_dir(const char *dir, s32 mode, const char *pref_path);
+s32 remove_dir(const char *dir, const char *pref_path);
+s32 stat_file(const char* file, SceIoStat* stat, const char *pref_path);
 
-int open_dir(IOState &io, const char *path, const char *pref_path);
-int read_dir(IOState &io, SceUID fd, SceIoDirent *dent);
-int close_dir(IOState &io, SceUID fd);
+s32 open_dir(IOState &io, const char *path, const char *pref_path);
+s32 read_dir(IOState &io, SceUID fd, SceIoDirent *dent);
+s32 close_dir(IOState &io, SceUID fd);

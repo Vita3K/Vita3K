@@ -7,4 +7,5 @@ add_library(
 )
 
 target_include_directories(nids PUBLIC include)
-target_link_libraries(cpu INTERFACE util spdlog)
+target_link_libraries(nids PUBLIC util)
+target_link_libraries(cpu INTERFACE spdlog)

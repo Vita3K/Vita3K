@@ -26,7 +26,7 @@
 # include <winsock2.h>
 # include <Ws2tcpip.h>
 typedef SOCKET abs_socket;
-typedef int socklen_t;
+typedef s32 socklen_t;
 #else
 # include <unistd.h>
 # include <sys/socket.h>
@@ -34,13 +34,13 @@ typedef int socklen_t;
 # include <netinet/in.h>
 # include <netdb.h>
 # include <arpa/inet.h>
-typedef int abs_socket;
+typedef s32 abs_socket;
 #endif
 
-typedef std::map<int, abs_socket> sockets;
+typedef std::map<s32, abs_socket> sockets;
 
 struct NetState {
     bool inited = false;
-    int next_id = 0;
+    s32 next_id = 0;
     sockets socks;
 };

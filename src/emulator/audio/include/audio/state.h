@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <psp2/types.h>
+#include <util/types.h>
 
 #include <SDL_audio.h>
 
@@ -32,13 +33,13 @@ typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
 typedef std::function<void(SceUID)> ResumeAudioThread;
 
 struct AudioOutput {
-    const uint8_t *buf = nullptr;
-    int len_bytes = 0;
+    const u8 *buf = nullptr;
+    s32 len_bytes = 0;
     SceUID thread = -1;
 };
 
 struct ReadOnlyAudioOutPortState {
-    int len_bytes = 0;
+    s32 len_bytes = 0;
 };
 
 struct AudioCallbackOutPortState {
@@ -57,7 +58,7 @@ struct AudioOutPort {
 };
 
 typedef std::shared_ptr<AudioOutPort> AudioOutPortPtr;
-typedef std::map<int, AudioOutPortPtr> AudioOutPortPtrs;
+typedef std::map<s32, AudioOutPortPtr> AudioOutPortPtrs;
 typedef std::shared_ptr<void> AudioDevicePtr;
 
 struct ReadOnlyAudioState {
@@ -66,12 +67,12 @@ struct ReadOnlyAudioState {
 };
 
 struct AudioCallbackState {
-    std::vector<uint8_t> temp_buffer;
+    std::vector<u8> temp_buffer;
 };
 
 struct SharedAudioState {
     std::mutex mutex;
-    int next_port_id = 0;
+    s32 next_port_id = 0;
     AudioOutPortPtrs out_ports;
 };
 

@@ -22,6 +22,7 @@
 
 #include <io/state.h>
 #include <util/log.h>
+#include <util/types.h>
 
 #include <psp2/io/fcntl.h>
 
@@ -41,7 +42,7 @@
 #include <iostream>
 
 static ZipFilePtr open_zip(mz_zip_archive &zip, const char *entry_path) {
-    const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
+    const s32 index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
     if (index < 0) {
         return ZipFilePtr();
     }
@@ -66,7 +67,7 @@ static void delete_dir(DIR* dir) {
     }
 }
 
-const char *translate_open_mode(int flags) {
+const char *translate_open_mode(s32 flags) {
     if (flags & SCE_O_WRONLY) {
         if (flags & SCE_O_RDONLY) {
             if (flags & SCE_O_CREAT) {
@@ -93,7 +94,7 @@ const char *translate_open_mode(int flags) {
 std::string translate_path(const char *part_name, const char *path, const char* pref_path){
     std::string res = pref_path;
     res += part_name;
-    int i = strlen(part_name);
+    s32 i = strlen(part_name);
     res += "/";
 
     if (path[i+1] == '/') i++;
@@ -116,7 +117,7 @@ bool init(IOState &io, const char *pref_path) {
     CreateDirectoryA(uma0.c_str(), nullptr);
     CreateDirectoryA(uma0_data.c_str(), nullptr);
 #else
-    const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+    const s32 mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     mkdir(ux0.c_str(), mode);
     mkdir(ux0_data.c_str(), mode);
     mkdir(uma0.c_str(), mode);
@@ -126,7 +127,7 @@ bool init(IOState &io, const char *pref_path) {
     return true;
 }
 
-SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path) {
+SceUID open_file(IOState &io, const char *path, s32 flags, const char *pref_path) {
     // TODO Hacky magic numbers.
     assert((strcmp(path, "tty0:") == 0) || (strncmp(path, "app0:", 5) == 0) || (strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
 
@@ -151,7 +152,7 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
             return -1;
         }
 
-        int i = 5;
+        s32 i = 5;
         if (path[5] == '/') i++;
         const ZipFilePtr file = open_zip(*io.vpk, &path[i]);
 
@@ -201,7 +202,7 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
     }
 }
 
-int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
+s32 read_file(void *data, IOState &io, SceUID fd, SceSize size) {
     assert(data != nullptr);
     assert(fd >= 0);
     assert(size >= 0);
@@ -228,7 +229,7 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
     return -1;
 }
 
-int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
+s32 write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
     assert(data != nullptr);
     assert(fd >= 0);
     assert(size >= 0);
@@ -252,7 +253,7 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
     return -1;
 }
 
-int seek_file(SceUID fd, int offset, int whence, const IOState &io) {
+s32 seek_file(SceUID fd, s32 offset, s32 whence, const IOState &io) {
     assert(fd >= 0);
     assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
 
@@ -262,7 +263,7 @@ int seek_file(SceUID fd, int offset, int whence, const IOState &io) {
         return -1;
     }
 
-    int base = SEEK_SET;
+    s32 base = SEEK_SET;
     switch (whence) {
     case SCE_SEEK_SET:
         base = SEEK_SET;
@@ -275,7 +276,7 @@ int seek_file(SceUID fd, int offset, int whence, const IOState &io) {
         break;
     }
 
-    const int ret = fseek(file->second.get(), offset, base);
+    const s32 ret = fseek(file->second.get(), offset, base);
     if (ret != 0) {
         return -1;
     }
@@ -292,7 +293,7 @@ void close_file(IOState &io, SceUID fd) {
     io.zip_files.erase(fd);
 }
 
-int remove_file(const char *file, const char *pref_path){
+s32 remove_file(const char *file, const char *pref_path){
     // TODO Hacky magic numbers.
     assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
     if (strncmp(file, "ux0:", 4) == 0) {
@@ -306,19 +307,19 @@ int remove_file(const char *file, const char *pref_path){
 #endif
     } else if (strncmp(file, "uma0:", 5) == 0) {
         std::string file_path = translate_path("uma0", file, pref_path);
-        
+
 #ifdef WIN32
         DeleteFileA(file_path.c_str());
         return 0;
 #else
         return unlink(file_path.c_str());
-#endif 
+#endif
     } else {
         return -1;
     }
 }
 
-int create_dir(const char *dir, int mode, const char *pref_path){
+s32 create_dir(const char *dir, s32 mode, const char *pref_path){
     // TODO Hacky magic numbers.
     assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
     if (strncmp(dir, "ux0:", 4) == 0) {
@@ -344,7 +345,7 @@ int create_dir(const char *dir, int mode, const char *pref_path){
     }
 }
 
-int remove_dir(const char *dir, const char *pref_path){
+s32 remove_dir(const char *dir, const char *pref_path){
     // TODO Hacky magic numbers.
     assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
     if (strncmp(dir, "ux0:", 4) == 0) {
@@ -358,19 +359,19 @@ int remove_dir(const char *dir, const char *pref_path){
 #endif
     } else if (strncmp(dir, "uma0:", 5) == 0) {
         std::string dir_path = translate_path("uma0", dir, pref_path);
-        
+
 #ifdef WIN32
         RemoveDirectoryA(dir_path.c_str());
         return 0;
 #else
         return rmdir(dir_path.c_str());
-#endif 
+#endif
     } else {
         return -1;
     }
 }
 
-int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
+s32 stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
     // TODO Hacky magic numbers.
     assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
     assert(statp != NULL);
@@ -420,7 +421,7 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
     return 0;
 }
 
-int open_dir(IOState &io, const char *path, const char *pref_path) {
+s32 open_dir(IOState &io, const char *path, const char *pref_path) {
     // TODO Hacky magic numbers.
     assert((strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
 
@@ -449,7 +450,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path) {
     return fd;
 }
 
-int read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
+s32 read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
     assert(dent != nullptr);
 
     memset(dent->d_name, '\0', sizeof(dent->d_name));
@@ -485,7 +486,7 @@ int read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
     return 0;
 }
 
-int close_dir(IOState &io, SceUID fd) {
+s32 close_dir(IOState &io, SceUID fd) {
     io.dir_entries.erase(fd);
 
     return 1;

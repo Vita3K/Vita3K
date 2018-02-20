@@ -29,12 +29,12 @@ static bool SAVE_SURFACE_IMAGES = false;
 
 namespace emu {
     struct SceDisplayFrameBuf {
-        uint32_t size = 0;
+        u32 size = 0;
         Ptr<const void> base;
-        uint32_t pitch = 0;
-        uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-        uint32_t width = 0;
-        uint32_t height = 0;
+        u32 pitch = 0;
+        u32 pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
+        u32 width = 0;
+        u32 height = 0;
     };
 }
 
@@ -98,11 +98,11 @@ EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDis
     SDL_GL_MakeCurrent(prev_gl_window, prev_gl_context);
 
     ++host.frame_count;
-    const uint32_t t2 = SDL_GetTicks();
-    const uint32_t ms = t2 - host.t1;
+    const u32 t2 = SDL_GetTicks();
+    const u32 ms = t2 - host.t1;
     if (ms >= 1000) {
-        const uint32_t fps = (host.frame_count * 1000) / ms;
-        const uint32_t ms_per_frame = ms / host.frame_count;
+        const u32 fps = (host.frame_count * 1000) / ms;
+        const u32 ms_per_frame = ms / host.frame_count;
         std::ostringstream title;
         title << window_title << " - " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
         SDL_SetWindowTitle(host.window.get(), title.str().c_str());

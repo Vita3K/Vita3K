@@ -20,22 +20,22 @@
 #include <cpu/functions.h>
 
 template <>
-void bridge_return<uint16_t>(CPUState &cpu, uint16_t ret) {
+void bridge_return<u16>(CPUState &cpu, u16 ret) {
     write_reg(cpu, 0, ret);
 }
 
 template <>
-void bridge_return<int32_t>(CPUState &cpu, int32_t ret) {
+void bridge_return<s32>(CPUState &cpu, s32 ret) {
     write_reg(cpu, 0, ret);
 }
 
 template <>
-void bridge_return<uint32_t>(CPUState &cpu, uint32_t ret) {
+void bridge_return<u32>(CPUState &cpu, u32 ret) {
     write_reg(cpu, 0, ret);
 }
 
 template <>
-void bridge_return<uint64_t>(CPUState &cpu, uint64_t ret) {
+void bridge_return<u64>(CPUState &cpu, u64 ret) {
     write_reg(cpu, 0, ret & UINT32_MAX);
     write_reg(cpu, 1, ret >> 32);
 }

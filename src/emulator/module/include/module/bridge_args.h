@@ -40,7 +40,7 @@ struct StackLayout {
 // Simple case - argument can be cast from integer.
 template <typename T>
 struct RegArg {
-    static T bridge(const MemState &, uint32_t value) {
+    static T bridge(const MemState &, u32 value) {
         return static_cast<T>(value);
     }
 };
@@ -48,7 +48,7 @@ struct RegArg {
 // Emulated pointer constructed from address in register.
 template <typename Pointee>
 struct RegArg<Ptr<Pointee>> {
-    static Ptr<Pointee> bridge(const MemState &, uint32_t value) {
+    static Ptr<Pointee> bridge(const MemState &, u32 value) {
         return Ptr<Pointee>(value);
     }
 };
@@ -56,7 +56,7 @@ struct RegArg<Ptr<Pointee>> {
 // Real pointer bridged from address in register.
 template <typename Pointee>
 struct RegArg<Pointee *> {
-    static Pointee *bridge(const MemState &mem, uint32_t value) {
+    static Pointee *bridge(const MemState &mem, u32 value) {
         const Ptr<Pointee> ptr(value);
         return ptr.get(mem);
     }
@@ -91,7 +91,7 @@ template <typename... Args>
 struct ArgLayout {
     template <typename T, size_t index>
     static T read(CPUState &cpu, const MemState &mem) {
-        const uint32_t value = read_reg(cpu, index);
+        const u32 value = read_reg(cpu, index);
         return RegArg<T>::bridge(mem, value);
     }
 };
@@ -103,7 +103,7 @@ struct ArgLayout<R0, R1, R2, R3, StackHead, StackTail...> {
 
     template <typename T, size_t index>
         static typename std::enable_if < index<4, T>::type read(CPUState &cpu, const MemState &mem) {
-        const uint32_t value = read_reg(cpu, index);
+        const u32 value = read_reg(cpu, index);
         return RegArg<T>::bridge(mem, value);
     }
 

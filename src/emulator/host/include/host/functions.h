@@ -18,9 +18,10 @@
 #pragma once
 
 #include <psp2/types.h>
+#include <util/types.h>
 
 struct HostState;
 
 bool init(HostState &state);
 bool handle_events(HostState &host);
-void call_import(HostState &host, uint32_t nid, SceUID thread_id);
+void call_import(HostState &host, u32 nid, SceUID thread_id);

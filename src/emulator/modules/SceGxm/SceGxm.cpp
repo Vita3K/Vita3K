@@ -33,14 +33,14 @@ using namespace glbinding;
 #define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
 
 // https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1a_hash
-static uint64_t fnv1a(const void *data, size_t size) {
+static u64 fnv1a(const void *data, size_t size) {
     GXM_PROFILE(__FUNCTION__);
 
-    const uint8_t *const begin = static_cast<const uint8_t *>(data);
-    const uint8_t *const end = begin + size;
-    uint64_t result = 0xcbf29ce484222325;
+    const u8 *const begin = static_cast<const u8 *>(data);
+    const u8 *const end = begin + size;
+    u64 result = 0xcbf29ce484222325;
 
-    for (const uint8_t *p = begin; p != end; ++p) {
+    for (const u8 *p = begin; p != end; ++p) {
         result ^= *p;
         result *= 0x100000001b3;
     }
@@ -94,7 +94,7 @@ static bool compile_shader(GLuint shader, const GLchar *source) {
 static bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *base_path) {
     GXM_PROFILE(__FUNCTION__);
 
-    const uint64_t hash = fnv1a(program, program->size);
+    const u64 hash = fnv1a(program, program->size);
     std::ostringstream path;
     path << base_path << "shaders/" << hash << ".glsl";
 
@@ -158,11 +158,11 @@ static bool attribute_format_normalised(SceGxmAttributeFormat format) {
 static void bind_attribute_locations(GLuint gl_program, const SceGxmProgram *program) {
     GXM_PROFILE(__FUNCTION__);
 
-    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
-    for (uint32_t i = 0; i < program->parameter_count; ++i) {
+    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const u8 *>(&program->parameters_offset) + program->parameters_offset);
+    for (u32 i = 0; i < program->parameter_count; ++i) {
         const SceGxmProgramParameter *const parameter = &parameters[i];
         if (parameter->category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
+            const u8 *const parameter_bytes = reinterpret_cast<const u8 *>(parameter);
             const char *const parameter_name = reinterpret_cast<const char *>(parameter_bytes + parameter->name_offset);
 
             glBindAttribLocation(gl_program, parameter->resource_index, parameter_name);
@@ -170,11 +170,11 @@ static void bind_attribute_locations(GLuint gl_program, const SceGxmProgram *pro
     }
 }
 
-static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
+static void flip_vertically(u32 *pixels, size_t width, size_t height, size_t stride_in_pixels) {
     GXM_PROFILE(__FUNCTION__);
 
-    uint32_t *row1 = &pixels[0];
-    uint32_t *row2 = &pixels[(height - 1) * stride_in_pixels];
+    u32 *row1 = &pixels[0];
+    u32 *row2 = &pixels[(height - 1) * stride_in_pixels];
 
     while (row1 < row2) {
         std::swap_ranges(&row1[0], &row1[width], &row2[0]);

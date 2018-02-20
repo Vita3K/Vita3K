@@ -31,7 +31,7 @@
 #include <unistd.h>
 #endif
 
-static void delete_memory(uint8_t *memory) {
+static void delete_memory(u8 *memory) {
     if (memory != nullptr) {
 #ifdef WIN32
         const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
@@ -43,7 +43,7 @@ static void delete_memory(uint8_t *memory) {
 }
 
 static void alloc_inner(MemState &state, Address address, size_t page_count, Allocated::iterator block, const char *name) {
-    uint8_t *const memory = &state.memory[address];
+    u8 *const memory = &state.memory[address];
     const size_t aligned_size = page_count * state.page_size;
 
     const Generation generation = ++state.generation;
@@ -71,15 +71,15 @@ bool init(MemState &state) {
 
     const size_t length = GB(4);
 #ifdef WIN32
-    state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, length, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+    state.memory = Memory(static_cast<u8 *>(VirtualAlloc(nullptr, length, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
 #else
     // http://man7.org/linux/man-pages/man2/mmap.2.html
     void *const addr = nullptr;
-    const int prot = PROT_NONE;
-    const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-    const int fd = 0;
+    const s32 prot = PROT_NONE;
+    const s32 flags = MAP_PRIVATE | MAP_ANONYMOUS;
+    const s32 fd = 0;
     const off_t offset = 0;
-    state.memory = Memory(static_cast<uint8_t *>(mmap(addr, length, prot, flags, fd, offset)), delete_memory);
+    state.memory = Memory(static_cast<u8 *>(mmap(addr, length, prot, flags, fd, offset)), delete_memory);
 #endif
     if (!state.memory) {
         LOG_CRITICAL("VirtualAlloc failed");

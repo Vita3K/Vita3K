@@ -17,9 +17,11 @@
 
 #pragma once
 
+#include <util/types.h>
+
 #include <string>
 
 struct DisasmState;
 
 bool init(DisasmState &state);
-std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, uint64_t address, bool thumb);
+std::string disassemble(DisasmState &state, const u8 *code, size_t size, u64 address, bool thumb);

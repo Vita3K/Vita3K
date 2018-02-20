@@ -7,7 +7,7 @@ src/net.cpp
 )
 
 target_include_directories(net PUBLIC include)
-target_link_libraries(net PUBLIC sdl2 vita-headers)
+target_link_libraries(net PUBLIC sdl2 vita-headers util)
 if (WIN32)
     target_link_libraries(net PRIVATE winsock)
 endif()

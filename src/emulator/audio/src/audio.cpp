@@ -19,14 +19,15 @@
 
 #include <audio/state.h>
 #include <util/log.h>
+#include <util/types.h>
 
 #include <cassert>
 #include <cstring>
 
-static const int stream_put_granularity = 512;
+static const s32 stream_put_granularity = 512;
 
-static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
-    int available_to_get = SDL_AudioStreamAvailable(port.callback.stream.get());
+static void mix_out_port(u8 *stream, u8 *temp_buffer, s32 len, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
+    s32 available_to_get = SDL_AudioStreamAvailable(port.callback.stream.get());
     assert(available_to_get >= 0);
 
     while (available_to_get < len) {
@@ -37,8 +38,8 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
             break;
         } else {
             AudioOutput &output = port.shared.outputs.front();
-            const int bytes_to_put = std::min(stream_put_granularity, output.len_bytes);
-            const int ret = SDL_AudioStreamPut(port.callback.stream.get(), output.buf, bytes_to_put);
+            const s32 bytes_to_put = std::min(stream_put_granularity, output.len_bytes);
+            const s32 ret = SDL_AudioStreamPut(port.callback.stream.get(), output.buf, bytes_to_put);
             assert(ret == 0);
             output.buf += bytes_to_put;
             output.len_bytes -= bytes_to_put;
@@ -52,14 +53,14 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
         assert(available_to_get >= 0);
     }
 
-    const int bytes_to_get = std::min(len, available_to_get);
-    const int get_result = SDL_AudioStreamGet(port.callback.stream.get(), temp_buffer, bytes_to_get);
+    const s32 bytes_to_get = std::min(len, available_to_get);
+    const s32 get_result = SDL_AudioStreamGet(port.callback.stream.get(), temp_buffer, bytes_to_get);
     if (get_result > 0) {
         SDL_MixAudio(stream, temp_buffer, bytes_to_get, SDL_MIX_MAXVOLUME);
     }
 }
 
-static void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
+static void SDLCALL audio_callback(void *userdata, Uint8 *stream, s32 len) {
     assert(userdata != nullptr);
     assert(stream != nullptr);
     AudioState &state = *static_cast<AudioState *>(userdata);
