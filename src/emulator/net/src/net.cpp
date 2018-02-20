@@ -20,6 +20,7 @@
 #include <net/functions.h>
 
 #include <net/state.h>
+#include <util/types.h>
 
 #include <cstring>
 
@@ -47,21 +48,21 @@ bool init(NetState &state) {
     return true;
 }
 
-int open_socket(NetState &net, int domain, int type, int protocol) {
+s32 open_socket(NetState &net, s32 domain, s32 type, s32 protocol) {
     abs_socket sock = socket(domain, type, protocol);
-    if (sock >= 0){     
+    if (sock >= 0){
         if (protocol == SCE_NET_IPPROTO_UDP){
             bool _true = true;
             setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (const char *)&_true, 1);
         }
-        const int id = net.next_id++;
+        const s32 id = net.next_id++;
         net.socks.emplace(id, sock);
         return id;
     }
     return -1;
 }
 
-int close_socket(NetState &net, int id){
+s32 close_socket(NetState &net, s32 id){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
 #ifdef WIN32
@@ -75,7 +76,7 @@ int close_socket(NetState &net, int id){
     return -1;
 }
 
-int bind_socket(NetState &net,int id, const SceNetSockaddr *name, unsigned int addrlen){
+s32 bind_socket(NetState &net,s32 id, const SceNetSockaddr *name, u32 addrlen){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         struct sockaddr addr;
@@ -85,7 +86,7 @@ int bind_socket(NetState &net,int id, const SceNetSockaddr *name, unsigned int a
     return -1;
 }
 
-int send_packet(NetState &net, int id, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen){
+s32 send_packet(NetState &net, s32 id, const void *msg, u32 len, s32 flags, const SceNetSockaddr *to, u32 tolen){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         if (to != nullptr){
@@ -99,12 +100,12 @@ int send_packet(NetState &net, int id, const void *msg, unsigned int len, int fl
     return -1;
 }
 
-int recv_packet(NetState &net, int id, void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen){
+s32 recv_packet(NetState &net, s32 id, void *buf, u32 len, s32 flags, SceNetSockaddr *from, u32 *fromlen){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         if (from != nullptr){
             struct sockaddr addr;
-            int res = recvfrom(socket->second, (char *)buf, len, flags, &addr, (socklen_t*)fromlen);
+            s32 res = recvfrom(socket->second, (char *)buf, len, flags, &addr, (socklen_t*)fromlen);
             if (res >= 0){
                 convertPosixSockaddrToSce(&addr, from);
                 *fromlen = sizeof(SceNetSockaddrIn);
@@ -117,7 +118,7 @@ int recv_packet(NetState &net, int id, void *buf, unsigned int len, int flags, S
     return -1;
 }
 
-int get_socket_address(NetState &net, int id, SceNetSockaddr *name, unsigned int *namelen){
+s32 get_socket_address(NetState &net, s32 id, SceNetSockaddr *name, u32 *namelen){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         struct sockaddr addr;
@@ -125,7 +126,7 @@ int get_socket_address(NetState &net, int id, SceNetSockaddr *name, unsigned int
         if (name != nullptr){
             *namelen = sizeof(sockaddr_in);
         }
-        int res = getsockname(socket->second, &addr, (socklen_t*)namelen);
+        s32 res = getsockname(socket->second, &addr, (socklen_t*)namelen);
         if (res >= 0){
             convertPosixSockaddrToSce(&addr, name);
             *namelen = sizeof(SceNetSockaddrIn);
@@ -135,7 +136,7 @@ int get_socket_address(NetState &net, int id, SceNetSockaddr *name, unsigned int
     return -1;
 }
 
-int set_socket_options(NetState &net, int id, int level, int optname, const void *optval, unsigned int optlen){
+s32 set_socket_options(NetState &net, s32 id, s32 level, s32 optname, const void *optval, u32 optlen){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         if (optname == SCE_NET_SO_NBIO){
@@ -144,7 +145,7 @@ int set_socket_options(NetState &net, int id, int level, int optname, const void
             memcpy(&mode, optval, optlen);
             return ioctlsocket(socket->second, FIONBIO, &mode);
 #else
-            int mode;
+            s32 mode;
             memcpy(&mode, optval, optlen);
             return ioctl(socket->second, FIONBIO, &mode);
 #endif
@@ -154,7 +155,7 @@ int set_socket_options(NetState &net, int id, int level, int optname, const void
     return -1;
 }
 
-int connect_socket(NetState &net, int id, const SceNetSockaddr *name, unsigned int namelen){
+s32 connect_socket(NetState &net, s32 id, const SceNetSockaddr *name, u32 namelen){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         struct sockaddr addr;
@@ -164,7 +165,7 @@ int connect_socket(NetState &net, int id, const SceNetSockaddr *name, unsigned i
     return -1;
 }
 
-int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *addrlen){
+s32 accept_socket(NetState &net, s32 id, SceNetSockaddr *name, u32 *addrlen){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         struct sockaddr addr;
@@ -172,7 +173,7 @@ int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *add
         if (new_socket >= 0){
             convertPosixSockaddrToSce(&addr, name);
             *addrlen = sizeof(SceNetSockaddrIn);
-            const int id = net.next_id++;
+            const s32 id = net.next_id++;
             net.socks.emplace(id, new_socket);
             return id;
         }
@@ -180,7 +181,7 @@ int accept_socket(NetState &net, int id, SceNetSockaddr *name, unsigned int *add
     return -1;
 }
 
-int listen_socket(NetState &net, int id, int backlog){
+s32 listen_socket(NetState &net, s32 id, s32 backlog){
     const sockets::const_iterator socket = net.socks.find(id);
     if (socket != net.socks.end()) {
         return listen(socket->second, backlog);

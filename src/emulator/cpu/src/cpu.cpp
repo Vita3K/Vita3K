@@ -21,6 +21,7 @@
 #include <disasm/state.h>
 #include <mem/ptr.h>
 #include <util/log.h>
+#include <util/types.h>
 
 #include <unicorn/unicorn.h>
 
@@ -53,22 +54,22 @@ static bool is_thumb_mode(uc_engine *uc) {
     return mode & UC_MODE_THUMB;
 }
 
-static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+static void code_hook(uc_engine *uc, u64 address, u32 size, void *user_data) {
     CPUState &state = *static_cast<CPUState *>(user_data);
     const MemState &mem = *state.mem;
-    const uint8_t *const code = Ptr<const uint8_t>(static_cast<Address>(address)).get(mem);
+    const u8 *const code = Ptr<const u8>(static_cast<Address>(address)).get(mem);
     const size_t buffer_size = GB(4) - address;
     const bool thumb = is_thumb_mode(uc);
     const std::string disassembly = disassemble(state.disasm, code, buffer_size, address, thumb);
 	LOG_TRACE("{:#08x} {}", address, disassembly);
 }
 
-static void log_memory_access(const char *type, Address address, int size, int64_t value, const MemState &mem) {
+static void log_memory_access(const char *type, Address address, s32 size, s64 value, const MemState &mem) {
     const char *const name = mem_name(address, mem);
 	LOG_TRACE("{} {} bytes, address {:#08x} ( {} ), value {:#x}", type, size, address, name, value);
 }
 
-static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+static void read_hook(uc_engine *uc, uc_mem_type type, u64 address, s32 size, s64 value, void *user_data) {
     assert(value == 0);
 
     const CPUState &state = *static_cast<const CPUState *>(user_data);
@@ -77,40 +78,40 @@ static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int siz
     log_memory_access("Read", static_cast<Address>(address), size, value, mem);
 }
 
-static void write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+static void write_hook(uc_engine *uc, uc_mem_type type, u64 address, s32 size, s64 value, void *user_data) {
     const CPUState &state = *static_cast<const CPUState *>(user_data);
     const MemState &mem = *state.mem;
     log_memory_access("Write", static_cast<Address>(address), size, value, mem);
 }
 
-static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
+static void intr_hook(uc_engine *uc, u32 intno, void *user_data) {
     assert(intno == 2);
 
     CPUState &state = *static_cast<CPUState *>(user_data);
 
-    uint32_t pc = 0;
+    u32 pc = 0;
     uc_err err = uc_reg_read(uc, UC_ARM_REG_PC, &pc);
     assert(err == UC_ERR_OK);
 
     if (is_thumb_mode(uc)) {
         const Address svc_address = pc - 2;
-        uint16_t svc_instruction = 0;
+        u16 svc_instruction = 0;
         err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
         assert(err == UC_ERR_OK);
-        const uint8_t imm = svc_instruction & 0xff;
+        const u8 imm = svc_instruction & 0xff;
         state.call_svc(imm, pc);
     } else {
         const Address svc_address = pc - 4;
-        uint32_t svc_instruction = 0;
+        u32 svc_instruction = 0;
         err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
         assert(err == UC_ERR_OK);
-        const uint32_t imm = svc_instruction & 0xffffff;
+        const u32 imm = svc_instruction & 0xffffff;
         state.call_svc(imm, pc);
     }
 }
 
 static void enable_vfp_fpu(uc_engine *uc) {
-    uint64_t c1_c0_2 = 0;
+    u64 c1_c0_2 = 0;
     uc_err err = uc_reg_read(uc, UC_ARM_REG_C1_C0_2, &c1_c0_2);
     assert(err == UC_ERR_OK);
 
@@ -119,7 +120,7 @@ static void enable_vfp_fpu(uc_engine *uc) {
     err = uc_reg_write(uc, UC_ARM_REG_C1_C0_2, &c1_c0_2);
     assert(err == UC_ERR_OK);
 
-    const uint64_t fpexc = 0xf0000000;
+    const u64 fpexc = 0xf0000000;
 
     err = uc_reg_write(uc, UC_ARM_REG_FPEXC, &fpexc);
     assert(err == UC_ERR_OK);
@@ -173,7 +174,7 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
 }
 
 bool run(CPUState &state) {
-    uint64_t pc = 0;
+    u64 pc = 0;
     uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &pc);
     assert(err == UC_ERR_OK);
 
@@ -192,26 +193,26 @@ void stop(CPUState &state) {
     assert(err == UC_ERR_OK);
 }
 
-uint32_t read_reg(CPUState &state, size_t index) {
+u32 read_reg(CPUState &state, size_t index) {
     assert(index >= 0);
     assert(index <= 3);
 
-    uint32_t value = 0;
+    u32 value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_R0 + index, &value);
     assert(err == UC_ERR_OK);
 
     return value;
 }
 
-uint32_t read_sp(CPUState &state) {
-    uint32_t value = 0;
+u32 read_sp(CPUState &state) {
+    u32 value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_SP, &value);
     assert(err == UC_ERR_OK);
 
     return value;
 }
 
-void write_reg(CPUState &state, size_t index, uint32_t value) {
+void write_reg(CPUState &state, size_t index, u32 value) {
     assert(index >= 0);
     assert(index <= 1);
 
@@ -219,7 +220,7 @@ void write_reg(CPUState &state, size_t index, uint32_t value) {
     assert(err == UC_ERR_OK);
 }
 
-void write_pc(CPUState &state, uint32_t value) {
+void write_pc(CPUState &state, u32 value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_PC, &value);
     assert(err == UC_ERR_OK);
 }

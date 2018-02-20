@@ -1,5 +1,6 @@
 #include <util/log.h>
 #include <util/string_convert.h>
+#include <util/types.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -101,11 +102,11 @@ std::string wide_to_utf(const std::wstring& str)
     return myconv.to_bytes(str);
 }
 
-ProgramArgsWide process_args(int argc, char* argv[])
+ProgramArgsWide process_args(s32 argc, char* argv[])
 {
     ProgramArgsWide args;
 
-    int n_args = argc;
+    s32 n_args = argc;
     args.reserve(n_args);
 
 #ifdef _WIN32

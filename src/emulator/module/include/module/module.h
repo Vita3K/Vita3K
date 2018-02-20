@@ -23,11 +23,12 @@
 
 #include <host/import_fn.h>
 #include <host/state.h>
+#include <util/types.h>
 
 #include <cassert>
 
-int unimplemented(const char *name);
-int error(const char *name, int error);
+s32 unimplemented(const char *name);
+s32 error(const char *name, s32 error);
 
 #define BRIDGE_DECL(name) extern ImportFn *const import_##name;
 #define BRIDGE_IMPL(name) ImportFn *const import_##name = &Bridge<decltype(&export_##name), &export_##name>::call;

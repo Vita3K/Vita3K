@@ -4,7 +4,7 @@
 #include <nids/nids.h>
 #undef NID
 
-const char *import_name(uint32_t nid) {
+const char *import_name(u32 nid) {
     switch (nid) {
 #define NID(name, nid) \
     case nid:          \

@@ -17,15 +17,17 @@
 
 #pragma once
 
+#include <util/types.h>
+
 #include <functional>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
-typedef uint32_t Address;
+typedef u32 Address;
 typedef size_t Generation;
-typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
+typedef std::unique_ptr<u8[], std::function<void(u8 *)>> Memory;
 typedef std::vector<Generation> Allocated;
 typedef std::map<Generation, std::string> GenerationNames;
 

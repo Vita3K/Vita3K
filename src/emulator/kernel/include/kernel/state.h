@@ -21,6 +21,7 @@
 
 #include <psp2/types.h>
 #include <psp2/rtc.h>
+#include <util/types.h>
 
 #include <map>
 #include <mutex>
@@ -42,7 +43,7 @@ typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 
 namespace emu {
-    typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
+    typedef Ptr<s32(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
 }
 
 struct WaitingThreadState {

@@ -29,6 +29,7 @@
 #include <nids/functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/types.h>
 
 #include <SDL_events.h>
 #include <SDL_filesystem.h>
@@ -44,7 +45,7 @@ static const bool LOG_IMPORT_CALLS = false;
 #include <nids/nids.h>
 #undef NID
 
-static ImportFn *resolve_import(uint32_t nid) {
+static ImportFn *resolve_import(u32 nid) {
     switch (nid) {
 #define NID(name, nid) \
     case nid:          \
@@ -92,7 +93,7 @@ bool handle_events(HostState &host) {
     return true;
 }
 
-void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
+void call_import(HostState &host, u32 nid, SceUID thread_id) {
     if (LOG_IMPORT_CALLS) {
         const char *const name = import_name(nid);
 		LOG_TRACE("NID {:#08x} ({})) called", nid, name);

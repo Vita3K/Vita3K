@@ -47,18 +47,18 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
         return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_SIZE);   
     }
     
-    const int channels = (mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
+    const s32 channels = (mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
     const AudioStreamPtr stream(SDL_NewAudioStream(AUDIO_S16LSB, channels, freq, host.audio.ro.spec.format, host.audio.ro.spec.channels, host.audio.ro.spec.freq), SDL_FreeAudioStream);
     if (!stream) {
         return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_NOT_OPENED);
     }
 
     const AudioOutPortPtr port = std::make_shared<AudioOutPort>();
-    port->ro.len_bytes = len * channels * sizeof(int16_t);
+    port->ro.len_bytes = len * channels * sizeof(s16);
     port->callback.stream = stream;
 
     const std::unique_lock<std::mutex> lock(host.audio.shared.mutex);
-    const int port_id = host.audio.shared.next_port_id++;
+    const s32 port_id = host.audio.shared.next_port_id++;
     host.audio.shared.out_ports.emplace(port_id, port);
 
     return port_id;
@@ -81,7 +81,7 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
     stop(*thread->cpu);
 
     AudioOutput output;
-    output.buf = static_cast<const uint8_t *>(buf);
+    output.buf = static_cast<const u8 *>(buf);
     output.len_bytes = prt->ro.len_bytes;
     output.thread = thread_id;
 

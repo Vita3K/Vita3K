@@ -17,6 +17,7 @@
 
 #include "relocation.h"
 #include <util/log.h>
+#include <util/types.h>
 
 #include <assert.h>
 #include <iostream>
@@ -40,51 +41,51 @@ enum Code {
 };
 
 struct Entry {
-    uint8_t is_short : 4;
-    uint8_t symbol_segment : 4;
-    uint8_t code;
+    u8 is_short : 4;
+    u8 symbol_segment : 4;
+    u8 code;
 };
 
 struct ShortEntry : Entry {
-    uint16_t data_segment : 4;
-    uint16_t offset_lo : 12;
-    uint32_t offset_hi : 20;
-    uint32_t addend : 12;
+    u16 data_segment : 4;
+    u16 offset_lo : 12;
+    u32 offset_hi : 20;
+    u32 addend : 12;
 };
 
 struct LongEntry : Entry {
-    uint16_t data_segment : 4;
-    uint16_t code2 : 8;
-    uint16_t dist2 : 4;
-    uint32_t addend;
-    uint32_t offset;
+    u16 data_segment : 4;
+    u16 code2 : 8;
+    u16 dist2 : 4;
+    u32 addend;
+    u32 offset;
 };
 
 static_assert(sizeof(ShortEntry) == 8, "Short entry has incorrect size.");
 static_assert(sizeof(LongEntry) == 12, "Long entry has incorrect size.");
 
-static void write(void *data, uint32_t value) {
+static void write(void *data, u32 value) {
     memcpy(data, &value, sizeof(value));
 }
 
-static void write_masked(void *data, uint32_t symbol, uint32_t mask) {
+static void write_masked(void *data, u32 symbol, u32 mask) {
     write(data, symbol & mask);
 }
 
-static void write_thumb_call(void *data, uint32_t symbol) {
+static void write_thumb_call(void *data, u32 symbol) {
     // This is cribbed from UVLoader, but I used bitfields to get rid of some shifting and masking.
     struct Upper {
-        uint16_t imm10 : 10;
-        uint16_t sign : 1;
-        uint16_t ignored : 5;
+        u16 imm10 : 10;
+        u16 sign : 1;
+        u16 ignored : 5;
     };
 
     struct Lower {
-        uint16_t imm11 : 11;
-        uint16_t j2 : 1;
-        uint16_t unknown : 1;
-        uint16_t j1 : 1;
-        uint16_t unknown2 : 2;
+        u16 imm11 : 11;
+        u16 j2 : 1;
+        u16 unknown : 1;
+        u16 j1 : 1;
+        u16 unknown2 : 2;
     };
 
     struct Pair {
@@ -102,12 +103,12 @@ static void write_thumb_call(void *data, uint32_t symbol) {
     pair->lower.j1 = pair->upper.sign ^ ((~symbol) >> 23);
 }
 
-static void write_mov_abs(void *data, uint16_t symbol) {
+static void write_mov_abs(void *data, u16 symbol) {
     struct Instruction {
-        uint32_t imm12 : 12;
-        uint32_t ignored1 : 4;
-        uint32_t imm4 : 4;
-        uint32_t ignored2 : 12;
+        u32 imm12 : 12;
+        u32 ignored1 : 4;
+        u32 imm4 : 4;
+        u32 ignored2 : 12;
     };
 
     static_assert(sizeof(Instruction) == 4, "Incorrect size.");
@@ -117,20 +118,20 @@ static void write_mov_abs(void *data, uint16_t symbol) {
     instruction->imm4 = symbol >> 12;
 }
 
-static void write_thumb_mov_abs(void *data, uint16_t symbol) {
+static void write_thumb_mov_abs(void *data, u16 symbol) {
     // This is cribbed from UVLoader, but I used bitfields to get rid of some shifting and masking.
     struct Upper {
-        uint16_t imm4 : 4;
-        uint16_t ignored1 : 6;
-        uint16_t i : 1;
-        uint16_t ignored2 : 5;
+        u16 imm4 : 4;
+        u16 ignored1 : 6;
+        u16 i : 1;
+        u16 ignored2 : 5;
     };
 
     struct Lower {
-        uint16_t imm8 : 8;
-        uint16_t ignored1 : 4;
-        uint16_t imm3 : 3;
-        uint16_t ignored2 : 1;
+        u16 imm8 : 8;
+        u16 ignored1 : 4;
+        u16 imm3 : 3;
+        u16 ignored2 : 1;
     };
 
     struct Pair {
@@ -147,7 +148,7 @@ static void write_thumb_mov_abs(void *data, uint16_t symbol) {
     pair->upper.imm4 = symbol >> 12;
 }
 
-static bool relocate(void *data, Code code, uint32_t s, uint32_t a, uint32_t p) {
+static bool relocate(void *data, Code code, u32 s, u32 a, u32 p) {
     switch (code) {
     case None:
     case V4BX: // Untested.
@@ -199,7 +200,7 @@ static bool relocate(void *data, Code code, uint32_t s, uint32_t a, uint32_t p) 
 }
 
 bool relocate(const void *entries, size_t size, const SegmentAddresses &segments, const MemState &mem) {
-    const void *const end = static_cast<const uint8_t *>(entries) + size;
+    const void *const end = static_cast<const u8 *>(entries) + size;
     const Entry *entry = static_cast<const Entry *>(entries);
     while (entry < end) {
         assert(entry->is_short == 0);
@@ -217,7 +218,7 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
             const Ptr<void> segment_start = segments.find(long_entry->data_segment)->second;
             const Address p = segment_start.address() + long_entry->offset;
             const Address a = long_entry->addend;
-            if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
+            if (!relocate(Ptr<u32>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
                 return false;
             }
 

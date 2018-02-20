@@ -24,7 +24,7 @@
 #include <mem/mem.h>
 #include <mem/ptr.h>
 
-Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key) {
+Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, s32 key) {
     SlotToAddress &slot_to_address = kernel.tls[thread_id];
 
     const SlotToAddress::const_iterator existing = slot_to_address.find(key);

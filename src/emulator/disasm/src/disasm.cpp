@@ -18,6 +18,7 @@
 #include <disasm/functions.h>
 
 #include <disasm/state.h>
+#include <util/types.h>
 
 #include <capstone.h>
 
@@ -46,7 +47,7 @@ bool init(DisasmState &state) {
     return true;
 }
 
-std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, uint64_t address, bool thumb) {
+std::string disassemble(DisasmState &state, const u8 *code, size_t size, u64 address, bool thumb) {
     const cs_err err = cs_option(state.csh, CS_OPT_MODE, thumb ? CS_MODE_THUMB : CS_MODE_ARM);
     assert(err == CS_ERR_OK);
 

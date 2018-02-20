@@ -23,6 +23,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
+#include <util/types.h>
 
 struct SDL_Window;
 
@@ -32,7 +33,7 @@ struct HostState {
     std::string base_path;
     std::string pref_path;
     size_t frame_count = 0;
-    uint32_t t1 = 0;
+    u32 t1 = 0;
     WindowPtr window;
     MemState mem;
     CtrlState ctrl;

@@ -25,7 +25,7 @@
 struct CPUState;
 struct ThreadState;
 
-typedef std::function<void(uint32_t)> CallImport;
+typedef std::function<void(u32)> CallImport;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 
 ThreadStatePtr init_thread(Ptr<const void> entry_point, size_t stack_size, bool log_code, MemState &mem, CallImport call_import);

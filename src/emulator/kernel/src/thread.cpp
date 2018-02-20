@@ -21,6 +21,7 @@
 
 #include <cpu/functions.h>
 #include <util/resource.h>
+#include <util/types.h>
 
 #include <cassert>
 #include <cstring>
@@ -35,9 +36,9 @@ ThreadStatePtr init_thread(Ptr<const void> entry_point, size_t stack_size, bool 
     const Address stack_top = thread->stack->get() + stack_size;
     memset(Ptr<void>(thread->stack->get()).get(mem), 0xcc, stack_size);
 
-    const CallSVC call_svc = [call_import, &mem](uint32_t imm, Address pc) {
+    const CallSVC call_svc = [call_import, &mem](u32 imm, Address pc) {
         assert(imm == 0);
-        const uint32_t nid = *Ptr<uint32_t>(pc + 4).get(mem);
+        const u32 nid = *Ptr<u32>(pc + 4).get(mem);
         call_import(nid);
     };
 

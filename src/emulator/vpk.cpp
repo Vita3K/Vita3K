@@ -21,12 +21,13 @@
 
 #include <io/state.h>
 #include <util/string_convert.h>
+#include <util/types.h>
 
 #include <cassert>
 #include <cstring>
 #include <vector>
 
-typedef std::vector<uint8_t> Buffer;
+typedef std::vector<u8> Buffer;
 
 static void delete_zip(mz_zip_archive *zip) {
     mz_zip_reader_end(zip);
@@ -36,8 +37,8 @@ static void delete_zip(mz_zip_archive *zip) {
 static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBuf, size_t n) {
     Buffer *const buffer = static_cast<Buffer *>(pOpaque);
     assert(file_ofs == buffer->size());
-    const uint8_t *const first = static_cast<const uint8_t *>(pBuf);
-    const uint8_t *const last = &first[n];
+    const u8 *const first = static_cast<const u8 *>(pBuf);
+    const u8 *const last = &first[n];
     buffer->insert(buffer->end(), first, last);
 
     return n;
@@ -61,7 +62,7 @@ bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const st
         return false;
     }
 
-    const int eboot_index = mz_zip_reader_locate_file(zip.get(), "eboot.bin", nullptr, 0);
+    const s32 eboot_index = mz_zip_reader_locate_file(zip.get(), "eboot.bin", nullptr, 0);
     if (eboot_index < 0) {
         return false;
     }

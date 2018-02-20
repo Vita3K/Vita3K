@@ -17,6 +17,7 @@
 
 #include <module/module.h>
 #include <util/log.h>
+#include <util/types.h>
 
 #include <iostream>
 #include <mutex>
@@ -27,7 +28,7 @@ typedef std::set<std::string> NameSet;
 static std::mutex mutex;
 static NameSet logged;
 
-int unimplemented(const char *name) {
+s32 unimplemented(const char *name) {
     bool inserted = false;
     {
         const std::lock_guard<std::mutex> lock(mutex);
@@ -41,7 +42,7 @@ int unimplemented(const char *name) {
     return 0;
 }
 
-int error(const char *name, int error) {
+s32 error(const char *name, s32 error) {
     bool inserted = false;
 
     {
