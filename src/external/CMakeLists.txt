@@ -24,6 +24,9 @@ option(CAPSTONE_X86_SUPPORT "x86 support" OFF)
 add_subdirectory(capstone EXCLUDE_FROM_ALL)
 set(capstone_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/capstone/include" PARENT_SCOPE)
 
+add_library(crypto-algorithms STATIC crypto-algorithms/sha256.c crypto-algorithms/sha256.h)
+target_include_directories(crypto-algorithms PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/crypto-algorithms")
+
 add_library(dirent INTERFACE)
 if(WIN32)
     target_include_directories(dirent INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/dirent/include")

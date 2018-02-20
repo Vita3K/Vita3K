@@ -18,6 +18,8 @@
 #include "SceGxm.h"
 
 #include "gxm.h"
+
+#include <crypto/hash.h>
 #include <util/log.h>
 
 #include <glbinding/Binding.h>
@@ -31,22 +33,6 @@ using namespace emu;
 using namespace glbinding;
 
 #define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
-
-// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1a_hash
-static uint64_t fnv1a(const void *data, size_t size) {
-    GXM_PROFILE(__FUNCTION__);
-
-    const uint8_t *const begin = static_cast<const uint8_t *>(data);
-    const uint8_t *const end = begin + size;
-    uint64_t result = 0xcbf29ce484222325;
-
-    for (const uint8_t *p = begin; p != end; ++p) {
-        result ^= *p;
-        result *= 0x100000001b3;
-    }
-
-    return result;
-}
 
 #if MICROPROFILE_ENABLED != 0
 static void before_callback(const FunctionCall &fn) {
@@ -94,13 +80,24 @@ static bool compile_shader(GLuint shader, const GLchar *source) {
 static bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *base_path) {
     GXM_PROFILE(__FUNCTION__);
 
-    const uint64_t hash = fnv1a(program, program->size);
+    const Sha256Hash hash_bytes = sha256(program, program->size);
+    const std::array<char, 65> hash_text = hex(hash_bytes);
+    
     std::ostringstream path;
-    path << base_path << "shaders/" << hash << ".glsl";
+    path << base_path << "shaders/" << hash_text.data() << ".glsl";
 
     std::ifstream is(path.str());
     if (is.fail()) {
         LOG_ERROR("Couldn't open '{}' for reading.", path.str());
+        
+        // Dump missing shader binary.
+        std::ostringstream gxp_path;
+        gxp_path << hash_text.data() << ".gxp";
+        std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
+        if (!gxp.fail()) {
+            gxp.write(reinterpret_cast<const char *>(program), program->size);
+        }
+        
         return false;
     }
 
