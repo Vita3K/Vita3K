@@ -19,27 +19,28 @@
 
 #include <psp2/types.h>
 #include <psp2/io/fcntl.h>
-#include <iostream>
+
 #include <cassert>
 #include <cstring>
 #include <vector>
 
 class ReadOnlyInMemFile {
-	std::vector<char> buf;
-	size_t            currentPos = 0;
+    std::vector<char> buf;
+    size_t currentPos = 0;
+
 public:
-	ReadOnlyInMemFile();
-	ReadOnlyInMemFile(const char* data, size_t size);
+    ReadOnlyInMemFile();
+    ReadOnlyInMemFile(const char *data, size_t size);
 
-	char* alloc_data(size_t bufsize);
+    char *alloc_data(size_t bufsize);
 
-	size_t tell() const { return currentPos; }
-	size_t size() const { return buf.size(); }
+    size_t tell() const { return currentPos; }
+    size_t size() const { return buf.size(); }
 
-	bool valid() const { return !buf.empty(); }
-	operator bool() const { return valid(); }
+    bool valid() const { return !buf.empty(); }
+    operator bool() const { return valid(); }
 
-	size_t read(void* ibuf, size_t size);
-	const char* data();
-	bool seek(int offset, int origin);
+    size_t read(void *ibuf, size_t size);
+    const char *data();
+    bool seek(int offset, int origin);
 };

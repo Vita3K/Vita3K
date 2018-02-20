@@ -17,50 +17,49 @@
 
 #include <io/file.h>
 
-ReadOnlyInMemFile::ReadOnlyInMemFile() = default; 
+ReadOnlyInMemFile::ReadOnlyInMemFile() = default;
 
-ReadOnlyInMemFile::ReadOnlyInMemFile(const char* data, size_t size) 
-	: buf(data, data+size) {
-} 	
-
-char* ReadOnlyInMemFile::alloc_data(size_t bufsize) {
-		buf.resize(bufsize);
-		return buf.data();
-} 
-
-size_t ReadOnlyInMemFile::read(void* ibuf, size_t size) {
-	size_t res = size;
-
-	if (currentPos + size > buf.size()) {
-		res = buf.size() - currentPos;	
-	}		
-
-	memcpy(ibuf, buf.data() + currentPos, res);
-	currentPos += res;
-
-	return res;
+ReadOnlyInMemFile::ReadOnlyInMemFile(const char *data, size_t size)
+    : buf(data, data + size) {
 }
 
+char *ReadOnlyInMemFile::alloc_data(size_t bufsize) {
+    buf.resize(bufsize);
+    return buf.data();
+}
 
-const char* ReadOnlyInMemFile::data() {
-	return buf.data();
+size_t ReadOnlyInMemFile::read(void *ibuf, size_t size) {
+    size_t res = size;
+
+    if (currentPos + size > buf.size()) {
+        res = buf.size() - currentPos;
+    }
+
+    memcpy(ibuf, buf.data() + currentPos, res);
+    currentPos += res;
+
+    return res;
+}
+
+const char *ReadOnlyInMemFile::data() {
+    return buf.data();
 }
 
 bool ReadOnlyInMemFile::seek(int offset, int origin) {
-	if ((offset < 0) || !valid()) {
-		return false;		
-	}
+    if ((offset < 0) || !valid()) {
+        return false;
+    }
 
-	if (origin == SCE_SEEK_SET) {
-		currentPos = offset;
-		return true;		
-	}
+    if (origin == SCE_SEEK_SET) {
+        currentPos = offset;
+        return true;
+    }
 
-	else if (origin == SCE_SEEK_CUR) {
-		currentPos += offset;
-		return true;		
-	}
+    else if (origin == SCE_SEEK_CUR) {
+        currentPos += offset;
+        return true;
+    }
 
-	currentPos = buf.size() + offset;
-	return true;
+    currentPos = buf.size() + offset;
+    return true;
 }

@@ -20,6 +20,8 @@
 #include <miniz.h>
 #include <psp2/types.h>
 
+#include <io/file.h>
+
 #include <cstdio>
 #include <map>
 #include <memory>
@@ -29,8 +31,6 @@ struct _WDIR;
 #else
 #include <dirent.h>
 #endif
-
-#include <io/file.h>
 
 typedef std::shared_ptr<FILE> FilePtr;
 typedef std::shared_ptr<mz_zip_archive> ZipPtr;

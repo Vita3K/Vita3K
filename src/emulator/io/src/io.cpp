@@ -17,8 +17,8 @@
 
 #include <io/functions.h>
 
-#include <psp2/io/stat.h>
 #include <psp2/io/dirent.h>
+#include <psp2/io/stat.h>
 
 #include <io/state.h>
 #include <util/log.h>
@@ -26,39 +26,40 @@
 #include <psp2/io/fcntl.h>
 
 #ifdef WIN32
-# define WIN32_LEAN_AND_MEAN
-# include <Windows.h>
-#include <util/string_convert.h>
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include <dirent.h>
+#include <util/string_convert.h>
 #else
-# include <unistd.h>
-# include <sys/stat.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 #include <algorithm>
 #include <cassert>
-#include <string>
 #include <iostream>
+#include <string>
 
 static ReadOnlyInMemFile open_zip(mz_zip_archive &zip, const char *entry_path) {
-	const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
-	   
-	if (index < 0) {
-		return ReadOnlyInMemFile();
-	}
+    const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
 
-	const auto zip_file = mz_zip_reader_extract_iter_new(&zip, index, 0);
-	
-	if (!zip_file) {
-		return ReadOnlyInMemFile();	
-	}   
+    if (index < 0) {
+        return ReadOnlyInMemFile();
+    }
 
-	ReadOnlyInMemFile res; char* data = res.alloc_data(zip_file->file_stat.m_uncomp_size);
+    const auto zip_file = mz_zip_reader_extract_iter_new(&zip, index, 0);
 
-	mz_zip_reader_extract_iter_read(zip_file, data, zip_file->file_stat.m_uncomp_size);
-	mz_zip_reader_extract_iter_free(zip_file);
+    if (!zip_file) {
+        return ReadOnlyInMemFile();
+    }
 
-	return res;
+    ReadOnlyInMemFile res;
+    char *data = res.alloc_data(zip_file->file_stat.m_uncomp_size);
+
+    mz_zip_reader_extract_iter_read(zip_file, data, zip_file->file_stat.m_uncomp_size);
+    mz_zip_reader_extract_iter_free(zip_file);
+
+    return res;
 }
 
 static void delete_file(FILE *file) {
@@ -67,7 +68,7 @@ static void delete_file(FILE *file) {
     }
 }
 
-static void delete_dir(DIR* dir) {
+static void delete_dir(DIR *dir) {
     if (dir != nullptr) {
         closedir(dir);
     }
@@ -82,9 +83,8 @@ const char *translate_open_mode(int flags) {
                 } else {
                     return "wb+";
                 }
-
             } else {
-            	return "rb+";
+                return "rb+";
             }
         } else {
             if (flags & SCE_O_APPEND) {
@@ -98,14 +98,15 @@ const char *translate_open_mode(int flags) {
     }
 }
 
-std::string translate_path(const char *part_name, const char *path, const char* pref_path){
+std::string translate_path(const char *part_name, const char *path, const char *pref_path) {
     std::string res = pref_path;
     res += part_name;
     int i = strlen(part_name);
     res += "/";
 
-    if (path[i+1] == '/') i++;
-    res += &path[i+1];
+    if (path[i + 1] == '/')
+        i++;
+    res += &path[i + 1];
 
     return res;
 }
@@ -142,9 +143,9 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         assert(flags >= 0);
 
         TtyType type;
-        if(flags==SCE_O_RDONLY){
+        if (flags == SCE_O_RDONLY) {
             type = TTY_IN;
-        } else if (flags==SCE_O_WRONLY) {
+        } else if (flags == SCE_O_WRONLY) {
             type = TTY_OUT;
         }
 
@@ -160,8 +161,9 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         }
 
         int i = 5;
-        if (path[5] == '/') i++;
-        
+        if (path[5] == '/')
+            i++;
+
         const ReadOnlyInMemFile file = open_zip(*io.vpk, &path[i]);
 
         const SceUID fd = io.next_fd++;
@@ -213,7 +215,7 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
 
     AppFiles::iterator app_file = io.app_files.find(fd);
     if (app_file != io.app_files.end()) {
-        auto is =  app_file->second.read(data, size);
+        auto is = app_file->second.read(data, size);
         return is;
     }
 
@@ -224,7 +226,7 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
 
     const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
     if (tty_file != io.tty_files.end()) {
-        if(tty_file->second == TTY_IN){
+        if (tty_file->second == TTY_IN) {
             std::cin.read(reinterpret_cast<char *>(data), size);
             return size;
         }
@@ -246,8 +248,8 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
 
     const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
     if (tty_file != io.tty_files.end()) {
-        if(tty_file->second == TTY_OUT){
-            std::string s(reinterpret_cast<char const*>(data),size);
+        if (tty_file->second == TTY_OUT) {
+            std::string s(reinterpret_cast<char const *>(data), size);
             LOG_INFO("*** TTY: {}", s);
             return size;
         }
@@ -264,7 +266,7 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io) {
 
     const StdFiles::const_iterator std_file = io.std_files.find(fd);
     AppFiles::iterator app_file = io.app_files.find(fd);
-  
+
     assert(std_file != io.std_files.end() || app_file != io.app_files.end());
 
     if (std_file == io.std_files.end() && app_file == io.app_files.end()) {
@@ -284,7 +286,8 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io) {
         break;
     }
 
-    int ret = 0; long pos = 0;
+    int ret = 0;
+    long pos = 0;
 
     if (std_file != io.std_files.end()) {
         ret = fseek(std_file->second.get(), offset, base);
@@ -297,7 +300,7 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io) {
     }
 
     if (std_file != io.std_files.end()) {
-    	pos = ftell(std_file->second.get());
+        pos = ftell(std_file->second.get());
     } else {
         pos = app_file->second.tell();
     }
@@ -312,7 +315,7 @@ void close_file(IOState &io, SceUID fd) {
     io.app_files.erase(fd);
 }
 
-int remove_file(const char *file, const char *pref_path){
+int remove_file(const char *file, const char *pref_path) {
     // TODO Hacky magic numbers.
     assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
     if (strncmp(file, "ux0:", 4) == 0) {
@@ -326,19 +329,19 @@ int remove_file(const char *file, const char *pref_path){
 #endif
     } else if (strncmp(file, "uma0:", 5) == 0) {
         std::string file_path = translate_path("uma0", file, pref_path);
-        
+
 #ifdef WIN32
         DeleteFileA(file_path.c_str());
         return 0;
 #else
         return unlink(file_path.c_str());
-#endif 
+#endif
     } else {
         return -1;
     }
 }
 
-int create_dir(const char *dir, int mode, const char *pref_path){
+int create_dir(const char *dir, int mode, const char *pref_path) {
     // TODO Hacky magic numbers.
     assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
     if (strncmp(dir, "ux0:", 4) == 0) {
@@ -364,7 +367,7 @@ int create_dir(const char *dir, int mode, const char *pref_path){
     }
 }
 
-int remove_dir(const char *dir, const char *pref_path){
+int remove_dir(const char *dir, const char *pref_path) {
     // TODO Hacky magic numbers.
     assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
     if (strncmp(dir, "ux0:", 4) == 0) {
@@ -378,13 +381,13 @@ int remove_dir(const char *dir, const char *pref_path){
 #endif
     } else if (strncmp(dir, "uma0:", 5) == 0) {
         std::string dir_path = translate_path("uma0", dir, pref_path);
-        
+
 #ifdef WIN32
         RemoveDirectoryA(dir_path.c_str());
         return 0;
 #else
         return rmdir(dir_path.c_str());
-#endif 
+#endif
     } else {
         return -1;
     }
@@ -429,8 +432,7 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
 
     if (S_ISREG(sb.st_mode)) {
         statp->st_mode = SCE_S_IFREG;
-    }
-    else if (S_ISDIR(sb.st_mode)) {
+    } else if (S_ISDIR(sb.st_mode)) {
         statp->st_mode = SCE_S_IFDIR;
     }
 
@@ -477,9 +479,9 @@ int read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
     const DirEntries::const_iterator dir = io.dir_entries.find(fd);
     if (dir != io.dir_entries.end()) {
 #ifdef WIN32
-        _wdirent* d = _wreaddir(dir->second.get());
+        _wdirent *d = _wreaddir(dir->second.get());
 #else
-        dirent* d = readdir(dir->second.get());
+        dirent *d = readdir(dir->second.get());
 #endif
 
         if (!d) {
