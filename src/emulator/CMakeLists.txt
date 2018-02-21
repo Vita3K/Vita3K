@@ -38,6 +38,7 @@ add_subdirectory(mem)
 add_subdirectory(module)
 add_subdirectory(modules)
 add_subdirectory(nids)
+add_subdirectory(reporting)
 add_subdirectory(util)
 
 add_executable(
