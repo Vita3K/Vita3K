@@ -20,6 +20,7 @@
 #include "gxm.h"
 
 #include <crypto/hash.h>
+#include <reporting/functions.h>
 #include <util/log.h>
 
 #include <glbinding/Binding.h>
@@ -77,7 +78,7 @@ static bool compile_shader(GLuint shader, const GLchar *source) {
     return is_compiled != GL_FALSE;
 }
 
-static bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *base_path) {
+static bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *base_path, ReportingState &reporting) {
     GXM_PROFILE(__FUNCTION__);
 
     const Sha256Hash hash_bytes = sha256(program, program->size);
@@ -89,6 +90,7 @@ static bool compile_shader(GLuint shader, const SceGxmProgram *program, const ch
     std::ifstream is(path.str());
     if (is.fail()) {
         LOG_ERROR("Couldn't open '{}' for reading.", path.str());
+        report_missing_shader(reporting, hash_text.data(), "TODO_GLSL");
         
         // Dump missing shader binary.
         std::ostringstream gxp_path;
@@ -1421,7 +1423,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
-    if (!compile_shader(fragment_shader.get(), programId->program.get(mem), host.base_path.c_str())) {
+    if (!compile_shader(fragment_shader.get(), programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
         free(mem, *fragmentProgram);
         fragmentProgram->reset();
 
@@ -1515,7 +1517,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
 
-    if (!compile_shader(vp->shader->get(), programId->program.get(mem), host.base_path.c_str())) {
+    if (!compile_shader(vp->shader->get(), programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
         free(mem, *vertexProgram);
         vertexProgram->reset();
 
