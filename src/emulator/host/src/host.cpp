@@ -63,8 +63,9 @@ bool init(HostState &state) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::unique_lock<std::mutex> lock(thread->mutex);
-        assert(thread->to_do == ThreadToDo::wait);
-        thread->to_do = ThreadToDo::run;
+        if(thread->to_do == ThreadToDo::wait) {
+            thread->to_do = ThreadToDo::run;
+        }
         thread->something_to_do.notify_all();
     };
 

@@ -16,16 +16,45 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <kernel/thread_functions.h>
-
 #include <kernel/thread_state.h>
+#include <psp2/types.h>
+#include <psp2/kernel/error.h>
+
+#include <kernel/state.h>
 
 #include <cpu/functions.h>
 #include <util/resource.h>
+#include <util/lock_and_find.h>
+#include <util/find.h>
+
+#include <SDL_thread.h>
 
 #include <cassert>
 #include <cstring>
 
-ThreadStatePtr init_thread(Ptr<const void> entry_point, size_t stack_size, bool log_code, MemState &mem, CallImport call_import) {
+struct ThreadParams {
+    KernelState *kernel = nullptr;
+    SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    SceSize arglen = 0;
+    Ptr<void> argp;
+    std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
+};
+
+static int SDLCALL thread_function(void *data) {
+    assert(data != nullptr);
+    const ThreadParams params = *static_cast<const ThreadParams *>(data);
+    SDL_SemPost(params.host_may_destroy_params.get());
+    const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
+    write_reg(*thread->cpu, 0, params.arglen);
+    write_reg(*thread->cpu, 1, params.argp.address());
+    const bool succeeded = run_thread(*thread);
+    assert(succeeded);
+    const uint32_t r0 = read_reg(*thread->cpu, 0);
+    return r0;
+}
+
+typedef std::function<void(uint32_t)> CallImportForThread;
+ThreadStatePtr init_thread(Ptr<const void> entry_point, size_t stack_size, bool log_code, MemState &mem, CallImportForThread call_import) {
     const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {
         free(mem, stack);
     };
@@ -49,22 +78,81 @@ ThreadStatePtr init_thread(Ptr<const void> entry_point, size_t stack_size, bool 
     return thread;
 }
 
+SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int stackSize, CallImport call_import){
+    WaitingThreadState waiting;
+    waiting.name = name;
+
+    SceUID thid = kernel.next_uid++;
+    const CallImportForThread new_call_import = [call_import,thid](uint32_t nid) {
+        call_import(nid, thid);
+    };
+
+    const bool log_code = false;
+    const ThreadStatePtr thread = init_thread(entry_point, stackSize, log_code, mem, new_call_import);
+    if (!thread) {
+        return SCE_KERNEL_ERROR_ERROR;
+    }
+
+    const std::unique_lock<std::mutex> lock(kernel.mutex);
+    kernel.threads.emplace(thid, thread);
+    kernel.waiting_threads.emplace(thid, waiting);
+
+    return thid;
+}
+
+int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp) {
+    const std::unique_lock<std::mutex> lock(kernel.mutex);
+
+    const WaitingThreadStates::const_iterator waiting = kernel.waiting_threads.find(thid);
+    if (waiting == kernel.waiting_threads.end()) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+
+    const ThreadStatePtr thread = find(thid, kernel.threads);
+    assert(thread);
+
+    ThreadParams params;
+    params.kernel = &kernel;
+    params.thid = thid;
+    params.arglen = arglen;
+    params.argp = argp;
+
+    const std::function<void(SDL_Thread *)> delete_thread = [thread](SDL_Thread *running_thread) {
+        {
+            const std::unique_lock<std::mutex> lock(thread->mutex);
+            thread->to_do = ThreadToDo::exit;
+        }
+        thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+        SDL_WaitThread(running_thread, nullptr);
+    };
+
+    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, waiting->second.name.c_str(), &params), delete_thread);
+    if (!running_thread) {
+        return SCE_KERNEL_ERROR_THREAD_ERROR;
+    }
+
+    kernel.waiting_threads.erase(waiting);
+    kernel.running_threads.emplace(thid, running_thread);
+    SDL_SemWait(params.host_may_destroy_params.get());
+    return SCE_KERNEL_OK;
+}
+
 bool run_thread(ThreadState &thread) {
     std::unique_lock<std::mutex> lock(thread.mutex);
     while (true) {
         switch (thread.to_do) {
-        case ThreadToDo::exit:
-            return true;
-        case ThreadToDo::run:
-            lock.unlock();
-            if (!run(*thread.cpu)) {
-                return false;
-            }
-            lock.lock();
-            break;
-        case ThreadToDo::wait:
-            thread.something_to_do.wait(lock);
-            break;
+            case ThreadToDo::exit:
+                return true;
+            case ThreadToDo::run:
+                lock.unlock();
+                if (!run(*thread.cpu)) {
+                    return false;
+                }
+                lock.lock();
+                break;
+            case ThreadToDo::wait:
+                thread.something_to_do.wait(lock);
+                break;
         }
     }
 }

@@ -10,4 +10,4 @@ add_library(
 )
 
 target_include_directories(kernel PUBLIC include)
-target_link_libraries(kernel PUBLIC cpu vita-headers util)
+target_link_libraries(kernel PUBLIC cpu sdl2 vita-headers util)

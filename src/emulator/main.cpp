@@ -23,6 +23,7 @@
 #include <kernel/thread_functions.h>
 #include <util/string_convert.h>
 #include <util/log.h>
+#include <util/find.h>
 
 #include <SDL.h>
 
@@ -110,29 +111,24 @@ int main(int argc, char *argv[]) {
         return ModuleLoadFailed;
     }
 
-    // TODO This is hacky. Belongs in kernel?
-    const SceUID main_thread_id = host.kernel.next_uid++;
-
-    const CallImport call_import = [&host, main_thread_id](uint32_t nid) {
+    const CallImport call_import = [&host](uint32_t nid, SceUID main_thread_id) {
         ::call_import(host, nid, main_thread_id);
     };
 
     const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
-    const bool log_code = false;
-    const ThreadStatePtr main_thread = init_thread(entry_point, stack_size, log_code, host.mem, call_import);
-    if (!main_thread) {
+   
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main_thread",stack_size, call_import);
+    if (main_thread_id<0) {
         error("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
     }
 
-    // TODO Move this to kernel.
-    host.kernel.threads.emplace(main_thread_id, main_thread);
+    const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
 
     host.t1 = SDL_GetTicks();
     if (!run_thread(*main_thread)) {
         error("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }
-
     return Success;
 }
