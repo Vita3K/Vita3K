@@ -1,7 +1,11 @@
 add_library(
 	gxm
-	INTERFACE
+	STATIC
+	include/gxm/functions.h
+	include/gxm/state.h
+	include/gxm/types.h
+	src/gxm.cpp
 )
 
-target_include_directories(gxm INTERFACE include)
-target_link_libraries(gxm INTERFACE glutil mem sdl2 vita-headers)
+target_include_directories(gxm PUBLIC include)
+target_link_libraries(gxm PUBLIC glutil mem sdl2 vita-headers)

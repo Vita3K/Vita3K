@@ -18,6 +18,7 @@
 #include "SceGxm.h"
 
 #include <crypto/hash.h>
+#include <gxm/functions.h>
 #include <gxm/types.h>
 #include <reporting/functions.h>
 #include <util/log.h>
@@ -89,7 +90,8 @@ static bool compile_shader(GLuint shader, const SceGxmProgram *program, const ch
     std::ifstream is(path.str());
     if (is.fail()) {
         LOG_ERROR("Couldn't open '{}' for reading.", path.str());
-        report_missing_shader(reporting, hash_text.data(), "TODO_GLSL");
+        const std::string glsl = generate_glsl(*program);
+        report_missing_shader(reporting, hash_text.data(), glsl.c_str());
         
         // Dump missing shader binary.
         std::ostringstream gxp_path;
