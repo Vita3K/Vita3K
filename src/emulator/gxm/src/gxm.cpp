@@ -18,18 +18,73 @@ static const SceGxmProgramParameter *program_parameters(const SceGxmProgram &pro
     return reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program.parameters_offset) + program.parameters_offset);
 }
 
+static const char *parameter_category(const SceGxmProgramParameter &parameter) {
+    switch (parameter.category) {
+        case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
+            return "attribute";
+        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
+            return "uniform";
+        case SCE_GXM_PARAMETER_CATEGORY_SAMPLER:
+            return "sampler";
+        case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE:
+            return "surface";
+        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER:
+            return "uniform_buffer";
+    }
+    
+    return "unknown";
+}
+
+static const char *parameter_type(const SceGxmProgramParameter &parameter) {
+    switch (parameter.array_size) {
+    }
+    
+    return "unknown";
+}
+
 static const char *parameter_name(const SceGxmProgramParameter &parameter) {
     const uint8_t *const bytes = reinterpret_cast<const uint8_t *>(&parameter);
     return reinterpret_cast<const char *>(bytes + parameter.name_offset);
 }
 
-static std::string generate_glsl(const SceGxmProgram &program) {
+static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
     
-    return "TODO";
+    std::ostringstream glsl;
+    glsl << "// https://TODO\n";
+    
+    const SceGxmProgramParameter *const parameters = program_parameters(program);
+    for (size_t i = 0; i < program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = parameters[i];
+        const char *const category = parameter_category(parameter);
+        const char *const type = parameter_type(parameter);
+        const char *const name = parameter_name(parameter);
+        glsl << category << " " << type << " " << name << ";\n";
+    }
+    
+    return glsl.str();
 }
 
-static bool compile_shader(GLuint shader, const GLchar *source) {
+
+static std::string generate_vertex_glsl(const SceGxmProgram &vertex_program, const SceGxmProgram &fragment_program) {
+    GXM_PROFILE(__FUNCTION__);
+    
+    std::ostringstream glsl;
+    glsl << "// https://TODO\n";
+    
+    const SceGxmProgramParameter *const parameters = program_parameters(vertex_program);
+    for (size_t i = 0; i < vertex_program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = parameters[i];
+        const char *const category = parameter_category(parameter);
+        const char *const type = parameter_type(parameter);
+        const char *const name = parameter_name(parameter);
+        glsl << category << " " << type << " " << name << ";\n";
+    }
+    
+    return glsl.str();
+}
+
+static bool compile_glsl(GLuint shader, const GLchar *source) {
     GXM_PROFILE(__FUNCTION__);
     
     const GLint length = static_cast<GLint>(strlen(source));
@@ -55,6 +110,54 @@ static bool compile_shader(GLuint shader, const GLchar *source) {
     return is_compiled != GL_FALSE;
 }
 
+typedef std::function<std::string(const SceGxmProgram &program)> GenerateGLSL;
+
+static bool compile_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, const GenerateGLSL &generate_glsl, ReportingState &reporting) {
+    GXM_PROFILE(__FUNCTION__);
+    
+    const Sha256Hash hash_bytes = sha256(&program, program.size);
+    const std::array<char, 65> hash_text = hex(hash_bytes);
+    
+    std::ostringstream path;
+    path << base_path << "shaders/" << hash_text.data() << ".glsl";
+    
+    std::ifstream is(path.str());
+    if (is.fail()) {
+        LOG_ERROR("Couldn't open shader '{}' for reading.", path.str());
+        const std::string glsl = generate_glsl(program);
+        report_missing_shader(reporting, hash_text.data(), glsl.c_str());
+        
+        // Dump missing shader GLSL.
+        std::ostringstream glsl_path;
+        glsl_path << hash_text.data() << ".glsl";
+        std::ofstream glsl_file(glsl_path.str());
+        if (!glsl_file.fail()) {
+            glsl_file << glsl;
+            glsl_file.close();
+        }
+        
+        // Dump missing shader binary.
+        std::ostringstream gxp_path;
+        gxp_path << hash_text.data() << ".gxp";
+        std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
+        if (!gxp.fail()) {
+            gxp.write(reinterpret_cast<const char *>(&program), program.size);
+            gxp.close();
+        }
+        
+        return false;
+    }
+    
+    is.seekg(0, std::ios::end);
+    const size_t size = is.tellg();
+    is.seekg(0);
+    
+    std::string source(size, ' ');
+    is.read(&source[0], size);
+    
+    return compile_glsl(shader, source.c_str());
+}
+
 void before_callback(const glbinding::FunctionCall &fn) {
 #if MICROPROFILE_ENABLED
     const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
@@ -72,40 +175,16 @@ void after_callback(const glbinding::FunctionCall &fn) {
     }
 }
 
-bool compile_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, ReportingState &reporting) {
-    GXM_PROFILE(__FUNCTION__);
+bool compile_fragment_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, ReportingState &reporting) {
+    return compile_shader(shader, program, base_path, generate_fragment_glsl, reporting);
+}
+
+bool compile_vertex_shader(GLuint shader, const SceGxmProgram &vertex_program, const SceGxmProgram &fragment_program, const char *base_path, ReportingState &reporting) {
+    const GenerateGLSL generate_glsl = [&fragment_program](const SceGxmProgram &vertex_program) {
+        return generate_vertex_glsl(vertex_program, fragment_program);
+    };
     
-    const Sha256Hash hash_bytes = sha256(&program, program.size);
-    const std::array<char, 65> hash_text = hex(hash_bytes);
-    
-    std::ostringstream path;
-    path << base_path << "shaders/" << hash_text.data() << ".glsl";
-    
-    std::ifstream is(path.str());
-    if (is.fail()) {
-        LOG_ERROR("Couldn't open '{}' for reading.", path.str());
-        const std::string glsl = generate_glsl(program);
-        report_missing_shader(reporting, hash_text.data(), glsl.c_str());
-        
-        // Dump missing shader binary.
-        std::ostringstream gxp_path;
-        gxp_path << hash_text.data() << ".gxp";
-        std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
-        if (!gxp.fail()) {
-            gxp.write(reinterpret_cast<const char *>(&program), program.size);
-        }
-        
-        return false;
-    }
-    
-    is.seekg(0, std::ios::end);
-    const size_t size = is.tellg();
-    is.seekg(0);
-    
-    std::string source(size, ' ');
-    is.read(&source[0], size);
-    
-    return compile_shader(shader, source.c_str());
+    return compile_shader(shader, vertex_program, base_path, generate_glsl, reporting);
 }
 
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {

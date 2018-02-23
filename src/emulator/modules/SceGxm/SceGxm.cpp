@@ -1147,14 +1147,13 @@ EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *par
     return 0;
 }
 
-EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, SceGxmOutputRegisterFormat outputFormat, SceGxmMultisampleMode multisampleMode, const emu::SceGxmBlendInfo *blendInfo, Ptr<const SceGxmProgram> vertexProgram, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
+EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, SceGxmOutputRegisterFormat outputFormat, SceGxmMultisampleMode multisampleMode, const emu::SceGxmBlendInfo *blendInfo, const SceGxmProgram *vertexProgram, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
     MemState &mem = host.mem;
     assert(shaderPatcher != nullptr);
     assert(programId != nullptr);
     assert(outputFormat == SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
     assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
-    assert((blendInfo == nullptr) || (blendInfo != nullptr));
-    assert(vertexProgram);
+    assert(vertexProgram != nullptr);
     assert(fragmentProgram != nullptr);
 
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
@@ -1167,12 +1166,24 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     if (!fragment_shader.init(glCreateShader(GL_FRAGMENT_SHADER), glDeleteShader)) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
-
+    
+    GLObject vertex_shader;
+    if (!vertex_shader.init(glCreateShader(GL_VERTEX_SHADER), glDeleteShader)) {
+        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+    }
+    
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
-    if (!compile_shader(fragment_shader.get(), *programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
+    if (!compile_fragment_shader(fragment_shader.get(), *programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
         free(mem, *fragmentProgram);
         fragmentProgram->reset();
-
+        
+        return SCE_GXM_ERROR_PATCHER_INTERNAL;
+    }
+    
+    if (!compile_vertex_shader(vertex_shader.get(), *vertexProgram, *programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
+        free(mem, *fragmentProgram);
+        fragmentProgram->reset();
+        
         return SCE_GXM_ERROR_PATCHER_INTERNAL;
     }
 
@@ -1183,13 +1194,10 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         return SCE_GXM_ERROR_PATCHER_INTERNAL;
     }
 
-    const ProgramToVertexShader::const_iterator vertex_shader = shaderPatcher->vertex_shaders.find(vertexProgram);
-    assert(vertex_shader != shaderPatcher->vertex_shaders.end());
-
-    glAttachShader(fp->program.get(), vertex_shader->second->get());
+    glAttachShader(fp->program.get(), vertex_shader.get());
     glAttachShader(fp->program.get(), fragment_shader.get());
 
-    bind_attribute_locations(fp->program.get(), *vertexProgram.get(mem));
+    bind_attribute_locations(fp->program.get(), *vertexProgram);
 
     glLinkProgram(fp->program.get());
 
@@ -1215,7 +1223,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
 
     glDetachShader(fp->program.get(), fragment_shader.get());
-    glDetachShader(fp->program.get(), vertex_shader->second->get());
+    glDetachShader(fp->program.get(), vertex_shader.get());
 
     // Translate blending.
     if (blendInfo != nullptr) {
@@ -1256,24 +1264,8 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     }
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
-    if (!vp->shader->init(glCreateShader(GL_VERTEX_SHADER), glDeleteShader)) {
-        free(mem, *vertexProgram);
-        vertexProgram->reset();
-
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
-    }
-
-    if (!compile_shader(vp->shader->get(), *programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
-        free(mem, *vertexProgram);
-        vertexProgram->reset();
-
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
-
     vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
-
-    shaderPatcher->vertex_shaders[programId->program] = vp->shader;
 
     return 0;
 }
@@ -1374,7 +1366,6 @@ EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPat
     assert(programId);
 
     SceGxmRegisteredProgram *const rp = programId.get(host.mem);
-    shaderPatcher->vertex_shaders.erase(rp->program);
     rp->program.reset();
 
     free(host.mem, programId);
