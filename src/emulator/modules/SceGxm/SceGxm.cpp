@@ -17,9 +17,8 @@
 
 #include "SceGxm.h"
 
-#include "gxm.h"
-
 #include <crypto/hash.h>
+#include <gxm/types.h>
 #include <reporting/functions.h>
 #include <util/log.h>
 
