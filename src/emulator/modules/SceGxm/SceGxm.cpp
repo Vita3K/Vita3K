@@ -1169,7 +1169,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
-    if (!compile_shader(fragment_shader.get(), programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
+    if (!compile_shader(fragment_shader.get(), *programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
         free(mem, *fragmentProgram);
         fragmentProgram->reset();
 
@@ -1189,7 +1189,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     glAttachShader(fp->program.get(), vertex_shader->second->get());
     glAttachShader(fp->program.get(), fragment_shader.get());
 
-    bind_attribute_locations(fp->program.get(), vertexProgram.get(mem));
+    bind_attribute_locations(fp->program.get(), *vertexProgram.get(mem));
 
     glLinkProgram(fp->program.get());
 
@@ -1263,7 +1263,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
 
-    if (!compile_shader(vp->shader->get(), programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
+    if (!compile_shader(vp->shader->get(), *programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
         free(mem, *vertexProgram);
         vertexProgram->reset();
 

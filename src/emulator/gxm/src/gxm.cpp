@@ -14,6 +14,15 @@
 
 #define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
 
+static const SceGxmProgramParameter *program_parameters(const SceGxmProgram &program) {
+    return reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program.parameters_offset) + program.parameters_offset);
+}
+
+static const char *parameter_name(const SceGxmProgramParameter &parameter) {
+    const uint8_t *const bytes = reinterpret_cast<const uint8_t *>(&parameter);
+    return reinterpret_cast<const char *>(bytes + parameter.name_offset);
+}
+
 static std::string generate_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
     
@@ -63,10 +72,10 @@ void after_callback(const glbinding::FunctionCall &fn) {
     }
 }
 
-bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *base_path, ReportingState &reporting) {
+bool compile_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, ReportingState &reporting) {
     GXM_PROFILE(__FUNCTION__);
     
-    const Sha256Hash hash_bytes = sha256(program, program->size);
+    const Sha256Hash hash_bytes = sha256(&program, program.size);
     const std::array<char, 65> hash_text = hex(hash_bytes);
     
     std::ostringstream path;
@@ -75,7 +84,7 @@ bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *bas
     std::ifstream is(path.str());
     if (is.fail()) {
         LOG_ERROR("Couldn't open '{}' for reading.", path.str());
-        const std::string glsl = generate_glsl(*program);
+        const std::string glsl = generate_glsl(program);
         report_missing_shader(reporting, hash_text.data(), glsl.c_str());
         
         // Dump missing shader binary.
@@ -83,7 +92,7 @@ bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *bas
         gxp_path << hash_text.data() << ".gxp";
         std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
         if (!gxp.fail()) {
-            gxp.write(reinterpret_cast<const char *>(program), program->size);
+            gxp.write(reinterpret_cast<const char *>(&program), program.size);
         }
         
         return false;
@@ -140,17 +149,14 @@ bool attribute_format_normalised(SceGxmAttributeFormat format) {
     }
 }
 
-void bind_attribute_locations(GLuint gl_program, const SceGxmProgram *program) {
+void bind_attribute_locations(GLuint gl_program, const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
     
-    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
-    for (uint32_t i = 0; i < program->parameter_count; ++i) {
-        const SceGxmProgramParameter *const parameter = &parameters[i];
-        if (parameter->category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
-            const char *const parameter_name = reinterpret_cast<const char *>(parameter_bytes + parameter->name_offset);
-            
-            glBindAttribLocation(gl_program, parameter->resource_index, parameter_name);
+    const SceGxmProgramParameter *const parameters = program_parameters(program);
+    for (uint32_t i = 0; i < program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = parameters[i];
+        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+            glBindAttribLocation(gl_program, parameter.resource_index, parameter_name(parameter));
         }
     }
 }
