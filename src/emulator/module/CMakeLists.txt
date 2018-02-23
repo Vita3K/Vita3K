@@ -10,4 +10,4 @@ add_library(
 )
 
 target_include_directories(module PUBLIC include)
-target_link_libraries(module PUBLIC crypto host microprofile reporting)
+target_link_libraries(module PUBLIC host microprofile)
