@@ -53,8 +53,14 @@ static int SDLCALL thread_function(void *data) {
     return r0;
 }
 
-typedef std::function<void(uint32_t)> CallImportForThread;
-ThreadStatePtr init_thread(Ptr<const void> entry_point, size_t stack_size, bool log_code, MemState &mem, CallImportForThread call_import) {
+SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int stack_size, CallImport call_import){
+    WaitingThreadState waiting;
+    waiting.name = name;
+
+    SceUID thid = kernel.next_uid++;
+
+    const bool log_code = false;
+
     const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {
         free(mem, stack);
     };
@@ -64,32 +70,14 @@ ThreadStatePtr init_thread(Ptr<const void> entry_point, size_t stack_size, bool 
     const Address stack_top = thread->stack->get() + stack_size;
     memset(Ptr<void>(thread->stack->get()).get(mem), 0xcc, stack_size);
 
-    const CallSVC call_svc = [call_import, &mem](uint32_t imm, Address pc) {
+    const CallSVC call_svc = [call_import, thid, &mem](uint32_t imm, Address pc) {
         assert(imm == 0);
         const uint32_t nid = *Ptr<uint32_t>(pc + 4).get(mem);
-        call_import(nid);
+        call_import(nid,thid);
     };
 
     thread->cpu = init_cpu(entry_point.address(), stack_top, log_code, call_svc, mem);
     if (!thread->cpu) {
-        return ThreadStatePtr();
-    }
-
-    return thread;
-}
-
-SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int stackSize, CallImport call_import){
-    WaitingThreadState waiting;
-    waiting.name = name;
-
-    SceUID thid = kernel.next_uid++;
-    const CallImportForThread new_call_import = [call_import,thid](uint32_t nid) {
-        call_import(nid, thid);
-    };
-
-    const bool log_code = false;
-    const ThreadStatePtr thread = init_thread(entry_point, stackSize, log_code, mem, new_call_import);
-    if (!thread) {
         return SCE_KERNEL_ERROR_ERROR;
     }
 

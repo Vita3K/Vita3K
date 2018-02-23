@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
 
     const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
    
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main_thread",stack_size, call_import);
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main",stack_size, call_import);
     if (main_thread_id<0) {
         error("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
