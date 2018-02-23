@@ -34,9 +34,13 @@
 #include <SDL_filesystem.h>
 #include <SDL_video.h>
 
+#include <glbinding/Binding.h>
+
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+
+using namespace glbinding;
 
 static const bool LOG_IMPORT_CALLS = false;
 
@@ -76,6 +80,8 @@ bool init(HostState &state) {
         return false;
     }
 
+    state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
+    Binding::initialize(false);
     state.kernel.base_tick = { rtc_base_ticks() };
 
     return true;

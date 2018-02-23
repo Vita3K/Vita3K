@@ -25,7 +25,6 @@
 
 #include <sstream>
 
-static bool SAVE_SURFACE_IMAGES = false;
 
 namespace emu {
     struct SceDisplayFrameBuf {
@@ -57,9 +56,7 @@ EXPORT(int, sceDisplayGetResolutionInfoInternal) {
 }
 
 EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync) {
-    typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
 
-    const MemState &mem = host.mem;
     assert(pParam != nullptr); // Todo: pParam can be NULL, in that case black screen is shown
     if (pParam->size != sizeof(emu::SceDisplayFrameBuf)){
         return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_VALUE);
@@ -77,39 +74,12 @@ EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDis
         return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
     }
 
-    SDL_Window *const prev_gl_window = SDL_GL_GetCurrentWindow();
-    const SDL_GLContext prev_gl_context = SDL_GL_GetCurrentContext();
-
-    // TODO SLOW
-    void *const pixels = pParam->base.cast<void>().get(mem);
-    const SurfacePtr framebuffer_surface(SDL_CreateRGBSurfaceFrom(pixels, pParam->width, pParam->height, 32, pParam->pitch * 4, 0xff << 0, 0xff << 8, 0xff << 16, 0), SDL_FreeSurface);
-    if (SAVE_SURFACE_IMAGES) {
-        SDL_SaveBMP(framebuffer_surface.get(), (host.pref_path + "framebuffer.bmp").c_str());
-    }
-    SDL_Surface *const window_surface = SDL_GetWindowSurface(host.window.get());
-    SDL_UpperBlit(framebuffer_surface.get(), nullptr, window_surface, nullptr);
-    if (SAVE_SURFACE_IMAGES) {
-        SDL_LockSurface(window_surface);
-        SDL_SaveBMP(window_surface, (host.pref_path + "window.bmp").c_str());
-        SDL_UnlockSurface(window_surface);
-    }
-    SDL_UpdateWindowSurface(host.window.get());
-
-    SDL_GL_MakeCurrent(prev_gl_window, prev_gl_context);
-
-    ++host.frame_count;
-    const uint32_t t2 = SDL_GetTicks();
-    const uint32_t ms = t2 - host.t1;
-    if (ms >= 1000) {
-        const uint32_t fps = (host.frame_count * 1000) / ms;
-        const uint32_t ms_per_frame = ms / host.frame_count;
-        std::ostringstream title;
-        title << window_title << " - " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
-        SDL_SetWindowTitle(host.window.get(), title.str().c_str());
-        host.t1 = t2;
-        host.frame_count = 0;
-    }
-
+    host.display.base = pParam->base;
+    host.display.height = pParam->height;
+    host.display.pitch = pParam->pitch;
+    host.display.pixelformat = pParam->pixelformat;
+    host.display.width = pParam->width;
+    
     MicroProfileFlip(nullptr);
 
     return SCE_DISPLAY_ERROR_OK;

@@ -108,12 +108,8 @@ EXPORT(int, sceKernelDelayThread, SceUInt delay) {
     const uint32_t t1 = SDL_GetTicks();
     uint32_t elapsed;
     do {
-        if (handle_events(host)) {
-            const uint32_t t2 = SDL_GetTicks();
-            elapsed = t2 - t1;
-        } else {
-            elapsed = delay_ms;
-        }
+        const uint32_t t2 = SDL_GetTicks();
+        elapsed = t2 - t1;
     } while (elapsed < delay_ms);
 
     return SCE_KERNEL_OK;

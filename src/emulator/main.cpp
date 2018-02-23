@@ -26,12 +26,17 @@
 #include <util/find.h>
 
 #include <SDL.h>
+#include <glutil/gl.h>
 
 #include <algorithm> // find_if_not
 #include <cassert>
 #include <iostream>
+#include <sstream>
+
+static bool SAVE_SURFACE_IMAGES = false;
 
 typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
+typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
 
 enum ExitCode {
     Success = 0,
@@ -71,6 +76,8 @@ int main(int argc, char *argv[]) {
         error("SDL initialisation failed.");
         return SDLInitFailed;
     }
+    
+    SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
     const char *const *const path_arg = std::find_if_not(&argv[1], &argv[argc], is_macos_process_arg);
     std::wstring path;
@@ -125,10 +132,91 @@ int main(int argc, char *argv[]) {
 
     const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
 
-    host.t1 = SDL_GetTicks();
-    if (!run_thread(*main_thread)) {
+    if(start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0){
         error("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }
+
+    GLuint TextureID = 0;
+    host.t1 = SDL_GetTicks();
+    while(handle_events(host)) {
+
+        SDL_Window *const prev_gl_window = SDL_GL_GetCurrentWindow();
+        const SDL_GLContext prev_gl_context = SDL_GL_GetCurrentContext();
+
+        SDL_GL_MakeCurrent(host.window.get(),host.glcontext.get());
+        
+        if(!TextureID){
+            glGenTextures(1, &TextureID);
+            glClearColor ( 1.0, 0.0, 0.5, 1.0 );
+            glClearDepth(1.0f);
+            glViewport(0, 0, 960, 544);
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+            glOrtho(0, 960, 544, 0, 1, -1);
+            glMatrixMode(GL_MODELVIEW);
+            glEnable(GL_TEXTURE_2D);
+            glLoadIdentity();
+    
+        }
+
+
+
+
+
+        // Clear back buffer
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glLoadIdentity();
+
+        if(host.display.base){
+            glBindTexture(GL_TEXTURE_2D, TextureID);
+            void *const pixels = host.display.base.cast<void>().get(host.mem);
+            const SurfacePtr framebuffer_surface(SDL_CreateRGBSurfaceFrom(pixels, host.display.width, host.display.height, 32, host.display.pitch * 4, 0xff << 0, 0xff << 8, 0xff << 16, 0), SDL_FreeSurface);
+
+            if (SAVE_SURFACE_IMAGES) {
+                SDL_SaveBMP(framebuffer_surface.get(), (host.pref_path + "framebuffer.bmp").c_str());
+            }
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, framebuffer_surface->w, framebuffer_surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, framebuffer_surface->pixels);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, TextureID);
+
+            // For Ortho mode, of course
+            int X = 0;
+            int Y = 0;
+            int Width = 960;
+            int Height = 544;
+
+            glBegin(GL_TRIANGLE_FAN);
+            glTexCoord2f(0, 0); glVertex3f(X, Y, 0);
+            glTexCoord2f(1, 0); glVertex3f(X + Width, Y, 0);
+            glTexCoord2f(1, 1); glVertex3f(X + Width, Y + Height, 0);
+            glTexCoord2f(0, 1); glVertex3f(X, Y + Height, 0);
+            glEnd();
+
+        }
+        
+        SDL_GL_SwapWindow(host.window.get());
+        SDL_GL_MakeCurrent(prev_gl_window, prev_gl_context);
+        
+        host.display.condvar.notify_all();
+        
+        ++host.frame_count;
+        const uint32_t t2 = SDL_GetTicks();
+        const uint32_t ms = t2 - host.t1;
+        if (ms >= 1000) {
+            const uint32_t fps = (host.frame_count * 1000) / ms;
+            const uint32_t ms_per_frame = ms / host.frame_count;
+            std::ostringstream title;
+            title << window_title << " - " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
+            SDL_SetWindowTitle(host.window.get(), title.str().c_str());
+            host.t1 = t2;
+            host.frame_count = 0;
+        }
+    }
+
     return Success;
 }
