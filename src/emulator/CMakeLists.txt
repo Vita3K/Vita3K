@@ -25,6 +25,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(audio)
 add_subdirectory(cpu)
+add_subdirectory(crypto)
 add_subdirectory(ctrl)
 add_subdirectory(disasm)
 add_subdirectory(glutil)
