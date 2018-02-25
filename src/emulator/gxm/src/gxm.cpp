@@ -65,7 +65,6 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     return glsl.str();
 }
 
-
 static std::string generate_vertex_glsl(const SceGxmProgram &vertex_program, const SceGxmProgram &fragment_program) {
     GXM_PROFILE(__FUNCTION__);
     
