@@ -115,14 +115,13 @@ struct SceGxmProgram {
 
 struct SceGxmProgramParameter {
     int32_t name_offset; // Number of bytes from the start of this structure to the name string.
-    uint8_t category; // SceGxmParameterCategory.
-    uint8_t container_index : 4;
+    uint8_t category : 4; // SceGxmParameterCategory.
+    uint8_t type : 4; // SceGxmParameterType.
     uint8_t component_count : 4;
+    uint8_t container_index : 4;
     uint8_t unknown1[2];
-    uint8_t array_size;
-    uint8_t unknown2[3];
-    uint8_t resource_index;
-    uint8_t unknown3[3];
+    uint32_t array_size;
+    int32_t resource_index;
 };
 
 static_assert(sizeof(SceGxmProgramParameter) == 16, "Incorrect structure layout.");
