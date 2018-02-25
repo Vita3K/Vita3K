@@ -13,7 +13,7 @@ struct ReportingState;
 void before_callback(const glbinding::FunctionCall &fn);
 void after_callback(const glbinding::FunctionCall &fn);
 bool compile_fragment_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, ReportingState &reporting);
-bool compile_vertex_shader(GLuint shader, const SceGxmProgram &vertex_program, const SceGxmProgram &fragment_program, const char *base_path, ReportingState &reporting);
+bool compile_vertex_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, ReportingState &reporting);
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format);
 bool attribute_format_normalised(SceGxmAttributeFormat format);
 void bind_attribute_locations(GLuint gl_program, const SceGxmProgram &program);

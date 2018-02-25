@@ -51,7 +51,8 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
     
     std::ostringstream glsl;
-    glsl << "// https://TODO\n";
+    glsl << "// Fragment shader.\n";
+    glsl << "#version 120\n";
     
     const SceGxmProgramParameter *const parameters = program_parameters(program);
     for (size_t i = 0; i < program.parameter_count; ++i) {
@@ -65,14 +66,15 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     return glsl.str();
 }
 
-static std::string generate_vertex_glsl(const SceGxmProgram &vertex_program, const SceGxmProgram &fragment_program) {
+static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
     
     std::ostringstream glsl;
-    glsl << "// https://TODO\n";
+    glsl << "// Vertex shader.\n";
+    glsl << "#version 120\n";
     
-    const SceGxmProgramParameter *const parameters = program_parameters(vertex_program);
-    for (size_t i = 0; i < vertex_program.parameter_count; ++i) {
+    const SceGxmProgramParameter *const parameters = program_parameters(program);
+    for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
         const char *const category = parameter_category(parameter);
         const char *const type = parameter_type(parameter);
@@ -175,15 +177,13 @@ void after_callback(const glbinding::FunctionCall &fn) {
 }
 
 bool compile_fragment_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, ReportingState &reporting) {
+    GXM_PROFILE(__FUNCTION__);
     return compile_shader(shader, program, base_path, generate_fragment_glsl, reporting);
 }
 
-bool compile_vertex_shader(GLuint shader, const SceGxmProgram &vertex_program, const SceGxmProgram &fragment_program, const char *base_path, ReportingState &reporting) {
-    const GenerateGLSL generate_glsl = [&fragment_program](const SceGxmProgram &vertex_program) {
-        return generate_vertex_glsl(vertex_program, fragment_program);
-    };
-    
-    return compile_shader(shader, vertex_program, base_path, generate_glsl, reporting);
+bool compile_vertex_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, ReportingState &reporting) {
+    GXM_PROFILE(__FUNCTION__);
+    return compile_shader(shader, program, base_path, generate_vertex_glsl, reporting);
 }
 
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
