@@ -356,7 +356,6 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
 EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, unsigned int indexCount) {
     assert(context != nullptr);
     assert(indexData != nullptr);
-    assert(indexCount > 0);
 
     if (!host.gxm.isInScene){
         return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
