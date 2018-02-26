@@ -1496,13 +1496,13 @@ EXPORT(int, sceGxmTextureInitLinear, emu::SceGxmTexture *texture, Ptr<const void
     assert((texFormat == SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR) || (texFormat == SCE_GXM_TEXTURE_FORMAT_U8_R111) || (texFormat == SCE_GXM_TEXTURE_FORMAT_P8_ABGR));
     assert(width > 0);
     assert(height > 0);
-    assert(mipCount == 0);
 
     texture->format = texFormat;
     texture->width = width;
     texture->height = height;
     texture->data = data;
     texture->palette = Ptr<void>();
+    // TODO Support mip-mapping.
 
     return 0;
 }
