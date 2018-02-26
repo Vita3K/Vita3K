@@ -18,33 +18,109 @@ static const SceGxmProgramParameter *program_parameters(const SceGxmProgram &pro
     return reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program.parameters_offset) + program.parameters_offset);
 }
 
-static const char *parameter_category(const SceGxmProgramParameter &parameter) {
-    switch (parameter.category) {
-        case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
-            return "attribute";
-        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
-            return "uniform";
-        case SCE_GXM_PARAMETER_CATEGORY_SAMPLER:
-            return "sampler";
-        case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE:
-            return "surface";
-        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER:
-            return "uniform_buffer";
-    }
-    
-    return "unknown";
-}
-
-static const char *parameter_type(const SceGxmProgramParameter &parameter) {
-    switch (parameter.array_size) {
-    }
-    
-    return "unknown";
-}
-
 static const char *parameter_name(const SceGxmProgramParameter &parameter) {
     const uint8_t *const bytes = reinterpret_cast<const uint8_t *>(&parameter);
     return reinterpret_cast<const char *>(bytes + parameter.name_offset);
+}
+
+static const char *scalar_type(SceGxmParameterType type) {
+    switch (type) {
+        case SCE_GXM_PARAMETER_TYPE_F32: return "float";
+        case SCE_GXM_PARAMETER_TYPE_U32: return "uint";
+        case SCE_GXM_PARAMETER_TYPE_S32: return "int";
+    }
+    
+    return "?";
+}
+
+static const char *vector_prefix(SceGxmParameterType type) {
+    switch (type) {
+        case SCE_GXM_PARAMETER_TYPE_F32: return "";
+        case SCE_GXM_PARAMETER_TYPE_U32: return "u";
+        case SCE_GXM_PARAMETER_TYPE_S32: return "i";
+    }
+    
+    return "?";
+}
+
+static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
+    assert(parameter.component_count == 1);
+    
+    glsl << scalar_type(static_cast<SceGxmParameterType>(parameter.type)) << " " << parameter_name(parameter);
+    if (parameter.array_size != 1) {
+        glsl << "[" << parameter.array_size << "]";
+    }
+}
+
+static void output_vector_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
+    assert(parameter.component_count >= 2);
+    assert(parameter.component_count <= 4);
+    
+    glsl << vector_prefix(static_cast<SceGxmParameterType>(parameter.type)) << "vec" << parameter.component_count << " " << parameter_name(parameter);
+    if (parameter.array_size != 1) {
+        glsl << "[" << parameter.array_size << "]";
+    }
+}
+
+static void output_matrix_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
+    assert(parameter.component_count >= 2);
+    assert(parameter.array_size >= 2);
+    assert(parameter.array_size <= 4);
+    
+    glsl << vector_prefix(static_cast<SceGxmParameterType>(parameter.type)) << "mat";
+    if (parameter.component_count == parameter.array_size) {
+        glsl << parameter.component_count;
+    } else {
+        glsl << parameter.component_count << "x" << parameter.array_size;
+    }
+    glsl << " " << parameter_name(parameter);
+}
+
+static void output_glsl_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
+    if (parameter.component_count >= 2) {
+        if ((parameter.array_size >= 2) &&
+            (parameter.array_size <= 4)) {
+            output_matrix_decl(glsl, parameter);
+        } else {
+            output_vector_decl(glsl, parameter);
+        }
+    } else {
+        output_scalar_decl(glsl, parameter);
+    }
+}
+
+static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &program) {
+    if (program.parameter_count > 0) {
+        glsl << "\n";
+    }
+    
+    const SceGxmProgramParameter *const parameters = program_parameters(program);
+    for (size_t i = 0; i < program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = parameters[i];
+        switch (static_cast<SceGxmParameterCategory>(parameter.category)) {
+            case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
+                glsl << "attribute ";
+                output_glsl_decl(glsl, parameter);
+                break;
+            case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
+                glsl << "uniform ";
+                output_glsl_decl(glsl, parameter);
+                break;
+            case SCE_GXM_PARAMETER_CATEGORY_SAMPLER:
+                assert(parameter.component_count == 4);
+                glsl << "uniform sampler2D " << parameter_name(parameter);
+                break;
+            case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE:
+                assert(parameter.component_count == 0);
+                glsl << "auxiliary_surface";
+                break;
+            case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER:
+                assert(parameter.component_count == 0);
+                glsl << "uniform_buffer";
+                break;
+        }
+        glsl << ";\n";
+    }
 }
 
 static std::string generate_fragment_glsl(const SceGxmProgram &program) {
@@ -53,15 +129,11 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     std::ostringstream glsl;
     glsl << "// Fragment shader.\n";
     glsl << "#version 120\n";
-    
-    const SceGxmProgramParameter *const parameters = program_parameters(program);
-    for (size_t i = 0; i < program.parameter_count; ++i) {
-        const SceGxmProgramParameter &parameter = parameters[i];
-        const char *const category = parameter_category(parameter);
-        const char *const type = parameter_type(parameter);
-        const char *const name = parameter_name(parameter);
-        glsl << category << " " << type << " " << name << ";\n";
-    }
+    output_glsl_parameters(glsl, program);
+    glsl << "\n";
+    glsl << "void main() {\n";
+    glsl << "    gl_FragColor = vec4(1, 0, 1, 1);\n";
+    glsl << "}\n";
     
     return glsl.str();
 }
@@ -72,15 +144,11 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     std::ostringstream glsl;
     glsl << "// Vertex shader.\n";
     glsl << "#version 120\n";
-    
-    const SceGxmProgramParameter *const parameters = program_parameters(program);
-    for (size_t i = 0; i < program.parameter_count; ++i) {
-        const SceGxmProgramParameter &parameter = parameters[i];
-        const char *const category = parameter_category(parameter);
-        const char *const type = parameter_type(parameter);
-        const char *const name = parameter_name(parameter);
-        glsl << category << " " << type << " " << name << ";\n";
-    }
+    output_glsl_parameters(glsl, program);
+    glsl << "\n";
+    glsl << "void main() {\n";
+    glsl << "    gl_Position = vec4(0, 0, 0, 1);\n";
+    glsl << "}\n";
     
     return glsl.str();
 }
@@ -123,17 +191,18 @@ static bool compile_shader(GLuint shader, const SceGxmProgram &program, const ch
     path << base_path << "shaders/" << hash_text.data() << ".glsl";
     
     std::ifstream is(path.str());
+    std::string source;
     if (is.fail()) {
         LOG_ERROR("Couldn't open shader '{}' for reading.", path.str());
-        const std::string glsl = generate_glsl(program);
-        report_missing_shader(reporting, hash_text.data(), glsl.c_str());
+        source = generate_glsl(program);
+        report_missing_shader(reporting, hash_text.data(), source.c_str());
         
         // Dump missing shader GLSL.
         std::ostringstream glsl_path;
         glsl_path << hash_text.data() << ".glsl";
         std::ofstream glsl_file(glsl_path.str());
         if (!glsl_file.fail()) {
-            glsl_file << glsl;
+            glsl_file << source;
             glsl_file.close();
         }
         
@@ -145,16 +214,14 @@ static bool compile_shader(GLuint shader, const SceGxmProgram &program, const ch
             gxp.write(reinterpret_cast<const char *>(&program), program.size);
             gxp.close();
         }
+    } else {
+        is.seekg(0, std::ios::end);
+        const size_t size = is.tellg();
+        is.seekg(0);
         
-        return false;
+        source.resize(size, ' ');
+        is.read(&source[0], size);
     }
-    
-    is.seekg(0, std::ios::end);
-    const size_t size = is.tellg();
-    is.seekg(0);
-    
-    std::string source(size, ' ');
-    is.read(&source[0], size);
     
     return compile_glsl(shader, source.c_str());
 }

@@ -1025,7 +1025,10 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(program != 0);
 
     const GLint location = glGetUniformLocation(program, name);
-    assert(location >= 0);
+    if (location < 0) {
+        // Happens when shaders can't be loaded, as dummy shaders do not have uniforms.
+        return SCE_GXM_ERROR_INVALID_VALUE;
+    }
 
     switch (componentCount) {
     case 4:
@@ -1198,9 +1201,9 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     if (log_length > 0) {
         std::vector<GLchar> log;
         log.resize(log_length);
-        glGetProgramInfoLog(fp->program.get(), log_length, nullptr, &log.front());
+        glGetProgramInfoLog(fp->program.get(), log_length, nullptr, log.data());
 
-		LOG_ERROR("{}", log.front());
+		LOG_ERROR("{}", log.data());
     }
 
     GLboolean is_linked = GL_FALSE;

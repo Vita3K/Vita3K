@@ -115,11 +115,11 @@ struct SceGxmProgram {
 
 struct SceGxmProgramParameter {
     int32_t name_offset; // Number of bytes from the start of this structure to the name string.
-    uint8_t category : 4; // SceGxmParameterCategory.
-    uint8_t type : 4; // SceGxmParameterType.
-    uint8_t component_count : 4;
-    uint8_t container_index : 4;
-    uint8_t unknown1[2]; // Maybe relevant to SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE or SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER.
+    uint16_t category : 4; // SceGxmParameterCategory.
+    uint16_t type : 4; // SceGxmParameterType.
+    uint16_t component_count : 4;
+    uint16_t container_index : 4;
+    uint16_t unknown; // Maybe relevant to SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE or SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER.
     uint32_t array_size;
     int32_t resource_index;
 };
