@@ -136,12 +136,8 @@ struct SceGxmRenderTarget {
     GLObjectArray<1> framebuffer;
 };
 
-typedef std::shared_ptr<GLObject> GLObjectPtr;
-typedef std::map<Ptr<const SceGxmProgram>, GLObjectPtr> ProgramToVertexShader;
-
 struct SceGxmShaderPatcher {
     // TODO This is an opaque struct.
-    ProgramToVertexShader vertex_shaders;
 };
 
 namespace emu {
@@ -192,7 +188,6 @@ namespace emu {
 
 struct SceGxmVertexProgram {
     // TODO I think this is an opaque type.
-    GLObjectPtr shader = std::make_shared<GLObject>();
     std::vector<SceGxmVertexStream> streams;
     std::vector<emu::SceGxmVertexAttribute> attributes;
 };
