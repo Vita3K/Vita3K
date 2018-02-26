@@ -1068,7 +1068,6 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, const SceGxmVertexP
 
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, const uint8_t *streamData) {
     assert(context != nullptr);
-    assert(streamIndex == 0);
     assert(streamData != nullptr);
 
     for (const emu::SceGxmVertexAttribute &attribute : context->vertex_program->attributes) {
