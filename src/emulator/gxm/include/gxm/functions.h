@@ -11,14 +11,13 @@ namespace glbinding {
 }
 
 class GLObject;
-struct ReportingState;
 
 typedef std::shared_ptr<GLObject> SharedGLObject;
 
 void before_callback(const glbinding::FunctionCall &fn);
 void after_callback(const glbinding::FunctionCall &fn);
-SharedGLObject get_fragment_shader(SceGxmShaderPatcher &shader_patcher, ReportingState &reporting, const SceGxmProgram &fragment_program, const char *base_path);
-SharedGLObject get_vertex_shader(SceGxmShaderPatcher &shader_patcher, ReportingState &reporting, const SceGxmProgram &vertex_program, const char *base_path);
+SharedGLObject get_fragment_shader(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path);
+SharedGLObject get_vertex_shader(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path);
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format);
 bool attribute_format_normalised(SceGxmAttributeFormat format);
 void bind_attribute_locations(GLuint gl_program, const SceGxmProgram &program);

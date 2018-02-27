@@ -1157,8 +1157,8 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     assert(vertexProgram != nullptr);
     assert(fragmentProgram != nullptr);
 
-    const SharedGLObject fragment_shader = get_fragment_shader(*shaderPatcher, *host.reporting, *programId->program.get(mem), host.base_path.c_str());
-    const SharedGLObject vertex_shader = get_vertex_shader(*shaderPatcher, *host.reporting, *vertexProgram, host.base_path.c_str());
+    const SharedGLObject fragment_shader = get_fragment_shader(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
+    const SharedGLObject vertex_shader = get_vertex_shader(*shaderPatcher, *vertexProgram, host.base_path.c_str());
     if (!fragment_shader || !vertex_shader) {
         return SCE_GXM_ERROR_PATCHER_INTERNAL;
     }

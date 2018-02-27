@@ -24,10 +24,8 @@
 #include <kernel/state.h>
 #include <net/state.h>
 
-struct ReportingState;
 struct SDL_Window;
 
-typedef std::shared_ptr<ReportingState> ReportingStatePtr;
 typedef std::shared_ptr<SDL_Window> WindowPtr;
 
 struct HostState {
@@ -35,7 +33,6 @@ struct HostState {
     std::string pref_path;
     size_t frame_count = 0;
     uint32_t t1 = 0;
-    ReportingStatePtr reporting;
     WindowPtr window;
     MemState mem;
     CtrlState ctrl;

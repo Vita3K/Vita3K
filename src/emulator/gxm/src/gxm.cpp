@@ -2,7 +2,6 @@
 
 #include <crypto/hash.h>
 #include <gxm/types.h>
-#include <reporting/functions.h>
 #include <util/log.h>
 
 #include <glbinding/AbstractFunction.h>
@@ -243,7 +242,7 @@ void after_callback(const glbinding::FunctionCall &fn) {
     }
 }
 
-SharedGLObject get_fragment_shader(SceGxmShaderPatcher &shader_patcher, ReportingState &reporting, const SceGxmProgram &fragment_program, const char *base_path) {
+SharedGLObject get_fragment_shader(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path) {
     GXM_PROFILE(__FUNCTION__);
     
     const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
@@ -257,7 +256,6 @@ SharedGLObject get_fragment_shader(SceGxmShaderPatcher &shader_patcher, Reportin
     if (source.empty()) {
         source = generate_fragment_glsl(fragment_program);
         dump_missing_shader(hash_text.data(), fragment_program, source.c_str());
-        report_missing_shader(reporting, hash_text.data(), source.c_str());
     }
     
     const SharedGLObject shader = compile_glsl(GL_FRAGMENT_SHADER, source.c_str());
@@ -270,7 +268,7 @@ SharedGLObject get_fragment_shader(SceGxmShaderPatcher &shader_patcher, Reportin
     return shader;
 }
 
-SharedGLObject get_vertex_shader(SceGxmShaderPatcher &shader_patcher, ReportingState &reporting, const SceGxmProgram &vertex_program, const char *base_path) {
+SharedGLObject get_vertex_shader(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path) {
     GXM_PROFILE(__FUNCTION__);
     
     const Sha256Hash hash_bytes = sha256(&vertex_program, vertex_program.size);
@@ -284,7 +282,6 @@ SharedGLObject get_vertex_shader(SceGxmShaderPatcher &shader_patcher, ReportingS
     if (source.empty()) {
         source = generate_vertex_glsl(vertex_program);
         dump_missing_shader(hash_text.data(), vertex_program, source.c_str());
-        report_missing_shader(reporting, hash_text.data(), source.c_str());
     }
     
     const SharedGLObject shader = compile_glsl(GL_VERTEX_SHADER, source.c_str());

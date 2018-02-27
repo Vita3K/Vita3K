@@ -27,7 +27,6 @@
 #include <kernel/functions.h>
 #include <kernel/thread_state.h>
 #include <nids/functions.h>
-#include <reporting/functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -71,7 +70,6 @@ bool init(HostState &state) {
 
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
-    state.reporting = init_reporting();
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 960, 544, SDL_WINDOW_OPENGL), SDL_DestroyWindow);
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, pref_path.get())) {
         return false;
