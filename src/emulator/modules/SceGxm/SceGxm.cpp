@@ -1157,37 +1157,19 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     assert(vertexProgram != nullptr);
     assert(fragmentProgram != nullptr);
 
+    const SharedGLObject fragment_shader = get_fragment_shader(*shaderPatcher, *host.reporting, *programId->program.get(mem), host.base_path.c_str());
+    const SharedGLObject vertex_shader = get_vertex_shader(*shaderPatcher, *host.reporting, *vertexProgram, host.base_path.c_str());
+    if (!fragment_shader || !vertex_shader) {
+        return SCE_GXM_ERROR_PATCHER_INTERNAL;
+    }
+    
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
-
-    GLObject fragment_shader;
-    if (!fragment_shader.init(glCreateShader(GL_FRAGMENT_SHADER), glDeleteShader)) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
-    }
-
-    GLObject vertex_shader;
-    if (!vertex_shader.init(glCreateShader(GL_VERTEX_SHADER), glDeleteShader)) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
-    }
     
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
-    if (!compile_fragment_shader(fragment_shader.get(), *programId->program.get(mem), host.base_path.c_str(), *host.reporting)) {
-        free(mem, *fragmentProgram);
-        fragmentProgram->reset();
-
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
-    
-    if (!compile_vertex_shader(vertex_shader.get(), *vertexProgram, host.base_path.c_str(), *host.reporting)) {
-        free(mem, *fragmentProgram);
-        fragmentProgram->reset();
-        
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
-
     if (!fp->program.init(glCreateProgram(), glDeleteProgram)) {
         free(mem, *fragmentProgram);
         fragmentProgram->reset();
@@ -1195,8 +1177,8 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         return SCE_GXM_ERROR_PATCHER_INTERNAL;
     }
 
-    glAttachShader(fp->program.get(), vertex_shader.get());
-    glAttachShader(fp->program.get(), fragment_shader.get());
+    glAttachShader(fp->program.get(), fragment_shader->get());
+    glAttachShader(fp->program.get(), vertex_shader->get());
 
     bind_attribute_locations(fp->program.get(), *vertexProgram);
 
@@ -1223,8 +1205,8 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         return SCE_GXM_ERROR_PATCHER_INTERNAL;
     }
 
-    glDetachShader(fp->program.get(), fragment_shader.get());
-    glDetachShader(fp->program.get(), vertex_shader.get());
+    glDetachShader(fp->program.get(), fragment_shader->get());
+    glDetachShader(fp->program.get(), vertex_shader->get());
 
     // Translate blending.
     if (blendInfo != nullptr) {

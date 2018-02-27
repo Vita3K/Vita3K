@@ -1,5 +1,6 @@
 #pragma once
 
+#include <crypto/hash.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 #include <mem/ptr.h>
@@ -7,6 +8,7 @@
 #include <psp2/gxm.h>
 
 #include <SDL_video.h>
+#include <map>
 
 namespace emu {
     struct SceGxmBlendInfo {
@@ -136,8 +138,13 @@ struct SceGxmRenderTarget {
     GLObjectArray<1> framebuffer;
 };
 
+typedef std::shared_ptr<GLObject> SharedGLObject;
+typedef std::map<Sha256Hash, SharedGLObject> ShaderCache;
+
 struct SceGxmShaderPatcher {
-    // TODO This is an opaque struct.
+    // This is an opaque struct.
+    ShaderCache fragment_shader_cache;
+    ShaderCache vertex_shader_cache;
 };
 
 namespace emu {

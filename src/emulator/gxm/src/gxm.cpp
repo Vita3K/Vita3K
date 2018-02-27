@@ -14,6 +14,25 @@
 
 #define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
 
+static std::string load_shader(const char *hash, const char *base_path) {
+    std::ostringstream path;
+    path << base_path << "shaders/" << hash << ".glsl";
+    
+    std::ifstream is(path.str());
+    if (is.fail()) {
+        return std::string();
+    }
+    
+    is.seekg(0, std::ios::end);
+    const size_t size = is.tellg();
+    is.seekg(0);
+    
+    std::string source(size, ' ');
+    is.read(&source.front(), size);
+    
+    return source;
+}
+
 static const SceGxmProgramParameter *program_parameters(const SceGxmProgram &program) {
     return reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program.parameters_offset) + program.parameters_offset);
 }
@@ -153,77 +172,58 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     return glsl.str();
 }
 
-static bool compile_glsl(GLuint shader, const GLchar *source) {
+static void dump_missing_shader(const char *hash, const SceGxmProgram &program, const char *source) {
+    // Dump missing shader GLSL.
+    std::ostringstream glsl_path;
+    glsl_path << hash << ".glsl";
+    std::ofstream glsl_file(glsl_path.str());
+    if (!glsl_file.fail()) {
+        glsl_file << source;
+        glsl_file.close();
+    }
+    
+    // Dump missing shader binary.
+    std::ostringstream gxp_path;
+    gxp_path << hash << ".gxp";
+    std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
+    if (!gxp.fail()) {
+        gxp.write(reinterpret_cast<const char *>(&program), program.size);
+        gxp.close();
+    }
+}
+
+static SharedGLObject compile_glsl(GLenum type, const GLchar *source) {
     GXM_PROFILE(__FUNCTION__);
     
-    const GLint length = static_cast<GLint>(strlen(source));
-    glShaderSource(shader, 1, &source, &length);
+    const SharedGLObject shader = std::make_shared<GLObject>();
+    if (!shader->init(glCreateShader(type), glDeleteShader)) {
+        return SharedGLObject();
+    }
     
-    glCompileShader(shader);
+    const GLint length = static_cast<GLint>(strlen(source));
+    glShaderSource(shader->get(), 1, &source, &length);
+    
+    glCompileShader(shader->get());
     
     GLint log_length = 0;
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length);
+    glGetShaderiv(shader->get(), GL_INFO_LOG_LENGTH, &log_length);
     
     if (log_length > 0) {
         std::vector<GLchar> log;
         log.resize(log_length);
-        glGetShaderInfoLog(shader, log_length, nullptr, log.data());
+        glGetShaderInfoLog(shader->get(), log_length, nullptr, log.data());
         
         LOG_ERROR("{}", log.data());
     }
     
     GLboolean is_compiled = GL_FALSE;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &is_compiled);
+    glGetShaderiv(shader->get(), GL_COMPILE_STATUS, &is_compiled);
     assert(is_compiled != GL_FALSE);
-    
-    return is_compiled != GL_FALSE;
-}
-
-typedef std::function<std::string(const SceGxmProgram &program)> GenerateGLSL;
-
-static bool compile_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, const GenerateGLSL &generate_glsl, ReportingState &reporting) {
-    GXM_PROFILE(__FUNCTION__);
-    
-    const Sha256Hash hash_bytes = sha256(&program, program.size);
-    const std::array<char, 65> hash_text = hex(hash_bytes);
-    
-    std::ostringstream path;
-    path << base_path << "shaders/" << hash_text.data() << ".glsl";
-    
-    std::ifstream is(path.str());
-    std::string source;
-    if (is.fail()) {
-        LOG_ERROR("Couldn't open shader '{}' for reading.", path.str());
-        source = generate_glsl(program);
-        report_missing_shader(reporting, hash_text.data(), source.c_str());
-        
-        // Dump missing shader GLSL.
-        std::ostringstream glsl_path;
-        glsl_path << hash_text.data() << ".glsl";
-        std::ofstream glsl_file(glsl_path.str());
-        if (!glsl_file.fail()) {
-            glsl_file << source;
-            glsl_file.close();
-        }
-        
-        // Dump missing shader binary.
-        std::ostringstream gxp_path;
-        gxp_path << hash_text.data() << ".gxp";
-        std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
-        if (!gxp.fail()) {
-            gxp.write(reinterpret_cast<const char *>(&program), program.size);
-            gxp.close();
-        }
-    } else {
-        is.seekg(0, std::ios::end);
-        const size_t size = is.tellg();
-        is.seekg(0);
-        
-        source.resize(size, ' ');
-        is.read(&source[0], size);
+    if (!is_compiled) {
+        return SharedGLObject();
     }
     
-    return compile_glsl(shader, source.c_str());
+    return shader;
 }
 
 void before_callback(const glbinding::FunctionCall &fn) {
@@ -243,14 +243,58 @@ void after_callback(const glbinding::FunctionCall &fn) {
     }
 }
 
-bool compile_fragment_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, ReportingState &reporting) {
+SharedGLObject get_fragment_shader(SceGxmShaderPatcher &shader_patcher, ReportingState &reporting, const SceGxmProgram &fragment_program, const char *base_path) {
     GXM_PROFILE(__FUNCTION__);
-    return compile_shader(shader, program, base_path, generate_fragment_glsl, reporting);
+    
+    const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
+    const ShaderCache::const_iterator cached = shader_patcher.fragment_shader_cache.find(hash_bytes);
+    if (cached != shader_patcher.fragment_shader_cache.end()) {
+        return cached->second;
+    }
+    
+    const std::array<char, 65> hash_text = hex(hash_bytes);
+    std::string source = load_shader(hash_text.data(), base_path);
+    if (source.empty()) {
+        source = generate_fragment_glsl(fragment_program);
+        dump_missing_shader(hash_text.data(), fragment_program, source.c_str());
+        report_missing_shader(reporting, hash_text.data(), source.c_str());
+    }
+    
+    const SharedGLObject shader = compile_glsl(GL_FRAGMENT_SHADER, source.c_str());
+    if (!shader) {
+        return SharedGLObject();
+    }
+    
+    shader_patcher.fragment_shader_cache.emplace(hash_bytes, shader);
+    
+    return shader;
 }
 
-bool compile_vertex_shader(GLuint shader, const SceGxmProgram &program, const char *base_path, ReportingState &reporting) {
+SharedGLObject get_vertex_shader(SceGxmShaderPatcher &shader_patcher, ReportingState &reporting, const SceGxmProgram &vertex_program, const char *base_path) {
     GXM_PROFILE(__FUNCTION__);
-    return compile_shader(shader, program, base_path, generate_vertex_glsl, reporting);
+    
+    const Sha256Hash hash_bytes = sha256(&vertex_program, vertex_program.size);
+    const ShaderCache::const_iterator cached = shader_patcher.vertex_shader_cache.find(hash_bytes);
+    if (cached != shader_patcher.vertex_shader_cache.end()) {
+        return cached->second;
+    }
+    
+    const std::array<char, 65> hash_text = hex(hash_bytes);
+    std::string source = load_shader(hash_text.data(), base_path);
+    if (source.empty()) {
+        source = generate_vertex_glsl(vertex_program);
+        dump_missing_shader(hash_text.data(), vertex_program, source.c_str());
+        report_missing_shader(reporting, hash_text.data(), source.c_str());
+    }
+    
+    const SharedGLObject shader = compile_glsl(GL_VERTEX_SHADER, source.c_str());
+    if (!shader) {
+        return SharedGLObject();
+    }
+    
+    shader_patcher.vertex_shader_cache.emplace(hash_bytes, shader);
+    
+    return shader;
 }
 
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
