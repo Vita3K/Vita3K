@@ -104,8 +104,11 @@ EXPORT(int, sceKernelCreateThreadForUser) {
 }
 
 EXPORT(int, sceKernelDelayThread, SceUInt delay) {
+#ifdef _WIN32
+    Sleep(delay / 1000);
+#else
     usleep(delay);
-
+#endif
     return SCE_KERNEL_OK;
 }
 
