@@ -167,9 +167,9 @@ static bool compile_glsl(GLuint shader, const GLchar *source) {
     if (log_length > 0) {
         std::vector<GLchar> log;
         log.resize(log_length);
-        glGetShaderInfoLog(shader, log_length, nullptr, &log.front());
+        glGetShaderInfoLog(shader, log_length, nullptr, log.data());
         
-        LOG_ERROR("{}", log.front());
+        LOG_ERROR("{}", log.data());
     }
     
     GLboolean is_compiled = GL_FALSE;
