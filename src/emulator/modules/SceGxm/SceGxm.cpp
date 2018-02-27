@@ -23,6 +23,16 @@
 
 #include <glbinding/Binding.h>
 
+#include <host/functions.h>
+#include <cpu/functions.h>
+#include <kernel/thread_functions.h>
+#include <psp2/kernel/error.h>
+
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
 using namespace emu;
 using namespace glbinding;
 
@@ -339,13 +349,10 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, SceGxmSyncObject *oldBuffer, SceGxmSync
     assert(newBuffer != nullptr);
     assert(callbackData);
 
-    const Address callback_data_address = callbackData.address();
-    const Address callback_pc = host.gxm.params.displayQueueCallback.address();
-
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    write_reg(*thread->cpu, 0, callback_data_address);
-    write_pc(*thread->cpu, callback_pc);
-
+    DisplayCallback display_callback;
+    display_callback.data = callbackData.address();
+    display_callback.pc = host.gxm.params.displayQueueCallback.address();
+    host.gxm.display_queue.push(display_callback);
     // TODO Return success if/when we call callback not as a tail call.
 }
 
@@ -466,11 +473,53 @@ EXPORT(int, sceGxmGetRenderTargetMemSizes) {
     return unimplemented("sceGxmGetRenderTargetMemSizes");
 }
 
+struct GxmThreadParams {
+    KernelState *kernel = nullptr;
+    SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    GxmState *gxm = nullptr;
+};
+
+static int SDLCALL thread_function(void *data) {
+    const GxmThreadParams params = *static_cast<const GxmThreadParams *>(data);
+    while(true){
+        DisplayCallback display_callback = params.gxm->display_queue.pop();
+        const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
+        run_callback(*display_thread,display_callback.pc,display_callback.data);
+    }
+}
+
+
 EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     assert(params != nullptr);
 
     host.gxm.params = *params;
-
+    host.gxm.display_queue.displayQueueMaxPendingCount_ = params->displayQueueMaxPendingCount;
+    
+    const ThreadStatePtr main_thread = find(thread_id, host.kernel.threads);
+    
+    const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
+        ::call_import(host, nid, thread_id);
+    };
+    
+    const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "display", MB(1), call_import, false);
+    
+    if (display_thread_id<0) {
+        return SCE_GXM_ERROR_DRIVER;
+    }
+    
+    const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
+    
+    const std::function<void(SDL_Thread *)> delete_thread = [display_thread](SDL_Thread *running_thread) {
+        SDL_WaitThread(running_thread, nullptr);
+    };
+    
+    GxmThreadParams gxm_params;
+    gxm_params.kernel = &host.kernel;
+    gxm_params.thid = display_thread_id;
+    gxm_params.gxm = &host.gxm;
+    
+    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), delete_thread);
+    host.kernel.running_threads.emplace(display_thread_id,running_thread);
     return 0;
 }
 

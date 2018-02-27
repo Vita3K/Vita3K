@@ -762,7 +762,7 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
         ::call_import(host, nid, thread_id);
     };
 
-    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, stackSize, call_import);
+    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, stackSize, call_import, false);
     if(thid<0)
         return error("sceKernelCreateThread",thid);
     return thid;

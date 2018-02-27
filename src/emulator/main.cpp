@@ -122,29 +122,40 @@ int main(int argc, char *argv[]) {
         ::call_import(host, nid, main_thread_id);
     };
 
-    const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
+    const size_t stack_size = MB(32); // TODO Get main thread stack size from somewhere?
    
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main",stack_size, call_import);
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main",stack_size, call_import, false);
     if (main_thread_id<0) {
         error("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
     }
-
+    
+    const SceUID display_thread_id = create_thread(entry_point, host.kernel, host.mem, "display", stack_size, call_import, false);
+    
+    if (display_thread_id<0) {
+        error("Failed to init display thread.", host.window.get());
+        return InitThreadFailed;
+    }
+    
     const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
-
+    
     if(start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0){
         error("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }
+    
+    const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
 
     GLuint TextureID = 0;
     host.t1 = SDL_GetTicks();
     while(handle_events(host)) {
 
-        SDL_Window *const prev_gl_window = SDL_GL_GetCurrentWindow();
-        const SDL_GLContext prev_gl_context = SDL_GL_GetCurrentContext();
+        //SDL_Window *const prev_gl_window = SDL_GL_GetCurrentWindow();
+        //const SDL_GLContext prev_gl_context = SDL_GL_GetCurrentContext();
 
-        SDL_GL_MakeCurrent(host.window.get(),host.glcontext.get());
+        //SDL_GL_MakeCurrent(host.window.get(),host.glcontext.get());
+        
+        
         
         if(!TextureID){
             glGenTextures(1, &TextureID);
@@ -169,42 +180,50 @@ int main(int argc, char *argv[]) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glLoadIdentity();
-
-        if(host.display.base){
-            glBindTexture(GL_TEXTURE_2D, TextureID);
-            void *const pixels = host.display.base.cast<void>().get(host.mem);
-            const SurfacePtr framebuffer_surface(SDL_CreateRGBSurfaceFrom(pixels, host.display.width, host.display.height, 32, host.display.pitch * 4, 0xff << 0, 0xff << 8, 0xff << 16, 0), SDL_FreeSurface);
-
-            if (SAVE_SURFACE_IMAGES) {
-                SDL_SaveBMP(framebuffer_surface.get(), (host.pref_path + "framebuffer.bmp").c_str());
+        /*{
+            std::unique_lock<std::mutex> lock(host.display.mutex);
+            host.display.ready = false;
+        }*/
+        {
+            std::unique_lock<std::mutex> lock(host.display.mutex);
+            if(host.display.base)
+            {
+                glBindTexture(GL_TEXTURE_2D, TextureID);
+                void *const pixels = host.display.base.cast<void>().get(host.mem);
+            
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, host.display.pitch);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, host.display.width, host.display.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+                lock.unlock();
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
             }
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glBindTexture(GL_TEXTURE_2D, TextureID);
 
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, framebuffer_surface->w, framebuffer_surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, framebuffer_surface->pixels);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glBindTexture(GL_TEXTURE_2D, TextureID);
+                // For Ortho mode, of course
+                const int X = 0;
+                const int Y = 0;
+                const int Width = 960;
+                const int Height = 544;
 
-            // For Ortho mode, of course
-            int X = 0;
-            int Y = 0;
-            int Width = 960;
-            int Height = 544;
-
-            glBegin(GL_TRIANGLE_FAN);
-            glTexCoord2f(0, 0); glVertex3f(X, Y, 0);
-            glTexCoord2f(1, 0); glVertex3f(X + Width, Y, 0);
-            glTexCoord2f(1, 1); glVertex3f(X + Width, Y + Height, 0);
-            glTexCoord2f(0, 1); glVertex3f(X, Y + Height, 0);
-            glEnd();
-
+                glBegin(GL_TRIANGLE_FAN);
+                glTexCoord2f(0, 0); glVertex3f(X, Y, 0);
+                glTexCoord2f(1, 0); glVertex3f(X + Width, Y, 0);
+                glTexCoord2f(1, 1); glVertex3f(X + Width, Y + Height, 0);
+                glTexCoord2f(0, 1); glVertex3f(X, Y + Height, 0);
+                glEnd();
+            
         }
-        
         SDL_GL_SwapWindow(host.window.get());
-        SDL_GL_MakeCurrent(prev_gl_window, prev_gl_context);
+        //SDL_GL_MakeCurrent(prev_gl_window, prev_gl_context);
         
-        host.display.condvar.notify_all();
         
-        ++host.frame_count;
+        {
+            //std::unique_lock<std::mutex> lock(host.display.mutex);
+            //host.display.ready = true;
+            host.display.condvar.notify_all();
+        }
+        /*++host.frame_count;
         const uint32_t t2 = SDL_GetTicks();
         const uint32_t ms = t2 - host.t1;
         if (ms >= 1000) {
@@ -215,7 +234,7 @@ int main(int argc, char *argv[]) {
             SDL_SetWindowTitle(host.window.get(), title.str().c_str());
             host.t1 = t2;
             host.frame_count = 0;
-        }
+        }*/
     }
 
     return Success;
