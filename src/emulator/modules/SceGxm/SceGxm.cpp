@@ -61,6 +61,14 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         return SCE_GXM_ERROR_INVALID_VALUE;
     }
     
+    if(fragmentSyncObject!=nullptr){
+        std::unique_lock<std::mutex> lock(fragmentSyncObject->mutex);
+        while(fragmentSyncObject->value==0){
+            fragmentSyncObject->cond_var.wait(lock);
+        }
+        fragmentSyncObject->value=0;
+    }
+    
     // TODO This may not be right.
     context->fragment_ring_buffer_used = 0;
     context->vertex_ring_buffer_used = 0;
@@ -344,15 +352,31 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
     return 0;
 }
 
-EXPORT(void, sceGxmDisplayQueueAddEntry, SceGxmSyncObject *oldBuffer, SceGxmSyncObject *newBuffer, Ptr<const void> callbackData) {
-    assert(oldBuffer != nullptr);
-    assert(newBuffer != nullptr);
+EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<SceGxmSyncObject> newBuffer, Ptr<const void> callbackData) {
+    //assert(oldBuffer != nullptr);
+    //assert(newBuffer != nullptr);
     assert(callbackData);
-
+    SceGxmSyncObject * _newBuffer = newBuffer.get(host.mem);
+    SceGxmSyncObject * _oldBuffer = oldBuffer.get(host.mem);
     DisplayCallback display_callback;
     display_callback.data = callbackData.address();
     display_callback.pc = host.gxm.params.displayQueueCallback.address();
+    display_callback.old_buffer = oldBuffer.address();
+    display_callback.new_buffer = newBuffer.address();
     host.gxm.display_queue.push(display_callback);
+    
+    /*
+     
+     // Uncomment to remove glitches
+     
+    {
+        std::unique_lock<std::mutex> lock(_newBuffer->mutex);
+        if(_newBuffer->value == 0)
+            _newBuffer->cond_var.wait(lock);
+    }
+     
+    */
+    
     // TODO Return success if/when we call callback not as a tail call.
 }
 
@@ -475,6 +499,7 @@ EXPORT(int, sceGxmGetRenderTargetMemSizes) {
 
 struct GxmThreadParams {
     KernelState *kernel = nullptr;
+    MemState *mem = nullptr;
     SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
     GxmState *gxm = nullptr;
 };
@@ -485,6 +510,10 @@ static int SDLCALL thread_function(void *data) {
         DisplayCallback display_callback = params.gxm->display_queue.pop();
         const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
         run_callback(*display_thread,display_callback.pc,display_callback.data);
+        const Ptr<SceGxmSyncObject> newBuffer(display_callback.new_buffer);
+        std::unique_lock<std::mutex> lock(newBuffer.get(*params.mem)->mutex);
+        newBuffer.get(*params.mem)->value = 1;
+        newBuffer.get(*params.mem)->cond_var.notify_all();
     }
 }
 
@@ -514,6 +543,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     };
     
     GxmThreadParams gxm_params;
+    gxm_params.mem = &host.mem;
     gxm_params.kernel = &host.kernel;
     gxm_params.thid = display_thread_id;
     gxm_params.gxm = &host.gxm;
@@ -1421,7 +1451,9 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
     if (!*syncObject) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
-
+    
+    SceGxmSyncObject * _syncObject = syncObject->get(host.mem);
+    _syncObject->value = 1;
     return 0;
 }
 

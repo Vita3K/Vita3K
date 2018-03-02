@@ -86,6 +86,8 @@ private:
 struct DisplayCallback {
     Address pc;
     Address data;
+    Address old_buffer;
+    Address new_buffer;
 };
 
 struct GxmState {

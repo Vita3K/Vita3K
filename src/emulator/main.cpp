@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
         ::call_import(host, nid, main_thread_id);
     };
 
-    const size_t stack_size = MB(32); // TODO Get main thread stack size from somewhere?
+    const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
    
     const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main",stack_size, call_import, false);
     if (main_thread_id<0) {
@@ -185,17 +185,15 @@ int main(int argc, char *argv[]) {
             host.display.ready = false;
         }*/
         {
-            std::unique_lock<std::mutex> lock(host.display.mutex);
-            if(host.display.base)
+            if(host.display.width>0)
             {
                 glBindTexture(GL_TEXTURE_2D, TextureID);
                 void *const pixels = host.display.base.cast<void>().get(host.mem);
             
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, host.display.pitch);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, host.display.width, host.display.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-                lock.unlock();
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-            }
+            
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glBindTexture(GL_TEXTURE_2D, TextureID);
@@ -212,6 +210,7 @@ int main(int argc, char *argv[]) {
                 glTexCoord2f(1, 1); glVertex3f(X + Width, Y + Height, 0);
                 glTexCoord2f(0, 1); glVertex3f(X, Y + Height, 0);
                 glEnd();
+            }
             
         }
         SDL_GL_SwapWindow(host.window.get());
