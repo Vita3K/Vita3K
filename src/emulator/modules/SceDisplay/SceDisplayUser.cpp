@@ -74,11 +74,11 @@ EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDis
         return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
     }
 
-        host.display.base = pParam->base;
-        host.display.height = pParam->height;
-        host.display.pitch = pParam->pitch;
-        host.display.pixelformat = pParam->pixelformat;
-        host.display.width = pParam->width;
+    host.display.base = pParam->base;
+    host.display.height = pParam->height;
+    host.display.pitch = pParam->pitch;
+    host.display.pixelformat = pParam->pixelformat;
+    host.display.width = pParam->width;
     
     MicroProfileFlip(nullptr);
 

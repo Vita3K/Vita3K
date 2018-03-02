@@ -356,26 +356,17 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     //assert(oldBuffer != nullptr);
     //assert(newBuffer != nullptr);
     assert(callbackData);
-    SceGxmSyncObject * _newBuffer = newBuffer.get(host.mem);
-    SceGxmSyncObject * _oldBuffer = oldBuffer.get(host.mem);
     DisplayCallback display_callback;
-    display_callback.data = callbackData.address();
+    
+    const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
+    const Ptr<void> ptr(address);
+    memcpy(ptr.get(host.mem),callbackData.get(host.mem),host.gxm.params.displayQueueCallbackDataSize);
+    
+    display_callback.data = address;
     display_callback.pc = host.gxm.params.displayQueueCallback.address();
     display_callback.old_buffer = oldBuffer.address();
     display_callback.new_buffer = newBuffer.address();
     host.gxm.display_queue.push(display_callback);
-    
-    /*
-     
-     // Uncomment to remove glitches
-     
-    {
-        std::unique_lock<std::mutex> lock(_newBuffer->mutex);
-        if(_newBuffer->value == 0)
-            _newBuffer->cond_var.wait(lock);
-    }
-     
-    */
     
     // TODO Return success if/when we call callback not as a tail call.
 }
@@ -514,6 +505,7 @@ static int SDLCALL thread_function(void *data) {
         std::unique_lock<std::mutex> lock(newBuffer.get(*params.mem)->mutex);
         newBuffer.get(*params.mem)->value = 1;
         newBuffer.get(*params.mem)->cond_var.notify_all();
+        free(*params.mem,display_callback.data);
     }
 }
 
