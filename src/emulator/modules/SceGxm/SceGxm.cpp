@@ -1167,7 +1167,9 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
     glBindTexture(GL_TEXTURE_2D, context->texture[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture->mag_filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture->min_filter);
+	
     if (texture->format == SCE_GXM_TEXTURE_FORMAT_P8_ABGR) {
         glPixelTransferi(GL_MAP_COLOR, GL_TRUE);
         GLfloat map[4][256];
@@ -1691,12 +1693,28 @@ EXPORT(int, sceGxmTextureGetLodMin) {
     return unimplemented("sceGxmTextureGetLodMin");
 }
 
-EXPORT(int, sceGxmTextureGetMagFilter) {
-    return unimplemented("sceGxmTextureGetMagFilter");
+EXPORT(int, sceGxmTextureGetMagFilter, emu::SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    switch (texture->mag_filter) {
+    case GL_NEAREST:
+        return SCE_GXM_TEXTURE_FILTER_POINT;
+        break;
+    case GL_LINEAR:
+        return SCE_GXM_TEXTURE_FILTER_LINEAR;
+        break;
+    }
 }
 
-EXPORT(int, sceGxmTextureGetMinFilter) {
-    return unimplemented("sceGxmTextureGetMinFilter");
+EXPORT(int, sceGxmTextureGetMinFilter, emu::SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    switch (texture->min_filter) {
+    case GL_NEAREST:
+        return SCE_GXM_TEXTURE_FILTER_POINT;
+        break;
+    case GL_LINEAR:
+        return SCE_GXM_TEXTURE_FILTER_LINEAR;
+        break;
+    }
 }
 
 EXPORT(int, sceGxmTextureGetMipFilter) {
@@ -1761,6 +1779,8 @@ EXPORT(int, sceGxmTextureInitLinear, emu::SceGxmTexture *texture, Ptr<const void
     texture->height = height;
     texture->data = data;
     texture->palette = Ptr<void>();
+    texture->min_filter = GL_NEAREST;
+    texture->mag_filter = GL_NEAREST;
 
     return 0;
 }
@@ -1816,12 +1836,36 @@ EXPORT(int, sceGxmTextureSetLodMin) {
     return unimplemented("sceGxmTextureSetLodMin");
 }
 
-EXPORT(int, sceGxmTextureSetMagFilter) {
-    return unimplemented("sceGxmTextureSetMagFilter");
+EXPORT(int, sceGxmTextureSetMagFilter, emu::SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
+    assert(texture != nullptr);
+    switch (magFilter) {
+    case SCE_GXM_TEXTURE_FILTER_POINT:
+        texture->mag_filter = GL_NEAREST;
+        break;
+    case SCE_GXM_TEXTURE_FILTER_LINEAR:
+        texture->mag_filter = GL_LINEAR;
+        break;
+    default:
+        return SCE_GXM_ERROR_INVALID_VALUE;
+        break;
+    }
+    return 0;
 }
 
-EXPORT(int, sceGxmTextureSetMinFilter) {
-    return unimplemented("sceGxmTextureSetMinFilter");
+EXPORT(int, sceGxmTextureSetMinFilter, emu::SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
+    assert(texture != nullptr);
+    switch (minFilter) {
+    case SCE_GXM_TEXTURE_FILTER_POINT:
+        texture->min_filter = GL_NEAREST;
+        break;
+    case SCE_GXM_TEXTURE_FILTER_LINEAR:
+        texture->min_filter = GL_LINEAR;
+        break;
+    default:
+        return SCE_GXM_ERROR_INVALID_VALUE;
+        break;
+    }
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetMipFilter) {
