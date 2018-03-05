@@ -48,7 +48,7 @@ static int SDLCALL thread_function(void *data) {
 
     const ThreadStatePtr thread = lock_and_find(params.thid, params.host->kernel.threads, params.host->kernel.mutex);
     write_reg(*thread->cpu, 0, params.arglen);
-    write_reg(*thread->cpu, 0, params.argp.address());
+    write_reg(*thread->cpu, 1, params.argp.address());
 
     const bool succeeded = run_thread(*thread);
     assert(succeeded);
