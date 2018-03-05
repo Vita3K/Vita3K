@@ -225,6 +225,14 @@ static SharedGLObject compile_glsl(GLenum type, const GLchar *source) {
     return shader;
 }
 
+static void bind_attribute_locations(GLuint gl_program, const SceGxmFragmentProgram &program) {
+    GXM_PROFILE(__FUNCTION__);
+    
+    for (const AttributeLocations::value_type &binding : program.attribute_locations) {
+        glBindAttribLocation(gl_program, binding.first, binding.second.c_str());
+    }
+}
+
 void before_callback(const glbinding::FunctionCall &fn) {
 #if MICROPROFILE_ENABLED
     const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
@@ -242,12 +250,10 @@ void after_callback(const glbinding::FunctionCall &fn) {
     }
 }
 
-SharedGLObject get_fragment_shader(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path) {
-    GXM_PROFILE(__FUNCTION__);
-    
+std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path) {
     const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
-    const ShaderCache::const_iterator cached = shader_patcher.fragment_shader_cache.find(hash_bytes);
-    if (cached != shader_patcher.fragment_shader_cache.end()) {
+    const GLSLCache::const_iterator cached = shader_patcher.fragment_glsl_cache.find(hash_bytes);
+    if (cached != shader_patcher.fragment_glsl_cache.end()) {
         return cached->second;
     }
     
@@ -258,22 +264,15 @@ SharedGLObject get_fragment_shader(SceGxmShaderPatcher &shader_patcher, const Sc
         dump_missing_shader(hash_text.data(), fragment_program, source.c_str());
     }
     
-    const SharedGLObject shader = compile_glsl(GL_FRAGMENT_SHADER, source.c_str());
-    if (!shader) {
-        return SharedGLObject();
-    }
+    shader_patcher.fragment_glsl_cache.emplace(hash_bytes, source);
     
-    shader_patcher.fragment_shader_cache.emplace(hash_bytes, shader);
-    
-    return shader;
+    return source;
 }
 
-SharedGLObject get_vertex_shader(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path) {
-    GXM_PROFILE(__FUNCTION__);
-    
+std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path) {
     const Sha256Hash hash_bytes = sha256(&vertex_program, vertex_program.size);
-    const ShaderCache::const_iterator cached = shader_patcher.vertex_shader_cache.find(hash_bytes);
-    if (cached != shader_patcher.vertex_shader_cache.end()) {
+    const GLSLCache::const_iterator cached = shader_patcher.vertex_glsl_cache.find(hash_bytes);
+    if (cached != shader_patcher.vertex_glsl_cache.end()) {
         return cached->second;
     }
     
@@ -284,14 +283,80 @@ SharedGLObject get_vertex_shader(SceGxmShaderPatcher &shader_patcher, const SceG
         dump_missing_shader(hash_text.data(), vertex_program, source.c_str());
     }
     
-    const SharedGLObject shader = compile_glsl(GL_VERTEX_SHADER, source.c_str());
-    if (!shader) {
+    shader_patcher.vertex_glsl_cache.emplace(hash_bytes, source);
+    
+    return source;
+}
+
+AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
+    AttributeLocations locations;
+    
+    const SceGxmProgramParameter *const parameters = program_parameters(vertex_program);
+    for (uint32_t i = 0; i < vertex_program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = parameters[i];
+        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+            locations.emplace(parameter.resource_index, parameter_name(parameter));
+        }
+    }
+    
+    return locations;
+}
+
+SharedGLObject get_program(SceGxmContext &context, const SceGxmFragmentProgram &fragment_program) {
+    GXM_PROFILE(__FUNCTION__);
+    
+    const ProgramGLSLs glsls(fragment_program.fragment_glsl, fragment_program.vertex_glsl);
+    const ProgramCache::const_iterator cached = context.program_cache.find(glsls);
+    if (cached != context.program_cache.end()) {
+        return cached->second;
+    }
+    
+    const SharedGLObject fragment_shader = compile_glsl(GL_FRAGMENT_SHADER, fragment_program.fragment_glsl.c_str());
+    if (!fragment_shader) {
         return SharedGLObject();
     }
     
-    shader_patcher.vertex_shader_cache.emplace(hash_bytes, shader);
+    const SharedGLObject vertex_shader = compile_glsl(GL_VERTEX_SHADER, fragment_program.vertex_glsl.c_str());
+    if (!vertex_shader) {
+        return SharedGLObject();
+    }
     
-    return shader;
+    const SharedGLObject program = std::make_shared<GLObject>();
+    if (!program->init(glCreateProgram(), &glDeleteProgram)) {
+        return SharedGLObject();
+    }
+    
+    glAttachShader(program->get(), fragment_shader->get());
+    glAttachShader(program->get(), vertex_shader->get());
+    
+    bind_attribute_locations(program->get(), fragment_program);
+    
+    glLinkProgram(program->get());
+    
+    GLint log_length = 0;
+    glGetProgramiv(program->get(), GL_INFO_LOG_LENGTH, &log_length);
+    
+    if (log_length > 0) {
+        std::vector<GLchar> log;
+        log.resize(log_length);
+        glGetProgramInfoLog(program->get(), log_length, nullptr, log.data());
+        
+        LOG_ERROR("{}", log.data());
+    }
+    
+    GLboolean is_linked = GL_FALSE;
+    glGetProgramiv(program->get(), GL_LINK_STATUS, &is_linked);
+    assert(is_linked != GL_FALSE);
+    if (is_linked == GL_FALSE) {
+        return SharedGLObject();
+    }
+    
+    glDetachShader(program->get(), fragment_shader->get());
+    glDetachShader(program->get(), vertex_shader->get());
+    
+    context.program_cache.emplace(glsls, program);
+    
+    return program;
 }
 
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
@@ -332,18 +397,6 @@ bool attribute_format_normalised(SceGxmAttributeFormat format) {
             return true;
         default:
             return false;
-    }
-}
-
-void bind_attribute_locations(GLuint gl_program, const SceGxmProgram &program) {
-    GXM_PROFILE(__FUNCTION__);
-    
-    const SceGxmProgramParameter *const parameters = program_parameters(program);
-    for (uint32_t i = 0; i < program.parameter_count; ++i) {
-        const SceGxmProgramParameter &parameter = parameters[i];
-        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            glBindAttribLocation(gl_program, parameter.resource_index, parameter_name(parameter));
-        }
     }
 }
 

@@ -57,6 +57,9 @@ namespace emu {
 }
 
 typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
+typedef std::shared_ptr<GLObject> SharedGLObject;
+typedef std::tuple<std::string, std::string> ProgramGLSLs;
+typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 
 struct SceGxmContext {
     // This is an opaque type.
@@ -65,6 +68,7 @@ struct SceGxmContext {
     size_t fragment_ring_buffer_used = 0;
     size_t vertex_ring_buffer_used = 0;
     emu::SceGxmColorSurface color_surface;
+    ProgramCache program_cache;
     const SceGxmVertexProgram *vertex_program = nullptr;
     GLObjectArray<1> texture;
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
@@ -80,9 +84,13 @@ namespace emu {
     };
 }
 
+typedef std::map<GLuint, std::string> AttributeLocations;
+
 struct SceGxmFragmentProgram {
-    // TODO This is an opaque type.
-    GLObject program;
+    std::string fragment_glsl;
+    std::string vertex_glsl;
+    AttributeLocations attribute_locations;
+    
     GLboolean color_mask_red = GL_TRUE;
     GLboolean color_mask_green = GL_TRUE;
     GLboolean color_mask_blue = GL_TRUE;
@@ -138,13 +146,12 @@ struct SceGxmRenderTarget {
     GLObjectArray<1> framebuffer;
 };
 
-typedef std::shared_ptr<GLObject> SharedGLObject;
-typedef std::map<Sha256Hash, SharedGLObject> ShaderCache;
+typedef std::map<Sha256Hash, std::string> GLSLCache;
 
 struct SceGxmShaderPatcher {
-    // This is an opaque struct.
-    ShaderCache fragment_shader_cache;
-    ShaderCache vertex_shader_cache;
+    // TODO This is an opaque struct.
+    GLSLCache fragment_glsl_cache;
+    GLSLCache vertex_glsl_cache;
 };
 
 namespace emu {

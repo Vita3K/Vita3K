@@ -896,7 +896,9 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, const SceGxmFragm
     assert(context != nullptr);
     assert(fragmentProgram != nullptr);
 
-    glUseProgram(fragmentProgram->program.get());
+    const SharedGLObject program = get_program(*context, *fragmentProgram);
+    
+    glUseProgram(program->get());
     glColorMask(fragmentProgram->color_mask_red, fragmentProgram->color_mask_green, fragmentProgram->color_mask_blue, fragmentProgram->color_mask_alpha);
     if (fragmentProgram->blend_enabled) {
         glEnable(GL_BLEND);
@@ -1156,12 +1158,6 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
     assert(vertexProgram != nullptr);
     assert(fragmentProgram != nullptr);
-
-    const SharedGLObject fragment_shader = get_fragment_shader(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
-    const SharedGLObject vertex_shader = get_vertex_shader(*shaderPatcher, *vertexProgram, host.base_path.c_str());
-    if (!fragment_shader || !vertex_shader) {
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
     
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
@@ -1170,43 +1166,9 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
     
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
-    if (!fp->program.init(glCreateProgram(), glDeleteProgram)) {
-        free(mem, *fragmentProgram);
-        fragmentProgram->reset();
-
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
-
-    glAttachShader(fp->program.get(), fragment_shader->get());
-    glAttachShader(fp->program.get(), vertex_shader->get());
-
-    bind_attribute_locations(fp->program.get(), *vertexProgram);
-
-    glLinkProgram(fp->program.get());
-
-    GLint log_length = 0;
-    glGetProgramiv(fp->program.get(), GL_INFO_LOG_LENGTH, &log_length);
-
-    if (log_length > 0) {
-        std::vector<GLchar> log;
-        log.resize(log_length);
-        glGetProgramInfoLog(fp->program.get(), log_length, nullptr, log.data());
-
-		LOG_ERROR("{}", log.data());
-    }
-
-    GLboolean is_linked = GL_FALSE;
-    glGetProgramiv(fp->program.get(), GL_LINK_STATUS, &is_linked);
-    assert(is_linked != GL_FALSE);
-    if (is_linked == GL_FALSE) {
-        free(mem, *fragmentProgram);
-        fragmentProgram->reset();
-
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
-
-    glDetachShader(fp->program.get(), fragment_shader->get());
-    glDetachShader(fp->program.get(), vertex_shader->get());
+    fp->fragment_glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
+    fp->vertex_glsl = get_vertex_glsl(*shaderPatcher, *vertexProgram, host.base_path.c_str());
+    fp->attribute_locations = attribute_locations(*vertexProgram);
 
     // Translate blending.
     if (blendInfo != nullptr) {
