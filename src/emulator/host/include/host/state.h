@@ -22,6 +22,7 @@
 #include <gxm/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
+#include <net/state.h>
 
 struct SDL_Window;
 
@@ -39,4 +40,5 @@ struct HostState {
     AudioState audio;
     GxmState gxm;
     IOState io;
+    NetState net;
 };

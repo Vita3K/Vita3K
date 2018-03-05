@@ -1,3 +1,0 @@
-add_library(SceLocationExtension STATIC include/SceLocationExtension/exports.h src/SceLibLocationExtension.cpp)
-target_include_directories(SceLocationExtension PUBLIC include)
-target_link_libraries(SceLocationExtension PRIVATE module)

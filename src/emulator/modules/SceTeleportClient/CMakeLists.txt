@@ -1,3 +1,0 @@
-add_library(SceTeleportClient STATIC include/SceTeleportClient/exports.h src/SceTeleportClient.cpp)
-target_include_directories(SceTeleportClient PUBLIC include)
-target_link_libraries(SceTeleportClient PRIVATE module)

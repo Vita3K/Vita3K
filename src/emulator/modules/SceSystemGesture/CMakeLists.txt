@@ -1,3 +1,0 @@
-add_library(SceSystemGesture STATIC include/SceSystemGesture/exports.h src/SceSystemGesture.cpp)
-target_include_directories(SceSystemGesture PUBLIC include)
-target_link_libraries(SceSystemGesture PRIVATE module)

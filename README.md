@@ -4,7 +4,8 @@
 ## Introduction
 Vita3K is an experimental PlayStation Vita emulator for Windows and macOS.
 
-* [Website](https://Vita3K.github.io/) (not done yet)
+* [Website](https://Vita3K.github.io/) (information for users)
+* [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
 * [Discord](https://discord.gg/6aGwQzh)
 * IRC `#vita3k` on **freenode** ([Web-based IRC client](https://webchat.freenode.net/?channels=%23vita3k))
 * [Patreon](https://www.patreon.com/Vita3K)
@@ -42,6 +43,13 @@ Vita3K binaries for Windows can be downloaded on [AppVeyor](https://ci.appveyor.
 2. Open the `Vita3K.xcodeproj` project.
 3. When prompted to create schemes, create one for the `emulator` target only. The project builds many targets, so it will make your life easier if you create schemes as needed.
 4. Build.
+
+### Linux
+1. Get [SDL](https://wiki.libsdl.org/Installation#Linux.2FUnix) (2.0.7+) and [unicorn](http://www.unicorn-engine.org)
+2. `git submodule init && git submodule update`
+3. `mkdir build-linux && cd build-linux`
+4. `cmake ../src/`
+5. `make`
 
 ## Running
 The emulator does not yet have a front end. Please specify the path to a .vpk file as the first command line argument.
