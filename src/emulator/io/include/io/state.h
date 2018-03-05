@@ -20,20 +20,43 @@
 #include <miniz.h>
 #include <psp2/types.h>
 
+#include <io/file.h>
+
 #include <cstdio>
 #include <map>
 #include <memory>
+
+#ifdef WIN32
+struct _WDIR;
+#else
+#include <dirent.h>
+#endif
 
 typedef std::shared_ptr<FILE> FilePtr;
 typedef std::shared_ptr<mz_zip_archive> ZipPtr;
 typedef std::shared_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;
 
+#ifdef _WIN32
+typedef std::shared_ptr<_WDIR> DirPtr;
+#else
+typedef std::shared_ptr<DIR> DirPtr;
+#endif
+
+enum TtyType {
+    TTY_IN,
+    TTY_OUT
+};
+
+typedef std::map<SceUID, TtyType> TtyFiles;
 typedef std::map<SceUID, FilePtr> StdFiles;
-typedef std::map<SceUID, ZipFilePtr> ZipFiles;
+typedef std::map<SceUID, ReadOnlyInMemFile> AppFiles;
+typedef std::map<SceUID, DirPtr> DirEntries;
 
 struct IOState {
     ZipPtr vpk;
     SceUID next_fd = 0;
+    TtyFiles tty_files;
     StdFiles std_files;
-    ZipFiles zip_files;
+    AppFiles app_files;
+    DirEntries dir_entries;
 };

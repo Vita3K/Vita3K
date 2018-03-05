@@ -20,10 +20,12 @@
 #include <disasm/functions.h>
 #include <disasm/state.h>
 #include <mem/ptr.h>
+#include <util/log.h>
 
 #include <unicorn/unicorn.h>
 
 #include <cassert>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 
@@ -58,12 +60,12 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const size_t buffer_size = GB(4) - address;
     const bool thumb = is_thumb_mode(uc);
     const std::string disassembly = disassemble(state.disasm, code, buffer_size, address, thumb);
-    std::cout << std::hex << std::setw(8) << address << std::dec << " " << disassembly << std::endl;
+	LOG_TRACE("{:#08x} {}", address, disassembly);
 }
 
 static void log_memory_access(const char *type, Address address, int size, int64_t value, const MemState &mem) {
     const char *const name = mem_name(address, mem);
-    std::cout << type << " " << size << " bytes, address 0x" << std::hex << address << " (" << name << "), value 0x" << value << std::dec << std::endl;
+	LOG_TRACE("{} {} bytes, address {:#08x} ( {} ), value {:#x}", type, size, address, name, value);
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {

@@ -20,8 +20,10 @@
 #include "load_self.h"
 
 #include <io/state.h>
+#include <util/string_convert.h>
 
 #include <cassert>
+#include <cstring>
 #include <vector>
 
 typedef std::vector<uint8_t> Buffer;
@@ -41,11 +43,21 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
     return n;
 }
 
-bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const char *path) {
+bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const std::wstring& path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
-    if (!mz_zip_reader_init_file(zip.get(), path, 0)) {
+    FILE* vpk_fp;
+
+#ifdef WIN32
+    if (_wfopen_s(&vpk_fp, path.c_str(), L"rb")) {
+#else
+    if (!(vpk_fp = fopen(wide_to_utf(path).c_str(), "rb"))) {
+#endif
+        return false;
+    }
+
+    if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
         return false;
     }
 

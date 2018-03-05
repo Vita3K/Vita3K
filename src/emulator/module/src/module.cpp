@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <module/module.h>
+#include <util/log.h>
 
 #include <iostream>
 #include <mutex>
@@ -28,6 +29,20 @@ static NameSet logged;
 
 int unimplemented(const char *name) {
     bool inserted = false;
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        inserted = logged.insert(name).second;
+    }
+
+    if (inserted) {
+        LOG_WARN(">>> {} <<< Unimplemented import called.", name);
+    }
+
+    return 0;
+}
+
+int error(const char *name, int error) {
+    bool inserted = false;
 
     {
         const std::lock_guard<std::mutex> lock(mutex);
@@ -35,8 +50,8 @@ int unimplemented(const char *name) {
     }
 
     if (inserted) {
-        std::cerr << ">>> " << name << " <<< Unimplemented import called." << std::endl;
+		    LOG_ERROR(">>> {} <<< returned {:#X}", name, error);
     }
 
-    return 0;
+    return error;
 }

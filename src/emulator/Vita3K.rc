@@ -1,0 +1,3 @@
+#include "resource.h"
+IDI_ICON1 ICON "Vita3K.ico"
+frame_icon ICON "Vita3K.ico"
