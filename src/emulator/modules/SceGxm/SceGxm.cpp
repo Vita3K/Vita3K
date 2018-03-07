@@ -1129,12 +1129,22 @@ EXPORT(int, sceGxmSetYuvProfile) {
     return unimplemented("sceGxmSetYuvProfile");
 }
 
-EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram) {
-    return unimplemented("sceGxmShaderPatcherAddRefFragmentProgram");
+EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmFragmentProgram *fragmentProgram) {
+    assert(shaderPatcher != nullptr);
+    assert(fragmentProgram != nullptr);
+    
+    ++fragmentProgram->reference_count;
+    
+    return 0;
 }
 
-EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram) {
-    return unimplemented("sceGxmShaderPatcherAddRefVertexProgram");
+EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmVertexProgram *vertexProgram) {
+    assert(shaderPatcher != nullptr);
+    assert(vertexProgram != nullptr);
+    
+    ++vertexProgram->reference_count;
+    
+    return 0;
 }
 
 EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *params, Ptr<SceGxmShaderPatcher> *shaderPatcher) {
@@ -1284,7 +1294,11 @@ EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shad
     assert(shaderPatcher != nullptr);
     assert(fragmentProgram);
 
-    free(host.mem, fragmentProgram);
+    SceGxmFragmentProgram *const fp = fragmentProgram.get(host.mem);
+    --fp->reference_count;
+    if (fp->reference_count == 0) {
+        free(host.mem, fragmentProgram);
+    }
 
     return 0;
 }
@@ -1293,7 +1307,11 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
     assert(shaderPatcher != nullptr);
     assert(vertexProgram);
 
-    free(host.mem, vertexProgram);
+    SceGxmVertexProgram *const vp = vertexProgram.get(host.mem);
+    --vp->reference_count;
+    if (vp->reference_count == 0) {
+        free(host.mem, vertexProgram);
+    }
 
     return 0;
 }

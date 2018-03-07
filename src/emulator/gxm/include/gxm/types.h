@@ -87,6 +87,8 @@ namespace emu {
 typedef std::map<GLuint, std::string> AttributeLocations;
 
 struct SceGxmFragmentProgram {
+    size_t reference_count = 1;
+    
     std::string fragment_glsl;
     std::string vertex_glsl;
     AttributeLocations attribute_locations;
@@ -202,6 +204,7 @@ namespace emu {
 
 struct SceGxmVertexProgram {
     // TODO I think this is an opaque type.
+    size_t reference_count = 0;
     std::vector<SceGxmVertexStream> streams;
     std::vector<emu::SceGxmVertexAttribute> attributes;
 };
