@@ -78,6 +78,11 @@ bool operator<(const Ptr<T> &a, const Ptr<U> &b) {
 }
 
 template <class T>
+bool operator==(const Ptr<T> &a, const Ptr<T> &b) {
+    return a.address() == b.address();
+}
+
+template <class T>
 Ptr<T> alloc(MemState &mem, const char *name) {
     const Address address = alloc(mem, sizeof(T), name);
     const Ptr<T> ptr(address);

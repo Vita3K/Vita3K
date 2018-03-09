@@ -1160,14 +1160,35 @@ EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *par
     return 0;
 }
 
-EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, SceGxmOutputRegisterFormat outputFormat, SceGxmMultisampleMode multisampleMode, const emu::SceGxmBlendInfo *blendInfo, const SceGxmProgram *vertexProgram, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
+EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, SceGxmOutputRegisterFormat outputFormat, SceGxmMultisampleMode multisampleMode, const emu::SceGxmBlendInfo *blendInfo, Ptr<const SceGxmProgram> vertexProgram, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
     MemState &mem = host.mem;
     assert(shaderPatcher != nullptr);
     assert(programId != nullptr);
     assert(outputFormat == SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
     assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
-    assert(vertexProgram != nullptr);
+    assert(vertexProgram);
     assert(fragmentProgram != nullptr);
+    
+    static const emu::SceGxmBlendInfo default_blend_info = {
+        SCE_GXM_COLOR_MASK_ALL,
+        SCE_GXM_BLEND_FUNC_NONE,
+        SCE_GXM_BLEND_FUNC_NONE,
+        SCE_GXM_BLEND_FACTOR_ONE,
+        SCE_GXM_BLEND_FACTOR_ZERO,
+        SCE_GXM_BLEND_FACTOR_ONE,
+        SCE_GXM_BLEND_FACTOR_ZERO
+    };
+    const FragmentProgramCacheKey key = {
+        *programId,
+        (blendInfo != nullptr) ? *blendInfo : default_blend_info,
+        vertexProgram
+    };
+    FragmentProgramCache::const_iterator cached = shaderPatcher->fragment_program_cache.find(key);
+    if (cached != shaderPatcher->fragment_program_cache.end()) {
+        ++cached->second.get(mem)->reference_count;
+        *fragmentProgram = cached->second;
+        return 0;
+    }
     
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
@@ -1177,8 +1198,8 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->fragment_glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
-    fp->vertex_glsl = get_vertex_glsl(*shaderPatcher, *vertexProgram, host.base_path.c_str());
-    fp->attribute_locations = attribute_locations(*vertexProgram);
+    fp->vertex_glsl = get_vertex_glsl(*shaderPatcher, *vertexProgram.get(mem), host.base_path.c_str());
+    fp->attribute_locations = attribute_locations(*vertexProgram.get(mem));
 
     // Translate blending.
     if (blendInfo != nullptr) {
@@ -1195,6 +1216,8 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         fp->alpha_dst = translate_blend_factor(blendInfo->alphaDst);
     }
 
+    shaderPatcher->fragment_program_cache.emplace(key, *fragmentProgram);
+    
     return 0;
 }
 
@@ -1297,6 +1320,12 @@ EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shad
     SceGxmFragmentProgram *const fp = fragmentProgram.get(host.mem);
     --fp->reference_count;
     if (fp->reference_count == 0) {
+        for (FragmentProgramCache::const_iterator it = shaderPatcher->fragment_program_cache.begin(); it != shaderPatcher->fragment_program_cache.end(); ++it) {
+            if (it->second == fragmentProgram) {
+                shaderPatcher->fragment_program_cache.erase(it);
+                break;
+            }
+        }
         free(host.mem, fragmentProgram);
     }
 

@@ -8,6 +8,7 @@
 #include <glbinding/FunctionCall.h>
 #include <microprofile.h>
 
+#include <cstring> // memcmp
 #include <fstream>
 #include <sstream>
 
@@ -231,6 +232,14 @@ static void bind_attribute_locations(GLuint gl_program, const SceGxmFragmentProg
     for (const AttributeLocations::value_type &binding : program.attribute_locations) {
         glBindAttribLocation(gl_program, binding.first, binding.second.c_str());
     }
+}
+
+static bool operator<(const SceGxmRegisteredProgram &a, const SceGxmRegisteredProgram &b) {
+    return a.program < b.program;
+}
+
+static bool operator<(const emu::SceGxmBlendInfo &a, const emu::SceGxmBlendInfo &b) {
+    return memcmp(&a, &b, sizeof(a)) < 0;
 }
 
 void before_callback(const glbinding::FunctionCall &fn) {
@@ -511,4 +520,20 @@ GLenum translate_primitive(SceGxmPrimitiveType primType){
             return GL_TRIANGLES;
     }
     return GL_TRIANGLES;
+}
+
+bool operator<(const FragmentProgramCacheKey& a, const FragmentProgramCacheKey &b) {
+    if (a.fragment_program < b.fragment_program) {
+        return true;
+    }
+    if (b.fragment_program < a.fragment_program) {
+        return false;
+    }
+    if (a.blend_info < b.blend_info) {
+        return true;
+    }
+    if (b.blend_info < a.blend_info) {
+        return false;
+    }
+    return a.vertex_program < b.vertex_program;
 }

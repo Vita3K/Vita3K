@@ -13,6 +13,11 @@ namespace glbinding {
 
 class GLObject;
 
+namespace emu {
+    struct SceGxmBlendInfo;
+}
+
+struct FragmentProgramCacheKey;
 typedef std::shared_ptr<GLObject> SharedGLObject;
 typedef std::map<GLuint, std::string> AttributeLocations;
 
@@ -30,3 +35,4 @@ GLenum translate_blend_factor(SceGxmBlendFactor src);
 GLenum translate_internal_format(SceGxmTextureFormat src);
 GLenum translate_format(SceGxmTextureFormat src);
 GLenum translate_primitive(SceGxmPrimitiveType primType);
+bool operator<(const FragmentProgramCacheKey& a, const FragmentProgramCacheKey &b);

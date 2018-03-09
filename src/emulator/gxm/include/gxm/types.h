@@ -6,9 +6,10 @@
 #include <mem/ptr.h>
 
 #include <psp2/gxm.h>
-
 #include <SDL_video.h>
+
 #include <map>
+#include <tuple>
 
 namespace emu {
     struct SceGxmBlendInfo {
@@ -148,10 +149,18 @@ struct SceGxmRenderTarget {
     GLObjectArray<1> framebuffer;
 };
 
+struct FragmentProgramCacheKey {
+    SceGxmRegisteredProgram fragment_program;
+    emu::SceGxmBlendInfo blend_info;
+    Ptr<const SceGxmProgram> vertex_program;
+};
+
+typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
 typedef std::map<Sha256Hash, std::string> GLSLCache;
 
 struct SceGxmShaderPatcher {
     // TODO This is an opaque struct.
+    FragmentProgramCache fragment_program_cache;
     GLSLCache fragment_glsl_cache;
     GLSLCache vertex_glsl_cache;
 };
