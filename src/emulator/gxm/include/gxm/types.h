@@ -213,7 +213,7 @@ namespace emu {
 
 struct SceGxmVertexProgram {
     // TODO I think this is an opaque type.
-    size_t reference_count = 0;
+    size_t reference_count = 1;
     std::vector<SceGxmVertexStream> streams;
     std::vector<emu::SceGxmVertexAttribute> attributes;
 };
