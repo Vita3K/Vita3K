@@ -17,44 +17,13 @@
 
 #pragma once
 
-#include <miniz.h>
-#include <psp2/types.h>
+#include <string>
 
-#include <io/file.h>
+namespace vfs {
+    bool mount(const std::string& dvc, const std::string& physical_path);
+    bool unmount(const std::string& dvc);
 
-#include <cstdio>
-#include <map>
-#include <memory>
+    std::string physical_mount_path(const std::string& dvc);
 
-#ifdef WIN32
-struct _WDIR;
-#else
-#include <dirent.h>
-#endif
-
-typedef std::shared_ptr<FILE> FilePtr;
-typedef std::shared_ptr<mz_zip_archive> ZipPtr;
-typedef std::shared_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;
-
-#ifdef _WIN32
-typedef std::shared_ptr<_WDIR> DirPtr;
-#else
-typedef std::shared_ptr<DIR> DirPtr;
-#endif
-
-enum TtyType {
-    TTY_IN,
-    TTY_OUT
-};
-
-typedef std::map<SceUID, TtyType> TtyFiles;
-typedef std::map<SceUID, FilePtr> StdFiles;
-typedef std::map<SceUID, DirPtr> DirEntries;
-
-struct IOState {
-    ZipPtr vpk;
-    SceUID next_fd = 0;
-    TtyFiles tty_files;
-    StdFiles std_files;
-    DirEntries dir_entries;
-};
+    std::string get(const std::string& dvc_path);
+}
