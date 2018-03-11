@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cstring>
 #include <cmath>
+#include <functional>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -125,7 +126,7 @@ void free(MemState &state, Address address) {
     const Generation generation = state.allocated_pages[page];
     assert(generation != 0);
 
-    const std::binder1st<std::not_equal_to<Generation>> different_generation = std::bind1st(std::not_equal_to<Generation>(), generation);
+    const auto different_generation = std::bind(std::not_equal_to<Generation>(), generation, std::placeholders::_1);
     const Allocated::iterator first_page = state.allocated_pages.begin() + page;
     const Allocated::iterator last_page = std::find_if(first_page, state.allocated_pages.end(), different_generation);
     std::fill(first_page, last_page, 0);
