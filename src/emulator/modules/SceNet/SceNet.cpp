@@ -97,7 +97,10 @@ static int translate_errorcode(){
     ERROR_CASE(EPROTOTYPE)
     ERROR_CASE(ENOPROTOOPT)
     ERROR_CASE(EPROTONOSUPPORT)
+// ENOTSUP and EOPNOTSUPP has the same value on Linux Posix
+#ifndef __unix__
     ERROR_CASE(EOPNOTSUPP)
+#endif
     ERROR_CASE(EAFNOSUPPORT)
     ERROR_CASE(EADDRINUSE)
     ERROR_CASE(EADDRNOTAVAIL)

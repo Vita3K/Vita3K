@@ -105,7 +105,7 @@ EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDis
         const uint32_t ms_per_frame = ms / host.frame_count;
         std::ostringstream title;
         title << window_title << " - " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
-        SDL_SetWindowTitle(host.window.get(), title.str().c_str());
+        SDL_SetWindowTitle(host.window.get(), (title.str() + " | " + host.game_title + " (" + host.title_id + ")").c_str());
         host.t1 = t2;
         host.frame_count = 0;
     }
