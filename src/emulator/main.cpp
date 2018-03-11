@@ -23,12 +23,19 @@
 #include <kernel/thread_functions.h>
 #include <util/string_convert.h>
 #include <util/log.h>
+#include <io/vfs.h>
+
+#include "sfo.h"
 
 #include <SDL.h>
 
 #include <algorithm> // find_if_not
 #include <cassert>
 #include <iostream>
+
+#include <experimental/filesystem>
+
+namespace fs = std::experimental::filesystem;
 
 typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
 
@@ -58,10 +65,11 @@ static void term_sdl(const void *succeeded) {
     SDL_Quit();
 }
 
+
 int main(int argc, char *argv[]) {
 	init_logging();
 
-	LOG_INFO("{}", window_title);
+	LOG_INFO("{}", window_title);    
 
     ProgramArgsWide argv_wide = process_args(argc, argv);
 
@@ -100,8 +108,10 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
+    vfs::mount("vs0", fs::absolute(host.pref_path + "vs0"));
+
     Ptr<const void> entry_point;
-    if (!load_vpk(entry_point, host.io, host.mem, path)) {
+    if (!load_vpk(entry_point, host.io, host.mem, host.game_title, host.title_id, path)) {
         std::string message = "Failed to load \"";
         message += wide_to_utf(path);
         message += "\"";
