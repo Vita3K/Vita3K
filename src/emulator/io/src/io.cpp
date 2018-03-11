@@ -147,7 +147,7 @@ SceUID open_file(IOState &io, const char *path, int flags) {
         }
 
 #ifdef WIN32
-        const FilePtr file(_wfopen(utf_to_wide(vfs::get(path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
+        const FilePtr file(_wfopen(utf_to_wide(vfs::get(path)).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
 #else
         const FilePtr file(fopen(vfs::get(path).c_str(), open_mode), delete_file);
 #endif
