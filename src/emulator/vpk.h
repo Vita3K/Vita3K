@@ -21,7 +21,6 @@
 
 struct IOState;
 struct MemState;
-struct HostState;
 template <class T>
 class Ptr;
 
