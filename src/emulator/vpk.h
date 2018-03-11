@@ -21,7 +21,8 @@
 
 struct IOState;
 struct MemState;
+struct HostState;
 template <class T>
 class Ptr;
 
-bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const std::wstring& path);
+bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::string &game_title, std::string& title_id, const std::wstring& path);

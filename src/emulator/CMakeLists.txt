@@ -19,7 +19,7 @@ else()
 	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}")
 endif()
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -50,9 +50,16 @@ relocation.cpp
 relocation.h
 vpk.cpp
 vpk.h
+sfo.h
+sfo.cpp
 )
 
 target_link_libraries(emulator PRIVATE cpu elfio host modules nids vita-toolchain util)
+
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+   target_link_libraries(emulator PRIVATE stdc++fs)
+endif()
+
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

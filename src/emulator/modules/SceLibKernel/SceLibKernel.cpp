@@ -311,11 +311,11 @@ EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(file, stat, host.pref_path.c_str());
+    return stat_file(file, stat, host.pref_path.c_str(), host.io);
 }
 
-EXPORT(int, sceIoGetstatByFd) {
-    return unimplemented("sceIoGetstatByFd");
+EXPORT(int, sceIoGetstatByFd, SceUID uid, SceIoStat *stat) {
+    return stat_file_by_fd(uid, stat, host.io);
 }
 
 EXPORT(int, sceIoIoctl) {

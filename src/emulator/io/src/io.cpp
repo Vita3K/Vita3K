@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <iostream>
 #include <string>
 
@@ -53,7 +54,8 @@ static ReadOnlyInMemFile open_zip(mz_zip_archive &zip, const char *entry_path) {
         return ReadOnlyInMemFile();
     }
 
-    ReadOnlyInMemFile res;
+    // Quick hack
+    ReadOnlyInMemFile res(std::string("app0:") + std::string(entry_path));
     char *data = res.alloc_data(zip_file->file_stat.m_uncomp_size);
 
     mz_zip_reader_extract_iter_read(zip_file, data, zip_file->file_stat.m_uncomp_size);
@@ -393,9 +395,9 @@ int remove_dir(const char *dir, const char *pref_path) {
     }
 }
 
-int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
+int stat_file(const char *file, SceIoStat *statp, const char *pref_path, IOState &state) {
     // TODO Hacky magic numbers.
-    assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
+    assert((strncmp(file, "app0:", 5) == 0 || strncmp(file, "tty0:", 5) == 0 || strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
     assert(statp != NULL);
 
     memset(statp, '\0', sizeof(SceIoStat));
@@ -407,6 +409,28 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
     } else if (strncmp(file, "uma0:", 5) == 0) {
         file_path = translate_path("uma0", file, pref_path);
     } else {
+        if (strncmp(file, "app0:", 5) == 0) {
+            // Find the file that has the same path
+            auto res = std::find_if(state.app_files.begin(), state.app_files.end(),
+                  [file](auto appFile) { return appFile.second.path() == file; } );
+
+            if (res == state.app_files.end()) {
+                return -1;
+            }
+
+            statp->st_size = res->second.size();
+            statp->st_mode = S_IFREG;
+
+            return 0;
+        }
+
+        if (strncmp(file, "tty0:", 5) == 0) {
+            statp->st_size = 0;
+            statp->st_mode = S_IFIFO;
+
+            return 0;
+        }
+
         return -1;
     }
 
@@ -438,6 +462,80 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
 
     statp->st_size = sb.st_size;
 #endif
+
+    return 0;
+}
+
+int stat_file_by_fd(SceUID uid, SceIoStat *statp, IOState &state) {
+    AppFiles::iterator appFile = state.app_files.find(uid);
+    const StdFiles::const_iterator stdFile = state.std_files.find(uid);
+    const TtyFiles::const_iterator ttyFile = state.tty_files.find(uid);
+
+    bool valid = (appFile != state.app_files.end()) ||
+                 (stdFile != state.std_files.end()) ||
+                 (ttyFile != state.tty_files.end());
+
+    assert(valid);
+
+    if (!valid) {
+        return -1;
+    }
+
+    if (appFile != state.app_files.end()) {
+        statp->st_size = appFile->second.size();
+        statp->st_mode = SCE_S_IFREG;
+
+        return 0;
+    }
+
+    if (stdFile != state.std_files.end()){
+#ifndef WIN32
+        int physicalFD = fileno(stdFile->second.get());
+
+        if (physicalFD == -1) {
+            return -1;
+        }
+
+        struct stat sb;
+        if (fstat(physicalFD, &sb) < 0) {
+            return -1;
+        }
+
+        if (S_ISREG(sb.st_mode)) {
+            statp->st_mode = SCE_S_IFREG;
+        } else if (S_ISDIR(sb.st_mode)) {
+            statp->st_mode = SCE_S_IFDIR;
+        }
+
+        statp->st_size = sb.st_size;
+
+        return 0;
+#else
+        int physicalFD = _fileno(stdFile->second.get();
+        struct _stat sb;
+
+        if (_fstat(physicalFD, &sb) < 0) {
+            return -1;
+        }
+
+        if (S_ISREG(sb.st_mode)) {
+            statp->st_mode = SCE_S_IFREG;
+        } else if (S_ISDIR(sb.st_mode)) {
+            statp->st_mode = SCE_S_IFDIR;
+        }
+
+        statp->st_size = sb.st_size;
+
+        return 0;
+#endif
+    }
+
+    if (ttyFile != state.tty_files.end()) {
+        statp->st_size = 0;
+        statp->st_mode = S_IFIFO;
+
+        return 0;
+    }
 
     return 0;
 }

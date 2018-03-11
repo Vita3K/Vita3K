@@ -17,36 +17,39 @@
 
 #pragma once
 
-#include <psp2/types.h>
-#include <psp2/io/fcntl.h>
-
-#include <cassert>
-#include <cstring>
-#include <vector>
+#include <cstdint>
 #include <string>
 
-class ReadOnlyInMemFile {
-    std::vector<char> buf;
-    size_t currentPos = 0;
+#include <vector>
 
-    //The virtual file path
-    std::string virtualPath;
-public:
-    ReadOnlyInMemFile();
-    ReadOnlyInMemFile(const std::string path);
-    ReadOnlyInMemFile(const char *data, size_t size, const std::string path);
-
-    char *alloc_data(size_t bufsize);
-
-    size_t tell() const { return currentPos; }
-    size_t size() const { return buf.size(); }
-
-    bool valid() const { return !buf.empty(); }
-    operator bool() const { return valid(); }
-
-    std::string path() const;
-
-    size_t read(void *ibuf, size_t size);
-    const char *data();
-    bool seek(int offset, int origin);
+struct SfoHeader {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t key_table_start;
+    uint32_t data_table_start;
+    uint32_t tables_entries;
 };
+
+struct SfoIndexTableEntry
+{
+    uint16_t key_offset;
+    uint16_t data_fmt;
+    uint32_t data_len;
+    uint32_t data_max_len;
+    uint32_t data_offset;
+};
+
+struct SfoFile {
+    SfoHeader header;
+
+    struct SfoEntry {
+        SfoIndexTableEntry entry;
+        std::pair<std::string, std::string> data;
+    };
+
+    std::vector<SfoEntry> entries;
+};
+
+bool load_sfo(SfoFile &file, const std::vector<uint8_t>& data);
+bool load_sfo(SfoFile &file, const std::string path);
+std::string find_data(SfoFile& file, const std::string& key);

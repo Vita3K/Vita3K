@@ -19,8 +19,15 @@
 
 ReadOnlyInMemFile::ReadOnlyInMemFile() = default;
 
-ReadOnlyInMemFile::ReadOnlyInMemFile(const char *data, size_t size)
-    : buf(data, data + size) {
+ReadOnlyInMemFile::ReadOnlyInMemFile(const char *data, size_t size, const std::string path)
+    : buf(data, data + size), virtualPath(path) {
+}
+
+ReadOnlyInMemFile::ReadOnlyInMemFile(const std::string path)
+    : virtualPath(path) {}
+
+std::string ReadOnlyInMemFile::path() const {
+    return virtualPath;
 }
 
 char *ReadOnlyInMemFile::alloc_data(size_t bufsize) {
