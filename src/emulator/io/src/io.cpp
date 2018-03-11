@@ -388,7 +388,7 @@ int stat_file_by_fd(SceUID uid, SceIoStat *statp, IOState &state) {
 
         return 0;
 #else
-        int physicalFD = _fileno(stdFile->second.get();
+        int physicalFD = _fileno(stdFile->second.get());
         struct _stat sb;
 
         if (_fstat(physicalFD, &sb) < 0) {
