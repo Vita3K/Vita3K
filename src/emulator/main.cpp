@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    vfs::mount("vs0", fs::absolute(host.pref_path + "vs0"));
+    vfs::mount("vs0", fs::absolute(host.pref_path + "vs0").string());
 
     Ptr<const void> entry_point;
     if (!load_vpk(entry_point, host.io, host.mem, host.game_title, host.title_id, path)) {

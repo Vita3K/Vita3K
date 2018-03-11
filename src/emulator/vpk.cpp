@@ -99,7 +99,7 @@ bool extract_vpk_to_path(const ZipPtr zip, const std::string& pref_path) {
             lastDir = dir;
         }
 
-        mz_zip_reader_extract_to_file(zip.get(), i, destFile.c_str(), 0);
+        mz_zip_reader_extract_to_file(zip.get(), i, destFile.string().c_str(), 0);
     }
 
     return true;
@@ -142,7 +142,7 @@ bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
     if (res == true) {
          title_id = find_data(file, "TITLE_ID");
          game_title = find_data(file, "TITLE");
-         vfs::mount("app0", fs::absolute(vfs::physical_mount_path("vs0") + "/app/" + title_id + "/"));
+         vfs::mount("app0", fs::absolute(vfs::physical_mount_path("vs0") + "/app/" + title_id + "/").string());
 
          // If the folder exists, dont reinstall it
          if (!fs::exists(vfs::physical_mount_path("vs0") + "/app/" + title_id)) {
