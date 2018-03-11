@@ -17,42 +17,36 @@
 
 #pragma once
 
-#include <miniz.h>
 #include <psp2/types.h>
+#include <psp2/io/fcntl.h>
 
-#include <cstdio>
-#include <map>
-#include <memory>
+#include <cassert>
+#include <cstring>
+#include <vector>
+#include <string>
 
-#ifdef WIN32
-struct _WDIR;
-#else
-#include <dirent.h>
-#endif
+class ReadOnlyInMemFile {
+    std::vector<char> buf;
+    size_t currentPos = 0;
 
-typedef std::shared_ptr<FILE> FilePtr;
-typedef std::shared_ptr<mz_zip_archive> ZipPtr;
-typedef std::shared_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;
+    //The virtual file path
+    std::string virtualPath;
+public:
+    ReadOnlyInMemFile();
+    ReadOnlyInMemFile(const std::string path);
+    ReadOnlyInMemFile(const char *data, size_t size, const std::string path);
 
-#ifdef _WIN32
-typedef std::shared_ptr<_WDIR> DirPtr;
-#else
-typedef std::shared_ptr<DIR> DirPtr;
-#endif
+    char *alloc_data(size_t bufsize);
 
-enum TtyType {
-    TTY_IN,
-    TTY_OUT
-};
+    size_t tell() const { return currentPos; }
+    size_t size() const { return buf.size(); }
 
-typedef std::map<SceUID, TtyType> TtyFiles;
-typedef std::map<SceUID, FilePtr> StdFiles;
-typedef std::map<SceUID, DirPtr> DirEntries;
+    bool valid() const { return !buf.empty(); }
+    operator bool() const { return valid(); }
 
-struct IOState {
-    ZipPtr vpk;
-    SceUID next_fd = 0;
-    TtyFiles tty_files;
-    StdFiles std_files;
-    DirEntries dir_entries;
+    std::string path() const;
+
+    size_t read(void *ibuf, size_t size);
+    const char *data();
+    bool seek(int offset, int origin);
 };
