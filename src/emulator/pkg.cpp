@@ -18,8 +18,11 @@
 #include "pkg.h"
 
 #include <miniz.h>
+
+extern "C" {
 #include <base64.h>
 #include <aes.h>
+}
 
 #include <util/string_convert.h>
 
