@@ -56,9 +56,11 @@ vpk.cpp
 vpk.h
 sfo.h
 sfo.cpp
+pkg.h
+pkg.cpp
 )
 
-target_link_libraries(emulator PRIVATE cpu elfio host modules nids vita-toolchain util)
+target_link_libraries(emulator PRIVATE cpu elfio host modules nids crypto-algorithms vita-toolchain util)
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
    target_link_libraries(emulator PRIVATE stdc++fs)
