@@ -25,7 +25,6 @@
 
 #include <sstream>
 
-
 namespace emu {
     struct SceDisplayFrameBuf {
         uint32_t size = 0;
@@ -56,21 +55,20 @@ EXPORT(int, sceDisplayGetResolutionInfoInternal) {
 }
 
 EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync) {
-
     assert(pParam != nullptr); // Todo: pParam can be NULL, in that case black screen is shown
-    if (pParam->size != sizeof(emu::SceDisplayFrameBuf)){
+    if (pParam->size != sizeof(emu::SceDisplayFrameBuf)) {
         return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_VALUE);
     }
-    if (!pParam->base){
+    if (!pParam->base) {
         return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_ADDR);
     }
-    if (pParam->pitch < pParam->width){
+    if (pParam->pitch < pParam->width) {
         return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_PITCH);
     }
-    if (pParam->pixelformat != SCE_DISPLAY_PIXELFORMAT_A8B8G8R8){
+    if (pParam->pixelformat != SCE_DISPLAY_PIXELFORMAT_A8B8G8R8) {
         return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_PIXELFORMAT);
     }
-    if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE){
+    if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE) {
         return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
     }
 

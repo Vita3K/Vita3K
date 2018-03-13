@@ -67,7 +67,7 @@ bool init(HostState &state) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::unique_lock<std::mutex> lock(thread->mutex);
-        if(thread->to_do == ThreadToDo::wait) {
+        if (thread->to_do == ThreadToDo::wait) {
             thread->to_do = ThreadToDo::run;
         }
         thread->something_to_do.notify_all();
@@ -105,7 +105,7 @@ bool handle_events(HostState &host) {
 void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
     if (LOG_IMPORT_CALLS) {
         const char *const name = import_name(nid);
-		LOG_TRACE("NID {:#08x} ({})) called", nid, name);
+        LOG_TRACE("NID {:#08x} ({})) called", nid, name);
     }
 
     ImportFn *const fn = resolve_import(nid);

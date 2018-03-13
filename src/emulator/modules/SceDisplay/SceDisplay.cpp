@@ -91,10 +91,10 @@ EXPORT(int, sceDisplayWaitSetFrameBufMultiCB) {
 
 EXPORT(int, sceDisplayWaitVblankStart) {
     {
-      std::unique_lock<std::mutex> lock(host.display.mutex);
-      host.display.condvar.wait(lock);
-        if(host.display.abort){
-          lock.release();
+        std::unique_lock<std::mutex> lock(host.display.mutex);
+        host.display.condvar.wait(lock);
+        if (host.display.abort) {
+            lock.release();
         }
     }
     return SCE_DISPLAY_ERROR_OK;

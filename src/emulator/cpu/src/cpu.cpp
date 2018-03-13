@@ -64,12 +64,11 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
     uc_err err = uc_reg_read(uc, UC_ARM_REG_PC, &pc);
     const std::string disassembly = disassemble(state.disasm, code, buffer_size, address, thumb);
     LOG_TRACE("{:#08x} {} {:#08x}", address, disassembly, pc);
-
 }
 
 static void log_memory_access(const char *type, Address address, int size, int64_t value, const MemState &mem) {
     const char *const name = mem_name(address, mem);
-	LOG_TRACE("{} {} bytes, address {:#08x} ( {} ), value {:#x}", type, size, address, name, value);
+    LOG_TRACE("{} {} bytes, address {:#08x} ( {} ), value {:#x}", type, size, address, name, value);
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -170,11 +169,11 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     assert(err == UC_ERR_OK);
 
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_PC, &pc);
-    
+
     assert(err == UC_ERR_OK);
-    
+
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_LR, &pc);
-    
+
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(state->uc.get());
@@ -190,10 +189,10 @@ bool run(CPUState &state, bool callback) {
     if (thumb_mode) {
         pc |= 1;
     }
-    if(callback){
+    if (callback) {
         uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &state.entry_point);
     }
-    err = uc_emu_start(state.uc.get(), pc, callback?state.entry_point&0xfffffffe:0, 0, 0);
+    err = uc_emu_start(state.uc.get(), pc, callback ? state.entry_point & 0xfffffffe : 0, 0, 0);
     assert(err == UC_ERR_OK);
 
     return true;
@@ -227,7 +226,7 @@ uint32_t read_pc(CPUState &state) {
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &value);
     assert(err == UC_ERR_OK);
-    
+
     return value;
 }
 

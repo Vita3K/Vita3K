@@ -17,15 +17,15 @@
 
 #include <kernel/thread_functions.h>
 #include <kernel/thread_state.h>
-#include <psp2/types.h>
 #include <psp2/kernel/error.h>
+#include <psp2/types.h>
 
 #include <kernel/state.h>
 
 #include <cpu/functions.h>
-#include <util/resource.h>
-#include <util/lock_and_find.h>
 #include <util/find.h>
+#include <util/lock_and_find.h>
+#include <util/resource.h>
 
 #include <SDL_thread.h>
 
@@ -47,13 +47,13 @@ static int SDLCALL thread_function(void *data) {
     const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
     write_reg(*thread->cpu, 0, params.arglen);
     write_reg(*thread->cpu, 1, params.argp.address());
-    const bool succeeded = run_thread(*thread,false);
+    const bool succeeded = run_thread(*thread, false);
     assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
     return r0;
 }
 
-SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int stack_size, CallImport call_import, bool log_code){
+SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int stack_size, CallImport call_import, bool log_code) {
     WaitingThreadState waiting;
     waiting.name = name;
 
@@ -71,7 +71,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const CallSVC call_svc = [call_import, thid, &mem](uint32_t imm, Address pc) {
         assert(imm == 0);
         const uint32_t nid = *Ptr<uint32_t>(pc + 4).get(mem);
-        call_import(nid,thid);
+        call_import(nid, thid);
     };
 
     thread->cpu = init_cpu(entry_point.address(), stack_top, log_code, call_svc, mem);
@@ -127,20 +127,20 @@ bool run_thread(ThreadState &thread, bool callback) {
     std::unique_lock<std::mutex> lock(thread.mutex);
     while (true) {
         switch (thread.to_do) {
-            case ThreadToDo::exit:
+        case ThreadToDo::exit:
+            return true;
+        case ThreadToDo::run:
+            lock.unlock();
+            if (!run(*thread.cpu, callback)) {
+                return false;
+            }
+            if (callback)
                 return true;
-            case ThreadToDo::run:
-                lock.unlock();
-                if (!run(*thread.cpu,callback)) {
-                    return false;
-                }
-                if(callback)
-                    return true;
-                lock.lock();
-                break;
-            case ThreadToDo::wait:
-                thread.something_to_do.wait(lock);
-                break;
+            lock.lock();
+            break;
+        case ThreadToDo::wait:
+            thread.something_to_do.wait(lock);
+            break;
         }
     }
 }
@@ -150,5 +150,5 @@ bool run_callback(ThreadState &thread, Address &pc, Address &data) {
     write_reg(*thread.cpu, 0, data);
     write_pc(*thread.cpu, pc);
     lock.unlock();
-    return run_thread(thread,true);
+    return run_thread(thread, true);
 }

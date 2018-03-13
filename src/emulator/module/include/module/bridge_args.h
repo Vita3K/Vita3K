@@ -99,24 +99,24 @@ struct ArgLayout {
 template <typename R0, typename StackHead, typename... StackTail>
 struct ArgLayout<R0, long long, StackHead, StackTail...> {
     using StackLayout2 = StackLayout<StackType<StackHead>, StackType<StackTail>...>;
-    
+
     template <typename T, size_t index>
-    static typename std::enable_if < index<2, T>::type read(CPUState &cpu, const MemState &mem) {
-        if(sizeof(T)==sizeof(uint64_t)){
+        static typename std::enable_if < index<2, T>::type read(CPUState &cpu, const MemState &mem) {
+        if (sizeof(T) == sizeof(uint64_t)) {
             uint64_t value = 0;
-            value |= read_reg(cpu,index*2);
-            value |= read_reg(cpu,index*2+1) >> 32;
+            value |= read_reg(cpu, index * 2);
+            value |= read_reg(cpu, index * 2 + 1) >> 32;
             return RegArg<T>::bridge(mem, value);
-        }else{
-            const uint32_t value = read_reg(cpu, index*2);
+        } else {
+            const uint32_t value = read_reg(cpu, index * 2);
             return RegArg<T>::bridge(mem, value);
         }
     }
-    
+
     template <typename T, size_t index>
     static typename std::enable_if<index >= 2, T>::type read(CPUState &cpu, const MemState &mem) {
         using StackType = StackType<T>;
-        
+
         constexpr size_t offset_on_stack = StackLayout2::template offset<index - 2>();
         const Address sp = read_sp(cpu);
         const Address address = static_cast<Address>(sp + offset_on_stack);

@@ -21,9 +21,9 @@
 #include <host/state.h>
 #include <host/version.h>
 #include <kernel/thread_functions.h>
-#include <util/string_convert.h>
-#include <util/log.h>
 #include <util/find.h>
+#include <util/log.h>
+#include <util/string_convert.h>
 
 #include <SDL.h>
 #include <glutil/gl.h>
@@ -50,7 +50,7 @@ static bool is_macos_process_arg(const char *arg) {
     return strncmp(arg, "-psn_", 5) == 0;
 }
 
-static void error(const std::string& message, SDL_Window *window = nullptr) {
+static void error(const std::string &message, SDL_Window *window = nullptr) {
     if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window) < 0) {
         LOG_ERROR("SDL Error: {}", message);
     }
@@ -63,9 +63,9 @@ static void term_sdl(const void *succeeded) {
 }
 
 int main(int argc, char *argv[]) {
-	init_logging();
+    init_logging();
 
-	LOG_INFO("{}", window_title);
+    LOG_INFO("{}", window_title);
 
     ProgramArgsWide argv_wide = process_args(argc, argv);
 
@@ -74,8 +74,8 @@ int main(int argc, char *argv[]) {
         error("SDL initialisation failed.");
         return SDLInitFailed;
     }
-    
-    SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     const char *const *const path_arg = std::find_if_not(&argv[1], &argv[argc], is_macos_process_arg);
     std::wstring path;
@@ -121,36 +121,35 @@ int main(int argc, char *argv[]) {
     };
 
     const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
-   
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main",stack_size, call_import, false);
-    if (main_thread_id<0) {
+
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main", stack_size, call_import, false);
+    if (main_thread_id < 0) {
         error("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
     }
-    
+
     const SceUID display_thread_id = create_thread(entry_point, host.kernel, host.mem, "display", stack_size, call_import, false);
-    
-    if (display_thread_id<0) {
+
+    if (display_thread_id < 0) {
         error("Failed to init display thread.", host.window.get());
         return InitThreadFailed;
     }
-    
+
     const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
-    
-    if(start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0){
+
+    if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
         error("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }
-    
+
     const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
 
     GLuint TextureID = 0;
     host.t1 = SDL_GetTicks();
-    while(handle_events(host)) {
-        
-        if(!TextureID){
+    while (handle_events(host)) {
+        if (!TextureID) {
             glGenTextures(1, &TextureID);
-            glClearColor ( 1.0, 0.0, 0.5, 1.0 );
+            glClearColor(1.0, 0.0, 0.5, 1.0);
             glClearDepth(1.0f);
             glViewport(0, 0, 960, 544);
             glMatrixMode(GL_PROJECTION);
@@ -159,7 +158,6 @@ int main(int argc, char *argv[]) {
             glMatrixMode(GL_MODELVIEW);
             glEnable(GL_TEXTURE_2D);
             glLoadIdentity();
-    
         }
 
         // Clear back buffer
@@ -169,15 +167,14 @@ int main(int argc, char *argv[]) {
         glLoadIdentity();
 
         {
-            if(host.display.width>0)
-            {
+            if (host.display.width > 0) {
                 glBindTexture(GL_TEXTURE_2D, TextureID);
                 void *const pixels = host.display.base.cast<void>().get(host.mem);
-            
+
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, host.display.pitch);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, host.display.width, host.display.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-            
+
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glBindTexture(GL_TEXTURE_2D, TextureID);
@@ -189,15 +186,18 @@ int main(int argc, char *argv[]) {
                 const int Height = 544;
 
                 glBegin(GL_TRIANGLE_FAN);
-                glTexCoord2f(0, 0); glVertex3f(X, Y, 0);
-                glTexCoord2f(1, 0); glVertex3f(X + Width, Y, 0);
-                glTexCoord2f(1, 1); glVertex3f(X + Width, Y + Height, 0);
-                glTexCoord2f(0, 1); glVertex3f(X, Y + Height, 0);
+                glTexCoord2f(0, 0);
+                glVertex3f(X, Y, 0);
+                glTexCoord2f(1, 0);
+                glVertex3f(X + Width, Y, 0);
+                glTexCoord2f(1, 1);
+                glVertex3f(X + Width, Y + Height, 0);
+                glTexCoord2f(0, 1);
+                glVertex3f(X, Y + Height, 0);
                 glEnd();
             }
-            
         }
-        
+
         SDL_GL_SwapWindow(host.window.get());
 
         {

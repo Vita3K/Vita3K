@@ -23,8 +23,8 @@
 
 #include <glbinding/Binding.h>
 
-#include <host/functions.h>
 #include <cpu/functions.h>
+#include <host/functions.h>
 #include <kernel/thread_functions.h>
 #include <psp2/kernel/error.h>
 
@@ -54,32 +54,32 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(colorSurface != nullptr);
     assert(depthStencil != nullptr);
 
-    if (host.gxm.isInScene){
+    if (host.gxm.isInScene) {
         return SCE_GXM_ERROR_WITHIN_SCENE;
     }
-    if (depthStencil == nullptr && colorSurface == nullptr){
+    if (depthStencil == nullptr && colorSurface == nullptr) {
         return SCE_GXM_ERROR_INVALID_VALUE;
     }
-    
-    if(fragmentSyncObject!=nullptr){
+
+    if (fragmentSyncObject != nullptr) {
         std::unique_lock<std::mutex> lock(fragmentSyncObject->mutex);
-        while(fragmentSyncObject->value==0){
+        while (fragmentSyncObject->value == 0) {
             fragmentSyncObject->cond_var.wait(lock);
         }
-        fragmentSyncObject->value=0;
+        fragmentSyncObject->value = 0;
     }
-    
+
     // TODO This may not be right.
     context->fragment_ring_buffer_used = 0;
     context->vertex_ring_buffer_used = 0;
     context->color_surface = *colorSurface;
-    
+
     host.gxm.isInScene = true;
-    
+
     glBindFramebuffer(GL_FRAMEBUFFER, renderTarget->framebuffer[0]);
 
     // Re-load GL machine settings for multiple contexts support
-    switch (context->cull_mode){
+    switch (context->cull_mode) {
     case SCE_GXM_CULL_CCW:
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
@@ -92,7 +92,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         glDisable(GL_CULL_FACE);
         break;
     }
-    
+
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -212,7 +212,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     setAfterCallback(after_callback);
 
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
-	LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
@@ -356,19 +356,18 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     //assert(oldBuffer != nullptr);
     //assert(newBuffer != nullptr);
     assert(callbackData);
+    DisplayCallback *display_callback = new DisplayCallback();
 
-    DisplayCallback* display_callback = new DisplayCallback();
-    
     const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
     const Ptr<void> ptr(address);
-    memcpy(ptr.get(host.mem),callbackData.get(host.mem),host.gxm.params.displayQueueCallbackDataSize);
-    
+    memcpy(ptr.get(host.mem), callbackData.get(host.mem), host.gxm.params.displayQueueCallbackDataSize);
+
     display_callback->data = address;
     display_callback->pc = host.gxm.params.displayQueueCallback.address();
     display_callback->old_buffer = oldBuffer.address();
     display_callback->new_buffer = newBuffer.address();
     host.gxm.display_queue.push(*display_callback);
-    
+
     // TODO Return success if/when we call callback not as a tail call.
 }
 
@@ -380,10 +379,10 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     assert(context != nullptr);
     assert(indexData != nullptr);
 
-    if (!host.gxm.isInScene){
+    if (!host.gxm.isInScene) {
         return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
     }
-    
+
     const GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, indexData);
@@ -409,10 +408,10 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     assert(vertexNotification == nullptr);
     assert(fragmentNotification == nullptr);
 
-    if (!host.gxm.isInScene){
+    if (!host.gxm.isInScene) {
         return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
     }
-    
+
     const GLsizei width = context->color_surface.pbeEmitWords[0];
     const GLsizei height = context->color_surface.pbeEmitWords[1];
     const GLsizei stride_in_pixels = context->color_surface.pbeEmitWords[2];
@@ -423,7 +422,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     flip_vertically(pixels, width, height, stride_in_pixels);
 
     host.gxm.isInScene = false;
-    
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return 0;
@@ -501,45 +500,44 @@ struct GxmThreadParams {
 static int SDLCALL thread_function(void *data) {
     const GxmThreadParams params = *static_cast<const GxmThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
-    while(true){
+    while (true) {
         DisplayCallback display_callback = params.gxm->display_queue.pop();
         {
             const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
-            if(thread->to_do == ThreadToDo::exit)
+            if (thread->to_do == ThreadToDo::exit)
                 break;
         }
         const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
-        run_callback(*display_thread,display_callback.pc,display_callback.data);
+        run_callback(*display_thread, display_callback.pc, display_callback.data);
         const Ptr<SceGxmSyncObject> newBuffer(display_callback.new_buffer);
         std::unique_lock<std::mutex> lock(newBuffer.get(*params.mem)->mutex);
         newBuffer.get(*params.mem)->value = 1;
         newBuffer.get(*params.mem)->cond_var.notify_all();
-        free(*params.mem,display_callback.data);
+        free(*params.mem, display_callback.data);
     }
     return 0;
 }
-
 
 EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     assert(params != nullptr);
 
     host.gxm.params = *params;
     host.gxm.display_queue.displayQueueMaxPendingCount_ = params->displayQueueMaxPendingCount;
-    
+
     const ThreadStatePtr main_thread = find(thread_id, host.kernel.threads);
-    
+
     const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
         ::call_import(host, nid, thread_id);
     };
-    
+
     const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "display", MB(1), call_import, false);
-    
-    if (display_thread_id<0) {
+
+    if (display_thread_id < 0) {
         return SCE_GXM_ERROR_DRIVER;
     }
-    
+
     const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
-    
+
     const std::function<void(SDL_Thread *)> delete_thread = [display_thread](SDL_Thread *running_thread) {
         {
             const std::unique_lock<std::mutex> lock(display_thread->mutex);
@@ -547,16 +545,16 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
         }
         display_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
     };
-    
+
     GxmThreadParams gxm_params;
     gxm_params.mem = &host.mem;
     gxm_params.kernel = &host.kernel;
     gxm_params.thid = display_thread_id;
     gxm_params.gxm = &host.gxm;
-    
+
     const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), delete_thread);
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
-    host.kernel.running_threads.emplace(display_thread_id,running_thread);
+    host.kernel.running_threads.emplace(display_thread_id, running_thread);
     return 0;
 }
 
@@ -942,7 +940,7 @@ EXPORT(int, sceGxmSetBackVisibilityTestOp) {
 
 EXPORT(int, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
     context->cull_mode = mode;
-    switch (mode){
+    switch (mode) {
     case SCE_GXM_CULL_CCW:
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
@@ -998,7 +996,7 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, const SceGxmFragm
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const emu::SceGxmTexture *texture) {
     assert(context != nullptr);
     assert(texture != nullptr);
-	
+
     glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
     glBindTexture(GL_TEXTURE_2D, context->texture[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
@@ -1366,7 +1364,7 @@ EXPORT(Ptr<const SceGxmProgram>, sceGxmShaderPatcherGetProgramFromId, emu::SceGx
     if (!programId) {
         return Ptr<const SceGxmProgram>();
     }
-    
+
     return programId.get(host.mem)->program;
 }
 
@@ -1458,8 +1456,8 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
     if (!*syncObject) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
-    
-    SceGxmSyncObject * _syncObject = syncObject->get(host.mem);
+
+    SceGxmSyncObject *_syncObject = syncObject->get(host.mem);
     _syncObject->value = 1;
     return 0;
 }
@@ -1603,7 +1601,7 @@ EXPORT(int, sceGxmTextureInitTiled) {
 EXPORT(int, sceGxmTextureSetData, emu::SceGxmTexture *texture, Ptr<const void> data) {
     assert(texture != nullptr);
     assert(data);
-    
+
     texture->data = data;
     return 0;
 }
@@ -1622,7 +1620,7 @@ EXPORT(int, sceGxmTextureSetGammaMode) {
 
 EXPORT(int, sceGxmTextureSetHeight, emu::SceGxmTexture *texture, unsigned int height) {
     assert(texture != nullptr);
-    
+
     texture->height = height;
     return 0;
 }
@@ -1679,7 +1677,7 @@ EXPORT(int, sceGxmTextureSetVAddrMode) {
 
 EXPORT(int, sceGxmTextureSetWidth, emu::SceGxmTexture *texture, unsigned int width) {
     assert(texture != nullptr);
-    
+
     texture->width = width;
     return 0;
 }
