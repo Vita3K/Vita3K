@@ -92,6 +92,9 @@ bool handle_events(HostState &host) {
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
             stop_all_threads(host.kernel);
+            host.gxm.display_queue.abort();
+            host.display.abort = true;
+            host.display.condvar.notify_all();
             return false;
         }
     }

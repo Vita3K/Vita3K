@@ -38,7 +38,7 @@ struct DisplayState {
     uint32_t height = 0;
     std::mutex mutex;
     std::condition_variable condvar;
-    bool ready = false;
+    bool abort = false;
 };
 
 struct HostState {

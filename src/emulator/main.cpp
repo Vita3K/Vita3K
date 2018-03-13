@@ -33,8 +33,6 @@
 #include <iostream>
 #include <sstream>
 
-static bool SAVE_SURFACE_IMAGES = false;
-
 typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
 typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
 
@@ -149,13 +147,6 @@ int main(int argc, char *argv[]) {
     GLuint TextureID = 0;
     host.t1 = SDL_GetTicks();
     while(handle_events(host)) {
-
-        //SDL_Window *const prev_gl_window = SDL_GL_GetCurrentWindow();
-        //const SDL_GLContext prev_gl_context = SDL_GL_GetCurrentContext();
-
-        //SDL_GL_MakeCurrent(host.window.get(),host.glcontext.get());
-        
-        
         
         if(!TextureID){
             glGenTextures(1, &TextureID);
@@ -171,19 +162,12 @@ int main(int argc, char *argv[]) {
     
         }
 
-
-
-
-
         // Clear back buffer
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glLoadIdentity();
-        /*{
-            std::unique_lock<std::mutex> lock(host.display.mutex);
-            host.display.ready = false;
-        }*/
+
         {
             if(host.display.width>0)
             {
@@ -213,19 +197,16 @@ int main(int argc, char *argv[]) {
             }
             
         }
+        
         SDL_GL_SwapWindow(host.window.get());
-        //SDL_GL_MakeCurrent(prev_gl_window, prev_gl_context);
-        
-        
+
         {
-            //std::unique_lock<std::mutex> lock(host.display.mutex);
-            //host.display.ready = true;
             host.display.condvar.notify_all();
         }
-        /*++host.frame_count;
+
         const uint32_t t2 = SDL_GetTicks();
         const uint32_t ms = t2 - host.t1;
-        if (ms >= 1000) {
+        if (ms >= 1000 && host.frame_count > 0) {
             const uint32_t fps = (host.frame_count * 1000) / ms;
             const uint32_t ms_per_frame = ms / host.frame_count;
             std::ostringstream title;
@@ -233,8 +214,7 @@ int main(int argc, char *argv[]) {
             SDL_SetWindowTitle(host.window.get(), title.str().c_str());
             host.t1 = t2;
             host.frame_count = 0;
-        }*/
+        }
     }
-
     return Success;
 }

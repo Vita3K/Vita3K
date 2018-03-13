@@ -356,17 +356,18 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     //assert(oldBuffer != nullptr);
     //assert(newBuffer != nullptr);
     assert(callbackData);
-    DisplayCallback display_callback;
+
+    DisplayCallback* display_callback = new DisplayCallback();
     
     const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
     const Ptr<void> ptr(address);
     memcpy(ptr.get(host.mem),callbackData.get(host.mem),host.gxm.params.displayQueueCallbackDataSize);
     
-    display_callback.data = address;
-    display_callback.pc = host.gxm.params.displayQueueCallback.address();
-    display_callback.old_buffer = oldBuffer.address();
-    display_callback.new_buffer = newBuffer.address();
-    host.gxm.display_queue.push(display_callback);
+    display_callback->data = address;
+    display_callback->pc = host.gxm.params.displayQueueCallback.address();
+    display_callback->old_buffer = oldBuffer.address();
+    display_callback->new_buffer = newBuffer.address();
+    host.gxm.display_queue.push(*display_callback);
     
     // TODO Return success if/when we call callback not as a tail call.
 }
@@ -434,6 +435,7 @@ EXPORT(int, sceGxmExecuteCommandList) {
 
 EXPORT(void, sceGxmFinish, SceGxmContext *context) {
     assert(context != nullptr);
+    glFinish();
 }
 
 EXPORT(int, sceGxmFragmentProgramGetPassType) {
@@ -493,12 +495,19 @@ struct GxmThreadParams {
     MemState *mem = nullptr;
     SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
     GxmState *gxm = nullptr;
+    std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
 };
 
 static int SDLCALL thread_function(void *data) {
     const GxmThreadParams params = *static_cast<const GxmThreadParams *>(data);
+    SDL_SemPost(params.host_may_destroy_params.get());
     while(true){
         DisplayCallback display_callback = params.gxm->display_queue.pop();
+        {
+            const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
+            if(thread->to_do == ThreadToDo::exit)
+                break;
+        }
         const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
         run_callback(*display_thread,display_callback.pc,display_callback.data);
         const Ptr<SceGxmSyncObject> newBuffer(display_callback.new_buffer);
@@ -507,6 +516,7 @@ static int SDLCALL thread_function(void *data) {
         newBuffer.get(*params.mem)->cond_var.notify_all();
         free(*params.mem,display_callback.data);
     }
+    return 0;
 }
 
 
@@ -531,7 +541,11 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
     
     const std::function<void(SDL_Thread *)> delete_thread = [display_thread](SDL_Thread *running_thread) {
-        SDL_WaitThread(running_thread, nullptr);
+        {
+            const std::unique_lock<std::mutex> lock(display_thread->mutex);
+            display_thread->to_do = ThreadToDo::exit;
+        }
+        display_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
     };
     
     GxmThreadParams gxm_params;
@@ -541,6 +555,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     gxm_params.gxm = &host.gxm;
     
     const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), delete_thread);
+    SDL_SemWait(gxm_params.host_may_destroy_params.get());
     host.kernel.running_threads.emplace(display_thread_id,running_thread);
     return 0;
 }
