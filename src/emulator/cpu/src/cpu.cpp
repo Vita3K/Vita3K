@@ -60,10 +60,8 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const uint8_t *const code = Ptr<const uint8_t>(static_cast<Address>(address)).get(mem);
     const size_t buffer_size = GB(4) - address;
     const bool thumb = is_thumb_mode(uc);
-    uint32_t pc = 0;
-    uc_err err = uc_reg_read(uc, UC_ARM_REG_PC, &pc);
     const std::string disassembly = disassemble(state.disasm, code, buffer_size, address, thumb);
-    LOG_TRACE("{:#08x} {} {:#08x}", address, disassembly, pc);
+    LOG_TRACE("{:#08x} {}", address, disassembly);
 }
 
 static void log_memory_access(const char *type, Address address, int size, int64_t value, const MemState &mem) {

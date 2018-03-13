@@ -104,8 +104,9 @@ struct ArgLayout<R0, long long, StackHead, StackTail...> {
         static typename std::enable_if < index<2, T>::type read(CPUState &cpu, const MemState &mem) {
         if (sizeof(T) == sizeof(uint64_t)) {
             uint64_t value = 0;
+            value |= read_reg(cpu, index * 2 + 1);
+            value = value >> 32;
             value |= read_reg(cpu, index * 2);
-            value |= read_reg(cpu, index * 2 + 1) >> 32;
             return RegArg<T>::bridge(mem, value);
         } else {
             const uint32_t value = read_reg(cpu, index * 2);
