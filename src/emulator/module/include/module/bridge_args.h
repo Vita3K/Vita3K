@@ -105,7 +105,7 @@ struct ArgLayout<R0, long long, StackHead, StackTail...> {
         if (sizeof(T) == sizeof(uint64_t)) {
             uint64_t value = 0;
             value |= read_reg(cpu, index * 2 + 1);
-            value = value >> 32;
+            value = value << 32;
             value |= read_reg(cpu, index * 2);
             return RegArg<T>::bridge(mem, value);
         } else {
