@@ -92,20 +92,20 @@ uint64_t read_swap64(FILE* file, uint32_t elementCount = 1) {
 }
 
 bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::string &game_title, std::string& title_id, const std::wstring& path) {
-    FILE* pkg_file;
+	FILE* pkg_file;
 
 #ifdef WIN32
-    if (_wfopen_s(&pkg_file, path.c_str(), L"rb")) {
+	if (_wfopen_s(&pkg_file, path.c_str(), L"rb")) {
 #else
-    if (!(pkg_file = fopen(wide_to_utf(path).c_str(), "rb"))) {
+	if (!(pkg_file = fopen(wide_to_utf(path).c_str(), "rb"))) {
 #endif
-        return false;
-    }
+		return false;
+	}
 
-    PkgHeader header;
+	PkgHeader header;
 	PkgExtendHeader extHeader;
 
-    ContentType ctType;
+	ContentType ctType;
 
 	header.magicNumber = read_swap32(pkg_file);
 	header.pkgRevision = read_swap16(pkg_file);
@@ -144,50 +144,52 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
 	uint32_t itemsOffset;
 	uint32_t itemsSize;
 
-    std::vector<PkgInfo> infos;
+	std::vector<PkgInfo> infos;
 
 	infos.resize(header.pkgInfoCount);
 	fseek(pkg_file, header.pkgInfoOffset, SEEK_SET);
 
-    for (uint32_t i = 0; i < header.pkgInfoCount; i++) {
+	for (uint32_t i = 0; i < header.pkgInfoCount; i++) {
 		uint32_t tell = ftell(pkg_file);
 
-		 infos[i].ident = (PkgIdentifier)read_swap32(pkg_file);
-		 infos[i].size = read_swap32(pkg_file);
+		infos[i].ident = (PkgIdentifier)read_swap32(pkg_file);
+		infos[i].size = read_swap32(pkg_file);
 
-         if (infos[i].ident == PkgIdentifier::Cagetory) {
-			 infos[i].contentType = (ContentType)read_swap32(pkg_file);
-             ctType = (ContentType)infos[i].contentType;
+		if (infos[i].ident == PkgIdentifier::Cagetory) {
+			infos[i].contentType = (ContentType)read_swap32(pkg_file);
+			ctType = (ContentType)infos[i].contentType;
 
-			 fseek(pkg_file, infos[i].size - 4, SEEK_CUR);
-         }
-         else if (infos[i].ident == PkgIdentifier::Item) {
-			 infos[i].itemOffset = read_swap32(pkg_file);
-			 infos[i].itemSize = read_swap32(pkg_file);
+			fseek(pkg_file, infos[i].size - 4, SEEK_CUR);
+		}
+		else if (infos[i].ident == PkgIdentifier::Item) {
+			infos[i].itemOffset = read_swap32(pkg_file);
+			infos[i].itemSize = read_swap32(pkg_file);
 
-			 itemsOffset = infos[i].itemOffset;
-			 itemsSize = infos[i].itemSize;
+			itemsOffset = infos[i].itemOffset;
+			itemsSize = infos[i].itemSize;
 
-			 fseek(pkg_file, infos[i].size - 8, SEEK_CUR);
-		 }
-		 else if (infos[i].ident == PkgIdentifier::SfoFile) {
-			 infos[i].sfoOffset = read_swap32(pkg_file);
-			 infos[i].sfoSize = read_swap32(pkg_file);
+			fseek(pkg_file, infos[i].size - 8, SEEK_CUR);
+		}
+		else if (infos[i].ident == PkgIdentifier::SfoFile) {
+			infos[i].sfoOffset = read_swap32(pkg_file);
+			infos[i].sfoSize = read_swap32(pkg_file);
 
-			 fseek(pkg_file, infos[i].size - 8, SEEK_CUR);
-		 }
-		 else if (infos[i].ident == PkgIdentifier::DrmType) {
-			 infos[i].drmType = read_swap32(pkg_file);
+			fseek(pkg_file, infos[i].size - 8, SEEK_CUR);
+		}
+		else if (infos[i].ident == PkgIdentifier::DrmType) {
+			infos[i].drmType = read_swap32(pkg_file);
 
-			 fseek(pkg_file, infos[i].size - 4, SEEK_CUR);
-		 } else if (infos[i].ident == PkgIdentifier::Flags) {
-			 infos[i].packageFlag = read_swap32(pkg_file);
+			fseek(pkg_file, infos[i].size - 4, SEEK_CUR);
+		}
+		else if (infos[i].ident == PkgIdentifier::Flags) {
+			infos[i].packageFlag = read_swap32(pkg_file);
 
-			 fseek(pkg_file, infos[i].size - 4, SEEK_CUR);
-		 } else {
-			 fseek(pkg_file, infos[i].size, SEEK_CUR);
-		 }
-    }
+			fseek(pkg_file, infos[i].size - 4, SEEK_CUR);
+		}
+		else {
+			fseek(pkg_file, infos[i].size, SEEK_CUR);
+		}
+	}
 
 	AES_ctx ctx;
 	BYTE main_key[0x10];
@@ -199,7 +201,7 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
 	else if (key == 2) {
 		AES_ctx sub_ctx;
 		AES_init_ctx(&sub_ctx, pkg_vita_2);
-		
+
 		memcpy(main_key, header.dataRiv, 0x10);
 
 		AES_ECB_encrypt(&sub_ctx, main_key);
@@ -242,10 +244,34 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
 		memcpy(&file_headers[i].dataOffset, item_header_raw + 8, 8);
 		memcpy(&file_headers[i].dataSize, item_header_raw + 16, 8);
 
+		uint8_t psp_type = item_header_raw[24];
+
 		file_headers[i].fileNameOffset = swap_int(file_headers[i].fileNameOffset);
 		file_headers[i].fileNameSize = swap_int(file_headers[i].fileNameSize);
 		file_headers[i].dataOffset = swap_int64(file_headers[i].dataOffset);
 		file_headers[i].dataSize = swap_int64(file_headers[i].dataSize);
+
+		assert(file_headers[i].fileNameOffset % 16 == 0 && file_headers[i].dataOffset % 16 == 0);
+
+		AES_ctx item_ctx;
+
+		if (header.pkgType == PkgType::PSVITA) {
+			if (psp_type != 0x90) {
+				AES_init_ctx(&item_ctx, pkg_ps3_key);
+			}
+			else {
+				item_ctx = final_ctx;
+			}
+		}
+		else {
+			item_ctx = final_ctx;
+		}
+
+		uint8_t file_name[256];
+		fseek(pkg_file, header.dataOffset + file_headers[i].fileNameOffset, SEEK_SET);
+		fread(file_name, 1, file_headers[i].fileNameSize, pkg_file);
+
+		AES_CTR_xcrypt_buffer(&item_ctx, file_name, sizeof(file_name));
 	}
 
     return true;
