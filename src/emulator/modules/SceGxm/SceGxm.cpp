@@ -976,18 +976,18 @@ EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer) {
     return unimplemented("sceGxmSetFragmentDefaultUniformBuffer");
 }
 
-EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, const SceGxmFragmentProgram *fragmentProgram) {
+EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmFragmentProgram> fragmentProgram) {
     assert(context != nullptr);
-    assert(fragmentProgram != nullptr);
+    assert(fragmentProgram);
 
-    const SharedGLObject program = get_program(*context, *fragmentProgram);
+    context->fragment_program = fragmentProgram;
     
-    glUseProgram(program->get());
-    glColorMask(fragmentProgram->color_mask_red, fragmentProgram->color_mask_green, fragmentProgram->color_mask_blue, fragmentProgram->color_mask_alpha);
-    if (fragmentProgram->blend_enabled) {
+    const SceGxmFragmentProgram &fragment_program = *fragmentProgram.get(host.mem);
+    glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
+    if (fragment_program.blend_enabled) {
         glEnable(GL_BLEND);
-        glBlendEquationSeparate(fragmentProgram->color_func, fragmentProgram->alpha_func);
-        glBlendFuncSeparate(fragmentProgram->color_src, fragmentProgram->color_dst, fragmentProgram->alpha_src, fragmentProgram->alpha_dst);
+        glBlendEquationSeparate(fragment_program.color_func, fragment_program.alpha_func);
+        glBlendFuncSeparate(fragment_program.color_src, fragment_program.color_dst, fragment_program.alpha_src, fragment_program.alpha_dst);
     } else {
         glDisable(GL_BLEND);
     }
@@ -1144,9 +1144,9 @@ EXPORT(int, sceGxmSetVertexDefaultUniformBuffer) {
     return unimplemented("sceGxmSetVertexDefaultUniformBuffer");
 }
 
-EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, const SceGxmVertexProgram *vertexProgram) {
+EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVertexProgram> vertexProgram) {
     assert(context != nullptr);
-    assert(vertexProgram != nullptr);
+    assert(vertexProgram);
 
     context->vertex_program = vertexProgram;
 }
@@ -1154,13 +1154,15 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, const SceGxmVertexP
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, const uint8_t *streamData) {
     assert(context != nullptr);
     assert(streamData != nullptr);
+    assert(context->vertex_program);
 
-    for (const emu::SceGxmVertexAttribute &attribute : context->vertex_program->attributes) {
+    const SceGxmVertexProgram &vertex_program = *context->vertex_program.get(host.mem);
+    for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
         if (attribute.streamIndex != streamIndex) {
             continue;
         }
 
-        const SceGxmVertexStream &stream = context->vertex_program->streams[attribute.streamIndex];
+        const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
 
         const GLenum type = attribute_format_to_gl_type(static_cast<SceGxmAttributeFormat>(attribute.format));
         const GLboolean normalised = attribute_format_normalised(static_cast<SceGxmAttributeFormat>(attribute.format)) ? GL_TRUE : GL_FALSE;
@@ -1281,9 +1283,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
     
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
-    fp->fragment_glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
-    fp->vertex_glsl = get_vertex_glsl(*shaderPatcher, *vertexProgram.get(mem), host.base_path.c_str());
-    fp->attribute_locations = attribute_locations(*vertexProgram.get(mem));
+    fp->glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
 
     // Translate blending.
     if (blendInfo != nullptr) {
@@ -1326,6 +1326,8 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     }
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
+    vp->glsl = get_vertex_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
+    vp->attribute_locations = attribute_locations(*programId->program.get(mem));
     vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
 

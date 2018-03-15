@@ -12,6 +12,7 @@ namespace glbinding {
 }
 
 class GLObject;
+struct MemState;
 
 namespace emu {
     struct SceGxmBlendInfo;
@@ -26,7 +27,7 @@ void after_callback(const glbinding::FunctionCall &fn);
 std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path);
 std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path);
 AttributeLocations attribute_locations(const SceGxmProgram &vertex_program);
-SharedGLObject get_program(SceGxmContext &context, const SceGxmFragmentProgram &fragment_program);
+SharedGLObject get_program(SceGxmContext &context, const MemState &mem);
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format);
 bool attribute_format_normalised(SceGxmAttributeFormat format);
 void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels);

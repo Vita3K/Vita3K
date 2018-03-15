@@ -72,7 +72,8 @@ struct SceGxmContext {
     size_t vertex_ring_buffer_used = 0;
     emu::SceGxmColorSurface color_surface;
     ProgramCache program_cache;
-    const SceGxmVertexProgram *vertex_program = nullptr;
+    Ptr<const SceGxmFragmentProgram> fragment_program;
+    Ptr<const SceGxmVertexProgram> vertex_program;
     GLObjectArray<1> texture;
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
 };
@@ -87,14 +88,10 @@ namespace emu {
     };
 }
 
-typedef std::map<GLuint, std::string> AttributeLocations;
-
 struct SceGxmFragmentProgram {
     size_t reference_count = 1;
     
-    std::string fragment_glsl;
-    std::string vertex_glsl;
-    AttributeLocations attribute_locations;
+    std::string glsl;
     
     GLboolean color_mask_red = GL_TRUE;
     GLboolean color_mask_green = GL_TRUE;
@@ -216,9 +213,13 @@ namespace emu {
     static_assert(sizeof(SceGxmVertexAttribute) == 8, "Structure has been incorrectly packed.");
 }
 
+typedef std::map<GLuint, std::string> AttributeLocations;
+
 struct SceGxmVertexProgram {
     // TODO I think this is an opaque type.
     size_t reference_count = 1;
+    std::string glsl;
+    AttributeLocations attribute_locations;
     std::vector<SceGxmVertexStream> streams;
     std::vector<emu::SceGxmVertexAttribute> attributes;
 };
