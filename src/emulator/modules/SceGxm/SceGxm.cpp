@@ -17,266 +17,14 @@
 
 #include "SceGxm.h"
 
-#include "gxm.h"
-
-#include <crypto/hash.h>
+#include <gxm/functions.h>
+#include <gxm/types.h>
 #include <util/log.h>
 
 #include <glbinding/Binding.h>
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-
 using namespace emu;
 using namespace glbinding;
-
-#define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
-
-#if MICROPROFILE_ENABLED != 0
-static void before_callback(const FunctionCall &fn) {
-    const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
-    MICROPROFILE_ENTER_TOKEN(token);
-}
-#endif // MICROPROFILE_ENABLED
-
-static void after_callback(const FunctionCall &fn) {
-    MICROPROFILE_LEAVE();
-    for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
-        std::stringstream gl_error;
-        gl_error << error;
-        LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
-        assert(false);
-    }
-}
-
-static bool compile_shader(GLuint shader, const GLchar *source) {
-    GXM_PROFILE(__FUNCTION__);
-
-    const GLint length = static_cast<GLint>(strlen(source));
-    glShaderSource(shader, 1, &source, &length);
-
-    glCompileShader(shader);
-
-    GLint log_length = 0;
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length);
-
-    if (log_length > 0) {
-        std::vector<GLchar> log;
-        log.resize(log_length);
-        glGetShaderInfoLog(shader, log_length, nullptr, &log.front());
-
-        LOG_ERROR("{}", log.front());
-    }
-
-    GLboolean is_compiled = GL_FALSE;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &is_compiled);
-    assert(is_compiled != GL_FALSE);
-
-    return is_compiled != GL_FALSE;
-}
-
-static bool compile_shader(GLuint shader, const SceGxmProgram *program, const char *base_path) {
-    GXM_PROFILE(__FUNCTION__);
-
-    const Sha256Hash hash_bytes = sha256(program, program->size);
-    const std::array<char, 65> hash_text = hex(hash_bytes);
-    
-    std::ostringstream path;
-    path << base_path << "shaders/" << hash_text.data() << ".glsl";
-
-    std::ifstream is(path.str());
-    if (is.fail()) {
-        LOG_ERROR("Couldn't open '{}' for reading.", path.str());
-        
-        // Dump missing shader binary.
-        std::ostringstream gxp_path;
-        gxp_path << hash_text.data() << ".gxp";
-        std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
-        if (!gxp.fail()) {
-            gxp.write(reinterpret_cast<const char *>(program), program->size);
-        }
-        
-        return false;
-    }
-
-    is.seekg(0, std::ios::end);
-    const size_t size = is.tellg();
-    is.seekg(0);
-
-    std::string source(size, ' ');
-    is.read(&source[0], size);
-
-    return compile_shader(shader, source.c_str());
-}
-
-static GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
-    GXM_PROFILE(__FUNCTION__);
-
-    switch (format) {
-    case SCE_GXM_ATTRIBUTE_FORMAT_U8:
-    case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
-        return GL_UNSIGNED_BYTE;
-    case SCE_GXM_ATTRIBUTE_FORMAT_S8:
-    case SCE_GXM_ATTRIBUTE_FORMAT_S8N:
-        return GL_BYTE;
-    case SCE_GXM_ATTRIBUTE_FORMAT_U16:
-    case SCE_GXM_ATTRIBUTE_FORMAT_U16N:
-        return GL_UNSIGNED_SHORT;
-    case SCE_GXM_ATTRIBUTE_FORMAT_S16:
-    case SCE_GXM_ATTRIBUTE_FORMAT_S16N:
-        return GL_SHORT;
-    case SCE_GXM_ATTRIBUTE_FORMAT_F16:
-        return GL_HALF_FLOAT;
-    case SCE_GXM_ATTRIBUTE_FORMAT_F32:
-        return GL_FLOAT;
-
-    default:
-        assert(!"Unhandled format.");
-        return GL_UNSIGNED_BYTE;
-    }
-}
-
-static bool attribute_format_normalised(SceGxmAttributeFormat format) {
-    GXM_PROFILE(__FUNCTION__);
-
-    switch (format) {
-    case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
-    case SCE_GXM_ATTRIBUTE_FORMAT_S8N:
-    case SCE_GXM_ATTRIBUTE_FORMAT_U16N:
-    case SCE_GXM_ATTRIBUTE_FORMAT_S16N:
-        return true;
-    default:
-        return false;
-    }
-}
-
-static void bind_attribute_locations(GLuint gl_program, const SceGxmProgram *program) {
-    GXM_PROFILE(__FUNCTION__);
-
-    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
-    for (uint32_t i = 0; i < program->parameter_count; ++i) {
-        const SceGxmProgramParameter *const parameter = &parameters[i];
-        if (parameter->category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
-            const char *const parameter_name = reinterpret_cast<const char *>(parameter_bytes + parameter->name_offset);
-
-            glBindAttribLocation(gl_program, parameter->resource_index, parameter_name);
-        }
-    }
-}
-
-static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
-    GXM_PROFILE(__FUNCTION__);
-
-    uint32_t *row1 = &pixels[0];
-    uint32_t *row2 = &pixels[(height - 1) * stride_in_pixels];
-
-    while (row1 < row2) {
-        std::swap_ranges(&row1[0], &row1[width], &row2[0]);
-        row1 += stride_in_pixels;
-        row2 -= stride_in_pixels;
-    }
-}
-
-static GLenum translate_blend_func(SceGxmBlendFunc src) {
-    GXM_PROFILE(__FUNCTION__);
-
-    switch (src) {
-    case SCE_GXM_BLEND_FUNC_NONE:
-        return GL_FUNC_ADD; // TODO Disable blending? Warn?
-    case SCE_GXM_BLEND_FUNC_ADD:
-        return GL_FUNC_ADD;
-    case SCE_GXM_BLEND_FUNC_SUBTRACT:
-        return GL_FUNC_SUBTRACT;
-    case SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT:
-        return GL_FUNC_REVERSE_SUBTRACT;
-    }
-
-    return GL_FUNC_ADD;
-}
-
-static GLenum translate_blend_factor(SceGxmBlendFactor src) {
-    GXM_PROFILE(__FUNCTION__);
-
-    switch (src) {
-    case SCE_GXM_BLEND_FACTOR_ZERO:
-        return GL_ZERO;
-    case SCE_GXM_BLEND_FACTOR_ONE:
-        return GL_ONE;
-    case SCE_GXM_BLEND_FACTOR_SRC_COLOR:
-        return GL_SRC_COLOR;
-    case SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR:
-        return GL_ONE_MINUS_SRC_COLOR;
-    case SCE_GXM_BLEND_FACTOR_SRC_ALPHA:
-        return GL_SRC_ALPHA;
-    case SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:
-        return GL_ONE_MINUS_SRC_ALPHA;
-    case SCE_GXM_BLEND_FACTOR_DST_COLOR:
-        return GL_DST_COLOR;
-    case SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR:
-        return GL_ONE_MINUS_DST_COLOR;
-    case SCE_GXM_BLEND_FACTOR_DST_ALPHA:
-        return GL_DST_ALPHA;
-    case SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
-        return GL_ONE_MINUS_DST_ALPHA;
-    case SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE:
-        return GL_SRC_ALPHA_SATURATE;
-    case SCE_GXM_BLEND_FACTOR_DST_ALPHA_SATURATE:
-        return GL_DST_ALPHA; // TODO Not supported.
-    }
-
-    return GL_ONE;
-}
-
-static GLenum translate_internal_format(SceGxmTextureFormat src) {
-    GXM_PROFILE(__FUNCTION__);
-
-    switch (src) {
-    case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-        return GL_RGBA;
-    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-        return GL_RGBA8;
-    case SCE_GXM_TEXTURE_FORMAT_U8_R111:
-        return GL_INTENSITY8;
-    default:
-        return GL_RGBA8; // TODO Warn.
-    }
-}
-
-static GLenum translate_format(SceGxmTextureFormat src) {
-    GXM_PROFILE(__FUNCTION__);
-
-    switch (src) {
-    case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-        return GL_COLOR_INDEX;
-    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-        return GL_RGBA;
-    case SCE_GXM_TEXTURE_FORMAT_U8_R111:
-        return GL_RED;
-    default:
-        return GL_RGBA; // TODO Warn.
-    }
-}
-
-static GLenum translate_primitive(SceGxmPrimitiveType primType){
-    switch (primType){
-    case SCE_GXM_PRIMITIVE_TRIANGLES:
-        return GL_TRIANGLES;
-    case SCE_GXM_PRIMITIVE_TRIANGLE_STRIP:
-        return GL_TRIANGLE_STRIP;
-    case SCE_GXM_PRIMITIVE_TRIANGLE_FAN:
-        return GL_TRIANGLE_FAN;
-    case SCE_GXM_PRIMITIVE_LINES:
-        return GL_LINES;
-    case SCE_GXM_PRIMITIVE_POINTS:
-        return GL_POINTS;
-    case SCE_GXM_PRIMITIVE_TRIANGLE_EDGES: // Todo: Implement this
-        return GL_TRIANGLES;
-    }
-    return GL_TRIANGLES;
-}
 
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return unimplemented("sceGxmAddRazorGpuCaptureBuffer");
@@ -608,7 +356,6 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
 EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, unsigned int indexCount) {
     assert(context != nullptr);
     assert(indexData != nullptr);
-    assert(indexCount > 0);
 
     if (!host.gxm.isInScene){
         return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
@@ -1149,7 +896,9 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, const SceGxmFragm
     assert(context != nullptr);
     assert(fragmentProgram != nullptr);
 
-    glUseProgram(fragmentProgram->program.get());
+    const SharedGLObject program = get_program(*context, *fragmentProgram);
+    
+    glUseProgram(program->get());
     glColorMask(fragmentProgram->color_mask_red, fragmentProgram->color_mask_green, fragmentProgram->color_mask_blue, fragmentProgram->color_mask_alpha);
     if (fragmentProgram->blend_enabled) {
         glEnable(GL_BLEND);
@@ -1277,7 +1026,10 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(program != 0);
 
     const GLint location = glGetUniformLocation(program, name);
-    assert(location >= 0);
+    if (location < 0) {
+        // Happens when shaders can't be loaded, as dummy shaders do not have uniforms.
+        return SCE_GXM_ERROR_INVALID_VALUE;
+    }
 
     switch (componentCount) {
     case 4:
@@ -1317,7 +1069,6 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, const SceGxmVertexP
 
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, const uint8_t *streamData) {
     assert(context != nullptr);
-    assert(streamIndex == 0);
     assert(streamData != nullptr);
 
     for (const emu::SceGxmVertexAttribute &attribute : context->vertex_program->attributes) {
@@ -1378,12 +1129,22 @@ EXPORT(int, sceGxmSetYuvProfile) {
     return unimplemented("sceGxmSetYuvProfile");
 }
 
-EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram) {
-    return unimplemented("sceGxmShaderPatcherAddRefFragmentProgram");
+EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmFragmentProgram *fragmentProgram) {
+    assert(shaderPatcher != nullptr);
+    assert(fragmentProgram != nullptr);
+    
+    ++fragmentProgram->reference_count;
+    
+    return 0;
 }
 
-EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram) {
-    return unimplemented("sceGxmShaderPatcherAddRefVertexProgram");
+EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmVertexProgram *vertexProgram) {
+    assert(shaderPatcher != nullptr);
+    assert(vertexProgram != nullptr);
+    
+    ++vertexProgram->reference_count;
+    
+    return 0;
 }
 
 EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *params, Ptr<SceGxmShaderPatcher> *shaderPatcher) {
@@ -1405,69 +1166,40 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     assert(programId != nullptr);
     assert(outputFormat == SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
     assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
-    assert((blendInfo == nullptr) || (blendInfo != nullptr));
     assert(vertexProgram);
     assert(fragmentProgram != nullptr);
-
+    
+    static const emu::SceGxmBlendInfo default_blend_info = {
+        SCE_GXM_COLOR_MASK_ALL,
+        SCE_GXM_BLEND_FUNC_NONE,
+        SCE_GXM_BLEND_FUNC_NONE,
+        SCE_GXM_BLEND_FACTOR_ONE,
+        SCE_GXM_BLEND_FACTOR_ZERO,
+        SCE_GXM_BLEND_FACTOR_ONE,
+        SCE_GXM_BLEND_FACTOR_ZERO
+    };
+    const FragmentProgramCacheKey key = {
+        *programId,
+        (blendInfo != nullptr) ? *blendInfo : default_blend_info,
+        vertexProgram
+    };
+    FragmentProgramCache::const_iterator cached = shaderPatcher->fragment_program_cache.find(key);
+    if (cached != shaderPatcher->fragment_program_cache.end()) {
+        ++cached->second.get(mem)->reference_count;
+        *fragmentProgram = cached->second;
+        return 0;
+    }
+    
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
-
-    GLObject fragment_shader;
-    if (!fragment_shader.init(glCreateShader(GL_FRAGMENT_SHADER), glDeleteShader)) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
-    }
-
+    
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
-    if (!compile_shader(fragment_shader.get(), programId->program.get(mem), host.base_path.c_str())) {
-        free(mem, *fragmentProgram);
-        fragmentProgram->reset();
-
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
-
-    if (!fp->program.init(glCreateProgram(), glDeleteProgram)) {
-        free(mem, *fragmentProgram);
-        fragmentProgram->reset();
-
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
-
-    const ProgramToVertexShader::const_iterator vertex_shader = shaderPatcher->vertex_shaders.find(vertexProgram);
-    assert(vertex_shader != shaderPatcher->vertex_shaders.end());
-
-    glAttachShader(fp->program.get(), vertex_shader->second->get());
-    glAttachShader(fp->program.get(), fragment_shader.get());
-
-    bind_attribute_locations(fp->program.get(), vertexProgram.get(mem));
-
-    glLinkProgram(fp->program.get());
-
-    GLint log_length = 0;
-    glGetProgramiv(fp->program.get(), GL_INFO_LOG_LENGTH, &log_length);
-
-    if (log_length > 0) {
-        std::vector<GLchar> log;
-        log.resize(log_length);
-        glGetProgramInfoLog(fp->program.get(), log_length, nullptr, &log.front());
-
-		LOG_ERROR("{}", log.front());
-    }
-
-    GLboolean is_linked = GL_FALSE;
-    glGetProgramiv(fp->program.get(), GL_LINK_STATUS, &is_linked);
-    assert(is_linked != GL_FALSE);
-    if (is_linked == GL_FALSE) {
-        free(mem, *fragmentProgram);
-        fragmentProgram->reset();
-
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
-
-    glDetachShader(fp->program.get(), fragment_shader.get());
-    glDetachShader(fp->program.get(), vertex_shader->second->get());
+    fp->fragment_glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
+    fp->vertex_glsl = get_vertex_glsl(*shaderPatcher, *vertexProgram.get(mem), host.base_path.c_str());
+    fp->attribute_locations = attribute_locations(*vertexProgram.get(mem));
 
     // Translate blending.
     if (blendInfo != nullptr) {
@@ -1484,6 +1216,8 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         fp->alpha_dst = translate_blend_factor(blendInfo->alphaDst);
     }
 
+    shaderPatcher->fragment_program_cache.emplace(key, *fragmentProgram);
+    
     return 0;
 }
 
@@ -1508,24 +1242,8 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     }
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
-    if (!vp->shader->init(glCreateShader(GL_VERTEX_SHADER), glDeleteShader)) {
-        free(mem, *vertexProgram);
-        vertexProgram->reset();
-
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
-    }
-
-    if (!compile_shader(vp->shader->get(), programId->program.get(mem), host.base_path.c_str())) {
-        free(mem, *vertexProgram);
-        vertexProgram->reset();
-
-        return SCE_GXM_ERROR_PATCHER_INTERNAL;
-    }
-
     vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
-
-    shaderPatcher->vertex_shaders[programId->program] = vp->shader;
 
     return 0;
 }
@@ -1599,7 +1317,17 @@ EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shad
     assert(shaderPatcher != nullptr);
     assert(fragmentProgram);
 
-    free(host.mem, fragmentProgram);
+    SceGxmFragmentProgram *const fp = fragmentProgram.get(host.mem);
+    --fp->reference_count;
+    if (fp->reference_count == 0) {
+        for (FragmentProgramCache::const_iterator it = shaderPatcher->fragment_program_cache.begin(); it != shaderPatcher->fragment_program_cache.end(); ++it) {
+            if (it->second == fragmentProgram) {
+                shaderPatcher->fragment_program_cache.erase(it);
+                break;
+            }
+        }
+        free(host.mem, fragmentProgram);
+    }
 
     return 0;
 }
@@ -1608,7 +1336,11 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
     assert(shaderPatcher != nullptr);
     assert(vertexProgram);
 
-    free(host.mem, vertexProgram);
+    SceGxmVertexProgram *const vp = vertexProgram.get(host.mem);
+    --vp->reference_count;
+    if (vp->reference_count == 0) {
+        free(host.mem, vertexProgram);
+    }
 
     return 0;
 }
@@ -1626,7 +1358,6 @@ EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPat
     assert(programId);
 
     SceGxmRegisteredProgram *const rp = programId.get(host.mem);
-    shaderPatcher->vertex_shaders.erase(rp->program);
     rp->program.reset();
 
     free(host.mem, programId);
@@ -1754,13 +1485,13 @@ EXPORT(int, sceGxmTextureInitLinear, emu::SceGxmTexture *texture, Ptr<const void
     assert((texFormat == SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR) || (texFormat == SCE_GXM_TEXTURE_FORMAT_U8_R111) || (texFormat == SCE_GXM_TEXTURE_FORMAT_P8_ABGR));
     assert(width > 0);
     assert(height > 0);
-    assert(mipCount == 0);
 
     texture->format = texFormat;
     texture->width = width;
     texture->height = height;
     texture->data = data;
     texture->palette = Ptr<void>();
+    // TODO Support mip-mapping.
 
     return 0;
 }
