@@ -132,14 +132,14 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
 	extHeader.dataSize = read_swap32(pkg_file);
 	extHeader.dataOffset = read_swap32(pkg_file);
 	extHeader.dataType = read_swap32(pkg_file);
-	extHeader.pkgDataSize = read_swap32(pkg_file);
+	extHeader.pkgDataSize = read_swap64(pkg_file);
 	extHeader.padding01 = read_swap32(pkg_file);
 	extHeader.dataType2 = read_swap32(pkg_file);
 	extHeader.padding02 = read_swap32(pkg_file);
-	extHeader.padding03 = read_swap32(pkg_file);
-	extHeader.padding04 = read_swap32(pkg_file);
+	extHeader.padding03 = read_swap64(pkg_file);
+	extHeader.padding04 = read_swap64(pkg_file);
 
-	char key = extHeader.dataType & 7;
+	char key = extHeader.dataType2 & 7;
 
 	uint32_t itemsOffset;
 	uint32_t itemsSize;
@@ -220,6 +220,8 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
 
 		AES_ECB_encrypt(&sub_ctx, main_key);
 	}
+
+	LOG_INFO("KEY: {:x}", key);
 
 	AES_ctx final_ctx;
 	AES_init_ctx_iv(&final_ctx, main_key, header.dataRiv);
