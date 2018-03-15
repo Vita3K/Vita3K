@@ -6,6 +6,7 @@ add_library(
 	include/util/resource.h
 	include/util/string_convert.h
 	include/util/log.h
+	include/util/byteswap.h
 	src/util.cpp
 )
 
