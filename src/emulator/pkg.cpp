@@ -26,6 +26,8 @@ extern "C" {
 #include <aes.hpp>
 
 #include <util/string_convert.h>
+#include <util/byteswap.h>
+#include <util/log.h>
 
 #include <vector>
 #include <string>
@@ -68,6 +70,27 @@ bool zrif_decode(uint8_t* org, uint8_t* target, uint32_t len) {
     return true;
 }
 
+uint32_t read_swap32(FILE* file, uint32_t elementCount = 1) {
+	uint32_t temp;
+	fread(&temp, sizeof(uint32_t), elementCount, file);
+
+	return swap_int(temp);
+}
+
+uint16_t read_swap16(FILE* file, uint32_t elementCount = 1) {
+	uint16_t temp;
+	fread(&temp, sizeof(uint16_t), elementCount, file);
+
+	return swap_short(temp);
+}
+
+uint64_t read_swap64(FILE* file, uint32_t elementCount = 1) {
+	uint64_t temp;
+	fread(&temp, sizeof(uint64_t), elementCount, file);
+
+	return swap_int64(temp);
+}
+
 bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::string &game_title, std::string& title_id, const std::wstring& path) {
     FILE* pkg_file;
 
@@ -80,15 +103,46 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
     }
 
     PkgHeader header;
+	PkgExtendHeader extHeader;
+
     ContentType ctType;
 
-    fread(&header, 1, sizeof(PkgHeader), pkg_file);
-	fseek(pkg_file, 0xe7, SEEK_SET);
+	header.magicNumber = read_swap32(pkg_file);
+	header.pkgRevision = read_swap16(pkg_file);
+	header.pkgType = (PkgType)read_swap16(pkg_file);
+	header.pkgInfoOffset = read_swap32(pkg_file);
+	header.pkgInfoCount = read_swap32(pkg_file);
+	header.headerSize = read_swap32(pkg_file);
+	header.itemCount = read_swap32(pkg_file);
+	header.totalSize = read_swap64(pkg_file);
+	header.dataOffset = read_swap64(pkg_file);
+	header.dataSize = read_swap64(pkg_file);
 
-	char key = 0;
-	fread(&key, 1, 1, pkg_file);
+	// All bytes, should be fine
+	fread(header.contentid, 1, 0x30, pkg_file);
+	fread(header.digest, 1, 0x10, pkg_file);
+	fread(header.dataRiv, 1, 0x10, pkg_file);
+	fread(header.cmacHash, 1, 0x10, pkg_file);
+	fread(header.npdrmSig, 1, 0x28, pkg_file);
+	fread(header.sha1Hash, 1, 0x08, pkg_file);
 
-	key &= 7;
+	extHeader.magic = read_swap32(pkg_file);
+	extHeader.unknown01 = read_swap32(pkg_file);
+	extHeader.headerSize = read_swap32(pkg_file);
+	extHeader.dataSize = read_swap32(pkg_file);
+	extHeader.dataOffset = read_swap32(pkg_file);
+	extHeader.dataType = read_swap32(pkg_file);
+	extHeader.pkgDataSize = read_swap32(pkg_file);
+	extHeader.padding01 = read_swap32(pkg_file);
+	extHeader.dataType2 = read_swap32(pkg_file);
+	extHeader.padding02 = read_swap32(pkg_file);
+	extHeader.padding03 = read_swap32(pkg_file);
+	extHeader.padding04 = read_swap32(pkg_file);
+
+	char key = extHeader.dataType & 7;
+
+	uint32_t itemsOffset;
+	uint32_t itemsSize;
 
     std::vector<PkgInfo> infos;
 
@@ -96,20 +150,44 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
 	fseek(pkg_file, header.pkgInfoOffset, SEEK_SET);
 
     for (uint32_t i = 0; i < header.pkgInfoCount; i++) {
-         fread(&infos[i], 1, 8, pkg_file);
+		uint32_t tell = ftell(pkg_file);
+
+		 infos[i].ident = (PkgIdentifier)read_swap32(pkg_file);
+		 infos[i].size = read_swap32(pkg_file);
 
          if (infos[i].ident == PkgIdentifier::Cagetory) {
-             fread(&infos[i].contentType, 1, sizeof(uint32_t), pkg_file);
-             ctType = infos[i].contentType;
-         }
-         else if (infos[i].ident == PkgIdentifier::Item || infos[i].ident == PkgIdentifier::SfoFile) {
-             fread(&infos[i].itemOffset, 1, sizeof(uint32_t), pkg_file);
-             fread(&infos[i].itemSize, 1, sizeof(uint32_t), pkg_file);
-         }
-    }
+			 infos[i].contentType = (ContentType)read_swap32(pkg_file);
+             ctType = (ContentType)infos[i].contentType;
 
-	// TEST
-	
+			 fseek(pkg_file, infos[i].size - 4, SEEK_CUR);
+         }
+         else if (infos[i].ident == PkgIdentifier::Item) {
+			 infos[i].itemOffset = read_swap32(pkg_file);
+			 infos[i].itemSize = read_swap32(pkg_file);
+
+			 itemsOffset = infos[i].itemOffset;
+			 itemsSize = infos[i].itemSize;
+
+			 fseek(pkg_file, infos[i].size - 8, SEEK_CUR);
+		 }
+		 else if (infos[i].ident == PkgIdentifier::SfoFile) {
+			 infos[i].sfoOffset = read_swap32(pkg_file);
+			 infos[i].sfoSize = read_swap32(pkg_file);
+
+			 fseek(pkg_file, infos[i].size - 8, SEEK_CUR);
+		 }
+		 else if (infos[i].ident == PkgIdentifier::DrmType) {
+			 infos[i].drmType = read_swap32(pkg_file);
+
+			 fseek(pkg_file, infos[i].size - 4, SEEK_CUR);
+		 } else if (infos[i].ident == PkgIdentifier::Flags) {
+			 infos[i].packageFlag = read_swap32(pkg_file);
+
+			 fseek(pkg_file, infos[i].size - 4, SEEK_CUR);
+		 } else {
+			 fseek(pkg_file, infos[i].size, SEEK_CUR);
+		 }
+    }
 
 	AES_ctx ctx;
 	BYTE main_key[0x10];
@@ -144,9 +222,29 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
 	}
 
 	AES_ctx final_ctx;
-	AES_init_ctx(&final_ctx, main_key);
+	AES_init_ctx_iv(&final_ctx, main_key, header.dataRiv);
 
-	//Dont deal with the zRIF, user part
+	std::vector<PkgFileHeader> file_headers;
+	file_headers.resize(header.itemCount);
+
+	fseek(pkg_file, header.dataOffset + itemsOffset, SEEK_SET);
+
+	for (uint32_t i = 0; i < header.itemCount; i++) {
+		uint8_t item_header_raw[sizeof(PkgFileHeader)];
+		fread(item_header_raw, 1, sizeof(PkgFileHeader), pkg_file);
+
+		AES_CTR_xcrypt_buffer(&final_ctx, item_header_raw, sizeof(PkgFileHeader));
+
+		memcpy(&file_headers[i].fileNameOffset, item_header_raw, 4);
+		memcpy(&file_headers[i].fileNameSize, item_header_raw + 4, 4);
+		memcpy(&file_headers[i].dataOffset, item_header_raw + 8, 8);
+		memcpy(&file_headers[i].dataSize, item_header_raw + 16, 8);
+
+		file_headers[i].fileNameOffset = swap_int(file_headers[i].fileNameOffset);
+		file_headers[i].fileNameSize = swap_int(file_headers[i].fileNameSize);
+		file_headers[i].dataOffset = swap_int64(file_headers[i].dataOffset);
+		file_headers[i].dataSize = swap_int64(file_headers[i].dataSize);
+	}
 
     return true;
 }

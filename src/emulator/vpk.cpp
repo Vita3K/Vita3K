@@ -145,10 +145,10 @@ bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
          vfs::mount("app0", fs::absolute(vfs::physical_mount_path("ux0") + "/app/" + title_id + "/").string());
 
          // If the folder exists, dont reinstall it
-         if (!fs::exists(vfs::physical_mount_path("ux0") + "/app/" + title_id)) {
+         if (!fs::exists(vfs::physical_mount_path("app0"))) {
              // If there is missing files, its user fault
-             LOG_INFO("Try to install {} ({}) if you are done with the app/game and you want to remove, please remove folder: {}/app/{}", game_title, title_id,
-                       vfs::physical_mount_path("vs0"), title_id);
+             LOG_INFO("Try to install {} ({}) if you are done with the app/game and you want to remove, please remove folder: {}", game_title, title_id,
+                       vfs::physical_mount_path("app0"));
 
              extract_vpk_to_path(zip, vfs::physical_mount_path("app0"));
          }

@@ -44,15 +44,30 @@ struct PkgHeader {
     uint64_t dataOffset; 
     uint64_t dataSize;
 
-    char contentid[0x24]; 
-
-	uint8_t padding[0x0C];
+    char contentid[0x30]; 
 
     uint8_t digest[0x10]; 
 	uint8_t dataRiv[0x10];
 	uint8_t cmacHash[0x10];
 	uint8_t npdrmSig[0x28];
     uint8_t sha1Hash[0x08]; 
+};
+
+struct PkgExtendHeader {
+	uint32_t magic;
+	uint32_t unknown01;
+	uint32_t headerSize;
+	uint32_t dataSize;
+	uint32_t dataOffset;
+	uint32_t dataType;
+	uint64_t pkgDataSize;
+
+	uint32_t padding01;
+	uint32_t dataType2;
+	uint32_t unknown02;
+	uint32_t padding02;
+	uint64_t padding03;
+	uint64_t padding04;
 };
 
 enum class PkgIdentifier: uint32_t {
@@ -90,11 +105,15 @@ enum class ContentType: uint32_t {
 };
 
 struct PkgInfo {
+	uint32_t drmType;
+	uint32_t packageFlag;
     PkgIdentifier ident;
     uint32_t size;
     ContentType contentType;
     uint32_t itemOffset;
     uint32_t itemSize;
+	uint32_t sfoOffset;
+	uint32_t sfoSize;
 };
 
 enum class FileType: uint32_t {

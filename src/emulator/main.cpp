@@ -128,8 +128,6 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    vfs::mount("ux0", fs::absolute(host.pref_path + "ux0").string());
-
     Ptr<const void> entry_point;
 
 	VitaFileType type = file_type(wide_to_utf(path).c_str());
@@ -143,11 +141,20 @@ int main(int argc, char *argv[]) {
 			error(message.c_str(), host.window.get());
 			return ModuleLoadFailed;
 		}
-		else {
-			load_pkg(entry_point, host.io, host.mem, host.game_title, host.title_id, path);
-			return 0;
-		}
 	}
+	else {
+		if (!load_pkg(entry_point, host.io, host.mem, host.game_title, host.title_id, path)) {
+			std::string message = "Failed to load \"";
+			message += wide_to_utf(path);
+			message += "\"";
+			message += "\nSee console output for details.";
+			error(message.c_str(), host.window.get());
+			return ModuleLoadFailed;
+		}
+
+		return 0;
+	}
+
     // TODO This is hacky. Belongs in kernel?
     const SceUID main_thread_id = host.kernel.next_uid++;
 
