@@ -36,16 +36,23 @@ struct PkgHeader {
     uint32_t pkgInfoOffset;
     uint32_t pkgInfoCount;
 
-    uint32_t headerSize;
+	uint32_t headerSize;
     uint32_t itemCount;
 
-    uint64_t dataOffset;
+	uint64_t totalSize;
+
+    uint64_t dataOffset; 
     uint64_t dataSize;
 
-    char contentid[0x30];
+    char contentid[0x24]; 
 
-    uint32_t digest[0x10];
-    uint32_t license[0x10];
+	uint8_t padding[0x0C];
+
+    uint8_t digest[0x10]; 
+	uint8_t dataRiv[0x10];
+	uint8_t cmacHash[0x10];
+	uint8_t npdrmSig[0x28];
+    uint8_t sha1Hash[0x08]; 
 };
 
 enum class PkgIdentifier: uint32_t {

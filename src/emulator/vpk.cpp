@@ -105,7 +105,7 @@ bool extract_vpk_to_path(const ZipPtr zip, const std::string& pref_path) {
     return true;
 }
 
-bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::string &game_title, std::string& title_id, const std::wstring& path) {
+bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::string &game_title, std::string& title_id, const std::wstring& path) { 
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
@@ -142,10 +142,10 @@ bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
     if (res == true) {
          title_id = find_data(file, "TITLE_ID");
          game_title = find_data(file, "TITLE");
-         vfs::mount("app0", fs::absolute(vfs::physical_mount_path("vs0") + "/app/" + title_id + "/").string());
+         vfs::mount("app0", fs::absolute(vfs::physical_mount_path("ux0") + "/app/" + title_id + "/").string());
 
          // If the folder exists, dont reinstall it
-         if (!fs::exists(vfs::physical_mount_path("vs0") + "/app/" + title_id)) {
+         if (!fs::exists(vfs::physical_mount_path("ux0") + "/app/" + title_id)) {
              // If there is missing files, its user fault
              LOG_INFO("Try to install {} ({}) if you are done with the app/game and you want to remove, please remove folder: {}/app/{}", game_title, title_id,
                        vfs::physical_mount_path("vs0"), title_id);

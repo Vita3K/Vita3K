@@ -21,8 +21,9 @@
 
 extern "C" {
 #include <base64.h>
-#include <aes.h>
 }
+
+#include <aes.hpp>
 
 #include <util/string_convert.h>
 
@@ -82,10 +83,17 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
     ContentType ctType;
 
     fread(&header, 1, sizeof(PkgHeader), pkg_file);
+	fseek(pkg_file, 0xe7, SEEK_SET);
+
+	char key = 0;
+	fread(&key, 1, 1, pkg_file);
+
+	key &= 7;
 
     std::vector<PkgInfo> infos;
 
-    infos.resize(header.pkgInfoCount);
+	infos.resize(header.pkgInfoCount);
+	fseek(pkg_file, header.pkgInfoOffset, SEEK_SET);
 
     for (uint32_t i = 0; i < header.pkgInfoCount; i++) {
          fread(&infos[i], 1, 8, pkg_file);
@@ -99,6 +107,46 @@ bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::str
              fread(&infos[i].itemSize, 1, sizeof(uint32_t), pkg_file);
          }
     }
+
+	// TEST
+	
+
+	AES_ctx ctx;
+	BYTE main_key[0x10];
+
+	if (key == 1) {
+		memcpy(main_key, pkg_psp_key, 0x10);
+		AES_init_ctx(&ctx, pkg_ps3_key);
+	}
+	else if (key == 2) {
+		AES_ctx sub_ctx;
+		AES_init_ctx(&sub_ctx, pkg_vita_2);
+		
+		memcpy(main_key, header.dataRiv, 0x10);
+
+		AES_ECB_encrypt(&sub_ctx, main_key);
+	}
+	else if (key == 3) {
+		AES_ctx sub_ctx;
+		AES_init_ctx(&sub_ctx, pkg_vita_3);
+
+		memcpy(main_key, header.dataRiv, 0x10);
+
+		AES_ECB_encrypt(&sub_ctx, main_key);
+	}
+	else if (key == 4) {
+		AES_ctx sub_ctx;
+		AES_init_ctx(&sub_ctx, pkg_vita_4);
+
+		memcpy(main_key, header.dataRiv, 0x10);
+
+		AES_ECB_encrypt(&sub_ctx, main_key);
+	}
+
+	AES_ctx final_ctx;
+	AES_init_ctx(&final_ctx, main_key);
+
+	//Dont deal with the zRIF, user part
 
     return true;
 }
