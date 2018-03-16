@@ -1,10 +1,3 @@
-//
-//  queue.h
-//  Vita3K
-//
-//  Created by Francisco José García García on 11/3/18.
-//
-
 #ifndef queue_h
 #define queue_h
 
