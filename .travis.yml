@@ -15,7 +15,7 @@ deploy:
   provider: script
   overwrite: true
   skip_cleanup: true
-  script: bash $TRAVIS_BUILD_DIR/deploy_mac_nightly.sh
+  script: bash $TRAVIS_BUILD_DIR/deploy-mac-nightly.sh
   on:
     repo: Vita3K/Vita3K
     tags: false
