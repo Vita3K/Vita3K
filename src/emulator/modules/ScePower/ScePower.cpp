@@ -48,7 +48,7 @@ EXPORT(int, scePowerGetBatteryFullCapacity) {
 }
 
 EXPORT(int, scePowerGetBatteryLifePercent) {
-    return unimplemented("scePowerGetBatteryLifePercent");
+    return 100;
 }
 
 EXPORT(int, scePowerGetBatteryLifeTime) {
@@ -100,7 +100,7 @@ EXPORT(int, scePowerGetUsingWireless) {
 }
 
 EXPORT(int, scePowerIsBatteryCharging) {
-    return unimplemented("scePowerIsBatteryCharging");
+    return SCE_TRUE;
 }
 
 EXPORT(int, scePowerIsBatteryExist) {
@@ -108,7 +108,7 @@ EXPORT(int, scePowerIsBatteryExist) {
 }
 
 EXPORT(int, scePowerIsLowBattery) {
-    return unimplemented("scePowerIsLowBattery");
+    return SCE_FALSE;
 }
 
 EXPORT(int, scePowerIsLowBatteryInhibitUpdateDownload) {
