@@ -104,18 +104,11 @@ EXPORT(int, sceKernelCreateThreadForUser) {
 }
 
 EXPORT(int, sceKernelDelayThread, SceUInt delay) {
-    const uint32_t delay_ms = delay / 1000;
-    const uint32_t t1 = SDL_GetTicks();
-    uint32_t elapsed;
-    do {
-        if (handle_events(host)) {
-            const uint32_t t2 = SDL_GetTicks();
-            elapsed = t2 - t1;
-        } else {
-            elapsed = delay_ms;
-        }
-    } while (elapsed < delay_ms);
-
+#ifdef _WIN32
+    Sleep(delay / 1000);
+#else
+    usleep(delay);
+#endif
     return SCE_KERNEL_OK;
 }
 

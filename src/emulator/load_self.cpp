@@ -100,7 +100,6 @@ bool load_self(Ptr<const void> &entry_point, MemState &mem, const void *self) {
     const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
     const uint32_t module_info_offset = elf.e_entry & 0x3fffffff;
     const Elf32_Phdr *const segments = reinterpret_cast<const Elf32_Phdr *>(self_bytes + self_header.phdr_offset);
-    const Elf32_Phdr &module_info_segment = segments[module_info_segment_index];
 
     const segment_info *const segment_infos = reinterpret_cast<const segment_info *>(self_bytes + self_header.section_info_offset);
 

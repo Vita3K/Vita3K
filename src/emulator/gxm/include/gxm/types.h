@@ -1,9 +1,11 @@
 #pragma once
 
 #include <crypto/hash.h>
+#include <condition_variable>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 #include <mem/ptr.h>
+#include <mutex>
 
 #include <psp2/gxm.h>
 #include <SDL_video.h>
@@ -197,6 +199,9 @@ namespace emu {
 }
 
 struct SceGxmSyncObject {
+    std::mutex mutex;
+    std::condition_variable cond_var;
+    int value;
 };
 
 namespace emu {

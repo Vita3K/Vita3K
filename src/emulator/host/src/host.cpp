@@ -34,9 +34,13 @@
 #include <SDL_filesystem.h>
 #include <SDL_video.h>
 
+#include <glbinding/Binding.h>
+
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+
+using namespace glbinding;
 
 static const bool LOG_IMPORT_CALLS = false;
 
@@ -63,8 +67,9 @@ bool init(HostState &state) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::unique_lock<std::mutex> lock(thread->mutex);
-        assert(thread->to_do == ThreadToDo::wait);
-        thread->to_do = ThreadToDo::run;
+        if (thread->to_do == ThreadToDo::wait) {
+            thread->to_do = ThreadToDo::run;
+        }
         thread->something_to_do.notify_all();
     };
 
@@ -75,6 +80,8 @@ bool init(HostState &state) {
         return false;
     }
 
+    state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
+    Binding::initialize(false);
     state.kernel.base_tick = { rtc_base_ticks() };
 
     return true;
@@ -85,6 +92,9 @@ bool handle_events(HostState &host) {
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
             stop_all_threads(host.kernel);
+            host.gxm.display_queue.abort();
+            host.display.abort = true;
+            host.display.condvar.notify_all();
             return false;
         }
     }
@@ -95,7 +105,7 @@ bool handle_events(HostState &host) {
 void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
     if (LOG_IMPORT_CALLS) {
         const char *const name = import_name(nid);
-		LOG_TRACE("NID {:#08x} ({})) called", nid, name);
+        LOG_TRACE("NID {:#08x} ({})) called", nid, name);
     }
 
     ImportFn *const fn = resolve_import(nid);
