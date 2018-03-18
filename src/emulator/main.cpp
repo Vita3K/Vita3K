@@ -74,8 +74,8 @@ VitaFileType file_type(const char* path) {
 	FILE* temp = fopen(path, "rb");
 
 	int magic;
-
 	fread(&magic, sizeof(int), 1, temp);
+	fclose(temp);
 
 	if (magic == 0x474b507f) {
 		return Pkg;
@@ -111,8 +111,6 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-
-	path = L"E:\\Netflix.pkg";
 
     if (path.empty()) {
         std::string message = "Usage: ";

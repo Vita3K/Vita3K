@@ -99,7 +99,7 @@ enum class ContentType: uint32_t {
     PSP2Classic = 0x00000012,
     PSPRemastered = 0x00000014,
     PSVitaGameData = 0x00000015,
-    PSVitaAlternativeContent = 0x00000016,
+    PSVitaDLC = 0x00000016,
     PSVitaLA = 0x00000017,
     PSWebTV = 0x00000019
 };
@@ -121,7 +121,17 @@ enum class FileType: uint32_t {
     Self = 1,
     Sprx = 2,
     EData = 3,
-    SData = 4
+    SData = 4,
+	Keystone=  14,
+	Keystone2 = 15,
+	PFSFile = 16,
+	TempBin = 17,
+	SData2 = 18,
+	ClearSign = 19,
+	ClearSign2 = 20,
+	RightSprx = 21,
+	OO = 22,
+	DigsBin = 24,
 };
 
 enum class DRMLisenceType {
@@ -144,5 +154,14 @@ struct IOState;
 struct MemState;
 template <class T>
 class Ptr;
+
+void ctr128_add(unsigned char *counter, unsigned long long int value);
+
+uint32_t pdb_gen(uint8_t *buffer, uint32_t len, std::string title,
+	std::string title_id, std::string pkg_name, std::string pkg_url,
+	uint64_t pkg_size, uint32_t install_id);
+
+// User can install a lisence after the game finish install
+// uint32_t zrif_install(const std::string &title_id, uint8_t *zrif_buf);
 
 bool load_pkg(Ptr<const void> &entry_point, IOState &io, MemState &mem, std::string &game_title, std::string& title_id, const std::wstring& path);
