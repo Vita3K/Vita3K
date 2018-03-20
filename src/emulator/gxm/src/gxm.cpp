@@ -341,7 +341,6 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
     
     const std::array<char, 65> hash_text = hex(hash_bytes);
     std::string source = load_shader(hash_text.data(), base_path);
-    assert(source.find("_v.") == std::string::npos);
     if (source.empty()) {
         source = generate_fragment_glsl(fragment_program);
         dump_missing_shader(hash_text.data(), fragment_program, source.c_str());
@@ -361,7 +360,6 @@ std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmPro
     
     const std::array<char, 65> hash_text = hex(hash_bytes);
     std::string source = load_shader(hash_text.data(), base_path);
-    assert(source.find("_f.") == std::string::npos);
     if (source.empty()) {
         source = generate_vertex_glsl(vertex_program);
         dump_missing_shader(hash_text.data(), vertex_program, source.c_str());
