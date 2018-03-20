@@ -4,7 +4,7 @@
 uniform mat4 wvp;
 attribute vec3 position;
 attribute vec2 texcoord;
-attribute vex4 color;
+attribute vec4 color;
 
 varying vec4 vColor;
 varying float vFog;
