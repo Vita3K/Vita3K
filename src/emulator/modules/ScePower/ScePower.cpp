@@ -20,6 +20,8 @@
 #include <SDL.h>
 #include <psp2/power.h>
 
+#define LOW_BATTERY_PERCENT 10
+
 EXPORT(int, scePowerBatteryUpdateInfo) {
     return unimplemented("scePowerBatteryUpdateInfo");
 }
@@ -123,7 +125,7 @@ EXPORT(int, scePowerIsBatteryExist) {
 EXPORT(int, scePowerIsLowBattery) {
     int res;
     SDL_GetPowerInfo(NULL, &res);
-    if (res <= 10){
+    if (res <= LOW_BATTERY_PERCENT){
         return SCE_TRUE;
     }
     return SCE_FALSE;
