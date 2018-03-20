@@ -234,6 +234,79 @@ static void bind_attribute_locations(GLuint gl_program, const SceGxmVertexProgra
     }
 }
 
+template <class T>
+void uniform_4(GLint location, GLsizei count, const T *value);
+
+template <>
+void uniform_4<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
+    glUniform4fv(location, count, value);
+}
+
+template <class T>
+void uniform_matrix_4(GLint location, GLsizei count, GLboolean, const T *value);
+
+template <>
+void uniform_matrix_4<GLfloat>(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+    glUniformMatrix4fv(location, count, transpose, value);
+}
+
+template <class T>
+void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value) {
+    switch (component_count) {
+        case 4:
+            switch (array_size) {
+                case 4:
+                    uniform_matrix_4<T>(location, 1, GL_FALSE, value);
+                    break;
+                default:
+                    uniform_4<T>(location, array_size, value);
+                    break;
+            }
+            break;
+            
+        default:
+            LOG_WARN("Unhandled uniform component count {}.", component_count);
+            break;
+    }
+}
+
+static void set_uniforms(GLuint gl_program, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem) {
+    GXM_PROFILE(__FUNCTION__);
+    
+    const SceGxmProgramParameter *const parameters = program_parameters(gxm_program);
+    for (size_t i = 0; i < gxm_program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = parameters[i];
+        if (parameter.category != SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
+            continue;
+        }
+        
+        const char *const name = parameter_name(parameter);
+        const GLint location = glGetUniformLocation(gl_program, name);
+        if (location < 0) {
+            LOG_WARN("Uniform parameter {} not found in current OpenGL program.", name);
+            continue;
+        }
+        
+        const SceGxmParameterType type = static_cast<SceGxmParameterType>(parameter.type);
+        const Ptr<const void> uniform_buffer = uniform_buffers[parameter.container_index];
+        if (!uniform_buffer) {
+            LOG_WARN("Uniform buffer {} not set for parameter {}.", parameter.container_index, name);
+            continue;
+        }
+        
+        const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
+        const GLfloat *const src = reinterpret_cast<const GLfloat *>(base + parameter.resource_index * 4); // TODO What offset?
+        switch (type) {
+            case SCE_GXM_PARAMETER_TYPE_F32:
+                set_uniform<GLfloat>(location, parameter.component_count, parameter.array_size, src);
+                break;
+            default:
+                LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
+                break;
+        }
+    }
+}
+
 static bool operator<(const SceGxmRegisteredProgram &a, const SceGxmRegisteredProgram &b) {
     return a.program < b.program;
 }
@@ -414,6 +487,18 @@ bool attribute_format_normalised(SceGxmAttributeFormat format) {
         default:
             return false;
     }
+}
+
+void set_uniforms(GLuint program, const SceGxmContext &context, const MemState &mem) {
+    GXM_PROFILE(__FUNCTION__);
+    
+    assert(context.fragment_program);
+    assert(context.fragment_program.get(mem)->program);
+    assert(context.vertex_program);
+    assert(context.vertex_program.get(mem)->program);
+    
+    set_uniforms(program, context.fragment_uniform_buffers, *context.fragment_program.get(mem)->program.get(mem), mem);
+    set_uniforms(program, context.vertex_uniform_buffers, *context.vertex_program.get(mem)->program.get(mem), mem);
 }
 
 void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
