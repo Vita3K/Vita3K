@@ -17,7 +17,7 @@
 
 #include "ScePower.h"
 
-#include <SDL.h>
+#include <SDL_power.h>
 #include <psp2/power.h>
 
 #define LOW_BATTERY_PERCENT 10
@@ -119,7 +119,7 @@ EXPORT(int, scePowerIsBatteryCharging) {
 
 EXPORT(int, scePowerIsBatteryExist) {
     SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
-    return (!(info == SDL_POWERSTATE_NO_BATTERY));
+    return (info != SDL_POWERSTATE_NO_BATTERY);
 }
 
 EXPORT(int, scePowerIsLowBattery) {
