@@ -14,9 +14,9 @@
 
 #define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
 
-static std::string load_shader(const char *hash, const char *base_path) {
+static std::string load_shader(const char *hash, const char *extension, const char *base_path) {
     std::ostringstream path;
-    path << base_path << "shaders/" << hash << ".glsl";
+    path << base_path << "shaders/" << hash << "." << extension;
     
     std::ifstream is(path.str());
     if (is.fail()) {
@@ -172,10 +172,10 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     return glsl.str();
 }
 
-static void dump_missing_shader(const char *hash, const SceGxmProgram &program, const char *source) {
+static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source) {
     // Dump missing shader GLSL.
     std::ostringstream glsl_path;
-    glsl_path << hash << ".glsl";
+    glsl_path << hash << "." << extension;
     std::ofstream glsl_file(glsl_path.str());
     if (!glsl_file.fail()) {
         glsl_file << source;
@@ -340,11 +340,11 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
     }
     
     const std::array<char, 65> hash_text = hex(hash_bytes);
-    std::string source = load_shader(hash_text.data(), base_path);
+    std::string source = load_shader(hash_text.data(), "frag", base_path);
     if (source.empty()) {
         LOG_ERROR("Missing fragment shader {}", hash_text.data());
         source = generate_fragment_glsl(fragment_program);
-        dump_missing_shader(hash_text.data(), fragment_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "frag", fragment_program, source.c_str());
     }
     
     shader_patcher.fragment_glsl_cache.emplace(hash_bytes, source);
@@ -360,11 +360,11 @@ std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmPro
     }
     
     const std::array<char, 65> hash_text = hex(hash_bytes);
-    std::string source = load_shader(hash_text.data(), base_path);
+    std::string source = load_shader(hash_text.data(), "vert", base_path);
     if (source.empty()) {
         LOG_ERROR("Missing vertex shader {}", hash_text.data());
         source = generate_vertex_glsl(vertex_program);
-        dump_missing_shader(hash_text.data(), vertex_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "vert", vertex_program, source.c_str());
     }
     
     shader_patcher.vertex_glsl_cache.emplace(hash_bytes, source);
