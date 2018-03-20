@@ -17,7 +17,10 @@
 
 #include "ScePower.h"
 
+#include <SDL_power.h>
 #include <psp2/power.h>
+
+#define LOW_BATTERY_PERCENT 10
 
 EXPORT(int, scePowerBatteryUpdateInfo) {
     return unimplemented("scePowerBatteryUpdateInfo");
@@ -48,11 +51,21 @@ EXPORT(int, scePowerGetBatteryFullCapacity) {
 }
 
 EXPORT(int, scePowerGetBatteryLifePercent) {
-    return 100;
+    int res;
+    SDL_GetPowerInfo(NULL, &res);
+    if (res == -1){
+        return 100;
+    }
+    return res;
 }
 
 EXPORT(int, scePowerGetBatteryLifeTime) {
-    return unimplemented("scePowerGetBatteryLifeTime");
+    int res;
+    SDL_GetPowerInfo(&res, NULL);
+    if (res == -1){
+        return INT_MAX;
+    }
+    return res;
 }
 
 EXPORT(int, scePowerGetBatteryRemainCapacity) {
@@ -100,14 +113,21 @@ EXPORT(int, scePowerGetUsingWireless) {
 }
 
 EXPORT(int, scePowerIsBatteryCharging) {
-    return SCE_TRUE;
+    SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
+    return (info == SDL_POWERSTATE_CHARGING);
 }
 
 EXPORT(int, scePowerIsBatteryExist) {
-    return unimplemented("scePowerIsBatteryExist");
+    SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
+    return (info != SDL_POWERSTATE_NO_BATTERY);
 }
 
 EXPORT(int, scePowerIsLowBattery) {
+    int res;
+    SDL_GetPowerInfo(NULL, &res);
+    if (res <= LOW_BATTERY_PERCENT){
+        return SCE_TRUE;
+    }
     return SCE_FALSE;
 }
 
@@ -120,7 +140,8 @@ EXPORT(int, scePowerIsLowBatteryInhibitUpdateReboot) {
 }
 
 EXPORT(int, scePowerIsPowerOnline) {
-    return unimplemented("scePowerIsPowerOnline");
+    SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
+    return ((info != SDL_POWERSTATE_UNKNOWN) && (info != SDL_POWERSTATE_ON_BATTERY));
 }
 
 EXPORT(int, scePowerIsRequest) {
