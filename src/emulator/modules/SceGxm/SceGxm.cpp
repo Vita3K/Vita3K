@@ -383,6 +383,13 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
     }
 
+    // TODO Use some kind of caching to avoid setting every draw call?
+    const SharedGLObject program = get_program(*context, host.mem);
+    glUseProgram(program->get());
+    
+    // TODO Use some kind of caching to avoid setting every draw call?
+    set_uniforms(program->get(), *context, host.mem);
+    
     const GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, indexData);
@@ -861,6 +868,8 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
 
     *uniformBuffer = context->params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->fragment_ring_buffer_used);
     context->fragment_ring_buffer_used = next_used;
+    
+    context->fragment_uniform_buffers[14] = *uniformBuffer;
 
     return 0;
 }
@@ -882,6 +891,8 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
 
     *uniformBuffer = context->params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->vertex_ring_buffer_used);
     context->vertex_ring_buffer_used = next_used;
+    
+    context->vertex_uniform_buffers[14] = *uniformBuffer;
 
     return 0;
 }
@@ -976,18 +987,18 @@ EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer) {
     return unimplemented("sceGxmSetFragmentDefaultUniformBuffer");
 }
 
-EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, const SceGxmFragmentProgram *fragmentProgram) {
+EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmFragmentProgram> fragmentProgram) {
     assert(context != nullptr);
-    assert(fragmentProgram != nullptr);
+    assert(fragmentProgram);
 
-    const SharedGLObject program = get_program(*context, *fragmentProgram);
+    context->fragment_program = fragmentProgram;
     
-    glUseProgram(program->get());
-    glColorMask(fragmentProgram->color_mask_red, fragmentProgram->color_mask_green, fragmentProgram->color_mask_blue, fragmentProgram->color_mask_alpha);
-    if (fragmentProgram->blend_enabled) {
+    const SceGxmFragmentProgram &fragment_program = *fragmentProgram.get(host.mem);
+    glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
+    if (fragment_program.blend_enabled) {
         glEnable(GL_BLEND);
-        glBlendEquationSeparate(fragmentProgram->color_func, fragmentProgram->alpha_func);
-        glBlendFuncSeparate(fragmentProgram->color_src, fragmentProgram->color_dst, fragmentProgram->alpha_src, fragmentProgram->alpha_dst);
+        glBlendEquationSeparate(fragment_program.color_func, fragment_program.alpha_func);
+        glBlendFuncSeparate(fragment_program.color_src, fragment_program.color_dst, fragment_program.alpha_src, fragment_program.alpha_dst);
     } else {
         glDisable(GL_BLEND);
     }
@@ -1099,35 +1110,15 @@ EXPORT(int, sceGxmSetTwoSidedEnable) {
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
     assert(uniformBuffer != nullptr);
     assert(parameter != nullptr);
+    assert(parameter->container_index == 14);
+    assert(parameter->resource_index == 0);
     assert(componentOffset == 0);
     assert(componentCount > 0);
     assert(sourceData != nullptr);
 
-    const char *const name = reinterpret_cast<const char *>(parameter) + parameter->name_offset;
-
-    GLint program = 0;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &program);
-    assert(program != 0);
-
-    const GLint location = glGetUniformLocation(program, name);
-    if (location < 0) {
-        // Happens when shaders can't be loaded, as dummy shaders do not have uniforms.
-        return SCE_GXM_ERROR_INVALID_VALUE;
-    }
-
-    switch (componentCount) {
-    case 4:
-        glUniform4fv(location, 1, sourceData);
-        break;
-
-    case 16:
-        glUniformMatrix4fv(location, 1, GL_FALSE, sourceData);
-        break;
-
-    default:
-        assert(!"Unhandled component count.");
-        break;
-    }
+    size_t size = componentCount * sizeof(float);
+    size_t offset = componentOffset * sizeof(float);
+    memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, sourceData, size);
 
     return 0;
 }
@@ -1144,9 +1135,9 @@ EXPORT(int, sceGxmSetVertexDefaultUniformBuffer) {
     return unimplemented("sceGxmSetVertexDefaultUniformBuffer");
 }
 
-EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, const SceGxmVertexProgram *vertexProgram) {
+EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVertexProgram> vertexProgram) {
     assert(context != nullptr);
-    assert(vertexProgram != nullptr);
+    assert(vertexProgram);
 
     context->vertex_program = vertexProgram;
 }
@@ -1154,13 +1145,15 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, const SceGxmVertexP
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, const uint8_t *streamData) {
     assert(context != nullptr);
     assert(streamData != nullptr);
+    assert(context->vertex_program);
 
-    for (const emu::SceGxmVertexAttribute &attribute : context->vertex_program->attributes) {
+    const SceGxmVertexProgram &vertex_program = *context->vertex_program.get(host.mem);
+    for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
         if (attribute.streamIndex != streamIndex) {
             continue;
         }
 
-        const SceGxmVertexStream &stream = context->vertex_program->streams[attribute.streamIndex];
+        const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
 
         const GLenum type = attribute_format_to_gl_type(static_cast<SceGxmAttributeFormat>(attribute.format));
         const GLboolean normalised = attribute_format_normalised(static_cast<SceGxmAttributeFormat>(attribute.format)) ? GL_TRUE : GL_FALSE;
@@ -1281,9 +1274,8 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
     
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
-    fp->fragment_glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
-    fp->vertex_glsl = get_vertex_glsl(*shaderPatcher, *vertexProgram.get(mem), host.base_path.c_str());
-    fp->attribute_locations = attribute_locations(*vertexProgram.get(mem));
+    fp->program = programId->program;
+    fp->glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
 
     // Translate blending.
     if (blendInfo != nullptr) {
@@ -1326,6 +1318,9 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     }
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
+    vp->program = programId->program;
+    vp->glsl = get_vertex_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
+    vp->attribute_locations = attribute_locations(*programId->program.get(mem));
     vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
 

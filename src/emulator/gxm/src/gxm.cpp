@@ -226,11 +226,84 @@ static SharedGLObject compile_glsl(GLenum type, const GLchar *source) {
     return shader;
 }
 
-static void bind_attribute_locations(GLuint gl_program, const SceGxmFragmentProgram &program) {
+static void bind_attribute_locations(GLuint gl_program, const SceGxmVertexProgram &program) {
     GXM_PROFILE(__FUNCTION__);
     
     for (const AttributeLocations::value_type &binding : program.attribute_locations) {
         glBindAttribLocation(gl_program, binding.first, binding.second.c_str());
+    }
+}
+
+template <class T>
+void uniform_4(GLint location, GLsizei count, const T *value);
+
+template <>
+void uniform_4<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
+    glUniform4fv(location, count, value);
+}
+
+template <class T>
+void uniform_matrix_4(GLint location, GLsizei count, GLboolean, const T *value);
+
+template <>
+void uniform_matrix_4<GLfloat>(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+    glUniformMatrix4fv(location, count, transpose, value);
+}
+
+template <class T>
+void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value) {
+    switch (component_count) {
+        case 4:
+            switch (array_size) {
+                case 4:
+                    uniform_matrix_4<T>(location, 1, GL_FALSE, value);
+                    break;
+                default:
+                    uniform_4<T>(location, array_size, value);
+                    break;
+            }
+            break;
+            
+        default:
+            LOG_WARN("Unhandled uniform component count {}.", component_count);
+            break;
+    }
+}
+
+static void set_uniforms(GLuint gl_program, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem) {
+    GXM_PROFILE(__FUNCTION__);
+    
+    const SceGxmProgramParameter *const parameters = program_parameters(gxm_program);
+    for (size_t i = 0; i < gxm_program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = parameters[i];
+        if (parameter.category != SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
+            continue;
+        }
+        
+        const char *const name = parameter_name(parameter);
+        const GLint location = glGetUniformLocation(gl_program, name);
+        if (location < 0) {
+            LOG_WARN("Uniform parameter {} not found in current OpenGL program.", name);
+            continue;
+        }
+        
+        const SceGxmParameterType type = static_cast<SceGxmParameterType>(parameter.type);
+        const Ptr<const void> uniform_buffer = uniform_buffers[parameter.container_index];
+        if (!uniform_buffer) {
+            LOG_WARN("Uniform buffer {} not set for parameter {}.", parameter.container_index, name);
+            continue;
+        }
+        
+        const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
+        const GLfloat *const src = reinterpret_cast<const GLfloat *>(base + parameter.resource_index * 4); // TODO What offset?
+        switch (type) {
+            case SCE_GXM_PARAMETER_TYPE_F32:
+                set_uniform<GLfloat>(location, parameter.component_count, parameter.array_size, src);
+                break;
+            default:
+                LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
+                break;
+        }
     }
 }
 
@@ -311,21 +384,26 @@ AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
     return locations;
 }
 
-SharedGLObject get_program(SceGxmContext &context, const SceGxmFragmentProgram &fragment_program) {
+SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
     GXM_PROFILE(__FUNCTION__);
     
-    const ProgramGLSLs glsls(fragment_program.fragment_glsl, fragment_program.vertex_glsl);
+    assert(context.fragment_program);
+    assert(context.vertex_program);
+    
+    const SceGxmFragmentProgram &fragment_program = *context.fragment_program.get(mem);
+    const SceGxmVertexProgram &vertex_program = *context.vertex_program.get(mem);
+    const ProgramGLSLs glsls(fragment_program.glsl, vertex_program.glsl);
     const ProgramCache::const_iterator cached = context.program_cache.find(glsls);
     if (cached != context.program_cache.end()) {
         return cached->second;
     }
     
-    const SharedGLObject fragment_shader = compile_glsl(GL_FRAGMENT_SHADER, fragment_program.fragment_glsl.c_str());
+    const SharedGLObject fragment_shader = compile_glsl(GL_FRAGMENT_SHADER, fragment_program.glsl.c_str());
     if (!fragment_shader) {
         return SharedGLObject();
     }
     
-    const SharedGLObject vertex_shader = compile_glsl(GL_VERTEX_SHADER, fragment_program.vertex_glsl.c_str());
+    const SharedGLObject vertex_shader = compile_glsl(GL_VERTEX_SHADER, vertex_program.glsl.c_str());
     if (!vertex_shader) {
         return SharedGLObject();
     }
@@ -338,7 +416,7 @@ SharedGLObject get_program(SceGxmContext &context, const SceGxmFragmentProgram &
     glAttachShader(program->get(), fragment_shader->get());
     glAttachShader(program->get(), vertex_shader->get());
     
-    bind_attribute_locations(program->get(), fragment_program);
+    bind_attribute_locations(program->get(), vertex_program);
     
     glLinkProgram(program->get());
     
@@ -407,6 +485,18 @@ bool attribute_format_normalised(SceGxmAttributeFormat format) {
         default:
             return false;
     }
+}
+
+void set_uniforms(GLuint program, const SceGxmContext &context, const MemState &mem) {
+    GXM_PROFILE(__FUNCTION__);
+    
+    assert(context.fragment_program);
+    assert(context.fragment_program.get(mem)->program);
+    assert(context.vertex_program);
+    assert(context.vertex_program.get(mem)->program);
+    
+    set_uniforms(program, context.fragment_uniform_buffers, *context.fragment_program.get(mem)->program.get(mem), mem);
+    set_uniforms(program, context.vertex_uniform_buffers, *context.vertex_program.get(mem)->program.get(mem), mem);
 }
 
 void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {

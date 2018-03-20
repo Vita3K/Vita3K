@@ -10,6 +10,7 @@
 #include <psp2/gxm.h>
 #include <SDL_video.h>
 
+#include <array>
 #include <map>
 #include <tuple>
 
@@ -63,6 +64,7 @@ typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 typedef std::shared_ptr<GLObject> SharedGLObject;
 typedef std::tuple<std::string, std::string> ProgramGLSLs;
 typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
+typedef std::array<Ptr<void>, 16> UniformBuffers;
 
 struct SceGxmContext {
     // This is an opaque type.
@@ -72,7 +74,10 @@ struct SceGxmContext {
     size_t vertex_ring_buffer_used = 0;
     emu::SceGxmColorSurface color_surface;
     ProgramCache program_cache;
-    const SceGxmVertexProgram *vertex_program = nullptr;
+    Ptr<const SceGxmFragmentProgram> fragment_program;
+    Ptr<const SceGxmVertexProgram> vertex_program;
+    UniformBuffers fragment_uniform_buffers;
+    UniformBuffers vertex_uniform_buffers;
     GLObjectArray<1> texture;
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
 };
@@ -87,14 +92,11 @@ namespace emu {
     };
 }
 
-typedef std::map<GLuint, std::string> AttributeLocations;
-
 struct SceGxmFragmentProgram {
     size_t reference_count = 1;
     
-    std::string fragment_glsl;
-    std::string vertex_glsl;
-    AttributeLocations attribute_locations;
+    Ptr<const SceGxmProgram> program;
+    std::string glsl;
     
     GLboolean color_mask_red = GL_TRUE;
     GLboolean color_mask_green = GL_TRUE;
@@ -216,9 +218,16 @@ namespace emu {
     static_assert(sizeof(SceGxmVertexAttribute) == 8, "Structure has been incorrectly packed.");
 }
 
+typedef std::map<GLuint, std::string> AttributeLocations;
+
 struct SceGxmVertexProgram {
     // TODO I think this is an opaque type.
     size_t reference_count = 1;
+    
+    Ptr<const SceGxmProgram> program;
+    std::string glsl;
+    
+    AttributeLocations attribute_locations;
     std::vector<SceGxmVertexStream> streams;
     std::vector<emu::SceGxmVertexAttribute> attributes;
 };
