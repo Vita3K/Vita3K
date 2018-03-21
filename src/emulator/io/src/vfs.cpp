@@ -44,8 +44,7 @@ namespace vfs {
          auto res = mount_map.find(dvc);
 
          if (res != mount_map.end()) {
-             LOG_ERROR("Trying to mount already-mounted {}", dvc);
-             return false;
+             LOG_WARN("Trying to mount already-mounted {}", dvc);
          }
 
          std::lock_guard<std::mutex> guard(mut);
