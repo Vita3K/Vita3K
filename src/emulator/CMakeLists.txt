@@ -43,6 +43,7 @@ add_subdirectory(module)
 add_subdirectory(modules)
 add_subdirectory(nids)
 add_subdirectory(util)
+add_subdirectory(threads)
 
 add_executable(
 emulator
@@ -60,7 +61,7 @@ pkg.h
 pkg.cpp
 )
 
-target_link_libraries(emulator PRIVATE cpu elfio host modules nids crypto-algorithms tiny-aes vita-toolchain util)
+target_link_libraries(emulator PRIVATE cpu elfio glutil host modules nids crypto-algorithms tiny-aes vita-toolchain util)
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
    target_link_libraries(emulator PRIVATE stdc++fs)

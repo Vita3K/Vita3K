@@ -23,7 +23,6 @@
 #include <kernel/functions.h>
 #include <kernel/thread_functions.h>
 
-#include <SDL_thread.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/io/stat.h>
@@ -31,32 +30,6 @@
 
 struct Semaphore {
 };
-
-struct ThreadParams {
-    HostState *host = nullptr;
-    SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-    SceSize arglen = 0;
-    Ptr<void> argp;
-    std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
-};
-
-static int SDLCALL thread_function(void *data) {
-    assert(data != nullptr);
-
-    const ThreadParams params = *static_cast<const ThreadParams *>(data);
-    SDL_SemPost(params.host_may_destroy_params.get());
-
-    const ThreadStatePtr thread = lock_and_find(params.thid, params.host->kernel.threads, params.host->kernel.mutex);
-    write_reg(*thread->cpu, 0, params.arglen);
-    write_reg(*thread->cpu, 1, params.argp.address());
-
-    const bool succeeded = run_thread(*thread);
-    assert(succeeded);
-
-    const uint32_t r0 = read_reg(*thread->cpu, 0);
-
-    return r0;
-}
 
 EXPORT(int, SceKernelStackChkGuard) {
     return unimplemented("SceKernelStackChkGuard");
@@ -789,25 +762,13 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
     if (cpuAffinityMask > 0x70000){
         return error("sceKernelCreateThread", SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
-
-    WaitingThreadState waiting;
-    waiting.name = name;
-
-    const SceUID thid = host.kernel.next_uid++;
-    const CallImport call_import = [&host, thid](uint32_t nid) {
-        ::call_import(host, nid, thid);
+    const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
+        ::call_import(host, nid, thread_id);
     };
 
-    const bool log_code = false;
-    const ThreadStatePtr thread = init_thread(entry.cast<const void>(), stackSize, log_code, host.mem, call_import);
-    if (!thread) {
-        return error("sceKernelCreateThread", SCE_KERNEL_ERROR_ERROR);
-    }
-
-    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
-    host.kernel.threads.emplace(thid, thread);
-    host.kernel.waiting_threads.emplace(thid, waiting);
-
+    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, stackSize, call_import, false);
+    if(thid<0)
+        return error("sceKernelCreateThread",thid);
     return thid;
 }
 
@@ -1091,42 +1052,11 @@ EXPORT(int, sceKernelStartModule) {
 }
 
 EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
-    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
-
-    const WaitingThreadStates::const_iterator waiting = host.kernel.waiting_threads.find(thid);
-    if (waiting == host.kernel.waiting_threads.end()) {
-        return error("sceKernelStartThread", SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    const int res = start_thread(host.kernel, thid, arglen, argp);
+    if(res<0){
+        return error("sceKernelStartThread",res);
     }
-
-    const ThreadStatePtr thread = find(thid, host.kernel.threads);
-    assert(thread);
-
-    ThreadParams params;
-    params.host = &host;
-    params.thid = thid;
-    params.arglen = arglen;
-    params.argp = argp;
-
-    const std::function<void(SDL_Thread *)> delete_thread = [thread](SDL_Thread *running_thread) {
-        {
-            const std::unique_lock<std::mutex> lock(thread->mutex);
-            thread->to_do = ThreadToDo::exit;
-        }
-        thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
-        SDL_WaitThread(running_thread, nullptr);
-    };
-
-    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, waiting->second.name.c_str(), &params), delete_thread);
-    if (!running_thread) {
-        return error("sceKernelStartThread", SCE_KERNEL_ERROR_THREAD_ERROR);
-    }
-
-    host.kernel.waiting_threads.erase(waiting);
-    host.kernel.running_threads.emplace(thid, running_thread);
-
-    SDL_SemWait(params.host_may_destroy_params.get());
-
-    return SCE_KERNEL_OK;
+    return res;
 }
 
 EXPORT(int, sceKernelStopModule) {

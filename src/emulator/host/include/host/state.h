@@ -23,10 +23,23 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
+#include <psp2/display.h>
 
 struct SDL_Window;
-
+typedef void *SDL_GLContext;
 typedef std::shared_ptr<SDL_Window> WindowPtr;
+typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
+
+struct DisplayState {
+    Ptr<const void> base;
+    uint32_t pitch = 0;
+    uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    std::mutex mutex;
+    std::condition_variable condvar;
+    bool abort = false;
+};
 
 struct HostState {
     std::string base_path;
@@ -36,6 +49,7 @@ struct HostState {
     size_t frame_count = 0;
     uint32_t t1 = 0;
     WindowPtr window;
+    GLContextPtr glcontext;
     MemState mem;
     CtrlState ctrl;
     KernelState kernel;
@@ -43,4 +57,5 @@ struct HostState {
     GxmState gxm;
     IOState io;
     NetState net;
+    DisplayState display;
 };

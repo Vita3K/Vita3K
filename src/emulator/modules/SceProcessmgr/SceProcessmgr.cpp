@@ -19,6 +19,13 @@
 
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/processmgr.h>
+#include <host/rtc.h>
+
+struct VitaTimeval
+{
+    uint32_t tv_sec;
+    uint32_t tv_usec;
+};
 
 EXPORT(int, sceKernelGetStderr) {
     return unimplemented("sceKernelGetStderr");
@@ -44,8 +51,18 @@ EXPORT(int, sceKernelLibcClock) {
     return unimplemented("sceKernelLibcClock");
 }
 
-EXPORT(int, sceKernelLibcGettimeofday) {
-    return unimplemented("sceKernelLibcGettimeofday");
+EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> tzAddr) {
+    if (timeAddr)
+    {
+        auto* tv = timeAddr.get(host.mem);
+
+        const auto ticks = rtc_get_ticks(host);
+
+        tv->tv_sec = ticks / VITA_CLOCKS_PER_SEC;
+        tv->tv_usec = ticks % VITA_CLOCKS_PER_SEC;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceKernelLibcGmtime_r) {
