@@ -25,12 +25,14 @@ add_subdirectory(capstone EXCLUDE_FROM_ALL)
 set(capstone_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/capstone/include" PARENT_SCOPE)
 
 add_library(crypto-algorithms STATIC crypto-algorithms/sha256.c crypto-algorithms/sha256.h
-                                     crypto-algorithms/aes.c crypto-algorithms/aes.h
                                      crypto-algorithms/base64.c crypto-algorithms/base64.h)
 
 target_include_directories(crypto-algorithms PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/crypto-algorithms")
 
 add_library(dirent INTERFACE)
+
+add_library(tiny-aes STATIC tiny-AES-c/aes.hpp tiny-AES-c/aes.c)
+target_include_directories(tiny-aes PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/tiny-AES-c")
 
 if(WIN32)
     target_include_directories(dirent INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/dirent/include")

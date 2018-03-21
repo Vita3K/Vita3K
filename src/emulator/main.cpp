@@ -16,6 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "vpk.h"
+#include "sfo.h"
+#include "pkg.h"
 
 #include <host/functions.h>
 #include <host/state.h>
@@ -24,8 +26,6 @@
 #include <util/string_convert.h>
 #include <util/log.h>
 #include <io/vfs.h>
-
-#include "sfo.h"
 
 #include <SDL.h>
 
@@ -49,6 +49,11 @@ enum ExitCode {
     RunThreadFailed
 };
 
+enum VitaFileType {
+	Vpk = 0,
+	Pkg = 1
+};
+
 static bool is_macos_process_arg(const char *arg) {
     return strncmp(arg, "-psn_", 5) == 0;
 }
@@ -65,6 +70,19 @@ static void term_sdl(const void *succeeded) {
     SDL_Quit();
 }
 
+VitaFileType file_type(const char* path) {
+	FILE* temp = fopen(path, "rb");
+
+	int magic;
+	fread(&magic, sizeof(int), 1, temp);
+	fclose(temp);
+
+	if (magic == 0x474b507f) {
+		return Pkg;
+	}
+
+	return Vpk;
+}
 
 int main(int argc, char *argv[]) {
 	init_logging();
@@ -108,17 +126,32 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    vfs::mount("vs0", fs::absolute(host.pref_path + "vs0").string());
-
     Ptr<const void> entry_point;
-    if (!load_vpk(entry_point, host.io, host.mem, host.game_title, host.title_id, path)) {
-        std::string message = "Failed to load \"";
-        message += wide_to_utf(path);
-        message += "\"";
-        message += "\nSee console output for details.";
-        error(message.c_str(), host.window.get());
-        return ModuleLoadFailed;
-    }
+
+	VitaFileType type = file_type(wide_to_utf(path).c_str());
+
+	if (type == Vpk) {
+		if (!load_vpk(entry_point, host.io, host.mem, host.game_title, host.title_id, path)) {
+			std::string message = "Failed to load \"";
+			message += wide_to_utf(path);
+			message += "\"";
+			message += "\nSee console output for details.";
+			error(message.c_str(), host.window.get());
+			return ModuleLoadFailed;
+		}
+	}
+	else {
+		if (!load_pkg(entry_point, host.io, host.mem, host.game_title, host.title_id, path)) {
+			std::string message = "Failed to load \"";
+			message += wide_to_utf(path);
+			message += "\"";
+			message += "\nSee console output for details.";
+			error(message.c_str(), host.window.get());
+			return ModuleLoadFailed;
+		}
+
+		return 0;
+	}
 
     // TODO This is hacky. Belongs in kernel?
     const SceUID main_thread_id = host.kernel.next_uid++;
