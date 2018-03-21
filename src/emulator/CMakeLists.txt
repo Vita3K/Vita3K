@@ -19,9 +19,13 @@ else()
 	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}")
 endif()
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_COMPILER_IS_GNUCXX)
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
+endif()
 
 add_subdirectory(audio)
 add_subdirectory(cpu)
@@ -51,9 +55,18 @@ relocation.cpp
 relocation.h
 vpk.cpp
 vpk.h
+sfo.h
+sfo.cpp
+pkg.h
+pkg.cpp
 )
 
-target_link_libraries(emulator PRIVATE cpu elfio glutil host modules nids vita-toolchain util)
+target_link_libraries(emulator PRIVATE cpu elfio glutil host modules nids crypto-algorithms tiny-aes vita-toolchain util)
+
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+   target_link_libraries(emulator PRIVATE stdc++fs)
+endif()
+
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

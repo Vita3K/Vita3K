@@ -276,7 +276,7 @@ EXPORT(int, sceIoDevctl) {
 }
 
 EXPORT(int, sceIoDopen, const char *dir) {
-    return open_dir(host.io, dir, host.pref_path.c_str());
+    return open_dir(host.io, dir);
 }
 
 EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
@@ -284,11 +284,11 @@ EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(file, stat, host.pref_path.c_str());
+    return stat_file(file, stat, host.io);
 }
 
-EXPORT(int, sceIoGetstatByFd) {
-    return unimplemented("sceIoGetstatByFd");
+EXPORT(int, sceIoGetstatByFd, SceUID uid, SceIoStat *stat) {
+    return stat_file_by_fd(uid, stat, host.io);
 }
 
 EXPORT(int, sceIoIoctl) {
@@ -304,7 +304,7 @@ EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
-    return create_dir(dir, mode, host.pref_path.c_str());
+    return create_dir(dir, mode);
 }
 
 EXPORT(int, sceIoLseekAsync) {
@@ -315,7 +315,7 @@ EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
     if (file == nullptr){
         return error("sceIoOpen", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
-    return open_file(host.io, file, flags, host.pref_path.c_str());
+    return open_file(host.io, file, flags);
 }
 
 EXPORT(int, sceIoOpenAsync) {
@@ -336,18 +336,22 @@ EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr){
         return error("sceIoRemove", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
-    return remove_file(path, host.pref_path.c_str());
+    return remove_file(path);
 }
 
-EXPORT(int, sceIoRename) {
-    return unimplemented("sceIoRename");
+EXPORT(int, sceIoRename, const char* oldName, const char* newName) {
+    if (oldName == nullptr || newName == nullptr){
+        return error("sceIoRemove", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+    }
+
+    return rename(newName, oldName);
 }
 
 EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr){
         return error("sceIoRmdir", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
-    return remove_dir(path, host.pref_path.c_str());
+    return remove_dir(path);
 }
 
 EXPORT(int, sceIoSync) {

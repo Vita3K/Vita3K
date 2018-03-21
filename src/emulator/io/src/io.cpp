@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <io/functions.h>
+#include <io/vfs.h>
 
 #include <psp2/io/dirent.h>
 #include <psp2/io/stat.h>
@@ -37,30 +38,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <iostream>
 #include <string>
-
-static ReadOnlyInMemFile open_zip(mz_zip_archive &zip, const char *entry_path) {
-    const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
-
-    if (index < 0) {
-        return ReadOnlyInMemFile();
-    }
-
-    const auto zip_file = mz_zip_reader_extract_iter_new(&zip, index, 0);
-
-    if (!zip_file) {
-        return ReadOnlyInMemFile();
-    }
-
-    ReadOnlyInMemFile res;
-    char *data = res.alloc_data(zip_file->file_stat.m_uncomp_size);
-
-    mz_zip_reader_extract_iter_read(zip_file, data, zip_file->file_stat.m_uncomp_size);
-    mz_zip_reader_extract_iter_free(zip_file);
-
-    return res;
-}
 
 static void delete_file(FILE *file) {
     if (file != nullptr) {
@@ -112,12 +92,15 @@ std::string translate_path(const char *part_name, const char *path, const char *
 }
 
 bool init(IOState &io, const char *pref_path) {
-    std::string ux0 = pref_path;
-    std::string uma0 = pref_path;
-    ux0 += "ux0";
-    uma0 += "uma0";
-    const std::string ux0_data = ux0 + "/data";
-    const std::string uma0_data = uma0 + "/data";
+    std::string ux0 = std::string(pref_path) + "ux0";
+    std::string uma0 = std::string(pref_path) + "uma0";
+
+    vfs::mount("ux0", ux0);
+    vfs::mount("uma0", uma0);
+
+
+    const std::string ux0_data = std::string(pref_path) + "ux0/data";
+    const std::string uma0_data = std::string(pref_path) + "uma0/data";
 
 #ifdef WIN32
     CreateDirectoryA(ux0.c_str(), nullptr);
@@ -135,7 +118,7 @@ bool init(IOState &io, const char *pref_path) {
     return true;
 }
 
-SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path) {
+SceUID open_file(IOState &io, const char *path, int flags) {
     // TODO Hacky magic numbers.
     assert((strcmp(path, "tty0:") == 0) || (strncmp(path, "app0:", 5) == 0) || (strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
 
@@ -153,49 +136,23 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         io.tty_files.emplace(fd, type);
 
         return fd;
-    } else if (strncmp(path, "app0:", 5) == 0) {
-        assert(flags == SCE_O_RDONLY);
+    } else if (strncmp(path, "app0:", 5) == 0 || strncmp(path, "ux0:", 4) == 0
+               || strncmp(path, "uma0:", 4)) {
+        const char* open_mode = translate_open_mode(flags);
 
-        if (!io.vpk) {
-            return -1;
+        if (strncmp(path, "app0:", 5) == 0) {
+            if (flags != SCE_O_RDONLY) {
+                return -1;
+            }
         }
 
-        int i = 5;
-        if (path[5] == '/')
-            i++;
-
-        const ReadOnlyInMemFile file = open_zip(*io.vpk, &path[i]);
-
-        const SceUID fd = io.next_fd++;
-        io.app_files.emplace(fd, file);
-
-        return fd;
-    } else if (strncmp(path, "ux0:", 4) == 0) {
-        std::string file_path = translate_path("ux0", path, pref_path);
-
-        const char *const open_mode = translate_open_mode(flags);
 #ifdef WIN32
-        const FilePtr file(_wfopen(utf_to_wide(file_path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
+        const FilePtr file(_wfopen(utf_to_wide(vfs::get(path)).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
 #else
-        const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
+        const FilePtr file(fopen(vfs::get(path).c_str(), open_mode), delete_file);
 #endif
-        if (!file) {
-            return -1;
-        }
 
-        const SceUID fd = io.next_fd++;
-        io.std_files.emplace(fd, file);
-
-        return fd;
-    } else if (strncmp(path, "uma0:", 5) == 0) {
-        std::string file_path = translate_path("uma0", path, pref_path);
-        const char *const open_mode = translate_open_mode(flags);
-#ifdef WIN32
-        const FilePtr file(_wfopen(utf_to_wide(file_path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
-#else
-        const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
-#endif
-        if (!file) {
+        if (!file.get()) {
             return -1;
         }
 
@@ -206,18 +163,14 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
     } else {
         return -1;
     }
+
+    return -1;
 }
 
 int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
     assert(data != nullptr);
     assert(fd >= 0);
     assert(size >= 0);
-
-    AppFiles::iterator app_file = io.app_files.find(fd);
-    if (app_file != io.app_files.end()) {
-        auto is = app_file->second.read(data, size);
-        return is;
-    }
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
@@ -265,11 +218,10 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io) {
     assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
 
     const StdFiles::const_iterator std_file = io.std_files.find(fd);
-    AppFiles::iterator app_file = io.app_files.find(fd);
 
-    assert(std_file != io.std_files.end() || app_file != io.app_files.end());
+    assert(std_file != io.std_files.end());
 
-    if (std_file == io.std_files.end() && app_file == io.app_files.end()) {
+    if (std_file == io.std_files.end()) {
         return -1;
     }
 
@@ -289,21 +241,14 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io) {
     int ret = 0;
     long pos = 0;
 
-    if (std_file != io.std_files.end()) {
-        ret = fseek(std_file->second.get(), offset, base);
-    } else {
-        ret = !(app_file->second.seek(offset, whence));
-    }
+    ret = fseek(std_file->second.get(), offset, base);
 
     if (ret != 0) {
         return -1;
     }
 
-    if (std_file != io.std_files.end()) {
-        pos = ftell(std_file->second.get());
-    } else {
-        pos = app_file->second.tell();
-    }
+    pos = ftell(std_file->second.get());
+
     return pos;
 }
 
@@ -312,23 +257,13 @@ void close_file(IOState &io, SceUID fd) {
 
     io.tty_files.erase(fd);
     io.std_files.erase(fd);
-    io.app_files.erase(fd);
 }
 
-int remove_file(const char *file, const char *pref_path) {
+int remove_file(const char *file) {
     // TODO Hacky magic numbers.
     assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
-    if (strncmp(file, "ux0:", 4) == 0) {
-        std::string file_path = translate_path("ux0", file, pref_path);
-
-#ifdef WIN32
-        DeleteFileA(file_path.c_str());
-        return 0;
-#else
-        return unlink(file_path.c_str());
-#endif
-    } else if (strncmp(file, "uma0:", 5) == 0) {
-        std::string file_path = translate_path("uma0", file, pref_path);
+    if ((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0)) {
+        std::string file_path = vfs::get(file);
 
 #ifdef WIN32
         DeleteFileA(file_path.c_str());
@@ -341,20 +276,12 @@ int remove_file(const char *file, const char *pref_path) {
     }
 }
 
-int create_dir(const char *dir, int mode, const char *pref_path) {
+int create_dir(const char *dir, int mode) {
     // TODO Hacky magic numbers.
     assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
-    if (strncmp(dir, "ux0:", 4) == 0) {
-        std::string dir_path = translate_path("ux0", dir, pref_path);
 
-#ifdef WIN32
-        CreateDirectoryA(dir_path.c_str(), nullptr);
-        return 0;
-#else
-        return mkdir(dir_path.c_str(), mode);
-#endif
-    } else if (strncmp(dir, "uma0:", 5) == 0) {
-        std::string dir_path = translate_path("uma0", dir, pref_path);
+    if ((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0)) {
+        std::string dir_path = vfs::get(dir);
 
 #ifdef WIN32
         CreateDirectoryA(dir_path.c_str(), nullptr);
@@ -367,20 +294,11 @@ int create_dir(const char *dir, int mode, const char *pref_path) {
     }
 }
 
-int remove_dir(const char *dir, const char *pref_path) {
+int remove_dir(const char *dir) {
     // TODO Hacky magic numbers.
     assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
-    if (strncmp(dir, "ux0:", 4) == 0) {
-        std::string dir_path = translate_path("ux0", dir, pref_path);
-
-#ifdef WIN32
-        RemoveDirectoryA(dir_path.c_str());
-        return 0;
-#else
-        return rmdir(dir_path.c_str());
-#endif
-    } else if (strncmp(dir, "uma0:", 5) == 0) {
-        std::string dir_path = translate_path("uma0", dir, pref_path);
+    if ((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0)) {
+        std::string dir_path = vfs::get(dir);
 
 #ifdef WIN32
         RemoveDirectoryA(dir_path.c_str());
@@ -393,22 +311,14 @@ int remove_dir(const char *dir, const char *pref_path) {
     }
 }
 
-int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
+int stat_file(const char *file, SceIoStat *statp, IOState &state) {
     // TODO Hacky magic numbers.
-    assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
+    assert((strncmp(file, "app0:", 5) == 0 || strncmp(file, "tty0:", 5) == 0 || strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
     assert(statp != NULL);
 
     memset(statp, '\0', sizeof(SceIoStat));
 
-    std::string file_path;
-
-    if (strncmp(file, "ux0:", 4) == 0) {
-        file_path = translate_path("ux0", file, pref_path);
-    } else if (strncmp(file, "uma0:", 5) == 0) {
-        file_path = translate_path("uma0", file, pref_path);
-    } else {
-        return -1;
-    }
+    std::string file_path = vfs::get(file);
 
 #ifdef WIN32
     WIN32_FIND_DATAW find_data;
@@ -442,16 +352,93 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
     return 0;
 }
 
-int open_dir(IOState &io, const char *path, const char *pref_path) {
+int stat_file_by_fd(SceUID uid, SceIoStat *statp, IOState &state) {
+    const StdFiles::const_iterator stdFile = state.std_files.find(uid);
+    const TtyFiles::const_iterator ttyFile = state.tty_files.find(uid);
+
+    bool valid = (stdFile != state.std_files.end()) ||
+                 (ttyFile != state.tty_files.end());
+
+    assert(valid);
+
+    if (!valid) {
+        return -1;
+    }
+
+    if (stdFile != state.std_files.end()){
+#ifndef WIN32
+        int physicalFD = fileno(stdFile->second.get());
+
+        if (physicalFD == -1) {
+            return -1;
+        }
+
+        struct stat sb;
+        if (fstat(physicalFD, &sb) < 0) {
+            return -1;
+        }
+
+        if (S_ISREG(sb.st_mode)) {
+            statp->st_mode = SCE_S_IFREG;
+        } else if (S_ISDIR(sb.st_mode)) {
+            statp->st_mode = SCE_S_IFDIR;
+        }
+
+        statp->st_size = sb.st_size;
+
+        return 0;
+#else
+        int physicalFD = _fileno(stdFile->second.get());
+        struct _stat sb;
+
+        if (_fstat(physicalFD, &sb) < 0) {
+            return -1;
+        }
+
+        if (S_ISREG(sb.st_mode)) {
+            statp->st_mode = SCE_S_IFREG;
+        } else if (S_ISDIR(sb.st_mode)) {
+            statp->st_mode = SCE_S_IFDIR;
+        }
+
+        statp->st_size = sb.st_size;
+
+        return 0;
+#endif
+    }
+
+    if (ttyFile != state.tty_files.end()) {
+        statp->st_size = 0;
+        statp->st_mode = S_IFIFO;
+
+        return 0;
+    }
+
+    return 0;
+}
+
+int rename_file(const char *lastName, const char *newName) {
+    assert((strncmp(lastName, "ux0:", 4) == 0) || (strncmp(lastName, "uma0:", 5) == 0)
+           && ((strncmp(newName, "ux0:", 4) == 0) || (strncmp(newName, "umx0:", 5) == 0)));
+
+    if (((strncmp(lastName, "ux0:", 4) == 0) || (strncmp(lastName, "uma0:", 5) == 0))
+            && ((strncmp(newName, "ux0:", 4) == 0) || (strncmp(newName, "umx0:", 5) == 0))) {
+         std::rename(vfs::get(lastName).c_str(), vfs::get(newName).c_str());
+
+         return 0;
+    }
+
+    return -1;
+}
+
+int open_dir(IOState &io, const char *path) {
     // TODO Hacky magic numbers.
-    assert((strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
+    assert((strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0 || (strncmp(path, "app0:", 5) == 0)));
 
     std::string dir_path;
 
-    if (strncmp(path, "ux0:", 4) == 0) {
-        dir_path = translate_path("ux0", path, pref_path);
-    } else if (strncmp(path, "uma0:", 5) == 0) {
-        dir_path = translate_path("uma0", path, pref_path);
+    if ((strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0) || (strncmp(path, "app0:", 5) == 0)) {
+        dir_path = vfs::get(path);
     } else {
         return -1;
     }

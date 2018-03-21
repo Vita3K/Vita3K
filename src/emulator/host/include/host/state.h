@@ -44,6 +44,8 @@ struct DisplayState {
 struct HostState {
     std::string base_path;
     std::string pref_path;
+    std::string game_title;
+    std::string title_id;
     size_t frame_count = 0;
     uint32_t t1 = 0;
     WindowPtr window;

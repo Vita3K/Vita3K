@@ -31,3 +31,6 @@
 [submodule "src/external/crypto-algorithms"]
 	path = src/external/crypto-algorithms
 	url = https://github.com/B-Con/crypto-algorithms.git
+[submodule "src/external/tiny-AES-c"]
+	path = src/external/tiny-AES-c
+	url = https://github.com/kokke/tiny-AES-c/
