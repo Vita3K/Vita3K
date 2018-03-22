@@ -562,36 +562,65 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
     return GL_ONE;
 }
 
+namespace texture {
+
+SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src) {
+    return static_cast<SceGxmTextureBaseFormat>(src & 0xFF000000);
+}
+
+std::uint32_t get_swizzle(SceGxmTextureFormat src) {
+    return static_cast<SceGxmTextureBaseFormat>(src & 0x0000F000);
+}
+
+bool is_paletted_format(SceGxmTextureFormat src) {
+    const auto base_format = get_base_format(src);
+
+    return
+        base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8 ||
+        base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P4;
+}
+
 GLenum translate_internal_format(SceGxmTextureFormat src) {
     GXM_PROFILE(__FUNCTION__);
     
+    if (is_paletted_format(src)) {
+        return GL_RGBA;
+    }
+
     switch (src) {
-        case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-            return GL_RGBA;
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
             return GL_RGBA8;
         case SCE_GXM_TEXTURE_FORMAT_U8_R111:
             return GL_INTENSITY8;
         default:
-            return GL_RGBA8; // TODO Warn.
+        {
+            LOG_WARN("Unsupported internal texture format translated: {:#08X}", src);
+            return GL_RGBA8;
+        }
     }
 }
 
 GLenum translate_format(SceGxmTextureFormat src) {
     GXM_PROFILE(__FUNCTION__);
     
+    if (is_paletted_format(src)) {
+        return GL_COLOR_INDEX;
+    }
+
     switch (src) {
-        case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-            return GL_COLOR_INDEX;
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
             return GL_RGBA;
         case SCE_GXM_TEXTURE_FORMAT_U8_R111:
             return GL_RED;
         default:
-            return GL_RGBA; // TODO Warn.
+        {
+            LOG_WARN("Unsupported texture format translated: {:#08X}", src);
+            return GL_RGBA;
+        }
     }
 }
 
+} // namespace texture
 GLenum translate_primitive(SceGxmPrimitiveType primType){
     GXM_PROFILE(__FUNCTION__);
     
