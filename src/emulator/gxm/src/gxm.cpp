@@ -17,19 +17,19 @@
 static std::string load_shader(const char *hash, const char *base_path) {
     std::ostringstream path;
     path << base_path << "shaders/" << hash << ".glsl";
-    
+
     std::ifstream is(path.str());
     if (is.fail()) {
         return std::string();
     }
-    
+
     is.seekg(0, std::ios::end);
     const size_t size = is.tellg();
     is.seekg(0);
-    
+
     std::string source(size, ' ');
     is.read(&source.front(), size);
-    
+
     return source;
 }
 
@@ -48,7 +48,7 @@ static const char *scalar_type(SceGxmParameterType type) {
         case SCE_GXM_PARAMETER_TYPE_U32: return "uint";
         case SCE_GXM_PARAMETER_TYPE_S32: return "int";
     }
-    
+
     return "?";
 }
 
@@ -58,13 +58,13 @@ static const char *vector_prefix(SceGxmParameterType type) {
         case SCE_GXM_PARAMETER_TYPE_U32: return "u";
         case SCE_GXM_PARAMETER_TYPE_S32: return "i";
     }
-    
+
     return "?";
 }
 
 static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
     assert(parameter.component_count == 1);
-    
+
     glsl << scalar_type(static_cast<SceGxmParameterType>(parameter.type)) << " " << parameter_name(parameter);
     if (parameter.array_size != 1) {
         glsl << "[" << parameter.array_size << "]";
@@ -74,7 +74,7 @@ static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter 
 static void output_vector_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
     assert(parameter.component_count >= 2);
     assert(parameter.component_count <= 4);
-    
+
     glsl << vector_prefix(static_cast<SceGxmParameterType>(parameter.type)) << "vec" << parameter.component_count << " " << parameter_name(parameter);
     if (parameter.array_size != 1) {
         glsl << "[" << parameter.array_size << "]";
@@ -85,7 +85,7 @@ static void output_matrix_decl(std::ostream &glsl, const SceGxmProgramParameter 
     assert(parameter.component_count >= 2);
     assert(parameter.array_size >= 2);
     assert(parameter.array_size <= 4);
-    
+
     glsl << vector_prefix(static_cast<SceGxmParameterType>(parameter.type)) << "mat";
     if (parameter.component_count == parameter.array_size) {
         glsl << parameter.component_count;
@@ -112,7 +112,7 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
     if (program.parameter_count > 0) {
         glsl << "\n";
     }
-    
+
     const SceGxmProgramParameter *const parameters = program_parameters(program);
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
@@ -144,7 +144,7 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
 
 static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     std::ostringstream glsl;
     glsl << "// Fragment shader.\n";
     glsl << "#version 120\n";
@@ -153,13 +153,13 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     glsl << "void main() {\n";
     glsl << "    gl_FragColor = vec4(1, 0, 1, 1);\n";
     glsl << "}\n";
-    
+
     return glsl.str();
 }
 
 static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     std::ostringstream glsl;
     glsl << "// Vertex shader.\n";
     glsl << "#version 120\n";
@@ -168,7 +168,7 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     glsl << "void main() {\n";
     glsl << "    gl_Position = vec4(0, 0, 0, 1);\n";
     glsl << "}\n";
-    
+
     return glsl.str();
 }
 
@@ -181,7 +181,7 @@ static void dump_missing_shader(const char *hash, const SceGxmProgram &program, 
         glsl_file << source;
         glsl_file.close();
     }
-    
+
     // Dump missing shader binary.
     std::ostringstream gxp_path;
     gxp_path << hash << ".gxp";
@@ -194,41 +194,41 @@ static void dump_missing_shader(const char *hash, const SceGxmProgram &program, 
 
 static SharedGLObject compile_glsl(GLenum type, const GLchar *source) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     const SharedGLObject shader = std::make_shared<GLObject>();
     if (!shader->init(glCreateShader(type), glDeleteShader)) {
         return SharedGLObject();
     }
-    
+
     const GLint length = static_cast<GLint>(strlen(source));
     glShaderSource(shader->get(), 1, &source, &length);
-    
+
     glCompileShader(shader->get());
-    
+
     GLint log_length = 0;
     glGetShaderiv(shader->get(), GL_INFO_LOG_LENGTH, &log_length);
-    
+
     if (log_length > 0) {
         std::vector<GLchar> log;
         log.resize(log_length);
         glGetShaderInfoLog(shader->get(), log_length, nullptr, log.data());
-        
+
         LOG_ERROR("{}", log.data());
     }
-    
+
     GLboolean is_compiled = GL_FALSE;
     glGetShaderiv(shader->get(), GL_COMPILE_STATUS, &is_compiled);
     assert(is_compiled != GL_FALSE);
     if (!is_compiled) {
         return SharedGLObject();
     }
-    
+
     return shader;
 }
 
 static void bind_attribute_locations(GLuint gl_program, const SceGxmVertexProgram &program) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     for (const AttributeLocations::value_type &binding : program.attribute_locations) {
         glBindAttribLocation(gl_program, binding.first, binding.second.c_str());
     }
@@ -263,7 +263,7 @@ void set_uniform(GLint location, size_t component_count, GLsizei array_size, con
                     break;
             }
             break;
-            
+
         default:
             LOG_WARN("Unhandled uniform component count {}.", component_count);
             break;
@@ -272,28 +272,28 @@ void set_uniform(GLint location, size_t component_count, GLsizei array_size, con
 
 static void set_uniforms(GLuint gl_program, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     const SceGxmProgramParameter *const parameters = program_parameters(gxm_program);
     for (size_t i = 0; i < gxm_program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
         if (parameter.category != SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
             continue;
         }
-        
+
         const char *const name = parameter_name(parameter);
         const GLint location = glGetUniformLocation(gl_program, name);
         if (location < 0) {
             LOG_WARN("Uniform parameter {} not found in current OpenGL program.", name);
             continue;
         }
-        
+
         const SceGxmParameterType type = static_cast<SceGxmParameterType>(parameter.type);
         const Ptr<const void> uniform_buffer = uniform_buffers[parameter.container_index];
         if (!uniform_buffer) {
             LOG_WARN("Uniform buffer {} not set for parameter {}.", parameter.container_index, name);
             continue;
         }
-        
+
         const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
         const GLfloat *const src = reinterpret_cast<const GLfloat *>(base + parameter.resource_index * 4); // TODO What offset?
         switch (type) {
@@ -338,16 +338,16 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
     if (cached != shader_patcher.fragment_glsl_cache.end()) {
         return cached->second;
     }
-    
+
     const std::array<char, 65> hash_text = hex(hash_bytes);
     std::string source = load_shader(hash_text.data(), base_path);
     if (source.empty()) {
         source = generate_fragment_glsl(fragment_program);
         dump_missing_shader(hash_text.data(), fragment_program, source.c_str());
     }
-    
+
     shader_patcher.fragment_glsl_cache.emplace(hash_bytes, source);
-    
+
     return source;
 }
 
@@ -357,22 +357,22 @@ std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmPro
     if (cached != shader_patcher.vertex_glsl_cache.end()) {
         return cached->second;
     }
-    
+
     const std::array<char, 65> hash_text = hex(hash_bytes);
     std::string source = load_shader(hash_text.data(), base_path);
     if (source.empty()) {
         source = generate_vertex_glsl(vertex_program);
         dump_missing_shader(hash_text.data(), vertex_program, source.c_str());
     }
-    
+
     shader_patcher.vertex_glsl_cache.emplace(hash_bytes, source);
-    
+
     return source;
 }
 
 AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
     AttributeLocations locations;
-    
+
     const SceGxmProgramParameter *const parameters = program_parameters(vertex_program);
     for (uint32_t i = 0; i < vertex_program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
@@ -380,16 +380,16 @@ AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
             locations.emplace(parameter.resource_index, parameter_name(parameter));
         }
     }
-    
+
     return locations;
 }
 
 SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     assert(context.fragment_program);
     assert(context.vertex_program);
-    
+
     const SceGxmFragmentProgram &fragment_program = *context.fragment_program.get(mem);
     const SceGxmVertexProgram &vertex_program = *context.vertex_program.get(mem);
     const ProgramGLSLs glsls(fragment_program.glsl, vertex_program.glsl);
@@ -397,58 +397,58 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
     if (cached != context.program_cache.end()) {
         return cached->second;
     }
-    
+
     const SharedGLObject fragment_shader = compile_glsl(GL_FRAGMENT_SHADER, fragment_program.glsl.c_str());
     if (!fragment_shader) {
         return SharedGLObject();
     }
-    
+
     const SharedGLObject vertex_shader = compile_glsl(GL_VERTEX_SHADER, vertex_program.glsl.c_str());
     if (!vertex_shader) {
         return SharedGLObject();
     }
-    
+
     const SharedGLObject program = std::make_shared<GLObject>();
     if (!program->init(glCreateProgram(), &glDeleteProgram)) {
         return SharedGLObject();
     }
-    
+
     glAttachShader(program->get(), fragment_shader->get());
     glAttachShader(program->get(), vertex_shader->get());
-    
+
     bind_attribute_locations(program->get(), vertex_program);
-    
+
     glLinkProgram(program->get());
-    
+
     GLint log_length = 0;
     glGetProgramiv(program->get(), GL_INFO_LOG_LENGTH, &log_length);
-    
+
     if (log_length > 0) {
         std::vector<GLchar> log;
         log.resize(log_length);
         glGetProgramInfoLog(program->get(), log_length, nullptr, log.data());
-        
+
         LOG_ERROR("{}", log.data());
     }
-    
+
     GLboolean is_linked = GL_FALSE;
     glGetProgramiv(program->get(), GL_LINK_STATUS, &is_linked);
     assert(is_linked != GL_FALSE);
     if (is_linked == GL_FALSE) {
         return SharedGLObject();
     }
-    
+
     glDetachShader(program->get(), fragment_shader->get());
     glDetachShader(program->get(), vertex_shader->get());
-    
+
     context.program_cache.emplace(glsls, program);
-    
+
     return program;
 }
 
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     switch (format) {
         case SCE_GXM_ATTRIBUTE_FORMAT_U8:
         case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
@@ -466,7 +466,7 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
             return GL_HALF_FLOAT;
         case SCE_GXM_ATTRIBUTE_FORMAT_F32:
             return GL_FLOAT;
-            
+
         default:
             assert(!"Unhandled format.");
             return GL_UNSIGNED_BYTE;
@@ -475,7 +475,7 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
 
 bool attribute_format_normalised(SceGxmAttributeFormat format) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     switch (format) {
         case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
         case SCE_GXM_ATTRIBUTE_FORMAT_S8N:
@@ -489,22 +489,22 @@ bool attribute_format_normalised(SceGxmAttributeFormat format) {
 
 void set_uniforms(GLuint program, const SceGxmContext &context, const MemState &mem) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     assert(context.fragment_program);
     assert(context.fragment_program.get(mem)->program);
     assert(context.vertex_program);
     assert(context.vertex_program.get(mem)->program);
-    
+
     set_uniforms(program, context.fragment_uniform_buffers, *context.fragment_program.get(mem)->program.get(mem), mem);
     set_uniforms(program, context.vertex_uniform_buffers, *context.vertex_program.get(mem)->program.get(mem), mem);
 }
 
 void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     uint32_t *row1 = &pixels[0];
     uint32_t *row2 = &pixels[(height - 1) * stride_in_pixels];
-    
+
     while (row1 < row2) {
         std::swap_ranges(&row1[0], &row1[width], &row2[0]);
         row1 += stride_in_pixels;
@@ -514,7 +514,7 @@ void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t strid
 
 GLenum translate_blend_func(SceGxmBlendFunc src) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     switch (src) {
         case SCE_GXM_BLEND_FUNC_NONE:
             return GL_FUNC_ADD; // TODO Disable blending? Warn?
@@ -525,13 +525,13 @@ GLenum translate_blend_func(SceGxmBlendFunc src) {
         case SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT:
             return GL_FUNC_REVERSE_SUBTRACT;
     }
-    
+
     return GL_FUNC_ADD;
 }
 
 GLenum translate_blend_factor(SceGxmBlendFactor src) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     switch (src) {
         case SCE_GXM_BLEND_FACTOR_ZERO:
             return GL_ZERO;
@@ -558,7 +558,7 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
         case SCE_GXM_BLEND_FACTOR_DST_ALPHA_SATURATE:
             return GL_DST_ALPHA; // TODO Not supported.
     }
-    
+
     return GL_ONE;
 }
 
@@ -582,7 +582,7 @@ bool is_paletted_format(SceGxmTextureFormat src) {
 
 GLenum translate_internal_format(SceGxmTextureFormat src) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     if (is_paletted_format(src)) {
         return GL_RGBA;
     }
@@ -602,7 +602,7 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
 
 GLenum translate_format(SceGxmTextureFormat src) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     if (is_paletted_format(src)) {
         return GL_COLOR_INDEX;
     }
@@ -623,7 +623,7 @@ GLenum translate_format(SceGxmTextureFormat src) {
 } // namespace texture
 GLenum translate_primitive(SceGxmPrimitiveType primType){
     GXM_PROFILE(__FUNCTION__);
-    
+
     switch (primType){
         case SCE_GXM_PRIMITIVE_TRIANGLES:
             return GL_TRIANGLES;

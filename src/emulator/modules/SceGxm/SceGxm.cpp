@@ -386,10 +386,10 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     // TODO Use some kind of caching to avoid setting every draw call?
     const SharedGLObject program = get_program(*context, host.mem);
     glUseProgram(program->get());
-    
+
     // TODO Use some kind of caching to avoid setting every draw call?
     set_uniforms(program->get(), *context, host.mem);
-    
+
     const GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, indexData);
@@ -868,7 +868,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
 
     *uniformBuffer = context->params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->fragment_ring_buffer_used);
     context->fragment_ring_buffer_used = next_used;
-    
+
     context->fragment_uniform_buffers[14] = *uniformBuffer;
 
     return 0;
@@ -891,7 +891,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
 
     *uniformBuffer = context->params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->vertex_ring_buffer_used);
     context->vertex_ring_buffer_used = next_used;
-    
+
     context->vertex_uniform_buffers[14] = *uniformBuffer;
 
     return 0;
@@ -992,7 +992,7 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     assert(fragmentProgram);
 
     context->fragment_program = fragmentProgram;
-    
+
     const SceGxmFragmentProgram &fragment_program = *fragmentProgram.get(host.mem);
     glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
     if (fragment_program.blend_enabled) {
@@ -1247,18 +1247,18 @@ EXPORT(int, sceGxmSetYuvProfile) {
 EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmFragmentProgram *fragmentProgram) {
     assert(shaderPatcher != nullptr);
     assert(fragmentProgram != nullptr);
-    
+
     ++fragmentProgram->reference_count;
-    
+
     return 0;
 }
 
 EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmVertexProgram *vertexProgram) {
     assert(shaderPatcher != nullptr);
     assert(vertexProgram != nullptr);
-    
+
     ++vertexProgram->reference_count;
-    
+
     return 0;
 }
 
@@ -1283,7 +1283,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
     assert(vertexProgram);
     assert(fragmentProgram != nullptr);
-    
+
     static const emu::SceGxmBlendInfo default_blend_info = {
         SCE_GXM_COLOR_MASK_ALL,
         SCE_GXM_BLEND_FUNC_NONE,
@@ -1304,13 +1304,13 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         *fragmentProgram = cached->second;
         return 0;
     }
-    
+
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
-    
+
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = programId->program;
     fp->glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
@@ -1331,7 +1331,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
 
     shaderPatcher->fragment_program_cache.emplace(key, *fragmentProgram);
-    
+
     return 0;
 }
 
