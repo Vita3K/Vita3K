@@ -156,7 +156,6 @@ struct SceGxmRenderTarget {
 struct FragmentProgramCacheKey {
     SceGxmRegisteredProgram fragment_program;
     emu::SceGxmBlendInfo blend_info;
-    Ptr<const SceGxmProgram> vertex_program;
 };
 
 typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
