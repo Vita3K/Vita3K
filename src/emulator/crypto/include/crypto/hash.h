@@ -20,8 +20,9 @@
 #include <array>
 
 using Sha256Hash = std::array<uint8_t, 32>;
+class ICryptoOperations;
 
-Sha256Hash sha256(const void *data, size_t size);
+Sha256Hash sha256(const void *data, size_t size, ICryptoOperations* cryptop);
 
 template <size_t N>
 constexpr std::array<char, (N * 2) + 1> hex(const std::array<uint8_t, N> &hash) {

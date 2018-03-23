@@ -16,17 +16,15 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <crypto/hash.h>
+#include <crypto/crypto_operations_interface.h>
+#include <crypto/libtomcrypt_crypto_operations.h>
 
-extern "C" {
-#include <sha256.h>
-}
+#include <cassert>
 
-Sha256Hash sha256(const void *data, size_t size) {
+Sha256Hash sha256(const void *data, size_t size, ICryptoOperations* cryptop) {
     Sha256Hash hash;
-    SHA256_CTX sha_ctx = {};
-    sha256_init(&sha_ctx);
-    sha256_update(&sha_ctx, static_cast<const uint8_t *>(data), size);
-    sha256_final(&sha_ctx, hash.data());
-    
+
+    cryptop->sha256(static_cast<const unsigned char*>(data), hash.data(), size);
+
     return hash;
 }

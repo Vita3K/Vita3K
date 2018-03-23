@@ -24,11 +24,13 @@
 #include <kernel/state.h>
 #include <net/state.h>
 #include <psp2/display.h>
+#include <crypto/crypto_operations_interface.h>
 
 struct SDL_Window;
 typedef void *SDL_GLContext;
 typedef std::shared_ptr<SDL_Window> WindowPtr;
 typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
+typedef std::shared_ptr<ICryptoOperations> CryptoOperationsSingleton;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -56,4 +58,6 @@ struct HostState {
     IOState io;
     NetState net;
     DisplayState display;
+
+    CryptoOperationsSingleton cryptop;
 };

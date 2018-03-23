@@ -28,6 +28,3 @@
 [submodule "src/external/dirent"]
 	path = src/external/dirent
 	url = https://github.com/tronkko/dirent
-[submodule "src/external/crypto-algorithms"]
-	path = src/external/crypto-algorithms
-	url = https://github.com/B-Con/crypto-algorithms.git

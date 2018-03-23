@@ -1,5 +1,6 @@
 #include <gxm/functions.h>
 
+#include <crypto/crypto_operations_interface.h>
 #include <crypto/hash.h>
 #include <gxm/types.h>
 #include <util/log.h>
@@ -332,8 +333,11 @@ void after_callback(const glbinding::FunctionCall &fn) {
     }
 }
 
-std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path) {
-    const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
+std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher,
+                              const SceGxmProgram &fragment_program,
+                              const char *base_path,
+                              ICryptoOperations* cryptop) {
+    const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size, cryptop);
     const GLSLCache::const_iterator cached = shader_patcher.fragment_glsl_cache.find(hash_bytes);
     if (cached != shader_patcher.fragment_glsl_cache.end()) {
         return cached->second;
@@ -351,8 +355,11 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
     return source;
 }
 
-std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path) {
-    const Sha256Hash hash_bytes = sha256(&vertex_program, vertex_program.size);
+std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher,
+                            const SceGxmProgram &vertex_program,
+                            const char *base_path,
+                            ICryptoOperations* cryptop) {
+    const Sha256Hash hash_bytes = sha256(&vertex_program, vertex_program.size, cryptop);
     const GLSLCache::const_iterator cached = shader_patcher.vertex_glsl_cache.find(hash_bytes);
     if (cached != shader_patcher.vertex_glsl_cache.end()) {
         return cached->second;
