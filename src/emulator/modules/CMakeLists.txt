@@ -29,20 +29,16 @@ add_library(modules STATIC
 	SceDTrace/SceDTrace.cpp SceDTrace/SceDTrace.h
 	SceDbg/SceDbg.cpp SceDbg/SceDbg.h
 	SceDeci4p/SceDeci4pUserp.cpp SceDeci4p/SceDeci4pUserp.h
-	SceDeflt/SceDeflt.cpp SceDeflt/SceDeflt.h
 	SceDisplay/SceDisplay.cpp SceDisplay/SceDisplay.h
 	SceDisplay/SceDisplayUser.cpp SceDisplay/SceDisplayUser.h
 	SceFace/SceFace.cpp SceFace/SceFace.h
 	SceFiber/SceFiber.cpp SceFiber/SceFiber.h
 	SceFios2/SceFios2.cpp SceFios2/SceFios2.h
-	SceFpu/SceFpu.cpp SceFpu/SceFpu.h
 	SceGameUpdate/SceGameUpdate.cpp SceGameUpdate/SceGameUpdate.h
 	SceGpuEs4/SceGpuEs4ForUser.cpp SceGpuEs4/SceGpuEs4ForUser.h
 	SceGxm/SceGxm.cpp SceGxm/SceGxm.h
 	SceHandwriting/SceHandwriting.cpp SceHandwriting/SceHandwriting.h
-	SceHeap/SceHeap.cpp SceHeap/SceHeap.h
 	SceHid/SceHid.cpp SceHid/SceHid.h
-	SceHmac/SceHmac.cpp SceHmac/SceHmac.h
 	SceHttp/SceHttp.cpp SceHttp/SceHttp.h
 	SceIme/SceIme.cpp SceIme/SceIme.h
 	SceIofilemgr/SceIofilemgr.cpp SceIofilemgr/SceIofilemgr.h
@@ -67,10 +63,8 @@ add_library(modules STATIC
 	SceLocation/SceLibLocation.cpp SceLocation/SceLibLocation.h
 	SceLocationExtension/SceLibLocationExtension.cpp SceLocationExtension/SceLibLocationExtension.h
 	SceLsdb/SceLsdb.cpp SceLsdb/SceLsdb.h
-	SceMd5/SceMd5.cpp SceMd5/SceMd5.h
 	SceMotion/SceMotion.cpp SceMotion/SceMotion.h
 	SceMotionDev/SceMotionDev.cpp SceMotionDev/SceMotionDev.h
-	SceMt19937/SceMt19937.cpp SceMt19937/SceMt19937.h
 	SceMtpIfDriver/SceMtpIf.cpp SceMtpIfDriver/SceMtpIf.h
 	SceMusicExport/SceMusicExport.cpp SceMusicExport/SceMusicExport.h
 	SceNearDialogUtil/SceNearDialogUtil.cpp SceNearDialogUtil/SceNearDialogUtil.h
@@ -117,23 +111,6 @@ add_library(modules STATIC
 	SceSas/SceSas.cpp SceSas/SceSas.h
 	SceSblUpdateMgr/SceSblSsUpdateMgr.cpp SceSblUpdateMgr/SceSblSsUpdateMgr.h
 	SceScreenShot/SceScreenShot.cpp SceScreenShot/SceScreenShot.h
-	SceSfmt11213/SceSfmt11213.cpp SceSfmt11213/SceSfmt11213.h
-	SceSfmt1279/SceSfmt1279.cpp SceSfmt1279/SceSfmt1279.h
-	SceSfmt132049/SceSfmt132049.cpp SceSfmt132049/SceSfmt132049.h
-	SceSfmt19937/SceSfmt19937.cpp SceSfmt19937/SceSfmt19937.h
-	SceSfmt216091/SceSfmt216091.cpp SceSfmt216091/SceSfmt216091.h
-	SceSfmt2281/SceSfmt2281.cpp SceSfmt2281/SceSfmt2281.h
-	SceSfmt4253/SceSfmt4253.cpp SceSfmt4253/SceSfmt4253.h
-	SceSfmt44497/SceSfmt44497.cpp SceSfmt44497/SceSfmt44497.h
-	SceSfmt607/SceSfmt607.cpp SceSfmt607/SceSfmt607.h
-	SceSfmt86243/SceSfmt86243.cpp SceSfmt86243/SceSfmt86243.h
-	SceSha0/SceSha0.cpp SceSha0/SceSha0.h
-	SceSha1/SceSha1.cpp SceSha1/SceSha1.h
-	SceSha224/SceSha224.cpp SceSha224/SceSha224.h
-	SceSha256/SceSha256.cpp SceSha256/SceSha256.h
-	SceSha384/SceSha384.cpp SceSha384/SceSha384.h
-	SceSha512/SceSha512.cpp SceSha512/SceSha512.h
-	SceSha512t/SceSha512t.cpp SceSha512t/SceSha512t.h
 	SceShellSvc/SceShellUtil.cpp SceShellSvc/SceShellUtil.h
 	SceShutterSound/SceShutterSound.cpp SceShutterSound/SceShutterSound.h
 	SceSmart/SceSmart.cpp SceSmart/SceSmart.h

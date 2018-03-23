@@ -1052,23 +1052,6 @@ NID(sceKernelDeci4pOpen, 0x28578FE8)
 NID(sceKernelDeci4pRead, 0x971E1C66)
 NID(sceKernelDeci4pRegisterCallback, 0x73371F35)
 NID(sceKernelDeci4pWrite, 0xCDA3AAAC)
-// Module "SceDeflt"
-// Library "SceDeflt"
-NID(sceDeflateDecompress, 0x110D5050)
-NID(sceDeflateDecompressPartial, 0x25B8C7A2)
-NID(sceGzipCrc32, 0xF720A8F6)
-NID(sceGzipDecompress, 0xE3CB51A3)
-NID(sceGzipGetComment, 0xBABCF5CF)
-NID(sceGzipGetCompressedData, 0xE1844802)
-NID(sceGzipGetInfo, 0x1B8E5862)
-NID(sceGzipGetName, 0xAEBAABE6)
-NID(sceGzipIsValid, 0xDEDADC31)
-NID(sceZipGetInfo, 0xDA404FE4)
-NID(sceZlibAdler32, 0xCD83A464)
-NID(sceZlibDecompress, 0xE38F754D)
-NID(sceZlibGetCompressedData, 0xE680A65A)
-NID(sceZlibGetInfo, 0x4C0A685D)
-NID(sceZlibIsValid, 0x14A0698D)
 // Module "SceDisplay"
 // Library "SceDisplay"
 NID(_sceDisplayGetFrameBuf, 0xA753B0CA)
@@ -1313,22 +1296,6 @@ NID(sceFiosTimeIntervalFromNanoseconds, 0x35A82737)
 NID(sceFiosTimeIntervalToNanoseconds, 0x397BF626)
 NID(sceFiosUpdateParameters, 0x1915052A)
 NID(sceFiosVprintf, 0x5BA4BD6D)
-// Module "SceFpu"
-// Library "SceFpu"
-NID(sceFpuAcosf, 0x64A8F9FE)
-NID(sceFpuAsinf, 0x4D1AE0F1)
-NID(sceFpuAtan2f, 0xC8A4989B)
-NID(sceFpuAtanf, 0x53FF26AF)
-NID(sceFpuCosf, 0xDB66BA89)
-NID(sceFpuExp10f, 0x35652326)
-NID(sceFpuExp2f, 0xA3A88AD0)
-NID(sceFpuExpf, 0xEFA16C6E)
-NID(sceFpuLog10f, 0xABBB6168)
-NID(sceFpuLog2f, 0x19881EC8)
-NID(sceFpuLogf, 0x936F0D27)
-NID(sceFpuPowf, 0xDF622E56)
-NID(sceFpuSinf, 0x33E1AC14)
-NID(sceFpuTanf, 0x6FBDA1C9)
 // Module "SceGameUpdate"
 // Library "SceGameUpdate"
 NID(sceGameUpdateAbort, 0x14116007)
@@ -1620,54 +1587,12 @@ NID(sceHandwritingRegisterSet, 0x79CA5D3F)
 NID(sceHandwritingRegisterTerm, 0x6ABBD675)
 NID(sceHandwritingSetMode, 0x09AF9BF8)
 NID(sceHandwritingTerm, 0x356B2931)
-// Module "SceHeap"
-// Library "SceHeap"
-NID(sceHeapAllocHeapMemory, 0xB6FC0BA1)
-NID(sceHeapAllocHeapMemoryWithOption, 0xD4C09869)
-NID(sceHeapCreateHeap, 0xA7571AD8)
-NID(sceHeapDeleteHeap, 0xA130D00C)
-NID(sceHeapFreeHeapMemory, 0xD09FFC11)
-NID(sceHeapGetMallinfo, 0xAD2645B0)
-NID(sceHeapGetTotalFreeSize, 0x76C5B003)
-NID(sceHeapIsAllocatedHeapMemory, 0xAA50462F)
-NID(sceHeapReallocHeapMemory, 0x9E6716BA)
-NID(sceHeapReallocHeapMemoryWithOption, 0x00BE8FC3)
 // Module "SceHid"
 // Library "SceHid"
 NID(sceHidKeyboardEnumerate, 0x34BDFACE)
 NID(sceHidKeyboardRead, 0x224A8AD8)
 NID(sceHidMouseEnumerate, 0x2A0D2F54)
 NID(sceHidMouseRead, 0xBDECBDC0)
-// Module "SceHmac"
-// Library "SceHmac"
-NID(sceHmacMd5BlockInit, 0xD6E232CD)
-NID(sceHmacMd5BlockResult, 0x9BCCC484)
-NID(sceHmacMd5BlockUpdate, 0x9FD439E9)
-NID(sceHmacMd5Digest, 0x6EEB05D3)
-NID(sceHmacSha0BlockInit, 0xD44F6B32)
-NID(sceHmacSha0BlockResult, 0x05AE1466)
-NID(sceHmacSha0BlockUpdate, 0x9CB7F0EF)
-NID(sceHmacSha0Digest, 0xCCB91784)
-NID(sceHmacSha1BlockInit, 0xA2285A9A)
-NID(sceHmacSha1BlockResult, 0xD0AF51C6)
-NID(sceHmacSha1BlockUpdate, 0x6EF06490)
-NID(sceHmacSha1Digest, 0x55871D87)
-NID(sceHmacSha224BlockInit, 0x393FF6BC)
-NID(sceHmacSha224BlockResult, 0x2AB46BB5)
-NID(sceHmacSha224BlockUpdate, 0xB77629EB)
-NID(sceHmacSha224Digest, 0x359ED31E)
-NID(sceHmacSha256BlockInit, 0x96AD3A67)
-NID(sceHmacSha256BlockResult, 0x5A52150F)
-NID(sceHmacSha256BlockUpdate, 0x0C9FA657)
-NID(sceHmacSha256Digest, 0xE254D9A1)
-NID(sceHmacSha384BlockInit, 0xB786F59F)
-NID(sceHmacSha384BlockResult, 0xBA308CDA)
-NID(sceHmacSha384BlockUpdate, 0xC16D8AB6)
-NID(sceHmacSha384Digest, 0x9C3B4844)
-NID(sceHmacSha512BlockInit, 0x272FEFFE)
-NID(sceHmacSha512BlockResult, 0x64219FF5)
-NID(sceHmacSha512BlockUpdate, 0xECA83992)
-NID(sceHmacSha512Digest, 0x8FDFCE5B)
 // Module "SceHttp"
 // Library "SceHttp"
 NID(sceHttpAbortRequest, 0xEA61662F)
@@ -4641,12 +4566,6 @@ NID(sceLsdbGetStitle, 0x3B064DF5)
 NID(sceLsdbGetSystemVersion, 0x9AE94B9F)
 NID(sceLsdbGetTitle, 0x4141EBCD)
 NID(sceLsdbGetType, 0xDEC358E4)
-// Module "SceMd5"
-// Library "SceMd5"
-NID(sceMd5BlockInit, 0x4D6436F9)
-NID(sceMd5BlockResult, 0xB94ABF83)
-NID(sceMd5BlockUpdate, 0x094A4902)
-NID(sceMd5Digest, 0xB845BCCB)
 // Module "SceMotion"
 // Library "SceMotion"
 NID(sceMotionGetAngleThreshold, 0x499B6C87)
@@ -4701,10 +4620,6 @@ NID(sceMotionDevSetGyroFeedBack, 0xCCAEBF59)
 NID(sceMotionDevSetSamplingMode, 0x3EAA8A4F)
 NID(sceMotionDevUpdateMagnCalibData, 0x787384FA)
 NID(sceMotionDevUpdateMagnStabilityLevel, 0xEC94F683)
-// Module "SceMt19937"
-// Library "SceMt19937"
-NID(sceMt19937Init, 0xEE5BA27C)
-NID(sceMt19937UInt, 0x29E43BB5)
 // Module "SceMtpIfDriver"
 // Library "SceMtpIf"
 NID(sceMtpIfCancelTransfer, 0x80D1CA60)
@@ -5832,128 +5747,6 @@ NID(sceScreenShotEnableNotification, 0x816633FE)
 NID(sceScreenShotGetParam, 0xBAE9E534)
 NID(sceScreenShotSetOverlayImage, 0x7061665B)
 NID(sceScreenShotSetParam, 0x05DB59C7)
-// Module "SceSfmt11213"
-// Library "SceSfmt11213"
-NID(sceSfmt11213FillArray32, 0xFD696585)
-NID(sceSfmt11213FillArray64, 0x7A412A29)
-NID(sceSfmt11213GenRand32, 0xFB281CD7)
-NID(sceSfmt11213GenRand64, 0xAFEDD6E1)
-NID(sceSfmt11213InitByArray, 0xBAF5F058)
-NID(sceSfmt11213InitGenRand, 0x8FF464C9)
-// Module "SceSfmt1279"
-// Library "SceSfmt1279"
-NID(sceSfmt1279FillArray32, 0xE7F63838)
-NID(sceSfmt1279FillArray64, 0xDB3832EB)
-NID(sceSfmt1279GenRand32, 0x9B4A48DF)
-NID(sceSfmt1279GenRand64, 0xA2C5EE14)
-NID(sceSfmt1279InitByArray, 0xC25D9ACE)
-NID(sceSfmt1279InitGenRand, 0x02E8D906)
-// Module "SceSfmt132049"
-// Library "SceSfmt132049"
-NID(sceSfmt132049FillArray32, 0xD891A99F)
-NID(sceSfmt132049FillArray64, 0x68AD7866)
-NID(sceSfmt132049GenRand32, 0x795F9644)
-NID(sceSfmt132049GenRand64, 0xBBD80AC4)
-NID(sceSfmt132049InitByArray, 0xDC69294A)
-NID(sceSfmt132049InitGenRand, 0xDC6B23B0)
-// Module "SceSfmt19937"
-// Library "SceSfmt19937"
-NID(sceSfmt19937FillArray32, 0xA1C654D8)
-NID(sceSfmt19937FillArray64, 0xE74BA81C)
-NID(sceSfmt19937GenRand32, 0xF0557157)
-NID(sceSfmt19937GenRand64, 0xE66F2502)
-NID(sceSfmt19937InitByArray, 0xAC496C8C)
-NID(sceSfmt19937InitGenRand, 0x2AFACB0B)
-// Module "SceSfmt216091"
-// Library "SceSfmt216091"
-NID(sceSfmt216091FillArray32, 0xDD4256F0)
-NID(sceSfmt216091FillArray64, 0xA1CE5628)
-NID(sceSfmt216091GenRand32, 0x4A972DCD)
-NID(sceSfmt216091GenRand64, 0x23369ABF)
-NID(sceSfmt216091InitByArray, 0xA9CF6616)
-NID(sceSfmt216091InitGenRand, 0x86DDE4A7)
-// Module "SceSfmt2281"
-// Library "SceSfmt2281"
-NID(sceSfmt2281FillArray32, 0xBB89D8F0)
-NID(sceSfmt2281FillArray64, 0x17C10E2D)
-NID(sceSfmt2281GenRand32, 0x84BB4ADB)
-NID(sceSfmt2281GenRand64, 0x3CC47146)
-NID(sceSfmt2281InitByArray, 0xAB3AD459)
-NID(sceSfmt2281InitGenRand, 0xB8E5A0BB)
-// Module "SceSfmt4253"
-// Library "SceSfmt4253"
-NID(sceSfmt4253FillArray32, 0x59A1B9FC)
-NID(sceSfmt4253FillArray64, 0x01683CDD)
-NID(sceSfmt4253GenRand32, 0x8791E2EF)
-NID(sceSfmt4253GenRand64, 0x6C0E5E3C)
-NID(sceSfmt4253InitByArray, 0xC4D7AA2D)
-NID(sceSfmt4253InitGenRand, 0xE9F8CB9A)
-// Module "SceSfmt44497"
-// Library "SceSfmt44497"
-NID(sceSfmt44497FillArray32, 0x1C38322A)
-NID(sceSfmt44497FillArray64, 0x908F1122)
-NID(sceSfmt44497GenRand32, 0xF869DFDC)
-NID(sceSfmt44497GenRand64, 0xD411A9A6)
-NID(sceSfmt44497InitByArray, 0x16D8AA5E)
-NID(sceSfmt44497InitGenRand, 0xCF1C8C38)
-// Module "SceSfmt607"
-// Library "SceSfmt607"
-NID(sceSfmt607FillArray32, 0xA288ADB9)
-NID(sceSfmt607FillArray64, 0x1520D408)
-NID(sceSfmt607GenRand32, 0x8A0BF859)
-NID(sceSfmt607GenRand64, 0x5E880862)
-NID(sceSfmt607InitByArray, 0xCC6DABA0)
-NID(sceSfmt607InitGenRand, 0x76A5D8CA)
-// Module "SceSfmt86243"
-// Library "SceSfmt86243"
-NID(sceSfmt86243FillArray32, 0xC297E6B1)
-NID(sceSfmt86243FillArray64, 0xF7FFE87C)
-NID(sceSfmt86243GenRand32, 0x569BF903)
-NID(sceSfmt86243GenRand64, 0x8E25CBA8)
-NID(sceSfmt86243InitByArray, 0x81B67AB5)
-NID(sceSfmt86243InitGenRand, 0x2FF42588)
-// Module "SceSha0"
-// Library "SceSha0"
-NID(sceSha0BlockInit, 0xBCF6DB3A)
-NID(sceSha0BlockResult, 0xBF0158C4)
-NID(sceSha0BlockUpdate, 0x37EF2AFC)
-NID(sceSha0Digest, 0xD19A9AA8)
-// Module "SceSha1"
-// Library "SceSha1"
-NID(sceSha1BlockInit, 0xB13D65AA)
-NID(sceSha1BlockResult, 0x0195DADF)
-NID(sceSha1BlockUpdate, 0x9007205E)
-NID(sceSha1Digest, 0xE1215C9D)
-// Module "SceSha224"
-// Library "SceSha224"
-NID(sceSha224BlockInit, 0x538F04CE)
-NID(sceSha224BlockResult, 0xA36ECF65)
-NID(sceSha224BlockUpdate, 0xB5FD0160)
-NID(sceSha224Digest, 0x1346D270)
-// Module "SceSha256"
-// Library "SceSha256"
-NID(sceSha256BlockInit, 0xE281374F)
-NID(sceSha256BlockResult, 0x9B5BB4BA)
-NID(sceSha256BlockUpdate, 0xDAECA1F8)
-NID(sceSha256Digest, 0xA337079C)
-// Module "SceSha384"
-// Library "SceSha384"
-NID(sceSha384BlockInit, 0x037AABE7)
-NID(sceSha384BlockResult, 0x30D5C919)
-NID(sceSha384BlockUpdate, 0x4B99DBB8)
-NID(sceSha384Digest, 0xA602C694)
-// Module "SceSha512"
-// Library "SceSha512"
-NID(sceSha512BlockInit, 0xE017A9CD)
-NID(sceSha512BlockResult, 0x26146A16)
-NID(sceSha512BlockUpdate, 0x669281E8)
-NID(sceSha512Digest, 0x5DC0B916)
-// Module "SceSha512t"
-// Library "SceSha512t"
-NID(sceSha512tBlockInit, 0x79065BB2)
-NID(sceSha512tBlockResult, 0x66425DB6)
-NID(sceSha512tBlockUpdate, 0xC5359DF8)
-NID(sceSha512tDigest, 0x00E52720)
 // Module "SceShellSvc"
 // Library "SceShellUtil"
 NID(sceShellUtilInitEvents, 0xE8AD11EC)
