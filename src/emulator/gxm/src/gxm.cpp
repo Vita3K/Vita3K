@@ -650,11 +650,5 @@ bool operator<(const FragmentProgramCacheKey& a, const FragmentProgramCacheKey &
     if (b.fragment_program < a.fragment_program) {
         return false;
     }
-    if (a.blend_info < b.blend_info) {
-        return true;
-    }
-    if (b.blend_info < a.blend_info) {
-        return false;
-    }
-    return a.vertex_program < b.vertex_program;
+    return b.blend_info < a.blend_info;
 }
