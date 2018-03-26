@@ -1607,6 +1607,7 @@ EXPORT(int, sceGxmTextureInitLinear, emu::SceGxmTexture *texture, Ptr<const void
     switch(texFormat) {
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U8_R111:
+    case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
         break;
 
     default:
