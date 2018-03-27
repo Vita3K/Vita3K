@@ -493,12 +493,15 @@ void set_uniforms(GLuint program, const SceGxmContext &context, const MemState &
     GXM_PROFILE(__FUNCTION__);
 
     assert(context.fragment_program);
-    assert(context.fragment_program.get(mem)->program);
     assert(context.vertex_program);
-    assert(context.vertex_program.get(mem)->program);
+    
+    const SceGxmFragmentProgram &fragment_program = *context.fragment_program.get(mem);
+    const SceGxmVertexProgram &vertex_program = *context.vertex_program.get(mem);
+    assert(fragment_program.program);
+    assert(vertex_program.program);
 
-    set_uniforms(program, context.fragment_uniform_buffers, *context.fragment_program.get(mem)->program.get(mem), mem);
-    set_uniforms(program, context.vertex_uniform_buffers, *context.vertex_program.get(mem)->program.get(mem), mem);
+    set_uniforms(program, context.fragment_uniform_buffers, *fragment_program.program.get(mem), mem);
+    set_uniforms(program, context.vertex_uniform_buffers, *vertex_program.program.get(mem), mem);
 }
 
 void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
