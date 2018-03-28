@@ -431,7 +431,6 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
         glGetProgramInfoLog(program->get(), log_length, nullptr, log.data());
         
         LOG_ERROR("{}", log.data());
-        assert(false);
     }
     
     GLboolean is_linked = GL_FALSE;
