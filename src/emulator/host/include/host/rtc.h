@@ -18,7 +18,6 @@
 #pragma once
 
 #include <host/state.h>
-#include <util/log.h>
 #include <psp2/types.h>
 
 #include <chrono>
@@ -36,143 +35,9 @@ constexpr auto VITA_CLOCKS_PER_SEC = 1'000'000;
 
 using VitaClocks = std::chrono::duration<std::uint64_t, std::ratio<1, VITA_CLOCKS_PER_SEC>>;
 
-inline std::uint64_t rtc_base_ticks()
-{
-    const auto now = std::chrono::system_clock::now();
-    const auto now_timepoint = std::chrono::time_point_cast<VitaClocks>(now);
-    const auto clocks_since_unix_time = now_timepoint.time_since_epoch().count();
-
-    // host high_resolution_clock offset (implementations dependant)
-    const auto host_clock_offset = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-
-    return RTC_OFFSET + clocks_since_unix_time - host_clock_offset;
-}
-
-inline std::uint64_t rtc_get_ticks(const HostState& host)
-{
-    const uint64_t base_ticks = host.kernel.base_tick.tick;
-
-    const auto now = std::chrono::high_resolution_clock::now();
-    const auto now_timepoint = std::chrono::time_point_cast<VitaClocks>(now);
-    const uint64_t now_ticks = now_timepoint.time_since_epoch().count();
-
-    return base_ticks + now_ticks;
-}
-
-// The following functions are from PPSSPP
-// Copyright (c) 2012- PPSSPP Project.
-
-#if defined(_WIN32)
-inline time_t rtc_timegm(struct tm *tm)
-{
-    return _mkgmtime(tm);
-}
-
-#elif (defined(__GLIBC__) && !defined(__ANDROID__))
-#define rtc_timegm timegm
-#else
-
-static time_t rtc_timegm(struct tm *tm)
-{
-    time_t ret;
-    char *tz;
-    std::string tzcopy;
-
-    tz = getenv("TZ");
-    if (tz)
-        tzcopy = tz;
-
-    setenv("TZ", "", 1);
-    tzset();
-    ret = mktime(tm);
-    if (tz)
-        setenv("TZ", tzcopy.c_str(), 1);
-    else
-        unsetenv("TZ");
-    tzset();
-    return ret;
-}
-
-#endif
-
-static void __RtcPspTimeToTm(tm &val, const SceDateTime &pt)
-{
-    val.tm_year = pt.year - 1900;
-    val.tm_mon = pt.month - 1;
-    val.tm_mday = pt.day;
-    val.tm_wday = -1;
-    val.tm_yday = -1;
-    val.tm_hour = pt.hour;
-    val.tm_min = pt.minute;
-    val.tm_sec = pt.second;
-    val.tm_isdst = 0;
-}
-
-static void __RtcTicksToPspTime(SceDateTime &t, std::uint64_t ticks)
-{
-    int numYearAdd = 0;
-    if (ticks < 1000000ULL)
-    {
-        t.year = 1;
-        t.month = 1;
-        t.day = 1;
-        t.hour = 0;
-        t.minute = 0;
-        t.second = 0;
-        t.microsecond = ticks % 1000000ULL;
-        return;
-    }
-    else if (ticks < RTC_OFFSET)
-    {
-        // Need to get a year past 1970 for gmtime
-        // Add enough 400 year to pass over 1970.
-        numYearAdd = (int)((RTC_OFFSET - ticks) / RTC_400_YEAR_TICKS + 1);
-        ticks += RTC_400_YEAR_TICKS * numYearAdd;
-    }
-
-    while (ticks >= RTC_OFFSET + RTC_400_YEAR_TICKS)
-    {
-        ticks -= RTC_400_YEAR_TICKS;
-        --numYearAdd;
-    }
-
-    time_t time = (ticks - RTC_OFFSET) / 1000000ULL;
-    t.microsecond = ticks % 1000000ULL;
-
-    tm *local = gmtime(&time);
-    if (!local)
-    {
-        LOG_ERROR("Date is too high/low to handle, pretending to work.");
-        return;
-    }
-
-    t.year = local->tm_year + 1900 - numYearAdd * 400;
-    t.month = local->tm_mon + 1;
-    t.day = local->tm_mday;
-    t.hour = local->tm_hour;
-    t.minute = local->tm_min;
-    t.second = local->tm_sec;
-}
-
-static std::uint64_t __RtcPspTimeToTicks(const SceDateTime &pt)
-{
-    tm local;
-    __RtcPspTimeToTm(local, pt);
-
-    std::int64_t tickOffset = 0;
-    while (local.tm_year < 70)
-    {
-        tickOffset -= RTC_400_YEAR_TICKS;
-        local.tm_year += 400;
-    }
-    while (local.tm_year >= 470)
-    {
-        tickOffset += RTC_400_YEAR_TICKS;
-        local.tm_year -= 400;
-    }
-
-    time_t seconds = rtc_timegm(&local);
-    std::uint64_t result = RTC_OFFSET + (std::uint64_t)seconds * 1000000ULL;
-    result += pt.microsecond;
-    return result + tickOffset;
-}
+std::uint64_t rtc_base_ticks();
+std::uint64_t rtc_get_ticks(const HostState& host);
+time_t rtc_timegm(struct tm *tm);
+void __RtcPspTimeToTm(tm& val, const SceDateTime& pt);
+void __RtcTicksToPspTime(SceDateTime& t, std::uint64_t ticks);
+std::uint64_t __RtcPspTimeToTicks(const SceDateTime& pt);
