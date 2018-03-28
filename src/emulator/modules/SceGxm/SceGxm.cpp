@@ -1563,7 +1563,7 @@ EXPORT(int, sceGxmTextureGetNormalizeMode) {
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
-    assert(is_paletted_format(texture->format));
+    assert(texture::is_paletted_format(texture->format));
 
     return texture->palette;
 }
@@ -1706,7 +1706,7 @@ EXPORT(int, sceGxmTextureSetNormalizeMode) {
 
 EXPORT(int, sceGxmTextureSetPalette, emu::SceGxmTexture *texture, Ptr<void> paletteData) {
     assert(texture != nullptr);
-    assert(is_paletted_format(SCE_GXM_TEXTURE_FORMAT_P8_ABGR));
+    assert(texture::is_paletted_format(SCE_GXM_TEXTURE_FORMAT_P8_ABGR));
     assert(paletteData);
 
     texture->palette = paletteData;
