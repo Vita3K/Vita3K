@@ -1038,6 +1038,8 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     unsigned int height = get_texture_height(texture);
     Ptr<const void> data = Ptr<const void>(texture->controlWords[2] & 0xFFFFFFFC);
     Ptr<void> palette = Ptr<void>(texture->controlWords[3] << 6);
+    SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)((texture->controlWords[0] >> 6) & 7);
+    SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)((texture->controlWords[0] >> 3) & 7);
 
     if (texture::is_paletted_format(fmt)) {
         const auto base_format = texture::get_base_format(fmt);
@@ -1096,6 +1098,8 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, (width + 7) & ~7);
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, GL_UNSIGNED_BYTE, pixels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture::translate_wrap_mode(uaddr));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture::translate_wrap_mode(vaddr));
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glPixelTransferi(GL_MAP_COLOR, GL_FALSE);
 
@@ -1592,12 +1596,12 @@ EXPORT(int, sceGxmTextureGetType) {
     return unimplemented("sceGxmTextureGetType");
 }
 
-EXPORT(int, sceGxmTextureGetUAddrMode) {
-    return unimplemented("sceGxmTextureGetUAddrMode");
+EXPORT(int, sceGxmTextureGetUAddrMode, SceGxmTexture *texture) {
+    return (texture->controlWords[0] >> 6) & 7;
 }
 
-EXPORT(int, sceGxmTextureGetVAddrMode) {
-    return unimplemented("sceGxmTextureGetVAddrMode");
+EXPORT(int, sceGxmTextureGetVAddrMode, SceGxmTexture *texture) {
+    return (texture->controlWords[0] >> 3) & 7;
 }
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, SceGxmTexture *texture) {
@@ -1741,12 +1745,56 @@ EXPORT(int, sceGxmTextureSetStride) {
     return unimplemented("sceGxmTextureSetStride");
 }
 
-EXPORT(int, sceGxmTextureSetUAddrMode) {
-    return unimplemented("sceGxmTextureSetUAddrMode");
+EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+    if (texture == nullptr){
+        return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    if ((texture->controlWords[1] & 0x60000000) == 0x40000000 || (texture->controlWords[1] & 0xE0000000) == 0xE0000000){
+        if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
+            return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+        }
+    }else{
+        if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER){
+            char unk = (texture->controlWords[1] & 0xE0000000 == 0xA0000000);
+            if (texture->controlWords[1] & 0xE0000000 != 0xA0000000){
+                unk = (texture->controlWords[1] & 0xE0000000 == 0);
+            }
+            if (!unk){
+                return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+            }
+        }
+        if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) && (texture->controlWords[1] & 0xE0000000)){
+            return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+        }
+    }
+    texture->controlWords[0] = ((int)mode << 6) & 0x1C0 | texture->controlWords[0] & 0xFFFFFE3F;
+    return 0;
 }
 
-EXPORT(int, sceGxmTextureSetVAddrMode) {
-    return unimplemented("sceGxmTextureSetVAddrMode");
+EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+    if (texture == nullptr){
+        return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    if ((texture->controlWords[1] & 0x60000000) == 0x40000000 || (texture->controlWords[1] & 0xE0000000) == 0xE0000000){
+        if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
+            return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+        }
+    }else{
+        if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER){
+            char unk = ((texture->controlWords[1] & 0xE0000000) == 0xA0000000);
+            if (texture->controlWords[1] & 0xE0000000 != 0xA0000000){
+                unk = ((texture->controlWords[1] & 0xE0000000) == 0);
+            }
+            if (!unk){
+                return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+            }
+        }
+        if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) && (texture->controlWords[1] & 0xE0000000)){
+            return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+        }
+    }
+    texture->controlWords[0] = 8 * (uint8_t)mode & 0x38 | texture->controlWords[0] & 0xFFFFFFC7;
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
