@@ -1,5 +1,5 @@
-// texture2d_rgba_fog_v
-// texture2d_rgba_v
+// texture2d_rgba_fog_v?
+// texture2d_rgba_v?
 #version 120
 
 attribute vec3 position;

@@ -1,11 +1,11 @@
-// /Users/pete/Documents/vitaQuake/shaders/modulate_rgba_alpha_f.cg ?
-// /Users/pete/Documents/vitaQuake/shaders/modulate_rgba_alpha_fog_f.cg ?
-// /Users/pete/Documents/vitaQuake/shaders/modulate_rgba_f.cg ?
-// /Users/pete/Documents/vitaQuake/shaders/modulate_rgba_fog_f.cg ?
-// /Users/pete/Documents/vitaQuake/shaders/replace_alpha_f.cg ?
-// /Users/pete/Documents/vitaQuake/shaders/replace_alpha_fog_f.cg ?
-// /Users/pete/Documents/vitaQuake/shaders/replace_f.cg ?
-// /Users/pete/Documents/vitaQuake/shaders/replace_fog_f.cg ?
+// modulate_rgba_alpha_f?
+// modulate_rgba_alpha_fog_f?
+// modulate_rgba_f?
+// modulate_rgba_fog_f?
+// replace_alpha_f?
+// replace_alpha_fog_f?
+// replace_f?
+// replace_fog_f?
 #version 120
 
 uniform sampler2D tex;

@@ -1,4 +1,4 @@
-// /Users/pete/Documents/vitaGL/shaders/disable_color_buffer_v.cg
+// disable_color_buffer_v
 #version 120
 
 attribute vec3 position;

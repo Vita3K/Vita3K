@@ -1,4 +1,4 @@
-// /Users/pete/Documents/vitaGL/shaders/texture2d_f.cg
+// texture2d_f
 #version 120
 
 uniform float alphaCut;

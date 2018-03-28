@@ -1,4 +1,4 @@
-// /Users/pete/Documents/vitaGL/shaders/disable_color_buffer_f.cg?
+// disable_color_buffer_f?
 #version 120
 
 void main() {

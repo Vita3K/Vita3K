@@ -1,7 +1,7 @@
-// modulate_alpha_f
-// modulate_alpha_fog_f
-// modulate_f
-// modulate_fog_f
+// modulate_alpha_f?
+// modulate_alpha_fog_f?
+// modulate_f?
+// modulate_fog_f?
 #version 120
 
 uniform vec4 vColor;

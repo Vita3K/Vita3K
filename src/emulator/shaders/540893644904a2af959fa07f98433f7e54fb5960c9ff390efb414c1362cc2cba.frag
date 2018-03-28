@@ -1,4 +1,4 @@
-// /Users/pete/Documents/vitaGL/shaders/texture2d_rgba_f.cg
+// texture2d_rgba_f
 #version 120
 
 uniform float alphaCut;
