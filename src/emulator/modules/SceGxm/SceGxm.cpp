@@ -1537,6 +1537,7 @@ EXPORT(int, sceGxmTerminate) {
 }
 
 EXPORT(int, sceGxmTextureGetData, SceGxmTexture *texture) {
+	assert(texture != nullptr);
     return texture->controlWords[2] & 0xFFFFFFFC;
 }
 
@@ -1553,6 +1554,7 @@ EXPORT(int, sceGxmTextureGetGammaMode) {
 }
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, SceGxmTexture *texture) {
+	assert(texture != nullptr);
     return texture::get_height(texture);
 }
 
@@ -1585,6 +1587,7 @@ EXPORT(int, sceGxmTextureGetNormalizeMode) {
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, SceGxmTexture *texture) {
+	assert(texture != nullptr);
     return Ptr<void>(texture->controlWords[3] << 6);
 }
 
@@ -1597,14 +1600,17 @@ EXPORT(int, sceGxmTextureGetType) {
 }
 
 EXPORT(int, sceGxmTextureGetUAddrMode, SceGxmTexture *texture) {
+	assert(texture != nullptr);
     return (texture->controlWords[0] >> 6) & 7;
 }
 
 EXPORT(int, sceGxmTextureGetVAddrMode, SceGxmTexture *texture) {
+	assert(texture != nullptr);
     return (texture->controlWords[0] >> 3) & 7;
 }
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, SceGxmTexture *texture) {
+	assert(texture != nullptr);
     return texture::get_width(texture);
 }
 
