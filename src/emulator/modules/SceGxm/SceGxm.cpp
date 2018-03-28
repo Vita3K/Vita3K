@@ -1039,7 +1039,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     Ptr<const void> data = Ptr<const void>(texture->controlWords[2] & 0xFFFFFFFC);
     Ptr<void> palette = Ptr<void>(texture->controlWords[3] << 6);
 
-    if (texture::is_paletted_format(texture->format)) {
+    if (texture::is_paletted_format(fmt)) {
         const auto base_format = texture::get_base_format(fmt);
         const auto is_byte_indexed = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8); // only altenative is SCE_GXM_TEXTURE_BASE_FORMAT_P4
         const auto palette_indexes = is_byte_indexed ? 256 : 16;
@@ -1063,7 +1063,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
         std::uint8_t R = 0, G = 0, B = 0, A = 0;
         constexpr auto A_max = std::numeric_limits<decltype(A)>::max();
 
-        switch (texture::get_swizzle(texture->format)) {
+        switch (texture::get_swizzle(fmt)) {
         case SCE_GXM_TEXTURE_SWIZZLE4_ABGR: R = 0; G = 1; B = 2; A = 3; break;
         case SCE_GXM_TEXTURE_SWIZZLE4_ARGB: R = 2; G = 1; B = 0; A = 3; break;
         case SCE_GXM_TEXTURE_SWIZZLE4_RGBA: R = 3; G = 2; B = 1; A = 0; break;
