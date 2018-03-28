@@ -33,6 +33,25 @@
 #include <iostream>
 #include <sstream>
 
+#ifndef HIWORD
+# define HIWORD(a) ((unsigned short)(((unsigned long)(a) >> 16) & 0xFFFF))
+#endif
+
+#ifndef __clz
+static inline uint32_t __clz(int32_t data){
+    uint32_t count = 0;
+    uint32_t mask = 0x80000000;
+
+    while((data & mask) == 0)
+    {
+      count += 1u;
+      mask = mask >> 1u;
+    }
+
+    return (count);
+}
+#endif
+
 using namespace emu;
 using namespace glbinding;
 
@@ -1004,18 +1023,24 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     }
 }
 
-EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const emu::SceGxmTexture *texture) {
+EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, SceGxmTexture *texture) {
     assert(context != nullptr);
     assert(texture != nullptr);
 
     glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
     glBindTexture(GL_TEXTURE_2D, context->texture[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    
+    SceGxmTextureFormat fmt = get_texture_format(texture);
+    unsigned int width = get_texture_width(texture);
+    unsigned int height = get_texture_height(texture);
+    Ptr<const void> data = Ptr<const void>(texture->controlWords[2] & 0xFFFFFFFC);
+    Ptr<void> palette = Ptr<void>(texture->controlWords[3] << 6);
 
-    if (texture->format == SCE_GXM_TEXTURE_FORMAT_P8_ABGR) {
+    if (fmt == SCE_GXM_TEXTURE_FORMAT_P8_ABGR) {
         glPixelTransferi(GL_MAP_COLOR, GL_TRUE);
         GLfloat map[4][256];
-        const uint8_t(*const src)[4] = static_cast<uint8_t(*)[4]>(texture->palette.get(host.mem));
+        const uint8_t(*const src)[4] = static_cast<uint8_t(*)[4]>(palette.get(host.mem));
         for (size_t i = 0; i < 256; ++i) {
             map[0][i] = src[i][0] / 255.0f;
             map[1][i] = src[i][1] / 255.0f;
@@ -1028,11 +1053,11 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
         glPixelMapfv(GL_PIXEL_MAP_I_TO_A, 256, map[3]);
     }
 
-    const void *const pixels = texture->data.get(host.mem);
-    const GLenum internal_format = translate_internal_format(texture->format);
-    const GLenum format = translate_format(texture->format);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, (texture->width + 7) & ~7);
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, pixels);
+    const void *const pixels = data.get(host.mem);
+    const GLenum internal_format = translate_internal_format(fmt);
+    const GLenum format = translate_format(fmt);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, (width + 7) & ~7);
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, GL_UNSIGNED_BYTE, pixels);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glPixelTransferi(GL_MAP_COLOR, GL_FALSE);
 
@@ -1469,30 +1494,24 @@ EXPORT(int, sceGxmTerminate) {
     return 0;
 }
 
-EXPORT(int, sceGxmTextureGetData, const emu::SceGxmTexture *texture) {
-    assert(texture != nullptr);
-
-    return texture->data.address();
+EXPORT(int, sceGxmTextureGetData, SceGxmTexture *texture) {
+    return texture->controlWords[2] & 0xFFFFFFFC;
 }
 
 EXPORT(int, sceGxmTextureGetAnisoMode) {
     return unimplemented("sceGxmTextureGetAnisoMode");
 }
 
-EXPORT(int, sceGxmTextureGetFormat, const emu::SceGxmTexture *texture) {
-    assert(texture != nullptr);
-
-    return texture->format;
+EXPORT(int, sceGxmTextureGetFormat, SceGxmTexture *texture) {
+    return get_texture_format(texture);
 }
 
 EXPORT(int, sceGxmTextureGetGammaMode) {
     return unimplemented("sceGxmTextureGetGammaMode");
 }
 
-EXPORT(int, sceGxmTextureGetHeight, const emu::SceGxmTexture *texture) {
-    assert(texture != nullptr);
-
-    return texture->height;
+EXPORT(unsigned int, sceGxmTextureGetHeight, SceGxmTexture *texture) {
+    return get_texture_height(texture);
 }
 
 EXPORT(int, sceGxmTextureGetLodBias) {
@@ -1523,11 +1542,8 @@ EXPORT(int, sceGxmTextureGetNormalizeMode) {
     return unimplemented("sceGxmTextureGetNormalizeMode");
 }
 
-EXPORT(Ptr<void>, sceGxmTextureGetPalette, const emu::SceGxmTexture *texture) {
-    assert(texture != nullptr);
-    assert(texture->format == SCE_GXM_TEXTURE_FORMAT_P8_ABGR);
-
-    return texture->palette;
+EXPORT(Ptr<void>, sceGxmTextureGetPalette, SceGxmTexture *texture) {
+    return Ptr<void>(texture->controlWords[3] << 6);
 }
 
 EXPORT(int, sceGxmTextureGetStride) {
@@ -1546,10 +1562,8 @@ EXPORT(int, sceGxmTextureGetVAddrMode) {
     return unimplemented("sceGxmTextureGetVAddrMode");
 }
 
-EXPORT(int, sceGxmTextureGetWidth, const emu::SceGxmTexture *texture) {
-    assert(texture != nullptr);
-
-    return texture->width;
+EXPORT(unsigned int, sceGxmTextureGetWidth, SceGxmTexture *texture) {
+    return get_texture_width(texture);
 }
 
 EXPORT(int, sceGxmTextureInitCube) {
@@ -1560,19 +1574,19 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary) {
     return unimplemented("sceGxmTextureInitCubeArbitrary");
 }
 
-EXPORT(int, sceGxmTextureInitLinear, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
-    assert(texture != nullptr);
-    assert(data);
-    assert((texFormat == SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR) || (texFormat == SCE_GXM_TEXTURE_FORMAT_U8_R111) || (texFormat == SCE_GXM_TEXTURE_FORMAT_P8_ABGR));
-    assert(width > 0);
-    assert(height > 0);
-
-    texture->format = texFormat;
-    texture->width = width;
-    texture->height = height;
-    texture->data = data;
-    texture->palette = Ptr<void>();
-    // TODO Support mip-mapping.
+EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+    if (width > 4096 || height > 4096 || mipCount > 13){
+        return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_VALUE);
+    }else if (!data){
+        return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    }else if (texture == nullptr){
+        return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    
+    texture->controlWords[0] = ((((uint8_t)mipCount - 1) & 0xF) << 17) | 0x3E00090 | texFormat & 0x80000000;
+    texture->controlWords[1] = (height - 1) | 0x60000000 | ((width - 1) << 12) | texFormat & 0x1F000000;
+    texture->controlWords[2] = (uint32_t)data.address() & 0xFFFFFFFC;
+    texture->controlWords[3] = ((texFormat & 0x7000) << 16) | 0x80000000;
 
     return 0;
 }
@@ -1593,11 +1607,12 @@ EXPORT(int, sceGxmTextureInitTiled) {
     return unimplemented("sceGxmTextureInitTiled");
 }
 
-EXPORT(int, sceGxmTextureSetData, emu::SceGxmTexture *texture, Ptr<const void> data) {
-    assert(texture != nullptr);
-    assert(data);
-
-    texture->data = data;
+EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) {
+    if (texture == nullptr){
+        return error("sceGxmTextureSetData", SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    
+    texture->controlWords[2] = (unsigned int)data.address() & 0xFFFFFFFC | texture->controlWords[2] & 3;
     return 0;
 }
 
@@ -1613,11 +1628,36 @@ EXPORT(int, sceGxmTextureSetGammaMode) {
     return unimplemented("sceGxmTextureSetGammaMode");
 }
 
-EXPORT(int, sceGxmTextureSetHeight, emu::SceGxmTexture *texture, unsigned int height) {
-    assert(texture != nullptr);
-
-    texture->height = height;
-    return 0;
+EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height) {
+    if (texture == nullptr){
+        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_POINTER);
+    }else if (height > 4096){
+        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_VALUE);
+    }
+    
+    if ((texture->controlWords[1] & 0xE0000000) == 0x80000000){
+        char unk = (((texture->controlWords[0] >> 17) & 0xF) + 1) & 0xF;
+        if ((((texture->controlWords[0] >> 17) & 0xF) + 1) & 0xF){
+            unk--;
+        }
+        if (height >> unk > 0x1F){
+            goto LINEAR;
+        }
+        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_VALUE);
+    }
+    
+    if (texture->controlWords[1] & 0xA0000000){
+LINEAR:
+        texture->controlWords[1] = (height - 1) | texture->controlWords[1] & 0xFFFFF000;
+        return 0;
+    }
+    
+    if ((height - 1) & height){
+        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    }else{
+        texture->controlWords[1] = (31 - __clz(height)) | texture->controlWords[1] & 0xFFFFFFF0;
+    }
+    return (height - 1) & height;
 }
 
 EXPORT(int, sceGxmTextureSetLodBias) {
@@ -1648,12 +1688,14 @@ EXPORT(int, sceGxmTextureSetNormalizeMode) {
     return unimplemented("sceGxmTextureSetNormalizeMode");
 }
 
-EXPORT(int, sceGxmTextureSetPalette, emu::SceGxmTexture *texture, Ptr<void> paletteData) {
-    assert(texture != nullptr);
-    assert(texture->format == SCE_GXM_TEXTURE_FORMAT_P8_ABGR);
-    assert(paletteData);
-
-    texture->palette = paletteData;
+EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteData) {
+    if (texture == nullptr){
+        return error("sceGxmTextureSetPalette", SCE_GXM_ERROR_INVALID_POINTER);
+    }else if ((uint8_t)paletteData.address() & 0x3F){
+        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    }
+    
+    texture->controlWords[3] = texture->controlWords[3] & 0xFC000000 | ((unsigned int)paletteData.address() >> 6);
 
     return 0;
 }
@@ -1670,11 +1712,36 @@ EXPORT(int, sceGxmTextureSetVAddrMode) {
     return unimplemented("sceGxmTextureSetVAddrMode");
 }
 
-EXPORT(int, sceGxmTextureSetWidth, emu::SceGxmTexture *texture, unsigned int width) {
-    assert(texture != nullptr);
-
-    texture->width = width;
-    return 0;
+EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
+    if (texture == nullptr){
+        return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_POINTER);
+    }else if (width > 4096){
+        return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_VALUE);
+    }
+    
+    if (texture->controlWords[1] == 0x80000000){
+        char unk = (((texture->controlWords[0] >> 17) & 0xF) + 1) & 0xF;
+        if (unk){
+            unk--;
+        }
+        if (width >> unk >> 0x1F){
+            goto LINEAR;
+        }
+        return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_VALUE);
+    }
+    
+    if (texture->controlWords[1] == 0xA0000000){
+LINEAR:
+        texture->controlWords[1] = texture->controlWords[1] & 0xFF000FFF | ((width - 1) << 12);
+        return 0;
+    }
+    
+    if ((width - 1) & width){
+        return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    }else{
+        texture->controlWords[1] = texture->controlWords[1] & 0xFFF0FFFF | ((31 - __clz(width)) << 16);
+    }
+    return (width - 1) & width;
 }
 
 EXPORT(int, sceGxmTextureValidate) {
