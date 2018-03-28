@@ -512,24 +512,6 @@ void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t strid
     }
 }
 
-SceGxmTextureFormat get_texture_format(SceGxmTexture *texture){
-    return (SceGxmTextureFormat)(texture->controlWords[1] & 0x1F000000 | texture->controlWords[0] & 0x80000000 | HIWORD(texture->controlWords[3]) & 0x7000);
-}
-
-unsigned int get_texture_width(SceGxmTexture *texture){
-    if (texture->controlWords[1] & 0xA0000000){
-        return ((texture->controlWords[1] >> 12) & 0xFFF) + 1;
-    }
-    return 1 << ((texture->controlWords[1] >> 16) & 0xF);
-}
-
-unsigned int get_texture_height(SceGxmTexture *texture){
-    if (texture->controlWords[1] & 0xA0000000){
-        return (texture->controlWords[1] & 0xFFF) + 1;
-    }
-    return 1 << (texture->controlWords[1] & 0xF);
-}
-
 GLenum translate_blend_func(SceGxmBlendFunc src) {
     GXM_PROFILE(__FUNCTION__);
 
@@ -581,6 +563,24 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
 }
 
 namespace texture {
+	
+SceGxmTextureFormat get_format(SceGxmTexture *texture){
+    return (SceGxmTextureFormat)(texture->controlWords[1] & 0x1F000000 | texture->controlWords[0] & 0x80000000 | HIWORD(texture->controlWords[3]) & 0x7000);
+}
+
+unsigned int get_width(SceGxmTexture *texture){
+    if (texture->controlWords[1] & 0xA0000000){
+        return ((texture->controlWords[1] >> 12) & 0xFFF) + 1;
+    }
+    return 1 << ((texture->controlWords[1] >> 16) & 0xF);
+}
+
+unsigned int get_height(SceGxmTexture *texture){
+    if (texture->controlWords[1] & 0xA0000000){
+        return (texture->controlWords[1] & 0xFFF) + 1;
+    }
+    return 1 << (texture->controlWords[1] & 0xF);
+}
 
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src) {
     return static_cast<SceGxmTextureBaseFormat>(src & 0xFF000000);

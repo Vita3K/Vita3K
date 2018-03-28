@@ -1033,9 +1033,9 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     // Disable mip-maps
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     
-    SceGxmTextureFormat fmt = get_texture_format(texture);
-    unsigned int width = get_texture_width(texture);
-    unsigned int height = get_texture_height(texture);
+    SceGxmTextureFormat fmt = texture::get_format(texture);
+    unsigned int width = texture::get_width(texture);
+    unsigned int height = texture::get_height(texture);
     Ptr<const void> data = Ptr<const void>(texture->controlWords[2] & 0xFFFFFFFC);
     Ptr<void> palette = Ptr<void>(texture->controlWords[3] << 6);
     SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)((texture->controlWords[0] >> 6) & 7);
@@ -1545,7 +1545,7 @@ EXPORT(int, sceGxmTextureGetAnisoMode) {
 }
 
 EXPORT(int, sceGxmTextureGetFormat, SceGxmTexture *texture) {
-    return get_texture_format(texture);
+    return texture::get_format(texture);
 }
 
 EXPORT(int, sceGxmTextureGetGammaMode) {
@@ -1553,7 +1553,7 @@ EXPORT(int, sceGxmTextureGetGammaMode) {
 }
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, SceGxmTexture *texture) {
-    return get_texture_height(texture);
+    return texture::get_height(texture);
 }
 
 EXPORT(int, sceGxmTextureGetLodBias) {
@@ -1605,7 +1605,7 @@ EXPORT(int, sceGxmTextureGetVAddrMode, SceGxmTexture *texture) {
 }
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, SceGxmTexture *texture) {
-    return get_texture_width(texture);
+    return texture::get_width(texture);
 }
 
 EXPORT(int, sceGxmTextureInitCube) {
