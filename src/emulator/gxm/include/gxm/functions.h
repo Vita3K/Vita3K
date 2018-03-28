@@ -37,7 +37,12 @@ unsigned int get_texture_width(SceGxmTexture *texture);
 unsigned int get_texture_height(SceGxmTexture *texture);
 GLenum translate_blend_func(SceGxmBlendFunc src);
 GLenum translate_blend_factor(SceGxmBlendFactor src);
-GLenum translate_internal_format(SceGxmTextureFormat src);
-GLenum translate_format(SceGxmTextureFormat src);
+namespace texture {
+    SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
+    std::uint32_t get_swizzle(SceGxmTextureFormat src);
+    bool is_paletted_format(SceGxmTextureFormat src);
+    GLenum translate_internal_format(SceGxmTextureFormat src);
+    GLenum translate_format(SceGxmTextureFormat src);
+}
 GLenum translate_primitive(SceGxmPrimitiveType primType);
 bool operator<(const FragmentProgramCacheKey& a, const FragmentProgramCacheKey &b);

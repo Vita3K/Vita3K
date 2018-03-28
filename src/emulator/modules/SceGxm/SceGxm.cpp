@@ -405,10 +405,10 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     // TODO Use some kind of caching to avoid setting every draw call?
     const SharedGLObject program = get_program(*context, host.mem);
     glUseProgram(program->get());
-    
+
     // TODO Use some kind of caching to avoid setting every draw call?
     set_uniforms(program->get(), *context, host.mem);
-    
+
     const GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, indexData);
@@ -887,7 +887,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
 
     *uniformBuffer = context->params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->fragment_ring_buffer_used);
     context->fragment_ring_buffer_used = next_used;
-    
+
     context->fragment_uniform_buffers[14] = *uniformBuffer;
 
     return 0;
@@ -910,7 +910,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
 
     *uniformBuffer = context->params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->vertex_ring_buffer_used);
     context->vertex_ring_buffer_used = next_used;
-    
+
     context->vertex_uniform_buffers[14] = *uniformBuffer;
 
     return 0;
@@ -1011,7 +1011,7 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     assert(fragmentProgram);
 
     context->fragment_program = fragmentProgram;
-    
+
     const SceGxmFragmentProgram &fragment_program = *fragmentProgram.get(host.mem);
     glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
     if (fragment_program.blend_enabled) {
@@ -1029,6 +1029,8 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
 
     glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
     glBindTexture(GL_TEXTURE_2D, context->texture[0]);
+
+    // Disable mip-maps
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     
     SceGxmTextureFormat fmt = get_texture_format(texture);
@@ -1037,25 +1039,61 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     Ptr<const void> data = Ptr<const void>(texture->controlWords[2] & 0xFFFFFFFC);
     Ptr<void> palette = Ptr<void>(texture->controlWords[3] << 6);
 
-    if (fmt == SCE_GXM_TEXTURE_FORMAT_P8_ABGR) {
+    if (texture::is_paletted_format(texture->format)) {
+        const auto base_format = texture::get_base_format(fmt);
+        const auto is_byte_indexed = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8); // only altenative is SCE_GXM_TEXTURE_BASE_FORMAT_P4
+        const auto palette_indexes = is_byte_indexed ? 256 : 16;
+
         glPixelTransferi(GL_MAP_COLOR, GL_TRUE);
+
+        // second dimension should be palette_indexes sized instead of 256, but prefer to keep it constant/stack-allocated
+        // TODO: Cache palette map instead of calculating here every time
         GLfloat map[4][256];
+
         const uint8_t(*const src)[4] = static_cast<uint8_t(*)[4]>(palette.get(host.mem));
-        for (size_t i = 0; i < 256; ++i) {
+        for (size_t i = 0; i < palette_indexes; ++i) {
             map[0][i] = src[i][0] / 255.0f;
             map[1][i] = src[i][1] / 255.0f;
             map[2][i] = src[i][2] / 255.0f;
             map[3][i] = src[i][3] / 255.0f;
         }
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_R, 256, map[0]);
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_G, 256, map[1]);
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_B, 256, map[2]);
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_A, 256, map[3]);
+
+        // map channel indexes for each channel
+        // A == A_max means alpha channel is unused (max)
+        std::uint8_t R = 0, G = 0, B = 0, A = 0;
+        constexpr auto A_max = std::numeric_limits<decltype(A)>::max();
+
+        switch (texture::get_swizzle(texture->format)) {
+        case SCE_GXM_TEXTURE_SWIZZLE4_ABGR: R = 0; G = 1; B = 2; A = 3; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_ARGB: R = 2; G = 1; B = 0; A = 3; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA: R = 3; G = 2; B = 1; A = 0; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA: R = 1; G = 2; B = 3; A = 0; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_1BGR: R = 0; G = 1; B = 2; A = A_max; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_1RGB: R = 2; G = 1; B = 0; A = A_max; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1: R = 3; G = 2; B = 1; A = A_max; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1: R = 1; G = 2; B = 3; A = A_max; break;
+        default:
+        {
+            LOG_ERROR("Invalid swizzle for paletted texture foramt.");
+        }
+        }
+
+        glPixelMapfv(GL_PIXEL_MAP_I_TO_R, palette_indexes, map[R]);
+        glPixelMapfv(GL_PIXEL_MAP_I_TO_G, palette_indexes, map[G]);
+        glPixelMapfv(GL_PIXEL_MAP_I_TO_B, palette_indexes, map[B]);
+        if (A == A_max) {
+            static std::array<GLfloat, 255> max_alpha;
+            std::fill(max_alpha.begin(), max_alpha.end(), 255.0);
+            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, palette_indexes, (GLfloat*)max_alpha.data());
+        } else {
+            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, palette_indexes, map[A]);
+        }
     }
 
     const void *const pixels = data.get(host.mem);
-    const GLenum internal_format = translate_internal_format(fmt);
-    const GLenum format = translate_format(fmt);
+    const GLenum internal_format = texture::translate_internal_format(fmt);
+    const GLenum format = texture::translate_format(fmt);
+
     glPixelStorei(GL_UNPACK_ROW_LENGTH, (width + 7) & ~7);
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, GL_UNSIGNED_BYTE, pixels);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -1234,18 +1272,18 @@ EXPORT(int, sceGxmSetYuvProfile) {
 EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmFragmentProgram *fragmentProgram) {
     assert(shaderPatcher != nullptr);
     assert(fragmentProgram != nullptr);
-    
+
     ++fragmentProgram->reference_count;
-    
+
     return 0;
 }
 
 EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmVertexProgram *vertexProgram) {
     assert(shaderPatcher != nullptr);
     assert(vertexProgram != nullptr);
-    
+
     ++vertexProgram->reference_count;
-    
+
     return 0;
 }
 
@@ -1270,7 +1308,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
     assert(vertexProgram);
     assert(fragmentProgram != nullptr);
-    
+
     static const emu::SceGxmBlendInfo default_blend_info = {
         SCE_GXM_COLOR_MASK_ALL,
         SCE_GXM_BLEND_FUNC_NONE,
@@ -1291,13 +1329,13 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         *fragmentProgram = cached->second;
         return 0;
     }
-    
+
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
-    
+
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = programId->program;
     fp->glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
@@ -1318,7 +1356,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
 
     shaderPatcher->fragment_program_cache.emplace(key, *fragmentProgram);
-    
+
     return 0;
 }
 
@@ -1696,7 +1734,6 @@ EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteDa
     }
     
     texture->controlWords[3] = texture->controlWords[3] & 0xFC000000 | ((unsigned int)paletteData.address() >> 6);
-
     return 0;
 }
 
