@@ -5734,8 +5734,12 @@ NID(sceSasSetSimpleADSR, 0xECCE0DB8)
 NID(sceSasSetVoice, 0x2B75F9BC)
 NID(sceSasSetVoicePCM, 0xB1756EFC)
 NID(sceSasSetVolume, 0x0BE8204D)
+// Module "SceSblACMgr"
+// Library "SceSblACMgr"
+NID(_sceSblACMgrIsGameProgram, 0x3C17A7F7)
 // Module "SceSblUpdateMgr"
 // Library "SceSblSsUpdateMgr"
+NID(sceSblSsUpdateMgrGetBootMode, 0x8E834565)
 NID(sceSblSsUpdateMgrSetBootMode, 0xC725E3F0)
 // Module "SceScreenShot"
 // Library "SceScreenShot"

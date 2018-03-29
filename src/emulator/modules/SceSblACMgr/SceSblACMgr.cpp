@@ -15,15 +15,10 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSblSsUpdateMgr.h"
+#include "SceSblACMgr.h"
 
-EXPORT(int, sceSblSsUpdateMgrGetBootMode) {
-    return unimplemented("sceSblSsUpdateMgrGetBootMode");
+EXPORT(int, _sceSblACMgrIsGameProgram) {
+    return unimplemented("_sceSblACMgrIsGameProgram");
 }
 
-EXPORT(int, sceSblSsUpdateMgrSetBootMode) {
-    return unimplemented("sceSblSsUpdateMgrSetBootMode");
-}
-
-BRIDGE_IMPL(sceSblSsUpdateMgrGetBootMode)
-BRIDGE_IMPL(sceSblSsUpdateMgrSetBootMode)
+BRIDGE_IMPL(_sceSblACMgrIsGameProgram)
