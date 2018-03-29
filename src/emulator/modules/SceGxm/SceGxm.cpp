@@ -1587,7 +1587,8 @@ EXPORT(int, sceGxmTextureGetNormalizeMode) {
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, SceGxmTexture *texture) {
-	assert(texture != nullptr);
+    assert(texture != nullptr);
+    assert(texture::is_paletted_format(texture->format));
     return Ptr<void>(texture->controlWords[3] << 6);
 }
 
@@ -1629,7 +1630,6 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
         return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_ALIGNMENT);
     }else if (texture == nullptr){
         return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_POINTER);
-    }
     
     texture->controlWords[0] = ((((uint8_t)mipCount - 1) & 0xF) << 17) | 0x3E00090 | texFormat & 0x80000000;
     texture->controlWords[1] = (height - 1) | 0x60000000 | ((width - 1) << 12) | texFormat & 0x1F000000;
