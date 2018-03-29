@@ -41,9 +41,9 @@ namespace texture {
     GLenum translate_internal_format(SceGxmTextureFormat src);
     GLenum translate_format(SceGxmTextureFormat src);
     GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
-	SceGxmTextureFormat get_format(SceGxmTexture *texture);
-	unsigned int get_width(SceGxmTexture *texture);
-	unsigned int get_height(SceGxmTexture *texture);
+    SceGxmTextureFormat get_format(SceGxmTexture *texture);
+    unsigned int get_width(SceGxmTexture *texture);
+    unsigned int get_height(SceGxmTexture *texture);
 }
 GLenum translate_primitive(SceGxmPrimitiveType primType);
 bool operator<(const FragmentProgramCacheKey& a, const FragmentProgramCacheKey &b);
