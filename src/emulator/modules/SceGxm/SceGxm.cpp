@@ -33,25 +33,6 @@
 #include <iostream>
 #include <sstream>
 
-#ifndef HIWORD
-# define HIWORD(a) ((unsigned short)(((unsigned long)(a) >> 16) & 0xFFFF))
-#endif
-
-#ifndef __clz
-static inline uint32_t __clz(int32_t data){
-    uint32_t count = 0;
-    uint32_t mask = 0x80000000;
-
-    while((data & mask) == 0)
-    {
-      count += 1u;
-      mask = mask >> 1u;
-    }
-
-    return (count);
-}
-#endif
-
 using namespace emu;
 using namespace glbinding;
 
@@ -1036,10 +1017,10 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     SceGxmTextureFormat fmt = texture::get_format(texture);
     unsigned int width = texture::get_width(texture);
     unsigned int height = texture::get_height(texture);
-    Ptr<const void> data = Ptr<const void>(texture->controlWords[2] & 0xFFFFFFFC);
-    Ptr<void> palette = Ptr<void>(texture->controlWords[3] << 6);
-    SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)((texture->controlWords[0] >> 6) & 7);
-    SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)((texture->controlWords[0] >> 3) & 7);
+    Ptr<const void> data = Ptr<const void>(texture->data_addr << 2);
+    Ptr<void> palette = Ptr<void>(texture->palette_addr << 6);
+    SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(texture->uaddr_mode);
+    SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(texture->vaddr_mode);
 
     if (texture::is_paletted_format(fmt)) {
         const auto base_format = texture::get_base_format(fmt);
@@ -1538,7 +1519,7 @@ EXPORT(int, sceGxmTerminate) {
 
 EXPORT(int, sceGxmTextureGetData, SceGxmTexture *texture) {
 	assert(texture != nullptr);
-    return texture->controlWords[2] & 0xFFFFFFFC;
+    return texture->data_addr << 2;
 }
 
 EXPORT(int, sceGxmTextureGetAnisoMode) {
@@ -1546,6 +1527,7 @@ EXPORT(int, sceGxmTextureGetAnisoMode) {
 }
 
 EXPORT(int, sceGxmTextureGetFormat, SceGxmTexture *texture) {
+    assert(texture != nullptr);
     return texture::get_format(texture);
 }
 
@@ -1588,26 +1570,27 @@ EXPORT(int, sceGxmTextureGetNormalizeMode) {
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, SceGxmTexture *texture) {
     assert(texture != nullptr);
-    assert(texture::is_paletted_format(texture->format));
-    return Ptr<void>(texture->controlWords[3] << 6);
+    assert(texture::is_paletted_format(texture::get_format(texture)));
+    return Ptr<void>(texture->palette_addr << 6);
 }
 
 EXPORT(int, sceGxmTextureGetStride) {
     return unimplemented("sceGxmTextureGetStride");
 }
 
-EXPORT(int, sceGxmTextureGetType) {
-    return unimplemented("sceGxmTextureGetType");
+EXPORT(int, sceGxmTextureGetType, SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    return texture->type << 29;
 }
 
 EXPORT(int, sceGxmTextureGetUAddrMode, SceGxmTexture *texture) {
 	assert(texture != nullptr);
-    return (texture->controlWords[0] >> 6) & 7;
+    return texture->uaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetVAddrMode, SceGxmTexture *texture) {
 	assert(texture != nullptr);
-    return (texture->controlWords[0] >> 3) & 7;
+    return texture->vaddr_mode;
 }
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, SceGxmTexture *texture) {
@@ -1630,11 +1613,19 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
         return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_ALIGNMENT);
     }else if (texture == nullptr){
         return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_POINTER);
+    }
     
-    texture->controlWords[0] = ((((uint8_t)mipCount - 1) & 0xF) << 17) | 0x3E00090 | texFormat & 0x80000000;
-    texture->controlWords[1] = (height - 1) | 0x60000000 | ((width - 1) << 12) | texFormat & 0x1F000000;
-    texture->controlWords[2] = (uint32_t)data.address() & 0xFFFFFFFC;
-    texture->controlWords[3] = ((texFormat & 0x7000) << 16) | 0x80000000;
+    texture->mip_count = mipCount - 1;
+    texture->format0 = (texFormat & 0x80000000) >> 31;
+    texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+    texture->lod_bias = 31;
+    texture->height = height - 1;
+    texture->width = width - 1;
+    texture->base_format = (texFormat & 0x1F000000) >> 24;
+    texture->type = SCE_GXM_TEXTURE_LINEAR >> 29;
+    texture->data_addr = (uint32_t)data.address() >> 2;
+    texture->swizzle_format = (texFormat & 0x7000) >> 12;
+    texture->normalize_mode = 1;
 
     return 0;
 }
@@ -1660,7 +1651,7 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
         return error("sceGxmTextureSetData", SCE_GXM_ERROR_INVALID_POINTER);
     }
     
-    texture->controlWords[2] = (unsigned int)data.address() & 0xFFFFFFFC | texture->controlWords[2] & 3;
+    texture->data_addr = (unsigned int)data.address() >> 2;
     return 0;
 }
 
@@ -1683,29 +1674,24 @@ EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height)
         return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_VALUE);
     }
     
-    if ((texture->controlWords[1] & 0xE0000000) == 0x80000000){
-        char unk = (((texture->controlWords[0] >> 17) & 0xF) + 1) & 0xF;
-        if ((((texture->controlWords[0] >> 17) & 0xF) + 1) & 0xF){
-            unk--;
-        }
-        if (height >> unk > 0x1F){
-            goto LINEAR;
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED){
+        if (texture->mip_count > 1){
+            if (height >> (texture->mip_count - 1) >> 0x1F){
+                goto LINEAR;
+            }
         }
         return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_VALUE);
     }
     
-    if (texture->controlWords[1] & 0xA0000000){
+    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
 LINEAR:
-        texture->controlWords[1] = (height - 1) | texture->controlWords[1] & 0xFFFFF000;
+        texture->height = height - 1;
         return 0;
     }
     
-    if ((height - 1) & height){
-        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_ALIGNMENT);
-    }else{
-        texture->controlWords[1] = (31 - __clz(height)) | texture->controlWords[1] & 0xFFFFFFF0;
-    }
-    return (height - 1) & height;
+    // TODO: Add support for swizzled textures
+    
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetLodBias) {
@@ -1740,10 +1726,10 @@ EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteDa
     if (texture == nullptr){
         return error("sceGxmTextureSetPalette", SCE_GXM_ERROR_INVALID_POINTER);
     }else if ((uint8_t)paletteData.address() & 0x3F){
-        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        return error("sceGxmTextureSetPalette", SCE_GXM_ERROR_INVALID_ALIGNMENT);
     }
     
-    texture->controlWords[3] = texture->controlWords[3] & 0xFC000000 | ((unsigned int)paletteData.address() >> 6);
+    texture->palette_addr = ((unsigned int)paletteData.address() >> 6);
     return 0;
 }
 
@@ -1755,25 +1741,18 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     if (texture == nullptr){
         return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_INVALID_POINTER);
     }
-    if ((texture->controlWords[1] & 0x60000000) == 0x40000000 || (texture->controlWords[1] & 0xE0000000) == 0xE0000000){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == 0xE0000000){ // TODO: Find out what that value means
         if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
             return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
         }
     }else{
         if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER){
-            char unk = (texture->controlWords[1] & 0xE0000000 == 0xA0000000);
-            if (texture->controlWords[1] & 0xE0000000 != 0xA0000000){
-                unk = (texture->controlWords[1] & 0xE0000000 == 0);
-            }
-            if (!unk){
+            if ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED){
                 return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
-        if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) && (texture->controlWords[1] & 0xE0000000)){
-            return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
-        }
     }
-    texture->controlWords[0] = ((int)mode << 6) & 0x1C0 | texture->controlWords[0] & 0xFFFFFE3F;
+    texture->uaddr_mode = mode;
     return 0;
 }
 
@@ -1781,25 +1760,18 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     if (texture == nullptr){
         return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_INVALID_POINTER);
     }
-    if ((texture->controlWords[1] & 0x60000000) == 0x40000000 || (texture->controlWords[1] & 0xE0000000) == 0xE0000000){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == 0xE0000000){ // TODO: Find out what that value means
         if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
             return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
         }
     }else{
         if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER){
-            char unk = ((texture->controlWords[1] & 0xE0000000) == 0xA0000000);
-            if (texture->controlWords[1] & 0xE0000000 != 0xA0000000){
-                unk = ((texture->controlWords[1] & 0xE0000000) == 0);
-            }
-            if (!unk){
+            if ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED){
                 return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
-        if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) && (texture->controlWords[1] & 0xE0000000)){
-            return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
-        }
     }
-    texture->controlWords[0] = 8 * (uint8_t)mode & 0x38 | texture->controlWords[0] & 0xFFFFFFC7;
+    texture->vaddr_mode = mode;
     return 0;
 }
 
@@ -1810,29 +1782,23 @@ EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
         return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_VALUE);
     }
     
-    if (texture->controlWords[1] == 0x80000000){
-        char unk = (((texture->controlWords[0] >> 17) & 0xF) + 1) & 0xF;
-        if (unk){
-            unk--;
-        }
-        if (width >> unk >> 0x1F){
-            goto LINEAR;
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED){
+        if (texture->mip_count > 1){
+            if (width >> (texture->mip_count - 1) >> 0x1F){
+                goto LINEAR;
+            }
         }
         return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_VALUE);
     }
     
-    if (texture->controlWords[1] == 0xA0000000){
+    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
 LINEAR:
-        texture->controlWords[1] = texture->controlWords[1] & 0xFF000FFF | ((width - 1) << 12);
-        return 0;
+        texture->width = width - 1;
     }
     
-    if ((width - 1) & width){
-        return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_ALIGNMENT);
-    }else{
-        texture->controlWords[1] = texture->controlWords[1] & 0xFFF0FFFF | ((31 - __clz(width)) << 16);
-    }
-    return (width - 1) & width;
+    // TODO: Add support for swizzled textures
+    
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureValidate) {
