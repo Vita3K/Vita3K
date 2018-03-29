@@ -1531,8 +1531,9 @@ EXPORT(int, sceGxmTextureGetFormat, SceGxmTexture *texture) {
     return texture::get_format(texture);
 }
 
-EXPORT(int, sceGxmTextureGetGammaMode) {
-    return unimplemented("sceGxmTextureGetGammaMode");
+EXPORT(int, sceGxmTextureGetGammaMode, SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    return texture->gamma_mode << 27;
 }
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, SceGxmTexture *texture) {
@@ -1540,32 +1541,49 @@ EXPORT(unsigned int, sceGxmTextureGetHeight, SceGxmTexture *texture) {
     return texture::get_height(texture);
 }
 
-EXPORT(int, sceGxmTextureGetLodBias) {
-    return unimplemented("sceGxmTextureGetLodBias");
+EXPORT(int, sceGxmTextureGetLodBias, SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    if (texture->type == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        return 0;
+    }
+    return texture->lod_bias;
 }
 
 EXPORT(int, sceGxmTextureGetLodMin) {
     return unimplemented("sceGxmTextureGetLodMin");
 }
 
-EXPORT(int, sceGxmTextureGetMagFilter) {
-    return unimplemented("sceGxmTextureGetMagFilter");
+EXPORT(int, sceGxmTextureGetMagFilter, SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    return texture->mag_filter;
 }
 
-EXPORT(int, sceGxmTextureGetMinFilter) {
-    return unimplemented("sceGxmTextureGetMinFilter");
+EXPORT(int, sceGxmTextureGetMinFilter, SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    if (texture->type == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        return texture->mag_filter;
+    }
+    return texture->min_filter;
 }
 
-EXPORT(int, sceGxmTextureGetMipFilter) {
-    return unimplemented("sceGxmTextureGetMipFilter");
+EXPORT(int, sceGxmTextureGetMipFilter, SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    if (texture->type == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        return 0;
+    }
+    return texture->mip_filter ? SCE_GXM_TEXTURE_MIP_FILTER_ENABLED : SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 }
 
-EXPORT(int, sceGxmTextureGetMipmapCount) {
-    return unimplemented("sceGxmTextureGetMipmapCount");
+EXPORT(int, sceGxmTextureGetMipmapCount, SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    if (texture->type == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        return 0;
+    }
+    return texture->mip_count + 1;
 }
 
-EXPORT(int, sceGxmTextureGetNormalizeMode) {
-    return unimplemented("sceGxmTextureGetNormalizeMode");
+EXPORT(int, sceGxmTextureGetNormalizeMode, SceGxmTexture *texture) {
+    return texture->normalize_mode << 31;
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, SceGxmTexture *texture) {
