@@ -290,7 +290,6 @@ EXPORT(int, sceGxmDepthStencilSurfaceGetStrideInSamples) {
 
 EXPORT(int, sceGxmDepthStencilSurfaceInit, emu::SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, unsigned int strideInSamples, Ptr<void> depthData, Ptr<void> stencilData) {
     assert(surface != nullptr);
-    assert(depthStencilFormat == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24);
     assert(surfaceType == SCE_GXM_DEPTH_STENCIL_SURFACE_TILED);
     assert(strideInSamples > 0);
     assert(depthData);
@@ -868,7 +867,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
 
     *uniformBuffer = context->params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->fragment_ring_buffer_used);
     context->fragment_ring_buffer_used = next_used;
-
+    
     context->fragment_uniform_buffers[14] = *uniformBuffer;
 
     return 0;
@@ -891,7 +890,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
 
     *uniformBuffer = context->params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->vertex_ring_buffer_used);
     context->vertex_ring_buffer_used = next_used;
-
+    
     context->vertex_uniform_buffers[14] = *uniformBuffer;
 
     return 0;
@@ -992,7 +991,7 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     assert(fragmentProgram);
 
     context->fragment_program = fragmentProgram;
-
+    
     const SceGxmFragmentProgram &fragment_program = *fragmentProgram.get(host.mem);
     glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
     if (fragment_program.blend_enabled) {
@@ -1295,8 +1294,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     };
     const FragmentProgramCacheKey key = {
         *programId,
-        (blendInfo != nullptr) ? *blendInfo : default_blend_info,
-        vertexProgram
+        (blendInfo != nullptr) ? *blendInfo : default_blend_info
     };
     FragmentProgramCache::const_iterator cached = shaderPatcher->fragment_program_cache.find(key);
     if (cached != shaderPatcher->fragment_program_cache.end()) {
@@ -1619,8 +1617,9 @@ EXPORT(int, sceGxmTextureInitLinear, emu::SceGxmTexture *texture, Ptr<const void
             default:
                 LOG_WARN("Initialized texture with untested paletted texture format: {:#08X}", texFormat);
             }
-        } else
+        } else {
             LOG_ERROR("Initialized texture with unsupported texture format: {:#08X}", texFormat);
+        }
     }
 
     texture->format = texFormat;
