@@ -20,6 +20,8 @@
 #include <SDL_power.h>
 #include <psp2/power.h>
 
+#include <climits>
+
 #define LOW_BATTERY_PERCENT 10
 
 EXPORT(int, scePowerBatteryUpdateInfo) {
