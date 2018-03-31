@@ -1004,7 +1004,7 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     }
 }
 
-EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, SceGxmTexture *texture) {
+EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const SceGxmTexture *texture) {
     assert(context != nullptr);
     assert(texture != nullptr);
 
@@ -1517,76 +1517,80 @@ EXPORT(int, sceGxmTerminate) {
     return 0;
 }
 
-EXPORT(int, sceGxmTextureGetData, SceGxmTexture *texture) {
+EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
 	assert(texture != nullptr);
-    return texture->data_addr << 2;
+    return Ptr<void>(texture->data_addr << 2);
 }
 
 EXPORT(int, sceGxmTextureGetAnisoMode) {
     return unimplemented("sceGxmTextureGetAnisoMode");
 }
 
-EXPORT(int, sceGxmTextureGetFormat, SceGxmTexture *texture) {
+EXPORT(SceGxmTextureFormat, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
     assert(texture != nullptr);
     return texture::get_format(texture);
 }
 
-EXPORT(int, sceGxmTextureGetGammaMode, SceGxmTexture *texture) {
+EXPORT(SceGxmTextureGammaMode, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return texture->gamma_mode << 27;
+    return (SceGxmTextureGammaMode)(texture->gamma_mode << 27);
 }
 
-EXPORT(unsigned int, sceGxmTextureGetHeight, SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
 	assert(texture != nullptr);
     return texture::get_height(texture);
 }
 
-EXPORT(int, sceGxmTextureGetLodBias, SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    if (texture->type == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return 0;
     }
     return texture->lod_bias;
 }
 
-EXPORT(int, sceGxmTextureGetLodMin) {
-    return unimplemented("sceGxmTextureGetLodMin");
-}
-
-EXPORT(int, sceGxmTextureGetMagFilter, SceGxmTexture *texture) {
-    assert(texture != nullptr);
-    return texture->mag_filter;
-}
-
-EXPORT(int, sceGxmTextureGetMinFilter, SceGxmTexture *texture) {
-    assert(texture != nullptr);
-    if (texture->type == SCE_GXM_TEXTURE_LINEAR_STRIDED){
-        return texture->mag_filter;
-    }
-    return texture->min_filter;
-}
-
-EXPORT(int, sceGxmTextureGetMipFilter, SceGxmTexture *texture) {
-    assert(texture != nullptr);
-    if (texture->type == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
+	assert(texture != nullptr);
+	if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return 0;
+    }
+    return (texture->lod_min0 << 2) | texture->lod_min1;
+}
+
+EXPORT(SceGxmTextureFilter, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    return (SceGxmTextureFilter)texture->mag_filter;
+}
+
+EXPORT(SceGxmTextureFilter, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        return (SceGxmTextureFilter)texture->mag_filter;
+    }
+    return (SceGxmTextureFilter)texture->min_filter;
+}
+
+EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
+    assert(texture != nullptr);
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        return SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
     }
     return texture->mip_filter ? SCE_GXM_TEXTURE_MIP_FILTER_ENABLED : SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 }
 
-EXPORT(int, sceGxmTextureGetMipmapCount, SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    if (texture->type == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return 0;
     }
     return texture->mip_count + 1;
 }
 
-EXPORT(int, sceGxmTextureGetNormalizeMode, SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
     return texture->normalize_mode << 31;
 }
 
-EXPORT(Ptr<void>, sceGxmTextureGetPalette, SceGxmTexture *texture) {
+EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
     assert(texture != nullptr);
     assert(texture::is_paletted_format(texture::get_format(texture)));
     return Ptr<void>(texture->palette_addr << 6);
@@ -1596,22 +1600,22 @@ EXPORT(int, sceGxmTextureGetStride) {
     return unimplemented("sceGxmTextureGetStride");
 }
 
-EXPORT(int, sceGxmTextureGetType, SceGxmTexture *texture) {
+EXPORT(SceGxmTextureType, sceGxmTextureGetType, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return texture->type << 29;
+    return (SceGxmTextureType)(texture->type << 29);
 }
 
-EXPORT(int, sceGxmTextureGetUAddrMode, SceGxmTexture *texture) {
+EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetUAddrMode, const SceGxmTexture *texture) {
 	assert(texture != nullptr);
-    return texture->uaddr_mode;
+    return (SceGxmTextureAddrMode)texture->uaddr_mode;
 }
 
-EXPORT(int, sceGxmTextureGetVAddrMode, SceGxmTexture *texture) {
+EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
 	assert(texture != nullptr);
-    return texture->vaddr_mode;
+    return (SceGxmTextureAddrMode)texture->vaddr_mode;
 }
 
-EXPORT(unsigned int, sceGxmTextureGetWidth, SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
 	assert(texture != nullptr);
     return texture::get_width(texture);
 }
@@ -1641,7 +1645,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     texture->width = width - 1;
     texture->base_format = (texFormat & 0x1F000000) >> 24;
     texture->type = SCE_GXM_TEXTURE_LINEAR >> 29;
-    texture->data_addr = (uint32_t)data.address() >> 2;
+    texture->data_addr = data.address() >> 2;
     texture->swizzle_format = (texFormat & 0x7000) >> 12;
     texture->normalize_mode = 1;
 
@@ -1759,7 +1763,7 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     if (texture == nullptr){
         return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_INVALID_POINTER);
     }
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == 0xE0000000){ // TODO: Find out what that value means
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == SCE_GXM_TEXTURE_CUBE_ARBITRARY){
         if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
             return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
         }
@@ -1778,7 +1782,7 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     if (texture == nullptr){
         return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_INVALID_POINTER);
     }
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == 0xE0000000){ // TODO: Find out what that value means
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == SCE_GXM_TEXTURE_CUBE_ARBITRARY){
         if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
             return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
         }
