@@ -1725,7 +1725,8 @@ LINEAR:
     }
     
     // TODO: Add support for swizzled textures
-    
+    LOG_WARN("Unimplemented texture format detected in sceGxmTextureSetHeight call.");
+	
     return 0;
 }
 
@@ -1832,7 +1833,8 @@ LINEAR:
     }
     
     // TODO: Add support for swizzled textures
-    
+    LOG_WARN("Unimplemented texture format detected in sceGxmTextureSetWidth call.");
+	
     return 0;
 }
 
