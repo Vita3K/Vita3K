@@ -1522,10 +1522,6 @@ EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
     return Ptr<void>(texture->data_addr << 2);
 }
 
-EXPORT(int, sceGxmTextureGetAnisoMode) {
-    return unimplemented("sceGxmTextureGetAnisoMode");
-}
-
 EXPORT(SceGxmTextureFormat, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
     assert(texture != nullptr);
     return texture::get_format(texture);
@@ -1586,6 +1582,10 @@ EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) 
     return texture->mip_count + 1;
 }
 
+EXPORT(int, sceGxmTextureGetMipmapCountUnsafe) {
+    return unimplemented("sceGxmTextureGetMipmapCountUnsafe");
+}
+
 EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
     return texture->normalize_mode << 31;
 }
@@ -1610,9 +1610,17 @@ EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetUAddrMode, const SceGxmTexture *te
     return (SceGxmTextureAddrMode)texture->uaddr_mode;
 }
 
+EXPORT(int, sceGxmTextureGetUAddrModeSafe) {
+    return unimplemented("sceGxmTextureGetUAddrModeSafe");
+}
+
 EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
 	assert(texture != nullptr);
     return (SceGxmTextureAddrMode)texture->vaddr_mode;
+}
+
+EXPORT(int, sceGxmTextureGetVAddrModeSafe) {
+    return unimplemented("sceGxmTextureGetVAddrModeSafe");
 }
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
@@ -1677,8 +1685,8 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetAnisoMode) {
-    return unimplemented("sceGxmTextureSetAnisoMode");
+EXPORT(int, sceGxmTextureSetData) {
+    return unimplemented("sceGxmTextureSetData");
 }
 
 EXPORT(int, sceGxmTextureSetFormat) {
@@ -2081,7 +2089,6 @@ BRIDGE_IMPL(sceGxmShaderPatcherUnregisterProgram)
 BRIDGE_IMPL(sceGxmSyncObjectCreate)
 BRIDGE_IMPL(sceGxmSyncObjectDestroy)
 BRIDGE_IMPL(sceGxmTerminate)
-BRIDGE_IMPL(sceGxmTextureGetAnisoMode)
 BRIDGE_IMPL(sceGxmTextureGetData)
 BRIDGE_IMPL(sceGxmTextureGetFormat)
 BRIDGE_IMPL(sceGxmTextureGetGammaMode)
@@ -2092,12 +2099,15 @@ BRIDGE_IMPL(sceGxmTextureGetMagFilter)
 BRIDGE_IMPL(sceGxmTextureGetMinFilter)
 BRIDGE_IMPL(sceGxmTextureGetMipFilter)
 BRIDGE_IMPL(sceGxmTextureGetMipmapCount)
+BRIDGE_IMPL(sceGxmTextureGetMipmapCountUnsafe)
 BRIDGE_IMPL(sceGxmTextureGetNormalizeMode)
 BRIDGE_IMPL(sceGxmTextureGetPalette)
 BRIDGE_IMPL(sceGxmTextureGetStride)
 BRIDGE_IMPL(sceGxmTextureGetType)
 BRIDGE_IMPL(sceGxmTextureGetUAddrMode)
+BRIDGE_IMPL(sceGxmTextureGetUAddrModeSafe)
 BRIDGE_IMPL(sceGxmTextureGetVAddrMode)
+BRIDGE_IMPL(sceGxmTextureGetVAddrModeSafe)
 BRIDGE_IMPL(sceGxmTextureGetWidth)
 BRIDGE_IMPL(sceGxmTextureInitCube)
 BRIDGE_IMPL(sceGxmTextureInitCubeArbitrary)
@@ -2106,7 +2116,6 @@ BRIDGE_IMPL(sceGxmTextureInitLinearStrided)
 BRIDGE_IMPL(sceGxmTextureInitSwizzled)
 BRIDGE_IMPL(sceGxmTextureInitSwizzledArbitrary)
 BRIDGE_IMPL(sceGxmTextureInitTiled)
-BRIDGE_IMPL(sceGxmTextureSetAnisoMode)
 BRIDGE_IMPL(sceGxmTextureSetData)
 BRIDGE_IMPL(sceGxmTextureSetFormat)
 BRIDGE_IMPL(sceGxmTextureSetGammaMode)
