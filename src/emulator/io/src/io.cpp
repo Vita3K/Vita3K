@@ -269,6 +269,11 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
     if (tty_file != io.tty_files.end()) {
         if (tty_file->second == TTY_OUT) {
             std::string s(reinterpret_cast<char const *>(data), size);
+
+            // trim newline
+            if (s.back() == '\n') {
+                s.back() = '\0';
+            }
             LOG_INFO("*** TTY: {}", s);
             return size;
         }
