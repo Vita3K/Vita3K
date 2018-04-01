@@ -564,18 +564,18 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
 
 namespace texture {
 	
-SceGxmTextureFormat get_format(SceGxmTexture *texture){
+SceGxmTextureFormat get_format(const SceGxmTexture *texture){
     return (SceGxmTextureFormat)((texture->base_format << 24) | (texture->format0 << 31) | (texture->swizzle_format << 12));
 }
 
-unsigned int get_width(SceGxmTexture *texture){
+unsigned int get_width(const SceGxmTexture *texture){
     if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
         return texture->width + 1;
     }
     return 1 << (texture->width & 0xF);
 }
 
-unsigned int get_height(SceGxmTexture *texture){
+unsigned int get_height(const SceGxmTexture *texture){
     if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
         return texture->height + 1;
     }

@@ -1582,8 +1582,9 @@ EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) 
     return texture->mip_count + 1;
 }
 
-EXPORT(int, sceGxmTextureGetMipmapCountUnsafe) {
-    return unimplemented("sceGxmTextureGetMipmapCountUnsafe");
+EXPORT(unsigned int, sceGxmTextureGetMipmapCountUnsafe, const SceGxmTexture *texture) {
+	assert(texture != nullptr);
+    return texture->mip_count + 1;
 }
 
 EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
@@ -1610,8 +1611,12 @@ EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetUAddrMode, const SceGxmTexture *te
     return (SceGxmTextureAddrMode)texture->uaddr_mode;
 }
 
-EXPORT(int, sceGxmTextureGetUAddrModeSafe) {
-    return unimplemented("sceGxmTextureGetUAddrModeSafe");
+EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
+    assert(texture != nullptr);
+	if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        return SCE_GXM_TEXTURE_ADDR_CLAMP;
+    }
+    return (SceGxmTextureAddrMode)texture->uaddr_mode;
 }
 
 EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
@@ -1619,8 +1624,12 @@ EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetVAddrMode, const SceGxmTexture *te
     return (SceGxmTextureAddrMode)texture->vaddr_mode;
 }
 
-EXPORT(int, sceGxmTextureGetVAddrModeSafe) {
-    return unimplemented("sceGxmTextureGetVAddrModeSafe");
+EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
+	assert(texture != nullptr);
+	if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        return SCE_GXM_TEXTURE_ADDR_CLAMP;
+    }
+    return (SceGxmTextureAddrMode)texture->vaddr_mode;
 }
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
@@ -1681,12 +1690,8 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
         return error("sceGxmTextureSetData", SCE_GXM_ERROR_INVALID_POINTER);
     }
     
-    texture->data_addr = (unsigned int)data.address() >> 2;
+    texture->data_addr = data.address() >> 2;
     return 0;
-}
-
-EXPORT(int, sceGxmTextureSetData) {
-    return unimplemented("sceGxmTextureSetData");
 }
 
 EXPORT(int, sceGxmTextureSetFormat) {
