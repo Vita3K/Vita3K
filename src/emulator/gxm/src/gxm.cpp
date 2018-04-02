@@ -563,7 +563,7 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
 }
 
 namespace texture {
-	
+    
 SceGxmTextureFormat get_format(const SceGxmTexture *texture){
     return (SceGxmTextureFormat)((texture->base_format << 24) | (texture->format0 << 31) | (texture->swizzle_format << 12));
 }
