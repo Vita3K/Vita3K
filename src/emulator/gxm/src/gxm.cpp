@@ -57,16 +57,19 @@ static const char *vector_prefix(SceGxmParameterType type) {
         case SCE_GXM_PARAMETER_TYPE_F32: return "";
         case SCE_GXM_PARAMETER_TYPE_U32: return "u";
         case SCE_GXM_PARAMETER_TYPE_S32: return "i";
+        default:
+        {
+            LOG_ERROR("Unsupported parameter type {:#x} used in shader.", type);
+        }
+        return "?";
     }
-
-    return "?";
 }
 
 static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
     assert(parameter.component_count == 1);
-
-    glsl << scalar_type(static_cast<SceGxmParameterType>(parameter.type)) << " " << parameter_name(parameter);
-    if (parameter.array_size != 1) {
+    
+    glsl << scalar_type(parameter_type(parameter)) << " " << parameter_name(parameter);
+    if (parameter.array_size > 1) {
         glsl << "[" << parameter.array_size << "]";
     }
 }
@@ -116,9 +119,11 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
     const SceGxmProgramParameter *const parameters = program_parameters(program);
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
-        switch (static_cast<SceGxmParameterCategory>(parameter.category)) {
+        LOG_DEBUG("Vertex attribute: name:{:s} category:{:x} type:{:x} component_count:{:x} container_index:{:x}",
+            parameter_name(parameter), parameter.category, parameter.type, parameter.component_count, parameter.container_index);
+        switch (parameter.category) {
             case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
-                glsl << "attribute ";
+                glsl << "in ";
                 output_glsl_decl(glsl, parameter);
                 break;
             case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
@@ -145,13 +150,15 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
 static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
 
+    LOG_DEBUG("Generating fragment shader");
+
     std::ostringstream glsl;
     glsl << "// Fragment shader.\n";
     glsl << "#version 120\n";
     output_glsl_parameters(glsl, program);
     glsl << "\n";
     glsl << "void main() {\n";
-    glsl << "    gl_FragColor = vec4(1, 0, 1, 1);\n";
+    glsl << "    gl_FragColor = vec4(0, 1, 0, 1);\n";
     glsl << "}\n";
 
     return glsl.str();
@@ -159,6 +166,8 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
 
 static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
+
+    LOG_DEBUG("Generating vertex shader");
 
     std::ostringstream glsl;
     glsl << "// Vertex shader.\n";
@@ -173,6 +182,8 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
 }
 
 static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source) {
+    LOG_DEBUG("Dumping GXM and GLSL shaders: {}", hash);
+
     // Dump missing shader GLSL.
     std::ostringstream glsl_path;
     glsl_path << hash << "." << extension;
@@ -192,7 +203,7 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
     }
 }
 
-static SharedGLObject compile_glsl(GLenum type, const GLchar *source) {
+static SharedGLObject compile_glsl(GLenum type, const std::string& source) {
     GXM_PROFILE(__FUNCTION__);
 
     const SharedGLObject shader = std::make_shared<GLObject>();
@@ -200,8 +211,9 @@ static SharedGLObject compile_glsl(GLenum type, const GLchar *source) {
         return SharedGLObject();
     }
 
-    const GLint length = static_cast<GLint>(strlen(source));
-    glShaderSource(shader->get(), 1, &source, &length);
+    const GLchar* source_glchar = static_cast<const GLchar*>(source.c_str());
+    const GLint length = static_cast<GLint>(source.length());
+    glShaderSource(shader->get(), 1, &source_glchar, &length);
 
     glCompileShader(shader->get());
 
@@ -287,7 +299,7 @@ static void set_uniforms(GLuint gl_program, const UniformBuffers &uniform_buffer
             continue;
         }
 
-        const SceGxmParameterType type = static_cast<SceGxmParameterType>(parameter.type);
+        const SceGxmParameterType type = static_cast<SceGxmParameterType>(static_cast<uint16_t>(parameter.type));
         const Ptr<const void> uniform_buffer = uniform_buffers[parameter.container_index];
         if (!uniform_buffer) {
             LOG_WARN("Uniform buffer {} not set for parameter {}.", parameter.container_index, name);
@@ -400,13 +412,14 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
         return cached->second;
     }
 
-    const SharedGLObject fragment_shader = compile_glsl(GL_FRAGMENT_SHADER, fragment_program.glsl.c_str());
+    const SharedGLObject fragment_shader = compile_glsl(GL_FRAGMENT_SHADER, fragment_program.glsl);
     if (!fragment_shader) {
+        LOG_CRITICAL("Error in compiled fragment shader:\n{}", fragment_program.glsl);
         return SharedGLObject();
     }
-
     const SharedGLObject vertex_shader = compile_glsl(GL_VERTEX_SHADER, vertex_program.glsl.c_str());
     if (!vertex_shader) {
+        LOG_CRITICAL("Error in compiled vertex shader:\n{}", vertex_program.glsl);
         return SharedGLObject();
     }
 
@@ -622,8 +635,6 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
         case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
             // TODO: this is inaccurate
             return GL_INTENSITY8;
-        case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-            return GL_RGB8;
         default:
         {
             return GL_RGBA8;
