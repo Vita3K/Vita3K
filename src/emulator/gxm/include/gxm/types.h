@@ -27,17 +27,6 @@ namespace emu {
 
     static_assert(sizeof(SceGxmBlendInfo) == 4, "Incorrect size.");
 
-    struct SceGxmTexture {
-        //uint32_t controlWords[4];
-        SceGxmTextureFormat format;
-        uint16_t width;
-        uint16_t height;
-        Ptr<const void> data;
-        Ptr<void> palette;
-    };
-
-    static_assert(sizeof(SceGxmTexture) == 16, "Incorrect size.");
-
     struct SceGxmColorSurface {
         uint32_t pbeSidebandWord;
         uint32_t pbeEmitWords[6];

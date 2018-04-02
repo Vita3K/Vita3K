@@ -563,6 +563,24 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
 }
 
 namespace texture {
+	
+SceGxmTextureFormat get_format(const SceGxmTexture *texture){
+    return (SceGxmTextureFormat)((texture->base_format << 24) | (texture->format0 << 31) | (texture->swizzle_format << 12));
+}
+
+unsigned int get_width(const SceGxmTexture *texture){
+    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
+        return texture->width + 1;
+    }
+    return 1 << (texture->width & 0xF);
+}
+
+unsigned int get_height(const SceGxmTexture *texture){
+    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
+        return texture->height + 1;
+    }
+    return 1 << (texture->height & 0xF);
+}
 
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src) {
     return static_cast<SceGxmTextureBaseFormat>(src & 0xFF000000);
@@ -624,7 +642,34 @@ GLenum translate_format(SceGxmTextureFormat src) {
     }
 }
 
+GLenum translate_wrap_mode(SceGxmTextureAddrMode src){
+    GXM_PROFILE(__FUNCTION__);
+
+    switch (src) {
+        case SCE_GXM_TEXTURE_ADDR_REPEAT:
+            return GL_REPEAT;
+        case SCE_GXM_TEXTURE_ADDR_CLAMP:
+            return GL_CLAMP_TO_EDGE;
+        case SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP:
+            return GL_MIRROR_CLAMP_TO_EDGE;
+        case SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER:
+            return GL_REPEAT; // FIXME: Is this correct?
+        case SCE_GXM_TEXTURE_ADDR_CLAMP_FULL_BORDER:
+            return GL_CLAMP_TO_BORDER;
+        case SCE_GXM_TEXTURE_ADDR_CLAMP_IGNORE_BORDER:
+            return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
+        case SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER:
+            return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
+        default:
+        {
+            LOG_WARN("Unsupported texture wrap mode translated: {:#08X}", src);
+            return GL_CLAMP_TO_EDGE;
+        }
+    }
+}
+
 } // namespace texture
+
 GLenum translate_primitive(SceGxmPrimitiveType primType){
     GXM_PROFILE(__FUNCTION__);
 

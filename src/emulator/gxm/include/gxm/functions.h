@@ -40,6 +40,10 @@ namespace texture {
     bool is_paletted_format(SceGxmTextureFormat src);
     GLenum translate_internal_format(SceGxmTextureFormat src);
     GLenum translate_format(SceGxmTextureFormat src);
+    GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
+    SceGxmTextureFormat get_format(const SceGxmTexture *texture);
+    unsigned int get_width(const SceGxmTexture *texture);
+    unsigned int get_height(const SceGxmTexture *texture);
 }
 GLenum translate_primitive(SceGxmPrimitiveType primType);
 bool operator<(const FragmentProgramCacheKey& a, const FragmentProgramCacheKey &b);
