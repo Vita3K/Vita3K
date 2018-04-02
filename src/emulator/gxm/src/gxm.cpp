@@ -444,7 +444,7 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
     glDetachShader(program->get(), vertex_shader->get());
 
     context.program_cache.emplace(glsls, program);
-
+    
     return program;
 }
 
@@ -570,18 +570,19 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
 namespace texture {
     
 SceGxmTextureFormat get_format(const SceGxmTexture *texture){
-    return (SceGxmTextureFormat)((texture->base_format << 24) | (texture->format0 << 31) | (texture->swizzle_format << 12));
+    return static_cast<SceGxmTextureFormat>(
+        texture->base_format << 24 | texture->format0 << 31 | texture->swizzle_format << 12);
 }
 
 unsigned int get_width(const SceGxmTexture *texture){
-    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
+    if (texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED && texture->type << 29 != SCE_GXM_TEXTURE_TILED) {
         return texture->width + 1;
     }
     return 1 << (texture->width & 0xF);
 }
 
 unsigned int get_height(const SceGxmTexture *texture){
-    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
+    if (texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED && texture->type << 29 != SCE_GXM_TEXTURE_TILED) {
         return texture->height + 1;
     }
     return 1 << (texture->height & 0xF);
@@ -612,8 +613,14 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
 
     switch (src) {
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+        case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
             return GL_RGBA8;
+        case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
+            return GL_RGBA4;
         case SCE_GXM_TEXTURE_FORMAT_U8_R111:
+        case SCE_GXM_TEXTURE_FORMAT_U8_111R:
+        case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
+            // TODO: this is inaccurate
             return GL_INTENSITY8;
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
             return GL_RGB8;
@@ -634,11 +641,19 @@ GLenum translate_format(SceGxmTextureFormat src) {
 
     switch (src) {
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+        case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
             return GL_RGBA;
         case SCE_GXM_TEXTURE_FORMAT_U8_R111:
+            // TODO: this is inaccurate
             return GL_RED;
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
             return GL_RGB;
+        case SCE_GXM_TEXTURE_FORMAT_U8_111R:
+            // TODO: this is inaccurate
+            return GL_ALPHA;
+        case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
+            // TODO: this is inaccurate
+            return GL_INTENSITY;
         default:
         {
             LOG_WARN("Unsupported texture format translated: {:#08X}", src);
@@ -689,12 +704,28 @@ GLenum translate_minmag_filter(SceGxmTextureFilter src){
     }
 }
 
+GLenum translate_type(SceGxmTextureFormat format)
+{
+    const auto base_format = texture::get_base_format(format);
+    switch (base_format) {
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+            return GL_UNSIGNED_SHORT_4_4_4_4;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+            return GL_UNSIGNED_BYTE;
+        default:
+        {
+            LOG_WARN("Unsupported texture type translated for {:#08x}", format);
+            return GL_UNSIGNED_BYTE;
+        }
+    }
+}
+
 } // namespace texture
 
 GLenum translate_primitive(SceGxmPrimitiveType primType){
     GXM_PROFILE(__FUNCTION__);
 
-    switch (primType){
+    switch (primType) {
         case SCE_GXM_PRIMITIVE_TRIANGLES:
             return GL_TRIANGLES;
         case SCE_GXM_PRIMITIVE_TRIANGLE_STRIP:
