@@ -1651,14 +1651,38 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary) {
 }
 
 EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
-    if (width > 4096 || height > 4096 || mipCount > 13){
+    if (width > 4096 || height > 4096 || mipCount > 13) {
         return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_VALUE);
-    }else if (!data){
+    } else if (!data) {
         return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_ALIGNMENT);
-    }else if (texture == nullptr){
+    } else if (texture == nullptr) {
         return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_POINTER);
     }
-    
+
+    // Add supported formats here
+
+    switch(texFormat) {
+    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+    case SCE_GXM_TEXTURE_FORMAT_U8_R111:
+    case SCE_GXM_TEXTURE_FORMAT_U8_111R:
+    case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
+        break;
+
+    default:
+        if (texture::is_paletted_format(texFormat)) {
+            switch (texFormat) {
+            case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
+            case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:
+                break;
+            default:
+                LOG_WARN("Initialized texture with untested paletted texture format: {:#08x}", texFormat);
+            }
+        } else
+            LOG_ERROR("Initialized texture with unsupported texture format: {:#08x}", texFormat);
+    }
+
     texture->mip_count = mipCount - 1;
     texture->format0 = (texFormat & 0x80000000) >> 31;
     texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;

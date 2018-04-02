@@ -626,7 +626,6 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
             return GL_RGB8;
         default:
         {
-            LOG_WARN("Unsupported internal texture format translated: {:#08X}", src);
             return GL_RGBA8;
         }
     }
@@ -656,7 +655,6 @@ GLenum translate_format(SceGxmTextureFormat src) {
             return GL_INTENSITY;
         default:
         {
-            LOG_WARN("Unsupported texture format translated: {:#08X}", src);
             return GL_RGBA;
         }
     }
@@ -710,11 +708,11 @@ GLenum translate_type(SceGxmTextureFormat format)
     switch (base_format) {
         case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
             return GL_UNSIGNED_SHORT_4_4_4_4;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
         case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
             return GL_UNSIGNED_BYTE;
         default:
         {
-            LOG_WARN("Unsupported texture type translated for {:#08x}", format);
             return GL_UNSIGNED_BYTE;
         }
     }
