@@ -1522,14 +1522,14 @@ EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
     return Ptr<void>(texture->data_addr << 2);
 }
 
-EXPORT(SceGxmTextureFormat, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
     assert(texture != nullptr);
     return texture::get_format(texture);
 }
 
-EXPORT(SceGxmTextureGammaMode, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return (SceGxmTextureGammaMode)(texture->gamma_mode << 27);
+    return (texture->gamma_mode << 27);
 }
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
@@ -1553,20 +1553,20 @@ EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
     return (texture->lod_min0 << 2) | texture->lod_min1;
 }
 
-EXPORT(SceGxmTextureFilter, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return (SceGxmTextureFilter)texture->mag_filter;
+    return texture->mag_filter;
 }
 
-EXPORT(SceGxmTextureFilter, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
-        return (SceGxmTextureFilter)texture->mag_filter;
+        return texture->mag_filter;
     }
-    return (SceGxmTextureFilter)texture->min_filter;
+    return texture->min_filter;
 }
 
-EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
@@ -1601,35 +1601,35 @@ EXPORT(int, sceGxmTextureGetStride) {
     return unimplemented("sceGxmTextureGetStride");
 }
 
-EXPORT(SceGxmTextureType, sceGxmTextureGetType, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return (SceGxmTextureType)(texture->type << 29);
+    return (texture->type << 29);
 }
 
-EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetUAddrMode, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetUAddrMode, const SceGxmTexture *texture) {
 	assert(texture != nullptr);
-    return (SceGxmTextureAddrMode)texture->uaddr_mode;
+    return texture->uaddr_mode;
 }
 
-EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
     assert(texture != nullptr);
 	if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
-    return (SceGxmTextureAddrMode)texture->uaddr_mode;
+    return texture->uaddr_mode;
 }
 
-EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
 	assert(texture != nullptr);
-    return (SceGxmTextureAddrMode)texture->vaddr_mode;
+    return texture->vaddr_mode;
 }
 
-EXPORT(SceGxmTextureAddrMode, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
 	assert(texture != nullptr);
 	if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
-    return (SceGxmTextureAddrMode)texture->vaddr_mode;
+    return texture->vaddr_mode;
 }
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
