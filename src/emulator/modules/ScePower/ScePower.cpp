@@ -65,7 +65,7 @@ EXPORT(int, scePowerGetBatteryLifeTime) {
     int res;
     SDL_GetPowerInfo(&res, NULL);
     if (res == -1){
-        return 0xFFFFFFFF;
+        return INT_MAX;
     }
     return res;
 }
