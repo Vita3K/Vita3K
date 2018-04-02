@@ -25,6 +25,9 @@
 
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
+#undef st_atime
+#undef st_ctime
+#undef st_mtime
 #include <psp2/io/stat.h>
 #include <psp2/io/dirent.h>
 

@@ -35,7 +35,16 @@ void set_uniforms(GLuint program, const SceGxmContext &context, const MemState &
 void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels);
 GLenum translate_blend_func(SceGxmBlendFunc src);
 GLenum translate_blend_factor(SceGxmBlendFactor src);
-GLenum translate_internal_format(SceGxmTextureFormat src);
-GLenum translate_format(SceGxmTextureFormat src);
+namespace texture {
+    SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
+    std::uint32_t get_swizzle(SceGxmTextureFormat src);
+    bool is_paletted_format(SceGxmTextureFormat src);
+    GLenum translate_internal_format(SceGxmTextureFormat src);
+    GLenum translate_format(SceGxmTextureFormat src);
+    GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
+    SceGxmTextureFormat get_format(const SceGxmTexture *texture);
+    unsigned int get_width(const SceGxmTexture *texture);
+    unsigned int get_height(const SceGxmTexture *texture);
+}
 GLenum translate_primitive(SceGxmPrimitiveType primType);
 bool operator<(const FragmentProgramCacheKey& a, const FragmentProgramCacheKey &b);

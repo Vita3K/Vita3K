@@ -18,6 +18,7 @@
 #pragma once
 
 #include <host/state.h>
+#include <psp2/types.h>
 
 #include <chrono>
 #include <cstdint>
@@ -25,29 +26,18 @@
 // This is the # of microseconds between January 1, 0001 and January 1, 1970.
 // Grabbed from JPSCP
 static constexpr auto RTC_OFFSET = 62135596800000000ULL;
+
+// 400 years is a convenient number, since leap days and everything cycle every 400 years.
+// 400 years is in other words 20871 full weeks.
+constexpr std::uint64_t RTC_400_YEAR_TICKS = 20871ULL * 7 * 24 * 3600 * 1000000;
+
 constexpr auto VITA_CLOCKS_PER_SEC = 1'000'000;
 
 using VitaClocks = std::chrono::duration<std::uint64_t, std::ratio<1, VITA_CLOCKS_PER_SEC>>;
 
-inline std::uint64_t rtc_base_ticks()
-{
-    const auto now = std::chrono::system_clock::now();
-    const auto now_timepoint = std::chrono::time_point_cast<VitaClocks>(now);
-    const auto clocks_since_unix_time = now_timepoint.time_since_epoch().count();
-
-    // host high_resolution_clock offset (implementations dependant)
-    const auto host_clock_offset = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-
-    return RTC_OFFSET + clocks_since_unix_time - host_clock_offset;
-}
-
-inline std::uint64_t rtc_get_ticks(const HostState& host)
-{
-    const uint64_t base_ticks = host.kernel.base_tick.tick;
-
-    const auto now = std::chrono::high_resolution_clock::now();
-    const auto now_timepoint = std::chrono::time_point_cast<VitaClocks>(now);
-    const uint64_t now_ticks = now_timepoint.time_since_epoch().count();
-
-    return base_ticks + now_ticks;
-}
+std::uint64_t rtc_base_ticks();
+std::uint64_t rtc_get_ticks(const HostState& host);
+time_t rtc_timegm(struct tm *tm);
+void __RtcPspTimeToTm(tm& val, const SceDateTime& pt);
+void __RtcTicksToPspTime(SceDateTime& t, std::uint64_t ticks);
+std::uint64_t __RtcPspTimeToTicks(const SceDateTime& pt);

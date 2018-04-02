@@ -19,4 +19,5 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(sceSblSsUpdateMgrGetBootMode)
 BRIDGE_DECL(sceSblSsUpdateMgrSetBootMode)

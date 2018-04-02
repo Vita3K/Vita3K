@@ -109,6 +109,7 @@ add_library(modules STATIC
 	SceRtc/SceRtcUser.cpp SceRtc/SceRtcUser.h
 	SceRudp/SceLibRudp.cpp SceRudp/SceLibRudp.h
 	SceSas/SceSas.cpp SceSas/SceSas.h
+	SceSblACMgr/SceSblACMgr.cpp SceSblACMgr/SceSblACMgr.h
 	SceSblUpdateMgr/SceSblSsUpdateMgr.cpp SceSblUpdateMgr/SceSblSsUpdateMgr.h
 	SceScreenShot/SceScreenShot.cpp SceScreenShot/SceScreenShot.h
 	SceShellSvc/SceShellUtil.cpp SceShellSvc/SceShellUtil.h
