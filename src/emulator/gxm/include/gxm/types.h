@@ -10,9 +10,9 @@
 #include <psp2/gxm.h>
 #include <SDL_video.h>
 
+#include <mutex>
 #include <array>
 #include <map>
-#include <mutex>
 #include <tuple>
 
 namespace emu {
@@ -122,10 +122,12 @@ struct SceGxmProgram {
 
 struct SceGxmProgramParameter {
     int32_t name_offset; // Number of bytes from the start of this structure to the name string.
-    uint16_t category : 4; // SceGxmParameterCategory.
-    uint16_t type : 4; // SceGxmParameterType.
-    uint16_t component_count : 4;
-    uint16_t container_index : 4;
+    union {
+        bf_t<uint16_t, 0, 4> category;  // SceGxmParameterCategory - select constant or sampler
+        bf_t<uint16_t, 4, 4> type;  // SceGxmParameterType - applicable for constants, not applicable for samplers (select type like float, half, fixed ...)
+        bf_t<uint16_t, 8, 4> component_count;  // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
+        bf_t<uint16_t, 12, 4> container_index;  // applicable for constants, not applicable for samplers (buffer, default, texture)
+    };
     uint16_t unknown; // Maybe relevant to SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE or SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER.
     uint32_t array_size;
     int32_t resource_index;
