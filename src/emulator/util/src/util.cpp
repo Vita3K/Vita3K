@@ -82,7 +82,7 @@ void init_logging()
 		std::cerr << "spdlog error: " << msg << std::endl;
 	});
 
-    spdlog::set_pattern("[%H:%M:%S.%e] [%l] %v");
+    spdlog::set_pattern("[%H:%M:%S.%e] %v");
 
     spdlog::set_level(spdlog::level::trace);
 
