@@ -1078,7 +1078,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     const void *const pixels = data.get(host.mem);
     const GLenum internal_format = texture::translate_internal_format(fmt);
     const GLenum format = texture::translate_format(fmt);
-    const GLenum type = texture::translate_type(texture->format);
+    const GLenum type = texture::translate_type(fmt);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, (width + 7) & ~7);
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, pixels);

@@ -42,14 +42,28 @@ static const char *parameter_name(const SceGxmProgramParameter &parameter) {
     return reinterpret_cast<const char *>(bytes + parameter.name_offset);
 }
 
+static SceGxmParameterType parameter_type(const SceGxmProgramParameter &parameter) {
+    return static_cast<SceGxmParameterType>(
+        static_cast<uint16_t>(parameter.type));
+}
+
 static const char *scalar_type(SceGxmParameterType type) {
     switch (type) {
+        case SCE_GXM_PARAMETER_TYPE_F16:
         case SCE_GXM_PARAMETER_TYPE_F32: return "float";
+        case SCE_GXM_PARAMETER_TYPE_U8:
+        case SCE_GXM_PARAMETER_TYPE_U16:
         case SCE_GXM_PARAMETER_TYPE_U32: return "uint";
+        case SCE_GXM_PARAMETER_TYPE_S8:
+        case SCE_GXM_PARAMETER_TYPE_S16:
         case SCE_GXM_PARAMETER_TYPE_S32: return "int";
+        default:
+        {
+            LOG_ERROR("Unsupported parameter type {:#x} used in shader.", type);
     }
 
     return "?";
+    }
 }
 
 static const char *vector_prefix(SceGxmParameterType type) {
@@ -58,11 +72,9 @@ static const char *vector_prefix(SceGxmParameterType type) {
         case SCE_GXM_PARAMETER_TYPE_U32: return "u";
         case SCE_GXM_PARAMETER_TYPE_S32: return "i";
         default:
-        {
             LOG_ERROR("Unsupported parameter type {:#x} used in shader.", type);
-        }
-        return "?";
     }
+    return "?";
 }
 
 static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
@@ -78,8 +90,10 @@ static void output_vector_decl(std::ostream &glsl, const SceGxmProgramParameter 
     assert(parameter.component_count >= 2);
     assert(parameter.component_count <= 4);
 
-    glsl << vector_prefix(static_cast<SceGxmParameterType>(parameter.type)) << "vec" << parameter.component_count << " " << parameter_name(parameter);
-    if (parameter.array_size != 1) {
+    const auto vector = vector_prefix(parameter_type(parameter));
+
+    glsl << vector << "vec" << parameter.component_count << " " << parameter_name(parameter);
+    if (parameter.array_size > 1) {
         glsl << "[" << parameter.array_size << "]";
     }
 }
@@ -89,7 +103,7 @@ static void output_matrix_decl(std::ostream &glsl, const SceGxmProgramParameter 
     assert(parameter.array_size >= 2);
     assert(parameter.array_size <= 4);
 
-    glsl << vector_prefix(static_cast<SceGxmParameterType>(parameter.type)) << "mat";
+    glsl << vector_prefix(parameter_type(parameter)) << "mat";
     if (parameter.component_count == parameter.array_size) {
         glsl << parameter.component_count;
     } else {
@@ -483,8 +497,10 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
             return GL_FLOAT;
 
         default:
-            assert(!"Unhandled format.");
-            return GL_UNSIGNED_BYTE;
+        {
+            LOG_ERROR("Unsupported attribute format {:#x}", format);
+        }
+        return GL_UNSIGNED_BYTE;
     }
 }
 
