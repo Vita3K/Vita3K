@@ -708,11 +708,10 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetUniformBuffer) {
 EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
     assert(program != nullptr);
 
-    assert(memcmp(program->magic, "GXP", 4) == 0);
-    assert(program->maybe_version[0] == 1);
-    assert(program->maybe_version[1] == 4);
-    assert(program->maybe_padding[0] == 0);
-    assert(program->maybe_padding[1] == 0);
+    assert(memcmp(&program->magic, "GXP", 4) == 0);
+    assert(program->major_version == 1);
+    assert(program->minor_version == 4);
+    assert(program->unk6 == 0);
 
     return 0;
 }
