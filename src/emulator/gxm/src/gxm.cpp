@@ -668,6 +668,22 @@ GLenum translate_wrap_mode(SceGxmTextureAddrMode src){
     }
 }
 
+GLenum translate_minmag_filter(SceGxmTextureFilter src){
+    GXM_PROFILE(__FUNCTION__);
+
+    switch (src) {
+        case SCE_GXM_TEXTURE_FILTER_POINT:
+            return GL_NEAREST;
+        case SCE_GXM_TEXTURE_FILTER_LINEAR:
+            return GL_LINEAR;
+        default:
+        {
+            LOG_WARN("Unsupported texture min/mag filter translated: {:#08X}", src);
+            return GL_LINEAR;
+        }
+    }
+}
+
 } // namespace texture
 
 GLenum translate_primitive(SceGxmPrimitiveType primType){
