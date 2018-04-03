@@ -7,6 +7,7 @@ include/host/rtc.h
 include/host/state.h
 include/host/version.h
 src/host.cpp
+src/rtc.cpp
 version.cpp
 )
 

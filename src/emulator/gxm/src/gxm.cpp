@@ -14,9 +14,9 @@
 
 #define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
 
-static std::string load_shader(const char *hash, const char *base_path) {
+static std::string load_shader(const char *hash, const char *extension, const char *base_path) {
     std::ostringstream path;
-    path << base_path << "shaders/" << hash << ".glsl";
+    path << base_path << "shaders/" << hash << "." << extension;
 
     std::ifstream is(path.str());
     if (is.fail()) {
@@ -172,10 +172,10 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     return glsl.str();
 }
 
-static void dump_missing_shader(const char *hash, const SceGxmProgram &program, const char *source) {
+static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source) {
     // Dump missing shader GLSL.
     std::ostringstream glsl_path;
-    glsl_path << hash << ".glsl";
+    glsl_path << hash << "." << extension;
     std::ofstream glsl_file(glsl_path.str());
     if (!glsl_file.fail()) {
         glsl_file << source;
@@ -340,11 +340,11 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
     }
 
     const std::array<char, 65> hash_text = hex(hash_bytes);
-    std::string source = load_shader(hash_text.data(), base_path);
+    std::string source = load_shader(hash_text.data(), "frag", base_path);
     if (source.empty()) {
         LOG_ERROR("Missing fragment shader {}", hash_text.data());
         source = generate_fragment_glsl(fragment_program);
-        dump_missing_shader(hash_text.data(), fragment_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "frag", fragment_program, source.c_str());
     }
 
     shader_patcher.fragment_glsl_cache.emplace(hash_bytes, source);
@@ -360,11 +360,11 @@ std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmPro
     }
 
     const std::array<char, 65> hash_text = hex(hash_bytes);
-    std::string source = load_shader(hash_text.data(), base_path);
+    std::string source = load_shader(hash_text.data(), "vert", base_path);
     if (source.empty()) {
         LOG_ERROR("Missing vertex shader {}", hash_text.data());
         source = generate_vertex_glsl(vertex_program);
-        dump_missing_shader(hash_text.data(), vertex_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "vert", vertex_program, source.c_str());
     }
 
     shader_patcher.vertex_glsl_cache.emplace(hash_bytes, source);
@@ -568,6 +568,24 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
 }
 
 namespace texture {
+	
+SceGxmTextureFormat get_format(const SceGxmTexture *texture){
+    return (SceGxmTextureFormat)((texture->base_format << 24) | (texture->format0 << 31) | (texture->swizzle_format << 12));
+}
+
+unsigned int get_width(const SceGxmTexture *texture){
+    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
+        return texture->width + 1;
+    }
+    return 1 << (texture->width & 0xF);
+}
+
+unsigned int get_height(const SceGxmTexture *texture){
+    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
+        return texture->height + 1;
+    }
+    return 1 << (texture->height & 0xF);
+}
 
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src) {
     return static_cast<SceGxmTextureBaseFormat>(src & 0xFF000000);
@@ -597,6 +615,8 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
             return GL_RGBA8;
         case SCE_GXM_TEXTURE_FORMAT_U8_R111:
             return GL_INTENSITY8;
+        case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+            return GL_RGB8;
         default:
         {
             LOG_WARN("Unsupported internal texture format translated: {:#08X}", src);
@@ -617,6 +637,8 @@ GLenum translate_format(SceGxmTextureFormat src) {
             return GL_RGBA;
         case SCE_GXM_TEXTURE_FORMAT_U8_R111:
             return GL_RED;
+        case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+            return GL_RGB;
         default:
         {
             LOG_WARN("Unsupported texture format translated: {:#08X}", src);
@@ -625,7 +647,34 @@ GLenum translate_format(SceGxmTextureFormat src) {
     }
 }
 
+GLenum translate_wrap_mode(SceGxmTextureAddrMode src){
+    GXM_PROFILE(__FUNCTION__);
+
+    switch (src) {
+        case SCE_GXM_TEXTURE_ADDR_REPEAT:
+            return GL_REPEAT;
+        case SCE_GXM_TEXTURE_ADDR_CLAMP:
+            return GL_CLAMP_TO_EDGE;
+        case SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP:
+            return GL_MIRROR_CLAMP_TO_EDGE;
+        case SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER:
+            return GL_REPEAT; // FIXME: Is this correct?
+        case SCE_GXM_TEXTURE_ADDR_CLAMP_FULL_BORDER:
+            return GL_CLAMP_TO_BORDER;
+        case SCE_GXM_TEXTURE_ADDR_CLAMP_IGNORE_BORDER:
+            return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
+        case SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER:
+            return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
+        default:
+        {
+            LOG_WARN("Unsupported texture wrap mode translated: {:#08X}", src);
+            return GL_CLAMP_TO_EDGE;
+        }
+    }
+}
+
 } // namespace texture
+
 GLenum translate_primitive(SceGxmPrimitiveType primType){
     GXM_PROFILE(__FUNCTION__);
 
