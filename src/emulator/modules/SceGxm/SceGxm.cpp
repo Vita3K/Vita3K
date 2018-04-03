@@ -385,6 +385,9 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
 
     // TODO Use some kind of caching to avoid setting every draw call?
     const SharedGLObject program = get_program(*context, host.mem);
+    if (!program) {
+        return SCE_GXM_ERROR_DRIVER;
+    }
     glUseProgram(program->get());
 
     // TODO Use some kind of caching to avoid setting every draw call?
