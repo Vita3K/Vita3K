@@ -16,6 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceModulemgr.h"
+#include "kernel/state.h"
+#include <psp2/kernel/error.h>
 
 EXPORT(int, sceKernelGetAllowedSdkVersionOnSystem) {
     return unimplemented("sceKernelGetAllowedSdkVersionOnSystem");
@@ -29,12 +31,25 @@ EXPORT(int, sceKernelGetModuleIdByAddr) {
     return unimplemented("sceKernelGetModuleIdByAddr");
 }
 
-EXPORT(int, sceKernelGetModuleInfo) {
-    return unimplemented("sceKernelGetModuleInfo");
+EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
+    KernelState *const state = &host.kernel;
+    const SceKernelModuleInfoPtrs::const_iterator module = state->loaded_modules.find(modid);
+    assert(module != state->loaded_modules.end());
+
+    memcpy(info, module->second.get(), module->second.get()->size);
+
+    return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelGetModuleList) {
-    return unimplemented("sceKernelGetModuleList");
+EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
+    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    int i = 0;
+    for (SceKernelModuleInfoPtrs::iterator module = host.kernel.loaded_modules.begin(); module != host.kernel.loaded_modules.end(); ++module) {
+        modids[i] = module->first;
+        i++;
+    }
+    *num = i;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelGetSystemSwVersion) {

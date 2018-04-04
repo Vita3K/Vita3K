@@ -411,7 +411,7 @@ int remove_dir(const char *dir, const char *pref_path) {
 
 int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
     // TODO Hacky magic numbers.
-    assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
+    assert((strncmp(file, "app0:", 5) == 0) || (strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
     assert(statp != NULL);
 
     memset(statp, '\0', sizeof(SceIoStat));

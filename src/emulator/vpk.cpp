@@ -18,7 +18,8 @@
 #include "vpk.h"
 #include "sfo.h"
 
-#include "load_self.h"
+#include <kernel/load_self.h>
+#include <kernel/state.h>
 
 #include <io/state.h>
 #include <util/string_convert.h>
@@ -45,7 +46,24 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
     return n;
 }
 
-bool load_vpk(Ptr<const void> &entry_point, std::string& game_title, std::string& title_id, IOState &io, MemState &mem, const std::wstring& path) {
+static bool read_file_from_zip(Buffer &eboot, FILE *&vpk_fp, const ZipPtr zip) {
+    if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
+        return false;
+    }
+
+    const int eboot_index = mz_zip_reader_locate_file(zip.get(), "eboot.bin", nullptr, 0);
+    if (eboot_index < 0) {
+        return false;
+    }
+
+    if (!mz_zip_reader_extract_file_to_callback(zip.get(), "eboot.bin", &write_to_buffer, &eboot, 0)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool load_vpk(Ptr<const void> &entry_point, std::string& game_title, std::string& title_id, KernelState &kernel, IOState &io, MemState &mem, const std::wstring &path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
@@ -59,17 +77,8 @@ bool load_vpk(Ptr<const void> &entry_point, std::string& game_title, std::string
         return false;
     }
 
-    if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
-        return false;
-    }
-
-    const int eboot_index = mz_zip_reader_locate_file(zip.get(), "eboot.bin", nullptr, 0);
-    if (eboot_index < 0) {
-        return false;
-    }
-
     Buffer eboot;
-    if (!mz_zip_reader_extract_file_to_callback(zip.get(), "eboot.bin", &write_to_buffer, &eboot, 0)) {
+    if (!read_file_from_zip(eboot, vpk_fp, zip)) {
         return false;
     }
 
@@ -84,7 +93,7 @@ bool load_vpk(Ptr<const void> &entry_point, std::string& game_title, std::string
     game_title = find_data(sfo_file, "TITLE");
     title_id = find_data(sfo_file, "TITLE_ID");
 
-    if (!load_self(entry_point, mem, eboot.data())) {
+    if (!load_self(entry_point, kernel, mem, eboot.data(), "app0:eboot.bin")) {
         return false;
     }
 

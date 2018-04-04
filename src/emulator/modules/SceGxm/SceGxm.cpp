@@ -416,7 +416,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     const MemState &mem = host.mem;
     assert(context != nullptr);
     assert(vertexNotification == nullptr);
-    assert(fragmentNotification == nullptr);
+    //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.isInScene) {
         return error(__func__, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
@@ -475,8 +475,8 @@ EXPORT(int, sceGxmGetDeferredContextVertexBuffer) {
     return unimplemented("sceGxmGetDeferredContextVertexBuffer");
 }
 
-EXPORT(int, sceGxmGetNotificationRegion) {
-    return unimplemented("sceGxmGetNotificationRegion");
+EXPORT(uint32_t, sceGxmGetNotificationRegion) {
+    return host.gxm.notification_region.address();
 }
 
 EXPORT(int, sceGxmGetParameterBufferThreshold) {
@@ -565,6 +565,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), delete_thread);
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
     host.kernel.running_threads.emplace(display_thread_id, running_thread);
+    host.gxm.notification_region = Ptr<uint32_t>(alloc(host.mem, MB(1), "SceGxmNotificationRegion"));
     return 0;
 }
 
@@ -1050,16 +1051,55 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
 
         // clang-format off
         switch (texture::get_swizzle(fmt)) {
-        case SCE_GXM_TEXTURE_SWIZZLE4_ABGR: R = 0; G = 1; B = 2; A = 3; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_ARGB: R = 2; G = 1; B = 0; A = 3; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA: R = 3; G = 2; B = 1; A = 0; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA: R = 1; G = 2; B = 3; A = 0; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1BGR: R = 0; G = 1; B = 2; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1RGB: R = 2; G = 1; B = 0; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1: R = 3; G = 2; B = 1; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1: R = 1; G = 2; B = 3; A = A_max; break;
-        default:
-        {
+        case SCE_GXM_TEXTURE_SWIZZLE4_ABGR:
+            R = 0;
+            G = 1;
+            B = 2;
+            A = 3;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_ARGB:
+            R = 2;
+            G = 1;
+            B = 0;
+            A = 3;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA:
+            R = 3;
+            G = 2;
+            B = 1;
+            A = 0;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA:
+            R = 1;
+            G = 2;
+            B = 3;
+            A = 0;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_1BGR:
+            R = 0;
+            G = 1;
+            B = 2;
+            A = A_max;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_1RGB:
+            R = 2;
+            G = 1;
+            B = 0;
+            A = A_max;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1:
+            R = 3;
+            G = 2;
+            B = 1;
+            A = A_max;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1:
+            R = 1;
+            G = 2;
+            B = 3;
+            A = A_max;
+            break;
+        default: {
             LOG_ERROR("Invalid swizzle for paletted texture foramt.");
         }
         }
