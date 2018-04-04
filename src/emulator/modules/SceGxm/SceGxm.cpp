@@ -55,10 +55,10 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(depthStencil != nullptr);
 
     if (host.gxm.isInScene) {
-        return SCE_GXM_ERROR_WITHIN_SCENE;
+        return error("sceGxmBeginScene", SCE_GXM_ERROR_WITHIN_SCENE);
     }
     if (depthStencil == nullptr && colorSurface == nullptr) {
-        return SCE_GXM_ERROR_INVALID_VALUE;
+        return error("sceGxmBeginScene", SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     if (fragmentSyncObject != nullptr) {
@@ -194,7 +194,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
 
     *context = alloc<SceGxmContext>(host.mem, __FUNCTION__);
     if (!*context) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return error("sceGxmCreateContext", SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmContext *const ctx = context->get(host.mem);
@@ -221,7 +221,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
         free(host.mem, *context);
         context->reset();
 
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return error("sceGxmCreateContext", SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     return 0;
@@ -237,13 +237,13 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
 
     *renderTarget = alloc<SceGxmRenderTarget>(host.mem, __FUNCTION__);
     if (!*renderTarget) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return error("sceGxmCreateRenderTarget", SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmRenderTarget *const rt = renderTarget->get(host.mem);
     if (!rt->renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) || !rt->framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
         free(host.mem, *renderTarget);
-        return SCE_GXM_ERROR_DRIVER;
+        return error("sceGxmCreateRenderTarget", SCE_GXM_ERROR_DRIVER);
     }
 
     glBindRenderbuffer(GL_RENDERBUFFER, rt->renderbuffers[0]);
@@ -380,7 +380,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     assert(indexData != nullptr);
 
     if (!host.gxm.isInScene) {
-        return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
+        return error("sceGxmDraw", SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
     // TODO Use some kind of caching to avoid setting every draw call?
@@ -416,7 +416,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     assert(fragmentNotification == nullptr);
 
     if (!host.gxm.isInScene) {
-        return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
+        return error("sceGxmEndScene", SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
     const GLsizei width = context->color_surface.pbeEmitWords[0];
@@ -540,7 +540,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "display", MB(1), call_import, false);
 
     if (display_thread_id < 0) {
-        return SCE_GXM_ERROR_DRIVER;
+        return error("sceGxmInitialize", SCE_GXM_ERROR_DRIVER);
     }
 
     const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
@@ -863,7 +863,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     const size_t next_used = context->fragment_ring_buffer_used + size;
     assert(next_used <= context->params.fragmentRingBufferMemSize);
     if (next_used > context->params.fragmentRingBufferMemSize) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return error("sceGxmReserveFragmentDefaultUniformBuffer", SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     *uniformBuffer = context->params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->fragment_ring_buffer_used);
@@ -886,7 +886,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     const size_t next_used = context->vertex_ring_buffer_used + size;
     assert(next_used <= context->params.vertexRingBufferMemSize);
     if (next_used > context->params.vertexRingBufferMemSize) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return error("sceGxmReserveVertexDefaultUniformBuffer", SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     *uniformBuffer = context->params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->vertex_ring_buffer_used);
@@ -1281,7 +1281,7 @@ EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *par
     *shaderPatcher = alloc<SceGxmShaderPatcher>(host.mem, __FUNCTION__);
     assert(*shaderPatcher);
     if (!*shaderPatcher) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return error("sceGxmShaderPatcherCreate", SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     return 0;
@@ -1320,7 +1320,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return error("sceGxmShaderPatcherCreateFragmentProgram", SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
@@ -1364,7 +1364,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     *vertexProgram = alloc<SceGxmVertexProgram>(mem, __FUNCTION__);
     assert(*vertexProgram);
     if (!*vertexProgram) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return error("sceGxmShaderPatcherCreateVertexProgram", SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
@@ -1433,7 +1433,7 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
     *programId = alloc<SceGxmRegisteredProgram>(host.mem, __FUNCTION__);
     assert(*programId);
     if (!*programId) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return error("sceGxmShaderPatcherRegisterProgram", SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmRegisteredProgram *const rp = programId->get(host.mem);
