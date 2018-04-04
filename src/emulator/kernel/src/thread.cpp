@@ -125,6 +125,7 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
 }
 
 bool run_thread(ThreadState &thread, bool callback) {
+    int res = 0;
     std::unique_lock<std::mutex> lock(thread.mutex);
     while (true) {
         switch (thread.to_do) {
@@ -132,11 +133,16 @@ bool run_thread(ThreadState &thread, bool callback) {
             return true;
         case ThreadToDo::run:
             lock.unlock();
-            if (!run(*thread.cpu, callback)) {
+            res = run(*thread.cpu, callback);
+            if (res == 1) {
+                return true;
+            }
+            if (res < 0) {
                 return false;
             }
-            if (callback)
+            if (callback) {
                 return true;
+            }
             lock.lock();
             break;
         case ThreadToDo::wait:

@@ -165,6 +165,29 @@ static void add_new_controllers(CtrlState &state) {
     }
 }
 
+static int peek_buffer_positive(HostState &host, SceCtrlData *&pad_data) {
+    CtrlState &state = host.ctrl;
+    remove_disconnected_controllers(state);
+    add_new_controllers(state);
+    
+    memset(pad_data, 0, sizeof(*pad_data));
+    pad_data->timeStamp = timestamp++; // TODO Use the real time and units.
+    
+    std::array<float, 4> axes;
+    axes.fill(0);
+    apply_keyboard(&pad_data->buttons, axes.data());
+    for (const GameControllerList::value_type &controller : state.controllers) {
+        apply_controller(&pad_data->buttons, axes.data(), controller.second.get());
+    }
+    
+    pad_data->lx = float_to_byte(axes[0]);
+    pad_data->ly = float_to_byte(axes[1]);
+    pad_data->rx = float_to_byte(axes[2]);
+    pad_data->ry = float_to_byte(axes[3]);
+    
+    return 0;
+}
+
 EXPORT(int, sceCtrlClearRapidFire) {
     return unimplemented("sceCtrlClearRapidFire");
 }
@@ -222,30 +245,11 @@ EXPORT(int, sceCtrlPeekBufferNegative2) {
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
-    assert(port == 0);
+    /*assert(port == 0);
     assert(pad_data != nullptr);
-    assert(count == 1);
+    assert(count == 1);*/
 
-    CtrlState &state = host.ctrl;
-    remove_disconnected_controllers(state);
-    add_new_controllers(state);
-
-    memset(pad_data, 0, sizeof(*pad_data));
-    pad_data->timeStamp = timestamp++; // TODO Use the real time and units.
-
-    std::array<float, 4> axes;
-    axes.fill(0);
-    apply_keyboard(&pad_data->buttons, axes.data());
-    for (const GameControllerList::value_type &controller : state.controllers) {
-        apply_controller(&pad_data->buttons, axes.data(), controller.second.get());
-    }
-
-    pad_data->lx = float_to_byte(axes[0]);
-    pad_data->ly = float_to_byte(axes[1]);
-    pad_data->rx = float_to_byte(axes[2]);
-    pad_data->ry = float_to_byte(axes[3]);
-
-    return 0;
+    return peek_buffer_positive(host, pad_data);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive2) {
@@ -268,8 +272,8 @@ EXPORT(int, sceCtrlReadBufferNegative2) {
     return unimplemented("sceCtrlReadBufferNegative2");
 }
 
-EXPORT(int, sceCtrlReadBufferPositive) {
-    return unimplemented("sceCtrlReadBufferPositive");
+EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int count) {
+    return peek_buffer_positive(host, pad_data);
 }
 
 EXPORT(int, sceCtrlReadBufferPositive2) {

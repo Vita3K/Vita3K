@@ -196,7 +196,7 @@ EXPORT(int, sceAppUtilStoreBrowse) {
     return unimplemented("sceAppUtilStoreBrowse");
 }
 
-EXPORT(int, sceAppUtilSystemParamGetInt) {
+EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
     return unimplemented("sceAppUtilSystemParamGetInt");
 }
 

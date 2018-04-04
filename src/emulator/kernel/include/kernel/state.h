@@ -17,10 +17,12 @@
 
 #pragma once
 
+#include <kernel/types.h>
 #include <mem/ptr.h>
 
-#include <psp2/types.h>
+#include <psp2/kernel/modulemgr.h>
 #include <psp2/rtc.h>
+#include <psp2/types.h>
 
 #include <map>
 #include <mutex>
@@ -40,6 +42,8 @@ typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
 typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
+typedef std::shared_ptr<emu::SceKernelModuleInfo> SceKernelModuleInfoPtr;
+typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
 
 namespace emu {
     typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
@@ -60,5 +64,6 @@ struct KernelState {
     ThreadStatePtrs threads;
     ThreadPtrs running_threads;
     WaitingThreadStates waiting_threads;
+    SceKernelModuleInfoPtrs loaded_modules;
     SceRtcTick base_tick;
 };
