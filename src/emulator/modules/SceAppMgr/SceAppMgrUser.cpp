@@ -53,7 +53,7 @@ EXPORT(int, sceAppMgrAppParamGetInt) {
     return unimplemented("sceAppMgrAppParamGetInt");
 }
 
-EXPORT(int, sceAppMgrAppParamGetString) {
+EXPORT(int, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
     return unimplemented("sceAppMgrAppParamGetString");
 }
 

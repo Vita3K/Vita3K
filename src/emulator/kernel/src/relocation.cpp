@@ -15,12 +15,12 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "relocation.h"
+#include <kernel/relocation.h>
 #include <util/log.h>
 
 #include <assert.h>
-#include <iostream>
 #include <cstring>
+#include <iostream>
 
 enum Code {
     None = 0,
@@ -212,13 +212,19 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
             entry = short_entry + 1;
         } else {
             const LongEntry *const long_entry = static_cast<const LongEntry *>(entry);
-            assert(long_entry->code2 == 0);
+            //assert(long_entry->code2 == 0);
 
             const Ptr<void> segment_start = segments.find(long_entry->data_segment)->second;
             const Address p = segment_start.address() + long_entry->offset;
             const Address a = long_entry->addend;
             if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
                 return false;
+            }
+
+            if (long_entry->code2 != 0) {
+                if (!relocate(Ptr<uint32_t>(p + (long_entry->dist2 * 2)).get(mem), static_cast<Code>(long_entry->code2), s, a, p)) {
+                    return false;
+                }
             }
 
             entry = long_entry + 1;

@@ -73,8 +73,9 @@ EXPORT(int, _FSinh) {
     return unimplemented("_FSinh");
 }
 
-EXPORT(int, _FSinx) {
-    return unimplemented("_FSinx");
+EXPORT(int, _FSinx, float a, unsigned int tag, int c) {
+    if (tag == 1) return cosf(a);
+    else return sinf(a);
 }
 
 EXPORT(int, _Fpcomp) {
