@@ -30,9 +30,9 @@
 #endif
 
 #ifdef WIN32
-# define ERROR_CASE(errname) case(WSA##errname): return SCE_NET_ERROR_##errname;
+# define ERROR_CASE(errname) case(WSA##errname): return SCE_NET_##errname;
 #else
-# define ERROR_CASE(errname) case(errname): return SCE_NET_ERROR_##errname; 
+# define ERROR_CASE(errname) case(errname): return SCE_NET_##errname; 
 #endif
 
 static int translate_errorcode(){
