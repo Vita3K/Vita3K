@@ -1667,6 +1667,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     texture->data_addr = data.address() >> 2;
     texture->swizzle_format = (texFormat & 0x7000) >> 12;
     texture->normalize_mode = 1;
+	texture->min_filter = texture->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 
     return 0;
 }
@@ -1744,6 +1745,7 @@ EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilt
     if (texture == nullptr){
         return error("sceGxmTextureSetMagFilter", SCE_GXM_ERROR_INVALID_POINTER);
     }
+	
     texture->mag_filter = (uint32_t)magFilter;
     return 0;
 }
@@ -1752,6 +1754,7 @@ EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilt
     if (texture == nullptr){
         return error("sceGxmTextureSetMinFilter", SCE_GXM_ERROR_INVALID_POINTER);
     }
+	
     texture->min_filter = (uint32_t)minFilter;
     return 0;
 }
