@@ -17,11 +17,39 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
-struct IOState;
-struct MemState;
-template <class T>
-class Ptr;
+#include <vector>
 
-bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const std::wstring& path, std::string& game_title, std::string& title_id);
+struct SfoHeader {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t key_table_start;
+    uint32_t data_table_start;
+    uint32_t tables_entries;
+};
+
+struct SfoIndexTableEntry
+{
+    uint16_t key_offset;
+    uint16_t data_fmt;
+    uint32_t data_len;
+    uint32_t data_max_len;
+    uint32_t data_offset;
+};
+
+struct SfoFile {
+    SfoHeader header;
+
+    struct SfoEntry {
+        SfoIndexTableEntry entry;
+        std::pair<std::string, std::string> data;
+    };
+
+    std::vector<SfoEntry> entries;
+};
+
+bool load_sfo(SfoFile &file, const std::vector<uint8_t>& data);
+bool load_sfo(SfoFile &file, const std::string path);
+std::string find_data(SfoFile& file, const std::string& key);

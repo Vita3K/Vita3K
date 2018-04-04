@@ -16,11 +16,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "vpk.h"
+#include "sfo.h"
 
 #include "load_self.h"
 
 #include <io/state.h>
 #include <util/string_convert.h>
+#include <util/log.h>
 
 #include <cassert>
 #include <cstring>
@@ -43,7 +45,7 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
     return n;
 }
 
-bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const std::wstring& path) {
+bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const std::wstring& path, std::string& game_title, std::string& title_id) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
@@ -70,6 +72,17 @@ bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const st
     if (!mz_zip_reader_extract_file_to_callback(zip.get(), "eboot.bin", &write_to_buffer, &eboot, 0)) {
         return false;
     }
+
+    Buffer params;
+    if (!mz_zip_reader_extract_file_to_callback(zip.get(), "sce_sys/param.sfo", &write_to_buffer, &params, 0)) {
+        return false;
+    }
+
+    SfoFile sfo_file;
+    load_sfo(sfo_file, params);
+
+    game_title = find_data(sfo_file, "TITLE");
+    title_id = find_data(sfo_file, "TITLE_ID");
 
     if (!load_self(entry_point, mem, eboot.data())) {
         return false;

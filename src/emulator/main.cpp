@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    if (!load_vpk(entry_point, host.io, host.mem, path)) {
+    if (!load_vpk(entry_point, host.io, host.mem, path, host.game_title, host.title_id)) {
         std::string message = "Failed to load \"";
         message += wide_to_utf(path);
         message += "\"";
@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
             const uint32_t fps = (host.frame_count * 1000) / ms;
             const uint32_t ms_per_frame = ms / host.frame_count;
             std::ostringstream title;
-            title << window_title << " - " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
+            title << window_title << " | " << host.game_title << " (" << host.title_id << ") | " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
             SDL_SetWindowTitle(host.window.get(), title.str().c_str());
             host.t1 = t2;
             host.frame_count = 0;

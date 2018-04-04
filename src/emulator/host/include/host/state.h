@@ -42,6 +42,8 @@ struct DisplayState {
 };
 
 struct HostState {
+    std::string title_id;
+    std::string game_title;
     std::string base_path;
     std::string pref_path;
     size_t frame_count = 0;
