@@ -51,6 +51,8 @@ relocation.cpp
 relocation.h
 vpk.cpp
 vpk.h
+sfo.h
+sfo.cpp
 )
 
 target_link_libraries(emulator PRIVATE cpu elfio glutil host modules nids vita-toolchain util)
