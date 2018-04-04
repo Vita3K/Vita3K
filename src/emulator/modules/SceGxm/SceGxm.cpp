@@ -1668,7 +1668,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     texture->swizzle_format = (texFormat & 0x7000) >> 12;
     texture->normalize_mode = 1;
     texture->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-	texture->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+    texture->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 
     return 0;
 }
