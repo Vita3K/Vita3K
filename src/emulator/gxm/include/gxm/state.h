@@ -26,4 +26,5 @@ struct GxmState {
     emu::SceGxmInitializeParams params;
     bool isInScene = false;
     Queue<DisplayCallback> display_queue;
+    Ptr<uint32_t> notification_region;
 };

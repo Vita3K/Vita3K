@@ -416,7 +416,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     const MemState &mem = host.mem;
     assert(context != nullptr);
     assert(vertexNotification == nullptr);
-    assert(fragmentNotification == nullptr);
+    //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.isInScene) {
         return error(__func__, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
@@ -475,8 +475,8 @@ EXPORT(int, sceGxmGetDeferredContextVertexBuffer) {
     return unimplemented("sceGxmGetDeferredContextVertexBuffer");
 }
 
-EXPORT(int, sceGxmGetNotificationRegion) {
-    return unimplemented("sceGxmGetNotificationRegion");
+EXPORT(uint32_t, sceGxmGetNotificationRegion) {
+    return host.gxm.notification_region.address();
 }
 
 EXPORT(int, sceGxmGetParameterBufferThreshold) {
@@ -565,6 +565,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), delete_thread);
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
     host.kernel.running_threads.emplace(display_thread_id, running_thread);
+    host.gxm.notification_region = Ptr<uint32_t>(alloc(host.mem, MB(1), "SceGxmNotificationRegion"));
     return 0;
 }
 
@@ -1015,7 +1016,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
 
     // Disable mip-maps
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    
+
     SceGxmTextureFormat fmt = texture::get_format(texture);
     unsigned int width = texture::get_width(texture);
     unsigned int height = texture::get_height(texture);
@@ -1023,7 +1024,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     Ptr<void> palette = Ptr<void>(texture->palette_addr << 6);
     SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(texture->uaddr_mode);
     SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(texture->vaddr_mode);
-    
+
     if (texture::is_paletted_format(fmt)) {
         const auto base_format = texture::get_base_format(fmt);
         const auto is_byte_indexed = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8); // only altenative is SCE_GXM_TEXTURE_BASE_FORMAT_P4
@@ -1049,16 +1050,55 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
         constexpr auto A_max = std::numeric_limits<decltype(A)>::max();
 
         switch (texture::get_swizzle(fmt)) {
-        case SCE_GXM_TEXTURE_SWIZZLE4_ABGR: R = 0; G = 1; B = 2; A = 3; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_ARGB: R = 2; G = 1; B = 0; A = 3; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA: R = 3; G = 2; B = 1; A = 0; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA: R = 1; G = 2; B = 3; A = 0; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1BGR: R = 0; G = 1; B = 2; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1RGB: R = 2; G = 1; B = 0; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1: R = 3; G = 2; B = 1; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1: R = 1; G = 2; B = 3; A = A_max; break;
-        default:
-        {
+        case SCE_GXM_TEXTURE_SWIZZLE4_ABGR:
+            R = 0;
+            G = 1;
+            B = 2;
+            A = 3;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_ARGB:
+            R = 2;
+            G = 1;
+            B = 0;
+            A = 3;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA:
+            R = 3;
+            G = 2;
+            B = 1;
+            A = 0;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA:
+            R = 1;
+            G = 2;
+            B = 3;
+            A = 0;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_1BGR:
+            R = 0;
+            G = 1;
+            B = 2;
+            A = A_max;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_1RGB:
+            R = 2;
+            G = 1;
+            B = 0;
+            A = A_max;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1:
+            R = 3;
+            G = 2;
+            B = 1;
+            A = A_max;
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1:
+            R = 1;
+            G = 2;
+            B = 3;
+            A = A_max;
+            break;
+        default: {
             LOG_ERROR("Invalid swizzle for paletted texture foramt.");
         }
         }
@@ -1069,7 +1109,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
         if (A == A_max) {
             static std::array<GLfloat, 255> max_alpha;
             std::fill(max_alpha.begin(), max_alpha.end(), 255.0);
-            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, palette_indexes, (GLfloat*)max_alpha.data());
+            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, palette_indexes, (GLfloat *)max_alpha.data());
         } else {
             glPixelMapfv(GL_PIXEL_MAP_I_TO_A, palette_indexes, map[A]);
         }
@@ -1543,7 +1583,7 @@ EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
     }
     return texture->lod_bias;
@@ -1551,7 +1591,7 @@ EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
     }
     return (texture->lod_min0 << 2) | texture->lod_min1;
@@ -1564,7 +1604,7 @@ EXPORT(int, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return texture->mag_filter;
     }
     return texture->min_filter;
@@ -1572,7 +1612,7 @@ EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
     }
     return texture->mip_filter ? SCE_GXM_TEXTURE_MIP_FILTER_ENABLED : SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
@@ -1580,7 +1620,7 @@ EXPORT(int, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
     }
     return texture->mip_count + 1;
@@ -1617,7 +1657,7 @@ EXPORT(int, sceGxmTextureGetUAddrMode, const SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
     return texture->uaddr_mode;
@@ -1630,7 +1670,7 @@ EXPORT(int, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
     return texture->vaddr_mode;
@@ -1719,7 +1759,7 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
     if (texture == nullptr){
         return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }
-    
+
     texture->data_addr = data.address() >> 2;
     return 0;
 }
@@ -1738,25 +1778,25 @@ EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height)
     }else if (height > 4096){
         return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     }
-    
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED){
-        if (texture->mip_count > 1){
-            if (height >> (texture->mip_count - 1) >> 0x1F){
+
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED) {
+        if (texture->mip_count > 1) {
+            if (height >> (texture->mip_count - 1) >> 0x1F) {
                 goto LINEAR;
             }
         }
         return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     }
-    
-    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
-LINEAR:
+
+    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)) {
+    LINEAR:
         texture->height = height - 1;
         return 0;
     }
-    
+
     // TODO: Add support for swizzled textures
     LOG_WARN("Unimplemented texture format detected in sceGxmTextureSetHeight call.");
-    
+
     return 0;
 }
 
@@ -1804,7 +1844,7 @@ EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteDa
     }else if ((uint8_t)paletteData.address() & 0x3F){
         return error(__func__, SCE_GXM_ERROR_INVALID_ALIGNMENT);
     }
-    
+
     texture->palette_addr = ((unsigned int)paletteData.address() >> 6);
     return 0;
 }
@@ -1865,24 +1905,24 @@ EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
     }else if (width > 4096){
         return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     }
-    
-    if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED){
-        if (texture->mip_count > 1){
-            if (width >> (texture->mip_count - 1) >> 0x1F){
+
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED) {
+        if (texture->mip_count > 1) {
+            if (width >> (texture->mip_count - 1) >> 0x1F) {
                 goto LINEAR;
             }
         }
         return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     }
-    
-    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
-LINEAR:
+
+    if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)) {
+    LINEAR:
         texture->width = width - 1;
     }
-    
+
     // TODO: Add support for swizzled textures
     LOG_WARN("Unimplemented texture format detected in sceGxmTextureSetWidth call.");
-    
+
     return 0;
 }
 
