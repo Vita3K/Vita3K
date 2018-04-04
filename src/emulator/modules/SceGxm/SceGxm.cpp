@@ -380,13 +380,13 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     assert(indexData != nullptr);
 
     if (!host.gxm.isInScene) {
-        return SCE_GXM_ERROR_NOT_WITHIN_SCENE;
+        return error("sceGxmDraw", SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
     // TODO Use some kind of caching to avoid setting every draw call?
     const SharedGLObject program = get_program(*context, host.mem);
     if (!program) {
-        return SCE_GXM_ERROR_DRIVER;
+        return error("sceGxmDraw", SCE_GXM_ERROR_DRIVER);
     }
     glUseProgram(program->get());
 
