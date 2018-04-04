@@ -45,7 +45,7 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
     return n;
 }
 
-bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const std::wstring& path, std::string& game_title, std::string& title_id) {
+bool load_vpk(Ptr<const void> &entry_point, std::string& game_title, std::string& title_id, IOState &io, MemState &mem, const std::wstring& path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 

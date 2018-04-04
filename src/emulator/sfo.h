@@ -51,5 +51,4 @@ struct SfoFile {
 };
 
 bool load_sfo(SfoFile &file, const std::vector<uint8_t>& data);
-bool load_sfo(SfoFile &file, const std::string path);
 std::string find_data(SfoFile& file, const std::string& key);

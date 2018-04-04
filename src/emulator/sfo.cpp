@@ -22,53 +22,6 @@
 #include <algorithm>
 #include <cstdio>
 
-bool load_sfo(SfoFile& sfile, const std::string path) {
-    FILE* file = fopen(path.c_str(), "rb");
-
-    if (file == nullptr) {
-        return false;
-    }
-
-    fread(static_cast<void*>(&sfile.header), sizeof(SfoHeader), 1, file);
-
-    sfile.entries.resize(sfile.header.tables_entries + 1);
-
-    for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
-        fread(static_cast<void*>(&sfile.entries[i].entry), sizeof(SfoIndexTableEntry), 1, file);
-    }
-
-    sfile.entries[sfile.header.tables_entries].entry.key_offset = sfile.header.data_table_start- sfile.header.key_table_start;
-
-    for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
-        fseek(file, sfile.header.key_table_start + sfile.entries[i].entry.key_offset, SEEK_SET);
-
-        uint32_t keySize = sfile.entries[i+1].entry.key_offset - sfile.entries[i].entry.key_offset;
-
-        sfile.entries[i].data.first.resize(keySize);
-
-        fread(&sfile.entries[i].data.first[0], 1, keySize, file);
-
-        //Quick hack to remove garbage null terminator caused by reading directly
-        //to buffer
-        sfile.entries[i].data.first = sfile.entries[i].data.first.c_str();
-    }
-
-    for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
-        fseek(file, sfile.header.data_table_start + sfile.entries[i].entry.data_offset, SEEK_SET);
-
-        uint32_t dataSize = sfile.entries[i].entry.data_len;
-
-        sfile.entries[i].data.second.resize(dataSize);
-
-        // The last of data is a terminator
-        fread(&sfile.entries[i].data.second[0], 1, dataSize - 1, file);
-    }
-
-    fclose(file);
-
-    return true;
-}
-
 bool load_sfo(SfoFile &sfile, const std::vector<uint8_t>& content) {
     if (content.empty()) {
         return false;

@@ -24,4 +24,4 @@ struct MemState;
 template <class T>
 class Ptr;
 
-bool load_vpk(Ptr<const void> &entry_point, IOState &io, MemState &mem, const std::wstring& path, std::string& game_title, std::string& title_id);
+bool load_vpk(Ptr<const void> &entry_point, std::string& game_title, std::string& title_id, IOState &io, MemState &mem, const std::wstring& path);

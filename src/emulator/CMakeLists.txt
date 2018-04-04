@@ -49,10 +49,10 @@ load_self.h
 main.cpp
 relocation.cpp
 relocation.h
+sfo.cpp
+sfo.h
 vpk.cpp
 vpk.h
-sfo.h
-sfo.cpp
 )
 
 target_link_libraries(emulator PRIVATE cpu elfio glutil host modules nids vita-toolchain util)
