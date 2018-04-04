@@ -1021,7 +1021,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     Ptr<void> palette = Ptr<void>(texture->palette_addr << 6);
     SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(texture->uaddr_mode);
     SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(texture->vaddr_mode);
-
+    
     if (texture::is_paletted_format(fmt)) {
         const auto base_format = texture::get_base_format(fmt);
         const auto is_byte_indexed = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8); // only altenative is SCE_GXM_TEXTURE_BASE_FORMAT_P4
@@ -1081,6 +1081,8 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, GL_UNSIGNED_BYTE, pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture::translate_wrap_mode(uaddr));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture::translate_wrap_mode(vaddr));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->min_filter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->mag_filter));
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glPixelTransferi(GL_MAP_COLOR, GL_FALSE);
 
@@ -1518,7 +1520,7 @@ EXPORT(int, sceGxmTerminate) {
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
-	assert(texture != nullptr);
+    assert(texture != nullptr);
     return Ptr<void>(texture->data_addr << 2);
 }
 
@@ -1533,7 +1535,7 @@ EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
 }
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
-	assert(texture != nullptr);
+    assert(texture != nullptr);
     return texture::get_height(texture);
 }
 
@@ -1546,8 +1548,8 @@ EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
 }
 
 EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
-	assert(texture != nullptr);
-	if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    assert(texture != nullptr);
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return 0;
     }
     return (texture->lod_min0 << 2) | texture->lod_min1;
@@ -1583,7 +1585,7 @@ EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) 
 }
 
 EXPORT(unsigned int, sceGxmTextureGetMipmapCountUnsafe, const SceGxmTexture *texture) {
-	assert(texture != nullptr);
+    assert(texture != nullptr);
     return texture->mip_count + 1;
 }
 
@@ -1607,33 +1609,33 @@ EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTextureGetUAddrMode, const SceGxmTexture *texture) {
-	assert(texture != nullptr);
+    assert(texture != nullptr);
     return texture->uaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-	if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
     return texture->uaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
-	assert(texture != nullptr);
+    assert(texture != nullptr);
     return texture->vaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
-	assert(texture != nullptr);
-	if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
+    assert(texture != nullptr);
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
     return texture->vaddr_mode;
 }
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
-	assert(texture != nullptr);
+    assert(texture != nullptr);
     return texture::get_width(texture);
 }
 
@@ -1726,7 +1728,7 @@ LINEAR:
     
     // TODO: Add support for swizzled textures
     LOG_WARN("Unimplemented texture format detected in sceGxmTextureSetHeight call.");
-	
+    
     return 0;
 }
 
@@ -1738,12 +1740,20 @@ EXPORT(int, sceGxmTextureSetLodMin) {
     return unimplemented("sceGxmTextureSetLodMin");
 }
 
-EXPORT(int, sceGxmTextureSetMagFilter) {
-    return unimplemented("sceGxmTextureSetMagFilter");
+EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
+    if (texture == nullptr){
+        return error("sceGxmTextureSetMagFilter", SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    texture->mag_filter = (uint32_t)magFilter;
+    return 0;
 }
 
-EXPORT(int, sceGxmTextureSetMinFilter) {
-    return unimplemented("sceGxmTextureSetMinFilter");
+EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
+    if (texture == nullptr){
+        return error("sceGxmTextureSetMinFilter", SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    texture->min_filter = (uint32_t)minFilter;
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetMipFilter) {
@@ -1834,7 +1844,7 @@ LINEAR:
     
     // TODO: Add support for swizzled textures
     LOG_WARN("Unimplemented texture format detected in sceGxmTextureSetWidth call.");
-	
+    
     return 0;
 }
 

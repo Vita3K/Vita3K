@@ -563,7 +563,7 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
 }
 
 namespace texture {
-	
+    
 SceGxmTextureFormat get_format(const SceGxmTexture *texture){
     return (SceGxmTextureFormat)((texture->base_format << 24) | (texture->format0 << 31) | (texture->swizzle_format << 12));
 }
@@ -664,6 +664,22 @@ GLenum translate_wrap_mode(SceGxmTextureAddrMode src){
         {
             LOG_WARN("Unsupported texture wrap mode translated: {:#08X}", src);
             return GL_CLAMP_TO_EDGE;
+        }
+    }
+}
+
+GLenum translate_minmag_filter(SceGxmTextureFilter src){
+    GXM_PROFILE(__FUNCTION__);
+
+    switch (src) {
+        case SCE_GXM_TEXTURE_FILTER_POINT:
+            return GL_NEAREST;
+        case SCE_GXM_TEXTURE_FILTER_LINEAR:
+            return GL_LINEAR;
+        default:
+        {
+            LOG_WARN("Unsupported texture min/mag filter translated: {:#08X}", src);
+            return GL_LINEAR;
         }
     }
 }

@@ -41,6 +41,7 @@ namespace texture {
     GLenum translate_internal_format(SceGxmTextureFormat src);
     GLenum translate_format(SceGxmTextureFormat src);
     GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
+    GLenum translate_minmag_filter(SceGxmTextureFilter src);
     SceGxmTextureFormat get_format(const SceGxmTexture *texture);
     unsigned int get_width(const SceGxmTexture *texture);
     unsigned int get_height(const SceGxmTexture *texture);
