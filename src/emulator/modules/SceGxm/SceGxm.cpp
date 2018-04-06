@@ -55,10 +55,10 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(depthStencil != nullptr);
 
     if (host.gxm.isInScene) {
-        return error("sceGxmBeginScene", SCE_GXM_ERROR_WITHIN_SCENE);
+        return error(__func__, SCE_GXM_ERROR_WITHIN_SCENE);
     }
     if (depthStencil == nullptr && colorSurface == nullptr) {
-        return error("sceGxmBeginScene", SCE_GXM_ERROR_INVALID_VALUE);
+        return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     if (fragmentSyncObject != nullptr) {
@@ -194,7 +194,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
 
     *context = alloc<SceGxmContext>(host.mem, __FUNCTION__);
     if (!*context) {
-        return error("sceGxmCreateContext", SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmContext *const ctx = context->get(host.mem);
@@ -221,7 +221,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
         free(host.mem, *context);
         context->reset();
 
-        return error("sceGxmCreateContext", SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     return 0;
@@ -237,13 +237,13 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
 
     *renderTarget = alloc<SceGxmRenderTarget>(host.mem, __FUNCTION__);
     if (!*renderTarget) {
-        return error("sceGxmCreateRenderTarget", SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmRenderTarget *const rt = renderTarget->get(host.mem);
     if (!rt->renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) || !rt->framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
         free(host.mem, *renderTarget);
-        return error("sceGxmCreateRenderTarget", SCE_GXM_ERROR_DRIVER);
+        return error(__func__, SCE_GXM_ERROR_DRIVER);
     }
 
     glBindRenderbuffer(GL_RENDERBUFFER, rt->renderbuffers[0]);
@@ -380,7 +380,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     assert(indexData != nullptr);
 
     if (!host.gxm.isInScene) {
-        return error("sceGxmDraw", SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+        return error(__func__, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
     // TODO Use some kind of caching to avoid setting every draw call?
@@ -419,7 +419,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     assert(fragmentNotification == nullptr);
 
     if (!host.gxm.isInScene) {
-        return error("sceGxmEndScene", SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+        return error(__func__, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
     const GLsizei width = context->color_surface.pbeEmitWords[0];
@@ -543,7 +543,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "display", MB(1), call_import, false);
 
     if (display_thread_id < 0) {
-        return error("sceGxmInitialize", SCE_GXM_ERROR_DRIVER);
+        return error(__func__, SCE_GXM_ERROR_DRIVER);
     }
 
     const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
@@ -865,7 +865,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     const size_t next_used = context->fragment_ring_buffer_used + size;
     assert(next_used <= context->params.fragmentRingBufferMemSize);
     if (next_used > context->params.fragmentRingBufferMemSize) {
-        return error("sceGxmReserveFragmentDefaultUniformBuffer", SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     *uniformBuffer = context->params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->fragment_ring_buffer_used);
@@ -888,7 +888,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     const size_t next_used = context->vertex_ring_buffer_used + size;
     assert(next_used <= context->params.vertexRingBufferMemSize);
     if (next_used > context->params.vertexRingBufferMemSize) {
-        return error("sceGxmReserveVertexDefaultUniformBuffer", SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     *uniformBuffer = context->params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->vertex_ring_buffer_used);
@@ -1284,7 +1284,7 @@ EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *par
     *shaderPatcher = alloc<SceGxmShaderPatcher>(host.mem, __FUNCTION__);
     assert(*shaderPatcher);
     if (!*shaderPatcher) {
-        return error("sceGxmShaderPatcherCreate", SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     return 0;
@@ -1322,7 +1322,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
-        return error("sceGxmShaderPatcherCreateFragmentProgram", SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
@@ -1366,7 +1366,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     *vertexProgram = alloc<SceGxmVertexProgram>(mem, __FUNCTION__);
     assert(*vertexProgram);
     if (!*vertexProgram) {
-        return error("sceGxmShaderPatcherCreateVertexProgram", SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
@@ -1435,7 +1435,7 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
     *programId = alloc<SceGxmRegisteredProgram>(host.mem, __FUNCTION__);
     assert(*programId);
     if (!*programId) {
-        return error("sceGxmShaderPatcherRegisterProgram", SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmRegisteredProgram *const rp = programId->get(host.mem);
@@ -1651,11 +1651,11 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary) {
 
 EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
-        return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_VALUE);
+        return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     } else if (!data) {
-        return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_ALIGNMENT);
-    } else if (texture == nullptr) {
-        return error("sceGxmTextureInitLinear", SCE_GXM_ERROR_INVALID_POINTER);
+        return error(__func__, SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    } else if (!texture) {
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     // Add supported formats here
@@ -1717,7 +1717,7 @@ EXPORT(int, sceGxmTextureInitTiled) {
 
 EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) {
     if (texture == nullptr){
-        return error("sceGxmTextureSetData", SCE_GXM_ERROR_INVALID_POINTER);
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }
     
     texture->data_addr = data.address() >> 2;
@@ -1734,9 +1734,9 @@ EXPORT(int, sceGxmTextureSetGammaMode) {
 
 EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height) {
     if (texture == nullptr){
-        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_POINTER);
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }else if (height > 4096){
-        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_VALUE);
+        return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     }
     
     if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED){
@@ -1745,7 +1745,7 @@ EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height)
                 goto LINEAR;
             }
         }
-        return error("sceGxmTextureSetHeight", SCE_GXM_ERROR_INVALID_VALUE);
+        return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     }
     
     if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
@@ -1770,7 +1770,7 @@ EXPORT(int, sceGxmTextureSetLodMin) {
 
 EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
     if (texture == nullptr){
-        return error("sceGxmTextureSetMagFilter", SCE_GXM_ERROR_INVALID_POINTER);
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }
 	
     texture->mag_filter = (uint32_t)magFilter;
@@ -1779,7 +1779,7 @@ EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilt
 
 EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
     if (texture == nullptr){
-        return error("sceGxmTextureSetMinFilter", SCE_GXM_ERROR_INVALID_POINTER);
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }
 	
     texture->min_filter = (uint32_t)minFilter;
@@ -1800,9 +1800,9 @@ EXPORT(int, sceGxmTextureSetNormalizeMode) {
 
 EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteData) {
     if (texture == nullptr){
-        return error("sceGxmTextureSetPalette", SCE_GXM_ERROR_INVALID_POINTER);
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }else if ((uint8_t)paletteData.address() & 0x3F){
-        return error("sceGxmTextureSetPalette", SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        return error(__func__, SCE_GXM_ERROR_INVALID_ALIGNMENT);
     }
     
     texture->palette_addr = ((unsigned int)paletteData.address() >> 6);
@@ -1815,16 +1815,16 @@ EXPORT(int, sceGxmTextureSetStride) {
 
 EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr){
-        return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_INVALID_POINTER);
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }
     if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == SCE_GXM_TEXTURE_CUBE_ARBITRARY){
         if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
-            return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+            return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
         }
     }else{
         if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER){
             if ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED){
-                return error("sceGxmTextureSetUAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+                return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
     }
@@ -1834,16 +1834,16 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
 
 EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr){
-        return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_INVALID_POINTER);
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }
     if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == SCE_GXM_TEXTURE_CUBE_ARBITRARY){
         if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
-            return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+            return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
         }
     }else{
         if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER){
             if ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED){
-                return error("sceGxmTextureSetVAddrMode", SCE_GXM_ERROR_UNSUPPORTED);
+                return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
     }
@@ -1853,9 +1853,9 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
 
 EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
     if (texture == nullptr){
-        return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_POINTER);
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }else if (width > 4096){
-        return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_VALUE);
+        return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     }
     
     if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED){
@@ -1864,7 +1864,7 @@ EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
                 goto LINEAR;
             }
         }
-        return error("sceGxmTextureSetWidth", SCE_GXM_ERROR_INVALID_VALUE);
+        return error(__func__, SCE_GXM_ERROR_INVALID_VALUE);
     }
     
     if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)){
