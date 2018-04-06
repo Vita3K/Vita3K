@@ -49,6 +49,8 @@ load_self.h
 main.cpp
 relocation.cpp
 relocation.h
+sfo.cpp
+sfo.h
 vpk.cpp
 vpk.h
 )
