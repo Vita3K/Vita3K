@@ -222,17 +222,17 @@ uint32_t read_reg(CPUState &state, size_t index) {
     return value;
 }
 
-uint32_t read_pc(CPUState &state) {
+uint32_t read_sp(CPUState &state) {
     uint32_t value = 0;
-    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &value);
+    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_SP, &value);
     assert(err == UC_ERR_OK);
 
     return value;
 }
 
-uint32_t read_sp(CPUState &state) {
+uint32_t read_pc(CPUState &state) {
     uint32_t value = 0;
-    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_SP, &value);
+    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &value);
     assert(err == UC_ERR_OK);
 
     return value;
