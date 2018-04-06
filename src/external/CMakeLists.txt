@@ -98,3 +98,6 @@ add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
 add_library(yaml INTERFACE)
 target_include_directories(yaml INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp/include")
 target_link_libraries(yaml INTERFACE yaml-cpp)
+
+add_library(rpcs3 INTERFACE)
+target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")

@@ -4,14 +4,15 @@
 #include <condition_variable>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
+#include <rpcs3/BitField.h>
 #include <mem/ptr.h>
-#include <mutex>
 
 #include <psp2/gxm.h>
 #include <SDL_video.h>
 
 #include <array>
 #include <map>
+#include <mutex>
 #include <tuple>
 
 namespace emu {
