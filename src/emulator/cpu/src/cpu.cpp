@@ -179,14 +179,6 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     return state;
 }
 
-uint32_t read_pc(CPUState &state) {
-    uint32_t value = 0;
-    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &value);
-    assert(err == UC_ERR_OK);
-
-    return value;
-}
-
 int run(CPUState &state, bool callback) {
     uint32_t pc = read_pc(state.uc.get());
     bool thumb_mode = is_thumb_mode(state.uc.get());
@@ -225,6 +217,14 @@ uint32_t read_reg(CPUState &state, size_t index) {
 
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_R0 + index, &value);
+    assert(err == UC_ERR_OK);
+
+    return value;
+}
+
+uint32_t read_pc(CPUState &state) {
+    uint32_t value = 0;
+    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &value);
     assert(err == UC_ERR_OK);
 
     return value;
