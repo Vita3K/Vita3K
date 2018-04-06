@@ -189,19 +189,19 @@ int run(CPUState &state, bool callback) {
         uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &state.entry_point);
     }
     err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
-    uint32_t pc2 = read_pc(state.uc.get());
+    pc = read_pc(state.uc.get());
     thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
-        pc2 |= 1;
+        pc |= 1;
     }
-    err = uc_emu_start(state.uc.get(), pc2, state.entry_point & 0xfffffffe, 0, 0);
+    err = uc_emu_start(state.uc.get(), pc, state.entry_point & 0xfffffffe, 0, 0);
     assert(err == UC_ERR_OK);
-    pc2 = read_pc(state.uc.get());
+    pc = read_pc(state.uc.get());
     thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
-        pc2 |= 1;
+        pc |= 1;
     }
-    if (pc2 == state.entry_point)
+    if (pc == state.entry_point)
         return 1;
     return 0;
 }
