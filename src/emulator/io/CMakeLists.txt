@@ -3,9 +3,11 @@ add_library(
 	STATIC
 	src/io.cpp
 	src/file.cpp
+	include/io/io.h
 	include/io/functions.h
 	include/io/state.h
 	include/io/file.h
+	include/io/VitaPartition.def
 )
 
 target_include_directories(io PUBLIC include)
