@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <io/io.h>
 #include <io/functions.h>
 
 #include <psp2/io/dirent.h>
@@ -39,6 +40,7 @@
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <tuple>
 
 static ReadOnlyInMemFile open_zip(mz_zip_archive &zip, const char *entry_path) {
     const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
@@ -98,10 +100,10 @@ const char *translate_open_mode(int flags) {
     }
 }
 
-std::string translate_path(const char *part_name, const char *path, const char *pref_path) {
+std::string translate_path(const std::string &part_name, const char *path, const char *pref_path) {
     std::string res = pref_path;
     res += part_name;
-    int i = strlen(part_name);
+    int i = part_name.length();
     res += "/";
 
     if (path[i + 1] == '/')
@@ -135,11 +137,32 @@ bool init(IOState &io, const char *pref_path) {
     return true;
 }
 
-SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path) {
-    // TODO Hacky magic numbers.
-    assert((strcmp(path, "tty0:") == 0) || (strncmp(path, "app0:", 5) == 0) || (strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
+static std::pair<VitaPartition, std::string>
+translate_partition(const std::string &full_path) {
+    std::uint32_t partition_end_idx = full_path.find(":");
+    if (partition_end_idx == std::string::npos) {
+        return { VitaPartition::_INVALID, "" };
+    }
 
-    if (strcmp(path, "tty0:") == 0) {
+    std::string partition_name(full_path.substr(0, partition_end_idx));
+
+#define JOIN_PARTITION(p) VitaPartition::p
+#define PARTITION(path, name)   \
+    if (partition_name == path) \
+        return { JOIN_PARTITION(name), path };
+#include <io/VitaPartition.def>
+#undef PARTITION
+#undef JOIN_PARTITION
+    return { VitaPartition::_UKNONWN, "" };
+}
+
+SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path) {
+    VitaPartition partition;
+    std::string partition_name;
+    std::tie(partition, partition_name) = translate_partition(path);
+
+    switch (partition) {
+    case VitaPartition::TTY0: {
         assert(flags >= 0);
 
         TtyType type;
@@ -153,7 +176,8 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         io.tty_files.emplace(fd, type);
 
         return fd;
-    } else if (strncmp(path, "app0:", 5) == 0) {
+    }
+    case VitaPartition::APP0: {
         assert(flags == SCE_O_RDONLY);
 
         if (!io.vpk) {
@@ -170,8 +194,10 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         io.app_files.emplace(fd, file);
 
         return fd;
-    } else if (strncmp(path, "ux0:", 4) == 0) {
-        std::string file_path = translate_path("ux0", path, pref_path);
+    }
+    case VitaPartition::UX0:
+    case VitaPartition::UMA0: {
+        std::string file_path = translate_path(partition_name, path, pref_path);
 
         const char *const open_mode = translate_open_mode(flags);
 #ifdef WIN32
@@ -187,24 +213,17 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         io.std_files.emplace(fd, file);
 
         return fd;
-    } else if (strncmp(path, "uma0:", 5) == 0) {
-        std::string file_path = translate_path("uma0", path, pref_path);
-        const char *const open_mode = translate_open_mode(flags);
-#ifdef WIN32
-        const FilePtr file(_wfopen(utf_to_wide(file_path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
-#else
-        const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
-#endif
-        if (!file) {
-            return -1;
-        }
+    }
+    case VitaPartition::SAVEDATA1:
+    case VitaPartition::_UKNONWN: {
+        LOG_CRITICAL("Unknown partition {} used. Report this to developers!", path);
+        // fall-through default behavior
+    }
+    default: {
+        // TODO: Have a default behavior
 
-        const SceUID fd = io.next_fd++;
-        io.std_files.emplace(fd, file);
-
-        return fd;
-    } else {
         return -1;
+    }
     }
 }
 
@@ -316,10 +335,14 @@ void close_file(IOState &io, SceUID fd) {
 }
 
 int remove_file(const char *file, const char *pref_path) {
-    // TODO Hacky magic numbers.
-    assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
-    if (strncmp(file, "ux0:", 4) == 0) {
-        std::string file_path = translate_path("ux0", file, pref_path);
+    VitaPartition partition;
+    std::string partition_name;
+    std::tie(partition, partition_name) = translate_partition(file);
+
+    switch (partition) {
+    case VitaPartition::UX0:
+    case VitaPartition::UMA0: {
+        std::string file_path = translate_path(partition_name, file, pref_path);
 
 #ifdef WIN32
         DeleteFileA(file_path.c_str());
@@ -327,25 +350,23 @@ int remove_file(const char *file, const char *pref_path) {
 #else
         return unlink(file_path.c_str());
 #endif
-    } else if (strncmp(file, "uma0:", 5) == 0) {
-        std::string file_path = translate_path("uma0", file, pref_path);
-
-#ifdef WIN32
-        DeleteFileA(file_path.c_str());
-        return 0;
-#else
-        return unlink(file_path.c_str());
-#endif
-    } else {
+    }
+    default: {
         return -1;
+    }
     }
 }
 
 int create_dir(const char *dir, int mode, const char *pref_path) {
     // TODO Hacky magic numbers.
-    assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
-    if (strncmp(dir, "ux0:", 4) == 0) {
-        std::string dir_path = translate_path("ux0", dir, pref_path);
+    VitaPartition partition;
+    std::string partition_name;
+    std::tie(partition, partition_name) = translate_partition(dir);
+
+    switch (partition) {
+    case VitaPartition::UX0:
+    case VitaPartition::UMA0: {
+        std::string dir_path = translate_path(partition_name, dir, pref_path);
 
 #ifdef WIN32
         CreateDirectoryA(dir_path.c_str(), nullptr);
@@ -353,25 +374,22 @@ int create_dir(const char *dir, int mode, const char *pref_path) {
 #else
         return mkdir(dir_path.c_str(), mode);
 #endif
-    } else if (strncmp(dir, "uma0:", 5) == 0) {
-        std::string dir_path = translate_path("uma0", dir, pref_path);
-
-#ifdef WIN32
-        CreateDirectoryA(dir_path.c_str(), nullptr);
-        return 0;
-#else
-        return mkdir(dir_path.c_str(), mode);
-#endif
-    } else {
+    }
+    default: {
         return -1;
+    }
     }
 }
 
 int remove_dir(const char *dir, const char *pref_path) {
-    // TODO Hacky magic numbers.
-    assert((strncmp(dir, "ux0:", 4) == 0) || (strncmp(dir, "uma0:", 5) == 0));
-    if (strncmp(dir, "ux0:", 4) == 0) {
-        std::string dir_path = translate_path("ux0", dir, pref_path);
+    VitaPartition partition;
+    std::string partition_name;
+    std::tie(partition, partition_name) = translate_partition(dir);
+
+    switch (partition) {
+    case VitaPartition::UX0:
+    case VitaPartition::UMA0: {
+        std::string dir_path = translate_path(partition_name, dir, pref_path);
 
 #ifdef WIN32
         RemoveDirectoryA(dir_path.c_str());
@@ -379,17 +397,10 @@ int remove_dir(const char *dir, const char *pref_path) {
 #else
         return rmdir(dir_path.c_str());
 #endif
-    } else if (strncmp(dir, "uma0:", 5) == 0) {
-        std::string dir_path = translate_path("uma0", dir, pref_path);
-
-#ifdef WIN32
-        RemoveDirectoryA(dir_path.c_str());
-        return 0;
-#else
-        return rmdir(dir_path.c_str());
-#endif
-    } else {
+    }
+    default: {
         return -1;
+    }
     }
 }
 

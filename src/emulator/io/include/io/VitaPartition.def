@@ -1,0 +1,38 @@
+// Vita3K emulator project
+// Copyright (C) 2018 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+#ifndef PARTITION
+    #define PARTITION(x,y)
+#endif
+
+PARTITION("sd0", SD0)
+PARTITION("app0", APP0)
+PARTITION("os0", OS0)
+PARTITION("pd0", PD0)
+PARTITION("sa0", SA0)
+PARTITION("savedata0", SAVEDATA0)
+PARTITION("savedata1", SAVEDATA1)
+PARTITION("tm0", TM0)
+PARTITION("ud0", UD0)
+PARTITION("ur0", UR0)
+PARTITION("ux0", UX0)
+PARTITION("vd0", VD0)
+PARTITION("vs0", VS0)
+PARTITION("gr0", GR0)
+PARTITION("grw0", GRW0)
+PARTITION("tty0", TTY0)
+PARTITION("uma0", UMA0)
