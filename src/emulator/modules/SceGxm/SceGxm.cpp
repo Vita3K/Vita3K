@@ -385,6 +385,9 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
 
     // TODO Use some kind of caching to avoid setting every draw call?
     const SharedGLObject program = get_program(*context, host.mem);
+    if (!program) {
+        return error("sceGxmDraw", SCE_GXM_ERROR_DRIVER);
+    }
     glUseProgram(program->get());
 
     // TODO Use some kind of caching to avoid setting every draw call?
@@ -1307,8 +1310,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     };
     const FragmentProgramCacheKey key = {
         *programId,
-        (blendInfo != nullptr) ? *blendInfo : default_blend_info,
-        vertexProgram
+        (blendInfo != nullptr) ? *blendInfo : default_blend_info
     };
     FragmentProgramCache::const_iterator cached = shaderPatcher->fragment_program_cache.find(key);
     if (cached != shaderPatcher->fragment_program_cache.end()) {
