@@ -177,7 +177,7 @@ EXPORT(int, sceKernelGetMsgPipeCreatorId) {
 }
 
 EXPORT(int, sceKernelGetProcessId) {
-    return unimplemented("sceKernelGetProcessId");
+    return 0;
 }
 
 EXPORT(int, sceKernelGetSystemTimeWide) {
