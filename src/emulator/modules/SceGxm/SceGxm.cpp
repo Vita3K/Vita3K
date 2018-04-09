@@ -1772,7 +1772,7 @@ EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilt
     if (texture == nullptr){
         return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }
-	
+    
     texture->mag_filter = (uint32_t)magFilter;
     return 0;
 }
@@ -1781,7 +1781,7 @@ EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilt
     if (texture == nullptr){
         return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
     }
-	
+    
     texture->min_filter = (uint32_t)minFilter;
     return 0;
 }
@@ -1832,8 +1832,25 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetUAddrModeSafe) {
-    return unimplemented("sceGxmTextureSetUAddrModeSafe");
+EXPORT(int, sceGxmTextureSetUAddrModeSafe, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+    if (texture == nullptr){
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    if ((texture->type << 29) != SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER){
+            if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)){
+                return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
+            }
+        }else if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) || ((texture->type << 29) == SCE_GXM_TEXTURE_SWIZZLED)){
+            return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
+        }
+        texture->uaddr_mode = mode;
+        return 0;
+    }
+    if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
+        return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
+    }
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
@@ -1855,8 +1872,25 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetVAddrModeSafe) {
-    return unimplemented("sceGxmTextureSetVAddrModeSafe");
+EXPORT(int, sceGxmTextureSetVAddrModeSafe, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+    if (texture == nullptr){
+        return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    if ((texture->type << 29) != SCE_GXM_TEXTURE_LINEAR_STRIDED){
+        if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER){
+            if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)){
+                return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
+            }
+        }else if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) || ((texture->type << 29) == SCE_GXM_TEXTURE_SWIZZLED)){
+            return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
+        }
+        texture->vaddr_mode = mode;
+        return 0;
+    }
+    if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP){
+        return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
+    }
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
