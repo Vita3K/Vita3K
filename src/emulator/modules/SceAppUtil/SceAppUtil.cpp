@@ -197,7 +197,14 @@ EXPORT(int, sceAppUtilStoreBrowse) {
 }
 
 EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
-    return unimplemented("sceAppUtilSystemParamGetInt");
+    switch(paramId){
+        case SCE_SYSTEM_PARAM_ID_LANG:
+            *value = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
+            return 0;
+            break;
+        default:
+            return error(__func__, SCE_APPUTIL_ERROR_PARAMETER);
+    }
 }
 
 EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize) {
