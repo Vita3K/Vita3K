@@ -41,6 +41,25 @@ using namespace ELFIO;
 static const bool LOG_IMPORTS = false;
 static const bool LOG_EXPORTS = false;
 
+static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const MemState &mem) {
+    for (size_t i = 0; i < count; ++i) {
+        const uint32_t nid = nids[i];
+        const Ptr<uint32_t> entry = entries[i];
+        
+        if (LOG_IMPORTS) {
+            const char *const name = import_name(nid);
+            LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
+        }
+        
+        /*uint32_t *const stub = entry.get(mem);
+        stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
+        stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+        stub[2] = nid; // Our interrupt hook will read this.*/
+    }
+    
+    return true;
+}
+
 static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const MemState &mem) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
@@ -80,24 +99,42 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
         if (!load_func_imports(nids, entries, imports->num_syms_funcs, mem)) {
             return false;
         }
+        
+        const uint32_t *const var_nids = Ptr<const uint32_t>(imports->var_nid_table).get(mem);
+        const Ptr<uint32_t> *const var_entries = Ptr<Ptr<uint32_t>>(imports->var_entry_table).get(mem);
+        if (!load_var_imports(var_nids, var_entries, imports->num_syms_vars, mem)) {
+            return false;
+        }
     }
 
     return true;
 }
 
-static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const MemState &mem) {
+static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
 
-        if (LOG_EXPORTS) {
-            LOG_DEBUG("\tNID {:#08x} at {:#x}", nid, entry.address());
-        }
-
         if (nid == 0x935cd196) {
             entry_point = entry;
+            continue;
         }
-
+        
+        if (nid == 0x79F8E492 || nid == 0x913482A9)
+            continue;
+        
+        if(nid == 0x70fba1e7) {
+            LOG_DEBUG("\tNID {:#08x} (SCE_PROC_PARAMS) at {:#x}", nid, entry.address());
+            continue;
+        }
+        
+        kernel.export_nids.emplace(nid,entry.address());
+        
+        if (LOG_EXPORTS) {
+            const char *const name = import_name(nid);
+            
+            LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
+        }
         /*uint32_t *const stub = entry.get(mem);
         stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
         stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
@@ -107,7 +144,50 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
     return true;
 }
 
-static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw &module, Ptr<const void> segment_address, const MemState &mem) {
+static bool load_var_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem) {
+    for (size_t i = 0; i < count; ++i) {
+        const uint32_t nid = nids[i];
+        const Ptr<uint32_t> entry = entries[i];
+        
+        if(nid == 0x70fba1e7) {
+            kernel.process_param = entry;
+            LOG_DEBUG("\tNID {:#08x} (SCE_PROC_PARAMS) at {:#x}", nid, entry.address());
+            continue;
+        }
+        
+        if(nid == 0x6c2224ba) {
+            LOG_DEBUG("\tNID {:#08x} (NID_MODULE_INFO) at {:#x}", nid, entry.address());
+            continue;
+        }
+        
+        if(nid == 0x936c8a78) {
+            LOG_DEBUG("\tNID {:#08x} (NID_MODULE_INFO) at {:#x}", nid, entry.address());
+            continue;
+        }
+        
+        if (LOG_EXPORTS) {
+            const char *const name = import_name(nid);
+            
+            LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
+            
+        }
+        
+        /*if (nid == 0x935cd196) {
+            entry_point = entry;
+            return true;
+        }*/
+        
+        kernel.export_nids.emplace(nid,entry.address());
+        /*uint32_t *const stub = entry.get(mem);
+         stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
+         stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+         stub[2] = nid; // Our interrupt hook will read this.*/
+    }
+    
+    return true;
+}
+
+static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, const MemState &mem) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_exports_raw *const exports_begin = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_top);
     const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
@@ -120,11 +200,18 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
             LOG_INFO("Loading exports from {}", lib_name);
         }
 
+        
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
-        if (!load_func_exports(entry_point, nids, entries, exports->num_syms_funcs, mem)) {
+        if (!load_func_exports(entry_point, nids, entries, exports->num_syms_funcs, kernel, mem)) {
             return false;
         }
+        
+        if (!load_var_exports(entry_point, &nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], exports->num_syms_vars, kernel, mem)) {
+            return false;
+        }
+        
+        
     }
 
     return true;
@@ -232,7 +319,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         return -1;
     }
 
-    if (!load_exports(entry_point, *module_info, module_info_segment_address, mem)) {
+    if (!load_exports(entry_point, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }
 

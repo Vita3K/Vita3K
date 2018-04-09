@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
         error("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
     }
-
+    
     const SceUID display_thread_id = create_thread(entry_point, host.kernel, host.mem, "display", stack_size, call_import, false);
 
     if (display_thread_id < 0) {
@@ -136,12 +136,20 @@ int main(int argc, char *argv[]) {
     }
 
     const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
-
+    Ptr<void> argp = Ptr<void>();
+    if(!strncmp(host.kernel.loaded_modules.begin()->second->module_name,"SceLibc",7)){
+        run_on_current(*main_thread, host.kernel.loaded_modules.begin()->second->module_start, 0, argp);
+    }
+    
     if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
         error("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }
 
+    std::ostringstream title;
+    title << window_title << " | " << host.game_title << " (" << host.title_id << ")";
+    SDL_SetWindowTitle(host.window.get(), title.str().c_str());
+    
     const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
 
     GLuint TextureID = 0;
