@@ -638,7 +638,7 @@ EXPORT(int, sceAppMgrIsGameBudgetAppPresent) {
 }
 
 EXPORT(int, sceAppMgrIsGameProgram) {
-    return unimplemented("sceAppMgrIsGameProgram");
+    return 0;
 }
 
 EXPORT(int, sceAppMgrIsNonGameProgram) {
