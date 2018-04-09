@@ -62,7 +62,15 @@ void init_logging()
 		{
 			std::cerr << "failed to get working directory" << std::endl;
 		}
-		sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_mt>(s_cwd + LOG_FILE_NAME));
+        const auto full_log_path = s_cwd + LOG_FILE_NAME;
+        
+#ifdef WIN32
+        DeleteFileW(full_log_path.c_str());
+#else
+        remove(full_log_path.c_str());
+#endif
+
+		sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_mt>(full_log_path));
 	}
 	catch (const spdlog::spdlog_ex& ex)
 	{
@@ -82,7 +90,7 @@ void init_logging()
 		std::cerr << "spdlog error: " << msg << std::endl;
 	});
 
-    spdlog::set_pattern("[%H:%M:%S.%e] [%l] %v");
+    spdlog::set_pattern("[%H:%M:%S.%e] %v");
 
     spdlog::set_level(spdlog::level::trace);
 
