@@ -270,8 +270,16 @@ EXPORT(int, sceIoChstat) {
     return unimplemented("sceIoChstat");
 }
 
+EXPORT(int, sceIoChstatAsync) {
+    return unimplemented("sceIoChstatAsync");
+}
+
 EXPORT(int, sceIoChstatByFd) {
     return unimplemented("sceIoChstatByFd");
+}
+
+EXPORT(int, sceIoCompleteMultiple) {
+    return unimplemented("sceIoCompleteMultiple");
 }
 
 EXPORT(int, sceIoDevctl) {
@@ -282,12 +290,20 @@ EXPORT(int, sceIoDopen, const char *dir) {
     return open_dir(host.io, dir, host.pref_path.c_str());
 }
 
+EXPORT(int, sceIoDevctlAsync) {
+    return unimplemented("sceIoDevctlAsync");
+}
+
 EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
     return read_dir(host.io, fd, dir);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
     return stat_file(file, stat, host.pref_path.c_str());
+}
+
+EXPORT(int, sceIoGetstatAsync) {
+    return unimplemented("sceIoGetstatAsync");
 }
 
 EXPORT(int, sceIoGetstatByFd) {
@@ -310,6 +326,10 @@ EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
     return create_dir(dir, mode, host.pref_path.c_str());
 }
 
+EXPORT(int, sceIoMkdirAsync) {
+    return unimplemented("sceIoMkdirAsync");
+}
+
 EXPORT(int, sceIoLseekAsync) {
     return unimplemented("sceIoLseekAsync");
 }
@@ -330,9 +350,17 @@ EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
     return read_file(data, host.io, fd, size);
 }
 
+EXPORT(int, sceIoPreadAsync) {
+    return unimplemented("sceIoPreadAsync");
+}
+
 EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
     seek_file(fd, offset, SEEK_SET, host.io);
     return write_file(fd, data, size, host.io);
+}
+
+EXPORT(int, sceIoPwriteAsync) {
+    return unimplemented("sceIoPwriteAsync");
 }
 
 EXPORT(int, sceIoRemove, const char *path) {
@@ -342,8 +370,16 @@ EXPORT(int, sceIoRemove, const char *path) {
     return remove_file(path, host.pref_path.c_str());
 }
 
+EXPORT(int, sceIoRemoveAsync) {
+    return unimplemented("sceIoRemoveAsync");
+}
+
 EXPORT(int, sceIoRename) {
     return unimplemented("sceIoRename");
+}
+
+EXPORT(int, sceIoRenameAsync) {
+    return unimplemented("sceIoRenameAsync");
 }
 
 EXPORT(int, sceIoRmdir, const char *path) {
@@ -353,8 +389,16 @@ EXPORT(int, sceIoRmdir, const char *path) {
     return remove_dir(path, host.pref_path.c_str());
 }
 
+EXPORT(int, sceIoRmdirAsync) {
+    return unimplemented("sceIoRmdirAsync");
+}
+
 EXPORT(int, sceIoSync) {
     return unimplemented("sceIoSync");
+}
+
+EXPORT(int, sceIoSyncAsync) {
+    return unimplemented("sceIoSyncAsync");
 }
 
 EXPORT(int, sceKernelAtomicAddAndGet16) {
@@ -732,6 +776,10 @@ EXPORT(int, sceKernelCreateMsgPipe) {
     return unimplemented("sceKernelCreateMsgPipe");
 }
 
+EXPORT(int, sceKernelCreateMsgPipeWithLR) {
+    return unimplemented("sceKernelCreateMsgPipeWithLR");
+}
+
 EXPORT(int, sceKernelCreateMutex) {
     return unimplemented("sceKernelCreateMutex");
 }
@@ -751,6 +799,10 @@ EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal,
     host.kernel.semaphores.emplace(uid, semaphore);
 
     return uid;
+}
+
+EXPORT(int, sceKernelCreateSema_16XX) {
+    return unimplemented("sceKernelCreateSema_16XX");
 }
 
 EXPORT(int, sceKernelCreateSimpleEvent) {
@@ -874,8 +926,16 @@ EXPORT(int, sceKernelGetSystemInfo) {
     return unimplemented("sceKernelGetSystemInfo");
 }
 
+EXPORT(int, sceKernelGetSystemTime) {
+    return unimplemented("sceKernelGetSystemTime");
+}
+
 EXPORT(Ptr<Ptr<void>>, sceKernelGetTLSAddr, int key) {
     return get_thread_tls_addr(host.kernel, host.mem, thread_id, key);
+}
+
+EXPORT(int, sceKernelGetThreadContextForVM) {
+    return unimplemented("sceKernelGetThreadContextForVM");
 }
 
 EXPORT(int, sceKernelGetThreadCpuAffinityMask) {
@@ -884,6 +944,10 @@ EXPORT(int, sceKernelGetThreadCpuAffinityMask) {
 
 EXPORT(int, sceKernelGetThreadCurrentPriority) {
     return unimplemented("sceKernelGetThreadCurrentPriority");
+}
+
+EXPORT(int, sceKernelGetThreadEventInfo) {
+    return unimplemented("sceKernelGetThreadEventInfo");
 }
 
 EXPORT(int, sceKernelGetThreadExitStatus) {
@@ -1002,6 +1066,10 @@ EXPORT(int, sceKernelReceiveMsgPipeVectorCB) {
     return unimplemented("sceKernelReceiveMsgPipeVectorCB");
 }
 
+EXPORT(int, sceKernelRegisterThreadEventHandler) {
+    return unimplemented("sceKernelRegisterThreadEventHandler");
+}
+
 EXPORT(int, sceKernelSendMsgPipe) {
     return unimplemented("sceKernelSendMsgPipe");
 }
@@ -1020,6 +1088,10 @@ EXPORT(int, sceKernelSendMsgPipeVectorCB) {
 
 EXPORT(int, sceKernelSetEventWithNotifyCallback) {
     return unimplemented("sceKernelSetEventWithNotifyCallback");
+}
+
+EXPORT(int, sceKernelSetThreadContextForVM) {
+    return unimplemented("sceKernelSetThreadContextForVM");
 }
 
 EXPORT(int, sceKernelSetTimerEvent) {
@@ -1121,6 +1193,14 @@ EXPORT(int, sceKernelWaitEventFlagCB) {
     return unimplemented("sceKernelWaitEventFlagCB");
 }
 
+EXPORT(int, sceKernelWaitException) {
+    return unimplemented("sceKernelWaitException");
+}
+
+EXPORT(int, sceKernelWaitExceptionCB) {
+    return unimplemented("sceKernelWaitExceptionCB");
+}
+
 EXPORT(int, sceKernelWaitLwCond) {
     return unimplemented("sceKernelWaitLwCond");
 }
@@ -1184,6 +1264,26 @@ EXPORT(int, sceSblACMgrIsGameProgram) {
     return unimplemented("sceSblACMgrIsGameProgram");
 }
 
+EXPORT(int, sceSblGcAuthMgrAdhocBB160Shutdown) {
+    return unimplemented("sceSblGcAuthMgrAdhocBB160Shutdown");
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB224Shutdown) {
+    return unimplemented("sceSblGcAuthMgrAdhocBB224Shutdown");
+}
+
+EXPORT(int, sceSblGcAuthMgrMsSaveBBCipherFinal) {
+    return unimplemented("sceSblGcAuthMgrMsSaveBBCipherFinal");
+}
+
+EXPORT(int, sceSblGcAuthMgrMsSaveBBMacUpdate) {
+    return unimplemented("sceSblGcAuthMgrMsSaveBBMacUpdate");
+}
+
+EXPORT(int, sceSblGcAuthMgrPcactActivation) {
+    return unimplemented("sceSblGcAuthMgrPcactActivation");
+}
+
 BRIDGE_IMPL(SceKernelStackChkGuard)
 BRIDGE_IMPL(__sce_aeabi_idiv0)
 BRIDGE_IMPL(__sce_aeabi_ldiv0)
@@ -1243,25 +1343,36 @@ BRIDGE_IMPL(sceClibVprintf)
 BRIDGE_IMPL(sceClibVsnprintf)
 BRIDGE_IMPL(sceClibVsnprintfChk)
 BRIDGE_IMPL(sceIoChstat)
+BRIDGE_IMPL(sceIoChstatAsync)
 BRIDGE_IMPL(sceIoChstatByFd)
+BRIDGE_IMPL(sceIoCompleteMultiple)
 BRIDGE_IMPL(sceIoDevctl)
+BRIDGE_IMPL(sceIoDevctlAsync)
 BRIDGE_IMPL(sceIoDopen)
 BRIDGE_IMPL(sceIoDread)
 BRIDGE_IMPL(sceIoGetstat)
+BRIDGE_IMPL(sceIoGetstatAsync)
 BRIDGE_IMPL(sceIoGetstatByFd)
 BRIDGE_IMPL(sceIoIoctl)
 BRIDGE_IMPL(sceIoIoctlAsync)
 BRIDGE_IMPL(sceIoLseek)
 BRIDGE_IMPL(sceIoLseekAsync)
 BRIDGE_IMPL(sceIoMkdir)
+BRIDGE_IMPL(sceIoMkdirAsync)
 BRIDGE_IMPL(sceIoOpen)
 BRIDGE_IMPL(sceIoOpenAsync)
 BRIDGE_IMPL(sceIoPread)
+BRIDGE_IMPL(sceIoPreadAsync)
 BRIDGE_IMPL(sceIoPwrite)
+BRIDGE_IMPL(sceIoPwriteAsync)
 BRIDGE_IMPL(sceIoRemove)
+BRIDGE_IMPL(sceIoRemoveAsync)
 BRIDGE_IMPL(sceIoRename)
+BRIDGE_IMPL(sceIoRenameAsync)
 BRIDGE_IMPL(sceIoRmdir)
+BRIDGE_IMPL(sceIoRmdirAsync)
 BRIDGE_IMPL(sceIoSync)
+BRIDGE_IMPL(sceIoSyncAsync)
 BRIDGE_IMPL(sceKernelAtomicAddAndGet16)
 BRIDGE_IMPL(sceKernelAtomicAddAndGet32)
 BRIDGE_IMPL(sceKernelAtomicAddAndGet64)
@@ -1354,9 +1465,11 @@ BRIDGE_IMPL(sceKernelCreateEventFlag)
 BRIDGE_IMPL(sceKernelCreateLwCond)
 BRIDGE_IMPL(sceKernelCreateLwMutex)
 BRIDGE_IMPL(sceKernelCreateMsgPipe)
+BRIDGE_IMPL(sceKernelCreateMsgPipeWithLR)
 BRIDGE_IMPL(sceKernelCreateMutex)
 BRIDGE_IMPL(sceKernelCreateRWLock)
 BRIDGE_IMPL(sceKernelCreateSema)
+BRIDGE_IMPL(sceKernelCreateSema_16XX)
 BRIDGE_IMPL(sceKernelCreateSimpleEvent)
 BRIDGE_IMPL(sceKernelCreateThread)
 BRIDGE_IMPL(sceKernelCreateTimer)
@@ -1384,9 +1497,12 @@ BRIDGE_IMPL(sceKernelGetProcessTimeWide)
 BRIDGE_IMPL(sceKernelGetRWLockInfo)
 BRIDGE_IMPL(sceKernelGetSemaInfo)
 BRIDGE_IMPL(sceKernelGetSystemInfo)
+BRIDGE_IMPL(sceKernelGetSystemTime)
 BRIDGE_IMPL(sceKernelGetTLSAddr)
+BRIDGE_IMPL(sceKernelGetThreadContextForVM)
 BRIDGE_IMPL(sceKernelGetThreadCpuAffinityMask)
 BRIDGE_IMPL(sceKernelGetThreadCurrentPriority)
+BRIDGE_IMPL(sceKernelGetThreadEventInfo)
 BRIDGE_IMPL(sceKernelGetThreadExitStatus)
 BRIDGE_IMPL(sceKernelGetThreadId)
 BRIDGE_IMPL(sceKernelGetThreadInfo)
@@ -1415,11 +1531,13 @@ BRIDGE_IMPL(sceKernelReceiveMsgPipe)
 BRIDGE_IMPL(sceKernelReceiveMsgPipeCB)
 BRIDGE_IMPL(sceKernelReceiveMsgPipeVector)
 BRIDGE_IMPL(sceKernelReceiveMsgPipeVectorCB)
+BRIDGE_IMPL(sceKernelRegisterThreadEventHandler)
 BRIDGE_IMPL(sceKernelSendMsgPipe)
 BRIDGE_IMPL(sceKernelSendMsgPipeCB)
 BRIDGE_IMPL(sceKernelSendMsgPipeVector)
 BRIDGE_IMPL(sceKernelSendMsgPipeVectorCB)
 BRIDGE_IMPL(sceKernelSetEventWithNotifyCallback)
+BRIDGE_IMPL(sceKernelSetThreadContextForVM)
 BRIDGE_IMPL(sceKernelSetTimerEvent)
 BRIDGE_IMPL(sceKernelSetTimerTime)
 BRIDGE_IMPL(sceKernelSignalLwCond)
@@ -1443,6 +1561,8 @@ BRIDGE_IMPL(sceKernelWaitEvent)
 BRIDGE_IMPL(sceKernelWaitEventCB)
 BRIDGE_IMPL(sceKernelWaitEventFlag)
 BRIDGE_IMPL(sceKernelWaitEventFlagCB)
+BRIDGE_IMPL(sceKernelWaitException)
+BRIDGE_IMPL(sceKernelWaitExceptionCB)
 BRIDGE_IMPL(sceKernelWaitLwCond)
 BRIDGE_IMPL(sceKernelWaitLwCondCB)
 BRIDGE_IMPL(sceKernelWaitMultipleEvents)
@@ -1454,3 +1574,8 @@ BRIDGE_IMPL(sceKernelWaitSignalCB)
 BRIDGE_IMPL(sceKernelWaitThreadEnd)
 BRIDGE_IMPL(sceKernelWaitThreadEndCB)
 BRIDGE_IMPL(sceSblACMgrIsGameProgram)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160Shutdown)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB224Shutdown)
+BRIDGE_IMPL(sceSblGcAuthMgrMsSaveBBCipherFinal)
+BRIDGE_IMPL(sceSblGcAuthMgrMsSaveBBMacUpdate)
+BRIDGE_IMPL(sceSblGcAuthMgrPcactActivation)

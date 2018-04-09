@@ -324,6 +324,10 @@ EXPORT(int, sceKernelUnregisterCallbackFromEventAll) {
     return unimplemented("sceKernelUnregisterCallbackFromEventAll");
 }
 
+EXPORT(int, sceKernelUnregisterThreadEventHandler) {
+    return unimplemented("sceKernelUnregisterThreadEventHandler");
+}
+
 BRIDGE_IMPL(sceKernelCancelCallback)
 BRIDGE_IMPL(sceKernelChangeActiveCpuMask)
 BRIDGE_IMPL(sceKernelChangeThreadCpuAffinityMask)
@@ -398,3 +402,4 @@ BRIDGE_IMPL(sceKernelUnlockReadRWLock)
 BRIDGE_IMPL(sceKernelUnlockWriteRWLock)
 BRIDGE_IMPL(sceKernelUnregisterCallbackFromEvent)
 BRIDGE_IMPL(sceKernelUnregisterCallbackFromEventAll)
+BRIDGE_IMPL(sceKernelUnregisterThreadEventHandler)
