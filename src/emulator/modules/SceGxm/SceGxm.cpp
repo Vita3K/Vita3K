@@ -1843,6 +1843,8 @@ EXPORT(int, sceGxmTextureSetUAddrModeSafe, SceGxmTexture *texture, SceGxmTexture
             }
         }else if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) || ((texture->type << 29) == SCE_GXM_TEXTURE_SWIZZLED)){
             return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
+        }else{
+            return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
         }
         texture->uaddr_mode = mode;
         return 0;
@@ -1882,6 +1884,8 @@ EXPORT(int, sceGxmTextureSetVAddrModeSafe, SceGxmTexture *texture, SceGxmTexture
                 return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
             }
         }else if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) || ((texture->type << 29) == SCE_GXM_TEXTURE_SWIZZLED)){
+            return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
+        }else{
             return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
         }
         texture->vaddr_mode = mode;
