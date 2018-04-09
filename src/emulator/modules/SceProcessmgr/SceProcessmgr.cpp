@@ -86,8 +86,14 @@ EXPORT(int, sceKernelLibcMktime) {
     return unimplemented("sceKernelLibcMktime");
 }
 
-EXPORT(int, sceKernelLibcTime) {
-    return unimplemented("sceKernelLibcTime");
+EXPORT(int, sceKernelLibcTime, uint32_t* time) {
+    const auto ticks = rtc_get_ticks(host) / VITA_CLOCKS_PER_SEC;
+    
+    if(time){
+        *time = ticks;
+    }
+    
+    return ticks;
 }
 
 EXPORT(int, sceKernelPowerLock) {
