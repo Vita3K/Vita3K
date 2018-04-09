@@ -148,6 +148,10 @@ int main(int argc, char *argv[]) {
     }
 
     const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
+    Ptr<void> argp = Ptr<void>();
+    if(!strncmp(host.kernel.loaded_modules.begin()->second->module_name,"SceLibc",7)){
+        run_on_current(*main_thread, host.kernel.loaded_modules.begin()->second->module_start, 0, argp);
+    }
 
     if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
         error("Failed to run main thread.", host.window.get());

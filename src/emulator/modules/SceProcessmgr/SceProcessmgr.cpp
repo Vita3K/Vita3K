@@ -32,8 +32,8 @@ EXPORT(int, sceKernelCallAbortHandler) {
     return unimplemented("sceKernelCallAbortHandler");
 }
 
-EXPORT(int, sceKernelGetProcessParam) {
-    return unimplemented("sceKernelGetProcessParam");
+EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void* args) {
+    return host.kernel.process_param;
 }
 
 EXPORT(int, sceKernelGetStderr) {
@@ -86,8 +86,14 @@ EXPORT(int, sceKernelLibcMktime) {
     return unimplemented("sceKernelLibcMktime");
 }
 
-EXPORT(int, sceKernelLibcTime) {
-    return unimplemented("sceKernelLibcTime");
+EXPORT(int, sceKernelLibcTime, uint32_t* time) {
+    const auto ticks = rtc_get_ticks(host) / VITA_CLOCKS_PER_SEC;
+    
+    if(time){
+        *time = ticks;
+    }
+    
+    return ticks;
 }
 
 EXPORT(int, sceKernelPowerLock) {

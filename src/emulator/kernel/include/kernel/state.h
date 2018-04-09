@@ -44,6 +44,7 @@ typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 typedef std::shared_ptr<emu::SceKernelModuleInfo> SceKernelModuleInfoPtr;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
+typedef std::map<uint32_t,Address> ExportNids;
 
 namespace emu {
     typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
@@ -65,5 +66,7 @@ struct KernelState {
     ThreadPtrs running_threads;
     WaitingThreadStates waiting_threads;
     SceKernelModuleInfoPtrs loaded_modules;
+    ExportNids export_nids;
     SceRtcTick base_tick;
+    Ptr<uint32_t> process_param;
 };
