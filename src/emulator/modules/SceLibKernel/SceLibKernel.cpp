@@ -165,8 +165,8 @@ EXPORT(int, sceClibPrintf) {
     return unimplemented("sceClibPrintf");
 }
 
-EXPORT(int, sceClibSnprintf) {
-    return unimplemented("sceClibSnprintf");
+EXPORT(int, sceClibSnprintf, char * dest, SceSize size, const char * format, void* args){
+    return snprintf(dest, size, format);
 }
 
 EXPORT(int, sceClibSnprintfChk) {
@@ -1041,7 +1041,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
 EXPORT(int, sceKernelLockLwMutex, SceKernelLwMutexWork *pWork, int lockCount, unsigned int *pTimeout) {
     assert(pWork != nullptr);
     //assert(lockCount == 1);
-    assert(pTimeout == nullptr);
+    //assert(pTimeout == nullptr);
 
     return unimplemented("sceKernelLockLwMutex");
 }
