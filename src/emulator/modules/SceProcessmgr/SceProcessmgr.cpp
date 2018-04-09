@@ -20,6 +20,7 @@
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/processmgr.h>
 #include <host/rtc.h>
+#include <io/functions.h>
 
 struct VitaTimeval
 {
@@ -36,15 +37,15 @@ EXPORT(int, sceKernelGetProcessParam) {
 }
 
 EXPORT(int, sceKernelGetStderr) {
-    return unimplemented("sceKernelGetStderr");
+    return open_file(host.io, "tty0", SCE_O_WRONLY, host.pref_path.c_str());
 }
 
 EXPORT(int, sceKernelGetStdin) {
-    return unimplemented("sceKernelGetStdin");
+    return open_file(host.io, "tty0", SCE_O_RDONLY, host.pref_path.c_str());
 }
 
 EXPORT(int, sceKernelGetStdout) {
-    return unimplemented("sceKernelGetStdout");
+    return open_file(host.io, "tty0", SCE_O_WRONLY, host.pref_path.c_str());
 }
 
 EXPORT(int, sceKernelIsCDialogAvailable) {
