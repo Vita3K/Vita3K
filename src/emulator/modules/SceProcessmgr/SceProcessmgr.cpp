@@ -32,8 +32,8 @@ EXPORT(int, sceKernelCallAbortHandler) {
     return unimplemented("sceKernelCallAbortHandler");
 }
 
-EXPORT(int, sceKernelGetProcessParam) {
-    return unimplemented("sceKernelGetProcessParam");
+EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void* args) {
+    return host.kernel.process_param;
 }
 
 EXPORT(int, sceKernelGetStderr) {
