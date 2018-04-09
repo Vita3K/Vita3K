@@ -1832,6 +1832,10 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     return 0;
 }
 
+EXPORT(int, sceGxmTextureSetUAddrModeSafe) {
+    return unimplemented("sceGxmTextureSetUAddrModeSafe");
+}
+
 EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr){
         return error(__func__, SCE_GXM_ERROR_INVALID_POINTER);
@@ -1849,6 +1853,10 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     }
     texture->vaddr_mode = mode;
     return 0;
+}
+
+EXPORT(int, sceGxmTextureSetVAddrModeSafe) {
+    return unimplemented("sceGxmTextureSetVAddrModeSafe");
 }
 
 EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
@@ -2177,7 +2185,9 @@ BRIDGE_IMPL(sceGxmTextureSetNormalizeMode)
 BRIDGE_IMPL(sceGxmTextureSetPalette)
 BRIDGE_IMPL(sceGxmTextureSetStride)
 BRIDGE_IMPL(sceGxmTextureSetUAddrMode)
+BRIDGE_IMPL(sceGxmTextureSetUAddrModeSafe)
 BRIDGE_IMPL(sceGxmTextureSetVAddrMode)
+BRIDGE_IMPL(sceGxmTextureSetVAddrModeSafe)
 BRIDGE_IMPL(sceGxmTextureSetWidth)
 BRIDGE_IMPL(sceGxmTextureValidate)
 BRIDGE_IMPL(sceGxmTransferCopy)

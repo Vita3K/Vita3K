@@ -27,6 +27,14 @@ struct VitaTimeval
     uint32_t tv_usec;
 };
 
+EXPORT(int, sceKernelCallAbortHandler) {
+    return unimplemented("sceKernelCallAbortHandler");
+}
+
+EXPORT(int, sceKernelGetProcessParam) {
+    return unimplemented("sceKernelGetProcessParam");
+}
+
 EXPORT(int, sceKernelGetStderr) {
     return unimplemented("sceKernelGetStderr");
 }
@@ -101,6 +109,8 @@ EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
     return unimplemented("sceKernelUnregisterProcessTerminationCallback");
 }
 
+BRIDGE_IMPL(sceKernelCallAbortHandler)
+BRIDGE_IMPL(sceKernelGetProcessParam)
 BRIDGE_IMPL(sceKernelGetStderr)
 BRIDGE_IMPL(sceKernelGetStdin)
 BRIDGE_IMPL(sceKernelGetStdout)
