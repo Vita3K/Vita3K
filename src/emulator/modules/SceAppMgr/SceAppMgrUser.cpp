@@ -58,7 +58,7 @@ EXPORT(int, sceAppMgrAppParamGetString, int pid, int param, char *string, int le
     switch (param) {
     case 12:
     #ifdef WIN32
-        strcpy_s((char*)buf, length, devname);
+        strcpy_s(string, length, host.title_id.c_str());
     #else
         strncpy(string, host.title_id.c_str(), length);
     #endif
