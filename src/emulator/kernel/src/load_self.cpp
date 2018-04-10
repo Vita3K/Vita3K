@@ -29,6 +29,12 @@
 #undef SCE_ELF_DEFS_TARGET
 #include <self.h>
 
+#define NID_MODULE_STOP     0x79F8E492
+#define NID_MODULE_EXIT     0x913482A9
+#define NID_MODULE_START    0x935CD196
+#define NID_MODULE_INFO     0x6C2224BA
+#define NID_PROCESS_PARAM   0x70FBA1E7
+
 #include <miniz.h>
 
 #include <assert.h>
@@ -115,18 +121,13 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
 
-        if (nid == 0x935cd196) {
+        if (nid == NID_MODULE_START) {
             entry_point = entry;
             continue;
         }
         
-        if (nid == 0x79F8E492 || nid == 0x913482A9)
+        if (nid == NID_MODULE_STOP || nid == NID_MODULE_EXIT)
             continue;
-        
-        if(nid == 0x70fba1e7) {
-            LOG_DEBUG("\tNID {:#08x} (SCE_PROC_PARAMS) at {:#x}", nid, entry.address());
-            continue;
-        }
         
         kernel.export_nids.emplace(nid,entry.address());
         
@@ -149,19 +150,19 @@ static bool load_var_exports(Ptr<const void> &entry_point, const uint32_t *nids,
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
         
-        if(nid == 0x70fba1e7) {
+        if(nid == NID_PROCESS_PARAM) {
             kernel.process_param = entry;
             LOG_DEBUG("\tNID {:#08x} (SCE_PROC_PARAMS) at {:#x}", nid, entry.address());
             continue;
         }
         
-        if(nid == 0x6c2224ba) {
+        if(nid == NID_MODULE_INFO) {
             LOG_DEBUG("\tNID {:#08x} (NID_MODULE_INFO) at {:#x}", nid, entry.address());
             continue;
         }
         
         if(nid == 0x936c8a78) {
-            LOG_DEBUG("\tNID {:#08x} (NID_MODULE_INFO) at {:#x}", nid, entry.address());
+            LOG_DEBUG("\tNID {:#08x} (SYSLYB) at {:#x}", nid, entry.address());
             continue;
         }
         
