@@ -29,6 +29,7 @@
 #include <nids/functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/v3k_assert.h>
 
 #include <SDL_events.h>
 #include <SDL_filesystem.h>
@@ -36,7 +37,6 @@
 
 #include <glbinding/Binding.h>
 
-#include <cassert>
 #include <iomanip>
 #include <iostream>
 

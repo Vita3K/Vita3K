@@ -55,7 +55,7 @@ EXPORT(int, sceDisplayGetResolutionInfoInternal) {
 }
 
 EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync) {
-    assert(pParam != nullptr); // Todo: pParam can be NULL, in that case black screen is shown
+    v3k_assert(pParam != nullptr); // Todo: pParam can be NULL, in that case black screen is shown
     if (pParam->size != sizeof(emu::SceDisplayFrameBuf)) {
         return error("sceDisplaySetFrameBuf", SCE_DISPLAY_ERROR_INVALID_VALUE);
     }

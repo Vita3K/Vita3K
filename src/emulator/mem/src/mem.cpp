@@ -17,9 +17,9 @@
 
 #include <mem/mem.h>
 #include <util/log.h>
+#include <util/v3k_assert.h>
 
 #include <algorithm>
-#include <cassert>
 #include <cstring>
 #include <cmath>
 
@@ -35,14 +35,14 @@ static void delete_memory(uint8_t *memory) {
     if (memory != nullptr) {
 #ifdef WIN32
         const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
-        assert(ret);
+        v3k_assert(ret);
 #else
         munmap(memory, GB(4));
 #endif
     }
 }
 
-static void alloc_inner(MemState &state, Address address, size_t page_count, Allocated::iterator block, const char *name) {
+static void alloc_inner(MemState &state, Address address, size_t page_count, Allocated::iterator block, const std::string& name) {
     uint8_t *const memory = &state.memory[address];
     const size_t aligned_size = page_count * state.page_size;
 
@@ -52,7 +52,7 @@ static void alloc_inner(MemState &state, Address address, size_t page_count, All
 
 #ifdef WIN32
     const void *const ret = VirtualAlloc(memory, aligned_size, MEM_COMMIT, PAGE_READWRITE);
-    assert(ret == memory);
+    v3k_assert(ret == memory);
 #else
     mprotect(memory, aligned_size, PROT_READ | PROT_WRITE);
 #endif
@@ -67,7 +67,7 @@ bool init(MemState &state) {
 #else
     state.page_size = sysconf(_SC_PAGESIZE);
 #endif
-    assert(state.page_size >= 4096); // Limit imposed by Unicorn.
+    v3k_assert(state.page_size >= 4096); // Limit imposed by Unicorn.
 
     const size_t length = GB(4);
 #ifdef WIN32
@@ -87,8 +87,8 @@ bool init(MemState &state) {
     }
 
     state.allocated_pages.resize(length / state.page_size);
-    const Address null_address = alloc(state, 1, "NULL");
-    assert(null_address == 0);
+    const Address null_address = alloc(state, 1, "NULL guard page");
+    v3k_assert(null_address == 0);
 #ifdef WIN32
     DWORD old_protect = 0;
     const BOOL res = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
@@ -101,11 +101,11 @@ bool init(MemState &state) {
     return true;
 }
 
-Address alloc(MemState &state, size_t size, const char *name) {
+Address alloc(MemState &state, size_t size, const std::string& name) {
     const size_t page_count = (size + (state.page_size - 1)) / state.page_size;
     const Allocated::iterator block = std::search_n(state.allocated_pages.begin(), state.allocated_pages.end(), page_count, 0);
     if (block == state.allocated_pages.end()) {
-        assert(false);
+        v3k_assert(false);
         return 0;
     }
 
@@ -119,11 +119,11 @@ Address alloc(MemState &state, size_t size, const char *name) {
 
 void free(MemState &state, Address address) {
     const size_t page = address / state.page_size;
-    assert(page >= 0);
-    assert(page < state.allocated_pages.size());
+    v3k_assert(page >= 0);
+    v3k_assert(page < state.allocated_pages.size());
 
     const Generation generation = state.allocated_pages[page];
-    assert(generation != 0);
+    v3k_assert(generation != 0);
 
     const std::binder1st<std::not_equal_to<Generation>> different_generation = std::bind1st(std::not_equal_to<Generation>(), generation);
     const Allocated::iterator first_page = state.allocated_pages.begin() + page;
@@ -135,8 +135,8 @@ void free(MemState &state, Address address) {
 
 const char *mem_name(Address address, const MemState &state) {
     const size_t page = address / state.page_size;
-    assert(page >= 0);
-    assert(page < state.allocated_pages.size());
+    v3k_assert(page >= 0);
+    v3k_assert(page < state.allocated_pages.size());
 
     const Generation generation = state.allocated_pages[page];
     if (generation == 0) {
@@ -144,7 +144,7 @@ const char *mem_name(Address address, const MemState &state) {
     }
 
     const GenerationNames::const_iterator found = state.generation_names.find(generation);
-    assert(found != state.generation_names.end());
+    v3k_assert(found != state.generation_names.end());
     if (found == state.generation_names.end()) {
         return "UNNAMED";
     }

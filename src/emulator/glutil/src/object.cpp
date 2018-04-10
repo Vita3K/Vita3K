@@ -16,8 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <glutil/object.h>
-
-#include <assert.h>
+#include <util/v3k_assert.h>
 
 GLObject::~GLObject() {
     if (deleter != nullptr) {
@@ -27,10 +26,10 @@ GLObject::~GLObject() {
 }
 
 bool GLObject::init(GLuint name, Deleter *deleter) {
-    assert(name != 0);
-    assert(deleter != nullptr);
-    assert(this->name == 0);
-    assert(this->deleter == nullptr);
+    v3k_assert(name != 0);
+    v3k_assert(deleter != nullptr);
+    v3k_assert(this->name == 0);
+    v3k_assert(this->deleter == nullptr);
     this->name = name;
     this->deleter = deleter;
 
@@ -38,6 +37,6 @@ bool GLObject::init(GLuint name, Deleter *deleter) {
 }
 
 GLuint GLObject::get() const {
-    assert(name != 0);
+    v3k_assert(name != 0);
     return name;
 }

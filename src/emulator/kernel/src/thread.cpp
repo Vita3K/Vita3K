@@ -26,10 +26,11 @@
 #include <util/find.h>
 #include <util/lock_and_find.h>
 #include <util/resource.h>
+#include <util/log.h>
+#include <util/v3k_assert.h>
 
 #include <SDL_thread.h>
 
-#include <cassert>
 #include <cstring>
 
 struct ThreadParams {
@@ -41,14 +42,14 @@ struct ThreadParams {
 };
 
 static int SDLCALL thread_function(void *data) {
-    assert(data != nullptr);
+    v3k_assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
     const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
     write_reg(*thread->cpu, 0, params.arglen);
     write_reg(*thread->cpu, 1, params.argp.address());
     const bool succeeded = run_thread(*thread, false);
-    assert(succeeded);
+    v3k_assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
     return r0;
 }
@@ -64,16 +65,18 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     };
 
     const ThreadStatePtr thread = std::make_shared<ThreadState>();
-    thread->stack = std::make_shared<ThreadStack>(alloc(mem, stack_size, "Stack"), stack_deleter);
+    const auto stack_alloc_name = std::string("stack_") + name;
+    thread->stack = std::make_shared<ThreadStack>(alloc(mem, stack_size, stack_alloc_name), stack_deleter);
     const Address stack_top = thread->stack->get() + stack_size;
     memset(Ptr<void>(thread->stack->get()).get(mem), 0xcc, stack_size);
 
     const CallSVC call_svc = [call_import, thid, &mem](uint32_t imm, Address pc) {
-        assert(imm == 0);
+        v3k_assert(imm == 0);
         const uint32_t nid = *Ptr<uint32_t>(pc + 4).get(mem);
         call_import(nid, thid);
     };
 
+    LOG_INFO("Creating thread: {{ name: \"{}\", thid: {} stack size: {} KiB }}", name, thid, stack_size / 1024);
     thread->cpu = init_cpu(entry_point.address(), stack_top, log_code, call_svc, mem);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
@@ -95,7 +98,7 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
     }
 
     const ThreadStatePtr thread = find(thid, kernel.threads);
-    assert(thread);
+    v3k_assert(thread);
 
     ThreadParams params;
     params.kernel = &kernel;

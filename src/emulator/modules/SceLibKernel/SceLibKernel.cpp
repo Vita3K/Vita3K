@@ -22,6 +22,7 @@
 #include <io/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread_functions.h>
+#include <util/v3k_assert.h>
 
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
@@ -762,12 +763,12 @@ EXPORT(int, sceKernelCreateLwCond) {
 }
 
 EXPORT(int, sceKernelCreateLwMutex, SceKernelLwMutexWork *pWork, const char *pName, unsigned int attr, int initCount, const SceKernelLwMutexOptParam *pOptParam) {
-    assert(pWork != nullptr);
-    assert(pName != nullptr);
-    assert((attr == 0) || (attr == 2));
-    assert(initCount >= 0);
-    assert(initCount <= 1);
-    assert(pOptParam == nullptr);
+    v3k_assert(pWork != nullptr);
+    v3k_assert(pName != nullptr);
+    v3k_assert((attr == 0) || (attr == 2));
+    v3k_assert(initCount >= 0);
+    v3k_assert(initCount <= 1);
+    v3k_assert(pOptParam == nullptr);
 
     return unimplemented("sceKernelCreateLwMutex");
 }
@@ -991,9 +992,9 @@ EXPORT(int, sceKernelLoadStartModule) {
 }
 
 EXPORT(int, sceKernelLockLwMutex, SceKernelLwMutexWork *pWork, int lockCount, unsigned int *pTimeout) {
-    assert(pWork != nullptr);
-    assert(lockCount == 1);
-    assert(pTimeout == nullptr);
+    v3k_assert(pWork != nullptr);
+    v3k_assert(lockCount == 1);
+    v3k_assert(pTimeout == nullptr);
 
     return unimplemented("sceKernelLockLwMutex");
 }
@@ -1163,8 +1164,8 @@ EXPORT(int, sceKernelUnloadModule) {
 }
 
 EXPORT(int, sceKernelUnlockLwMutex, SceKernelLwMutexWork *pWork, int unlockCount) {
-    assert(pWork != nullptr);
-    assert(unlockCount == 1);
+    v3k_assert(pWork != nullptr);
+    v3k_assert(unlockCount == 1);
 
     return unimplemented("sceKernelUnlockLwMutex");
 }
@@ -1218,9 +1219,9 @@ EXPORT(int, sceKernelWaitMultipleEventsCB) {
 }
 
 EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
-    assert(semaid >= 0);
-    assert(signal == 1);
-    assert(timeout == nullptr);
+    v3k_assert(semaid >= 0);
+    v3k_assert(signal == 1);
+    v3k_assert(timeout == nullptr);
 
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
@@ -1232,7 +1233,7 @@ EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
 
     {
         const std::unique_lock<std::mutex> lock(thread->mutex);
-        assert(thread->to_do == ThreadToDo::run);
+        v3k_assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
     }
     stop(*thread->cpu);

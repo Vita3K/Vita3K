@@ -20,7 +20,6 @@
 #include <psp2/types.h>
 #include <psp2/io/fcntl.h>
 
-#include <cassert>
 #include <cstring>
 #include <vector>
 

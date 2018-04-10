@@ -23,8 +23,8 @@
 #include <io/state.h>
 #include <util/string_convert.h>
 #include <util/log.h>
+#include <util/v3k_assert.h>
 
-#include <cassert>
 #include <cstring>
 #include <vector>
 
@@ -37,7 +37,7 @@ static void delete_zip(mz_zip_archive *zip) {
 
 static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBuf, size_t n) {
     Buffer *const buffer = static_cast<Buffer *>(pOpaque);
-    assert(file_ofs == buffer->size());
+    v3k_assert(file_ofs == buffer->size());
     const uint8_t *const first = static_cast<const uint8_t *>(pBuf);
     const uint8_t *const last = &first[n];
     buffer->insert(buffer->end(), first, last);

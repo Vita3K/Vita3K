@@ -28,10 +28,10 @@ using namespace emu;
 
 EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, int size, emu::SceKernelAllocMemBlockOpt *optp) {
     MemState &mem = host.mem;
-    assert(name != nullptr);
-    assert(type != 0);
-    assert(size != 0);
-    assert(optp == nullptr);
+    v3k_assert(name != nullptr);
+    v3k_assert(type != 0);
+    v3k_assert(size != 0);
+    v3k_assert(optp == nullptr);
 
     const Ptr<void> address(alloc(mem, size, name));
     if (!address) {
@@ -70,11 +70,11 @@ EXPORT(int, sceKernelFindMemBlockByAddr) {
 }
 
 EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
-    assert(uid >= 0);
+    v3k_assert(uid >= 0);
 
     KernelState *const state = &host.kernel;
     const Blocks::const_iterator block = state->blocks.find(uid);
-    assert(block != state->blocks.end());
+    v3k_assert(block != state->blocks.end());
 
     free(host.mem, block->second.address());
     state->blocks.erase(block);
@@ -91,8 +91,8 @@ EXPORT(int, sceKernelGetFreeMemorySize) {
 }
 
 EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
-    assert(uid >= 0);
-    assert(basep != nullptr);
+    v3k_assert(uid >= 0);
+    v3k_assert(basep != nullptr);
 
     const KernelState *const state = &host.kernel;
     const Blocks::const_iterator block = state->blocks.find(uid);

@@ -78,10 +78,10 @@ EXPORT(int, sceTouchGetSamplingStateExt) {
 }
 
 EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-    assert(port >= 0);
-    assert(port <= 1);
-    assert(pData != nullptr);
-    assert(nBufs == 1);
+    v3k_assert(port >= 0);
+    v3k_assert(port <= 1);
+    v3k_assert(pData != nullptr);
+    v3k_assert(nBufs == 1);
 
     memset(pData, 0, sizeof(*pData));
     pData->timeStamp = timestamp++; // TODO Use the real time and units.

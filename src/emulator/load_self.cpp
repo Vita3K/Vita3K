@@ -21,6 +21,7 @@
 
 #include <nids/functions.h>
 #include <util/log.h>
+#include <util/v3k_assert.h>
 
 #include <elfio/elf_types.hpp>
 #define SCE_ELF_DEFS_TARGET
@@ -30,7 +31,6 @@
 
 #include <miniz.h>
 
-#include <assert.h>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -69,9 +69,9 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
             LOG_INFO("Loading imports from {}", lib_name);
         }
 
-        assert(imports->version == 1);
-        assert(imports->num_syms_vars == 0);
-        assert(imports->num_syms_unk == 0);
+        v3k_assert(imports->version == 1);
+        v3k_assert(imports->num_syms_vars == 0);
+        v3k_assert(imports->num_syms_unk == 0);
 
         const uint32_t *const nids = Ptr<const uint32_t>(imports->func_nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(imports->func_entry_table).get(mem);
@@ -108,7 +108,7 @@ bool load_self(Ptr<const void> &entry_point, MemState &mem, const void *self) {
         const Elf32_Phdr &src = segments[segment_index];
         const uint8_t *const segment_bytes = self_bytes + self_header.header_len + src.p_offset;
 
-        assert(segment_infos[segment_index].encryption==2);
+        v3k_assert(segment_infos[segment_index].encryption==2);
         if (src.p_type == PT_LOAD) {
             const Ptr<void> address(alloc(mem, src.p_memsz, "segment"));
             if (!address) {
@@ -121,7 +121,7 @@ bool load_self(Ptr<const void> &entry_point, MemState &mem, const void *self) {
                 const uint8_t *const compressed_segment_bytes = self_bytes + segment_infos[segment_index].offset;
 
                 int res = mz_uncompress(reinterpret_cast<uint8_t *>(address.get(mem)), &dest_bytes, compressed_segment_bytes, segment_infos[segment_index].length);
-                assert(res == MZ_OK);
+                v3k_assert(res == MZ_OK);
             } else {
                 memcpy(address.get(mem), segment_bytes, src.p_filesz);
             }
@@ -134,7 +134,7 @@ bool load_self(Ptr<const void> &entry_point, MemState &mem, const void *self) {
                 std::unique_ptr<uint8_t> uncompressed(new uint8_t[dest_bytes]);
 
                 int res = mz_uncompress(uncompressed.get(), &dest_bytes, compressed_segment_bytes, segment_infos[segment_index].length);
-                assert(res == MZ_OK);
+                v3k_assert(res == MZ_OK);
                 if (!relocate(uncompressed.get(), src.p_filesz, segment_addrs, mem)) {
                     return false;
                 }
