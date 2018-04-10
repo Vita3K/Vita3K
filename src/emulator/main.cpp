@@ -24,12 +24,12 @@
 #include <util/find.h>
 #include <util/log.h>
 #include <util/string_convert.h>
+#include <util/v3k_assert.h>
 
 #include <SDL.h>
 #include <glutil/gl.h>
 
 #include <algorithm> // find_if_not
-#include <cassert>
 #include <iostream>
 #include <sstream>
 
@@ -57,7 +57,7 @@ static void error(const std::string &message, SDL_Window *window = nullptr) {
 }
 
 static void term_sdl(const void *succeeded) {
-    assert(succeeded != nullptr);
+    v3k_assert(succeeded != nullptr);
 
     SDL_Quit();
 }
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    const char *const *const path_arg = std::find_if_not(&argv[1], &argv[argc], is_macos_process_arg);
+    const char *const *const path_arg = std::find_if_not(&argv[argc - 1], &argv[argc], is_macos_process_arg);
     std::wstring path;
     if (path_arg != &argv[argc]) {
         path = utf_to_wide(*path_arg);
@@ -95,17 +95,24 @@ int main(int argc, char *argv[]) {
     if (path.empty()) {
         std::string message = "Usage: ";
         message += argv[0];
-        message += " <path to VPK file>";
+        message += "[-s|--strict] <path to VPK file>";
         error(message);
         return IncorrectArgs;
     }
 
+    // TODO: Get a proper agument handling library.
+    const bool strict_arg = std::any_of(argv_wide.begin(), argv_wide.end(), [](const std::wstring& w) {
+        return w == L"--strict" | w == L"-s";
+    });
+
+    v3k_assert_set_abort(strict_arg);
+    
     HostState host;
     if (!init(host)) {
         error("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }
-
+    
     Ptr<const void> entry_point;
     if (!load_vpk(entry_point, host.game_title, host.title_id, host.io, host.mem, path)) {
         std::string message = "Failed to load \"";
