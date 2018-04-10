@@ -754,12 +754,20 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat) {
     return unimplemented("sceGxmProgramGetOutputRegisterFormat");
 }
 
-EXPORT(int, sceGxmProgramGetParameter) {
-    return unimplemented("sceGxmProgramGetParameter");
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram* program, unsigned int index) {
+    
+    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
+    
+    const SceGxmProgramParameter *const parameter = &parameters[index];
+    const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
+
+    const Address parameter_address = static_cast<Address>(parameter_bytes - &host.mem.memory[0]);
+    return Ptr<SceGxmProgramParameter>(parameter_address);
+
 }
 
-EXPORT(int, sceGxmProgramGetParameterCount) {
-    return unimplemented("sceGxmProgramGetParameterCount");
+EXPORT(int, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
+    return program->parameter_count;
 }
 
 EXPORT(int, sceGxmProgramGetSize) {
@@ -802,8 +810,10 @@ EXPORT(int, sceGxmProgramParameterGetArraySize) {
     return unimplemented("sceGxmProgramParameterGetArraySize");
 }
 
-EXPORT(int, sceGxmProgramParameterGetCategory) {
-    return unimplemented("sceGxmProgramParameterGetCategory");
+EXPORT(int, sceGxmProgramParameterGetCategory, const SceGxmProgramParameter *parameter) {
+    assert(parameter != nullptr);
+    
+    return parameter->category;
 }
 
 EXPORT(int, sceGxmProgramParameterGetComponentCount) {
@@ -818,8 +828,8 @@ EXPORT(int, sceGxmProgramParameterGetIndex) {
     return unimplemented("sceGxmProgramParameterGetIndex");
 }
 
-EXPORT(int, sceGxmProgramParameterGetName) {
-    return unimplemented("sceGxmProgramParameterGetName");
+EXPORT(Ptr<void>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramParameter> parameter) {
+    return Ptr<void>(parameter.address() + parameter.get(host.mem)->name_offset);
 }
 
 EXPORT(unsigned int, sceGxmProgramParameterGetResourceIndex, const SceGxmProgramParameter *parameter) {
