@@ -17,6 +17,8 @@
 
 #include "SceCtrl.h"
 
+#include <util/v3k_assert.h>
+
 #include <psp2/ctrl.h>
 
 #include <SDL_gamecontroller.h>
@@ -107,14 +109,14 @@ static void apply_keyboard(uint32_t *buttons, float axes[4]) {
 
 static float axis_to_axis(int16_t axis) {
     const float unsigned_axis = axis - INT16_MIN;
-    assert(unsigned_axis >= 0);
-    assert(unsigned_axis <= UINT16_MAX);
+    v3k_assert(unsigned_axis >= 0);
+    v3k_assert(unsigned_axis <= UINT16_MAX);
 
     const float f = unsigned_axis / UINT16_MAX;
 
     const float output = (f * 2) - 1;
-    assert(output >= -1);
-    assert(output <= 1);
+    v3k_assert(output >= -1);
+    v3k_assert(output <= 1);
 
     return output;
 }
@@ -136,8 +138,8 @@ static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameControlle
 static uint8_t float_to_byte(float f) {
     const float mapped = (f * 0.5f) + 0.5f;
     const float clamped = std::max(0.0f, std::min(mapped, 1.0f));
-    assert(clamped >= 0);
-    assert(clamped <= 1);
+    v3k_assert(clamped >= 0);
+    v3k_assert(clamped <= 1);
 
     return static_cast<uint8_t>(clamped * 255);
 }
@@ -222,9 +224,9 @@ EXPORT(int, sceCtrlPeekBufferNegative2) {
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
-    assert(port == 0);
-    assert(pad_data != nullptr);
-    assert(count == 1);
+    v3k_assert(port == 0);
+    v3k_assert(pad_data != nullptr);
+    v3k_assert(count == 1);
 
     CtrlState &state = host.ctrl;
     remove_disconnected_controllers(state);

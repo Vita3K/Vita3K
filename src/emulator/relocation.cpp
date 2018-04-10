@@ -17,8 +17,8 @@
 
 #include "relocation.h"
 #include <util/log.h>
+#include <util/v3k_assert.h>
 
-#include <assert.h>
 #include <iostream>
 #include <cstring>
 
@@ -202,7 +202,7 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
     const void *const end = static_cast<const uint8_t *>(entries) + size;
     const Entry *entry = static_cast<const Entry *>(entries);
     while (entry < end) {
-        assert(entry->is_short == 0);
+        v3k_assert(entry->is_short == 0);
 
         const Ptr<void> symbol_start = segments.find(entry->symbol_segment)->second;
         const Address s = (entry->symbol_segment == 0xf) ? 0 : symbol_start.address();
@@ -212,7 +212,7 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
             entry = short_entry + 1;
         } else {
             const LongEntry *const long_entry = static_cast<const LongEntry *>(entry);
-            assert(long_entry->code2 == 0);
+            v3k_assert(long_entry->code2 == 0);
 
             const Ptr<void> segment_start = segments.find(long_entry->data_segment)->second;
             const Address p = segment_start.address() + long_entry->offset;

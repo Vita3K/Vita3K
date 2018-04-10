@@ -76,7 +76,7 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
     }
 
     const std::unique_lock<std::mutex> lock(thread->mutex);
-    assert(thread->to_do == ThreadToDo::run);
+    v3k_assert(thread->to_do == ThreadToDo::run);
     thread->to_do = ThreadToDo::wait;
     stop(*thread->cpu);
 

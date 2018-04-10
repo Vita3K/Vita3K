@@ -18,9 +18,9 @@
 #pragma once
 
 #include <glutil/gl.h>
+#include <util/v3k_assert.h>
 
 #include <array>
-#include <assert.h>
 
 template <size_t Size>
 class GLObjectArray {
@@ -33,14 +33,14 @@ public:
     }
 
     ~GLObjectArray() {
-        assert(deleter != nullptr);
+        v3k_assert(deleter != nullptr);
         deleter(static_cast<GLsizei>(names.size()), &names[0]);
         names.fill(0);
     }
 
     bool init(Generator *generator, Deleter *deleter) {
-        assert(generator != nullptr);
-        assert(deleter != nullptr);
+        v3k_assert(generator != nullptr);
+        v3k_assert(deleter != nullptr);
         this->deleter = deleter;
         generator(static_cast<GLsizei>(names.size()), &names[0]);
 
@@ -48,9 +48,9 @@ public:
     }
 
     const GLuint operator[](size_t i) const {
-        assert(i >= 0);
-        assert(i < names.size());
-        assert(names[i] != 0);
+        v3k_assert(i >= 0);
+        v3k_assert(i < names.size());
+        v3k_assert(names[i] != 0);
         return names[i];
     }
 

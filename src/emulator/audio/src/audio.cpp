@@ -19,15 +19,15 @@
 
 #include <audio/state.h>
 #include <util/log.h>
+#include <util/v3k_assert.h>
 
-#include <cassert>
 #include <cstring>
 
 static const int stream_put_granularity = 512;
 
 static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
     int available_to_get = SDL_AudioStreamAvailable(port.callback.stream.get());
-    assert(available_to_get >= 0);
+    v3k_assert(available_to_get >= 0);
 
     while (available_to_get < len) {
         std::unique_lock<std::mutex> lock(port.shared.mutex);
@@ -39,7 +39,7 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
             AudioOutput &output = port.shared.outputs.front();
             const int bytes_to_put = std::min(stream_put_granularity, output.len_bytes);
             const int ret = SDL_AudioStreamPut(port.callback.stream.get(), output.buf, bytes_to_put);
-            assert(ret == 0);
+            v3k_assert(ret == 0);
             output.buf += bytes_to_put;
             output.len_bytes -= bytes_to_put;
             if (output.len_bytes <= 0) {
@@ -49,7 +49,7 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
         }
 
         available_to_get = SDL_AudioStreamAvailable(port.callback.stream.get());
-        assert(available_to_get >= 0);
+        v3k_assert(available_to_get >= 0);
     }
 
     const int bytes_to_get = std::min(len, available_to_get);
@@ -60,11 +60,11 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
 }
 
 static void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
-    assert(userdata != nullptr);
-    assert(stream != nullptr);
+    v3k_assert(userdata != nullptr);
+    v3k_assert(stream != nullptr);
     AudioState &state = *static_cast<AudioState *>(userdata);
-    assert(len == state.ro.spec.size);
-    assert(len == state.callback.temp_buffer.size());
+    v3k_assert(len == state.ro.spec.size);
+    v3k_assert(len == state.callback.temp_buffer.size());
 
     std::vector<AudioOutPortPtr> ports;
     {

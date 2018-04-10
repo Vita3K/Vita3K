@@ -20,10 +20,9 @@
 #include <host/state.h>
 #include <kernel/thread_state.h>
 #include <util/lock_and_find.h>
+#include <util/v3k_assert.h>
 
 #include <microprofile.h>
-
-#include <cassert>
 
 struct CPUState;
 
@@ -64,7 +63,7 @@ struct Bridge<Ret (*)(HostState &, SceUID, Args...), export_fn> {
         MICROPROFILE_SCOPEI("HLE", "", MP_YELLOW);
 
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        assert(thread);
+        v3k_assert(thread);
 
         using Indices = std::index_sequence_for<Args...>;
         CallAndBridgeReturn<Ret (*)(HostState &, SceUID, Args...), export_fn, Indices>::call(thread_id, *thread->cpu, host);

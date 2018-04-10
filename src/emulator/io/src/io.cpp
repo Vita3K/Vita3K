@@ -23,6 +23,7 @@
 
 #include <io/state.h>
 #include <util/log.h>
+#include <util/v3k_assert.h>
 
 #include <psp2/io/fcntl.h>
 
@@ -37,7 +38,6 @@
 #endif
 
 #include <algorithm>
-#include <cassert>
 #include <iostream>
 #include <string>
 #include <tuple>
@@ -160,10 +160,10 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
     VitaPartition partition;
     std::string partition_name;
     std::tie(partition, partition_name) = translate_partition(path);
-
+    
     switch (partition) {
     case VitaPartition::TTY0: {
-        assert(flags >= 0);
+        v3k_assert(flags >= 0);
 
         TtyType type;
         if (flags == SCE_O_RDONLY) {
@@ -178,7 +178,7 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         return fd;
     }
     case VitaPartition::APP0: {
-        assert(flags == SCE_O_RDONLY);
+        v3k_assert(flags == SCE_O_RDONLY);
 
         if (!io.vpk) {
             return -1;
@@ -228,9 +228,9 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
 }
 
 int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
-    assert(data != nullptr);
-    assert(fd >= 0);
-    assert(size >= 0);
+    v3k_assert(data != nullptr);
+    v3k_assert(fd >= 0);
+    v3k_assert(size >= 0);
 
     AppFiles::iterator app_file = io.app_files.find(fd);
     if (app_file != io.app_files.end()) {
@@ -256,9 +256,9 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
 }
 
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
-    assert(data != nullptr);
-    assert(fd >= 0);
-    assert(size >= 0);
+    v3k_assert(data != nullptr);
+    v3k_assert(fd >= 0);
+    v3k_assert(size >= 0);
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
@@ -285,13 +285,13 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
 }
 
 int seek_file(SceUID fd, int offset, int whence, IOState &io) {
-    assert(fd >= 0);
-    assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
+    v3k_assert(fd >= 0);
+    v3k_assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
 
     const StdFiles::const_iterator std_file = io.std_files.find(fd);
     AppFiles::iterator app_file = io.app_files.find(fd);
 
-    assert(std_file != io.std_files.end() || app_file != io.app_files.end());
+    v3k_assert(std_file != io.std_files.end() || app_file != io.app_files.end());
 
     if (std_file == io.std_files.end() && app_file == io.app_files.end()) {
         return -1;
@@ -332,7 +332,7 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io) {
 }
 
 void close_file(IOState &io, SceUID fd) {
-    assert(fd >= 0);
+    v3k_assert(fd >= 0);
 
     io.tty_files.erase(fd);
     io.std_files.erase(fd);
@@ -411,8 +411,8 @@ int remove_dir(const char *dir, const char *pref_path) {
 
 int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
     // TODO Hacky magic numbers.
-    assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
-    assert(statp != NULL);
+    v3k_assert((strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
+    v3k_assert(statp != NULL);
 
     memset(statp, '\0', sizeof(SceIoStat));
 
@@ -460,7 +460,7 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
 
 int open_dir(IOState &io, const char *path, const char *pref_path) {
     // TODO Hacky magic numbers.
-    assert((strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
+    v3k_assert((strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
 
     std::string dir_path;
 
@@ -488,7 +488,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path) {
 }
 
 int read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
-    assert(dent != nullptr);
+    v3k_assert(dent != nullptr);
 
     memset(dent->d_name, '\0', sizeof(dent->d_name));
 

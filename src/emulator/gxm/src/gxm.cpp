@@ -3,6 +3,7 @@
 #include <crypto/hash.h>
 #include <gxm/types.h>
 #include <util/log.h>
+#include <util/v3k_assert.h>
 
 #include <glbinding/AbstractFunction.h>
 #include <glbinding/FunctionCall.h>
@@ -78,7 +79,7 @@ static const char *vector_prefix(SceGxmParameterType type) {
 }
 
 static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
-    assert(parameter.component_count == 1);
+    v3k_assert(parameter.component_count == 1);
     
     glsl << scalar_type(parameter_type(parameter)) << " " << parameter_name(parameter);
     if (parameter.array_size > 1) {
@@ -87,8 +88,8 @@ static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter 
 }
 
 static void output_vector_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
-    assert(parameter.component_count >= 2);
-    assert(parameter.component_count <= 4);
+    v3k_assert(parameter.component_count >= 2);
+    v3k_assert(parameter.component_count <= 4);
 
     const auto vector = vector_prefix(parameter_type(parameter));
 
@@ -99,9 +100,9 @@ static void output_vector_decl(std::ostream &glsl, const SceGxmProgramParameter 
 }
 
 static void output_matrix_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
-    assert(parameter.component_count >= 2);
-    assert(parameter.array_size >= 2);
-    assert(parameter.array_size <= 4);
+    v3k_assert(parameter.component_count >= 2);
+    v3k_assert(parameter.array_size >= 2);
+    v3k_assert(parameter.array_size <= 4);
 
     glsl << vector_prefix(parameter_type(parameter)) << "mat";
     if (parameter.component_count == parameter.array_size) {
@@ -145,15 +146,15 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
                 output_glsl_decl(glsl, parameter);
                 break;
             case SCE_GXM_PARAMETER_CATEGORY_SAMPLER:
-                assert(parameter.component_count == 4);
+                v3k_assert(parameter.component_count == 4);
                 glsl << "uniform sampler2D " << parameter_name(parameter);
                 break;
             case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE:
-                assert(parameter.component_count == 0);
+                v3k_assert(parameter.component_count == 0);
                 glsl << "auxiliary_surface";
                 break;
             case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER:
-                assert(parameter.component_count == 0);
+                v3k_assert(parameter.component_count == 0);
                 glsl << "uniform_buffer";
                 break;
         }
@@ -244,7 +245,7 @@ static SharedGLObject compile_glsl(GLenum type, const std::string& source) {
 
     GLboolean is_compiled = GL_FALSE;
     glGetShaderiv(shader->get(), GL_COMPILE_STATUS, &is_compiled);
-    assert(is_compiled != GL_FALSE);
+    v3k_assert(is_compiled != GL_FALSE);
     if (!is_compiled) {
         return SharedGLObject();
     }
@@ -354,7 +355,7 @@ void after_callback(const glbinding::FunctionCall &fn) {
         std::stringstream gl_error;
         gl_error << error;
         LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
-        assert(false);
+        v3k_assert(false);
     }
 }
 
@@ -415,8 +416,8 @@ AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
 SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
     GXM_PROFILE(__FUNCTION__);
 
-    assert(context.fragment_program);
-    assert(context.vertex_program);
+    v3k_assert(context.fragment_program);
+    v3k_assert(context.vertex_program);
 
     const SceGxmFragmentProgram &fragment_program = *context.fragment_program.get(mem);
     const SceGxmVertexProgram &vertex_program = *context.vertex_program.get(mem);
@@ -462,7 +463,7 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
 
     GLboolean is_linked = GL_FALSE;
     glGetProgramiv(program->get(), GL_LINK_STATUS, &is_linked);
-    assert(is_linked != GL_FALSE);
+    v3k_assert(is_linked != GL_FALSE);
     if (is_linked == GL_FALSE) {
         return SharedGLObject();
     }
@@ -521,13 +522,13 @@ bool attribute_format_normalised(SceGxmAttributeFormat format) {
 void set_uniforms(GLuint program, const SceGxmContext &context, const MemState &mem) {
     GXM_PROFILE(__FUNCTION__);
 
-    assert(context.fragment_program);
-    assert(context.vertex_program);
+    v3k_assert(context.fragment_program);
+    v3k_assert(context.vertex_program);
     
     const SceGxmFragmentProgram &fragment_program = *context.fragment_program.get(mem);
     const SceGxmVertexProgram &vertex_program = *context.vertex_program.get(mem);
-    assert(fragment_program.program);
-    assert(vertex_program.program);
+    v3k_assert(fragment_program.program);
+    v3k_assert(vertex_program.program);
 
     set_uniforms(program, context.fragment_uniform_buffers, *fragment_program.program.get(mem), mem);
     set_uniforms(program, context.vertex_uniform_buffers, *vertex_program.program.get(mem), mem);

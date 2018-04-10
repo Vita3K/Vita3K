@@ -16,12 +16,10 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <disasm/functions.h>
-
 #include <disasm/state.h>
-
 #include <capstone.h>
+#include <util/v3k_assert.h>
 
-#include <assert.h>
 #include <sstream>
 
 static void delete_insn(cs_insn *insn) {
@@ -48,7 +46,7 @@ bool init(DisasmState &state) {
 
 std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, uint64_t address, bool thumb) {
     const cs_err err = cs_option(state.csh, CS_OPT_MODE, thumb ? CS_MODE_THUMB : CS_MODE_ARM);
-    assert(err == CS_ERR_OK);
+    v3k_assert(err == CS_ERR_OK);
 
     const bool success = cs_disasm_iter(state.csh, &code, &size, &address, state.insn.get());
 

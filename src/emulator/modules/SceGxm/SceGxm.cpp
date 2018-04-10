@@ -20,6 +20,7 @@
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <util/log.h>
+#include <util/v3k_assert.h>
 
 #include <glbinding/Binding.h>
 
@@ -45,14 +46,14 @@ EXPORT(int, sceGxmBeginCommandList) {
 }
 
 EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, SceGxmSyncObject *fragmentSyncObject, const emu::SceGxmColorSurface *colorSurface, const emu::SceGxmDepthStencilSurface *depthStencil) {
-    assert(context != nullptr);
-    assert(flags == 0);
-    assert(renderTarget != nullptr);
-    assert(validRegion == nullptr);
-    assert(vertexSyncObject == nullptr);
-    assert(fragmentSyncObject != nullptr);
-    assert(colorSurface != nullptr);
-    assert(depthStencil != nullptr);
+    v3k_assert(context != nullptr);
+    v3k_assert(flags == 0);
+    v3k_assert(renderTarget != nullptr);
+    v3k_assert(validRegion == nullptr);
+    v3k_assert(vertexSyncObject == nullptr);
+    v3k_assert(fragmentSyncObject != nullptr);
+    v3k_assert(colorSurface != nullptr);
+    v3k_assert(depthStencil != nullptr);
 
     if (host.gxm.isInScene) {
         return error(__func__, SCE_GXM_ERROR_WITHIN_SCENE);
@@ -136,15 +137,15 @@ EXPORT(int, sceGxmColorSurfaceGetType) {
 }
 
 EXPORT(int, sceGxmColorSurfaceInit, emu::SceGxmColorSurface *surface, SceGxmColorFormat colorFormat, SceGxmColorSurfaceType surfaceType, SceGxmColorSurfaceScaleMode scaleMode, SceGxmOutputRegisterSize outputRegisterSize, unsigned int width, unsigned int height, unsigned int strideInPixels, Ptr<void> data) {
-    assert(surface != nullptr);
-    assert(colorFormat == SCE_GXM_COLOR_FORMAT_A8B8G8R8);
-    assert(surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR);
-    assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
-    assert(outputRegisterSize == SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT);
-    assert(width > 0);
-    assert(height > 0);
-    assert(strideInPixels > 0);
-    assert(data);
+    v3k_assert(surface != nullptr);
+    v3k_assert(colorFormat == SCE_GXM_COLOR_FORMAT_A8B8G8R8);
+    v3k_assert(surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR);
+    v3k_assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
+    v3k_assert(outputRegisterSize == SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT);
+    v3k_assert(width > 0);
+    v3k_assert(height > 0);
+    v3k_assert(strideInPixels > 0);
+    v3k_assert(data);
 
     memset(surface, 0, sizeof(*surface));
     surface->pbeEmitWords[0] = width;
@@ -189,8 +190,8 @@ EXPORT(int, sceGxmColorSurfaceSetScaleMode) {
 }
 
 EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<SceGxmContext> *context) {
-    assert(params != nullptr);
-    assert(context != nullptr);
+    v3k_assert(params != nullptr);
+    v3k_assert(context != nullptr);
 
     *context = alloc<SceGxmContext>(host.mem, __FUNCTION__);
     if (!*context) {
@@ -200,9 +201,9 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     SceGxmContext *const ctx = context->get(host.mem);
     ctx->params = *params;
 
-    assert(SDL_GL_GetCurrentContext() == nullptr);
+    v3k_assert(SDL_GL_GetCurrentContext() == nullptr);
     ctx->gl = GLContextPtr(SDL_GL_CreateContext(host.window.get()), SDL_GL_DeleteContext);
-    assert(ctx->gl != nullptr);
+    v3k_assert(ctx->gl != nullptr);
 
     Binding::initialize(false);
     setCallbackMaskExcept(CallbackMask::Before | CallbackMask::After, { "glGetError" });
@@ -232,8 +233,8 @@ EXPORT(int, sceGxmCreateDeferredContext) {
 }
 
 EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Ptr<SceGxmRenderTarget> *renderTarget) {
-    assert(params != nullptr);
-    assert(renderTarget != nullptr);
+    v3k_assert(params != nullptr);
+    v3k_assert(renderTarget != nullptr);
 
     *renderTarget = alloc<SceGxmRenderTarget>(host.mem, __FUNCTION__);
     if (!*renderTarget) {
@@ -289,11 +290,11 @@ EXPORT(int, sceGxmDepthStencilSurfaceGetStrideInSamples) {
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceInit, emu::SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, unsigned int strideInSamples, Ptr<void> depthData, Ptr<void> stencilData) {
-    assert(surface != nullptr);
-    assert(depthStencilFormat == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24);
-    assert(surfaceType == SCE_GXM_DEPTH_STENCIL_SURFACE_TILED);
-    assert(strideInSamples > 0);
-    assert(depthData);
+    v3k_assert(surface != nullptr);
+    v3k_assert(depthStencilFormat == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24);
+    v3k_assert(surfaceType == SCE_GXM_DEPTH_STENCIL_SURFACE_TILED);
+    v3k_assert(strideInSamples > 0);
+    v3k_assert(depthData);
 
     // TODO What to do here?
     memset(surface, 0, sizeof(*surface));
@@ -332,7 +333,7 @@ EXPORT(int, sceGxmDepthStencilSurfaceSetForceStoreMode) {
 }
 
 EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
-    assert(context);
+    v3k_assert(context);
 
     free(host.mem, context);
 
@@ -345,7 +346,7 @@ EXPORT(int, sceGxmDestroyDeferredContext) {
 
 EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
     MemState &mem = host.mem;
-    assert(renderTarget);
+    v3k_assert(renderTarget);
 
     free(mem, renderTarget);
 
@@ -353,9 +354,9 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 }
 
 EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<SceGxmSyncObject> newBuffer, Ptr<const void> callbackData) {
-    //assert(oldBuffer != nullptr);
-    //assert(newBuffer != nullptr);
-    assert(callbackData);
+    //v3k_assert(oldBuffer != nullptr);
+    //v3k_assert(newBuffer != nullptr);
+    v3k_assert(callbackData);
     DisplayCallback *display_callback = new DisplayCallback();
 
     const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
@@ -376,8 +377,8 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
 }
 
 EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, unsigned int indexCount) {
-    assert(context != nullptr);
-    assert(indexData != nullptr);
+    v3k_assert(context != nullptr);
+    v3k_assert(indexData != nullptr);
 
     if (!host.gxm.isInScene) {
         return error(__func__, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
@@ -414,9 +415,9 @@ EXPORT(int, sceGxmEndCommandList) {
 
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotification *vertexNotification, const emu::SceGxmNotification *fragmentNotification) {
     const MemState &mem = host.mem;
-    assert(context != nullptr);
-    assert(vertexNotification == nullptr);
-    assert(fragmentNotification == nullptr);
+    v3k_assert(context != nullptr);
+    v3k_assert(vertexNotification == nullptr);
+    v3k_assert(fragmentNotification == nullptr);
 
     if (!host.gxm.isInScene) {
         return error(__func__, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
@@ -443,7 +444,7 @@ EXPORT(int, sceGxmExecuteCommandList) {
 }
 
 EXPORT(void, sceGxmFinish, SceGxmContext *context) {
-    assert(context != nullptr);
+    v3k_assert(context != nullptr);
     glFinish();
 }
 
@@ -529,7 +530,7 @@ static int SDLCALL thread_function(void *data) {
 }
 
 EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
-    assert(params != nullptr);
+    v3k_assert(params != nullptr);
 
     host.gxm.params = *params;
     host.gxm.display_queue.displayQueueMaxPendingCount_ = params->displayQueueMaxPendingCount;
@@ -573,9 +574,9 @@ EXPORT(int, sceGxmIsDebugVersion) {
 }
 
 EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, SceSize size, unsigned int *offset) {
-    assert(base);
-    assert(size > 0);
-    assert(offset != nullptr);
+    v3k_assert(base);
+    v3k_assert(size > 0);
+    v3k_assert(offset != nullptr);
 
     // TODO What should this be?
     *offset = base.address();
@@ -584,17 +585,17 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, SceSize size, unsigned 
 }
 
 EXPORT(int, sceGxmMapMemory, void *base, SceSize size, SceGxmMemoryAttribFlags attr) {
-    assert(base != nullptr);
-    assert(size > 0);
-    assert((attr == SCE_GXM_MEMORY_ATTRIB_READ) || (attr == SCE_GXM_MEMORY_ATTRIB_RW));
+    v3k_assert(base != nullptr);
+    v3k_assert(size > 0);
+    v3k_assert((attr == SCE_GXM_MEMORY_ATTRIB_READ) || (attr == SCE_GXM_MEMORY_ATTRIB_RW));
 
     return 0;
 }
 
 EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, SceSize size, unsigned int *offset) {
-    assert(base);
-    assert(size > 0);
-    assert(offset != nullptr);
+    v3k_assert(base);
+    v3k_assert(size > 0);
+    v3k_assert(offset != nullptr);
 
     // TODO What should this be?
     *offset = base.address();
@@ -611,8 +612,8 @@ EXPORT(int, sceGxmNotificationWait) {
 }
 
 EXPORT(int, sceGxmPadHeartbeat, const emu::SceGxmColorSurface *displaySurface, SceGxmSyncObject *displaySyncObject) {
-    assert(displaySurface != nullptr);
-    assert(displaySyncObject != nullptr);
+    v3k_assert(displaySurface != nullptr);
+    v3k_assert(displaySyncObject != nullptr);
 
     return 0;
 }
@@ -706,20 +707,20 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetUniformBuffer) {
 }
 
 EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
-    assert(program != nullptr);
+    v3k_assert(program != nullptr);
 
-    assert(memcmp(&program->magic, "GXP", 4) == 0);
-    assert(program->major_version == 1);
-    assert(program->minor_version == 4);
-    assert(program->unk6 == 0);
+    v3k_assert(memcmp(&program->magic, "GXP", 4) == 0);
+    v3k_assert(program->major_version == 1);
+    v3k_assert(program->minor_version == 4);
+    v3k_assert(program->unk6 == 0);
 
     return 0;
 }
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, const SceGxmProgram *program, const char *name) {
     const MemState &mem = host.mem;
-    assert(program != nullptr);
-    assert(name != nullptr);
+    v3k_assert(program != nullptr);
+    v3k_assert(name != nullptr);
 
     const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
     for (uint32_t i = 0; i < program->parameter_count; ++i) {
@@ -820,7 +821,7 @@ EXPORT(int, sceGxmProgramParameterGetName) {
 }
 
 EXPORT(unsigned int, sceGxmProgramParameterGetResourceIndex, const SceGxmProgramParameter *parameter) {
-    assert(parameter != nullptr);
+    v3k_assert(parameter != nullptr);
 
     return parameter->resource_index;
 }
@@ -858,12 +859,12 @@ EXPORT(int, sceGxmRenderTargetGetDriverMemBlock) {
 }
 
 EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
-    assert(context != nullptr);
-    assert(uniformBuffer != nullptr);
+    v3k_assert(context != nullptr);
+    v3k_assert(uniformBuffer != nullptr);
 
     const size_t size = 64; // TODO I guess this must be in the fragment program.
     const size_t next_used = context->fragment_ring_buffer_used + size;
-    assert(next_used <= context->params.fragmentRingBufferMemSize);
+    v3k_assert(next_used <= context->params.fragmentRingBufferMemSize);
     if (next_used > context->params.fragmentRingBufferMemSize) {
         return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -881,12 +882,12 @@ EXPORT(int, sceGxmRenderTargetGetHostMem) {
 }
 
 EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
-    assert(context != nullptr);
-    assert(uniformBuffer != nullptr);
+    v3k_assert(context != nullptr);
+    v3k_assert(uniformBuffer != nullptr);
 
     const size_t size = 64; // TODO I guess this must be in the vertex program.
     const size_t next_used = context->vertex_ring_buffer_used + size;
-    assert(next_used <= context->params.vertexRingBufferMemSize);
+    v3k_assert(next_used <= context->params.vertexRingBufferMemSize);
     if (next_used > context->params.vertexRingBufferMemSize) {
         return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -990,8 +991,8 @@ EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmFragmentProgram> fragmentProgram) {
-    assert(context != nullptr);
-    assert(fragmentProgram);
+    v3k_assert(context != nullptr);
+    v3k_assert(fragmentProgram);
 
     context->fragment_program = fragmentProgram;
 
@@ -1007,8 +1008,8 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
 }
 
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const SceGxmTexture *texture) {
-    assert(context != nullptr);
-    assert(texture != nullptr);
+    v3k_assert(context != nullptr);
+    v3k_assert(texture != nullptr);
 
     glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
     glBindTexture(GL_TEXTURE_2D, context->texture[0]);
@@ -1161,13 +1162,13 @@ EXPORT(int, sceGxmSetTwoSidedEnable) {
 }
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
-    assert(uniformBuffer != nullptr);
-    assert(parameter != nullptr);
-    assert(parameter->container_index == 14);
-    assert(parameter->resource_index == 0);
-    assert(componentOffset == 0);
-    assert(componentCount > 0);
-    assert(sourceData != nullptr);
+    v3k_assert(uniformBuffer != nullptr);
+    v3k_assert(parameter != nullptr);
+    v3k_assert(parameter->container_index == 14);
+    v3k_assert(parameter->resource_index == 0);
+    v3k_assert(componentOffset == 0);
+    v3k_assert(componentCount > 0);
+    v3k_assert(sourceData != nullptr);
 
     size_t size = componentCount * sizeof(float);
     size_t offset = componentOffset * sizeof(float);
@@ -1189,16 +1190,16 @@ EXPORT(int, sceGxmSetVertexDefaultUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVertexProgram> vertexProgram) {
-    assert(context != nullptr);
-    assert(vertexProgram);
+    v3k_assert(context != nullptr);
+    v3k_assert(vertexProgram);
 
     context->vertex_program = vertexProgram;
 }
 
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, const uint8_t *streamData) {
-    assert(context != nullptr);
-    assert(streamData != nullptr);
-    assert(context->vertex_program);
+    v3k_assert(context != nullptr);
+    v3k_assert(streamData != nullptr);
+    v3k_assert(context->vertex_program);
 
     const SceGxmVertexProgram &vertex_program = *context->vertex_program.get(host.mem);
     for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
@@ -1260,8 +1261,8 @@ EXPORT(int, sceGxmSetYuvProfile) {
 }
 
 EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmFragmentProgram *fragmentProgram) {
-    assert(shaderPatcher != nullptr);
-    assert(fragmentProgram != nullptr);
+    v3k_assert(shaderPatcher != nullptr);
+    v3k_assert(fragmentProgram != nullptr);
 
     ++fragmentProgram->reference_count;
 
@@ -1269,8 +1270,8 @@ EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shade
 }
 
 EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmVertexProgram *vertexProgram) {
-    assert(shaderPatcher != nullptr);
-    assert(vertexProgram != nullptr);
+    v3k_assert(shaderPatcher != nullptr);
+    v3k_assert(vertexProgram != nullptr);
 
     ++vertexProgram->reference_count;
 
@@ -1278,11 +1279,11 @@ EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram, SceGxmShaderPatcher *shaderP
 }
 
 EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *params, Ptr<SceGxmShaderPatcher> *shaderPatcher) {
-    assert(params != nullptr);
-    assert(shaderPatcher != nullptr);
+    v3k_assert(params != nullptr);
+    v3k_assert(shaderPatcher != nullptr);
 
     *shaderPatcher = alloc<SceGxmShaderPatcher>(host.mem, __FUNCTION__);
-    assert(*shaderPatcher);
+    v3k_assert(*shaderPatcher);
     if (!*shaderPatcher) {
         return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -1292,12 +1293,12 @@ EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *par
 
 EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, SceGxmOutputRegisterFormat outputFormat, SceGxmMultisampleMode multisampleMode, const emu::SceGxmBlendInfo *blendInfo, Ptr<const SceGxmProgram> vertexProgram, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
     MemState &mem = host.mem;
-    assert(shaderPatcher != nullptr);
-    assert(programId != nullptr);
-    assert(outputFormat == SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
-    assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
-    assert(vertexProgram);
-    assert(fragmentProgram != nullptr);
+    v3k_assert(shaderPatcher != nullptr);
+    v3k_assert(programId != nullptr);
+    v3k_assert(outputFormat == SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
+    v3k_assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
+    v3k_assert(vertexProgram);
+    v3k_assert(fragmentProgram != nullptr);
 
     static const emu::SceGxmBlendInfo default_blend_info = {
         SCE_GXM_COLOR_MASK_ALL,
@@ -1320,7 +1321,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
 
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
-    assert(*fragmentProgram);
+    v3k_assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -1355,16 +1356,16 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram) {
 
 EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, const emu::SceGxmVertexAttribute *attributes, unsigned int attributeCount, const SceGxmVertexStream *streams, unsigned int streamCount, Ptr<SceGxmVertexProgram> *vertexProgram) {
     MemState &mem = host.mem;
-    assert(shaderPatcher != nullptr);
-    assert(programId != nullptr);
-    assert(attributes != nullptr);
-    assert(attributeCount > 0);
-    assert(streams != nullptr);
-    assert(streamCount > 0);
-    assert(vertexProgram != nullptr);
+    v3k_assert(shaderPatcher != nullptr);
+    v3k_assert(programId != nullptr);
+    v3k_assert(attributes != nullptr);
+    v3k_assert(attributeCount > 0);
+    v3k_assert(streams != nullptr);
+    v3k_assert(streamCount > 0);
+    v3k_assert(vertexProgram != nullptr);
 
     *vertexProgram = alloc<SceGxmVertexProgram>(mem, __FUNCTION__);
-    assert(*vertexProgram);
+    v3k_assert(*vertexProgram);
     if (!*vertexProgram) {
         return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -1380,7 +1381,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
 }
 
 EXPORT(int, sceGxmShaderPatcherDestroy, Ptr<SceGxmShaderPatcher> shaderPatcher) {
-    assert(shaderPatcher);
+    v3k_assert(shaderPatcher);
 
     free(host.mem, shaderPatcher);
 
@@ -1428,12 +1429,12 @@ EXPORT(int, sceGxmShaderPatcherGetVertexUsseMemAllocated) {
 }
 
 EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatcher, Ptr<const SceGxmProgram> programHeader, emu::SceGxmShaderPatcherId *programId) {
-    assert(shaderPatcher != nullptr);
-    assert(programHeader);
-    assert(programId != nullptr);
+    v3k_assert(shaderPatcher != nullptr);
+    v3k_assert(programHeader);
+    v3k_assert(programId != nullptr);
 
     *programId = alloc<SceGxmRegisteredProgram>(host.mem, __FUNCTION__);
-    assert(*programId);
+    v3k_assert(*programId);
     if (!*programId) {
         return error(__func__, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -1445,8 +1446,8 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
 }
 
 EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shaderPatcher, Ptr<SceGxmFragmentProgram> fragmentProgram) {
-    assert(shaderPatcher != nullptr);
-    assert(fragmentProgram);
+    v3k_assert(shaderPatcher != nullptr);
+    v3k_assert(fragmentProgram);
 
     SceGxmFragmentProgram *const fp = fragmentProgram.get(host.mem);
     --fp->reference_count;
@@ -1464,8 +1465,8 @@ EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shad
 }
 
 EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shaderPatcher, Ptr<SceGxmVertexProgram> vertexProgram) {
-    assert(shaderPatcher != nullptr);
-    assert(vertexProgram);
+    v3k_assert(shaderPatcher != nullptr);
+    v3k_assert(vertexProgram);
 
     SceGxmVertexProgram *const vp = vertexProgram.get(host.mem);
     --vp->reference_count;
@@ -1485,8 +1486,8 @@ EXPORT(int, sceGxmShaderPatcherSetUserData) {
 }
 
 EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPatcher, emu::SceGxmShaderPatcherId programId) {
-    assert(shaderPatcher != nullptr);
-    assert(programId);
+    v3k_assert(shaderPatcher != nullptr);
+    v3k_assert(programId);
 
     SceGxmRegisteredProgram *const rp = programId.get(host.mem);
     rp->program.reset();
@@ -1497,7 +1498,7 @@ EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPat
 }
 
 EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
-    assert(syncObject != nullptr);
+    v3k_assert(syncObject != nullptr);
 
     *syncObject = alloc<SceGxmSyncObject>(host.mem, __FUNCTION__);
     if (!*syncObject) {
@@ -1510,7 +1511,7 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
 }
 
 EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
-    assert(syncObject);
+    v3k_assert(syncObject);
 
     free(host.mem, syncObject);
 
@@ -1522,27 +1523,27 @@ EXPORT(int, sceGxmTerminate) {
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return Ptr<void>(texture->data_addr << 2);
 }
 
 EXPORT(int, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return texture::get_format(texture);
 }
 
 EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return (texture->gamma_mode << 27);
 }
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return texture::get_height(texture);
 }
 
 EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return 0;
     }
@@ -1550,7 +1551,7 @@ EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
 }
 
 EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return 0;
     }
@@ -1558,12 +1559,12 @@ EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return texture->mag_filter;
 }
 
 EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return texture->mag_filter;
     }
@@ -1571,7 +1572,7 @@ EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
     }
@@ -1579,7 +1580,7 @@ EXPORT(int, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
 }
 
 EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return 0;
     }
@@ -1587,7 +1588,7 @@ EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) 
 }
 
 EXPORT(unsigned int, sceGxmTextureGetMipmapCountUnsafe, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return texture->mip_count + 1;
 }
 
@@ -1596,8 +1597,8 @@ EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
-    assert(texture::is_paletted_format(texture::get_format(texture)));
+    v3k_assert(texture != nullptr);
+    v3k_assert(texture::is_paletted_format(texture::get_format(texture)));
     return Ptr<void>(texture->palette_addr << 6);
 }
 
@@ -1606,17 +1607,17 @@ EXPORT(int, sceGxmTextureGetStride) {
 }
 
 EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return (texture->type << 29);
 }
 
 EXPORT(int, sceGxmTextureGetUAddrMode, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return texture->uaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
@@ -1624,12 +1625,12 @@ EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return texture->vaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED){
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
@@ -1637,7 +1638,7 @@ EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
 }
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
-    assert(texture != nullptr);
+    v3k_assert(texture != nullptr);
     return texture::get_width(texture);
 }
 
@@ -1907,19 +1908,19 @@ EXPORT(int, sceGxmTransferFinish) {
 }
 
 EXPORT(int, sceGxmUnmapFragmentUsseMemory, void *base) {
-    assert(base != nullptr);
+    v3k_assert(base != nullptr);
 
     return 0;
 }
 
 EXPORT(int, sceGxmUnmapMemory, void *base) {
-    assert(base != nullptr);
+    v3k_assert(base != nullptr);
 
     return 0;
 }
 
 EXPORT(int, sceGxmUnmapVertexUsseMemory, void *base) {
-    assert(base != nullptr);
+    v3k_assert(base != nullptr);
 
     return 0;
 }

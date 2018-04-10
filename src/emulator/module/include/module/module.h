@@ -24,8 +24,6 @@
 #include <host/import_fn.h>
 #include <host/state.h>
 
-#include <cassert>
-
 int unimplemented(const char *name);
 int error(const char *name, int error);
 
