@@ -42,7 +42,7 @@ static void delete_memory(uint8_t *memory) {
     }
 }
 
-static void alloc_inner(MemState &state, Address address, size_t page_count, Allocated::iterator block, const char *name) {
+static void alloc_inner(MemState &state, Address address, size_t page_count, Allocated::iterator block, const std::string& name) {
     uint8_t *const memory = &state.memory[address];
     const size_t aligned_size = page_count * state.page_size;
 
@@ -87,8 +87,8 @@ bool init(MemState &state) {
     }
 
     state.allocated_pages.resize(length / state.page_size);
-    const Address null_address = alloc(state, 1, "NULL");
-    assert(null_address == 0);
+    const Address null_address = alloc(state, 1, "NULL guard page");
+    v3k_assert(null_address == 0);
 #ifdef WIN32
     DWORD old_protect = 0;
     const BOOL res = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
@@ -101,7 +101,7 @@ bool init(MemState &state) {
     return true;
 }
 
-Address alloc(MemState &state, size_t size, const char *name) {
+Address alloc(MemState &state, size_t size, const std::string& name) {
     const size_t page_count = (size + (state.page_size - 1)) / state.page_size;
     const Allocated::iterator block = std::search_n(state.allocated_pages.begin(), state.allocated_pages.end(), page_count, 0);
     if (block == state.allocated_pages.end()) {

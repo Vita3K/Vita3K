@@ -50,6 +50,6 @@ constexpr size_t GB(size_t gb) {
 }
 
 bool init(MemState &state);
-Address alloc(MemState &state, size_t size, const char *name);
+Address alloc(MemState &state, size_t size, const std::string &name);
 void free(MemState &state, Address address);
 const char *mem_name(Address address, const MemState &state);
