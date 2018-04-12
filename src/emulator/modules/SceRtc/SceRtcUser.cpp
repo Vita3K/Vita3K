@@ -285,7 +285,7 @@ EXPORT(int, sceRtcTickAddDays, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sce
         return error(__func__, SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 86400);
+    pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 86400ull);
     return 0;
 }
 
@@ -294,7 +294,7 @@ EXPORT(int, sceRtcTickAddHours, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
         return error(__func__, SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 3600);
+    pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 3600ull);
     return 0;
 }
 
@@ -343,7 +343,7 @@ EXPORT(int, sceRtcTickAddWeeks, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
         return error("sceRtcTickAddWeeks", SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 604800);
+    pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 604800ull);
     return 0;
 }
 
