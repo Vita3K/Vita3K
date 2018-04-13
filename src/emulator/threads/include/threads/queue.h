@@ -1,17 +1,19 @@
 #ifndef queue_h
 #define queue_h
 
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
+#include <memory>
 
 template <typename T>
 class Queue {
 public:
     unsigned int displayQueueMaxPendingCount_;
 
-    T pop() {
-        T item;
+    std::unique_ptr<T> pop() {
+        T item{ T() };
         {
             std::unique_lock<std::mutex> mlock(mutex_);
             while (!aborted && queue_.empty()) {
@@ -20,13 +22,13 @@ public:
 
             if (aborted) {
                 mlock.release();
-                return item;
+                return { nullptr };
             }
             item = queue_.front();
             queue_.pop();
         }
         cond_.notify_one();
-        return item;
+        return std::make_unique<T>(item);
     }
 
     void push(const T &item) {
@@ -64,7 +66,7 @@ private:
     std::condition_variable condempty_;
     std::queue<T> queue_;
     std::mutex mutex_;
-    bool aborted = false;
+    std::atomic<bool> aborted{ false };
 };
 
 #endif /* queue_h */
