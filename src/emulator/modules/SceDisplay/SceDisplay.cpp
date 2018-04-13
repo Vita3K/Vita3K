@@ -93,7 +93,7 @@ EXPORT(int, sceDisplayWaitVblankStart) {
     {
         std::unique_lock<std::mutex> lock(host.display.mutex);
         host.display.condvar.wait(lock);
-        if (host.display.abort) {
+        if (host.display.abort.load()) {
             lock.release();
         }
     }
