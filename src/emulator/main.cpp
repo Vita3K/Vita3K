@@ -36,7 +36,7 @@
 #include <sstream>
 
 #include <imgui.h>
-#include <gui/imgui_impl_sdl_gl3.h>
+#include <gui/imgui_impl_sdl_gl2.h>
 #include <gui/functions.h>
 
 typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
     
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImGui_ImplSdlGL3_Init(host.window.get());
+    ImGui_ImplSdlGL2_Init(host.window.get());
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
             glLoadIdentity();
         }
         
-        ImGui_ImplSdlGL3_NewFrame(host.window.get());
+        ImGui_ImplSdlGL2_NewFrame(host.window.get());
 
         // Clear back buffer
 
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
         
         glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
         ImGui::Render();
-        ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(host.window.get());
 
         {
