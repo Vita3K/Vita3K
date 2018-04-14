@@ -203,6 +203,8 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     assert(SDL_GL_GetCurrentContext() == nullptr);
     ctx->gl = GLContextPtr(SDL_GL_CreateContext(host.window.get()), SDL_GL_DeleteContext);
     assert(ctx->gl != nullptr);
+    
+    glViewport(0, 0, 960, 544);
 
     Binding::initialize(false);
     setCallbackMaskExcept(CallbackMask::Before | CallbackMask::After, { "glGetError" });

@@ -40,6 +40,7 @@ add_subdirectory(modules)
 add_subdirectory(nids)
 add_subdirectory(util)
 add_subdirectory(threads)
+add_subdirectory(gui)
 
 add_executable(
 emulator
@@ -55,7 +56,7 @@ vpk.cpp
 vpk.h
 )
 
-target_link_libraries(emulator PRIVATE cpu elfio glutil host modules nids vita-toolchain util)
+target_link_libraries(emulator PRIVATE cpu elfio glutil host modules nids vita-toolchain util gui imgui)
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
