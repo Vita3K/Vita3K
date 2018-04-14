@@ -40,6 +40,9 @@
 #include <iomanip>
 #include <iostream>
 
+#include <imgui.h>
+#include <gui/imgui_impl_sdl_gl2.h>
+
 using namespace glbinding;
 
 static const bool LOG_IMPORT_CALLS = false;
@@ -90,6 +93,7 @@ bool init(HostState &state) {
 bool handle_events(HostState &host) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+        ImGui_ImplSdlGL2_ProcessEvent(&event);
         if (event.type == SDL_QUIT) {
             stop_all_threads(host.kernel);
             host.gxm.display_queue.abort();

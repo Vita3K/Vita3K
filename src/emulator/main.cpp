@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
     }
     
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
     ImGui_ImplSdlGL2_Init(host.window.get());
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
@@ -197,7 +197,8 @@ int main(int argc, char *argv[]) {
                 ImGui::SetNextWindowSize(ImVec2(960, 579), ImGuiSetCond_Always);
                 ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | 
                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                    ImGuiWindowFlags_NoCollapse);
+                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
+                host.gui.renderer_focused = ImGui::IsWindowFocused();
                 ImGui::Image(reinterpret_cast<void *>(TextureID), ImVec2(960, 544));
                 ImGui::End();
             }

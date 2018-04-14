@@ -18,5 +18,6 @@
 #pragma once
 
 struct GuiState {
+    bool renderer_focused = true;
     bool threads_dialog = false;
 };
