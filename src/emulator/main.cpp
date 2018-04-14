@@ -21,9 +21,11 @@
 #include <host/state.h>
 #include <host/version.h>
 #include <kernel/thread_functions.h>
+#include <kernel/thread_state.h>
 #include <util/find.h>
 #include <util/log.h>
 #include <util/string_convert.h>
+#include <util/resource.h>
 
 #include <SDL.h>
 #include <glutil/gl.h>
@@ -131,7 +133,7 @@ int main(int argc, char *argv[]) {
 
     const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
 
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main", stack_size, call_import, false);
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.title_id.c_str(), stack_size, call_import, false);
     if (main_thread_id < 0) {
         error("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
@@ -202,10 +204,41 @@ int main(int argc, char *argv[]) {
         
         if (ImGui::BeginMainMenuBar()){
             if (ImGui::BeginMenu("Debug")){
-                if (ImGui::MenuItem("Threads"))   { /* Do stuff */ }
+                if (ImGui::MenuItem("Threads", nullptr, host.gui.threads_dialog)){
+                    host.gui.threads_dialog = !host.gui.threads_dialog;
+                }
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
+        }
+        
+        if (host.gui.threads_dialog){
+            ImGui::Begin("Threads", &host.gui.threads_dialog);
+            ImGui::TextColored(ImVec4(255,255,0,255), "%-32s   %-16s   %-16s", "Thread Name", "Status", "Stack Pointer");
+            for (auto thread : host.kernel.threads) {
+                std::shared_ptr<ThreadState> th_state = thread.second;
+                switch (th_state->to_do){
+                case ThreadToDo::run:
+                    ImGui::Text("%-32s   %-16s   0x%08X    ",
+                        th_state->name,
+                        "Running",
+                        th_state->stack.get()->get());
+                    break;
+                case ThreadToDo::wait:
+                    ImGui::Text("%-32s   %-16s   0x%08X    ",
+                        th_state->name,
+                        "Waiting",
+                        th_state->stack.get()->get());
+                    break;
+                case ThreadToDo::exit:
+                    ImGui::Text("%-32s   %-16s   0x%08X    ",
+                        th_state->name,
+                        "Exiting",
+                        th_state->stack.get()->get());
+                    break;
+                }
+            }
+            ImGui::End();
         }
         
         glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);

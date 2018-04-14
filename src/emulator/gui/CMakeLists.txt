@@ -2,6 +2,7 @@ add_library(
 gui
 STATIC
 include/gui/imgui_impl_sdl_gl3.h
+include/gui/state.h
 src/imgui_impl_sdl_gl3.cpp
 )
 

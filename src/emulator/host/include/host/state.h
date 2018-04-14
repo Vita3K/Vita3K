@@ -23,6 +23,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
+#include <gui/state.h>
 #include <psp2/display.h>
 
 struct SDL_Window;
@@ -58,4 +59,5 @@ struct HostState {
     IOState io;
     NetState net;
     DisplayState display;
+    GuiState gui;
 };
