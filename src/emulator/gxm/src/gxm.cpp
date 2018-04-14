@@ -558,6 +558,10 @@ GLenum translate_blend_func(SceGxmBlendFunc src) {
             return GL_FUNC_SUBTRACT;
         case SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT:
             return GL_FUNC_REVERSE_SUBTRACT;
+        case SCE_GXM_BLEND_FUNC_MIN:
+            return GL_MIN;
+        case SCE_GXM_BLEND_FUNC_MAX:
+            return GL_MAX;
     }
 
     return GL_FUNC_ADD;

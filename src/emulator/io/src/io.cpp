@@ -139,7 +139,7 @@ bool init(IOState &io, const char *pref_path) {
 
 static std::pair<VitaPartition, std::string>
 translate_partition(const std::string &full_path) {
-    std::uint32_t partition_end_idx = full_path.find(":");
+    const auto partition_end_idx = full_path.find(":");
     if (partition_end_idx == std::string::npos) {
         return { VitaPartition::_INVALID, "" };
     }

@@ -32,7 +32,9 @@ std::string& LOG_FILE_NAME = "/vita3k.log";
 
 void init_logging()
 {
+#ifdef _MSC_VER
 	static constexpr bool LOG_MSVC_OUTPUT = true;
+#endif
 
 	std::vector<spdlog::sink_ptr> sinks;
 
