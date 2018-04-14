@@ -37,6 +37,7 @@
 
 #include <imgui.h>
 #include <gui/imgui_impl_sdl_gl3.h>
+#include <gui/functions.h>
 
 typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
 typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
@@ -202,44 +203,7 @@ int main(int argc, char *argv[]) {
             }
         }
         
-        if (ImGui::BeginMainMenuBar()){
-            if (ImGui::BeginMenu("Debug")){
-                if (ImGui::MenuItem("Threads", nullptr, host.gui.threads_dialog)){
-                    host.gui.threads_dialog = !host.gui.threads_dialog;
-                }
-                ImGui::EndMenu();
-            }
-            ImGui::EndMainMenuBar();
-        }
-        
-        if (host.gui.threads_dialog){
-            ImGui::Begin("Threads", &host.gui.threads_dialog);
-            ImGui::TextColored(ImVec4(255,255,0,255), "%-32s   %-16s   %-16s", "Thread Name", "Status", "Stack Pointer");
-            for (auto thread : host.kernel.threads) {
-                std::shared_ptr<ThreadState> th_state = thread.second;
-                switch (th_state->to_do){
-                case ThreadToDo::run:
-                    ImGui::Text("%-32s   %-16s   0x%08X    ",
-                        th_state->name,
-                        "Running",
-                        th_state->stack.get()->get());
-                    break;
-                case ThreadToDo::wait:
-                    ImGui::Text("%-32s   %-16s   0x%08X    ",
-                        th_state->name,
-                        "Waiting",
-                        th_state->stack.get()->get());
-                    break;
-                case ThreadToDo::exit:
-                    ImGui::Text("%-32s   %-16s   0x%08X    ",
-                        th_state->name,
-                        "Exiting",
-                        th_state->stack.get()->get());
-                    break;
-                }
-            }
-            ImGui::End();
-        }
+        DrawUI(host);
         
         glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
         ImGui::Render();
