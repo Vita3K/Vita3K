@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
                 void *const pixels = host.display.base.cast<void>().get(host.mem);
 
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, host.display.pitch);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, host.display.width, host.display.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, host.display.width, host.display.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
