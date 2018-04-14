@@ -198,14 +198,14 @@ int main(int argc, char *argv[]) {
                 ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | 
                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                     ImGuiWindowFlags_NoCollapse);
-                ImGui::Image((void *)TextureID, ImVec2(960, 544));
+                ImGui::Image(reinterpret_cast<void *>(TextureID), ImVec2(960, 544));
                 ImGui::End();
             }
         }
         
         DrawUI(host);
         
-        glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
+        glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
         ImGui::Render();
         ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(host.window.get());

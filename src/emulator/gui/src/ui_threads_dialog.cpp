@@ -28,26 +28,22 @@ void DrawThreadsDialog(HostState& host){
     ImGui::TextColored(ImVec4(255,255,0,255), "%-32s   %-16s   %-16s", "Thread Name", "Status", "Stack Pointer");
     for (auto thread : host.kernel.threads) {
         std::shared_ptr<ThreadState> th_state = thread.second;
+        std::string run_state;
         switch (th_state->to_do){
         case ThreadToDo::run:
-            ImGui::Text("%-32s   %-16s   0x%08X    ",
-                th_state->name,
-                "Running",
-                th_state->stack.get()->get());
+            run_state = "Running";
             break;
         case ThreadToDo::wait:
-            ImGui::Text("%-32s   %-16s   0x%08X    ",
-                th_state->name,
-                "Waiting",
-                th_state->stack.get()->get());
+            run_state = "Waiting";
             break;
         case ThreadToDo::exit:
-            ImGui::Text("%-32s   %-16s   0x%08X    ",
-                th_state->name,
-                "Exiting",
-                th_state->stack.get()->get());
+            run_state = "Exiting";
             break;
         }
+        ImGui::Text("%-32s   %-16s   0x%08X    ",
+            th_state->name,
+            run_state.c_str(),
+            th_state->stack.get()->get());
     }
     ImGui::End();
 }
