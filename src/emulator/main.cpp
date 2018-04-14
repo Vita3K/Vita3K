@@ -192,8 +192,8 @@ int main(int argc, char *argv[]) {
                 
                 ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
                 ImGui::SetNextWindowSize(ImVec2(960, 579), ImGuiSetCond_Always);
-                ImGui::Begin("Renderer", nullptr, ImGuiWindowFlags_NoResize | 
-                    ImGuiWindowFlags_NoMove | 
+                ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | 
+                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                     ImGuiWindowFlags_NoCollapse);
                 ImGui::Image((void *)TextureID, ImVec2(960, 544));
                 ImGui::End();
@@ -202,9 +202,7 @@ int main(int argc, char *argv[]) {
         
         if (ImGui::BeginMainMenuBar()){
             if (ImGui::BeginMenu("Debug")){
-                if (ImGui::MenuItem("Registers")) { /* Do stuff */ }
                 if (ImGui::MenuItem("Threads"))   { /* Do stuff */ }
-                if (ImGui::MenuItem("Memory"))  { }
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
