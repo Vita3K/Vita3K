@@ -17,13 +17,12 @@
 
 #include "SceProcessmgr.h"
 
-#include <psp2/kernel/error.h>
-#include <psp2/kernel/processmgr.h>
 #include <host/rtc.h>
 #include <io/functions.h>
+#include <psp2/kernel/error.h>
+#include <psp2/kernel/processmgr.h>
 
-struct VitaTimeval
-{
+struct VitaTimeval {
     uint32_t tv_sec;
     uint32_t tv_usec;
 };
@@ -32,7 +31,7 @@ EXPORT(int, sceKernelCallAbortHandler) {
     return unimplemented("sceKernelCallAbortHandler");
 }
 
-EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void* args) {
+EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void *args) {
     return host.kernel.process_param;
 }
 
@@ -61,9 +60,8 @@ EXPORT(int, sceKernelLibcClock) {
 }
 
 EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> tzAddr) {
-    if (timeAddr)
-    {
-        auto* tv = timeAddr.get(host.mem);
+    if (timeAddr) {
+        auto *tv = timeAddr.get(host.mem);
 
         const auto ticks = rtc_get_ticks(host);
 
@@ -86,13 +84,13 @@ EXPORT(int, sceKernelLibcMktime) {
     return unimplemented("sceKernelLibcMktime");
 }
 
-EXPORT(int, sceKernelLibcTime, uint32_t* time) {
+EXPORT(int, sceKernelLibcTime, uint32_t *time) {
     const auto ticks = rtc_get_ticks(host) / VITA_CLOCKS_PER_SEC;
-    
-    if(time){
+
+    if (time) {
         *time = ticks;
     }
-    
+
     return ticks;
 }
 
