@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 
                 ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
-                ImGui::SetNextWindowSize(ImVec2(960, 579), ImGuiSetCond_Always);
+                ImGui::SetNextWindowSize(ImVec2(972, 575), ImGuiSetCond_Always);
                 ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | 
                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
