@@ -45,13 +45,9 @@ add_subdirectory(gui)
 add_executable(
 emulator
 MACOSX_BUNDLE
-load_self.cpp
-load_self.h
 main.cpp
-relocation.cpp
-relocation.h
-sfo.cpp
 sfo.h
+sfo.cpp
 vpk.cpp
 vpk.h
 )

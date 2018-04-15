@@ -16,9 +16,10 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
-
+#include "kernel/state.h"
+#include "psp2/types.h"
 struct MemState;
 template <class T>
 class Ptr;
 
-bool load_self(Ptr<const void> &entry_point, MemState &mem, const void *self);
+SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const char *path);

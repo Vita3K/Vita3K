@@ -17,12 +17,12 @@
 
 #include "SceProcessmgr.h"
 
+#include <host/rtc.h>
+#include <io/functions.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/processmgr.h>
-#include <host/rtc.h>
 
-struct VitaTimeval
-{
+struct VitaTimeval {
     uint32_t tv_sec;
     uint32_t tv_usec;
 };
@@ -31,20 +31,20 @@ EXPORT(int, sceKernelCallAbortHandler) {
     return unimplemented("sceKernelCallAbortHandler");
 }
 
-EXPORT(int, sceKernelGetProcessParam) {
-    return unimplemented("sceKernelGetProcessParam");
+EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void *args) {
+    return host.kernel.process_param;
 }
 
 EXPORT(int, sceKernelGetStderr) {
-    return unimplemented("sceKernelGetStderr");
+    return open_file(host.io, "tty0", SCE_O_WRONLY, host.pref_path.c_str());
 }
 
 EXPORT(int, sceKernelGetStdin) {
-    return unimplemented("sceKernelGetStdin");
+    return open_file(host.io, "tty0", SCE_O_RDONLY, host.pref_path.c_str());
 }
 
 EXPORT(int, sceKernelGetStdout) {
-    return unimplemented("sceKernelGetStdout");
+    return open_file(host.io, "tty0", SCE_O_WRONLY, host.pref_path.c_str());
 }
 
 EXPORT(int, sceKernelIsCDialogAvailable) {
@@ -60,9 +60,8 @@ EXPORT(int, sceKernelLibcClock) {
 }
 
 EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> tzAddr) {
-    if (timeAddr)
-    {
-        auto* tv = timeAddr.get(host.mem);
+    if (timeAddr) {
+        auto *tv = timeAddr.get(host.mem);
 
         const auto ticks = rtc_get_ticks(host);
 
@@ -85,8 +84,14 @@ EXPORT(int, sceKernelLibcMktime) {
     return unimplemented("sceKernelLibcMktime");
 }
 
-EXPORT(int, sceKernelLibcTime) {
-    return unimplemented("sceKernelLibcTime");
+EXPORT(int, sceKernelLibcTime, uint32_t *time) {
+    const auto ticks = rtc_get_ticks(host) / VITA_CLOCKS_PER_SEC;
+
+    if (time) {
+        *time = ticks;
+    }
+
+    return ticks;
 }
 
 EXPORT(int, sceKernelPowerLock) {

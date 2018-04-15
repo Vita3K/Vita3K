@@ -418,7 +418,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     const MemState &mem = host.mem;
     assert(context != nullptr);
     assert(vertexNotification == nullptr);
-    assert(fragmentNotification == nullptr);
+    //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.isInScene) {
         return error(__func__, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
@@ -477,8 +477,8 @@ EXPORT(int, sceGxmGetDeferredContextVertexBuffer) {
     return unimplemented("sceGxmGetDeferredContextVertexBuffer");
 }
 
-EXPORT(int, sceGxmGetNotificationRegion) {
-    return unimplemented("sceGxmGetNotificationRegion");
+EXPORT(uint32_t, sceGxmGetNotificationRegion) {
+    return host.gxm.notification_region.address();
 }
 
 EXPORT(int, sceGxmGetParameterBufferThreshold) {
@@ -567,6 +567,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), delete_thread);
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
     host.kernel.running_threads.emplace(display_thread_id, running_thread);
+    host.gxm.notification_region = Ptr<uint32_t>(alloc(host.mem, MB(1), "SceGxmNotificationRegion"));
     return 0;
 }
 
@@ -753,12 +754,20 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat) {
     return unimplemented("sceGxmProgramGetOutputRegisterFormat");
 }
 
-EXPORT(int, sceGxmProgramGetParameter) {
-    return unimplemented("sceGxmProgramGetParameter");
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram* program, unsigned int index) {
+    
+    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
+    
+    const SceGxmProgramParameter *const parameter = &parameters[index];
+    const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
+
+    const Address parameter_address = static_cast<Address>(parameter_bytes - &host.mem.memory[0]);
+    return Ptr<SceGxmProgramParameter>(parameter_address);
+
 }
 
-EXPORT(int, sceGxmProgramGetParameterCount) {
-    return unimplemented("sceGxmProgramGetParameterCount");
+EXPORT(int, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
+    return program->parameter_count;
 }
 
 EXPORT(int, sceGxmProgramGetSize) {
@@ -801,8 +810,10 @@ EXPORT(int, sceGxmProgramParameterGetArraySize) {
     return unimplemented("sceGxmProgramParameterGetArraySize");
 }
 
-EXPORT(int, sceGxmProgramParameterGetCategory) {
-    return unimplemented("sceGxmProgramParameterGetCategory");
+EXPORT(int, sceGxmProgramParameterGetCategory, const SceGxmProgramParameter *parameter) {
+    assert(parameter != nullptr);
+    
+    return parameter->category;
 }
 
 EXPORT(int, sceGxmProgramParameterGetComponentCount) {
@@ -817,8 +828,8 @@ EXPORT(int, sceGxmProgramParameterGetIndex) {
     return unimplemented("sceGxmProgramParameterGetIndex");
 }
 
-EXPORT(int, sceGxmProgramParameterGetName) {
-    return unimplemented("sceGxmProgramParameterGetName");
+EXPORT(Ptr<void>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramParameter> parameter) {
+    return Ptr<void>(parameter.address() + parameter.get(host.mem)->name_offset);
 }
 
 EXPORT(unsigned int, sceGxmProgramParameterGetResourceIndex, const SceGxmProgramParameter *parameter) {

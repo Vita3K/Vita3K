@@ -23,13 +23,16 @@
 #include <kernel/functions.h>
 #include <kernel/thread_functions.h>
 
+#include <kernel/load_self.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
 #undef st_atime
 #undef st_ctime
 #undef st_mtime
-#include <psp2/io/stat.h>
 #include <psp2/io/dirent.h>
+#include <psp2/io/stat.h>
+#include <psp2/kernel/modulemgr.h>
+#include <stdlib.h>
 
 struct Semaphore {
 };
@@ -162,8 +165,8 @@ EXPORT(int, sceClibPrintf) {
     return unimplemented("sceClibPrintf");
 }
 
-EXPORT(int, sceClibSnprintf) {
-    return unimplemented("sceClibSnprintf");
+EXPORT(int, sceClibSnprintf, char * dest, SceSize size, const char * format, void* args){
+    return snprintf(dest, size, format);
 }
 
 EXPORT(int, sceClibSnprintfChk) {
@@ -335,7 +338,7 @@ EXPORT(int, sceIoLseekAsync) {
 }
 
 EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
-    if (file == nullptr){
+    if (file == nullptr) {
         return error("sceIoOpen", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     return open_file(host.io, file, flags, host.pref_path.c_str());
@@ -364,7 +367,7 @@ EXPORT(int, sceIoPwriteAsync) {
 }
 
 EXPORT(int, sceIoRemove, const char *path) {
-    if (path == nullptr){
+    if (path == nullptr) {
         return error("sceIoRemove", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     return remove_file(path, host.pref_path.c_str());
@@ -383,7 +386,7 @@ EXPORT(int, sceIoRenameAsync) {
 }
 
 EXPORT(int, sceIoRmdir, const char *path) {
-    if (path == nullptr){
+    if (path == nullptr) {
         return error("sceIoRmdir", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     return remove_dir(path, host.pref_path.c_str());
@@ -762,9 +765,9 @@ EXPORT(int, sceKernelCreateLwCond) {
 }
 
 EXPORT(int, sceKernelCreateLwMutex, SceKernelLwMutexWork *pWork, const char *pName, unsigned int attr, int initCount, const SceKernelLwMutexOptParam *pOptParam) {
-    assert(pWork != nullptr);
+    //assert(pWork != nullptr);
     assert(pName != nullptr);
-    assert((attr == 0) || (attr == 2));
+    //assert((attr == 0) || (attr == 2));
     assert(initCount >= 0);
     assert(initCount <= 1);
     assert(pOptParam == nullptr);
@@ -789,7 +792,7 @@ EXPORT(int, sceKernelCreateRWLock) {
 }
 
 EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, SceKernelSemaOptParam *option) {
-    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)){
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return error("sceKernelCreateSema", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
 
@@ -810,7 +813,7 @@ EXPORT(int, sceKernelCreateSimpleEvent) {
 }
 
 EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, int cpuAffinityMask, const SceKernelThreadOptParam *option) {
-    if (cpuAffinityMask > 0x70000){
+    if (cpuAffinityMask > 0x70000) {
         return error("sceKernelCreateThread", SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
     const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
@@ -818,8 +821,8 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
     };
 
     const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, stackSize, call_import, false);
-    if(thid<0)
-        return error("sceKernelCreateThread",thid);
+    if (thid < 0)
+        return error("sceKernelCreateThread", thid);
     return thid;
 }
 
@@ -902,8 +905,8 @@ EXPORT(int, sceKernelGetPMUSERENR) {
     return unimplemented("sceKernelGetPMUSERENR");
 }
 
-EXPORT(int, sceKernelGetProcessTime) {
-    return unimplemented("sceKernelGetProcessTime");
+EXPORT(SceUInt64, sceKernelGetProcessTime) {
+    return rtc_get_ticks(host);
 }
 
 EXPORT(SceUInt32, sceKernelGetProcessTimeLow) {
@@ -982,18 +985,63 @@ EXPORT(int, sceKernelGetTimerTime) {
     return unimplemented("sceKernelGetTimerTime");
 }
 
-EXPORT(int, sceKernelLoadModule) {
-    return unimplemented("sceKernelLoadModule");
+EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
+    SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str());
+    int size = seek_file(file, 0, SEEK_END, host.io);
+    void *data = malloc(size);
+    Ptr<const void> entry_point;
+
+    SceUID modId = load_self(entry_point, host.kernel, host.mem, data, path);
+    close_file(host.io, file);
+    free(data);
+    if (modId < 0) {
+        return error("sceKernelLoadModule", modId);
+    };
+    return modId;
 }
 
-EXPORT(int, sceKernelLoadStartModule) {
-    return unimplemented("sceKernelLoadStartModule");
+EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, int flags, SceKernelLMOption *option, int *status) {
+    SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str());
+    if (file < 0)
+        return error("sceKernelLoadStartModule", file);
+    int size = seek_file(file, 0, SCE_SEEK_END, host.io);
+    if (size < 0)
+        return error("sceKernelLoadStartModule", size);
+    void *data = malloc(size);
+    if (seek_file(file, 0, SCE_SEEK_SET, host.io) < 0)
+        return error("sceKernelLoadStartModule", size);
+    if (read_file(data, host.io, file, size) < 0) {
+        return error("sceKernelLoadStartModule", size);
+    };
+
+    Ptr<const void> entry_point;
+    SceUID modId = load_self(entry_point, host.kernel, host.mem, data, path);
+    close_file(host.io, file);
+    free(data);
+    if (modId < 0) {
+        return error("sceKernelLoadStartModule", modId);
+    };
+
+    const SceKernelModuleInfoPtrs::const_iterator module = host.kernel.loaded_modules.find(modId);
+    assert(module != host.kernel.loaded_modules.end());
+
+    const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
+        ::call_import(host, nid, thread_id);
+    };
+
+    const size_t stack_size = MB(1);
+
+    const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->second.get()->module_name, stack_size, call_import, false);
+
+    const int res = start_thread(host.kernel, thid, args, argp);
+
+    return modId;
 }
 
 EXPORT(int, sceKernelLockLwMutex, SceKernelLwMutexWork *pWork, int lockCount, unsigned int *pTimeout) {
     assert(pWork != nullptr);
-    assert(lockCount == 1);
-    assert(pTimeout == nullptr);
+    //assert(lockCount == 1);
+    //assert(pTimeout == nullptr);
 
     return unimplemented("sceKernelLockLwMutex");
 }
@@ -1124,8 +1172,8 @@ EXPORT(int, sceKernelStartModule) {
 
 EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
     const int res = start_thread(host.kernel, thid, arglen, argp);
-    if(res<0){
-        return error("sceKernelStartThread",res);
+    if (res < 0) {
+        return error("sceKernelStartThread", res);
     }
     return res;
 }
@@ -1164,7 +1212,7 @@ EXPORT(int, sceKernelUnloadModule) {
 
 EXPORT(int, sceKernelUnlockLwMutex, SceKernelLwMutexWork *pWork, int unlockCount) {
     assert(pWork != nullptr);
-    assert(unlockCount == 1);
+    //assert(unlockCount == 1);
 
     return unimplemented("sceKernelUnlockLwMutex");
 }

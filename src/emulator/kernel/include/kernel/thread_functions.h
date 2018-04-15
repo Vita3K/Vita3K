@@ -34,3 +34,4 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp);
 bool run_thread(ThreadState &thread, bool callback);
 bool run_callback(ThreadState &thread, Address &pc, Address &data);
+bool run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp);

@@ -179,21 +179,31 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     return state;
 }
 
-bool run(CPUState &state, bool callback) {
-    uint64_t pc = 0;
-    uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &pc);
-    assert(err == UC_ERR_OK);
-    const bool thumb_mode = is_thumb_mode(state.uc.get());
+int run(CPUState &state, bool callback) {
+    uint32_t pc = read_pc(state);
+    bool thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
         pc |= 1;
     }
     if (callback) {
         uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &state.entry_point);
     }
-    err = uc_emu_start(state.uc.get(), pc, callback ? state.entry_point & 0xfffffffe : 0, 0, 0);
+    int err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
+    pc = read_pc(state);
+    thumb_mode = is_thumb_mode(state.uc.get());
+    if (thumb_mode) {
+        pc |= 1;
+    }
+    err = uc_emu_start(state.uc.get(), pc, state.entry_point & 0xfffffffe, 0, 0);
     assert(err == UC_ERR_OK);
-
-    return true;
+    pc = read_pc(state);
+    thumb_mode = is_thumb_mode(state.uc.get());
+    if (thumb_mode) {
+        pc |= 1;
+    }
+    if (pc == state.entry_point)
+        return 1;
+    return 0;
 }
 
 void stop(CPUState &state) {

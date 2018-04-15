@@ -125,6 +125,7 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
 }
 
 bool run_thread(ThreadState &thread, bool callback) {
+    int res = 0;
     std::unique_lock<std::mutex> lock(thread.mutex);
     while (true) {
         switch (thread.to_do) {
@@ -132,11 +133,16 @@ bool run_thread(ThreadState &thread, bool callback) {
             return true;
         case ThreadToDo::run:
             lock.unlock();
-            if (!run(*thread.cpu, callback)) {
+            res = run(*thread.cpu, callback);
+            if (res == 1) {
+                return true;
+            }
+            if (res < 0) {
                 return false;
             }
-            if (callback)
+            if (callback) {
                 return true;
+            }
             lock.lock();
             break;
         case ThreadToDo::wait:
@@ -152,4 +158,14 @@ bool run_callback(ThreadState &thread, Address &pc, Address &data) {
     write_pc(*thread.cpu, pc);
     lock.unlock();
     return run_thread(thread, true);
+}
+
+bool run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp) {
+    std::unique_lock<std::mutex> lock(thread.mutex);
+    write_reg(*thread.cpu, 0, arglen);
+    write_reg(*thread.cpu, 1, argp.address());
+    write_pc(*thread.cpu, entry_point.address());
+    lock.unlock();
+    const bool res = run_thread(thread, true);
+    return res;
 }

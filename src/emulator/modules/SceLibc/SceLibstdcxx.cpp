@@ -4477,16 +4477,16 @@ EXPORT(int, _ZdlPvS_) {
     return unimplemented("_ZdlPvS_");
 }
 
-EXPORT(int, _Znaj) {
-    return unimplemented("_Znaj");
+EXPORT(int, _Znaj, int test) {
+    return alloc(host.mem,test,"");
 }
 
 EXPORT(int, _ZnajRKSt9nothrow_t) {
     return unimplemented("_ZnajRKSt9nothrow_t");
 }
 
-EXPORT(int, _Znwj) {
-    return unimplemented("_Znwj");
+EXPORT(int, _Znwj, int test) {
+    return alloc(host.mem,test,"");
 }
 
 EXPORT(int, _ZnwjRKSt9nothrow_t) {
