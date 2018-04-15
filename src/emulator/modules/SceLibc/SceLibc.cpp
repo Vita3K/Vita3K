@@ -16,8 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceLibc.h"
-#include <util/log.h>
 #include <io/functions.h>
+#include <util/log.h>
 
 Ptr<void> g_dso;
 
@@ -388,7 +388,7 @@ EXPORT(int, exit) {
 }
 
 EXPORT(void, fclose, SceUID file) {
-    close_file(host.io,file);
+    close_file(host.io, file);
 }
 
 EXPORT(int, fdopen) {
@@ -431,7 +431,7 @@ EXPORT(int, fileno) {
     return unimplemented("fileno");
 }
 
-EXPORT(int, fopen, const char * filename, const char * mode ) {
+EXPORT(int, fopen, const char *filename, const char *mode) {
     return open_file(host.io, filename, SCE_O_RDONLY, host.pref_path.c_str());
 }
 
@@ -696,7 +696,7 @@ EXPORT(int, longjmp) {
 }
 
 EXPORT(int, malloc, SceSize size) {
-    return alloc(host.mem,size,"");//return unimplemented("malloc");
+    return alloc(host.mem, size, ""); //return unimplemented("malloc");
 }
 
 EXPORT(int, malloc_stats) {
@@ -767,7 +767,7 @@ EXPORT(int, memcmp) {
     return unimplemented("memcmp");
 }
 
-EXPORT(void, memcpy, void * destination, const void * source, size_t num) {
+EXPORT(void, memcpy, void *destination, const void *source, size_t num) {
     memcpy(destination, source, num);
 }
 
@@ -847,8 +847,8 @@ EXPORT(int, perror) {
     return unimplemented("perror");
 }
 
-EXPORT(int, printf, char* fmt, va_list va_args) {
-    LOG_INFO("{}",fmt);
+EXPORT(int, printf, char *fmt, va_list va_args) {
+    LOG_INFO("{}", fmt);
     return 0;
 }
 
@@ -996,8 +996,8 @@ EXPORT(int, strcasecmp) {
     return unimplemented("strcasecmp");
 }
 
-EXPORT(Ptr<char>, strcat, Ptr<char> destination, Ptr<char> source ) {
-    strcat(destination.get(host.mem),source.get(host.mem));
+EXPORT(Ptr<char>, strcat, Ptr<char> destination, Ptr<char> source) {
+    strcat(destination.get(host.mem), source.get(host.mem));
     return destination;
 }
 
@@ -1017,8 +1017,8 @@ EXPORT(int, strcoll) {
     return unimplemented("strcoll");
 }
 
-EXPORT(Ptr<char>, strcpy, Ptr<char> destination, Ptr<char> source ) {
-    strcpy(destination.get(host.mem),source.get(host.mem));
+EXPORT(Ptr<char>, strcpy, Ptr<char> destination, Ptr<char> source) {
+    strcpy(destination.get(host.mem), source.get(host.mem));
     return destination;
 }
 
@@ -1050,7 +1050,7 @@ EXPORT(int, strftime) {
     return unimplemented("strftime");
 }
 
-EXPORT(int, strlen, char * str) {
+EXPORT(int, strlen, char *str) {
     return strlen(str);
 }
 
@@ -1066,12 +1066,12 @@ EXPORT(int, strncat_s) {
     return unimplemented("strncat_s");
 }
 
-EXPORT(int, strncmp, const char * str1, const char * str2, size_t num ) {
+EXPORT(int, strncmp, const char *str1, const char *str2, size_t num) {
     return strncmp(str1, str2, num);
 }
 
-EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size ) {
-    strncpy(destination.get(host.mem),source.get(host.mem), size);
+EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size) {
+    strncpy(destination.get(host.mem), source.get(host.mem), size);
     return destination;
 }
 
@@ -1087,18 +1087,17 @@ EXPORT(int, strpbrk) {
     return unimplemented("strpbrk");
 }
 
-EXPORT(Ptr<char>, strrchr, Ptr<char> str, char ch ) {
+EXPORT(Ptr<char>, strrchr, Ptr<char> str, char ch) {
     Ptr<char> res = Ptr<char>();
-    char * _str = str.get(host.mem);
-    for (int i = strlen(_str)-1; i>=0; i--)
-    {
+    char *_str = str.get(host.mem);
+    for (int i = strlen(_str) - 1; i >= 0; i--) {
         const char ch1 = _str[i];
-        if (ch1 == ch){
-            res = str + i*sizeof(char);
+        if (ch1 == ch) {
+            res = str + i * sizeof(char);
             break;
         }
     }
-    
+
     return res;
 }
 
@@ -1258,7 +1257,7 @@ EXPORT(int, vscanf_s) {
     return unimplemented("vscanf_s");
 }
 
-EXPORT(int, vsnprintf, char * s, size_t n, const char * format, va_list arg) {
+EXPORT(int, vsnprintf, char *s, size_t n, const char *format, va_list arg) {
     return snprintf(s, n, format, "");
 }
 

@@ -44,7 +44,7 @@ typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 typedef std::shared_ptr<emu::SceKernelModuleInfo> SceKernelModuleInfoPtr;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
-typedef std::map<uint32_t,Address> ExportNids;
+typedef std::map<uint32_t, Address> ExportNids;
 
 namespace emu {
     typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
