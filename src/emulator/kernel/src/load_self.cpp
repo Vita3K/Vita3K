@@ -29,11 +29,11 @@
 #undef SCE_ELF_DEFS_TARGET
 #include <self.h>
 
-#define NID_MODULE_STOP     0x79F8E492
-#define NID_MODULE_EXIT     0x913482A9
-#define NID_MODULE_START    0x935CD196
-#define NID_MODULE_INFO     0x6C2224BA
-#define NID_PROCESS_PARAM   0x70FBA1E7
+#define NID_MODULE_STOP 0x79F8E492
+#define NID_MODULE_EXIT 0x913482A9
+#define NID_MODULE_START 0x935CD196
+#define NID_MODULE_INFO 0x6C2224BA
+#define NID_PROCESS_PARAM 0x70FBA1E7
 
 #include <miniz.h>
 
@@ -44,25 +44,20 @@
 
 using namespace ELFIO;
 
-static const bool LOG_IMPORTS = false;
-static const bool LOG_EXPORTS = false;
+static const bool LOG_IMPORTS = true;
+static const bool LOG_EXPORTS = true;
 
 static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const MemState &mem) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
-        
+
         if (LOG_IMPORTS) {
             const char *const name = import_name(nid);
             LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
         }
-        
-        /*uint32_t *const stub = entry.get(mem);
-        stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
-        stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
-        stub[2] = nid; // Our interrupt hook will read this.*/
     }
-    
+
     return true;
 }
 
@@ -105,7 +100,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
         if (!load_func_imports(nids, entries, imports->num_syms_funcs, mem)) {
             return false;
         }
-        
+
         const uint32_t *const var_nids = Ptr<const uint32_t>(imports->var_nid_table).get(mem);
         const Ptr<uint32_t> *const var_entries = Ptr<Ptr<uint32_t>>(imports->var_entry_table).get(mem);
         if (!load_var_imports(var_nids, var_entries, imports->num_syms_vars, mem)) {
@@ -125,21 +120,17 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
             entry_point = entry;
             continue;
         }
-        
+
         if (nid == NID_MODULE_STOP || nid == NID_MODULE_EXIT)
             continue;
-        
-        kernel.export_nids.emplace(nid,entry.address());
-        
+
+        kernel.export_nids.emplace(nid, entry.address());
+
         if (LOG_EXPORTS) {
             const char *const name = import_name(nid);
-            
+
             LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
         }
-        /*uint32_t *const stub = entry.get(mem);
-        stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
-        stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
-        stub[2] = nid; // Our interrupt hook will read this.*/
     }
 
     return true;
@@ -149,42 +140,37 @@ static bool load_var_exports(Ptr<const void> &entry_point, const uint32_t *nids,
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
-        
-        if(nid == NID_PROCESS_PARAM) {
+
+        if (nid == NID_PROCESS_PARAM) {
             kernel.process_param = entry;
             LOG_DEBUG("\tNID {:#08x} (SCE_PROC_PARAMS) at {:#x}", nid, entry.address());
             continue;
         }
-        
-        if(nid == NID_MODULE_INFO) {
+
+        if (nid == NID_MODULE_INFO) {
             LOG_DEBUG("\tNID {:#08x} (NID_MODULE_INFO) at {:#x}", nid, entry.address());
             continue;
         }
-        
-        if(nid == 0x936c8a78) {
+
+        if (nid == 0x936c8a78) {
             LOG_DEBUG("\tNID {:#08x} (SYSLYB) at {:#x}", nid, entry.address());
             continue;
         }
-        
+
         if (LOG_EXPORTS) {
             const char *const name = import_name(nid);
-            
+
             LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
-            
         }
-        
+
         /*if (nid == 0x935cd196) {
             entry_point = entry;
             return true;
         }*/
-        
-        kernel.export_nids.emplace(nid,entry.address());
-        /*uint32_t *const stub = entry.get(mem);
-         stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
-         stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
-         stub[2] = nid; // Our interrupt hook will read this.*/
+
+        kernel.export_nids.emplace(nid, entry.address());
     }
-    
+
     return true;
 }
 
@@ -201,18 +187,15 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
             LOG_INFO("Loading exports from {}", lib_name);
         }
 
-        
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
         if (!load_func_exports(entry_point, nids, entries, exports->num_syms_funcs, kernel, mem)) {
             return false;
         }
-        
+
         if (!load_var_exports(entry_point, &nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], exports->num_syms_vars, kernel, mem)) {
             return false;
         }
-        
-        
     }
 
     return true;
@@ -223,7 +206,6 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
     // assumes little endian host
-    // TODO: do it in a better way, perhaps with user-defined literals that do the conversion automatically (magic != "SCE\0"_u32)
     if (!memcmp(&self_header.magic, "\0ECS", 4)) {
         LOG_CRITICAL("(S)ELF is corrupt or encrypted. Decryption not yet supported.");
         return -1;
@@ -231,7 +213,6 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     const uint8_t *const elf_bytes = self_bytes + self_header.elf_offset;
     const Elf32_Ehdr &elf = *reinterpret_cast<const Elf32_Ehdr *>(elf_bytes);
-    const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
     const uint32_t module_info_offset = elf.e_entry & 0x3fffffff;
     const Elf32_Phdr *const segments = reinterpret_cast<const Elf32_Phdr *>(self_bytes + self_header.phdr_offset);
 
@@ -280,41 +261,42 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         }
     }
 
+    const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
     const Ptr<const uint8_t> module_info_segment_address = segment_addrs[module_info_segment_index].cast<const uint8_t>();
     const uint8_t *const module_info_segment_bytes = module_info_segment_address.get(mem);
     const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module_info_segment_bytes + module_info_offset);
 
     const SceKernelModuleInfoPtr sceKernelModuleInfo = std::make_shared<emu::SceKernelModuleInfo>();
-    sceKernelModuleInfo.get()->size = sizeof(*sceKernelModuleInfo.get());
-    strncpy(sceKernelModuleInfo.get()->module_name, module_info->name, 28);
+    sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
+    strncpy(sceKernelModuleInfo->module_name, module_info->name, 28);
     //unk28
     entry_point = module_info_segment_address + module_info->module_start;
-    sceKernelModuleInfo.get()->module_start = module_info->module_start ? entry_point : Ptr<const void>(0);
+    sceKernelModuleInfo->module_start = module_info->module_start ? entry_point : Ptr<const void>(0);
     //unk30
     const Ptr<const void> module_stop = module_info_segment_address + module_info->module_stop;
-    sceKernelModuleInfo.get()->module_stop = module_info->module_stop ? module_stop : Ptr<const void>(0);
+    sceKernelModuleInfo->module_stop = module_info->module_stop ? module_stop : Ptr<const void>(0);
 
     const Ptr<const void> exidx_top = Ptr<const void>(module_info->exidx_top);
-    sceKernelModuleInfo.get()->exidxTop = exidx_top;
+    sceKernelModuleInfo->exidxTop = exidx_top;
     const Ptr<const void> exidx_btm = Ptr<const void>(module_info->exidx_end);
-    sceKernelModuleInfo.get()->exidxBtm = exidx_btm;
+    sceKernelModuleInfo->exidxBtm = exidx_btm;
 
     //unk40
     //unk44
-    sceKernelModuleInfo.get()->tlsInit = Ptr<const void>(module_info_segment_address + module_info->field_38);
-    sceKernelModuleInfo.get()->tlsInitSize = module_info->field_3C;
-    sceKernelModuleInfo.get()->tlsAreaSize = module_info->field_40;
+    sceKernelModuleInfo->tlsInit = Ptr<const void>(module_info_segment_address + module_info->field_38);
+    sceKernelModuleInfo->tlsInitSize = module_info->field_3C;
+    sceKernelModuleInfo->tlsAreaSize = module_info->field_40;
     //SceSize tlsInitSize;
     //SceSize tlsAreaSize;
-    strncpy(sceKernelModuleInfo.get()->path, path, 255);
+    strncpy(sceKernelModuleInfo->path, path, 255);
 
     for (Elf_Half segment_index = 0; segment_index < elf.e_phnum; ++segment_index) {
-        sceKernelModuleInfo.get()->segments[segment_index].size = sizeof(sceKernelModuleInfo.get()->segments[segment_index]);
-        sceKernelModuleInfo.get()->segments[segment_index].vaddr = segment_addrs[segment_index];
-        sceKernelModuleInfo.get()->segments[segment_index].memsz = segments[segment_index].p_memsz;
+        sceKernelModuleInfo->segments[segment_index].size = sizeof(sceKernelModuleInfo->segments[segment_index]);
+        sceKernelModuleInfo->segments[segment_index].vaddr = segment_addrs[segment_index];
+        sceKernelModuleInfo->segments[segment_index].memsz = segments[segment_index].p_memsz;
     }
 
-    sceKernelModuleInfo.get()->type = module_info->type;
+    sceKernelModuleInfo->type = module_info->type;
 
     if (!load_imports(*module_info, module_info_segment_address, mem)) {
         return -1;
@@ -324,7 +306,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         return -1;
     }
 
-    sceKernelModuleInfo.get()->module_start = entry_point;
+    sceKernelModuleInfo->module_start = entry_point;
 
     const std::unique_lock<std::mutex> lock(kernel.mutex);
     const SceUID uid = kernel.next_uid++;

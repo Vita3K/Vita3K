@@ -3,17 +3,16 @@
 #include <psp2/types.h>
 
 namespace emu {
-
-    typedef struct SceKernelSegmentInfo {
+    struct SceKernelSegmentInfo {
         SceUInt size; //!< sizeof(SceKernelSegmentInfo)
         SceUInt perms; //!< probably rwx in low bits
         Ptr<const void> vaddr; //!< address in memory
         SceUInt memsz; //!< size in memory
         SceUInt flags; //!< meaning unknown
         SceUInt res; //!< unused?
-    } SceKernelSegmentInfo;
+    };
 
-    typedef struct SceKernelModuleInfo {
+    struct SceKernelModuleInfo {
         SceUInt size; //!< 0x1B8 for Vita 1.x
         SceUInt handle; //!< kernel module handle?
         SceUInt flags; //!< some bits. could be priority or whatnot
@@ -32,5 +31,5 @@ namespace emu {
         char path[256];
         SceKernelSegmentInfo segments[4];
         SceUInt type; //!< 6 = user-mode PRX?
-    } SceKernelModuleInfo;
+    };
 }

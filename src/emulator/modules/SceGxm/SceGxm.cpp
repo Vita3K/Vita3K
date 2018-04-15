@@ -1059,59 +1059,22 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
         std::uint8_t R = 0, G = 0, B = 0, A = 0;
         constexpr auto A_max = std::numeric_limits<decltype(A)>::max();
 
+        // clang-format off
         switch (texture::get_swizzle(fmt)) {
-        case SCE_GXM_TEXTURE_SWIZZLE4_ABGR:
-            R = 0;
-            G = 1;
-            B = 2;
-            A = 3;
-            break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_ARGB:
-            R = 2;
-            G = 1;
-            B = 0;
-            A = 3;
-            break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA:
-            R = 3;
-            G = 2;
-            B = 1;
-            A = 0;
-            break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA:
-            R = 1;
-            G = 2;
-            B = 3;
-            A = 0;
-            break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1BGR:
-            R = 0;
-            G = 1;
-            B = 2;
-            A = A_max;
-            break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1RGB:
-            R = 2;
-            G = 1;
-            B = 0;
-            A = A_max;
-            break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1:
-            R = 3;
-            G = 2;
-            B = 1;
-            A = A_max;
-            break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1:
-            R = 1;
-            G = 2;
-            B = 3;
-            A = A_max;
-            break;
-        default: {
+        case SCE_GXM_TEXTURE_SWIZZLE4_ABGR: R = 0; G = 1; B = 2; A = 3; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_ARGB: R = 2; G = 1; B = 0; A = 3; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA: R = 3; G = 2; B = 1; A = 0; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA: R = 1; G = 2; B = 3; A = 0; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_1BGR: R = 0; G = 1; B = 2; A = A_max; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_1RGB: R = 2; G = 1; B = 0; A = A_max; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1: R = 3; G = 2; B = 1; A = A_max; break;
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1: R = 1; G = 2; B = 3; A = A_max; break;
+        default:
+        {
             LOG_ERROR("Invalid swizzle for paletted texture foramt.");
         }
         }
+        // clang-format on
 
         glPixelMapfv(GL_PIXEL_MAP_I_TO_R, palette_indexes, map[R]);
         glPixelMapfv(GL_PIXEL_MAP_I_TO_G, palette_indexes, map[G]);
