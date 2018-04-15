@@ -31,3 +31,6 @@
 [submodule "src/external/crypto-algorithms"]
 	path = src/external/crypto-algorithms
 	url = https://github.com/B-Con/crypto-algorithms.git
+[submodule "src/external/imgui"]
+	path = src/external/imgui
+	url = https://github.com/ocornut/imgui

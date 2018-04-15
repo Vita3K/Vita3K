@@ -40,6 +40,9 @@
 #include <iomanip>
 #include <iostream>
 
+#include <imgui.h>
+#include <gui/imgui_impl_sdl_gl2.h>
+
 using namespace glbinding;
 
 static const bool LOG_IMPORT_CALLS = false;
@@ -75,7 +78,7 @@ bool init(HostState &state) {
 
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 960, 544, SDL_WINDOW_OPENGL), SDL_DestroyWindow);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 960, 575, SDL_WINDOW_OPENGL), SDL_DestroyWindow);
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, pref_path.get())) {
         return false;
     }
@@ -90,6 +93,7 @@ bool init(HostState &state) {
 bool handle_events(HostState &host) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+        ImGui_ImplSdlGL2_ProcessEvent(&event);
         if (event.type == SDL_QUIT) {
             stop_all_threads(host.kernel);
             host.gxm.display_queue.abort();

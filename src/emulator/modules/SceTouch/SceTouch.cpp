@@ -99,7 +99,7 @@ EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
     const float normalised_y = window_y / static_cast<float>(window_h);
 
     const uint32_t mask = (port == 1) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
-    if (buttons & mask) {
+    if (buttons & mask && (host.gui.renderer_focused)) {
         pData->report[pData->reportNum].x = static_cast<uint16_t>(normalised_x * 1920);
         pData->report[pData->reportNum].y = static_cast<uint16_t>(normalised_y * 1088);
         ++pData->reportNum;

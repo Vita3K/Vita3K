@@ -15,31 +15,18 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <imgui.h>
+#include <gui/functions.h>
+#include <host/state.h>
 
-#include <condition_variable>
-#include <mem/mem.h> // Address.
-#include <mutex>
-
-struct CPUState;
-template <typename T>
-class Resource;
-
-typedef Resource<Address> ThreadStack;
-typedef std::shared_ptr<ThreadStack> ThreadStackPtr;
-typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
-
-enum class ThreadToDo {
-    exit,
-    run,
-    wait,
-};
-
-struct ThreadState {
-    ThreadStackPtr stack;
-    CPUStatePtr cpu;
-    ThreadToDo to_do = ThreadToDo::run;
-    std::mutex mutex;
-    std::condition_variable something_to_do;
-    char name[32];
-};
+void DrawMainMenuBar(HostState& host){
+    if (ImGui::BeginMainMenuBar()){
+        if (ImGui::BeginMenu("Debug")){
+            if (ImGui::MenuItem("Threads", nullptr, host.gui.threads_dialog)){
+                host.gui.threads_dialog = !host.gui.threads_dialog;
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+}

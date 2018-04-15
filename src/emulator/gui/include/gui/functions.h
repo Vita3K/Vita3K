@@ -17,29 +17,8 @@
 
 #pragma once
 
-#include <condition_variable>
-#include <mem/mem.h> // Address.
-#include <mutex>
+struct HostState;
 
-struct CPUState;
-template <typename T>
-class Resource;
-
-typedef Resource<Address> ThreadStack;
-typedef std::shared_ptr<ThreadStack> ThreadStackPtr;
-typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
-
-enum class ThreadToDo {
-    exit,
-    run,
-    wait,
-};
-
-struct ThreadState {
-    ThreadStackPtr stack;
-    CPUStatePtr cpu;
-    ThreadToDo to_do = ThreadToDo::run;
-    std::mutex mutex;
-    std::condition_variable something_to_do;
-    char name[32];
-};
+void DrawMainMenuBar(HostState& host);
+void DrawThreadsDialog(HostState& host);
+void DrawUI(HostState& host);

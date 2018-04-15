@@ -21,9 +21,11 @@
 #include <host/state.h>
 #include <host/version.h>
 #include <kernel/thread_functions.h>
+#include <kernel/thread_state.h>
 #include <util/find.h>
 #include <util/log.h>
 #include <util/string_convert.h>
+#include <util/resource.h>
 
 #include <SDL.h>
 #include <glutil/gl.h>
@@ -32,6 +34,10 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+
+#include <imgui.h>
+#include <gui/imgui_impl_sdl_gl2.h>
+#include <gui/functions.h>
 
 typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
 typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
@@ -105,7 +111,13 @@ int main(int argc, char *argv[]) {
         error("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }
-
+    
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplSdlGL2_Init(host.window.get());
+    ImGui::StyleColorsDark();
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    
     Ptr<const void> entry_point;
     if (!load_vpk(entry_point, host.game_title, host.title_id, host.io, host.mem, path)) {
         std::string message = "Failed to load \"";
@@ -122,7 +134,7 @@ int main(int argc, char *argv[]) {
 
     const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
 
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, "main", stack_size, call_import, false);
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.title_id.c_str(), stack_size, call_import, false);
     if (main_thread_id < 0) {
         error("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
@@ -143,10 +155,11 @@ int main(int argc, char *argv[]) {
     }
 
     const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
-
+    
     GLuint TextureID = 0;
     host.t1 = SDL_GetTicks();
     while (handle_events(host)) {
+        
         if (!TextureID) {
             glGenTextures(1, &TextureID);
             glClearColor(1.0, 0.0, 0.5, 1.0);
@@ -159,6 +172,8 @@ int main(int argc, char *argv[]) {
             glEnable(GL_TEXTURE_2D);
             glLoadIdentity();
         }
+        
+        ImGui_ImplSdlGL2_NewFrame(host.window.get());
 
         // Clear back buffer
 
@@ -172,32 +187,28 @@ int main(int argc, char *argv[]) {
                 void *const pixels = host.display.base.cast<void>().get(host.mem);
 
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, host.display.pitch);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, host.display.width, host.display.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, host.display.width, host.display.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glBindTexture(GL_TEXTURE_2D, TextureID);
-
-                // For Ortho mode, of course
-                const int X = 0;
-                const int Y = 0;
-                const int Width = 960;
-                const int Height = 544;
-
-                glBegin(GL_TRIANGLE_FAN);
-                glTexCoord2f(0, 0);
-                glVertex3f(X, Y, 0);
-                glTexCoord2f(1, 0);
-                glVertex3f(X + Width, Y, 0);
-                glTexCoord2f(1, 1);
-                glVertex3f(X + Width, Y + Height, 0);
-                glTexCoord2f(0, 1);
-                glVertex3f(X, Y + Height, 0);
-                glEnd();
+                
+                ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
+                ImGui::SetNextWindowSize(ImVec2(960, 579), ImGuiSetCond_Always);
+                ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | 
+                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
+                host.gui.renderer_focused = ImGui::IsWindowFocused();
+                ImGui::Image(reinterpret_cast<void *>(TextureID), ImVec2(960, 544));
+                ImGui::End();
             }
         }
-
+        
+        DrawUI(host);
+        
+        glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
+        ImGui::Render();
+        ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(host.window.get());
 
         {
