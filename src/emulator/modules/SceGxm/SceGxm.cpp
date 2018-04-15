@@ -542,7 +542,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
         ::call_import(host, nid, thread_id);
     };
 
-    const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "display", MB(1), call_import, false);
+    const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", MB(1), call_import, false);
 
     if (display_thread_id < 0) {
         return error(__func__, SCE_GXM_ERROR_DRIVER);

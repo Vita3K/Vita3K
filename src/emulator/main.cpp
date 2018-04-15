@@ -140,21 +140,12 @@ int main(int argc, char *argv[]) {
         return InitThreadFailed;
     }
 
-    const SceUID display_thread_id = create_thread(entry_point, host.kernel, host.mem, "display", stack_size, call_import, false);
-
-    if (display_thread_id < 0) {
-        error("Failed to init display thread.", host.window.get());
-        return InitThreadFailed;
-    }
-
     const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
 
     if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
         error("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }
-
-    const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
     
     GLuint TextureID = 0;
     host.t1 = SDL_GetTicks();
