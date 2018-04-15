@@ -19,8 +19,10 @@
 
 #include <psp2/types.h>
 
+#include <cstdint>
+
 struct HostState;
 
-bool init(HostState &state);
+bool init(HostState &state, std::uint32_t window_width, std::uint32_t window_height);
 bool handle_events(HostState &host);
 void call_import(HostState &host, uint32_t nid, SceUID thread_id);
