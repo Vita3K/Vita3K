@@ -212,7 +212,6 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
             entry = short_entry + 1;
         } else {
             const LongEntry *const long_entry = static_cast<const LongEntry *>(entry);
-            //assert(long_entry->code2 == 0);
 
             const Ptr<void> segment_start = segments.find(long_entry->data_segment)->second;
             const Address p = segment_start.address() + long_entry->offset;

@@ -177,6 +177,7 @@ EXPORT(int, sceKernelGetMsgPipeCreatorId) {
 }
 
 EXPORT(int, sceKernelGetProcessId) {
+    unimplemented("sceKernelGetProcessId -> 0");
     return 0;
 }
 

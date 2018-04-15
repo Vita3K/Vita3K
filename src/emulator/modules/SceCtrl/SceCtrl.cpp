@@ -245,9 +245,8 @@ EXPORT(int, sceCtrlPeekBufferNegative2) {
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
-    /*assert(port == 0);
     assert(pad_data != nullptr);
-    assert(count == 1);*/
+    assert(count == 1);
 
     return peek_buffer_positive(host, pad_data);
 }

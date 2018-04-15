@@ -109,21 +109,27 @@ bool handle_events(HostState &host) {
     return true;
 }
 
-Address resolve_export(KernelState &kernel, uint32_t nid){
+/**
+ * \brief Resolves a function imported from a loaded module.
+ * \param kernel Kernel state struct
+ * \param nid NID to resolve
+ * \return Resolved address, 0 if not found
+ */
+Address resolve_export(KernelState &kernel, uint32_t nid) {
     const ExportNids::iterator export_address = kernel.export_nids.find(nid);
     if (export_address == kernel.export_nids.end()) {
         return 0;
     }
-    
+
     return export_address->second;
 }
 
 void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
-    
-
     Address export_pc = resolve_export(host.kernel, nid);
 
-    if(!export_pc){
+    if (!export_pc) {
+        // HLE - call our C++ function
+
         if (LOG_IMPORT_CALLS) {
             const char *const name = import_name(nid);
             LOG_TRACE("THREAD_ID {} NID {:#08x} ({})) called", thread_id, nid, name);
@@ -132,7 +138,9 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
         if (fn != nullptr) {
             (*fn)(host, thread_id);
         }
-    }else{
+    } else {
+        // LLE - directly run ARM code imported from some loaded module
+
         if (LOG_IMPORT_CALLS) {
             const char *const name = import_name(nid);
             LOG_TRACE("THREAD_ID {} EXPORTED NID {:#08x} at {:#08x} ({})) called", thread_id, nid, export_pc, name);
