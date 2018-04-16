@@ -24,8 +24,8 @@
 #include <kernel/thread_state.h>
 #include <util/find.h>
 #include <util/log.h>
-#include <util/string_convert.h>
 #include <util/resource.h>
+#include <util/string_convert.h>
 
 #include <SDL.h>
 #include <glutil/gl.h>
@@ -35,8 +35,10 @@
 #include <iostream>
 #include <sstream>
 
+// clang-format off
 #include <imgui.h>
 #include <gui/imgui_impl_sdl_gl2.h>
+// clang-format on
 #include <gui/functions.h>
 
 typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
@@ -67,6 +69,11 @@ static void term_sdl(const void *succeeded) {
 
     SDL_Quit();
 }
+
+static constexpr auto DEFAULT_RES_WIDTH = 960;
+static constexpr auto DEFAULT_RES_HEIGHT = 544;
+static constexpr auto WINDOW_BORDER_WIDTH = 16;
+static constexpr auto WINDOW_BORDER_HEIGHT = 34;
 
 int main(int argc, char *argv[]) {
     init_logging();
@@ -107,17 +114,17 @@ int main(int argc, char *argv[]) {
     }
 
     HostState host;
-    if (!init(host)) {
+    if (!init(host, DEFAULT_RES_WIDTH + WINDOW_BORDER_WIDTH, DEFAULT_RES_HEIGHT + WINDOW_BORDER_HEIGHT)) {
         error("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }
-    
+
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     ImGui_ImplSdlGL2_Init(host.window.get());
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    
+
     Ptr<const void> entry_point;
     if (!load_vpk(entry_point, host.game_title, host.title_id, host.io, host.mem, path)) {
         std::string message = "Failed to load \"";
@@ -146,24 +153,23 @@ int main(int argc, char *argv[]) {
         error("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }
-    
+
     GLuint TextureID = 0;
     host.t1 = SDL_GetTicks();
     while (handle_events(host)) {
-        
         if (!TextureID) {
             glGenTextures(1, &TextureID);
             glClearColor(1.0, 0.0, 0.5, 1.0);
             glClearDepth(1.0f);
-            glViewport(0, 0, 960, 544);
+            glViewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT);
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
-            glOrtho(0, 960, 544, 0, 1, -1);
+            glOrtho(0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0, 1, -1);
             glMatrixMode(GL_MODELVIEW);
             glEnable(GL_TEXTURE_2D);
             glLoadIdentity();
         }
-        
+
         ImGui_ImplSdlGL2_NewFrame(host.window.get());
 
         // Clear back buffer
@@ -183,20 +189,18 @@ int main(int argc, char *argv[]) {
 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                
+
                 ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
-                ImGui::SetNextWindowSize(ImVec2(972, 575), ImGuiSetCond_Always);
-                ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | 
-                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
+                ImGui::SetNextWindowSize(ImVec2(DEFAULT_RES_WIDTH + WINDOW_BORDER_WIDTH, DEFAULT_RES_HEIGHT + WINDOW_BORDER_HEIGHT), ImGuiSetCond_Always);
+                ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
                 host.gui.renderer_focused = ImGui::IsWindowFocused();
-                ImGui::Image(reinterpret_cast<void *>(TextureID), ImVec2(960, 544));
+                ImGui::Image(reinterpret_cast<void *>(TextureID), ImVec2(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT));
                 ImGui::End();
             }
         }
-        
+
         DrawUI(host);
-        
+
         glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
         ImGui::Render();
         ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());

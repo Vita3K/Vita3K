@@ -214,7 +214,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    glViewport(0, 0, 960, 544);
+    glViewport(0, 0, host.display.window_width, host.display.window_height);
     
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);

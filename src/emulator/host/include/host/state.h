@@ -37,9 +37,17 @@ struct DisplayState {
     uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
     uint32_t width = 0;
     uint32_t height = 0;
+    uint32_t window_width = 0;
+    uint32_t window_height = 0;
     std::mutex mutex;
     std::condition_variable condvar;
     bool abort = false;
+
+    void set_window_dims(std::uint32_t width, std::uint32_t height)
+    {
+        window_width = width;
+        window_height = height;
+    }
 };
 
 struct HostState {
