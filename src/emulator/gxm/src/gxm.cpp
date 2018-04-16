@@ -254,9 +254,9 @@ static SharedGLObject compile_glsl(GLenum type, const std::string& source) {
 
 static void bind_attribute_locations(GLuint gl_program, const SceGxmVertexProgram &program) {
     GXM_PROFILE(__FUNCTION__);
-
+    
     for (const AttributeLocations::value_type &binding : program.attribute_locations) {
-        glBindAttribLocation(gl_program, binding.first, binding.second.c_str());
+        glBindAttribLocation(gl_program, binding.first / 4, binding.second.c_str());
     }
 }
 
@@ -266,6 +266,14 @@ void uniform_4(GLint location, GLsizei count, const T *value);
 template <>
 void uniform_4<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
     glUniform4fv(location, count, value);
+}
+
+template <class T>
+void uniform_1(GLint location, GLsizei count, const T *value);
+
+template <>
+void uniform_1<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
+    glUniform1fv(location, count, value);
 }
 
 template <class T>
@@ -279,8 +287,20 @@ void uniform_matrix_4<GLfloat>(GLint location, GLsizei count, GLboolean transpos
 template <class T>
 void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value) {
     switch (component_count) {
+		case 1:
+			switch (array_size) {
+				case 1:
+					uniform_1<T>(location, array_size, value);
+					break;
+                case 4:
+                    uniform_4<T>(location, array_size, value);
+					break;
+			}
         case 4:
             switch (array_size) {
+                case 1:
+                    uniform_1<T>(location, array_size, value);
+                    break;
                 case 4:
                     uniform_matrix_4<T>(location, 1, GL_FALSE, value);
                     break;
