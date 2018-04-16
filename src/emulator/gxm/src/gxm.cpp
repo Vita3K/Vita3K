@@ -287,15 +287,15 @@ void uniform_matrix_4<GLfloat>(GLint location, GLsizei count, GLboolean transpos
 template <class T>
 void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value) {
     switch (component_count) {
-		case 1:
-			switch (array_size) {
-				case 1:
-					uniform_1<T>(location, array_size, value);
-					break;
+        case 1:
+            switch (array_size) {
+                case 1:
+                    uniform_1<T>(location, array_size, value);
+                    break;
                 case 4:
                     uniform_4<T>(location, array_size, value);
-					break;
-			}
+                    break;
+            }
         case 4:
             switch (array_size) {
                 case 1:
