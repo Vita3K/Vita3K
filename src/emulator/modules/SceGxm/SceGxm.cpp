@@ -1215,7 +1215,7 @@ EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIn
         const GLenum type = attribute_format_to_gl_type(static_cast<SceGxmAttributeFormat>(attribute.format));
         const GLboolean normalised = attribute_format_normalised(static_cast<SceGxmAttributeFormat>(attribute.format)) ? GL_TRUE : GL_FALSE;
         const GLvoid *const pointer = streamData + attribute.offset;
-        int attrib_location = attribute.regIndex / 4;
+        int attrib_location = attribute.regIndex / sizeof(uint32_t);
         glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, pointer);
 
         glEnableVertexAttribArray(attrib_location); // TODO Disable.

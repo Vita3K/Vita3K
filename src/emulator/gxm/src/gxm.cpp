@@ -256,7 +256,7 @@ static void bind_attribute_locations(GLuint gl_program, const SceGxmVertexProgra
     GXM_PROFILE(__FUNCTION__);
     
     for (const AttributeLocations::value_type &binding : program.attribute_locations) {
-        glBindAttribLocation(gl_program, binding.first / 4, binding.second.c_str());
+        glBindAttribLocation(gl_program, binding.first / sizeof(uint32_t), binding.second.c_str());
     }
 }
 
