@@ -26,6 +26,8 @@
 #include <gui/state.h>
 #include <psp2/display.h>
 
+#include <atomic>
+
 struct SDL_Window;
 typedef void *SDL_GLContext;
 typedef std::shared_ptr<SDL_Window> WindowPtr;
@@ -41,7 +43,7 @@ struct DisplayState {
     uint32_t window_height = 0;
     std::mutex mutex;
     std::condition_variable condvar;
-    bool abort = false;
+    std::atomic<bool> abort{ false };
 
     void set_window_dims(std::uint32_t width, std::uint32_t height)
     {

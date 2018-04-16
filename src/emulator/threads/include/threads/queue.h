@@ -1,32 +1,38 @@
 #ifndef queue_h
 #define queue_h
 
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
+#include <memory>
 
 template <typename T>
 class Queue {
 public:
     unsigned int displayQueueMaxPendingCount_;
 
-    T pop() {
-        T item;
+    std::unique_ptr<T> pop() {
+        T item{ T() };
         {
             std::unique_lock<std::mutex> mlock(mutex_);
             while (!aborted && queue_.empty()) {
                 condempty_.wait(mlock);
             }
-
             if (aborted) {
+                // releasing the mutex on Windows results in it not 
+                // being unlocked by the destructor
+#ifndef WIN32
                 mlock.release();
-                return item;
+#endif
+                return {};
             }
+
             item = queue_.front();
             queue_.pop();
         }
         cond_.notify_one();
-        return item;
+        return std::make_unique<T>(item);
     }
 
     void push(const T &item) {
@@ -36,7 +42,11 @@ public:
                 cond_.wait(mlock);
             }
             if (aborted) {
+                // releasing the mutex on Windows results in it not 
+                // being unlocked by the destructor
+#ifndef WIN32
                 mlock.release();
+#endif
                 return;
             }
             queue_.push(item);
@@ -64,7 +74,7 @@ private:
     std::condition_variable condempty_;
     std::queue<T> queue_;
     std::mutex mutex_;
-    bool aborted = false;
+    std::atomic<bool> aborted{ false };
 };
 
 #endif /* queue_h */

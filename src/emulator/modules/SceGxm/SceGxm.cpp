@@ -513,19 +513,21 @@ static int SDLCALL thread_function(void *data) {
     const GxmThreadParams params = *static_cast<const GxmThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
     while (true) {
-        DisplayCallback display_callback = params.gxm->display_queue.pop();
+        auto display_callback = params.gxm->display_queue.pop();
+        if (!display_callback)
+            break;
         {
             const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
             if (thread->to_do == ThreadToDo::exit)
                 break;
         }
         const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
-        run_callback(*display_thread, display_callback.pc, display_callback.data);
-        const Ptr<SceGxmSyncObject> newBuffer(display_callback.new_buffer);
+        run_callback(*display_thread, display_callback->pc, display_callback->data);
+        const Ptr<SceGxmSyncObject> newBuffer(display_callback->new_buffer);
         std::unique_lock<std::mutex> lock(newBuffer.get(*params.mem)->mutex);
         newBuffer.get(*params.mem)->value = 1;
         newBuffer.get(*params.mem)->cond_var.notify_all();
-        free(*params.mem, display_callback.data);
+        free(*params.mem, display_callback->data);
     }
     return 0;
 }

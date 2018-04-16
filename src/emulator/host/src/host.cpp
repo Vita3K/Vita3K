@@ -100,7 +100,7 @@ bool handle_events(HostState &host) {
         if (event.type == SDL_QUIT) {
             stop_all_threads(host.kernel);
             host.gxm.display_queue.abort();
-            host.display.abort = true;
+            host.display.abort.exchange(true);
             host.display.condvar.notify_all();
             return false;
         }

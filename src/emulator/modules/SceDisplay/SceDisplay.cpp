@@ -93,8 +93,11 @@ EXPORT(int, sceDisplayWaitVblankStart) {
     {
         std::unique_lock<std::mutex> lock(host.display.mutex);
         host.display.condvar.wait(lock);
-        if (host.display.abort) {
+        if (host.display.abort.load()) {
+#ifndef WIN32
             lock.release();
+#endif
+            return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
         }
     }
     return SCE_DISPLAY_ERROR_OK;
