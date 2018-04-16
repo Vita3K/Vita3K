@@ -31,6 +31,6 @@ void main() {
 	}else{
 		gl_Position = pm * vec4(aPosition, 0.0f, 1.0f);
 	}
-    vColor = aColor;
+	vColor = aColor;
 	vTexcoord = aTexcoord;
 }
