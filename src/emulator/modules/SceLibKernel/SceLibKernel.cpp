@@ -780,8 +780,19 @@ EXPORT(int, sceKernelCreateMsgPipeWithLR) {
     return unimplemented("sceKernelCreateMsgPipeWithLR");
 }
 
-EXPORT(int, sceKernelCreateMutex) {
-    return unimplemented("sceKernelCreateMutex");
+EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int initCount, SceKernelMutexOptParam *option) {
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
+        return error("sceKernelCreateMutex", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+    
+    const MutexPtr mutex = std::make_shared<Mutex>();
+    mutex->lock_count = initCount;
+    mutex->name.assign(name);
+    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    const SceUID uid = host.kernel.next_uid++;
+    host.kernel.mutexes.emplace(uid, mutex);
+    
+    return uid;
 }
 
 EXPORT(int, sceKernelCreateRWLock) {
@@ -796,6 +807,7 @@ EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal,
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
     semaphore->val = initVal;
     semaphore->max = maxVal;
+    semaphore->name.assign(name);
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host.kernel.semaphores.emplace(uid, semaphore);
@@ -1049,8 +1061,29 @@ EXPORT(int, sceKernelLockLwMutexCB) {
     return unimplemented("sceKernelLockLwMutexCB");
 }
 
-EXPORT(int, sceKernelLockMutex) {
-    return unimplemented("sceKernelLockMutex");
+EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lockCount, unsigned int *timeout) {
+    
+    // TODO Don't lock twice.
+    const MutexPtr mutex = lock_and_find(mutexid, host.kernel.mutexes, host.kernel.mutex);
+    if (!mutex) {
+        return error("sceKernelLockMutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+    }
+    
+    const std::unique_lock<std::mutex> lock(mutex->mutex);
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    if (mutex->lock_count > 0){
+        const std::unique_lock<std::mutex> lock(thread->mutex);
+        assert(thread->to_do == ThreadToDo::run);
+        thread->to_do = ThreadToDo::wait;
+        mutex->locked.push_back(thread);
+        stop(*thread->cpu);    
+    }else{
+        mutex->lock_count -= lockCount;
+    }
+    
+    return 0;
 }
 
 EXPORT(int, sceKernelLockMutexCB) {

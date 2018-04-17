@@ -328,8 +328,28 @@ EXPORT(int, sceKernelTryLockWriteRWLock) {
     return unimplemented("sceKernelTryLockWriteRWLock");
 }
 
-EXPORT(int, sceKernelUnlockMutex) {
-    return unimplemented("sceKernelUnlockMutex");
+EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlockCount) {
+    
+    // TODO Don't lock twice.
+    const MutexPtr mutex = lock_and_find(mutexid, host.kernel.mutexes, host.kernel.mutex);
+    if (!mutex) {
+        return error("sceKernelUnlockMutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+    }
+    
+    const std::unique_lock<std::mutex> lock(mutex->mutex);
+    
+    mutex->lock_count += unlockCount;
+    
+    while (mutex->lock_count > 0 && mutex->locked.size() > 0){
+        const ThreadStatePtr thread = mutex->locked.back();
+        assert(thread->to_do == ThreadToDo::wait);
+        thread->to_do = ThreadToDo::run;
+        mutex->locked.pop_back();
+        mutex->lock_count--;
+        thread->something_to_do.notify_one();
+    }
+    
+    return 0;
 }
 
 EXPORT(int, sceKernelUnlockReadRWLock) {
