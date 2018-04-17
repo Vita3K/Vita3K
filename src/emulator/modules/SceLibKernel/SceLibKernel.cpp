@@ -34,9 +34,6 @@
 #include <psp2/kernel/modulemgr.h>
 #include <stdlib.h>
 
-struct Semaphore {
-};
-
 EXPORT(int, SceKernelStackChkGuard) {
     return unimplemented("SceKernelStackChkGuard");
 }
@@ -797,6 +794,8 @@ EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal,
     }
 
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
+    semaphore->val = initVal;
+    semaphore->max = maxVal;
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host.kernel.semaphores.emplace(uid, semaphore);
@@ -1278,14 +1277,17 @@ EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
-    {
+    if (semaphore->val <= 0){
         const std::unique_lock<std::mutex> lock(thread->mutex);
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
+        semaphore->locked.emplace(semaphore->uid++, thread);
+        stop(*thread->cpu);    
+    }else{
+        semaphore->val -= signal;
     }
-    stop(*thread->cpu);
-
-    return SCE_KERNEL_OK;
+    
+    return 0;
 }
 
 EXPORT(int, sceKernelWaitSemaCB) {
