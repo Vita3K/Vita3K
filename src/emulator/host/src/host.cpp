@@ -65,7 +65,7 @@ static ImportFn *resolve_import(uint32_t nid) {
     return nullptr;
 }
 
-bool init(HostState &state, std::uint32_t window_width, std::uint32_t window_height) {
+bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_width, std::uint32_t window_height, std::uint32_t border_height) {
     const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
     const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
 
@@ -80,7 +80,7 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t window_hei
 
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height, SDL_WINDOW_OPENGL), SDL_DestroyWindow);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width + border_width, window_height + border_height, SDL_WINDOW_OPENGL), SDL_DestroyWindow);
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, pref_path.get())) {
         return false;
     }
