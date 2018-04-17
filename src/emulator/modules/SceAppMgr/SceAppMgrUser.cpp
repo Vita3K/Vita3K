@@ -16,7 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceAppMgrUser.h"
-#include <psp2/appmgr.h>
+#include <host/sfo.h>
 
 EXPORT(int, _sceAppMgrGetAppState) {
     return unimplemented("_sceAppMgrGetAppState");
@@ -55,17 +55,8 @@ EXPORT(int, sceAppMgrAppParamGetInt) {
 }
 
 EXPORT(int, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
-    switch (param) {
-    case 12:
-    #ifdef WIN32
-        strcpy_s(string, length, host.title_id.c_str());
-    #else
-        strncpy(string, host.title_id.c_str(), length);
-    #endif
-        break;
-    default:
-        return error(__func__, SCE_APPMGR_ERROR_INVALID);
-    }
+    std::string res = get_data(host.sfo_handle, param);
+    res.copy(string, length);
     return 0;
 }
 

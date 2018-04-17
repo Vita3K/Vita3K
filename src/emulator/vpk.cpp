@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "vpk.h"
-#include "sfo.h"
 
 #include <kernel/load_self.h>
 #include <kernel/state.h>
@@ -24,6 +23,8 @@
 #include <io/state.h>
 #include <util/log.h>
 #include <util/string_convert.h>
+
+#include <host/sfo.h>
 
 #include <cassert>
 #include <cstring>
@@ -63,7 +64,7 @@ static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, con
     return true;
 }
 
-bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string &title_id, KernelState &kernel, IOState &io, MemState &mem, const std::wstring &path) {
+bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string &title_id, KernelState &kernel, IOState &io, MemState &mem, SfoFile &sfo_file, const std::wstring &path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
@@ -107,7 +108,6 @@ bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string
         return false;
     }
 
-    SfoFile sfo_file;
     load_sfo(sfo_file, params);
 
     game_title = find_data(sfo_file, "TITLE");

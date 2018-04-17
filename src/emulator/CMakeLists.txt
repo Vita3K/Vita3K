@@ -46,8 +46,6 @@ add_executable(
 emulator
 MACOSX_BUNDLE
 main.cpp
-sfo.h
-sfo.cpp
 vpk.cpp
 vpk.h
 )
