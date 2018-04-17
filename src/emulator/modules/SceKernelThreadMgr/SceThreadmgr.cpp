@@ -296,12 +296,12 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
         semaphore->val = semaphore->max;
     }
     
-    if (semaphore->val > 0 && semaphore->locked.size() > 0){
+    while (semaphore->val > 0 && semaphore->locked.size() > 0){
         const ThreadStatePtr thread = semaphore->locked.back();
         assert(thread->to_do == ThreadToDo::wait);
         thread->to_do = ThreadToDo::run;
         semaphore->locked.pop_back();
-        semaphore->val -= signal;
+        semaphore->val--;
         thread->something_to_do.notify_one();
     }
     
