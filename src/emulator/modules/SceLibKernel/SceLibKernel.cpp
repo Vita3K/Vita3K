@@ -1281,7 +1281,7 @@ EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
         const std::unique_lock<std::mutex> lock(thread->mutex);
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
-        semaphore->locked.emplace(semaphore->uid++, thread);
+        semaphore->locked.push_back(thread);
         stop(*thread->cpu);    
     }else{
         semaphore->val -= signal;

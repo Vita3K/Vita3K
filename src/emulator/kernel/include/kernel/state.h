@@ -26,6 +26,7 @@
 
 #include <map>
 #include <mutex>
+#include <vector>
 
 struct ThreadState;
 
@@ -47,7 +48,7 @@ struct Semaphore {
     int val;
     int max;
     SceUID uid;
-    ThreadStatePtrs locked;
+    std::vector<ThreadStatePtr> locked;
 };
 
 typedef std::shared_ptr<Semaphore> SemaphorePtr;

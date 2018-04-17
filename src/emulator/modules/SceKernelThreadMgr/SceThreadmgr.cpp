@@ -295,11 +295,11 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
     }
     
     if (semaphore->val > 0 && semaphore->locked.size() > 0){
-        const ThreadStatePtr thread = semaphore->locked.rbegin()->second;
+        const ThreadStatePtr thread = semaphore->locked.back();
         assert(thread->to_do == ThreadToDo::wait);
         thread->to_do = ThreadToDo::run;
         semaphore->uid--;
-        semaphore->locked.erase(semaphore->uid);
+        semaphore->locked.pop_back();
         semaphore->val -= signal;
         run(*thread->cpu, false);
     }
