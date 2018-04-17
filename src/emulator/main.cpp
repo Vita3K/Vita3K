@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
     Ptr<const void> entry_point;
-    if (!load_vpk(entry_point, host.game_title, host.title_id, host.kernel, host.io, host.mem, path)) {
+    if (!load_vpk(entry_point, host.game_title, host.title_id, host.kernel, host.io, host.mem, host.sfo_handle, path)) {
         std::string message = "Failed to load \"";
         message += wide_to_utf(path);
         message += "\"";

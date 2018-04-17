@@ -15,14 +15,12 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "sfo.h"
-
-#include <util/log.h>
+#include <host/sfo.h>
 
 #include <algorithm>
 #include <cstdio>
 
-bool load_sfo(SfoFile &sfile, const std::vector<uint8_t>& content) {
+bool load_sfo(SfoFile &sfile, const std::vector<uint8_t> &content) {
     if (content.empty()) {
         return false;
     }
@@ -77,4 +75,12 @@ std::string find_data(SfoFile& file, const std::string& key) {
     }
 
     return res->data.second;
+}
+
+std::string get_data(SfoFile &file, int id) {
+    if (file.entries.size() < id) {
+        return "";
+    }
+
+    return file.entries.at(id).data.second;
 }

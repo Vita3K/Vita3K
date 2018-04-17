@@ -4,10 +4,12 @@ STATIC
 include/host/functions.h
 include/host/import_fn.h
 include/host/rtc.h
+include/host/sfo.h
 include/host/state.h
 include/host/version.h
 src/host.cpp
 src/rtc.cpp
+src/sfo.cpp
 version.cpp
 )
 

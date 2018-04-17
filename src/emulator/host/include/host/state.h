@@ -20,6 +20,7 @@
 #include <audio/state.h>
 #include <ctrl/state.h>
 #include <gxm/state.h>
+#include <host/sfo.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
@@ -70,4 +71,5 @@ struct HostState {
     NetState net;
     DisplayState display;
     GuiState gui;
+    SfoFile sfo_handle;
 };
