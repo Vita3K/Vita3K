@@ -71,5 +71,5 @@ struct HostState {
     NetState net;
     DisplayState display;
     GuiState gui;
-	SfoFile sfo_handle;
+    SfoFile sfo_handle;
 };
