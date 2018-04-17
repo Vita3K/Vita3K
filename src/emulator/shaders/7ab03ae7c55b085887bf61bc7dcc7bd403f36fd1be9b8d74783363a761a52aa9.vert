@@ -1,11 +1,11 @@
 // Vertex shader.
 #version 120
 
-in vec2 aPosition;
-in vec2 aTexcoord;
-in vec4 aColor;
-in float aAngle;
-in vec2 aTranslation;
+attribute vec2 aPosition;
+attribute vec2 aTexcoord;
+attribute vec4 aColor;
+attribute float aAngle;
+attribute vec2 aTranslation;
 uniform mat4 pm;
 uniform float trsEnable;
 
