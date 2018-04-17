@@ -25,7 +25,7 @@
 
 void DrawThreadsDialog(HostState& host){
     ImGui::Begin("Threads", &host.gui.threads_dialog);
-    ImGui::TextColored(ImVec4(255,255,0,255), "%-32s   %-16s   %-16s", "Thread Name", "Status", "Stack Pointer");
+    ImGui::TextColored(ImVec4(255,255,0,255), "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
     for (auto thread : host.kernel.threads) {
         std::shared_ptr<ThreadState> th_state = thread.second;
         std::string run_state;
@@ -40,7 +40,8 @@ void DrawThreadsDialog(HostState& host){
             run_state = "Exiting";
             break;
         }
-        ImGui::Text("%-32s   %-16s   0x%08X    ",
+        ImGui::Text("0x%08X       %-32s   %-16s   0x%08X       ",
+            thread.first,
             th_state->name,
             run_state.c_str(),
             th_state->stack.get()->get());
