@@ -48,6 +48,7 @@ struct Semaphore {
     int val;
     int max;
     SceUID uid;
+    std::mutex mutex;
     std::vector<ThreadStatePtr> locked;
 };
 

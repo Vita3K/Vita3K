@@ -1274,6 +1274,8 @@ EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
     if (!semaphore) {
         return error("sceKernelWaitSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
+    
+    const std::unique_lock<std::mutex> lock(semaphore->mutex);
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
