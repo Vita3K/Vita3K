@@ -660,9 +660,11 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
     }
 
     switch (src) {
+        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
+        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
+            return GL_RGB565;
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
             return GL_RGBA8;
         case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
             return GL_RGBA4;
@@ -672,6 +674,7 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
             return GL_INTENSITY8;
         default:
         {
+            LOG_WARN("Unsupported translate internal format: {:#08X}", src);
             return GL_RGBA8;
         }
     }
@@ -691,6 +694,7 @@ GLenum translate_format(SceGxmTextureFormat src) {
         case SCE_GXM_TEXTURE_FORMAT_U8_R111: // TODO: this is inaccurate
             return GL_RED;
         case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
+        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
             return GL_RGB;
         case SCE_GXM_TEXTURE_FORMAT_U8_111R: // TODO: this is inaccurate
@@ -699,6 +703,7 @@ GLenum translate_format(SceGxmTextureFormat src) {
             return GL_INTENSITY;
         default:
         {
+            LOG_WARN("Unsupported translate format: {:#08X}", src);
             return GL_RGBA;
         }
     }
@@ -759,6 +764,7 @@ GLenum translate_type(SceGxmTextureFormat format)
             return GL_UNSIGNED_SHORT_5_6_5;
         default:
         {
+            LOG_WARN("Unsupported translate type: {:#08X}", format);
             return GL_UNSIGNED_BYTE;
         }
     }
