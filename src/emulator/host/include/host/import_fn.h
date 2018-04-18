@@ -19,6 +19,8 @@
 
 #include <psp2/types.h>
 
+#include <functional>
+
 struct HostState;
 
-typedef void ImportFn(HostState &host, SceUID thread_id);
+typedef std::function<void(HostState &host, SceUID thread_id)> ImportFn;

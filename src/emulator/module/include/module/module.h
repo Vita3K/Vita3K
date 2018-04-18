@@ -29,7 +29,7 @@
 int unimplemented(const char *name);
 int error(const char *name, int error);
 
-#define BRIDGE_DECL(name) extern ImportFn *const import_##name;
-#define BRIDGE_IMPL(name) ImportFn *const import_##name = &Bridge<decltype(&export_##name), &export_##name>::call;
+#define BRIDGE_DECL(name) extern const ImportFn import_##name;
+#define BRIDGE_IMPL(name) const ImportFn import_##name = Bridge<decltype(&export_##name), &export_##name>::call;
 
 #define EXPORT(ret, name, ...) ret export_##name(HostState &host, SceUID thread_id, ##__VA_ARGS__)
