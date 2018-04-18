@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <host/import_fn.h>
 #include <host/state.h>
 #include <kernel/thread_state.h>
 #include <util/lock_and_find.h>
@@ -45,12 +46,9 @@ void call_and_bridge_return(void (*export_fn)(HostState &, SceUID, Args...), std
     (*export_fn)(host, thread_id, ArgLayoutType::template read<Args, indices>(cpu, host.mem)...);
 }
 
-template <typename FnPtr, FnPtr>
-struct Bridge;
-
-template <typename Ret, typename... Args, Ret (*export_fn)(HostState &, SceUID, Args...)>
-struct Bridge<Ret (*)(HostState &, SceUID, Args...), export_fn> {
-    static void call(HostState &host, SceUID thread_id) {
+template <typename Ret, typename... Args>
+ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, Args...)) {
+    return [export_fn](HostState &host, SceUID thread_id) {
         MICROPROFILE_SCOPEI("HLE", "", MP_YELLOW);
 
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
@@ -58,5 +56,5 @@ struct Bridge<Ret (*)(HostState &, SceUID, Args...), export_fn> {
 
         using Indices = std::index_sequence_for<Args...>;
         call_and_bridge_return(export_fn, Indices(), thread_id, *thread->cpu, host);
-    }
-};
+    };
+}
