@@ -17,22 +17,23 @@
 
 #include <imgui.h>
 #include <gui/functions.h>
-#include <host/state.h>
 
-void DrawMainMenuBar(HostState& host){
-    if (ImGui::BeginMainMenuBar()){
-        if (ImGui::BeginMenu("Debug")){
-            if (ImGui::MenuItem("Threads", nullptr, host.gui.threads_dialog)){
-                host.gui.threads_dialog = !host.gui.threads_dialog;
-            }
-            if (ImGui::MenuItem("Semaphores", nullptr, host.gui.semaphores_dialog)){
-                host.gui.semaphores_dialog = !host.gui.semaphores_dialog;
-            }
-            if (ImGui::MenuItem("Mutexes", nullptr, host.gui.mutexes_dialog)){
-                host.gui.mutexes_dialog = !host.gui.mutexes_dialog;
-            }
-            ImGui::EndMenu();
-        }
-        ImGui::EndMainMenuBar();
+#include <host/state.h>
+#include <kernel/thread_functions.h>
+#include <kernel/thread_state.h>
+#include <util/resource.h>
+
+void DrawMutexesDialog(HostState& host){
+    ImGui::Begin("Mutexes", &host.gui.mutexes_dialog);
+    ImGui::TextColored(ImVec4(255,255,0,255), "%-16s %-32s   %-16s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Locked Threads", "Owner");
+    for (auto mutex : host.kernel.mutexes) {
+        std::shared_ptr<Mutex> mutex_state = mutex.second;
+        ImGui::Text("0x%08X       %-32s   %02d                 %02u                 %s",
+            mutex.first,
+            mutex_state->name.c_str(),
+            mutex_state->lock_count,
+            mutex_state->locked.size(),
+            mutex_state->owner == nullptr ? "not owned" : mutex_state->owner->name);
     }
+    ImGui::End();
 }

@@ -25,4 +25,10 @@ void DrawUI(HostState& host){
     if (host.gui.threads_dialog){
         DrawThreadsDialog(host);
     }
+    if (host.gui.semaphores_dialog){
+        DrawSemaphoresDialog(host);
+    }
+    if (host.gui.mutexes_dialog){
+        DrawMutexesDialog(host);
+    }
 }
