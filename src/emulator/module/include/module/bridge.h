@@ -30,27 +30,20 @@ struct CPUState;
 template <typename... Args>
 struct ArgLayout;
 
-template <typename Fn, Fn, typename Indices>
-struct CallAndBridgeReturn;
-
 // Function returns a value that requires bridging.
-template <typename Ret, typename... Args, Ret (*export_fn)(HostState &, SceUID, Args...), size_t... Indices>
-struct CallAndBridgeReturn<Ret (*)(HostState &, SceUID, Args...), export_fn, std::index_sequence<Indices...>> {
-    static void call(SceUID thread_id, CPUState &cpu, HostState &host) {
-        using ArgLayoutType = ArgLayout<Args...>;
-        const Ret ret = (*export_fn)(host, thread_id, ArgLayoutType::template read<Args, Indices>(cpu, host.mem)...);
-        bridge_return(cpu, ret);
-    }
-};
+template <typename Ret, typename... Args, size_t... indices>
+void call_and_bridge_return(Ret (*export_fn)(HostState &, SceUID, Args...), std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+    using ArgLayoutType = ArgLayout<Args...>;
+    const Ret ret = (*export_fn)(host, thread_id, ArgLayoutType::template read<Args, indices>(cpu, host.mem)...);
+    bridge_return(cpu, ret);
+}
 
 // Function does not return a value.
-template <typename... Args, void (*export_fn)(HostState &, SceUID, Args...), size_t... Indices>
-struct CallAndBridgeReturn<void (*)(HostState &, SceUID, Args...), export_fn, std::index_sequence<Indices...>> {
-    static void call(SceUID thread_id, CPUState &cpu, HostState &host) {
-        using ArgLayoutType = ArgLayout<Args...>;
-        (*export_fn)(host, thread_id, ArgLayoutType::template read<Args, Indices>(cpu, host.mem)...);
-    }
-};
+template <typename... Args, size_t... indices>
+void call_and_bridge_return(void (*export_fn)(HostState &, SceUID, Args...), std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+    using ArgLayoutType = ArgLayout<Args...>;
+    (*export_fn)(host, thread_id, ArgLayoutType::template read<Args, indices>(cpu, host.mem)...);
+}
 
 template <typename FnPtr, FnPtr>
 struct Bridge;
@@ -64,6 +57,6 @@ struct Bridge<Ret (*)(HostState &, SceUID, Args...), export_fn> {
         assert(thread);
 
         using Indices = std::index_sequence_for<Args...>;
-        CallAndBridgeReturn<Ret (*)(HostState &, SceUID, Args...), export_fn, Indices>::call(thread_id, *thread->cpu, host);
+        call_and_bridge_return(export_fn, Indices(), thread_id, *thread->cpu, host);
     }
 };
