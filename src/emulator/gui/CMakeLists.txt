@@ -7,6 +7,8 @@ include/gui/state.h
 src/imgui_impl_sdl_gl2.cpp
 src/ui_main.cpp
 src/ui_main_menubar.cpp
+src/ui_mutexes_dialog.cpp
+src/ui_semaphores_dialog.cpp
 src/ui_threads_dialog.cpp
 )
 
