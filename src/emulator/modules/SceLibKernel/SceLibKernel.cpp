@@ -784,10 +784,22 @@ EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int initCount,
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return error("sceKernelCreateMutex", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
+    if (initCount < 0) {
+        return error("sceKernelCreateMutex", SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+    }
+    if (initCount > 1 && (attr & 0x02)) {
+        return error("sceKernelCreateMutex", SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+    }
     
     const MutexPtr mutex = std::make_shared<Mutex>();
     mutex->lock_count = initCount;
-    mutex->name.assign(name);
+    mutex->name = name;
+    mutex->attr = attr;
+    mutex->owner = nullptr;
+    if (initCount > 0) {
+        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+        mutex->owner = thread;
+    }
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host.kernel.mutexes.emplace(uid, mutex);
@@ -807,7 +819,7 @@ EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal,
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
     semaphore->val = initVal;
     semaphore->max = maxVal;
-    semaphore->name.assign(name);
+    semaphore->name = name;
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host.kernel.semaphores.emplace(uid, semaphore);
@@ -1073,14 +1085,15 @@ EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lockCount, unsigned int *tim
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
-    if (mutex->lock_count > 0){
+    if (mutex->lock_count > 0) {
         const std::unique_lock<std::mutex> lock(thread->mutex);
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
         mutex->locked.push_back(thread);
         stop(*thread->cpu);    
-    }else{
-        mutex->lock_count -= lockCount;
+    } else {
+        mutex->lock_count += lockCount;
+        mutex->owner = thread;
     }
     
     return 0;
