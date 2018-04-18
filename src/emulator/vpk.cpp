@@ -20,11 +20,10 @@
 #include <kernel/load_self.h>
 #include <kernel/state.h>
 
+#include <host/sfo.h>
 #include <io/state.h>
 #include <util/log.h>
 #include <util/string_convert.h>
-
-#include <host/sfo.h>
 
 #include <cassert>
 #include <cstring>
@@ -112,6 +111,11 @@ bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string
 
     game_title = find_data(sfo_file, "TITLE");
     title_id = find_data(sfo_file, "TITLE_ID");
+
+    LOG_INFO("Path: {}", wide_to_utf(path));
+    LOG_INFO("Title: {}", game_title);
+    LOG_INFO("Serial: {}", title_id);
+    LOG_INFO("Category: {}", find_data(sfo_file, "CATEGORY"));
 
     if (load_self(entry_point, kernel, mem, eboot.data(), "app0:eboot.bin") < 0) {
         return false;
