@@ -1216,7 +1216,8 @@ EXPORT(int, sceKernelStartModule) {
 }
 
 EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
-    const int res = start_thread(host.kernel, thid, arglen, argp);
+    Ptr<void> new_argp = copy_stack(thid, thread_id, argp, host.kernel, host.mem);
+    const int res = start_thread(host.kernel, thid, arglen, new_argp);
     if (res < 0) {
         return error("sceKernelStartThread", res);
     }

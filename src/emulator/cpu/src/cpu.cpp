@@ -238,11 +238,24 @@ uint32_t read_pc(CPUState &state) {
     return value;
 }
 
+uint32_t read_lr(CPUState &state) {
+    uint32_t value = 0;
+    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_LR, &value);
+    assert(err == UC_ERR_OK);
+    
+    return value;
+}
+
 void write_reg(CPUState &state, size_t index, uint32_t value) {
     assert(index >= 0);
     assert(index <= 1);
 
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_R0 + index, &value);
+    assert(err == UC_ERR_OK);
+}
+
+void write_sp(CPUState &state, uint32_t value) {
+    const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_SP, &value);
     assert(err == UC_ERR_OK);
 }
 

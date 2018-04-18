@@ -64,7 +64,8 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     };
 
     const ThreadStatePtr thread = std::make_shared<ThreadState>();
-    sprintf(thread->name, name);
+    strcpy(thread->name, name);
+    thread->stack_size = stack_size;
     thread->stack = std::make_shared<ThreadStack>(alloc(mem, stack_size, "Stack"), stack_deleter);
     const Address stack_top = thread->stack->get() + stack_size;
     memset(Ptr<void>(thread->stack->get()).get(mem), 0xcc, stack_size);
@@ -123,6 +124,31 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
     SDL_SemWait(params.host_may_destroy_params.get());
     return SCE_KERNEL_OK;
 }
+
+Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, KernelState &kernel, MemState &mem) {
+    const ThreadStatePtr new_thread = lock_and_find(thid, kernel.threads, kernel.mutex);
+    const ThreadStatePtr old_thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+
+    const std::unique_lock<std::mutex> lock(kernel.mutex);
+
+    const Address old_stack_address = old_thread->stack->get();
+    const Address new_stack_address = new_thread->stack->get();
+
+    const Address old_sp = read_sp(*old_thread->cpu);
+    const Address old_stack_size = old_stack_address + old_thread->stack_size - old_sp;
+    const Address new_sp = new_stack_address + new_thread->stack_size - old_stack_size;
+
+    memcpy(Ptr<void>(new_sp).get(mem), Ptr<void>(old_sp).get(mem), old_stack_size);
+    write_sp(*new_thread->cpu, new_sp);
+
+    Ptr<void> new_argp = argp;
+    if(old_stack_address<argp.address()&&(old_stack_address+old_thread->stack_size>argp.address())){
+        const Address offset = old_stack_address + old_thread->stack_size - argp.address();
+        new_argp = Ptr<void>(new_stack_address + new_thread->stack_size - offset);
+    }
+    return new_argp;
+}
+
 
 bool run_thread(ThreadState &thread, bool callback) {
     int res = 0;
