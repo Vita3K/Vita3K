@@ -1680,6 +1680,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     switch (texFormat) {
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
     case SCE_GXM_TEXTURE_FORMAT_U8_R111:
