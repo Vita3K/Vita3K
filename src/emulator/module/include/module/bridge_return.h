@@ -22,20 +22,9 @@
 struct CPUState;
 
 template <typename Ret>
-void bridge_return(CPUState &, Ret ret);
+void bridge_return(CPUState &cpu, Ret ret);
 
-// Simple case - return value can be written directly to registers.
-template <typename Ret>
-struct BridgeReturn {
-    static void write(CPUState &cpu, Ret ret) {
-        bridge_return(cpu, ret);
-    }
-};
-
-// Write pointers as addresses.
 template <typename Pointee>
-struct BridgeReturn<Ptr<Pointee>> {
-    static void write(CPUState &cpu, const Ptr<Pointee> &ret) {
-        bridge_return(cpu, ret.address());
-    }
-};
+void bridge_return(CPUState &cpu, const Ptr<Pointee> &ret) {
+    bridge_return(cpu, ret.address());
+}

@@ -30,9 +30,6 @@ struct CPUState;
 template <typename... Args>
 struct ArgLayout;
 
-template <typename Ret>
-struct BridgeReturn;
-
 template <typename Fn, Fn, typename Indices>
 struct CallAndBridgeReturn;
 
@@ -42,7 +39,7 @@ struct CallAndBridgeReturn<Ret (*)(HostState &, SceUID, Args...), export_fn, std
     static void call(SceUID thread_id, CPUState &cpu, HostState &host) {
         using ArgLayoutType = ArgLayout<Args...>;
         const Ret ret = (*export_fn)(host, thread_id, ArgLayoutType::template read<Args, Indices>(cpu, host.mem)...);
-        BridgeReturn<Ret>::write(cpu, ret);
+        bridge_return(cpu, ret);
     }
 };
 
