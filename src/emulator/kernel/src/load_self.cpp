@@ -34,6 +34,9 @@
 #define NID_MODULE_START 0x935CD196
 #define NID_MODULE_INFO 0x6C2224BA
 #define NID_PROCESS_PARAM 0x70FBA1E7
+#define NID_STACK_CHK_GUARD 0x93b8aa67
+
+#define __stack_chk_guard 0xDEADBEEF
 
 #include <miniz.h>
 
@@ -44,24 +47,10 @@
 
 using namespace ELFIO;
 
-static const bool LOG_IMPORTS = true;
-static const bool LOG_EXPORTS = true;
+static const bool LOG_IMPORTS = false;
+static const bool LOG_EXPORTS = false;
 
-static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const MemState &mem) {
-    for (size_t i = 0; i < count; ++i) {
-        const uint32_t nid = nids[i];
-        const Ptr<uint32_t> entry = entries[i];
-
-        if (LOG_IMPORTS) {
-            const char *const name = import_name(nid);
-            LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
-        }
-    }
-
-    return true;
-}
-
-static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const MemState &mem) {
+static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -72,15 +61,90 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
         }
 
         uint32_t *const stub = entry.get(mem);
-        stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
-        stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
-        stub[2] = nid; // Our interrupt hook will read this.
+
+        if(nid == NID_STACK_CHK_GUARD){
+            stub[0] = __stack_chk_guard;
+            continue;
+        }
+
+        const ExportNids::iterator export_address = kernel.export_nids.find(nid);
+        if (export_address == kernel.export_nids.end()) {
+            const char *const name = import_name(nid);
+            LOG_ERROR("\tNID NOT FOUND {:#08x} ({}) at {:#x}: {:#08x}", nid, name, entry.address(), stub[0]);
+            continue;
+        }
+        uint32_t *const export_ptr = Ptr<uint32_t>(export_address->second).get(mem);
+        stub[0] = export_ptr[0];
     }
 
     return true;
 }
 
-static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, const MemState &mem) {
+// Encode code taken from https://github.com/yifanlu/UVLoader/blob/master/resolve.c
+
+#define INSTRUCTION_UNKNOWN     0       ///< Unknown/unsupported instruction
+#define INSTRUCTION_MOVW        1       ///< MOVW Rd, \#imm instruction
+#define INSTRUCTION_MOVT        2       ///< MOVT Rd, \#imm instruction
+#define INSTRUCTION_SYSCALL     3       ///< SVC \#imm instruction
+#define INSTRUCTION_BRANCH      4       ///< BX Rn instruction
+
+static uint32_t encode_arm_inst (uint8_t type, uint16_t immed, uint16_t reg) {
+    switch(type)
+    {
+        case INSTRUCTION_MOVW:
+            // 1110 0011 0000 XXXX YYYY XXXXXXXXXXXX
+            // where X is the immediate and Y is the register
+            // Upper bits == 0xE30
+            return ((uint32_t)0xE30 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
+        case INSTRUCTION_MOVT:
+            // 1110 0011 0100 XXXX YYYY XXXXXXXXXXXX
+            // where X is the immediate and Y is the register
+            // Upper bits == 0xE34
+            return ((uint32_t)0xE34 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
+        case INSTRUCTION_SYSCALL:
+            // Syscall does not have any immediate value, the number should
+            // already be in R12
+            return (uint32_t)0xEF000000;
+        case INSTRUCTION_BRANCH:
+            // 1110 0001 0010 111111111111 0001 YYYY
+            // BX Rn has 0xE12FFF1 as top bytes
+            return ((uint32_t)0xE12FFF1 << 4) | reg;
+        case INSTRUCTION_UNKNOWN:
+        default:
+            return 0;
+    }
+}
+
+static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem) {
+    for (size_t i = 0; i < count; ++i) {
+        const uint32_t nid = nids[i];
+        const Ptr<uint32_t> entry = entries[i];
+
+        if (LOG_IMPORTS) {
+            const char *const name = import_name(nid);
+            LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
+        }
+
+        const ExportNids::iterator export_address = kernel.export_nids.find(nid);
+        if (export_address == kernel.export_nids.end()) {
+            uint32_t *const stub = entry.get(mem);
+            stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
+            stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+            stub[2] = nid; // Our interrupt hook will read this.
+        } else {
+            Address func_address = export_address->second;
+            uint32_t *const stub = entry.get(mem);
+            stub[0] = encode_arm_inst (INSTRUCTION_MOVW, (uint16_t)func_address, 12);
+            stub[1] = encode_arm_inst (INSTRUCTION_MOVT, (uint16_t)(func_address >> 16), 12);
+            stub[2] = encode_arm_inst (INSTRUCTION_BRANCH, 0, 12);
+        }
+        
+    }
+
+    return true;
+}
+
+static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, const MemState &mem) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_imports_raw *const imports_begin = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_top);
     const sce_module_imports_raw *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
@@ -95,13 +159,13 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
 
         const uint32_t *const nids = Ptr<const uint32_t>(imports->func_nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(imports->func_entry_table).get(mem);
-        if (!load_func_imports(nids, entries, imports->num_syms_funcs, mem)) {
+        if (!load_func_imports(nids, entries, imports->num_syms_funcs, kernel, mem)) {
             return false;
         }
 
         const uint32_t *const var_nids = Ptr<const uint32_t>(imports->var_nid_table).get(mem);
         const Ptr<uint32_t> *const var_entries = Ptr<Ptr<uint32_t>>(imports->var_entry_table).get(mem);
-        if (!load_var_imports(var_nids, var_entries, imports->num_syms_vars, mem)) {
+        if (!load_var_imports(var_nids, var_entries, imports->num_syms_vars, kernel, mem)) {
             return false;
         }
     }
@@ -217,7 +281,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
         assert(segment_infos[segment_index].encryption == 2);
         if (src.p_type == PT_LOAD) {
-            const Ptr<void> address(alloc(mem, src.p_memsz, "segment"));
+            const Ptr<void> address(alloc(mem, src.p_memsz, path));
             if (!address) {
                 LOG_ERROR("Failed to allocate memory for segment.");
                 return -1;
@@ -291,12 +355,12 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     sceKernelModuleInfo->type = module_info->type;
 
     LOG_INFO("*** Loading symbols for (S)ELF: {}", path);
-
-    if (!load_imports(*module_info, module_info_segment_address, mem)) {
+    
+    if (!load_exports(entry_point, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }
 
-    if (!load_exports(entry_point, *module_info, module_info_segment_address, kernel, mem)) {
+    if (!load_imports(*module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }
 
