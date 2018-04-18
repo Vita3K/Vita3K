@@ -1056,13 +1056,14 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
         ::call_import(host, nid, thread_id);
     };
-
-    const size_t stack_size = MB(1);
+    
+    const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
 
     const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->second.get()->module_name, stack_size, call_import, false);
+    
+    const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 
-    const int res = start_thread(host.kernel, thid, args, argp);
-
+    run_on_current(*thread, entry_point, args, argp);
     return modId;
 }
 

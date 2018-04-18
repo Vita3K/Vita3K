@@ -192,6 +192,5 @@ bool run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceS
     write_reg(*thread.cpu, 1, argp.address());
     write_pc(*thread.cpu, entry_point.address());
     lock.unlock();
-    const bool res = run_thread(thread, true);
-    return res;
+    return run_thread(thread, true);
 }
