@@ -32,6 +32,7 @@
 #include <psp2/io/dirent.h>
 #include <psp2/io/stat.h>
 #include <psp2/kernel/modulemgr.h>
+#include <util/log.h>
 #include <stdlib.h>
 
 EXPORT(int, SceKernelStackChkGuard) {
@@ -102,8 +103,9 @@ EXPORT(int, sceClibMemmoveChk) {
     return unimplemented("sceClibMemmoveChk");
 }
 
-EXPORT(int, sceClibMemset) {
-    return unimplemented("sceClibMemset");
+EXPORT(Ptr<void>, sceClibMemset, Ptr<void>s, int c, SceSize n) {
+    memset(s.get(host.mem),c,n);
+    return s;
 }
 
 EXPORT(int, sceClibMemsetChk) {
@@ -158,12 +160,15 @@ EXPORT(int, sceClibMspaceReallocalign) {
     return unimplemented("sceClibMspaceReallocalign");
 }
 
-EXPORT(int, sceClibPrintf) {
-    return unimplemented("sceClibPrintf");
+EXPORT(int, sceClibPrintf, const char * format, void* args) {
+    // TODO args
+    LOG_INFO("{}", format);
+    return 0;
 }
 
 EXPORT(int, sceClibSnprintf, char * dest, SceSize size, const char * format, void* args){
-    return snprintf(dest, size, format);
+    // TODO args
+    return snprintf(dest, size, "%s", format);
 }
 
 EXPORT(int, sceClibSnprintfChk) {
