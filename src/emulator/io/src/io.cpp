@@ -138,13 +138,12 @@ bool init(IOState &io, const char *pref_path) {
 }
 
 static std::pair<VitaIoDevice, std::string>
-translate_device(const std::string &full_path) {
-    const auto partition_end_idx = full_path.find(":");
-    if (partition_end_idx == std::string::npos) {
-        return { VitaPartition::_INVALID, "" };
-    }
+translate_device(const std::string &path_) {
+    std::string path(path_);
 
-    std::string partition_name(full_path.substr(0, partition_end_idx));
+    // trim leading '/'
+    if (path[0] == '/')
+        path.erase(0, 1);
 
     // find which IO device the path is associated with
     const auto device_end_idx = path.find(":");
