@@ -120,7 +120,6 @@ int main(int argc, char *argv[]) {
     }
 
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
     ImGui_ImplSdlGL2_Init(host.window.get());
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
