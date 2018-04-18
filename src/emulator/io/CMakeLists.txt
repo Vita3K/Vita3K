@@ -7,7 +7,7 @@ add_library(
 	include/io/functions.h
 	include/io/state.h
 	include/io/file.h
-	include/io/VitaPartition.def
+	include/io/VitaIoDevice.def
 )
 
 target_include_directories(io PUBLIC include)

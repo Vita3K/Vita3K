@@ -17,13 +17,13 @@
 
 #pragma once
 
-#define PARTITION(path, name) name,
+#define DEVICE(path, name) name,
 
-enum class VitaPartition {
-#include <io/VitaPartition.def>
+enum class VitaIoDevice {
+#include <io/VitaIoDevice.def>
 
     _UKNONWN = -1,
     _INVALID = -2,
 };
 
-#undef PARTITION
+#undef DEVICE
