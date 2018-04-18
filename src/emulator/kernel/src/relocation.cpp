@@ -48,8 +48,8 @@ struct Entry {
 struct ShortEntry : Entry {
     uint16_t data_segment : 4;
     uint16_t offset_lo : 12;
-    uint32_t offset_hi : 20;
-    uint32_t addend : 12;
+    uint32_t offset_hi : 10;
+    uint32_t addend : 22;
 };
 
 struct LongEntry : Entry {
@@ -202,13 +202,20 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
     const void *const end = static_cast<const uint8_t *>(entries) + size;
     const Entry *entry = static_cast<const Entry *>(entries);
     while (entry < end) {
-        assert(entry->is_short == 0);
 
         const Ptr<void> symbol_start = segments.find(entry->symbol_segment)->second;
         const Address s = (entry->symbol_segment == 0xf) ? 0 : symbol_start.address();
 
         if (entry->is_short) {
             const ShortEntry *const short_entry = static_cast<const ShortEntry *>(entry);
+            const Ptr<void> segment_start = segments.find(short_entry->data_segment)->second;
+            const Address offset = short_entry->offset_lo | (short_entry->offset_hi << 12);
+            const Address p = segment_start.address() + offset;
+            const Address a = short_entry->addend;
+            if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
+                return false;
+            }
+            
             entry = short_entry + 1;
         } else {
             const LongEntry *const long_entry = static_cast<const LongEntry *>(entry);
