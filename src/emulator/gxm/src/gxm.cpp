@@ -662,13 +662,13 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
     switch (src) {
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
             return GL_RGBA8;
         case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
             return GL_RGBA4;
-        case SCE_GXM_TEXTURE_FORMAT_U8_R111:
-        case SCE_GXM_TEXTURE_FORMAT_U8_111R:
-        case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
-            // TODO: this is inaccurate
+        case SCE_GXM_TEXTURE_FORMAT_U8_R111: // TODO: this is inaccurate
+        case SCE_GXM_TEXTURE_FORMAT_U8_111R: // TODO: this is inaccurate
+        case SCE_GXM_TEXTURE_FORMAT_U8_1RRR: // TODO: this is inaccurate
             return GL_INTENSITY8;
         default:
         {
@@ -688,16 +688,14 @@ GLenum translate_format(SceGxmTextureFormat src) {
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
         case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
             return GL_RGBA;
-        case SCE_GXM_TEXTURE_FORMAT_U8_R111:
-            // TODO: this is inaccurate
+        case SCE_GXM_TEXTURE_FORMAT_U8_R111: // TODO: this is inaccurate
             return GL_RED;
+        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
             return GL_RGB;
-        case SCE_GXM_TEXTURE_FORMAT_U8_111R:
-            // TODO: this is inaccurate
+        case SCE_GXM_TEXTURE_FORMAT_U8_111R: // TODO: this is inaccurate
             return GL_ALPHA;
-        case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
-            // TODO: this is inaccurate
+        case SCE_GXM_TEXTURE_FORMAT_U8_1RRR: // TODO: this is inaccurate
             return GL_INTENSITY;
         default:
         {
@@ -757,6 +755,8 @@ GLenum translate_type(SceGxmTextureFormat format)
         case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
         case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
             return GL_UNSIGNED_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+            return GL_UNSIGNED_SHORT_5_6_5;
         default:
         {
             return GL_UNSIGNED_BYTE;
