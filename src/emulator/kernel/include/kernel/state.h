@@ -47,13 +47,24 @@ typedef std::map<uint32_t, Address> ExportNids;
 struct Semaphore {
     int val;
     int max;
-    SceUID uid;
     std::mutex mutex;
     std::vector<ThreadStatePtr> locked;
+    std::string name;
+};
+
+struct Mutex {
+    int lock_count;
+    uint32_t attr;
+    std::mutex mutex;
+    std::vector<ThreadStatePtr> locked;
+    ThreadStatePtr owner;
+    std::string name;
 };
 
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
 typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
+typedef std::shared_ptr<Mutex> MutexPtr;
+typedef std::map<SceUID, MutexPtr> MutexPtrs;
 
 namespace emu {
     typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
@@ -71,6 +82,7 @@ struct KernelState {
     SceUID next_uid = 0;
     ThreadToSlotToAddress tls;
     SemaphorePtrs semaphores;
+    MutexPtrs mutexes;
     ThreadStatePtrs threads;
     ThreadPtrs running_threads;
     WaitingThreadStates waiting_threads;
