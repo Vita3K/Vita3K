@@ -672,9 +672,7 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
         case SCE_GXM_TEXTURE_FORMAT_U8_111R: // TODO: this is inaccurate
         case SCE_GXM_TEXTURE_FORMAT_U8_1RRR: // TODO: this is inaccurate
             return GL_INTENSITY8;
-        default:
-        {
-            LOG_WARN("Unsupported translate internal format: {:#08X}", src);
+        default: {
             return GL_RGBA8;
         }
     }
@@ -701,9 +699,7 @@ GLenum translate_format(SceGxmTextureFormat src) {
             return GL_ALPHA;
         case SCE_GXM_TEXTURE_FORMAT_U8_1RRR: // TODO: this is inaccurate
             return GL_INTENSITY;
-        default:
-        {
-            LOG_WARN("Unsupported translate format: {:#08X}", src);
+        default: {
             return GL_RGBA;
         }
     }
