@@ -419,20 +419,26 @@ int remove_dir(const char *dir, const char *pref_path) {
 }
 
 int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
-    // TODO Hacky magic numbers.
-    assert((strncmp(file, "app0:", 5) == 0) || (strncmp(file, "ux0:", 4) == 0) || (strncmp(file, "uma0:", 5) == 0));
     assert(statp != NULL);
 
     memset(statp, '\0', sizeof(SceIoStat));
 
+    VitaIoDevice device;
+    std::string device_name;
+    std::tie(device, device_name) = translate_device(file);
+
     std::string file_path;
 
-    if (strncmp(file, "ux0:", 4) == 0) {
-        file_path = translate_path("ux0", file, pref_path);
-    } else if (strncmp(file, "uma0:", 5) == 0) {
-        file_path = translate_path("uma0", file, pref_path);
-    } else {
+    switch (device) {
+    case VitaIoDevice::UX0:
+    case VitaIoDevice::UMA0: {
+        file_path = translate_path(device_name, file, pref_path);
+        break;
+    }
+    default: {
+        LOG_CRITICAL("Unknown file {} used. Report this to developers!", file);
         return -1;
+    }
     }
 
 #ifdef WIN32
@@ -468,17 +474,21 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
 }
 
 int open_dir(IOState &io, const char *path, const char *pref_path) {
-    // TODO Hacky magic numbers.
-    assert((strncmp(path, "ux0:", 4) == 0) || (strncmp(path, "uma0:", 5) == 0));
+    VitaIoDevice device;
+    std::string device_name;
+    std::tie(device, device_name) = translate_device(path);
 
     std::string dir_path;
-
-    if (strncmp(path, "ux0:", 4) == 0) {
-        dir_path = translate_path("ux0", path, pref_path);
-    } else if (strncmp(path, "uma0:", 5) == 0) {
-        dir_path = translate_path("uma0", path, pref_path);
-    } else {
+    switch (device) {
+    case VitaIoDevice::UX0:
+    case VitaIoDevice::UMA0: {
+        dir_path = translate_path(device_name, path, pref_path);
+        break;
+    }
+    default: {
+        LOG_CRITICAL("Unknown dir {} used. Report this to developers!", path);
         return -1;
+    }
     }
 
 #ifdef WIN32
