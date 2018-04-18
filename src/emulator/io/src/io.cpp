@@ -137,8 +137,8 @@ bool init(IOState &io, const char *pref_path) {
     return true;
 }
 
-static std::pair<VitaPartition, std::string>
-translate_partition(const std::string &full_path) {
+static std::pair<VitaIoDevice, std::string>
+translate_device(const std::string &full_path) {
     const auto partition_end_idx = full_path.find(":");
     if (partition_end_idx == std::string::npos) {
         return { VitaPartition::_INVALID, "" };
@@ -146,23 +146,31 @@ translate_partition(const std::string &full_path) {
 
     std::string partition_name(full_path.substr(0, partition_end_idx));
 
-#define JOIN_PARTITION(p) VitaPartition::p
-#define PARTITION(path, name)   \
-    if (partition_name == path) \
-        return { JOIN_PARTITION(name), path };
-#include <io/VitaPartition.def>
-#undef PARTITION
-#undef JOIN_PARTITION
-    return { VitaPartition::_UKNONWN, "" };
+    // find which IO device the path is associated with
+    const auto device_end_idx = path.find(":");
+    if (device_end_idx == std::string::npos) {
+        return { VitaIoDevice::_INVALID, "" };
+    }
+
+    std::string device_name(path.substr(0, device_end_idx));
+
+#define JOIN_DEVICE(p) VitaIoDevice::p
+#define DEVICE(path, name)   \
+    if (device_name == path) \
+        return { JOIN_DEVICE(name), path };
+#include <io/VitaIoDevice.def>
+#undef DEVICE
+#undef JOIN_DEVICE
+    return { VitaIoDevice::_UKNONWN, "" };
 }
 
 SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path) {
-    VitaPartition partition;
-    std::string partition_name;
-    std::tie(partition, partition_name) = translate_partition(path);
+    VitaIoDevice device;
+    std::string device_name;
+    std::tie(device, device_name) = translate_device(path);
 
-    switch (partition) {
-    case VitaPartition::TTY0: {
+    switch (device) {
+    case VitaIoDevice::TTY0: {
         assert(flags >= 0);
 
         TtyType type;
@@ -177,7 +185,7 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
 
         return fd;
     }
-    case VitaPartition::APP0: {
+    case VitaIoDevice::APP0: {
         assert(flags == SCE_O_RDONLY);
 
         if (!io.vpk) {
@@ -195,9 +203,9 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
 
         return fd;
     }
-    case VitaPartition::UX0:
-    case VitaPartition::UMA0: {
-        std::string file_path = translate_path(partition_name, path, pref_path);
+    case VitaIoDevice::UX0:
+    case VitaIoDevice::UMA0: {
+        std::string file_path = translate_path(device_name, path, pref_path);
 
         const char *const open_mode = translate_open_mode(flags);
 #ifdef WIN32
@@ -214,9 +222,9 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
 
         return fd;
     }
-    case VitaPartition::SAVEDATA1:
-    case VitaPartition::_UKNONWN: {
-        LOG_CRITICAL("Unknown partition {} used. Report this to developers!", path);
+    case VitaIoDevice::SAVEDATA1:
+    case VitaIoDevice::_UKNONWN: {
+        LOG_CRITICAL("Unknown device {} used. Report this to developers!", path);
         // fall-through default behavior
     }
     default: {
@@ -340,14 +348,14 @@ void close_file(IOState &io, SceUID fd) {
 }
 
 int remove_file(const char *file, const char *pref_path) {
-    VitaPartition partition;
-    std::string partition_name;
-    std::tie(partition, partition_name) = translate_partition(file);
+    VitaIoDevice device;
+    std::string device_name;
+    std::tie(device, device_name) = translate_device(file);
 
-    switch (partition) {
-    case VitaPartition::UX0:
-    case VitaPartition::UMA0: {
-        std::string file_path = translate_path(partition_name, file, pref_path);
+    switch (device) {
+    case VitaIoDevice::UX0:
+    case VitaIoDevice::UMA0: {
+        std::string file_path = translate_path(device_name, file, pref_path);
 
 #ifdef WIN32
         DeleteFileA(file_path.c_str());
@@ -357,21 +365,21 @@ int remove_file(const char *file, const char *pref_path) {
 #endif
     }
     default: {
+        LOG_CRITICAL("Unknown file {} used. Report this to developers!", file);
         return -1;
     }
     }
 }
 
 int create_dir(const char *dir, int mode, const char *pref_path) {
-    // TODO Hacky magic numbers.
-    VitaPartition partition;
-    std::string partition_name;
-    std::tie(partition, partition_name) = translate_partition(dir);
+    VitaIoDevice device;
+    std::string device_name;
+    std::tie(device, device_name) = translate_device(dir);
 
-    switch (partition) {
-    case VitaPartition::UX0:
-    case VitaPartition::UMA0: {
-        std::string dir_path = translate_path(partition_name, dir, pref_path);
+    switch (device) {
+    case VitaIoDevice::UX0:
+    case VitaIoDevice::UMA0: {
+        std::string dir_path = translate_path(device_name, dir, pref_path);
 
 #ifdef WIN32
         CreateDirectoryA(dir_path.c_str(), nullptr);
@@ -381,20 +389,21 @@ int create_dir(const char *dir, int mode, const char *pref_path) {
 #endif
     }
     default: {
+        LOG_CRITICAL("Unknown dir {} used. Report this to developers!", dir);
         return -1;
     }
     }
 }
 
 int remove_dir(const char *dir, const char *pref_path) {
-    VitaPartition partition;
-    std::string partition_name;
-    std::tie(partition, partition_name) = translate_partition(dir);
+    VitaIoDevice device;
+    std::string device_name;
+    std::tie(device, device_name) = translate_device(dir);
 
-    switch (partition) {
-    case VitaPartition::UX0:
-    case VitaPartition::UMA0: {
-        std::string dir_path = translate_path(partition_name, dir, pref_path);
+    switch (device) {
+    case VitaIoDevice::UX0:
+    case VitaIoDevice::UMA0: {
+        std::string dir_path = translate_path(device_name, dir, pref_path);
 
 #ifdef WIN32
         RemoveDirectoryA(dir_path.c_str());
@@ -404,6 +413,7 @@ int remove_dir(const char *dir, const char *pref_path) {
 #endif
     }
     default: {
+        LOG_CRITICAL("Unknown dir {} used. Report this to developers!", dir);
         return -1;
     }
     }

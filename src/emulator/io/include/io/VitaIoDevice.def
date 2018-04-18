@@ -15,24 +15,24 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#ifndef PARTITION
-    #define PARTITION(x,y)
+#ifndef DEVICE
+    #define DEVICE(x,y)
 #endif
 
-PARTITION("sd0", SD0)
-PARTITION("app0", APP0)
-PARTITION("os0", OS0)
-PARTITION("pd0", PD0)
-PARTITION("sa0", SA0)
-PARTITION("savedata0", SAVEDATA0)
-PARTITION("savedata1", SAVEDATA1)
-PARTITION("tm0", TM0)
-PARTITION("ud0", UD0)
-PARTITION("ur0", UR0)
-PARTITION("ux0", UX0)
-PARTITION("vd0", VD0)
-PARTITION("vs0", VS0)
-PARTITION("gr0", GR0)
-PARTITION("grw0", GRW0)
-PARTITION("tty0", TTY0)
-PARTITION("uma0", UMA0)
+DEVICE("sd0", SD0)
+DEVICE("app0", APP0)
+DEVICE("os0", OS0)
+DEVICE("pd0", PD0)
+DEVICE("sa0", SA0)
+DEVICE("savedata0", SAVEDATA0)
+DEVICE("savedata1", SAVEDATA1)
+DEVICE("tm0", TM0)
+DEVICE("ud0", UD0)
+DEVICE("ur0", UR0)
+DEVICE("ux0", UX0)
+DEVICE("vd0", VD0)
+DEVICE("vs0", VS0)
+DEVICE("gro0", GRO0)
+DEVICE("grw0", GRW0)
+DEVICE("tty0", TTY0)
+DEVICE("uma0", UMA0)
