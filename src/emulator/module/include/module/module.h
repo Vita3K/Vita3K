@@ -18,8 +18,6 @@
 #pragma once
 
 #include "bridge.h"
-#include "bridge_args.h"
-#include "bridge_return.h"
 
 #include <host/import_fn.h>
 #include <host/state.h>
