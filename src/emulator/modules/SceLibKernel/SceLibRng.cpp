@@ -15,10 +15,26 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <cstdlib>
+#include <ctime>
+
 #include "SceLibRng.h"
 
-EXPORT(int, sceKernelGetRandomNumber) {
-    return unimplemented("sceKernelGetRandomNumber");
+
+EXPORT(int, sceKernelGetRandomNumber, void *output, unsigned size) {
+    srand(time(nullptr));
+
+    if (size > 64) {
+        return -1;
+    }
+
+    int* int_output = reinterpret_cast<int*>(output);
+
+    for (unsigned int i = 0; i < size; i ++) {
+        int_output[i] = rand();
+    }
+
+    return 0;
 }
 
 BRIDGE_IMPL(sceKernelGetRandomNumber)
