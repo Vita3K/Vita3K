@@ -202,7 +202,6 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
     const void *const end = static_cast<const uint8_t *>(entries) + size;
     const Entry *entry = static_cast<const Entry *>(entries);
     while (entry < end) {
-
         const Ptr<void> symbol_start = segments.find(entry->symbol_segment)->second;
         const Address s = (entry->symbol_segment == 0xf) ? 0 : symbol_start.address();
 
@@ -215,7 +214,7 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
             if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
                 return false;
             }
-            
+
             entry = short_entry + 1;
         } else {
             const LongEntry *const long_entry = static_cast<const LongEntry *>(entry);

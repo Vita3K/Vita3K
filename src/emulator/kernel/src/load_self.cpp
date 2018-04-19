@@ -34,7 +34,7 @@
 #define NID_MODULE_START 0x935CD196
 #define NID_MODULE_INFO 0x6C2224BA
 #define NID_PROCESS_PARAM 0x70FBA1E7
-#define NID_STACK_CHK_GUARD 0x93b8aa67
+#define NID_STACK_CHK_GUARD 0x93B8AA67
 
 #define __stack_chk_guard 0xDEADBEEF
 
@@ -62,7 +62,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
         uint32_t *const stub = entry.get(mem);
 
-        if(nid == NID_STACK_CHK_GUARD){
+        if (nid == NID_STACK_CHK_GUARD) {
             stub[0] = __stack_chk_guard;
             continue;
         }
@@ -82,36 +82,35 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
 // Encode code taken from https://github.com/yifanlu/UVLoader/blob/master/resolve.c
 
-#define INSTRUCTION_UNKNOWN     0       ///< Unknown/unsupported instruction
-#define INSTRUCTION_MOVW        1       ///< MOVW Rd, \#imm instruction
-#define INSTRUCTION_MOVT        2       ///< MOVT Rd, \#imm instruction
-#define INSTRUCTION_SYSCALL     3       ///< SVC \#imm instruction
-#define INSTRUCTION_BRANCH      4       ///< BX Rn instruction
+#define INSTRUCTION_UNKNOWN 0 ///< Unknown/unsupported instruction
+#define INSTRUCTION_MOVW 1 ///< MOVW Rd, \#imm instruction
+#define INSTRUCTION_MOVT 2 ///< MOVT Rd, \#imm instruction
+#define INSTRUCTION_SYSCALL 3 ///< SVC \#imm instruction
+#define INSTRUCTION_BRANCH 4 ///< BX Rn instruction
 
-static uint32_t encode_arm_inst (uint8_t type, uint16_t immed, uint16_t reg) {
-    switch(type)
-    {
-        case INSTRUCTION_MOVW:
-            // 1110 0011 0000 XXXX YYYY XXXXXXXXXXXX
-            // where X is the immediate and Y is the register
-            // Upper bits == 0xE30
-            return ((uint32_t)0xE30 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
-        case INSTRUCTION_MOVT:
-            // 1110 0011 0100 XXXX YYYY XXXXXXXXXXXX
-            // where X is the immediate and Y is the register
-            // Upper bits == 0xE34
-            return ((uint32_t)0xE34 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
-        case INSTRUCTION_SYSCALL:
-            // Syscall does not have any immediate value, the number should
-            // already be in R12
-            return (uint32_t)0xEF000000;
-        case INSTRUCTION_BRANCH:
-            // 1110 0001 0010 111111111111 0001 YYYY
-            // BX Rn has 0xE12FFF1 as top bytes
-            return ((uint32_t)0xE12FFF1 << 4) | reg;
-        case INSTRUCTION_UNKNOWN:
-        default:
-            return 0;
+static uint32_t encode_arm_inst(uint8_t type, uint16_t immed, uint16_t reg) {
+    switch (type) {
+    case INSTRUCTION_MOVW:
+        // 1110 0011 0000 XXXX YYYY XXXXXXXXXXXX
+        // where X is the immediate and Y is the register
+        // Upper bits == 0xE30
+        return ((uint32_t)0xE30 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
+    case INSTRUCTION_MOVT:
+        // 1110 0011 0100 XXXX YYYY XXXXXXXXXXXX
+        // where X is the immediate and Y is the register
+        // Upper bits == 0xE34
+        return ((uint32_t)0xE34 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
+    case INSTRUCTION_SYSCALL:
+        // Syscall does not have any immediate value, the number should
+        // already be in R12
+        return (uint32_t)0xEF000000;
+    case INSTRUCTION_BRANCH:
+        // 1110 0001 0010 111111111111 0001 YYYY
+        // BX Rn has 0xE12FFF1 as top bytes
+        return ((uint32_t)0xE12FFF1 << 4) | reg;
+    case INSTRUCTION_UNKNOWN:
+    default:
+        return 0;
     }
 }
 
@@ -134,11 +133,10 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
         } else {
             Address func_address = export_address->second;
             uint32_t *const stub = entry.get(mem);
-            stub[0] = encode_arm_inst (INSTRUCTION_MOVW, (uint16_t)func_address, 12);
-            stub[1] = encode_arm_inst (INSTRUCTION_MOVT, (uint16_t)(func_address >> 16), 12);
-            stub[2] = encode_arm_inst (INSTRUCTION_BRANCH, 0, 12);
+            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)func_address, 12);
+            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(func_address >> 16), 12);
+            stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
         }
-        
     }
 
     return true;
@@ -355,7 +353,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     sceKernelModuleInfo->type = module_info->type;
 
     LOG_INFO("*** Loading symbols for (S)ELF: {}", path);
-    
+
     if (!load_exports(entry_point, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }

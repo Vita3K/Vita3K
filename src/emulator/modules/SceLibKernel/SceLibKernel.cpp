@@ -32,8 +32,8 @@
 #include <psp2/io/dirent.h>
 #include <psp2/io/stat.h>
 #include <psp2/kernel/modulemgr.h>
-#include <util/log.h>
 #include <stdlib.h>
+#include <util/log.h>
 
 EXPORT(int, SceKernelStackChkGuard) {
     return unimplemented("SceKernelStackChkGuard");
@@ -103,8 +103,8 @@ EXPORT(int, sceClibMemmoveChk) {
     return unimplemented("sceClibMemmoveChk");
 }
 
-EXPORT(Ptr<void>, sceClibMemset, Ptr<void>s, int c, SceSize n) {
-    memset(s.get(host.mem),c,n);
+EXPORT(Ptr<void>, sceClibMemset, Ptr<void> s, int c, SceSize n) {
+    memset(s.get(host.mem), c, n);
     return s;
 }
 
@@ -160,13 +160,13 @@ EXPORT(int, sceClibMspaceReallocalign) {
     return unimplemented("sceClibMspaceReallocalign");
 }
 
-EXPORT(int, sceClibPrintf, const char * format, void* args) {
+EXPORT(int, sceClibPrintf, const char *format, void *args) {
     // TODO args
     LOG_INFO("{}", format);
     return 0;
 }
 
-EXPORT(int, sceClibSnprintf, char * dest, SceSize size, const char * format, void* args){
+EXPORT(int, sceClibSnprintf, char *dest, SceSize size, const char *format, void *args) {
     // TODO args
     return snprintf(dest, size, "%s", format);
 }
@@ -795,7 +795,7 @@ EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int initCount,
     if (initCount > 1 && (attr & 0x02)) {
         return error("sceKernelCreateMutex", SCE_KERNEL_ERROR_ILLEGAL_COUNT);
     }
-    
+
     const MutexPtr mutex = std::make_shared<Mutex>();
     mutex->lock_count = initCount;
     mutex->name = name;
@@ -808,7 +808,7 @@ EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int initCount,
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host.kernel.mutexes.emplace(uid, mutex);
-    
+
     return uid;
 }
 
@@ -1056,11 +1056,11 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
         ::call_import(host, nid, thread_id);
     };
-    
+
     const size_t stack_size = MB(1); // TODO Get main thread stack size from somewhere?
 
     const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->second.get()->module_name, stack_size, call_import, false);
-    
+
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 
     run_on_current(*thread, entry_point, args, argp);
@@ -1080,13 +1080,12 @@ EXPORT(int, sceKernelLockLwMutexCB) {
 }
 
 EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lockCount, unsigned int *timeout) {
-    
     // TODO Don't lock twice.
     const MutexPtr mutex = lock_and_find(mutexid, host.kernel.mutexes, host.kernel.mutex);
     if (!mutex) {
         return error("sceKernelLockMutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
     }
-    
+
     const std::unique_lock<std::mutex> lock(mutex->mutex);
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
@@ -1096,12 +1095,12 @@ EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lockCount, unsigned int *tim
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
         mutex->locked.push_back(thread);
-        stop(*thread->cpu);    
+        stop(*thread->cpu);
     } else {
         mutex->lock_count += lockCount;
         mutex->owner = thread;
     }
-    
+
     return 0;
 }
 
@@ -1327,21 +1326,21 @@ EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
     if (!semaphore) {
         return error("sceKernelWaitSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
-    
+
     const std::unique_lock<std::mutex> lock(semaphore->mutex);
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
-    if (semaphore->val <= 0){
+    if (semaphore->val <= 0) {
         const std::unique_lock<std::mutex> lock(thread->mutex);
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
         semaphore->locked.push_back(thread);
-        stop(*thread->cpu);    
-    }else{
+        stop(*thread->cpu);
+    } else {
         semaphore->val -= signal;
     }
-    
+
     return 0;
 }
 

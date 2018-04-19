@@ -20,7 +20,7 @@
 EXPORT(int, sceKernelExitThread, int status) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     const std::unique_lock<std::mutex> lock(thread->mutex);
-    
+
     thread->to_do = ThreadToDo::exit;
     stop(*thread->cpu);
     thread->something_to_do.notify_all();
