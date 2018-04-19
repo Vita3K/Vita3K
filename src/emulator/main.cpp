@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
 
     const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
     Ptr<void> argp = Ptr<void>();
-    if(!strncmp(host.kernel.loaded_modules.begin()->second->module_name,"SceLibc",7)){
+    if (!strncmp(host.kernel.loaded_modules.begin()->second->module_name, "SceLibc", 7)) {
         const SceUID libc_thread_id = create_thread(host.kernel.loaded_modules.begin()->second->module_start, host.kernel, host.mem, "libc", stack_size, call_import, false);
         const ThreadStatePtr libc_thread = find(libc_thread_id, host.kernel.threads);
         run_on_current(*libc_thread, host.kernel.loaded_modules.begin()->second->module_start, 0, argp);

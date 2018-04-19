@@ -142,13 +142,12 @@ Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, Kerne
     write_sp(*new_thread->cpu, new_sp);
 
     Ptr<void> new_argp = argp;
-    if(old_stack_address<argp.address()&&(old_stack_address+old_thread->stack_size>argp.address())){
+    if (old_stack_address < argp.address() && (old_stack_address + old_thread->stack_size > argp.address())) {
         const Address offset = old_stack_address + old_thread->stack_size - argp.address();
         new_argp = Ptr<void>(new_stack_address + new_thread->stack_size - offset);
     }
     return new_argp;
 }
-
 
 bool run_thread(ThreadState &thread, bool callback) {
     int res = 0;
