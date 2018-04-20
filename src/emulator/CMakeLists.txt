@@ -27,6 +27,7 @@ add_subdirectory(audio)
 add_subdirectory(cpu)
 add_subdirectory(crypto)
 add_subdirectory(ctrl)
+add_subdirectory(dialog)
 add_subdirectory(disasm)
 add_subdirectory(glutil)
 add_subdirectory(gxm)
@@ -50,7 +51,7 @@ vpk.cpp
 vpk.h
 )
 
-target_link_libraries(emulator PRIVATE cpu elfio glutil host modules nids vita-toolchain util gui imgui)
+target_link_libraries(emulator PRIVATE cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util)
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
