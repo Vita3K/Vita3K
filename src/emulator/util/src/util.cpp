@@ -111,6 +111,7 @@ std::string wide_to_utf(const std::wstring& str)
     return myconv.to_bytes(str);
 }
 
+#ifdef WIN32
 std::string utf16_to_utf8(const std::u16string& str)
 {
     std::wstring_convert<std::codecvt_utf8_utf16<int16_t>, int16_t> myconv;
@@ -128,6 +129,19 @@ std::u16string utf8_to_utf16(const std::string& str)
     auto a = myconv.from_bytes(p, p + std::strlen(p));
     return std::u16string(a.begin(), a.end());
 }
+#else   
+std::string utf16_to_utf8(const std::u16string& str)
+{
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> myconv;
+    return myconv.to_bytes(str);
+}
+
+std::u16string utf8_to_utf16(const std::string& str)
+{
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> myconv;
+    return myconv.from_bytes(str);
+}   
+#endif
 
 ProgramArgsWide process_args(int argc, char* argv[])
 {
