@@ -36,7 +36,7 @@ struct ImeState {
 };
 
 struct DialogState {
-	DialogType type = NO_DIALOG;
+    DialogType type = NO_DIALOG;
     SceCommonDialogStatus status = SCE_COMMON_DIALOG_STATUS_NONE;
     ImeState ime;
 };
