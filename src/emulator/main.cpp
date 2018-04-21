@@ -205,7 +205,8 @@ int main(int argc, char *argv[]) {
         }
 
         DrawUI(host);
-
+        DrawCommonDialog(host);
+           
         glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
         ImGui::Render();
         ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());

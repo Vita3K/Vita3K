@@ -17,12 +17,6 @@
 
 #pragma once
 
-#include <dialog/state.h>
+#include <module/module.h>
 
-struct GuiState {
-    bool renderer_focused = true;
-    bool threads_dialog = false;
-    bool semaphores_dialog = false;
-    bool mutexes_dialog = false;
-    DialogState common_dialog;
-};
+BRIDGE_DECL(sce_paf_misc_does_file_exist)

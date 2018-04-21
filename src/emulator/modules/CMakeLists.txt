@@ -91,6 +91,7 @@ add_library(modules STATIC
 	SceNpTus/SceNpTus.cpp SceNpTus/SceNpTus.h
 	SceNpUtility/SceNpUtility.cpp SceNpUtility/SceNpUtility.h
 	SceNpWebApi/SceNpWebApi.cpp SceNpWebApi/SceNpWebApi.h
+	ScePaf/ScePafMisc.cpp ScePaf/ScePafMisc.h
 	ScePaf/ScePafStdc.cpp ScePaf/ScePafStdc.h
 	ScePerf/ScePerf.cpp ScePerf/ScePerf.h
 	ScePgf/ScePgf.cpp ScePgf/ScePgf.h
