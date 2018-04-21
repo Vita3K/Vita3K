@@ -15,20 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <imgui.h>
 #include <gui/functions.h>
 #include <host/state.h>
+#include <imgui.h>
 
-void DrawMainMenuBar(HostState& host){
-    if (ImGui::BeginMainMenuBar()){
-        if (ImGui::BeginMenu("Debug")){
-            if (ImGui::MenuItem("Threads", nullptr, host.gui.threads_dialog)){
+void DrawMainMenuBar(HostState &host) {
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("Debug")) {
+            if (ImGui::MenuItem("Threads", nullptr, host.gui.threads_dialog)) {
                 host.gui.threads_dialog = !host.gui.threads_dialog;
             }
-            if (ImGui::MenuItem("Semaphores", nullptr, host.gui.semaphores_dialog)){
+            if (ImGui::MenuItem("Semaphores", nullptr, host.gui.semaphores_dialog)) {
                 host.gui.semaphores_dialog = !host.gui.semaphores_dialog;
             }
-            if (ImGui::MenuItem("Mutexes", nullptr, host.gui.mutexes_dialog)){
+            if (ImGui::MenuItem("Mutexes", nullptr, host.gui.mutexes_dialog)) {
                 host.gui.mutexes_dialog = !host.gui.mutexes_dialog;
             }
             ImGui::EndMenu();

@@ -20,8 +20,8 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstring>
 #include <cmath>
+#include <cstring>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN

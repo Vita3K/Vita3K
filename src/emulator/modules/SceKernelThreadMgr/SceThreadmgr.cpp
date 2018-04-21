@@ -282,21 +282,20 @@ EXPORT(int, sceKernelSignalCondTo) {
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
-    
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
     if (!semaphore) {
         return error("sceKernelSignalSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
-    
+
     const std::unique_lock<std::mutex> lock(semaphore->mutex);
-    
+
     semaphore->val += signal;
-    if (semaphore->val > semaphore->max){
+    if (semaphore->val > semaphore->max) {
         semaphore->val = semaphore->max;
     }
-    
-    while (semaphore->val > 0 && semaphore->locked.size() > 0){
+
+    while (semaphore->val > 0 && semaphore->locked.size() > 0) {
         const ThreadStatePtr thread = semaphore->locked.back();
         assert(thread->to_do == ThreadToDo::wait);
         thread->to_do = ThreadToDo::run;
@@ -304,7 +303,7 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
         semaphore->val--;
         thread->something_to_do.notify_one();
     }
-    
+
     return 0;
 }
 
@@ -329,15 +328,14 @@ EXPORT(int, sceKernelTryLockWriteRWLock) {
 }
 
 EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlockCount) {
-    
     // TODO Don't lock twice.
     const MutexPtr mutex = lock_and_find(mutexid, host.kernel.mutexes, host.kernel.mutex);
     if (!mutex) {
         return error("sceKernelUnlockMutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
     }
-    
+
     const std::unique_lock<std::mutex> lock(mutex->mutex);
-    
+
     const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (cur_thread == mutex->owner) {
         mutex->lock_count -= unlockCount;
@@ -357,7 +355,7 @@ EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlockCount) {
             }
         }
     }
-    
+
     return 0;
 }
 

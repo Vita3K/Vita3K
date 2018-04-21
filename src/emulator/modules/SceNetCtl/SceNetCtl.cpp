@@ -18,8 +18,8 @@
 #include "SceNetCtl.h"
 
 #ifdef WIN32
-# undef s_addr
-# define s_addr s_addr
+#undef s_addr
+#define s_addr s_addr
 #endif
 #include <psp2/net/netctl.h>
 
@@ -68,16 +68,16 @@ EXPORT(int, sceNetCtlGetPhoneMaxDownloadableSize) {
 }
 
 EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
-    switch (code){
+    switch (code) {
     case SCE_NETCTL_INFO_GET_IP_ADDRESS:
         char devname[80];
         gethostname(devname, 80);
         struct hostent *resolved = gethostbyname(devname);
-        for (int i=0; resolved->h_addr_list[i] != nullptr; ++i){
+        for (int i = 0; resolved->h_addr_list[i] != nullptr; ++i) {
             struct in_addr addrIn;
             memcpy(&addrIn, resolved->h_addr_list[i], sizeof(uint32_t));
-            char* addr = inet_ntoa(addrIn);
-            if (strcmp(addr, "127.0.0.1") != 0){
+            char *addr = inet_ntoa(addrIn);
+            if (strcmp(addr, "127.0.0.1") != 0) {
                 strcpy(info->ip_address, addr);
                 break;
             }

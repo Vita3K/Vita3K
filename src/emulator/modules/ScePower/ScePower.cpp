@@ -55,7 +55,7 @@ EXPORT(int, scePowerGetBatteryFullCapacity) {
 EXPORT(int, scePowerGetBatteryLifePercent) {
     int res;
     SDL_GetPowerInfo(NULL, &res);
-    if (res == -1){
+    if (res == -1) {
         return 100;
     }
     return res;
@@ -64,7 +64,7 @@ EXPORT(int, scePowerGetBatteryLifePercent) {
 EXPORT(int, scePowerGetBatteryLifeTime) {
     int res;
     SDL_GetPowerInfo(&res, NULL);
-    if (res == -1){
+    if (res == -1) {
         return INT_MAX;
     }
     return res;
@@ -127,7 +127,7 @@ EXPORT(int, scePowerIsBatteryExist) {
 EXPORT(int, scePowerIsLowBattery) {
     int res;
     SDL_GetPowerInfo(NULL, &res);
-    if (res <= LOW_BATTERY_PERCENT){
+    if (res <= LOW_BATTERY_PERCENT) {
         return SCE_TRUE;
     }
     return SCE_FALSE;
@@ -179,35 +179,35 @@ EXPORT(int, scePowerRequestSuspend) {
 }
 
 EXPORT(int, scePowerSetArmClockFrequency, int freq) {
-    if (freq < 0){
+    if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
     return 0;
 }
 
 EXPORT(int, scePowerSetBusClockFrequency, int freq) {
-    if (freq < 0){
+    if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
     return 0;
 }
 
 EXPORT(int, scePowerSetConfigurationMode, int mode) {
-    if (mode != 0x80 && mode != 0x800 && mode != 0x10880){
+    if (mode != 0x80 && mode != 0x800 && mode != 0x10880) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
     return 0;
 }
 
 EXPORT(int, scePowerSetGpuClockFrequency, int freq) {
-    if (freq < 0){
+    if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
     return 0;
 }
 
 EXPORT(int, scePowerSetGpuXbarClockFrequency, int freq) {
-    if (freq < 0){
+    if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
     return 0;
@@ -218,7 +218,7 @@ EXPORT(int, scePowerSetIdleTimerCount) {
 }
 
 EXPORT(int, scePowerSetUsingWireless, SceBool enabled) {
-    if (enabled != SCE_TRUE && enabled != SCE_FALSE){
+    if (enabled != SCE_TRUE && enabled != SCE_FALSE) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
     return 0;

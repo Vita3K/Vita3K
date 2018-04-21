@@ -17,11 +17,11 @@
 
 #pragma once
 
-#include <psp2/ime_dialog.h>
 #include <mem/ptr.h>
+#include <psp2/ime_dialog.h>
 
 namespace emu {
-    
+
     struct SceCommonDialogParam {
         Ptr<SceCommonDialogInfobarParam> infobarParam;
         Ptr<SceCommonDialogColor> bgColor;
@@ -29,19 +29,19 @@ namespace emu {
         SceUInt8 reserved[60];
         SceUInt32 magic;
     };
-    
+
     struct SceImeDialogParam {
         SceUInt32 sdkVersion;
 
         SceUInt32 inputMethod;
-        SceUInt64 supportedLanguages;         //!< Dialog languages (One or more ::SceImeLanguage)
+        SceUInt64 supportedLanguages;
         SceBool languagesForced;
-        SceUInt32 type;                       //!< Dialog type (One of ::SceImeType)
-        SceUInt32 option;                     //!< Dialog options (One or more ::SceImeOption)
+        SceUInt32 type;
+        SceUInt32 option;
         SceUInt32 filter;
 
-        SceUInt32 dialogMode;                 //!< Dialog mode (One of ::SceImeDialogDialogMode)
-        SceUInt32 textBoxMode;                //!< Textbox mode (One of ::SceImeDialogTextboxMode)
+        SceUInt32 dialogMode;
+        SceUInt32 textBoxMode;
         const Ptr<SceWChar16> title;
         SceUInt32 maxTextLength;
         Ptr<SceWChar16> initialText;

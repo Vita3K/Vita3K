@@ -30,7 +30,7 @@ struct SfoHeader {
     uint32_t tables_entries;
 };
 
-struct SfoIndexTableEntry{
+struct SfoIndexTableEntry {
     uint16_t key_offset;
     uint16_t data_fmt;
     uint32_t data_len;

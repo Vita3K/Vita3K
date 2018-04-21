@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <imgui.h>
 #include <gui/functions.h>
+#include <imgui.h>
 
 #include <host/state.h>
 #include <kernel/thread_functions.h>
@@ -24,8 +24,8 @@
 #include <util/resource.h>
 #include <util/string_convert.h>
 
-void DrawImeDialog(HostState& host){
-    ImGui::SetNextWindowSize(ImVec2(0,0));
+void DrawImeDialog(HostState &host) {
+    ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin(host.gui.common_dialog.ime.title.c_str());
     if (host.gui.common_dialog.ime.multiline) {
         ImGui::InputTextMultiline(
@@ -56,9 +56,9 @@ void DrawImeDialog(HostState& host){
     ImGui::End();
 }
 
-void DrawCommonDialog(HostState& host){
+void DrawCommonDialog(HostState &host) {
     if (host.gui.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
-        switch (host.gui.common_dialog.type){
+        switch (host.gui.common_dialog.type) {
         case IME_DIALOG:
             DrawImeDialog(host);
             break;

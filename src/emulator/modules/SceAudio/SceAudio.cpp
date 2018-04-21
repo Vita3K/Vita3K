@@ -34,19 +34,19 @@ EXPORT(int, sceAudioOutGetRestSample) {
 }
 
 EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, SceAudioOutMode mode) {
-    if (type < SCE_AUDIO_OUT_PORT_TYPE_MAIN || type > SCE_AUDIO_OUT_PORT_TYPE_VOICE){
+    if (type < SCE_AUDIO_OUT_PORT_TYPE_MAIN || type > SCE_AUDIO_OUT_PORT_TYPE_VOICE) {
         return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_PORT_TYPE);
     }
-    if (type == SCE_AUDIO_OUT_PORT_TYPE_MAIN && freq != 48000){
+    if (type == SCE_AUDIO_OUT_PORT_TYPE_MAIN && freq != 48000) {
         return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ);
     }
-    if ((mode != SCE_AUDIO_OUT_MODE_MONO) && (mode != SCE_AUDIO_OUT_MODE_STEREO)){
-        return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_FORMAT);   
+    if ((mode != SCE_AUDIO_OUT_MODE_MONO) && (mode != SCE_AUDIO_OUT_MODE_STEREO)) {
+        return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_FORMAT);
     }
-    if (len <= 0){
-        return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_SIZE);   
+    if (len <= 0) {
+        return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_SIZE);
     }
-    
+
     const int channels = (mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
     const AudioStreamPtr stream(SDL_NewAudioStream(AUDIO_S16LSB, channels, freq, host.audio.ro.spec.format, host.audio.ro.spec.channels, host.audio.ro.spec.freq), SDL_FreeAudioStream);
     if (!stream) {

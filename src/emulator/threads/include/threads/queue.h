@@ -3,9 +3,9 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <queue>
-#include <memory>
 
 template <typename T>
 class Queue {
@@ -20,7 +20,7 @@ public:
                 condempty_.wait(mlock);
             }
             if (aborted) {
-                // releasing the mutex on Windows results in it not 
+                // releasing the mutex on Windows results in it not
                 // being unlocked by the destructor
 #ifndef WIN32
                 mlock.release();
@@ -42,7 +42,7 @@ public:
                 cond_.wait(mlock);
             }
             if (aborted) {
-                // releasing the mutex on Windows results in it not 
+                // releasing the mutex on Windows results in it not
                 // being unlocked by the destructor
 #ifndef WIN32
                 mlock.release();

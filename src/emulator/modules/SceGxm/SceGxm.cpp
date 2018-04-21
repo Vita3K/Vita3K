@@ -215,7 +215,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     glViewport(0, 0, host.display.window_width, host.display.window_height);
-    
+
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
 
@@ -753,16 +753,14 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat) {
     return unimplemented("sceGxmProgramGetOutputRegisterFormat");
 }
 
-EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram* program, unsigned int index) {
-    
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram *program, unsigned int index) {
     const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
-    
+
     const SceGxmProgramParameter *const parameter = &parameters[index];
     const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
 
     const Address parameter_address = static_cast<Address>(parameter_bytes - &host.mem.memory[0]);
     return Ptr<SceGxmProgramParameter>(parameter_address);
-
 }
 
 EXPORT(int, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
@@ -811,7 +809,7 @@ EXPORT(int, sceGxmProgramParameterGetArraySize) {
 
 EXPORT(int, sceGxmProgramParameterGetCategory, const SceGxmProgramParameter *parameter) {
     assert(parameter != nullptr);
-    
+
     return parameter->category;
 }
 
@@ -1843,7 +1841,7 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
                 return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
-        if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)){
+        if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)) {
             return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
         }
     }
@@ -1888,7 +1886,7 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
                 return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
-        if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)){
+        if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)) {
             return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
         }
     }

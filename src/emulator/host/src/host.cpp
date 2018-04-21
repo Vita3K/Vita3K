@@ -42,8 +42,8 @@
 #include <iomanip>
 #include <iostream>
 
-#include <imgui.h>
 #include <gui/imgui_impl_sdl_gl2.h>
+#include <imgui.h>
 
 using namespace glbinding;
 
