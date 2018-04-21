@@ -42,8 +42,10 @@
 #include <iomanip>
 #include <iostream>
 
-#include <gui/imgui_impl_sdl_gl2.h>
+// clang-format off
 #include <imgui.h>
+#include <gui/imgui_impl_sdl_gl2.h>
+// clang-format on
 
 using namespace glbinding;
 
