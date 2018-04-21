@@ -40,8 +40,10 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 #include <SDL_syswm.h>
-#include <gui/imgui_impl_sdl_gl2.h>
+// clang-format off
 #include <imgui.h>
+#include <gui/imgui_impl_sdl_gl2.h>
+// clang-format on
 
 // Data
 static Uint64 g_Time = 0;
