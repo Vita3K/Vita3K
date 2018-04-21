@@ -304,6 +304,10 @@ EXPORT(int, sceAppMgrLoadExec) {
     return unimplemented("sceAppMgrLoadExec");
 }
 
+EXPORT(int, sceAppMgrLoadSaveDataSystemFile) {
+    return unimplemented("sceAppMgrLoadSaveDataSystemFile");
+}
+
 EXPORT(int, sceAppMgrLoopBackFormat) {
     return unimplemented("sceAppMgrLoopBackFormat");
 }
@@ -586,6 +590,7 @@ BRIDGE_IMPL(sceAppMgrLaunchAppByUri)
 BRIDGE_IMPL(sceAppMgrLaunchAppByUri2)
 BRIDGE_IMPL(sceAppMgrLaunchVideoStreamingApp)
 BRIDGE_IMPL(sceAppMgrLoadExec)
+BRIDGE_IMPL(sceAppMgrLoadSaveDataSystemFile)
 BRIDGE_IMPL(sceAppMgrLoopBackFormat)
 BRIDGE_IMPL(sceAppMgrLoopBackMount)
 BRIDGE_IMPL(sceAppMgrMmsMount)
