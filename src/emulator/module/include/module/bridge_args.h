@@ -41,12 +41,42 @@ constexpr ArgsLayout<Args...> lay_out() {
     return { };
 }
 
-template <typename Arg>
-Arg read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
-    return Arg();
+template <typename T>
+T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
+    if (arg.gpr < 4) {
+        const uint32_t reg = read_reg(cpu, arg.gpr);
+        return static_cast<T>(reg);
+    } else {
+        const Address sp = read_sp(cpu);
+        const Address address_on_stack = sp + arg.stack_offset;
+        return *Ptr<T>(address_on_stack).get(mem);
+    }
 }
+
+// Arg in ARM register/memory requires no special conversion.
+template <typename Arg>
+struct BridgedArg {
+    typedef Arg Type;
+    
+    static Arg bridge(const Type &t, const MemState &mem) {
+        return t;
+    }
+};
+
+// Convert from address in ARM register/memory to host pointer.
+template <typename Pointee>
+struct BridgedArg<Pointee *> {
+    typedef Ptr<Pointee> Type;
+    
+    static Pointee *bridge(const Type &t, const MemState &mem) {
+        return t.get(mem);
+    }
+};
 
 template <typename Arg, typename... Args>
 Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, size_t index, const MemState &mem) {
-    return read<Arg>(cpu, args[index], mem);
+    typedef typename BridgedArg<Arg>::Type BridgedType;
+    
+    const BridgedType bridged = read<BridgedType>(cpu, args[index], mem);
+    return BridgedArg<Arg>::bridge(bridged, mem);
 }
