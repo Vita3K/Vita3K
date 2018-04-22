@@ -943,12 +943,25 @@ EXPORT(int, sceGxmSetBackPolygonMode) {
     return unimplemented("sceGxmSetBackPolygonMode");
 }
 
-EXPORT(int, sceGxmSetBackStencilFunc) {
-    return unimplemented("sceGxmSetBackStencilFunc");
+EXPORT(int, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
+    GLenum gl_func = translate_stencil_func(func);
+    GLenum sfail = translate_stencil_op(stencilFail);
+    GLenum dpfail = translate_stencil_op(depthFail);
+    GLenum dppass = translate_stencil_op(depthPass);
+    glStencilOp(sfail, dpfail, dppass);
+    GLint sref;
+    glGetIntegerv(GL_STENCIL_BACK_REF, &sref);
+    glStencilFuncSeparate(GL_BACK, gl_func, sref, compareMask);
+    glStencilMaskSeparate(GL_BACK, writeMask);
+    return 0;
 }
 
-EXPORT(int, sceGxmSetBackStencilRef) {
-    return unimplemented("sceGxmSetBackStencilRef");
+EXPORT(int, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
+    GLint stencil_config[2];
+    glGetIntegerv(GL_STENCIL_BACK_FUNC, &stencil_config[0]);
+    glGetIntegerv(GL_STENCIL_BACK_VALUE_MASK, &stencil_config[1]);
+    glStencilFuncSeparate(GL_BACK, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
+    return 0;
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestEnable) {
