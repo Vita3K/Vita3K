@@ -943,7 +943,7 @@ EXPORT(int, sceGxmSetBackPolygonMode) {
     return unimplemented("sceGxmSetBackPolygonMode");
 }
 
-EXPORT(int, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
+EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
     if (context->two_sided) {
         glEnable(GL_STENCIL_TEST);
         
@@ -960,10 +960,9 @@ EXPORT(int, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc 
         glStencilFuncSeparate(GL_BACK, gl_func, sref, compareMask);
         glStencilMaskSeparate(GL_BACK, writeMask);
     }
-    return 0;
 }
 
-EXPORT(int, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
+EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
     if (context->two_sided) {
         glEnable(GL_STENCIL_TEST);
         
@@ -973,7 +972,6 @@ EXPORT(int, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) 
         
         glStencilFuncSeparate(GL_BACK, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
     }
-    return 0;
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestEnable) {
@@ -1163,7 +1161,7 @@ EXPORT(int, sceGxmSetFrontPolygonMode) {
     return unimplemented("sceGxmSetFrontPolygonMode");
 }
 
-EXPORT(int, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
+EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
     glEnable(GL_STENCIL_TEST);
     
     GLenum face = context->two_sided ? GL_FRONT : GL_FRONT_AND_BACK;
@@ -1178,10 +1176,9 @@ EXPORT(int, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc
     glStencilOpSeparate(face, sfail, dpfail, dppass);
     glStencilFuncSeparate(face, gl_func, sref, compareMask);
     glStencilMaskSeparate(face, writeMask);
-    return 0;
 }
 
-EXPORT(int, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref) {
+EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref) {
     glEnable(GL_STENCIL_TEST);
     
     GLenum face = context->two_sided ? GL_FRONT : GL_FRONT_AND_BACK;
@@ -1191,7 +1188,6 @@ EXPORT(int, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref)
     glGetIntegerv(GL_STENCIL_VALUE_MASK, &stencil_config[1]);
     
     glStencilFuncSeparate(face, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
-    return 0;
 }
 
 EXPORT(int, sceGxmSetFrontVisibilityTestEnable) {
@@ -1218,9 +1214,8 @@ EXPORT(int, sceGxmSetRegionClip) {
     return unimplemented("sceGxmSetRegionClip");
 }
 
-EXPORT(int, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
+EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
     context->two_sided = (mode == SCE_GXM_TWO_SIDED_ENABLED);
-    return 0;
 }
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
@@ -1234,7 +1229,6 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     size_t size = componentCount * sizeof(float);
     size_t offset = componentOffset * sizeof(float);
     memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, sourceData, size);
-
     return 0;
 }
 
