@@ -1361,6 +1361,7 @@ EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     
     {
         const std::unique_lock<std::mutex> lock(cur_thread->mutex);
+        assert(cur_thread->to_do == ThreadToDo::run);
         cur_thread->to_do = ThreadToDo::wait;
         stop(*cur_thread->cpu);
     }
@@ -1371,7 +1372,7 @@ EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
         thread->waiting_threads.push_back(cur_thread);
     }
     
-    return 0;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelWaitThreadEndCB) {

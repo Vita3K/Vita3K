@@ -25,10 +25,9 @@ EXPORT(int, sceKernelExitThread, int status) {
     stop(*thread->cpu);
     thread->something_to_do.notify_all();
     
-    std::vector<ThreadStatePtr>::iterator thd;
-    for (thd = thread->waiting_threads.begin(); thd != thread->waiting_threads.end(); thd++){
-        ThreadStatePtr t = *thd;
+    for (auto t : thread->waiting_threads){
         const std::unique_lock<std::mutex> lock(t->mutex);
+        assert(t->to_do == ThreadToDo::wait);
         t->to_do = ThreadToDo::run;
         t->something_to_do.notify_one();
     }
