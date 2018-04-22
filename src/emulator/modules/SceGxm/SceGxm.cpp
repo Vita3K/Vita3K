@@ -949,7 +949,7 @@ EXPORT(int, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc 
     GLenum sfail = translate_stencil_op(stencilFail);
     GLenum dpfail = translate_stencil_op(depthFail);
     GLenum dppass = translate_stencil_op(depthPass);
-    glStencilOp(sfail, dpfail, dppass);
+    glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
     GLint sref;
     glGetIntegerv(GL_STENCIL_BACK_REF, &sref);
     glStencilFuncSeparate(GL_BACK, gl_func, sref, compareMask);
@@ -1159,7 +1159,7 @@ EXPORT(int, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc
     GLenum sfail = translate_stencil_op(stencilFail);
     GLenum dpfail = translate_stencil_op(depthFail);
     GLenum dppass = translate_stencil_op(depthPass);
-    glStencilOp(sfail, dpfail, dppass);
+    glStencilOpSeparate(GL_FRONT, sfail, dpfail, dppass);
     GLint sref;
     glGetIntegerv(GL_STENCIL_REF, &sref);
     glStencilFuncSeparate(GL_FRONT, gl_func, sref, compareMask);
