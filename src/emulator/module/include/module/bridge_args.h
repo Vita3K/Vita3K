@@ -33,11 +33,13 @@ using ArgsLayout = std::array<ArgLayout, sizeof...(Args)>;
 template <typename Arg>
 constexpr ArgLayout add(const ArgLayout &src) {
     const ArgLayout dst = src;
+    // TODO
     return dst;
 }
 
 template <typename... Args>
 constexpr ArgsLayout<Args...> lay_out() {
+    // TODO
     return { };
 }
 
