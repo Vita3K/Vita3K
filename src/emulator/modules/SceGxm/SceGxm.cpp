@@ -944,25 +944,35 @@ EXPORT(int, sceGxmSetBackPolygonMode) {
 }
 
 EXPORT(int, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
-    glEnable(GL_STENCIL_TEST);
-    GLenum gl_func = translate_stencil_func(func);
-    GLenum sfail = translate_stencil_op(stencilFail);
-    GLenum dpfail = translate_stencil_op(depthFail);
-    GLenum dppass = translate_stencil_op(depthPass);
-    glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
-    GLint sref;
-    glGetIntegerv(GL_STENCIL_BACK_REF, &sref);
-    glStencilFuncSeparate(GL_BACK, gl_func, sref, compareMask);
-    glStencilMaskSeparate(GL_BACK, writeMask);
+    if (context->two_sided) {
+        glEnable(GL_STENCIL_TEST);
+        
+        GLenum gl_func = translate_stencil_func(func);
+        GLenum sfail = translate_stencil_op(stencilFail);
+        GLenum dpfail = translate_stencil_op(depthFail);
+        GLenum dppass = translate_stencil_op(depthPass);
+        
+        
+        GLint sref;
+        glGetIntegerv(GL_STENCIL_BACK_REF, &sref);
+        
+        glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
+        glStencilFuncSeparate(GL_BACK, gl_func, sref, compareMask);
+        glStencilMaskSeparate(GL_BACK, writeMask);
+    }
     return 0;
 }
 
 EXPORT(int, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
-    glEnable(GL_STENCIL_TEST);
-    GLint stencil_config[2];
-    glGetIntegerv(GL_STENCIL_BACK_FUNC, &stencil_config[0]);
-    glGetIntegerv(GL_STENCIL_BACK_VALUE_MASK, &stencil_config[1]);
-    glStencilFuncSeparate(GL_BACK, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
+    if (context->two_sided) {
+        glEnable(GL_STENCIL_TEST);
+        
+        GLint stencil_config[2];
+        glGetIntegerv(GL_STENCIL_BACK_FUNC, &stencil_config[0]);
+        glGetIntegerv(GL_STENCIL_BACK_VALUE_MASK, &stencil_config[1]);
+        
+        glStencilFuncSeparate(GL_BACK, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
+    }
     return 0;
 }
 
@@ -1155,24 +1165,32 @@ EXPORT(int, sceGxmSetFrontPolygonMode) {
 
 EXPORT(int, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
     glEnable(GL_STENCIL_TEST);
+    
+    GLenum face = context->two_sided ? GL_FRONT : GL_FRONT_AND_BACK;
     GLenum gl_func = translate_stencil_func(func);
     GLenum sfail = translate_stencil_op(stencilFail);
     GLenum dpfail = translate_stencil_op(depthFail);
     GLenum dppass = translate_stencil_op(depthPass);
-    glStencilOpSeparate(GL_FRONT, sfail, dpfail, dppass);
+    
     GLint sref;
     glGetIntegerv(GL_STENCIL_REF, &sref);
-    glStencilFuncSeparate(GL_FRONT, gl_func, sref, compareMask);
-    glStencilMaskSeparate(GL_FRONT, writeMask);
+    
+    glStencilOpSeparate(face, sfail, dpfail, dppass);
+    glStencilFuncSeparate(face, gl_func, sref, compareMask);
+    glStencilMaskSeparate(face, writeMask);
     return 0;
 }
 
 EXPORT(int, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref) {
     glEnable(GL_STENCIL_TEST);
+    
+    GLenum face = context->two_sided ? GL_FRONT : GL_FRONT_AND_BACK;
+    
     GLint stencil_config[2];
     glGetIntegerv(GL_STENCIL_FUNC, &stencil_config[0]);
     glGetIntegerv(GL_STENCIL_VALUE_MASK, &stencil_config[1]);
-    glStencilFuncSeparate(GL_FRONT, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
+    
+    glStencilFuncSeparate(face, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
     return 0;
 }
 
@@ -1200,8 +1218,9 @@ EXPORT(int, sceGxmSetRegionClip) {
     return unimplemented("sceGxmSetRegionClip");
 }
 
-EXPORT(int, sceGxmSetTwoSidedEnable) {
-    return unimplemented("sceGxmSetTwoSidedEnable");
+EXPORT(int, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
+    context->two_sided = (mode == SCE_GXM_TWO_SIDED_ENABLED);
+    return 0;
 }
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
