@@ -70,6 +70,7 @@ struct SceGxmContext {
     UniformBuffers vertex_uniform_buffers;
     GLObjectArray<1> texture;
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
+    bool two_sided = false;
 };
 
 namespace emu {

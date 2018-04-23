@@ -768,7 +768,7 @@ GLenum translate_type(SceGxmTextureFormat format)
 
 } // namespace texture
 
-GLenum translate_primitive(SceGxmPrimitiveType primType){
+GLenum translate_primitive(SceGxmPrimitiveType primType) {
     GXM_PROFILE(__FUNCTION__);
 
     switch (primType) {
@@ -783,9 +783,60 @@ GLenum translate_primitive(SceGxmPrimitiveType primType){
         case SCE_GXM_PRIMITIVE_POINTS:
             return GL_POINTS;
         case SCE_GXM_PRIMITIVE_TRIANGLE_EDGES: // Todo: Implement this
+            LOG_WARN("Unsupported primitive: SCE_GXM_PRIMITIVE_TRIANGLE_EDGES, using GL_TRIANGLES instead");
             return GL_TRIANGLES;
     }
     return GL_TRIANGLES;
+}
+
+GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
+    GXM_PROFILE(__FUNCTION__);
+
+    switch (stencil_func) {
+    case SCE_GXM_STENCIL_FUNC_NEVER:
+        return GL_NEVER;
+    case SCE_GXM_STENCIL_FUNC_LESS:
+        return GL_LESS;
+    case SCE_GXM_STENCIL_FUNC_EQUAL:
+        return GL_EQUAL;
+    case SCE_GXM_STENCIL_FUNC_LESS_EQUAL:
+        return GL_LEQUAL;
+    case SCE_GXM_STENCIL_FUNC_GREATER:
+        return GL_GREATER;
+    case SCE_GXM_STENCIL_FUNC_NOT_EQUAL:
+        return GL_NOTEQUAL;
+    case SCE_GXM_STENCIL_FUNC_GREATER_EQUAL:
+        return GL_GEQUAL;
+    case SCE_GXM_STENCIL_FUNC_ALWAYS:
+        return GL_ALWAYS;
+    }
+    
+    return GL_ALWAYS;
+}
+
+GLenum translate_stencil_op(SceGxmStencilOp stencil_op) {
+    GXM_PROFILE(__FUNCTION__);
+
+    switch (stencil_op) {
+    case SCE_GXM_STENCIL_OP_KEEP:
+        return GL_KEEP;
+    case SCE_GXM_STENCIL_OP_ZERO:
+        return GL_ZERO;
+    case SCE_GXM_STENCIL_OP_REPLACE:
+        return GL_REPLACE;
+    case SCE_GXM_STENCIL_OP_INCR:
+        return GL_INCR;
+    case SCE_GXM_STENCIL_OP_DECR:
+        return GL_DECR;
+    case SCE_GXM_STENCIL_OP_INVERT:
+        return GL_INVERT;
+    case SCE_GXM_STENCIL_OP_INCR_WRAP:
+        return GL_INCR_WRAP;
+    case SCE_GXM_STENCIL_OP_DECR_WRAP:
+        return GL_DECR_WRAP;
+    }
+    
+    return GL_KEEP;
 }
 
 bool operator<(const FragmentProgramCacheKey& a, const FragmentProgramCacheKey &b) {

@@ -943,12 +943,35 @@ EXPORT(int, sceGxmSetBackPolygonMode) {
     return unimplemented("sceGxmSetBackPolygonMode");
 }
 
-EXPORT(int, sceGxmSetBackStencilFunc) {
-    return unimplemented("sceGxmSetBackStencilFunc");
+EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
+    if (context->two_sided) {
+        glEnable(GL_STENCIL_TEST);
+        
+        GLenum gl_func = translate_stencil_func(func);
+        GLenum sfail = translate_stencil_op(stencilFail);
+        GLenum dpfail = translate_stencil_op(depthFail);
+        GLenum dppass = translate_stencil_op(depthPass);
+        
+        
+        GLint sref;
+        glGetIntegerv(GL_STENCIL_BACK_REF, &sref);
+        
+        glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
+        glStencilFuncSeparate(GL_BACK, gl_func, sref, compareMask);
+        glStencilMaskSeparate(GL_BACK, writeMask);
+    }
 }
 
-EXPORT(int, sceGxmSetBackStencilRef) {
-    return unimplemented("sceGxmSetBackStencilRef");
+EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
+    if (context->two_sided) {
+        glEnable(GL_STENCIL_TEST);
+        
+        GLint stencil_config[2];
+        glGetIntegerv(GL_STENCIL_BACK_FUNC, &stencil_config[0]);
+        glGetIntegerv(GL_STENCIL_BACK_VALUE_MASK, &stencil_config[1]);
+        
+        glStencilFuncSeparate(GL_BACK, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
+    }
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestEnable) {
@@ -1138,12 +1161,33 @@ EXPORT(int, sceGxmSetFrontPolygonMode) {
     return unimplemented("sceGxmSetFrontPolygonMode");
 }
 
-EXPORT(int, sceGxmSetFrontStencilFunc) {
-    return unimplemented("sceGxmSetFrontStencilFunc");
+EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
+    glEnable(GL_STENCIL_TEST);
+    
+    GLenum face = context->two_sided ? GL_FRONT : GL_FRONT_AND_BACK;
+    GLenum gl_func = translate_stencil_func(func);
+    GLenum sfail = translate_stencil_op(stencilFail);
+    GLenum dpfail = translate_stencil_op(depthFail);
+    GLenum dppass = translate_stencil_op(depthPass);
+    
+    GLint sref;
+    glGetIntegerv(GL_STENCIL_REF, &sref);
+    
+    glStencilOpSeparate(face, sfail, dpfail, dppass);
+    glStencilFuncSeparate(face, gl_func, sref, compareMask);
+    glStencilMaskSeparate(face, writeMask);
 }
 
-EXPORT(int, sceGxmSetFrontStencilRef) {
-    return unimplemented("sceGxmSetFrontStencilRef");
+EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref) {
+    glEnable(GL_STENCIL_TEST);
+    
+    GLenum face = context->two_sided ? GL_FRONT : GL_FRONT_AND_BACK;
+    
+    GLint stencil_config[2];
+    glGetIntegerv(GL_STENCIL_FUNC, &stencil_config[0]);
+    glGetIntegerv(GL_STENCIL_VALUE_MASK, &stencil_config[1]);
+    
+    glStencilFuncSeparate(face, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
 }
 
 EXPORT(int, sceGxmSetFrontVisibilityTestEnable) {
@@ -1170,8 +1214,8 @@ EXPORT(int, sceGxmSetRegionClip) {
     return unimplemented("sceGxmSetRegionClip");
 }
 
-EXPORT(int, sceGxmSetTwoSidedEnable) {
-    return unimplemented("sceGxmSetTwoSidedEnable");
+EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
+    context->two_sided = (mode == SCE_GXM_TWO_SIDED_ENABLED);
 }
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
@@ -1185,7 +1229,6 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     size_t size = componentCount * sizeof(float);
     size_t offset = componentOffset * sizeof(float);
     memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, sourceData, size);
-
     return 0;
 }
 
