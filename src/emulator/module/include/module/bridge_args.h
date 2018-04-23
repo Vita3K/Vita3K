@@ -29,12 +29,12 @@ enum class ArgLocation {
 
 struct ArgLayout {
     ArgLocation location;
-    size_t offset = 0;
+    size_t offset;
 };
 
 struct LayoutArgsState {
-    size_t gpr_used = 0;
-    size_t stack_used = 0;
+    size_t gpr_used;
+    size_t stack_used;
 };
 
 constexpr size_t align(size_t current, size_t alignment) {
