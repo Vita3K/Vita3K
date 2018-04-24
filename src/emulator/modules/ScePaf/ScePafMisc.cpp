@@ -15,14 +15,10 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "ScePafMisc.h"
 
-#include <dialog/state.h>
+EXPORT(int, sce_paf_misc_does_file_exist) {
+    return unimplemented("sce_paf_misc_does_file_exist");
+}
 
-struct GuiState {
-    bool renderer_focused = true;
-    bool threads_dialog = false;
-    bool semaphores_dialog = false;
-    bool mutexes_dialog = false;
-    DialogState common_dialog;
-};
+BRIDGE_IMPL(sce_paf_misc_does_file_exist)

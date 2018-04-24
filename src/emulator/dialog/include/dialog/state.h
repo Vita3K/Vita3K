@@ -17,12 +17,26 @@
 
 #pragma once
 
-#include <dialog/state.h>
+#include <dialog/types.h>
+#include <psp2/ime_dialog.h>
 
-struct GuiState {
-    bool renderer_focused = true;
-    bool threads_dialog = false;
-    bool semaphores_dialog = false;
-    bool mutexes_dialog = false;
-    DialogState common_dialog;
+enum DialogType {
+	NO_DIALOG,
+	IME_DIALOG
+};
+
+struct ImeState {
+    std::string title;
+    uint32_t max_length;
+    bool multiline;
+    bool cancelable;
+    uint16_t *result;
+    char text[256];
+    uint32_t status;
+};
+
+struct DialogState {
+    DialogType type = NO_DIALOG;
+    SceCommonDialogStatus status = SCE_COMMON_DIALOG_STATUS_NONE;
+    ImeState ime;
 };

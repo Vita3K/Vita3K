@@ -315,6 +315,7 @@ NID(sceAppMgrLaunchAppByUri, 0x003C634F)
 NID(sceAppMgrLaunchAppByUri2, 0x0ED6AF54)
 NID(sceAppMgrLaunchVideoStreamingApp, 0x4C02B889)
 NID(sceAppMgrLoadExec, 0xE6774ABC)
+NID(sceAppMgrLoadSaveDataSystemFile, 0x660B57BE)
 NID(sceAppMgrLoopBackFormat, 0xCE8CE150)
 NID(sceAppMgrLoopBackMount, 0x33CD76DD)
 NID(sceAppMgrMmsMount, 0xF4730BA8)
@@ -5358,6 +5359,8 @@ NID(sceNpWebApiUnregisterPushEventCallback, 0xC9056736)
 NID(sceNpWebApiUnregisterServicePushEventCallback, 0x06D28ADA)
 NID(sceNpWebApiUtilityParseNpId, 0x98CBE11F)
 // Module "ScePaf"
+// Library "ScePafMisc"
+NID(sce_paf_misc_does_file_exist, 0x95F14046)
 // Library "ScePafStdc"
 NID(sce_paf_private_free, 0x1B77082E)
 NID(sce_paf_private_malloc, 0xFC5CD359)
