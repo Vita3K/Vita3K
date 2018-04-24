@@ -3,10 +3,12 @@ add_library(
 	STATIC
 	src/io.cpp
 	src/file.cpp
+        src/vfs.cpp
 	include/io/io.h
 	include/io/functions.h
 	include/io/state.h
 	include/io/file.h
+        include/io/vfs.h
 	include/io/VitaIoDevice.def
 )
 
