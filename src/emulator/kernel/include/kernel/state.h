@@ -17,20 +17,20 @@
 
 #pragma once
 
+#include <kernel/thread_state.h>
 #include <kernel/types.h>
 #include <mem/ptr.h>
 
-#include <psp2/kernel/modulemgr.h>
 #include <psp2/rtc.h>
 #include <psp2/types.h>
 
 #include <map>
 #include <mutex>
 #include <vector>
+#include <queue>
 
 struct ThreadState;
 
-struct SDL_semaphore;
 struct SDL_Thread;
 
 typedef std::map<SceUID, Ptr<void>> Blocks;
@@ -44,6 +44,18 @@ typedef std::shared_ptr<emu::SceKernelModuleInfo> SceKernelModuleInfoPtr;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
 typedef std::map<uint32_t, Address> ExportNids;
 
+struct WaitingThreadData {
+    ThreadStatePtr thread;
+    std::int32_t lock_count;
+    std::int32_t priority;
+
+    WaitingThreadData(ThreadStatePtr thread, std::int32_t lock_count, std::int32_t priority) :
+        thread(thread), lock_count(lock_count), priority(priority) {}
+};
+inline bool operator>(const WaitingThreadData& lhs, const WaitingThreadData& rhs) {
+    return lhs.priority > rhs.priority;
+}
+
 struct Semaphore {
     int val;
     int max;
@@ -56,9 +68,10 @@ struct Mutex {
     int lock_count;
     uint32_t attr;
     std::mutex mutex;
-    std::vector<ThreadStatePtr> locked;
+    std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>,
+        std::greater<WaitingThreadData>> waiting_threads;
     ThreadStatePtr owner;
-    std::string name;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
 
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
@@ -83,6 +96,7 @@ struct KernelState {
     ThreadToSlotToAddress tls;
     SemaphorePtrs semaphores;
     MutexPtrs mutexes;
+    MutexPtrs lwmutexes;   // also Mutexes for now
     ThreadStatePtrs threads;
     ThreadPtrs running_threads;
     WaitingThreadStates waiting_threads;
