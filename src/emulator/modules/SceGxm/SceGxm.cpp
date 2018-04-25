@@ -544,7 +544,9 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
         ::call_import(host, nid, thread_id);
     };
 
-    const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, MB(1), call_import, false);
+    const auto stack_size = SCE_KERNEL_STACK_SIZE_USER_DEFAULT; // TODO: Verify this is the correct stack size
+
+    const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, call_import, false);
 
     if (display_thread_id < 0) {
         return error(__func__, SCE_GXM_ERROR_DRIVER);
