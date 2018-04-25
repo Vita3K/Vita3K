@@ -28,8 +28,11 @@ void DrawMainMenuBar(HostState& host){
             if (ImGui::MenuItem("Semaphores", nullptr, host.gui.semaphores_dialog)){
                 host.gui.semaphores_dialog = !host.gui.semaphores_dialog;
             }
-            if (ImGui::MenuItem("Mutexes", nullptr, host.gui.mutexes_dialog)){
+            if (ImGui::MenuItem("Mutexes", nullptr, host.gui.mutexes_dialog)) {
                 host.gui.mutexes_dialog = !host.gui.mutexes_dialog;
+            }
+            if (ImGui::MenuItem("Lightweight Mutexes", nullptr, host.gui.lwmutexes_dialog)) {
+                host.gui.lwmutexes_dialog = !host.gui.lwmutexes_dialog;
             }
             ImGui::EndMenu();
         }
