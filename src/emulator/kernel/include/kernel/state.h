@@ -1,4 +1,4 @@
-// Vita3K emulator project
+﻿// Vita3K emulator project
 // Copyright (C) 2018 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -60,8 +60,8 @@ struct Semaphore {
     int val;
     int max;
     std::mutex mutex;
-    std::vector<ThreadStatePtr> locked;
-    std::string name;
+    std::vector<ThreadStatePtr> waiting_threads;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
 
 struct Mutex {

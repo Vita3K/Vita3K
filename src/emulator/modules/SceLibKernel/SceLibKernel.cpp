@@ -1458,13 +1458,13 @@ EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
         const std::unique_lock<std::mutex> lock(thread->mutex);
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
-        semaphore->locked.push_back(thread);
+        semaphore->waiting_threads.push_back(thread);
         stop(*thread->cpu);
     } else {
         semaphore->val -= signal;
     }
 
-    return 0;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelWaitSemaCB) {
@@ -1797,6 +1797,7 @@ BRIDGE_IMPL(sceKernelTrySendMsgPipe)
 BRIDGE_IMPL(sceKernelTrySendMsgPipeVector)
 BRIDGE_IMPL(sceKernelUnloadModule)
 BRIDGE_IMPL(sceKernelUnlockLwMutex)
+BRIDGE_IMPL(sceKernelUnlockLwMutex2)
 BRIDGE_IMPL(sceKernelWaitCond)
 BRIDGE_IMPL(sceKernelWaitCondCB)
 BRIDGE_IMPL(sceKernelWaitEvent)
