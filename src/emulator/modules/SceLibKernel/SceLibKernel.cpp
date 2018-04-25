@@ -840,15 +840,15 @@ EXPORT(int, sceKernelCreateSimpleEvent) {
     return unimplemented("sceKernelCreateSimpleEvent");
 }
 
-EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, int cpuAffinityMask, const SceKernelThreadOptParam *option) {
-    if (cpuAffinityMask > 0x70000) {
+EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntry entry, int init_priority, int stack_size, SceUInt attr, int cpu_affinity_mask, const SceKernelThreadOptParam *option) {
+    if (cpu_affinity_mask > 0x70000) {
         return error("sceKernelCreateThread", SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
     const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
         ::call_import(host, nid, thread_id);
     };
 
-    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, stackSize, call_import, false);
+    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, stack_size, call_import, false);
     if (thid < 0)
         return error("sceKernelCreateThread", thid);
     return thid;
