@@ -53,8 +53,9 @@ EXPORT(int, sceDisplayGetPrimaryHead) {
     return unimplemented("sceDisplayGetPrimaryHead");
 }
 
-EXPORT(int, sceDisplayGetRefreshRate) {
-    return unimplemented("sceDisplayGetRefreshRate");
+EXPORT(int, sceDisplayGetRefreshRate, float *pFps) {
+    *pFps = 59.94005f;
+    return 0;
 }
 
 EXPORT(int, sceDisplayGetVcount) {
