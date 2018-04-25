@@ -180,7 +180,7 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
 }
 
 int run(CPUState &state, bool callback) {
-    uint32_t pc = read_pc(state);
+    std::uint32_t pc = read_pc(state);
     bool thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
         pc |= 1;
@@ -188,14 +188,20 @@ int run(CPUState &state, bool callback) {
     if (callback) {
         uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &state.entry_point);
     }
-    int err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
+    uc_err err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
     pc = read_pc(state);
     thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
         pc |= 1;
     }
     err = uc_emu_start(state.uc.get(), pc, state.entry_point & 0xfffffffe, 0, 0);
-    assert(err == UC_ERR_OK);
+    
+    if (err != UC_ERR_OK) {
+        std::uint32_t error_pc = read_pc(state);
+        uint32_t lr = read_lr(state);
+        LOG_CRITICAL("Unicorn error {:#02x} at: start PC: {:#08x} error PC {:#08x} LR: {:#08x}", err, pc, error_pc, lr);
+        return -1;
+    }
     pc = read_pc(state);
     thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {

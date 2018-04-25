@@ -19,12 +19,14 @@
 
 #include <psp2/types.h>
 
+#include <string>
+
 struct IOState;
 struct SceIoStat;
 struct SceIoDirent;
 
 bool init(IOState &io, const char *pref_path);
-SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path);
+SceUID open_file(IOState &io, const std::string &path_, int flags, const char *pref_path);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io);
 int seek_file(SceUID fd, int offset, int whence, IOState &io);

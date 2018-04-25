@@ -17,7 +17,9 @@
 
 #include "SceModulemgr.h"
 #include "kernel/state.h"
+
 #include <psp2/kernel/error.h>
+#include <psp2/kernel/modulemgr.h>
 
 EXPORT(int, sceKernelGetAllowedSdkVersionOnSystem) {
     return unimplemented("sceKernelGetAllowedSdkVersionOnSystem");
