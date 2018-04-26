@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include "bridge_args.h"
-#include "bridge_return.h"
 #include "lay_out_args.h"
+#include "read_arg.h"
+#include "write_return_value.h"
 
 #include <host/import_fn.h>
 #include <host/state.h>
@@ -32,16 +32,16 @@
 
 struct CPUState;
 
-// Function returns a value that requires bridging.
+// Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>
-void call_and_bridge_return(Ret (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+void call(Ret (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
     const Ret ret = (*export_fn)(host, thread_id, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
-    bridge_return(cpu, ret);
+    write_return_value(cpu, ret);
 }
 
 // Function does not return a value.
 template <typename... Args, size_t... indices>
-void call_and_bridge_return(void (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+void call(void (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
     (*export_fn)(host, thread_id, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
 }
 
@@ -56,6 +56,6 @@ ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, Args...)) {
         assert(thread);
 
         using Indices = std::index_sequence_for<Args...>;
-        call_and_bridge_return(export_fn, args_layout, Indices(), thread_id, *thread->cpu, host);
+        call(export_fn, args_layout, Indices(), thread_id, *thread->cpu, host);
     };
 }

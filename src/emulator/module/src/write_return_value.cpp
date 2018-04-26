@@ -15,16 +15,27 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <module/write_return_value.h>
 
-#include <mem/ptr.h>
+#include <cpu/functions.h>
 
-struct CPUState;
+template <>
+void write_return_value<uint16_t>(CPUState &cpu, uint16_t ret) {
+    write_reg(cpu, 0, ret);
+}
 
-template <typename Ret>
-void bridge_return(CPUState &cpu, Ret ret);
+template <>
+void write_return_value<int32_t>(CPUState &cpu, int32_t ret) {
+    write_reg(cpu, 0, ret);
+}
 
-template <typename Pointee>
-void bridge_return(CPUState &cpu, const Ptr<Pointee> &ret) {
-    bridge_return(cpu, ret.address());
+template <>
+void write_return_value<uint32_t>(CPUState &cpu, uint32_t ret) {
+    write_reg(cpu, 0, ret);
+}
+
+template <>
+void write_return_value<uint64_t>(CPUState &cpu, uint64_t ret) {
+    write_reg(cpu, 0, ret & UINT32_MAX);
+    write_reg(cpu, 1, ret >> 32);
 }
