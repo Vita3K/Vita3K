@@ -41,7 +41,7 @@ int unimplemented(const char *name) {
     return 0;
 }
 
-int error(const char *name, int error) {
+int error(const char *name, std::uint32_t error) {
     bool inserted = false;
 
     {
@@ -50,7 +50,7 @@ int error(const char *name, int error) {
     }
 
     if (inserted) {
-        LOG_ERROR(">>> {} <<< returned {:#X}", name, error);
+		    LOG_ERROR(">>> {} <<< returned {:#x}", name, error);
     }
 
     return error;

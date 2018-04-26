@@ -37,10 +37,12 @@ enum class ThreadToDo {
 
 struct ThreadState {
     ThreadStackPtr stack;
+    int priority;
     int stack_size;
     CPUStatePtr cpu;
     ThreadToDo to_do = ThreadToDo::run;
     std::mutex mutex;
     std::condition_variable something_to_do;
+    std::vector<std::shared_ptr<ThreadState>> waiting_threads;
     char name[32];
 };

@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 
 bool load_sfo(SfoFile &sfile, const std::vector<uint8_t> &content) {
     if (content.empty()) {

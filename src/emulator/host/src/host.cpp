@@ -134,7 +134,7 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
 
         if (LOG_IMPORT_CALLS) {
             const char *const name = import_name(nid);
-            LOG_TRACE("THREAD_ID {} NID {:#08x} ({})) called", thread_id, nid, name);
+            LOG_TRACE("THREAD_ID {} NID {:#08x} ({}) called", thread_id, nid, name);
         }
         ImportFn *const fn = resolve_import(nid);
         if (fn != nullptr) {

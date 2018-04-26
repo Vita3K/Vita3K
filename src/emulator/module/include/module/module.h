@@ -27,7 +27,7 @@
 #include <cassert>
 
 int unimplemented(const char *name);
-int error(const char *name, int error);
+int error(const char *name, std::uint32_t error);
 
 #define BRIDGE_DECL(name) extern ImportFn *const import_##name;
 #define BRIDGE_IMPL(name) ImportFn *const import_##name = &Bridge<decltype(&export_##name), &export_##name>::call;

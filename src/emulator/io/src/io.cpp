@@ -100,7 +100,7 @@ const char *translate_open_mode(int flags) {
     }
 }
 
-std::string translate_path(const std::string &part_name, const char *path, const char *pref_path) {
+std::string translate_path(const std::string &part_name, const std::string &path, const std::string &pref_path) {
     std::string res = pref_path;
     res += part_name;
     int i = part_name.length();
@@ -163,10 +163,29 @@ translate_device(const std::string &path_) {
     return { VitaIoDevice::_UKNONWN, "" };
 }
 
-SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path) {
+SceUID open_file(IOState &io, const std::string& path_, int flags, const char *pref_path) {
+    std::string path(path_);
+
     VitaIoDevice device;
     std::string device_name;
     std::tie(device, device_name) = translate_device(path);
+
+    const std::string ux_app_path{ "ux0:/app/" };
+
+    // Redirect ux0:/app/<title_id> to app0:
+    if (device == VitaIoDevice::UX0) {
+        if (path.compare(0, ux_app_path.size(), ux_app_path) == 0) {
+            std::string fixed_path = path.substr(ux_app_path.length());
+            auto start_path = fixed_path.find('/');
+            if (start_path != std::string::npos) {
+                fixed_path = fixed_path.substr(start_path);
+                fixed_path.insert(0, "app0:");
+
+                path = fixed_path;
+                device = VitaIoDevice::APP0;
+            }
+        }
+    }
 
     switch (device) {
     case VitaIoDevice::TTY0: {
@@ -185,7 +204,8 @@ SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path
         return fd;
     }
     case VitaIoDevice::APP0: {
-        assert(flags == SCE_O_RDONLY);
+        if (flags == SCE_O_RDONLY)
+            LOG_WARN("Writing to app0(.vpk) unimplemented");
 
         if (!io.vpk) {
             return -1;
@@ -264,8 +284,10 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
 
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io) {
     assert(data != nullptr);
-    assert(fd >= 0);
     assert(size >= 0);
+    if (fd < 0) {
+        return -1;
+    }
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
