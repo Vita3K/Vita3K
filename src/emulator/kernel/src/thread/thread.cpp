@@ -128,6 +128,15 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
             thread->to_do = ThreadToDo::exit;
         }
         thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+        
+        for (auto t : thread->waiting_threads){
+            const std::unique_lock<std::mutex> lock(t->mutex);
+            assert(t->to_do == ThreadToDo::wait);
+            t->to_do = ThreadToDo::run;
+            t->something_to_do.notify_one();
+        }
+        thread->waiting_threads.clear();
+        
         SDL_WaitThread(running_thread, nullptr);
     };
 
@@ -177,6 +186,14 @@ bool run_thread(ThreadState &thread, bool callback) {
             lock.unlock();
             res = run(*thread.cpu, callback);
             if (res == 1) {
+                const std::unique_lock<std::mutex> lock(thread.mutex);
+                for (auto t : thread.waiting_threads){
+                    const std::unique_lock<std::mutex> lock(t->mutex);
+                    assert(t->to_do == ThreadToDo::wait);
+                    t->to_do = ThreadToDo::run;
+                    t->something_to_do.notify_one();
+                }
+                thread.waiting_threads.clear();
                 return true;
             }
             if (res < 0) {
