@@ -294,8 +294,8 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
     if (semaphore->val > semaphore->max) {
         semaphore->val = semaphore->max;
     }
-    
-    while (semaphore->val > 0 && semaphore->waiting_threads.size() > 0){
+
+    while (semaphore->val > 0 && semaphore->waiting_threads.size() > 0) {
         const ThreadStatePtr thread = semaphore->waiting_threads.back();
         assert(thread->to_do == ThreadToDo::wait);
         thread->to_do = ThreadToDo::run;

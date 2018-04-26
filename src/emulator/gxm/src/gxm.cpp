@@ -807,7 +807,7 @@ GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
     case SCE_GXM_STENCIL_FUNC_ALWAYS:
         return GL_ALWAYS;
     }
-    
+
     return GL_ALWAYS;
 }
 
@@ -832,7 +832,7 @@ GLenum translate_stencil_op(SceGxmStencilOp stencil_op) {
     case SCE_GXM_STENCIL_OP_DECR_WRAP:
         return GL_DECR_WRAP;
     }
-    
+
     return GL_KEEP;
 }
 

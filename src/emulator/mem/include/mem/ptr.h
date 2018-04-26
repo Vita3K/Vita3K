@@ -61,7 +61,7 @@ public:
         return addr != 0;
     }
 
-    Ptr& operator=(const Address &address) {
+    Ptr &operator=(const Address &address) {
         addr = address;
         return *this;
     }

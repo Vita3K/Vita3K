@@ -163,7 +163,7 @@ translate_device(const std::string &path_) {
     return { VitaIoDevice::_UKNONWN, "" };
 }
 
-SceUID open_file(IOState &io, const std::string& path_, int flags, const char *pref_path) {
+SceUID open_file(IOState &io, const std::string &path_, int flags, const char *pref_path) {
     std::string path(path_);
 
     VitaIoDevice device;

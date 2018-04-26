@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
     const CallImport call_import = [&host](uint32_t nid, SceUID main_thread_id) {
         ::call_import(host, nid, main_thread_id);
     };
-        
+
     const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_MAIN, call_import, false);
     if (main_thread_id < 0) {
         error("Failed to init main thread.", host.window.get());
