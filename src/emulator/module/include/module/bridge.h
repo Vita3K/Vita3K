@@ -19,6 +19,7 @@
 
 #include "bridge_args.h"
 #include "bridge_return.h"
+#include "lay_out_args.h"
 
 #include <host/import_fn.h>
 #include <host/state.h>
@@ -46,7 +47,7 @@ void call_and_bridge_return(void (*export_fn)(HostState &, SceUID, Args...), con
 
 template <typename Ret, typename... Args>
 ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, Args...)) {
-    constexpr ArgsLayout<Args...> args_layout = lay_out<Args...>();
+    constexpr ArgsLayout<Args...> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
     
     return [export_fn, args_layout](HostState &host, SceUID thread_id) {
         MICROPROFILE_SCOPEI("HLE", "", MP_YELLOW);
