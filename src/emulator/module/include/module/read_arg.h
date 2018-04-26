@@ -47,10 +47,12 @@ T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
         case ArgLocation::stack:
         {
             const Address sp = read_sp(cpu);
-            const Address address_on_stack = sp + arg.offset;
+            const Address address_on_stack = static_cast<Address>(sp + arg.offset);
             return *Ptr<T>(address_on_stack).get(mem);
         }
     }
+
+    return T();
 }
 
 template <typename Arg, size_t index, typename... Args>
