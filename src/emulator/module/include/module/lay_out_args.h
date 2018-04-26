@@ -93,7 +93,7 @@ template <typename... Args>
 constexpr ArgsLayout<Args...> lay_out() {
     ArgsLayout<Args...> layout = {};
     LayoutArgsState state = {};
-    Add<sizeof...(Args), Args...>::add(layout.front(), state);
+    Add<sizeof...(Args), Args...>::add(*layout.data(), state);
     
     return layout;
 }
