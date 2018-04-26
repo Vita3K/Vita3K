@@ -201,7 +201,9 @@ EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
     case SCE_SYSTEM_PARAM_ID_LANG:
         *value = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
         return 0;
-        break;
+    case SCE_SYSTEM_PARAM_ID_ENTER_BUTTON:
+        *value = SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS;
+        return 0;
     default:
         return error(__func__, SCE_APPUTIL_ERROR_PARAMETER);
     }
