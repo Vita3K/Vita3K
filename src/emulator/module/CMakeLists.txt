@@ -4,6 +4,7 @@ add_library(
 	include/module/bridge.h
 	include/module/bridge_args.h
 	include/module/bridge_return.h
+	include/module/bridge_types.h
 	include/module/module.h
 	src/bridge_return.cpp
 	src/module.cpp

@@ -17,8 +17,9 @@
 
 #pragma once
 
+#include "bridge_types.h"
+
 #include <cpu/functions.h>
-#include <mem/ptr.h>
 
 #include <array>
 
@@ -105,34 +106,11 @@ struct Add<count, Head, Tail...> {
     }
 };
 
-// Arg in ARM register/memory requires no special conversion.
-template <typename Arg>
-struct BridgedArg {
-    typedef Arg Type;
-    
-    static Arg bridge(const Type &t, const MemState &mem) {
-        return t;
-    }
-};
-
-// Convert from address in ARM register/memory to host pointer.
-template <typename Pointee>
-struct BridgedArg<Pointee *> {
-    typedef Ptr<Pointee> Type;
-    
-    static Pointee *bridge(const Type &t, const MemState &mem) {
-        return t.get(mem);
-    }
-};
-
-template <typename Arg>
-using BridgedType = typename BridgedArg<Arg>::Type;
-
 template <typename... Args>
 constexpr ArgsLayout<Args...> lay_out() {
     ArgsLayout<Args...> layout = {};
     LayoutArgsState state = {};
-    Add<sizeof...(Args), BridgedType<Args>...>::add(layout.front(), state);
+    Add<sizeof...(Args), typename BridgeTypes<Args>::ArmType...>::add(layout.front(), state);
     
     return layout;
 }
@@ -157,8 +135,8 @@ T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
 
 template <typename Arg, typename... Args>
 Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, size_t index, const MemState &mem) {
-    using BridgedArgType = BridgedType<Arg>;
+    using ArmType = typename BridgeTypes<Arg>::ArmType;
     
-    const BridgedArgType bridged = read<BridgedArgType>(cpu, args[index], mem);
-    return BridgedArg<Arg>::bridge(bridged, mem);
+    const ArmType bridged = read<ArmType>(cpu, args[index], mem);
+    return BridgeTypes<Arg>::arm_to_host(bridged, mem);
 }
