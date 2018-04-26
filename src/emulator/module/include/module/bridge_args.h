@@ -40,8 +40,8 @@ T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
     }
 }
 
-template <typename Arg, typename... Args>
-Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, size_t index, const MemState &mem) {
+template <typename Arg, size_t index, typename... Args>
+Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, const MemState &mem) {
     using ArmType = typename BridgeTypes<Arg>::ArmType;
     
     const ArmType bridged = read<ArmType>(cpu, args[index], mem);

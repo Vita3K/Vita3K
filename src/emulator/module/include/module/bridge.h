@@ -35,14 +35,14 @@ struct CPUState;
 // Function returns a value that requires bridging.
 template <typename Ret, typename... Args, size_t... indices>
 void call_and_bridge_return(Ret (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
-    const Ret ret = (*export_fn)(host, thread_id, read<Args, Args...>(cpu, args_layout, indices, host.mem)...);
+    const Ret ret = (*export_fn)(host, thread_id, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
     bridge_return(cpu, ret);
 }
 
 // Function does not return a value.
 template <typename... Args, size_t... indices>
 void call_and_bridge_return(void (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
-    (*export_fn)(host, thread_id, read<Args, Args...>(cpu, args_layout, indices, host.mem)...);
+    (*export_fn)(host, thread_id, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
 }
 
 template <typename Ret, typename... Args>
