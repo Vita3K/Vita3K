@@ -25,6 +25,32 @@
 // TODO Move elsewhere.
 static uint64_t timestamp;
 
+static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData) {
+    memset(pData, 0, sizeof(*pData));
+    pData->timeStamp = timestamp++; // TODO Use the real time and units.
+
+    int window_x = 0;
+    int window_y = 0;
+    const uint32_t buttons = SDL_GetMouseState(&window_x, &window_y);
+
+    int window_w = 0;
+    int window_h = 0;
+    SDL_Window *const window = SDL_GetMouseFocus();
+    SDL_GetWindowSize(window, &window_w, &window_h);
+
+    const float normalised_x = window_x / static_cast<float>(window_w);
+    const float normalised_y = window_y / static_cast<float>(window_h);
+
+    const uint32_t mask = (port == 1) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
+    if ((buttons & mask) && (host.gui.renderer_focused)) {
+        pData->report[pData->reportNum].x = static_cast<uint16_t>(normalised_x * 1920);
+        pData->report[pData->reportNum].y = static_cast<uint16_t>(normalised_y * 1088);
+        ++pData->reportNum;
+    }
+    
+    return 0;
+}
+
 EXPORT(int, sceTouchActivateRegion) {
     return unimplemented("sceTouchActivateRegion");
 }
@@ -83,33 +109,16 @@ EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
     assert(pData != nullptr);
     assert(nBufs == 1);
 
-    memset(pData, 0, sizeof(*pData));
-    pData->timeStamp = timestamp++; // TODO Use the real time and units.
-
-    int window_x = 0;
-    int window_y = 0;
-    const uint32_t buttons = SDL_GetMouseState(&window_x, &window_y);
-
-    int window_w = 0;
-    int window_h = 0;
-    SDL_Window *const window = SDL_GetMouseFocus();
-    SDL_GetWindowSize(window, &window_w, &window_h);
-
-    const float normalised_x = window_x / static_cast<float>(window_w);
-    const float normalised_y = window_y / static_cast<float>(window_h);
-
-    const uint32_t mask = (port == 1) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
-    if (buttons & mask && (host.gui.renderer_focused)) {
-        pData->report[pData->reportNum].x = static_cast<uint16_t>(normalised_x * 1920);
-        pData->report[pData->reportNum].y = static_cast<uint16_t>(normalised_y * 1088);
-        ++pData->reportNum;
-    }
-
-    return 0;
+    return peek_touch(host, port, pData);
 }
 
-EXPORT(int, sceTouchPeek2) {
-    return unimplemented("sceTouchPeek2");
+EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
+    assert(port >= 0);
+    assert(port <= 1);
+    assert(pData != nullptr);
+    assert(nBufs == 1);
+
+    return peek_touch(host, port, pData);
 }
 
 EXPORT(int, sceTouchPeekRegion) {
@@ -120,12 +129,22 @@ EXPORT(int, sceTouchPeekRegionExt) {
     return unimplemented("sceTouchPeekRegionExt");
 }
 
-EXPORT(int, sceTouchRead) {
-    return unimplemented("sceTouchRead");
+EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
+    assert(port >= 0);
+    assert(port <= 1);
+    assert(pData != nullptr);
+    assert(nBufs == 1);
+
+    return peek_touch(host, port, pData);
 }
 
-EXPORT(int, sceTouchRead2) {
-    return unimplemented("sceTouchRead2");
+EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
+    assert(port >= 0);
+    assert(port <= 1);
+    assert(pData != nullptr);
+    assert(nBufs == 1);
+
+    return peek_touch(host, port, pData);
 }
 
 EXPORT(int, sceTouchReadRegion) {
