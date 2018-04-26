@@ -215,7 +215,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     glViewport(0, 0, host.display.window_width, host.display.window_height);
-    
+
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
 
@@ -755,16 +755,14 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat) {
     return unimplemented("sceGxmProgramGetOutputRegisterFormat");
 }
 
-EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram* program, unsigned int index) {
-    
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram *program, unsigned int index) {
     const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
-    
+
     const SceGxmProgramParameter *const parameter = &parameters[index];
     const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
 
     const Address parameter_address = static_cast<Address>(parameter_bytes - &host.mem.memory[0]);
     return Ptr<SceGxmProgramParameter>(parameter_address);
-
 }
 
 EXPORT(int, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
@@ -813,7 +811,7 @@ EXPORT(int, sceGxmProgramParameterGetArraySize) {
 
 EXPORT(int, sceGxmProgramParameterGetCategory, const SceGxmProgramParameter *parameter) {
     assert(parameter != nullptr);
-    
+
     return parameter->category;
 }
 
@@ -948,16 +946,15 @@ EXPORT(int, sceGxmSetBackPolygonMode) {
 EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
     if (context->two_sided) {
         glEnable(GL_STENCIL_TEST);
-        
+
         GLenum gl_func = translate_stencil_func(func);
         GLenum sfail = translate_stencil_op(stencilFail);
         GLenum dpfail = translate_stencil_op(depthFail);
         GLenum dppass = translate_stencil_op(depthPass);
-        
-        
+
         GLint sref;
         glGetIntegerv(GL_STENCIL_BACK_REF, &sref);
-        
+
         glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
         glStencilFuncSeparate(GL_BACK, gl_func, sref, compareMask);
         glStencilMaskSeparate(GL_BACK, writeMask);
@@ -967,11 +964,11 @@ EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc
 EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
     if (context->two_sided) {
         glEnable(GL_STENCIL_TEST);
-        
+
         GLint stencil_config[2];
         glGetIntegerv(GL_STENCIL_BACK_FUNC, &stencil_config[0]);
         glGetIntegerv(GL_STENCIL_BACK_VALUE_MASK, &stencil_config[1]);
-        
+
         glStencilFuncSeparate(GL_BACK, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
     }
 }
@@ -1165,16 +1162,16 @@ EXPORT(int, sceGxmSetFrontPolygonMode) {
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
     glEnable(GL_STENCIL_TEST);
-    
+
     GLenum face = context->two_sided ? GL_FRONT : GL_FRONT_AND_BACK;
     GLenum gl_func = translate_stencil_func(func);
     GLenum sfail = translate_stencil_op(stencilFail);
     GLenum dpfail = translate_stencil_op(depthFail);
     GLenum dppass = translate_stencil_op(depthPass);
-    
+
     GLint sref;
     glGetIntegerv(GL_STENCIL_REF, &sref);
-    
+
     glStencilOpSeparate(face, sfail, dpfail, dppass);
     glStencilFuncSeparate(face, gl_func, sref, compareMask);
     glStencilMaskSeparate(face, writeMask);
@@ -1182,13 +1179,13 @@ EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFun
 
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref) {
     glEnable(GL_STENCIL_TEST);
-    
+
     GLenum face = context->two_sided ? GL_FRONT : GL_FRONT_AND_BACK;
-    
+
     GLint stencil_config[2];
     glGetIntegerv(GL_STENCIL_FUNC, &stencil_config[0]);
     glGetIntegerv(GL_STENCIL_VALUE_MASK, &stencil_config[1]);
-    
+
     glStencilFuncSeparate(face, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
 }
 
@@ -1888,7 +1885,7 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
                 return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
-        if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)){
+        if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)) {
             return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
         }
     }
@@ -1933,7 +1930,7 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
                 return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
-        if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)){
+        if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)) {
             return error(__func__, SCE_GXM_ERROR_UNSUPPORTED);
         }
     }

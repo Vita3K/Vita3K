@@ -15,20 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <imgui.h>
 #include <gui/functions.h>
+#include <imgui.h>
 
 #include <host/state.h>
 #include <kernel/thread_functions.h>
 #include <kernel/thread_state.h>
 #include <util/resource.h>
 
-
-void DrawMutexesDialog(HostState& host) {
+void DrawMutexesDialog(HostState &host) {
     ImGui::Begin("Mutexes", &host.gui.mutexes_dialog);
-    ImGui::TextColored(ImVec4(255,255,0,255), "%-16s %-32s   %-7s   %-8s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
+    ImGui::TextColored(ImVec4(255, 255, 0, 255), "%-16s %-32s   %-7s   %-8s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+
     for (auto mutex : host.kernel.mutexes) {
         std::shared_ptr<Mutex> mutex_state = mutex.second;
         ImGui::Text("0x%08X       %-32s   %02d        %01d            %02u                 %s",
@@ -42,9 +42,9 @@ void DrawMutexesDialog(HostState& host) {
     ImGui::End();
 }
 
-void DrawLwMutexesDialog(HostState& host) {
+void DrawLwMutexesDialog(HostState &host) {
     ImGui::Begin("Lightweight Mutexes", &host.gui.lwmutexes_dialog);
-    ImGui::TextColored(ImVec4(255, 255, 0, 255), "%-16s %-32s   %-7s   %-8s  %-16s   %-16s", "ID", "LwMutex Name", "Status",  "Attributes", "Waiting Threads", "Owner");
+    ImGui::TextColored(ImVec4(255, 255, 0, 255), "%-16s %-32s   %-7s   %-8s  %-16s   %-16s", "ID", "LwMutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
     for (auto mutex : host.kernel.lwmutexes) {

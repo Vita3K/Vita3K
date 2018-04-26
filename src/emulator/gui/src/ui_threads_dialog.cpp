@@ -15,23 +15,24 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <imgui.h>
 #include <gui/functions.h>
+#include <imgui.h>
 
 #include <host/state.h>
 #include <kernel/thread_functions.h>
 #include <kernel/thread_state.h>
 #include <util/resource.h>
 
-void DrawThreadsDialog(HostState& host){
+void DrawThreadsDialog(HostState &host) {
     ImGui::Begin("Threads", &host.gui.threads_dialog);
-    ImGui::TextColored(ImVec4(255,255,0,255), "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
+    ImGui::TextColored(ImVec4(255, 255, 0, 255), "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
 
     const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+
     for (auto thread : host.kernel.threads) {
         std::shared_ptr<ThreadState> th_state = thread.second;
         std::string run_state;
-        switch (th_state->to_do){
+        switch (th_state->to_do) {
         case ThreadToDo::run:
             run_state = "Running";
             break;

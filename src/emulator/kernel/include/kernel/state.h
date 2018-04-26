@@ -26,8 +26,8 @@
 
 #include <map>
 #include <mutex>
-#include <vector>
 #include <queue>
+#include <vector>
 
 struct ThreadState;
 
@@ -49,10 +49,12 @@ struct WaitingThreadData {
     std::int32_t lock_count;
     std::int32_t priority;
 
-    WaitingThreadData(ThreadStatePtr thread, std::int32_t lock_count, std::int32_t priority) :
-        thread(thread), lock_count(lock_count), priority(priority) {}
+    WaitingThreadData(ThreadStatePtr thread, std::int32_t lock_count, std::int32_t priority)
+        : thread(thread)
+        , lock_count(lock_count)
+        , priority(priority) {}
 };
-inline bool operator>(const WaitingThreadData& lhs, const WaitingThreadData& rhs) {
+inline bool operator>(const WaitingThreadData &lhs, const WaitingThreadData &rhs) {
     return lhs.priority > rhs.priority;
 }
 
@@ -69,7 +71,8 @@ struct Mutex {
     uint32_t attr;
     std::mutex mutex;
     std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>,
-        std::greater<WaitingThreadData>> waiting_threads;
+        std::greater<WaitingThreadData>>
+        waiting_threads;
     ThreadStatePtr owner;
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
@@ -96,7 +99,7 @@ struct KernelState {
     ThreadToSlotToAddress tls;
     SemaphorePtrs semaphores;
     MutexPtrs mutexes;
-    MutexPtrs lwmutexes;   // also Mutexes for now
+    MutexPtrs lwmutexes; // also Mutexes for now
     ThreadStatePtrs threads;
     ThreadPtrs running_threads;
     WaitingThreadStates waiting_threads;

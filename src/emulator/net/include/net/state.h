@@ -23,17 +23,17 @@
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-# include <winsock2.h>
-# include <Ws2tcpip.h>
+#include <Ws2tcpip.h>
+#include <winsock2.h>
 typedef SOCKET abs_socket;
 typedef int socklen_t;
 #else
-# include <unistd.h>
-# include <sys/socket.h>
-# include <sys/ioctl.h>
-# include <netinet/in.h>
-# include <netdb.h>
-# include <arpa/inet.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <unistd.h>
 typedef int abs_socket;
 #endif
 

@@ -1,18 +1,18 @@
 #pragma once
 
-#include <crypto/hash.h>
 #include <condition_variable>
+#include <crypto/hash.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
-#include <rpcs3/BitField.h>
 #include <mem/ptr.h>
+#include <rpcs3/BitField.h>
 
-#include <psp2/gxm.h>
 #include <SDL_video.h>
+#include <psp2/gxm.h>
 
-#include <mutex>
 #include <array>
 #include <map>
+#include <mutex>
 #include <tuple>
 
 namespace emu {
@@ -85,10 +85,10 @@ namespace emu {
 
 struct SceGxmFragmentProgram {
     size_t reference_count = 1;
-    
+
     Ptr<const SceGxmProgram> program;
     std::string glsl;
-    
+
     GLboolean color_mask_red = GL_TRUE;
     GLboolean color_mask_green = GL_TRUE;
     GLboolean color_mask_blue = GL_TRUE;
@@ -170,10 +170,10 @@ struct SceGxmProgram {
 struct SceGxmProgramParameter {
     int32_t name_offset; // Number of bytes from the start of this structure to the name string.
     union {
-        bf_t<uint16_t, 0, 4> category;  // SceGxmParameterCategory - select constant or sampler
-        bf_t<uint16_t, 4, 4> type;  // SceGxmParameterType - applicable for constants, not applicable for samplers (select type like float, half, fixed ...)
-        bf_t<uint16_t, 8, 4> component_count;  // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
-        bf_t<uint16_t, 12, 4> container_index;  // applicable for constants, not applicable for samplers (buffer, default, texture)
+        bf_t<uint16_t, 0, 4> category; // SceGxmParameterCategory - select constant or sampler
+        bf_t<uint16_t, 4, 4> type; // SceGxmParameterType - applicable for constants, not applicable for samplers (select type like float, half, fixed ...)
+        bf_t<uint16_t, 8, 4> component_count; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
+        bf_t<uint16_t, 12, 4> container_index; // applicable for constants, not applicable for samplers (buffer, default, texture)
     };
     uint16_t unknown; // Maybe relevant to SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE or SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER.
     uint32_t array_size;
@@ -261,10 +261,10 @@ typedef std::map<GLuint, std::string> AttributeLocations;
 struct SceGxmVertexProgram {
     // TODO I think this is an opaque type.
     size_t reference_count = 1;
-    
+
     Ptr<const SceGxmProgram> program;
     std::string glsl;
-    
+
     AttributeLocations attribute_locations;
     std::vector<SceGxmVertexStream> streams;
     std::vector<emu::SceGxmVertexAttribute> attributes;

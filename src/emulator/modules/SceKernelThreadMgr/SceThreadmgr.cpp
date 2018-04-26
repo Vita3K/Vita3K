@@ -282,21 +282,20 @@ EXPORT(int, sceKernelSignalCondTo) {
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
-    
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
     if (!semaphore) {
         return error("sceKernelSignalSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
-    
+
     const std::unique_lock<std::mutex> lock(semaphore->mutex);
-    
+
     semaphore->val += signal;
-    if (semaphore->val > semaphore->max){
+    if (semaphore->val > semaphore->max) {
         semaphore->val = semaphore->max;
     }
-    
-    while (semaphore->val > 0 && semaphore->waiting_threads.size() > 0){
+
+    while (semaphore->val > 0 && semaphore->waiting_threads.size() > 0) {
         const ThreadStatePtr thread = semaphore->waiting_threads.back();
         assert(thread->to_do == ThreadToDo::wait);
         thread->to_do = ThreadToDo::run;
@@ -304,7 +303,7 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
         semaphore->val--;
         thread->something_to_do.notify_one();
     }
-    
+
     return 0;
 }
 

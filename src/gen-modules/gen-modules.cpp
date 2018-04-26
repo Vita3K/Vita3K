@@ -135,7 +135,7 @@ static void gen_library_h(std::ostream &dst, const Library &library) {
     dst << std::endl;
     dst << "#include <module/module.h>" << std::endl;
     dst << std::endl;
-    
+
     for (const auto &function : library.second) {
         dst << "BRIDGE_DECL(" << function.first << ")" << std::endl;
     }
@@ -151,7 +151,7 @@ static void gen_module_stubs(const Modules &modules) {
         const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
         mkdir(module_path.c_str(), mode);
 #endif
-        
+
         for (const Library &library : module.second) {
             const std::string library_cpp_path = module_path + "/" + library.first + ".cpp";
             const std::string library_h_path = module_path + "/" + library.first + ".h";

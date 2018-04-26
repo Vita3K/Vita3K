@@ -21,8 +21,8 @@
 #include <psp2/ime_dialog.h>
 
 enum DialogType {
-	NO_DIALOG,
-	IME_DIALOG
+    NO_DIALOG,
+    IME_DIALOG
 };
 
 struct ImeState {

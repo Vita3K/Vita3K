@@ -54,15 +54,13 @@ namespace emu {
         SceKernelSegmentInfo segments[4];
         SceUInt type; //!< 6 = user-mode PRX?
     };
-    
+
     // We only use workarea for uid
-    struct SceKernelLwMutexWork
-    {
+    struct SceKernelLwMutexWork {
         SceUID uid;
 
         std::uint8_t padding[28];
     };
 
-    static_assert(sizeof (SceKernelLwMutexWork) == 32, "Incorrect size");
-
+    static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
 }

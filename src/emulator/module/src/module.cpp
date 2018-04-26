@@ -50,7 +50,7 @@ int error(const char *name, std::uint32_t error) {
     }
 
     if (inserted) {
-		    LOG_ERROR(">>> {} <<< returned {:#x}", name, error);
+        LOG_ERROR(">>> {} <<< returned {:#x}", name, error);
     }
 
     return error;

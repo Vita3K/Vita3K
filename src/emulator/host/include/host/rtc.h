@@ -36,8 +36,8 @@ constexpr auto VITA_CLOCKS_PER_SEC = 1'000'000;
 using VitaClocks = std::chrono::duration<std::uint64_t, std::ratio<1, VITA_CLOCKS_PER_SEC>>;
 
 std::uint64_t rtc_base_ticks();
-std::uint64_t rtc_get_ticks(const HostState& host);
+std::uint64_t rtc_get_ticks(const HostState &host);
 time_t rtc_timegm(struct tm *tm);
-void __RtcPspTimeToTm(tm& val, const SceDateTime& pt);
-void __RtcTicksToPspTime(SceDateTime& t, std::uint64_t ticks);
-std::uint64_t __RtcPspTimeToTicks(const SceDateTime& pt);
+void __RtcPspTimeToTm(tm &val, const SceDateTime &pt);
+void __RtcTicksToPspTime(SceDateTime &t, std::uint64_t ticks);
+std::uint64_t __RtcPspTimeToTicks(const SceDateTime &pt);

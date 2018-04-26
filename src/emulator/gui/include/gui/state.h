@@ -25,6 +25,6 @@ struct GuiState {
     bool semaphores_dialog = false;
     bool mutexes_dialog = false;
     bool lwmutexes_dialog = false;
-    
+
     DialogState common_dialog;
 };

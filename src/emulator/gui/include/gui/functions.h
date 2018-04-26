@@ -19,10 +19,10 @@
 
 struct HostState;
 
-void DrawMainMenuBar(HostState& host);
-void DrawThreadsDialog(HostState& host);
-void DrawSemaphoresDialog(HostState& host);
-void DrawMutexesDialog(HostState& host);
-void DrawLwMutexesDialog(HostState& host);
-void DrawUI(HostState& host);
-void DrawCommonDialog(HostState& host);
+void DrawMainMenuBar(HostState &host);
+void DrawThreadsDialog(HostState &host);
+void DrawSemaphoresDialog(HostState &host);
+void DrawMutexesDialog(HostState &host);
+void DrawLwMutexesDialog(HostState &host);
+void DrawUI(HostState &host);
+void DrawCommonDialog(HostState &host);

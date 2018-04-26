@@ -19,12 +19,12 @@
 
 #include <audio/state.h>
 #include <ctrl/state.h>
+#include <gui/state.h>
 #include <gxm/state.h>
 #include <host/sfo.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
-#include <gui/state.h>
 #include <psp2/display.h>
 
 #include <atomic>
@@ -46,8 +46,7 @@ struct DisplayState {
     std::condition_variable condvar;
     std::atomic<bool> abort{ false };
 
-    void set_window_dims(std::uint32_t width, std::uint32_t height)
-    {
+    void set_window_dims(std::uint32_t width, std::uint32_t height) {
         window_width = width;
         window_height = height;
     }

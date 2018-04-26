@@ -15,17 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <imgui.h>
 #include <gui/functions.h>
 #include <host/state.h>
+#include <imgui.h>
 
-void DrawUI(HostState& host){
+void DrawUI(HostState &host) {
     DrawMainMenuBar(host);
-    
-    if (host.gui.threads_dialog){
+
+    if (host.gui.threads_dialog) {
         DrawThreadsDialog(host);
     }
-    if (host.gui.semaphores_dialog){
+    if (host.gui.semaphores_dialog) {
         DrawSemaphoresDialog(host);
     }
     if (host.gui.mutexes_dialog) {

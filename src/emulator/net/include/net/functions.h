@@ -23,7 +23,7 @@ struct SceNetSockaddr;
 bool init(NetState &state);
 int open_socket(NetState &net, int domain, int type, int protocol);
 int close_socket(NetState &net, int id);
-int bind_socket(NetState &net,int s, const SceNetSockaddr *name, unsigned int addrlen);
+int bind_socket(NetState &net, int s, const SceNetSockaddr *name, unsigned int addrlen);
 int send_packet(NetState &net, int s, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen);
 int recv_packet(NetState &net, int s, void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen);
 int get_socket_address(NetState &net, int s, SceNetSockaddr *name, unsigned int *namelen);

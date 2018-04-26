@@ -18,8 +18,8 @@
 #pragma once
 
 #include <kernel/thread_functions.h>
-#include <psp2/types.h>
 #include <mem/ptr.h>
+#include <psp2/types.h>
 
 #include <cstdint>
 
@@ -30,5 +30,5 @@ bool handle_events(HostState &host);
 void call_import(HostState &host, uint32_t nid, SceUID thread_id);
 
 // Needed because Sony decided to split Mutex functions to both LibKernel and ThreadMgr
-int unlock_mutex(HostState& host, SceUID thread_id, MutexPtrs& host_mutexes, SceUID mutexid, int unlock_count);
-int delete_mutex(HostState& host, SceUID thread_id, MutexPtrs& host_mutexes, SceUID mutexid);
+int unlock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int unlock_count);
+int delete_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid);

@@ -27,6 +27,6 @@ Sha256Hash sha256(const void *data, size_t size) {
     sha256_init(&sha_ctx);
     sha256_update(&sha_ctx, static_cast<const uint8_t *>(data), size);
     sha256_final(&sha_ctx, hash.data());
-    
+
     return hash;
 }

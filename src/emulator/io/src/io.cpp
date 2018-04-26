@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <io/io.h>
 #include <io/functions.h>
+#include <io/io.h>
 
 #include <psp2/io/dirent.h>
 #include <psp2/io/stat.h>
@@ -163,7 +163,7 @@ translate_device(const std::string &path_) {
     return { VitaIoDevice::_UKNONWN, "" };
 }
 
-SceUID open_file(IOState &io, const std::string& path_, int flags, const char *pref_path) {
+SceUID open_file(IOState &io, const std::string &path_, int flags, const char *pref_path) {
     std::string path(path_);
 
     VitaIoDevice device;

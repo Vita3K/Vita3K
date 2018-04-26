@@ -195,7 +195,7 @@ int run(CPUState &state, bool callback) {
         pc |= 1;
     }
     err = uc_emu_start(state.uc.get(), pc, state.entry_point & 0xfffffffe, 0, 0);
-    
+
     if (err != UC_ERR_OK) {
         std::uint32_t error_pc = read_pc(state);
         uint32_t lr = read_lr(state);
