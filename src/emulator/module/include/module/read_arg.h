@@ -22,20 +22,20 @@
 
 #include <cpu/functions.h>
 
-// Read variable from register.
+// Read 32-bit (or smaller) values from a single register.
 template <typename T>
-std::enable_if_t<sizeof(T) < 8, T> read_from_gpr(CPUState &cpu, const ArgLayout &arg) {
+std::enable_if_t<sizeof(T) <= 4, T> read_from_gpr(CPUState &cpu, const ArgLayout &arg) {
     const uint32_t reg = read_reg(cpu, arg.offset);
     return static_cast<T>(reg);
 }
 
-// Specialised for 64-bit reads, which span 2 registers.
+// Read 64-bit values from 2 registers.
 template <typename T>
 std::enable_if_t<sizeof(T) == 8, T> read_from_gpr(CPUState &cpu, const ArgLayout &arg) {
     const uint64_t lo32 = read_reg(cpu, arg.offset);
     const uint64_t hi32 = read_reg(cpu, arg.offset + 1);
     const uint64_t both = lo32 | (hi32 << 32);
-    return both;
+    return static_cast<T>(both);
 }
 
 // Read variable from register or stack, as specified by arg layout.
