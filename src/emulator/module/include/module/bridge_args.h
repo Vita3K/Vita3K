@@ -80,29 +80,30 @@ constexpr std::tuple<ArgLayout, LayoutArgsState> add(const LayoutArgsState &stat
 template <typename... Args>
 using ArgsLayout = std::array<ArgLayout, sizeof...(Args)>;
 
-template <typename... Args>
-constexpr ArgsLayout<Args...> lay_out() {
-    // TODO
-    return { };
-}
+template <size_t count, typename... Args>
+struct Add;
 
-// Read variable from register or stack, as specified by arg layout.
-template <typename T>
-T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
-    switch (arg.location) {
-        case ArgLocation::gpr:
-        {
-            const uint32_t reg = read_reg(cpu, arg.offset);
-            return static_cast<T>(reg);
-        }
-        case ArgLocation::stack:
-        {
-            const Address sp = read_sp(cpu);
-            const Address address_on_stack = sp + arg.offset;
-            return *Ptr<T>(address_on_stack).get(mem);
-        }
+// Empty argument list -- no arguments to add.
+template <>
+struct Add<0> {
+    static constexpr void add(ArgLayout &head, LayoutArgsState &state) {
+        // Nothing to do.
     }
-}
+};
+
+// One or more arguments to add.
+template <size_t count, typename Head, typename... Tail>
+struct Add<count, Head, Tail...> {
+    static constexpr void add(ArgLayout &head, LayoutArgsState &state) {
+        // Add the argument at the head of the list.
+        const std::tuple<ArgLayout, LayoutArgsState> result = ::add<Head>(state);
+        head = std::get<0>(result);
+        state = std::get<1>(result);
+        
+        // Recursively add the remaining arguments.
+        Add<count - 1, Tail...>::add(*(&head + 1), state);
+    }
+};
 
 // Arg in ARM register/memory requires no special conversion.
 template <typename Arg>
@@ -124,10 +125,40 @@ struct BridgedArg<Pointee *> {
     }
 };
 
+template <typename Arg>
+using BridgedType = typename BridgedArg<Arg>::Type;
+
+template <typename... Args>
+constexpr ArgsLayout<Args...> lay_out() {
+    ArgsLayout<Args...> layout = {};
+    LayoutArgsState state = {};
+    Add<sizeof...(Args), BridgedType<Args>...>::add(layout.front(), state);
+    
+    return layout;
+}
+
+// Read variable from register or stack, as specified by arg layout.
+template <typename T>
+T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
+    switch (arg.location) {
+        case ArgLocation::gpr:
+        {
+            const uint32_t reg = read_reg(cpu, arg.offset);
+            return static_cast<T>(reg);
+        }
+        case ArgLocation::stack:
+        {
+            const Address sp = read_sp(cpu);
+            const Address address_on_stack = sp + arg.offset;
+            return *Ptr<T>(address_on_stack).get(mem);
+        }
+    }
+}
+
 template <typename Arg, typename... Args>
 Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, size_t index, const MemState &mem) {
-    typedef typename BridgedArg<Arg>::Type BridgedType;
+    using BridgedArgType = BridgedType<Arg>;
     
-    const BridgedType bridged = read<BridgedType>(cpu, args[index], mem);
+    const BridgedArgType bridged = read<BridgedArgType>(cpu, args[index], mem);
     return BridgedArg<Arg>::bridge(bridged, mem);
 }
