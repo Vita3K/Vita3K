@@ -1140,8 +1140,12 @@ EXPORT(int, sceGxmSetFrontDepthFunc) {
     return unimplemented("sceGxmSetFrontDepthFunc");
 }
 
-EXPORT(int, sceGxmSetFrontDepthWriteEnable) {
-    return unimplemented("sceGxmSetFrontDepthWriteEnable");
+EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
+    if (context->two_sided) {
+        // TODO: Find a way to implement this since glDepthMaskSeparate doesn't exist
+        LOG_WARN("sceGxmSetFrontDepthWriteEnable called with a two sided context, graphical glitches may happen.");
+    }
+    glDepthMask(enable == SCE_GXM_DEPTH_WRITE_ENABLED ? GL_TRUE : GL_FALSE);
 }
 
 EXPORT(int, sceGxmSetFrontFragmentProgramEnable) {
