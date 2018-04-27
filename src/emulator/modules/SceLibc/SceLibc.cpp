@@ -996,13 +996,13 @@ EXPORT(int, strcasecmp) {
     return unimplemented("strcasecmp");
 }
 
-EXPORT(Ptr<char>, strcat, Ptr<char> destination, Ptr<char> source) {
-    strcat(destination.get(host.mem), source.get(host.mem));
+EXPORT(Ptr<char>, strlcat, Ptr<char> destination, Ptr<char> source) {
+    strlcat(destination.get(host.mem), source.get(host.mem));
     return destination;
 }
 
-EXPORT(int, strcat_s) {
-    return unimplemented("strcat_s");
+EXPORT(int, strlcat_s) {
+    return unimplemented("strlcat_s");
 }
 
 EXPORT(int, strchr) {
@@ -1017,13 +1017,13 @@ EXPORT(int, strcoll) {
     return unimplemented("strcoll");
 }
 
-EXPORT(Ptr<char>, strcpy, Ptr<char> destination, Ptr<char> source) {
-    strcpy(destination.get(host.mem), source.get(host.mem));
+EXPORT(Ptr<char>, strlcpy, Ptr<char> destination, Ptr<char> source) {
+    strlcpy(destination.get(host.mem), source.get(host.mem));
     return destination;
 }
 
-EXPORT(int, strcpy_s) {
-    return unimplemented("strcpy_s");
+EXPORT(int, strlcpy_s) {
+    return unimplemented("strlcpy_s");
 }
 
 EXPORT(int, strcspn) {
@@ -1776,13 +1776,13 @@ BRIDGE_IMPL(srand)
 BRIDGE_IMPL(sscanf)
 BRIDGE_IMPL(sscanf_s)
 BRIDGE_IMPL(strcasecmp)
-BRIDGE_IMPL(strcat)
-BRIDGE_IMPL(strcat_s)
+BRIDGE_IMPL(strlcat)
+BRIDGE_IMPL(strlcat_s)
 BRIDGE_IMPL(strchr)
 BRIDGE_IMPL(strcmp)
 BRIDGE_IMPL(strcoll)
-BRIDGE_IMPL(strcpy)
-BRIDGE_IMPL(strcpy_s)
+BRIDGE_IMPL(strlcpy)
+BRIDGE_IMPL(strlcpy_s)
 BRIDGE_IMPL(strcspn)
 BRIDGE_IMPL(strdup)
 BRIDGE_IMPL(strerror)

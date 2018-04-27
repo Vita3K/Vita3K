@@ -78,7 +78,7 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
             memcpy(&addrIn, resolved->h_addr_list[i], sizeof(uint32_t));
             char *addr = inet_ntoa(addrIn);
             if (strcmp(addr, "127.0.0.1") != 0) {
-                strcpy(info->ip_address, addr);
+                strlcpy(info->ip_address, addr);
                 break;
             }
         }
