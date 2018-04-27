@@ -64,36 +64,29 @@ constexpr std::tuple<ArgLayout, LayoutArgsState> add(const LayoutArgsState &stat
     return add_to_gpr_or_stack<Arg>(state);
 }
 
-template <size_t count, typename... Args>
-struct Add;
-
 // Empty argument list -- no arguments to add.
-template <>
-struct Add<0> {
-    static constexpr void add(ArgLayout &head, LayoutArgsState &state) {
-        // Nothing to do.
-    }
-};
+template <typename... Args>
+constexpr std::enable_if_t<sizeof...(Args) == 0> add(ArgLayout &head, LayoutArgsState &state) {
+    // Nothing to do.
+}
 
 // One or more arguments to add.
-template <size_t count, typename Head, typename... Tail>
-struct Add<count, Head, Tail...> {
-    static constexpr void add(ArgLayout &head, LayoutArgsState &state) {
-        // Add the argument at the head of the list.
-        const std::tuple<ArgLayout, LayoutArgsState> result = ::add<Head>(state);
-        head = std::get<0>(result);
-        state = std::get<1>(result);
-        
-        // Recursively add the remaining arguments.
-        Add<count - 1, Tail...>::add(*(&head + 1), state);
-    }
-};
+template <typename Head, typename... Tail>
+constexpr void add(ArgLayout &head, LayoutArgsState &state) {
+    // Add the argument at the head of the list.
+    const std::tuple<ArgLayout, LayoutArgsState> result = ::add<Head>(state);
+    head = std::get<0>(result);
+    state = std::get<1>(result);
+    
+    // Recursively add the remaining arguments.
+    add<Tail...>(*(&head + 1), state);
+}
 
 template <typename... Args>
 constexpr ArgsLayout<Args...> lay_out() {
     ArgsLayout<Args...> layout = {};
     LayoutArgsState state = {};
-    Add<sizeof...(Args), Args...>::add(*layout.data(), state);
+    add<Args...>(*layout.data(), state);
     
     return layout;
 }
