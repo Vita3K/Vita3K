@@ -1217,8 +1217,26 @@ EXPORT(int, sceGxmSetPrecomputedVertexState) {
     return unimplemented("sceGxmSetPrecomputedVertexState");
 }
 
-EXPORT(int, sceGxmSetRegionClip) {
-    return unimplemented("sceGxmSetRegionClip");
+EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int yMin, unsigned int xMax, unsigned int yMax) {
+    xMin += xMin % 32;
+    yMin += yMin % 32;
+    xMax += xMax % 32;
+    yMax += yMax % 32;
+    switch (mode) {
+    case SCE_GXM_REGION_CLIP_NONE:
+        glScissor(0, 0, host.display.window_width, host.display.window_height);
+        break;
+    case SCE_GXM_REGION_CLIP_ALL:
+        glScissor(0, 0, 0, 0);
+        break;
+    case SCE_GXM_REGION_CLIP_OUTSIDE:
+        glScissor(xMin, host.display.window_height - yMax, xMin + xMax, yMin + yMax);
+        break;
+    case SCE_GXM_REGION_CLIP_INSIDE:
+        // TODO: Implement this
+        LOG_WARN("Unimplemented region clip mode used: SCE_GXM_REGION_CLIP_INSIDE");
+        break;
+    }
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
@@ -1291,9 +1309,8 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
     return unimplemented("sceGxmSetVertexUniformBuffer");
 }
 
-EXPORT(int, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
+EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
     glViewport(xOffset - xScale, host.display.window_height + yScale - yOffset, xScale * 2, -(yScale * 2));
-    return 0;
 }
 
 EXPORT(int, sceGxmSetViewportEnable) {
