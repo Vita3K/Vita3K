@@ -19,23 +19,22 @@
 
 #include <mem/ptr.h>
 
-struct CPUState;
-
-template <typename Ret>
-void bridge_return(CPUState &, Ret ret);
-
-// Simple case - return value can be written directly to registers.
-template <typename Ret>
-struct BridgeReturn {
-    static void write(CPUState &cpu, Ret ret) {
-        bridge_return(cpu, ret);
+// By default, do no special conversion.
+template <typename HostType>
+struct BridgeTypes {
+    typedef HostType ArmType;
+    
+    static HostType arm_to_host(const ArmType &t, const MemState &mem) {
+        return t;
     }
 };
 
-// Write pointers as addresses.
+// Convert from address in ARM register/memory to host pointer.
 template <typename Pointee>
-struct BridgeReturn<Ptr<Pointee>> {
-    static void write(CPUState &cpu, const Ptr<Pointee> &ret) {
-        bridge_return(cpu, ret.address());
+struct BridgeTypes<Pointee *> {
+    typedef Ptr<Pointee> ArmType;
+    
+    static Pointee *arm_to_host(const ArmType &t, const MemState &mem) {
+        return t.get(mem);
     }
 };

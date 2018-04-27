@@ -15,27 +15,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/bridge_return.h>
+#pragma once
 
-#include <cpu/functions.h>
+#include <array>
 
-template <>
-void bridge_return<uint16_t>(CPUState &cpu, uint16_t ret) {
-    write_reg(cpu, 0, ret);
-}
+enum class ArgLocation {
+    gpr,
+    stack,
+};
 
-template <>
-void bridge_return<int32_t>(CPUState &cpu, int32_t ret) {
-    write_reg(cpu, 0, ret);
-}
+struct ArgLayout {
+    ArgLocation location;
+    size_t offset;
+};
 
-template <>
-void bridge_return<uint32_t>(CPUState &cpu, uint32_t ret) {
-    write_reg(cpu, 0, ret);
-}
-
-template <>
-void bridge_return<uint64_t>(CPUState &cpu, uint64_t ret) {
-    write_reg(cpu, 0, ret & UINT32_MAX);
-    write_reg(cpu, 1, ret >> 32);
-}
+template <typename... Args>
+using ArgsLayout = std::array<ArgLayout, sizeof...(Args)>;

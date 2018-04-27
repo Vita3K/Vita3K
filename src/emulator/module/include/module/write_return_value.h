@@ -17,10 +17,14 @@
 
 #pragma once
 
-#include <psp2/types.h>
+#include <mem/ptr.h>
 
-#include <functional>
+struct CPUState;
 
-struct HostState;
+template <typename Ret>
+void write_return_value(CPUState &cpu, Ret ret);
 
-typedef std::function<void(HostState &host, SceUID thread_id)> ImportFn;
+template <typename Pointee>
+void write_return_value(CPUState &cpu, const Ptr<Pointee> &ret) {
+    write_return_value(cpu, ret.address());
+}

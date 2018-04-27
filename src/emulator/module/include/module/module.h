@@ -18,8 +18,6 @@
 #pragma once
 
 #include "bridge.h"
-#include "bridge_args.h"
-#include "bridge_return.h"
 
 #include <host/import_fn.h>
 #include <host/state.h>
@@ -29,7 +27,7 @@
 int unimplemented(const char *name);
 int error(const char *name, std::uint32_t error);
 
-#define BRIDGE_DECL(name) extern ImportFn *const import_##name;
-#define BRIDGE_IMPL(name) ImportFn *const import_##name = &Bridge<decltype(&export_##name), &export_##name>::call;
+#define BRIDGE_DECL(name) extern const ImportFn import_##name;
+#define BRIDGE_IMPL(name) const ImportFn import_##name = bridge(&export_##name);
 
 #define EXPORT(ret, name, ...) ret export_##name(HostState &host, SceUID thread_id, ##__VA_ARGS__)

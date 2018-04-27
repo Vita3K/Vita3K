@@ -15,12 +15,27 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <module/write_return_value.h>
 
-#include <psp2/types.h>
+#include <cpu/functions.h>
 
-#include <functional>
+template <>
+void write_return_value<uint16_t>(CPUState &cpu, uint16_t ret) {
+    write_reg(cpu, 0, ret);
+}
 
-struct HostState;
+template <>
+void write_return_value<int32_t>(CPUState &cpu, int32_t ret) {
+    write_reg(cpu, 0, ret);
+}
 
-typedef std::function<void(HostState &host, SceUID thread_id)> ImportFn;
+template <>
+void write_return_value<uint32_t>(CPUState &cpu, uint32_t ret) {
+    write_reg(cpu, 0, ret);
+}
+
+template <>
+void write_return_value<uint64_t>(CPUState &cpu, uint64_t ret) {
+    write_reg(cpu, 0, ret & UINT32_MAX);
+    write_reg(cpu, 1, ret >> 32);
+}

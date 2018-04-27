@@ -51,11 +51,11 @@ using namespace glbinding;
 
 static const bool LOG_IMPORT_CALLS = false;
 
-#define NID(name, nid) extern ImportFn *const import_##name;
+#define NID(name, nid) extern const ImportFn import_##name;
 #include <nids/nids.h>
 #undef NID
 
-static ImportFn *resolve_import(uint32_t nid) {
+static ImportFn resolve_import(uint32_t nid) {
     switch (nid) {
 #define NID(name, nid) \
     case nid:          \
@@ -64,7 +64,7 @@ static ImportFn *resolve_import(uint32_t nid) {
 #undef NID
     }
 
-    return nullptr;
+    return ImportFn();
 }
 
 bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_width, std::uint32_t window_height, std::uint32_t border_height) {
@@ -136,9 +136,9 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
             const char *const name = import_name(nid);
             LOG_TRACE("THREAD_ID {} NID {:#08x} ({}) called", thread_id, nid, name);
         }
-        ImportFn *const fn = resolve_import(nid);
-        if (fn != nullptr) {
-            (*fn)(host, thread_id);
+        const ImportFn fn = resolve_import(nid);
+        if (fn) {
+            fn(host, thread_id);
         }
     } else {
         // LLE - directly run ARM code imported from some loaded module
