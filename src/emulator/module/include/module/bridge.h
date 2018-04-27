@@ -46,11 +46,11 @@ void call(void (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args
 }
 
 template <typename Ret, typename... Args>
-ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, Args...)) {
+ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, Args...), const char *export_name) {
     constexpr ArgsLayout<Args...> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
     
-    return [export_fn, args_layout](HostState &host, SceUID thread_id) {
-        MICROPROFILE_SCOPEI("HLE", "", MP_YELLOW);
+    return [export_fn, export_name, args_layout](HostState &host, SceUID thread_id) {
+        MICROPROFILE_SCOPEI("HLE", export_name, MP_YELLOW);
 
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         assert(thread);
