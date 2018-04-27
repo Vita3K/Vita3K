@@ -92,7 +92,11 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         glDisable(GL_CULL_FACE);
         break;
     }
-
+    
+    glEnable(GL_SCISSOR_TEST);
+    glViewport(0, 0, host.display.window_width, host.display.window_height);
+    glScissor(0, 0, host.display.window_width, host.display.window_height);
+    
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1287,8 +1291,9 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
     return unimplemented("sceGxmSetVertexUniformBuffer");
 }
 
-EXPORT(int, sceGxmSetViewport) {
-    return unimplemented("sceGxmSetViewport");
+EXPORT(int, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
+    glViewport(xOffset - xScale, host.display.window_height + yScale - yOffset, xScale * 2, -(yScale * 2));
+    return 0;
 }
 
 EXPORT(int, sceGxmSetViewportEnable) {
