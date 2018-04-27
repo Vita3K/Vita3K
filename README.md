@@ -48,7 +48,7 @@ Vita3K binaries for Windows can be downloaded on [AppVeyor](https://ci.appveyor.
 1. Get [SDL](https://wiki.libsdl.org/Installation#Linux.2FUnix) (2.0.7+) and [unicorn](http://www.unicorn-engine.org)
 2. `git submodule init && git submodule update`
 3. `mkdir build-linux && cd build-linux`
-4. `cmake ../src/`
+4. `cmake ..`
 5. `make`
 
 ## Running
