@@ -60,33 +60,34 @@ constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_gpr_or_stack(const Layou
 }
 
 template <typename Arg>
-constexpr std::tuple<ArgLayout, LayoutArgsState> add(const LayoutArgsState &state) {
+constexpr std::tuple<ArgLayout, LayoutArgsState> add_arg_to_layout(const LayoutArgsState &state) {
+    // TODO Support floats and vectors.
     return add_to_gpr_or_stack<Arg>(state);
 }
 
 // Empty argument list -- no arguments to add.
 template <typename... Args>
-constexpr std::enable_if_t<sizeof...(Args) == 0> add(ArgLayout &head, LayoutArgsState &state) {
+constexpr std::enable_if_t<sizeof...(Args) == 0> add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
     // Nothing to do.
 }
 
 // One or more arguments to add.
 template <typename Head, typename... Tail>
-constexpr void add(ArgLayout &head, LayoutArgsState &state) {
+constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
     // Add the argument at the head of the list.
-    const std::tuple<ArgLayout, LayoutArgsState> result = ::add<Head>(state);
+    const std::tuple<ArgLayout, LayoutArgsState> result = add_arg_to_layout<Head>(state);
     head = std::get<0>(result);
     state = std::get<1>(result);
     
     // Recursively add the remaining arguments.
-    add<Tail...>(*(&head + 1), state);
+    add_args_to_layout<Tail...>(*(&head + 1), state);
 }
 
 template <typename... Args>
 constexpr ArgsLayout<Args...> lay_out() {
     ArgsLayout<Args...> layout = {};
     LayoutArgsState state = {};
-    add<Args...>(*layout.data(), state);
+    add_args_to_layout<Args...>(*layout.data(), state);
     
     return layout;
 }
