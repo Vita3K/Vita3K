@@ -131,7 +131,6 @@ int lock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUI
 }
 
 int unlock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int unlock_count) {
-    assert(unlock_count == 1);
 
     const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
     if (!mutex) {
