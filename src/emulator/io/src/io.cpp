@@ -15,8 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "host/rtc.h"
-#include "host/state.h"
+#include "rtc/rtc.h"
 
 #include <io/functions.h>
 #include <io/io.h>
@@ -443,7 +442,7 @@ int remove_dir(const char *dir, const char *pref_path) {
     }
 }
 
-int stat_file(const char *file, SceIoStat *statp, const char *pref_path, HostState &host) {
+int stat_file(const char *file, SceIoStat *statp, const char *pref_path, mz_zip_archive *vpk, uint64_t base_tick) {
     assert(statp != NULL);
 
     memset(statp, '\0', sizeof(SceIoStat));
@@ -455,24 +454,29 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path, HostSta
     // read and execute access rights
     statp->st_mode = SCE_S_IRUSR | SCE_S_IRGRP | SCE_S_IROTH |
         SCE_S_IXUSR | SCE_S_IXGRP | SCE_S_IXOTH;
+    
+    std::uint64_t last_access_time_ticks;
+    std::uint64_t last_modification_time_ticks;
+    std::uint64_t creation_time_ticks{ 0 };
 
     switch (device) {
     case VitaIoDevice::APP0: {
-        const mz_uint32 file_index = mz_zip_reader_locate_file(host.io.vpk.get(), file + 5, nullptr, 0);
+        const mz_uint32 file_index = mz_zip_reader_locate_file(vpk, file + 5, nullptr, 0);
         mz_zip_archive_file_stat stat;
-        mz_zip_reader_file_stat(host.io.vpk.get(),file_index, &stat);
+        mz_zip_reader_file_stat(vpk, file_index, &stat);
 
         statp->st_size = stat.m_uncomp_size;
-        SceDateTime last_modification;
-        __RtcTicksToPspTime(last_modification, rtc_get_ticks(host));
-        statp->st_atime = last_modification;
+
+        last_access_time_ticks = rtc_get_ticks(base_tick);
+        last_modification_time_ticks = RTC_OFFSET + stat.m_time * 1'000'000;
+        creation_time_ticks = last_modification_time_ticks; // hack
 
         if (stat.m_is_directory)
             statp->st_mode |= SCE_S_IFDIR;
         else
             statp->st_mode |= SCE_S_IFREG;
 
-        return 0;
+        break;
     }
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
@@ -491,7 +495,11 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path, HostSta
             statp->st_mode |= SCE_S_IFDIR;
         }
 
-        statp->st_size = (find_data.nFileSizeHigh * ((size_t)MAXDWORD + 1)) + find_data.nFileSizeLow;
+        statp->st_size = (std::uint64_t)find_data.nFileSizeHigh << 32 | (std::uint64_t)find_data.nFileSizeLow;
+
+        last_access_time_ticks = convert_filetime(find_data.ftLastAccessTime);
+        last_modification_time_ticks = convert_filetime(find_data.ftLastWriteTime);
+        creation_time_ticks = convert_filetime(find_data.ftCreationTime);
 #else
         struct stat sb;
         if (stat(file_path.c_str(), &sb) < 0) {
@@ -500,21 +508,32 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path, HostSta
 
         if (S_ISREG(sb.st_mode)) {
             statp->st_mode |= SCE_S_IFREG;
-        }
-        else if (S_ISDIR(sb.st_mode)) {
+        } else if (S_ISDIR(sb.st_mode)) {
             statp->st_mode |= SCE_S_IFDIR;
         }
 
         statp->st_size = sb.st_size;
-#endif
 
-        return 0;
+        last_access_time_ticks = (uint64_t)sb.st_atime * VITA_CLOCKS_PER_SEC;
+        last_modification_time_ticks = (uint64_t)sb.st_mtime * VITA_CLOCKS_PER_SEC;
+        creation_time_ticks = (uint64_t)sb.st_ctime * VITA_CLOCKS_PER_SEC;
+
+#undef st_atime
+#undef st_mtime
+#undef st_ctime
+#endif
+        break;
     }
     default: {
         LOG_CRITICAL("Unknown file {} used. Report this to developers!", file);
         return -1;
     }
     }
+    __RtcTicksToPspTime(statp->st_atime, last_access_time_ticks);
+    __RtcTicksToPspTime(statp->st_mtime, last_modification_time_ticks);
+    __RtcTicksToPspTime(statp->st_ctime, creation_time_ticks);
+
+    return 0;
 }
 
 int open_dir(IOState &io, const char *path, const char *pref_path) {
