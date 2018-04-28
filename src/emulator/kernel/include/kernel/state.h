@@ -53,16 +53,20 @@ struct WaitingThreadData {
         : thread(thread)
         , lock_count(lock_count)
         , priority(priority) {}
+
+    bool operator>(const WaitingThreadData &rhs) const {
+        return priority > rhs.priority;
+    }
 };
-inline bool operator>(const WaitingThreadData &lhs, const WaitingThreadData &rhs) {
-    return lhs.priority > rhs.priority;
-}
+
+using WaitingThreadQueue = std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>, std::greater<WaitingThreadData>>;
 
 struct Semaphore {
     int val;
     int max;
+    uint32_t attr;
     std::mutex mutex;
-    std::vector<ThreadStatePtr> waiting_threads;
+    WaitingThreadQueue waiting_threads;
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
 
@@ -70,9 +74,7 @@ struct Mutex {
     int lock_count;
     uint32_t attr;
     std::mutex mutex;
-    std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>,
-        std::greater<WaitingThreadData>>
-        waiting_threads;
+    WaitingThreadQueue waiting_threads;
     ThreadStatePtr owner;
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
@@ -87,10 +89,10 @@ namespace emu {
 }
 
 struct WaitingThreadState {
-    std::string name;
+    std::string name;   // for debugging
 };
 
-typedef std::map<SceUID, WaitingThreadState> WaitingThreadStates;
+typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
 
 struct KernelState {
     std::mutex mutex;
@@ -102,7 +104,7 @@ struct KernelState {
     MutexPtrs lwmutexes; // also Mutexes for now
     ThreadStatePtrs threads;
     ThreadPtrs running_threads;
-    WaitingThreadStates waiting_threads;
+    KernelWaitingThreadStates waiting_threads;
     SceKernelModuleInfoPtrs loaded_modules;
     ExportNids export_nids;
     SceRtcTick base_tick;

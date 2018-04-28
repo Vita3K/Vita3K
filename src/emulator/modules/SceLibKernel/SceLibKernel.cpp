@@ -40,7 +40,11 @@
 
 static const bool LOG_SYNC_PRIMITIVES = false;
 
-static SceUID create_mutex(SceUID *uid_out, HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, const char *name, SceUInt attr, int init_count, bool is_lw) {
+// *********
+// * Mutex *
+// *********
+
+SceUID create_mutex(SceUID *uid_out, HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, const char *name, SceUInt attr, int init_count, bool is_lw) {
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return error(export_name, SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -131,7 +135,6 @@ static int lock_mutex(HostState &host, const char *export_name, SceUID thread_id
 }
 
 int unlock_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int unlock_count) {
-
     const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
     if (!mutex) {
         return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
@@ -190,6 +193,88 @@ int delete_mutex(HostState &host, const char *export_name, SceUID thread_id, Mut
     return SCE_KERNEL_OK;
 }
 
+// **************
+// * Sempaphore *
+// **************
+
+static SceUID create_semaphore(HostState& host, const char *export_name, const char* name, SceUInt attr, int initVal, int maxVal) {
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
+        return error(export_name, SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+
+    const SemaphorePtr semaphore = std::make_shared<Semaphore>();
+    semaphore->val = initVal;
+    semaphore->max = maxVal;
+    semaphore->attr = attr;
+    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, semaphore->name);
+    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    const SceUID uid = host.kernel.next_uid++;
+    host.kernel.semaphores.emplace(uid, semaphore);
+
+    return uid;
+}
+
+static int wait_semaphore(HostState& host, const char *export_name, SceUID thread_id, SceUID semaid, int signal, SceUInt* timeout)
+{
+    assert(semaid >= 0);
+    assert(signal == 1);
+    assert(timeout == nullptr);
+
+    // TODO Don't lock twice.
+    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
+    if (!semaphore) {
+        return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    }
+
+    const std::unique_lock<std::mutex> lock(semaphore->mutex);
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    bool is_fifo = (semaphore->attr & SCE_KERNEL_ATTR_TH_FIFO);
+
+    if (semaphore->val <= 0) {
+        const std::unique_lock<std::mutex> lock2(thread->mutex);
+        assert(thread->to_do == ThreadToDo::run);
+        thread->to_do = ThreadToDo::wait;
+        semaphore->waiting_threads.emplace(thread, signal, is_fifo ? 0 : thread->priority);
+        stop(*thread->cpu);
+    }
+    else {
+        semaphore->val -= signal;
+    }
+
+    return SCE_KERNEL_OK;
+}
+
+int signal_sema(HostState& host, const char *export_name, SceUID semaid, int signal) {
+    // TODO Don't lock twice.
+    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
+    if (!semaphore) {
+        return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    }
+
+    const std::unique_lock<std::mutex> lock(semaphore->mutex);
+
+    if (semaphore->val + signal > semaphore->max) {
+        return error(export_name, SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
+    }
+    semaphore->val += signal;
+
+    while (semaphore->val > 0 && semaphore->waiting_threads.size() > 0) {
+        const auto waiting_thread_data = semaphore->waiting_threads.top();
+        const auto waiting_thread = waiting_thread_data.thread;
+        const auto waiting_signal_count = waiting_thread_data.lock_count;
+
+        assert(waiting_thread->to_do == ThreadToDo::wait);
+        waiting_thread->to_do = ThreadToDo::run;
+        semaphore->waiting_threads.pop();
+        semaphore->val -= waiting_signal_count;
+        waiting_thread->something_to_do.notify_one();
+    }
+
+    return 0;
+}
+
 EXPORT(int, SceKernelStackChkGuard) {
     return unimplemented(export_name);
 }
@@ -212,7 +297,6 @@ EXPORT(int, __stack_chk_guard) {
 
 EXPORT(int, _sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, int init_count, const SceKernelLwMutexOptParam *opt_param) {
     assert(name != nullptr);
-    assert((attr == SCE_KERNEL_ATTR_TH_FIFO) || (attr == SCE_KERNEL_MUTEX_ATTR_RECURSIVE));
     assert(init_count >= 0);
     assert(opt_param == nullptr);
 
@@ -931,7 +1015,6 @@ EXPORT(int, sceKernelCreateLwCond) {
 EXPORT(int, sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, int init_count, const SceKernelLwMutexOptParam *opt_param) {
     assert(workarea);
     assert(name);
-    assert((attr == SCE_KERNEL_ATTR_TH_FIFO) || (attr == SCE_KERNEL_MUTEX_ATTR_RECURSIVE));
     assert(init_count >= 0);
     assert(opt_param == nullptr);
 
@@ -961,19 +1044,7 @@ EXPORT(int, sceKernelCreateRWLock) {
 }
 
 EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, SceKernelSemaOptParam *option) {
-    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
-        return error(export_name, SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
-    }
-
-    const SemaphorePtr semaphore = std::make_shared<Semaphore>();
-    semaphore->val = initVal;
-    semaphore->max = maxVal;
-    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, semaphore->name);
-    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
-    const SceUID uid = host.kernel.next_uid++;
-    host.kernel.semaphores.emplace(uid, semaphore);
-
-    return uid;
+    return create_semaphore(host, export_name, name, attr, initVal, maxVal);
 }
 
 EXPORT(int, sceKernelCreateSema_16XX) {
@@ -1439,31 +1510,7 @@ EXPORT(int, sceKernelWaitMultipleEventsCB) {
 }
 
 EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
-    assert(semaid >= 0);
-    assert(signal == 1);
-    assert(timeout == nullptr);
-
-    // TODO Don't lock twice.
-    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
-    if (!semaphore) {
-        return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
-    }
-
-    const std::unique_lock<std::mutex> lock(semaphore->mutex);
-
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-
-    if (semaphore->val <= 0) {
-        const std::unique_lock<std::mutex> lock(thread->mutex);
-        assert(thread->to_do == ThreadToDo::run);
-        thread->to_do = ThreadToDo::wait;
-        semaphore->waiting_threads.push_back(thread);
-        stop(*thread->cpu);
-    } else {
-        semaphore->val -= signal;
-    }
-
-    return SCE_KERNEL_OK;
+    return wait_semaphore(host, export_name, thread_id, semaid, signal, timeout);
 }
 
 EXPORT(int, sceKernelWaitSemaCB) {
