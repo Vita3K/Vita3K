@@ -54,9 +54,6 @@ static int SDLCALL thread_function(void *data) {
 }
 
 SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CallImport call_import, bool log_code) {
-    WaitingThreadState waiting;
-    waiting.name = name;
-
     SceUID thid = kernel.next_uid++;
 
     const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {
@@ -87,6 +84,8 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         return SCE_KERNEL_ERROR_ERROR;
     }
 
+    WaitingThreadState waiting{ name };
+
     const std::unique_lock<std::mutex> lock(kernel.mutex);
     kernel.threads.emplace(thid, thread);
     kernel.waiting_threads.emplace(thid, waiting);
@@ -97,7 +96,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp) {
     const std::unique_lock<std::mutex> lock(kernel.mutex);
 
-    const WaitingThreadStates::const_iterator waiting = kernel.waiting_threads.find(thid);
+    const KernelWaitingThreadStates::const_iterator waiting = kernel.waiting_threads.find(thid);
     if (waiting == kernel.waiting_threads.end()) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
