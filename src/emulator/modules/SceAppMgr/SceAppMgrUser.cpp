@@ -58,7 +58,7 @@ EXPORT(int, sceAppMgrAppParamGetInt) {
 EXPORT(int, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
     std::string res = get_data(host.sfo_handle, param);
     if (res.length() <= 0) {
-        return error(__func__, SCE_APPMGR_ERROR_INVALID);
+        return error(export_name, SCE_APPMGR_ERROR_INVALID);
     }
     res.copy(string, length);
     return 0;

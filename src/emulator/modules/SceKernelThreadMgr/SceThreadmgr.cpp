@@ -141,7 +141,7 @@ EXPORT(int, sceKernelDeleteMsgPipe) {
 }
 
 EXPORT(int, sceKernelDeleteMutex, SceInt32 mutexid) {
-    return delete_mutex(host, thread_id, host.kernel.mutexes, mutexid);
+    return delete_mutex(host, export_name, thread_id, host.kernel.mutexes, mutexid);
 }
 
 EXPORT(int, sceKernelDeleteRWLock) {
@@ -285,7 +285,7 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
     if (!semaphore) {
-        return error("sceKernelSignalSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+        return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
 
     const std::unique_lock<std::mutex> lock(semaphore->mutex);
@@ -328,7 +328,7 @@ EXPORT(int, sceKernelTryLockWriteRWLock) {
 }
 
 EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
-    return unlock_mutex(host, thread_id, host.kernel.mutexes, mutexid, unlock_count);
+    return unlock_mutex(host, export_name, thread_id, host.kernel.mutexes, mutexid, unlock_count);
 }
 
 EXPORT(int, sceKernelUnlockReadRWLock) {

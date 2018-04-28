@@ -35,22 +35,22 @@ EXPORT(int, sceAudioOutGetRestSample) {
 
 EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, SceAudioOutMode mode) {
     if (type < SCE_AUDIO_OUT_PORT_TYPE_MAIN || type > SCE_AUDIO_OUT_PORT_TYPE_VOICE) {
-        return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_PORT_TYPE);
+        return error(export_name, SCE_AUDIO_OUT_ERROR_INVALID_PORT_TYPE);
     }
     if (type == SCE_AUDIO_OUT_PORT_TYPE_MAIN && freq != 48000) {
-        return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ);
+        return error(export_name, SCE_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ);
     }
     if ((mode != SCE_AUDIO_OUT_MODE_MONO) && (mode != SCE_AUDIO_OUT_MODE_STEREO)) {
-        return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_FORMAT);
+        return error(export_name, SCE_AUDIO_OUT_ERROR_INVALID_FORMAT);
     }
     if (len <= 0) {
-        return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_INVALID_SIZE);
+        return error(export_name, SCE_AUDIO_OUT_ERROR_INVALID_SIZE);
     }
 
     const int channels = (mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
     const AudioStreamPtr stream(SDL_NewAudioStream(AUDIO_S16LSB, channels, freq, host.audio.ro.spec.format, host.audio.ro.spec.channels, host.audio.ro.spec.freq), SDL_FreeAudioStream);
     if (!stream) {
-        return error("sceAudioOutOpenPort", SCE_AUDIO_OUT_ERROR_NOT_OPENED);
+        return error(export_name, SCE_AUDIO_OUT_ERROR_NOT_OPENED);
     }
 
     const AudioOutPortPtr port = std::make_shared<AudioOutPort>();
@@ -67,12 +67,12 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
 EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
     const AudioOutPortPtr prt = lock_and_find(port, host.audio.shared.out_ports, host.audio.shared.mutex);
     if (!prt) {
-        return error("sceAudioOutOutput", SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+        return error(export_name, SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (!thread) {
-        return error("sceAudioOutOutput", SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+        return error(export_name, SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
     const std::unique_lock<std::mutex> lock(thread->mutex);

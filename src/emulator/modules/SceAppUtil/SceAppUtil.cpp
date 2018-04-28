@@ -203,7 +203,7 @@ EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
         return 0;
         break;
     default:
-        return error(__func__, SCE_APPUTIL_ERROR_PARAMETER);
+        return error(export_name, SCE_APPUTIL_ERROR_PARAMETER);
     }
 }
 
@@ -219,7 +219,7 @@ EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf,
 #endif
         break;
     default:
-        return error("sceAppUtilSystemParamGetString", SCE_APPUTIL_ERROR_PARAMETER);
+        return error(export_name, SCE_APPUTIL_ERROR_PARAMETER);
     }
     return 0;
 }
