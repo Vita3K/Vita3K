@@ -192,7 +192,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     assert(params != nullptr);
     assert(context != nullptr);
 
-    *context = alloc<SceGxmContext>(host.mem, __FUNCTION__);
+    *context = alloc<SceGxmContext>(host.mem, export_name);
     if (!*context) {
         return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -237,7 +237,7 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     assert(params != nullptr);
     assert(renderTarget != nullptr);
 
-    *renderTarget = alloc<SceGxmRenderTarget>(host.mem, __FUNCTION__);
+    *renderTarget = alloc<SceGxmRenderTarget>(host.mem, export_name);
     if (!*renderTarget) {
         return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -360,7 +360,7 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     assert(callbackData);
     DisplayCallback *display_callback = new DisplayCallback();
 
-    const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
+    const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, export_name);
     const Ptr<void> ptr(address);
     memcpy(ptr.get(host.mem), callbackData.get(host.mem), host.gxm.params.displayQueueCallbackDataSize);
 
@@ -1341,7 +1341,7 @@ EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *par
     assert(params != nullptr);
     assert(shaderPatcher != nullptr);
 
-    *shaderPatcher = alloc<SceGxmShaderPatcher>(host.mem, __FUNCTION__);
+    *shaderPatcher = alloc<SceGxmShaderPatcher>(host.mem, export_name);
     assert(*shaderPatcher);
     if (!*shaderPatcher) {
         return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
@@ -1379,7 +1379,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         return 0;
     }
 
-    *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
+    *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, export_name);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
@@ -1423,7 +1423,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     assert(streamCount > 0);
     assert(vertexProgram != nullptr);
 
-    *vertexProgram = alloc<SceGxmVertexProgram>(mem, __FUNCTION__);
+    *vertexProgram = alloc<SceGxmVertexProgram>(mem, export_name);
     assert(*vertexProgram);
     if (!*vertexProgram) {
         return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
@@ -1492,7 +1492,7 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
     assert(programHeader);
     assert(programId != nullptr);
 
-    *programId = alloc<SceGxmRegisteredProgram>(host.mem, __FUNCTION__);
+    *programId = alloc<SceGxmRegisteredProgram>(host.mem, export_name);
     assert(*programId);
     if (!*programId) {
         return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
@@ -1559,7 +1559,7 @@ EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPat
 EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
     assert(syncObject != nullptr);
 
-    *syncObject = alloc<SceGxmSyncObject>(host.mem, __FUNCTION__);
+    *syncObject = alloc<SceGxmSyncObject>(host.mem, export_name);
     if (!*syncObject) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
