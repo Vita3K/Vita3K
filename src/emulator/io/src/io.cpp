@@ -15,6 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "host/rtc.h"
+#include "host/state.h"
+
 #include <io/functions.h>
 #include <io/io.h>
 
@@ -440,7 +443,7 @@ int remove_dir(const char *dir, const char *pref_path) {
     }
 }
 
-int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
+int stat_file(const char *file, SceIoStat *statp, const char *pref_path, HostState &host) {
     assert(statp != NULL);
 
     memset(statp, '\0', sizeof(SceIoStat));
@@ -449,54 +452,69 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
     std::string device_name;
     std::tie(device, device_name) = translate_device(file);
 
-    std::string file_path;
-
     // read and execute access rights
     statp->st_mode = SCE_S_IRUSR | SCE_S_IRGRP | SCE_S_IROTH |
         SCE_S_IXUSR | SCE_S_IXGRP | SCE_S_IXOTH;
 
     switch (device) {
+    case VitaIoDevice::APP0: {
+        const mz_uint32 file_index = mz_zip_reader_locate_file(host.io.vpk.get(), file + 5, nullptr, 0);
+        mz_zip_archive_file_stat stat;
+        mz_zip_reader_file_stat(host.io.vpk.get(),file_index, &stat);
+
+        statp->st_size = stat.m_uncomp_size;
+        SceDateTime last_modification;
+        __RtcTicksToPspTime(last_modification, rtc_get_ticks(host));
+        statp->st_atime = last_modification;
+
+        if (stat.m_is_directory)
+            statp->st_mode |= SCE_S_IFDIR;
+        else
+            statp->st_mode |= SCE_S_IFREG;
+
+        return 0;
+    }
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
-        file_path = translate_path(device_name, file, pref_path);
-        break;
+        std::string file_path = translate_path(device_name, file, pref_path);
+
+#ifdef WIN32
+        WIN32_FIND_DATAW find_data;
+        HANDLE handle = FindFirstFileW(utf_to_wide(file_path).c_str(), &find_data);
+        if (handle == INVALID_HANDLE_VALUE) {
+            return -1;
+        }
+        FindClose(handle);
+
+        statp->st_mode |= SCE_S_IFREG;
+        if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) {
+            statp->st_mode |= SCE_S_IFDIR;
+        }
+
+        statp->st_size = (find_data.nFileSizeHigh * ((size_t)MAXDWORD + 1)) + find_data.nFileSizeLow;
+#else
+        struct stat sb;
+        if (stat(file_path.c_str(), &sb) < 0) {
+            return -1;
+        }
+
+        if (S_ISREG(sb.st_mode)) {
+            statp->st_mode |= SCE_S_IFREG;
+        }
+        else if (S_ISDIR(sb.st_mode)) {
+            statp->st_mode |= SCE_S_IFDIR;
+        }
+
+        statp->st_size = sb.st_size;
+#endif
+
+        return 0;
     }
     default: {
         LOG_CRITICAL("Unknown file {} used. Report this to developers!", file);
         return -1;
     }
     }
-
-#ifdef WIN32
-    WIN32_FIND_DATAW find_data;
-    HANDLE handle = FindFirstFileW(utf_to_wide(file_path).c_str(), &find_data);
-    if (handle == INVALID_HANDLE_VALUE) {
-        return -1;
-    }
-    FindClose(handle);
-
-    statp->st_mode = SCE_S_IFREG;
-    if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) {
-        statp->st_mode = SCE_S_IFDIR;
-    }
-
-    statp->st_size = (find_data.nFileSizeHigh * ((size_t)MAXDWORD + 1)) + find_data.nFileSizeLow;
-#else
-    struct stat sb;
-    if (stat(file_path.c_str(), &sb) < 0) {
-        return -1;
-    }
-
-    if (S_ISREG(sb.st_mode)) {
-        statp->st_mode = SCE_S_IFREG;
-    } else if (S_ISDIR(sb.st_mode)) {
-        statp->st_mode = SCE_S_IFDIR;
-    }
-
-    statp->st_size = sb.st_size;
-#endif
-
-    return 0;
 }
 
 int open_dir(IOState &io, const char *path, const char *pref_path) {
