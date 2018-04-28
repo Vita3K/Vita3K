@@ -24,83 +24,83 @@
 #include <psp2/kernel/error.h>
 
 EXPORT(int, sceKernelCancelCallback) {
-    return unimplemented("sceKernelCancelCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelChangeActiveCpuMask) {
-    return unimplemented("sceKernelChangeActiveCpuMask");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelChangeThreadCpuAffinityMask) {
-    return unimplemented("sceKernelChangeThreadCpuAffinityMask");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelChangeThreadPriority) {
-    return unimplemented("sceKernelChangeThreadPriority");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelChangeThreadPriority2) {
-    return unimplemented("sceKernelChangeThreadPriority2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelChangeThreadVfpException) {
-    return unimplemented("sceKernelChangeThreadVfpException");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCheckCallback) {
-    return unimplemented("sceKernelCheckCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCheckWaitableStatus) {
-    return unimplemented("sceKernelCheckWaitableStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelClearEvent) {
-    return unimplemented("sceKernelClearEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelClearEventFlag) {
-    return unimplemented("sceKernelClearEventFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseCond) {
-    return unimplemented("sceKernelCloseCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseEventFlag) {
-    return unimplemented("sceKernelCloseEventFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseMsgPipe) {
-    return unimplemented("sceKernelCloseMsgPipe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseMutex) {
-    return unimplemented("sceKernelCloseMutex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseRWLock) {
-    return unimplemented("sceKernelCloseRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseSema) {
-    return unimplemented("sceKernelCloseSema");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseSimpleEvent) {
-    return unimplemented("sceKernelCloseSimpleEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseTimer) {
-    return unimplemented("sceKernelCloseTimer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCreateCallback) {
-    return unimplemented("sceKernelCreateCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCreateThreadForUser) {
-    return unimplemented("sceKernelCreateThreadForUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDelayThread, SceUInt delay) {
@@ -113,31 +113,31 @@ EXPORT(int, sceKernelDelayThread, SceUInt delay) {
 }
 
 EXPORT(int, sceKernelDelayThread200) {
-    return unimplemented("sceKernelDelayThread200");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDelayThreadCB) {
-    return unimplemented("sceKernelDelayThreadCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDelayThreadCB200) {
-    return unimplemented("sceKernelDelayThreadCB200");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteCallback) {
-    return unimplemented("sceKernelDeleteCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteCond) {
-    return unimplemented("sceKernelDeleteCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteEventFlag) {
-    return unimplemented("sceKernelDeleteEventFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteMsgPipe) {
-    return unimplemented("sceKernelDeleteMsgPipe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteMutex, SceInt32 mutexid) {
@@ -145,48 +145,48 @@ EXPORT(int, sceKernelDeleteMutex, SceInt32 mutexid) {
 }
 
 EXPORT(int, sceKernelDeleteRWLock) {
-    return unimplemented("sceKernelDeleteRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteSema) {
-    return unimplemented("sceKernelDeleteSema");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteSimpleEvent) {
-    return unimplemented("sceKernelDeleteSimpleEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteThread) {
-    return unimplemented("sceKernelDeleteThread");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteTimer) {
-    return unimplemented("sceKernelDeleteTimer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelExitDeleteThread) {
-    return unimplemented("sceKernelExitDeleteThread");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetCallbackCount) {
-    return unimplemented("sceKernelGetCallbackCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetMsgPipeCreatorId) {
-    return unimplemented("sceKernelGetMsgPipeCreatorId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetProcessId) {
-    unimplemented("sceKernelGetProcessId -> 0");
+    unimplemented(export_name);
     return 0;
 }
 
 EXPORT(int, sceKernelGetSystemTimeWide) {
-    return unimplemented("sceKernelGetSystemTimeWide");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetThreadStackFreeSize) {
-    return unimplemented("sceKernelGetThreadStackFreeSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(Ptr<void>, sceKernelGetThreadTLSAddr, SceUID thid, int key) {
@@ -194,91 +194,91 @@ EXPORT(Ptr<void>, sceKernelGetThreadTLSAddr, SceUID thid, int key) {
 }
 
 EXPORT(int, sceKernelGetThreadmgrUIDClass) {
-    return unimplemented("sceKernelGetThreadmgrUIDClass");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetTimerBaseWide) {
-    return unimplemented("sceKernelGetTimerBaseWide");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetTimerTimeWide) {
-    return unimplemented("sceKernelGetTimerTimeWide");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelNotifyCallback) {
-    return unimplemented("sceKernelNotifyCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenCond) {
-    return unimplemented("sceKernelOpenCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenEventFlag) {
-    return unimplemented("sceKernelOpenEventFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenMsgPipe) {
-    return unimplemented("sceKernelOpenMsgPipe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenMutex) {
-    return unimplemented("sceKernelOpenMutex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenRWLock) {
-    return unimplemented("sceKernelOpenRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenSema) {
-    return unimplemented("sceKernelOpenSema");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenSimpleEvent) {
-    return unimplemented("sceKernelOpenSimpleEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenTimer) {
-    return unimplemented("sceKernelOpenTimer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelPollSema) {
-    return unimplemented("sceKernelPollSema");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelPulseEvent) {
-    return unimplemented("sceKernelPulseEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelRegisterCallbackToEvent) {
-    return unimplemented("sceKernelRegisterCallbackToEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSendSignal) {
-    return unimplemented("sceKernelSendSignal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSetEvent) {
-    return unimplemented("sceKernelSetEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSetEventFlag) {
-    return unimplemented("sceKernelSetEventFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSetTimerTimeWide) {
-    return unimplemented("sceKernelSetTimerTimeWide");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSignalCond) {
-    return unimplemented("sceKernelSignalCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSignalCondAll) {
-    return unimplemented("sceKernelSignalCondAll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSignalCondTo) {
-    return unimplemented("sceKernelSignalCondTo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
@@ -308,23 +308,23 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
 }
 
 EXPORT(int, sceKernelStartTimer) {
-    return unimplemented("sceKernelStartTimer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelStopTimer) {
-    return unimplemented("sceKernelStopTimer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelTryLockMutex) {
-    return unimplemented("sceKernelTryLockMutex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelTryLockReadRWLock) {
-    return unimplemented("sceKernelTryLockReadRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelTryLockWriteRWLock) {
-    return unimplemented("sceKernelTryLockWriteRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
@@ -332,23 +332,23 @@ EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
 }
 
 EXPORT(int, sceKernelUnlockReadRWLock) {
-    return unimplemented("sceKernelUnlockReadRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelUnlockWriteRWLock) {
-    return unimplemented("sceKernelUnlockWriteRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelUnregisterCallbackFromEvent) {
-    return unimplemented("sceKernelUnregisterCallbackFromEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelUnregisterCallbackFromEventAll) {
-    return unimplemented("sceKernelUnregisterCallbackFromEventAll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelUnregisterThreadEventHandler) {
-    return unimplemented("sceKernelUnregisterThreadEventHandler");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceKernelCancelCallback)

@@ -18,179 +18,179 @@
 #include "SceSmart.h"
 
 EXPORT(int, sceSmartCreateInstantImageTarget) {
-    return unimplemented("sceSmartCreateInstantImageTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartCreateLearnedImageTarget) {
-    return unimplemented("sceSmartCreateLearnedImageTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartDestroyTarget) {
-    return unimplemented("sceSmartDestroyTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartGetTargetInfo) {
-    return unimplemented("sceSmartGetTargetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartInit) {
-    return unimplemented("sceSmartInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartRelease) {
-    return unimplemented("sceSmartRelease");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingDispatchAndQuery) {
-    return unimplemented("sceSmartSceneMappingDispatchAndQuery");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingDispatchAndQueryWithMask) {
-    return unimplemented("sceSmartSceneMappingDispatchAndQueryWithMask");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingEnableMask) {
-    return unimplemented("sceSmartSceneMappingEnableMask");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingFixMap) {
-    return unimplemented("sceSmartSceneMappingFixMap");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingForceLocalize) {
-    return unimplemented("sceSmartSceneMappingForceLocalize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingGetInitializationPointInfo) {
-    return unimplemented("sceSmartSceneMappingGetInitializationPointInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingGetLandmarkInfo) {
-    return unimplemented("sceSmartSceneMappingGetLandmarkInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingGetNodePointInfo) {
-    return unimplemented("sceSmartSceneMappingGetNodePointInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingGetNumInitializationPoints) {
-    return unimplemented("sceSmartSceneMappingGetNumInitializationPoints");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingGetNumLandmarks) {
-    return unimplemented("sceSmartSceneMappingGetNumLandmarks");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingGetNumNodePoints) {
-    return unimplemented("sceSmartSceneMappingGetNumNodePoints");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingLoadMap) {
-    return unimplemented("sceSmartSceneMappingLoadMap");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingPropagateResult) {
-    return unimplemented("sceSmartSceneMappingPropagateResult");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingRegisterTarget) {
-    return unimplemented("sceSmartSceneMappingRegisterTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingRemoveLandmark) {
-    return unimplemented("sceSmartSceneMappingRemoveLandmark");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingReset) {
-    return unimplemented("sceSmartSceneMappingReset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingRun) {
-    return unimplemented("sceSmartSceneMappingRun");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingRunCore) {
-    return unimplemented("sceSmartSceneMappingRunCore");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingSaveMap) {
-    return unimplemented("sceSmartSceneMappingSaveMap");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingSetCustomListener) {
-    return unimplemented("sceSmartSceneMappingSetCustomListener");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingSetDenseMapMode) {
-    return unimplemented("sceSmartSceneMappingSetDenseMapMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingSetDispatchMode) {
-    return unimplemented("sceSmartSceneMappingSetDispatchMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingStart) {
-    return unimplemented("sceSmartSceneMappingStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingStop) {
-    return unimplemented("sceSmartSceneMappingStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartSceneMappingUnregisterTarget) {
-    return unimplemented("sceSmartSceneMappingUnregisterTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingDispatchAndQuery) {
-    return unimplemented("sceSmartTargetTrackingDispatchAndQuery");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingGetResults) {
-    return unimplemented("sceSmartTargetTrackingGetResults");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingQuery) {
-    return unimplemented("sceSmartTargetTrackingQuery");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingQuery2) {
-    return unimplemented("sceSmartTargetTrackingQuery2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingRegisterTarget) {
-    return unimplemented("sceSmartTargetTrackingRegisterTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingReset) {
-    return unimplemented("sceSmartTargetTrackingReset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingRun) {
-    return unimplemented("sceSmartTargetTrackingRun");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingRun2) {
-    return unimplemented("sceSmartTargetTrackingRun2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingRunWorker) {
-    return unimplemented("sceSmartTargetTrackingRunWorker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingSetSearchPolicy) {
-    return unimplemented("sceSmartTargetTrackingSetSearchPolicy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingStart) {
-    return unimplemented("sceSmartTargetTrackingStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingStop) {
-    return unimplemented("sceSmartTargetTrackingStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSmartTargetTrackingUnregisterTarget) {
-    return unimplemented("sceSmartTargetTrackingUnregisterTarget");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceSmartCreateInstantImageTarget)

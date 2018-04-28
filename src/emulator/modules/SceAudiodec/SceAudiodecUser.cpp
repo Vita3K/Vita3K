@@ -18,63 +18,63 @@
 #include "SceAudiodecUser.h"
 
 EXPORT(int, sceAudiodecClearContext) {
-    return unimplemented("sceAudiodecClearContext");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecCreateDecoder) {
-    return unimplemented("sceAudiodecCreateDecoder");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecCreateDecoderExternal) {
-    return unimplemented("sceAudiodecCreateDecoderExternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecCreateDecoderResident) {
-    return unimplemented("sceAudiodecCreateDecoderResident");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecDecode) {
-    return unimplemented("sceAudiodecDecode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecDecodeNFrames) {
-    return unimplemented("sceAudiodecDecodeNFrames");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecDecodeNStreams) {
-    return unimplemented("sceAudiodecDecodeNStreams");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecDeleteDecoder) {
-    return unimplemented("sceAudiodecDeleteDecoder");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderExternal) {
-    return unimplemented("sceAudiodecDeleteDecoderExternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderResident) {
-    return unimplemented("sceAudiodecDeleteDecoderResident");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecGetContextSize) {
-    return unimplemented("sceAudiodecGetContextSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecGetInternalError) {
-    return unimplemented("sceAudiodecGetInternalError");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecInitLibrary) {
-    return unimplemented("sceAudiodecInitLibrary");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecPartlyDecode) {
-    return unimplemented("sceAudiodecPartlyDecode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudiodecTermLibrary) {
-    return unimplemented("sceAudiodecTermLibrary");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceAudiodecClearContext)

@@ -30,4 +30,4 @@ int error(const char *name, std::uint32_t error);
 #define BRIDGE_DECL(name) extern const ImportFn import_##name;
 #define BRIDGE_IMPL(name) const ImportFn import_##name = bridge(&export_##name, #name);
 
-#define EXPORT(ret, name, ...) ret export_##name(HostState &host, SceUID thread_id, ##__VA_ARGS__)
+#define EXPORT(ret, name, ...) ret export_##name(HostState &host, SceUID thread_id, const char *export_name, ##__VA_ARGS__)

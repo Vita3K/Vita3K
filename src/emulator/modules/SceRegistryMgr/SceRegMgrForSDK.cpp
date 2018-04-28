@@ -18,27 +18,27 @@
 #include "SceRegMgrForSDK.h"
 
 EXPORT(int, sceRegMgrUtilityGetBin) {
-    return unimplemented("sceRegMgrUtilityGetBin");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrUtilityGetInt) {
-    return unimplemented("sceRegMgrUtilityGetInt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrUtilityGetStr) {
-    return unimplemented("sceRegMgrUtilityGetStr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrUtilitySetBin) {
-    return unimplemented("sceRegMgrUtilitySetBin");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrUtilitySetInt) {
-    return unimplemented("sceRegMgrUtilitySetInt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrUtilitySetStr) {
-    return unimplemented("sceRegMgrUtilitySetStr");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceRegMgrUtilityGetBin)

@@ -18,259 +18,259 @@
 #include "SceVideodecUser.h"
 
 EXPORT(int, sceAvcdecCreateDecoder) {
-    return unimplemented("sceAvcdecCreateDecoder");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecCreateDecoderInternal) {
-    return unimplemented("sceAvcdecCreateDecoderInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecCreateDecoderNongameapp) {
-    return unimplemented("sceAvcdecCreateDecoderNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecCsc) {
-    return unimplemented("sceAvcdecCsc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecCscInternal) {
-    return unimplemented("sceAvcdecCscInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecode) {
-    return unimplemented("sceAvcdecDecode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeAuInternal) {
-    return unimplemented("sceAvcdecDecodeAuInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeAuNalAuInternal) {
-    return unimplemented("sceAvcdecDecodeAuNalAuInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeAuNalAuNongameapp) {
-    return unimplemented("sceAvcdecDecodeAuNalAuNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeAuNongameapp) {
-    return unimplemented("sceAvcdecDecodeAuNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeAvailableSize) {
-    return unimplemented("sceAvcdecDecodeAvailableSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeFlush) {
-    return unimplemented("sceAvcdecDecodeFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeGetPictureInternal) {
-    return unimplemented("sceAvcdecDecodeGetPictureInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeGetPictureNongameapp) {
-    return unimplemented("sceAvcdecDecodeGetPictureNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeGetPictureWithWorkPictureInternal) {
-    return unimplemented("sceAvcdecDecodeGetPictureWithWorkPictureInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeNalAu) {
-    return unimplemented("sceAvcdecDecodeNalAu");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeNalAuWithWorkPicture) {
-    return unimplemented("sceAvcdecDecodeNalAuWithWorkPicture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeSetTrickModeNongameapp) {
-    return unimplemented("sceAvcdecDecodeSetTrickModeNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
-    return unimplemented("sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeStop) {
-    return unimplemented("sceAvcdecDecodeStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeStopWithWorkPicture) {
-    return unimplemented("sceAvcdecDecodeStopWithWorkPicture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDecodeWithWorkPicture) {
-    return unimplemented("sceAvcdecDecodeWithWorkPicture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecDeleteDecoder) {
-    return unimplemented("sceAvcdecDeleteDecoder");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecGetSeiPictureTimingInternal) {
-    return unimplemented("sceAvcdecGetSeiPictureTimingInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecGetSeiUserDataNongameapp) {
-    return unimplemented("sceAvcdecGetSeiUserDataNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecQueryDecoderMemSize) {
-    return unimplemented("sceAvcdecQueryDecoderMemSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecQueryDecoderMemSizeInternal) {
-    return unimplemented("sceAvcdecQueryDecoderMemSizeInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecQueryDecoderMemSizeNongameapp) {
-    return unimplemented("sceAvcdecQueryDecoderMemSizeNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecRegisterCallbackInternal) {
-    return unimplemented("sceAvcdecRegisterCallbackInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecRegisterCallbackNongameapp) {
-    return unimplemented("sceAvcdecRegisterCallbackNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecSetDecodeMode) {
-    return unimplemented("sceAvcdecSetDecodeMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecSetDecodeModeInternal) {
-    return unimplemented("sceAvcdecSetDecodeModeInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecSetInterlacedStreamMode) {
-    return unimplemented("sceAvcdecSetInterlacedStreamMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecSetLowDelayModeNongameapp) {
-    return unimplemented("sceAvcdecSetLowDelayModeNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecSetRecoveryPointSEIMode) {
-    return unimplemented("sceAvcdecSetRecoveryPointSEIMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecUnregisterCallbackInternal) {
-    return unimplemented("sceAvcdecUnregisterCallbackInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecUnregisterCallbackNongameapp) {
-    return unimplemented("sceAvcdecUnregisterCallbackNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecUnregisterCallbackWithCbidInternal) {
-    return unimplemented("sceAvcdecUnregisterCallbackWithCbidInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvcdecUnregisterCallbackWithCbidNongameapp) {
-    return unimplemented("sceAvcdecUnregisterCallbackWithCbidNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecCreateDecoder) {
-    return unimplemented("sceM4vdecCreateDecoder");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecCreateDecoderInternal) {
-    return unimplemented("sceM4vdecCreateDecoderInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecCsc) {
-    return unimplemented("sceM4vdecCsc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecDecode) {
-    return unimplemented("sceM4vdecDecode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecDecodeAvailableSize) {
-    return unimplemented("sceM4vdecDecodeAvailableSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecDecodeFlush) {
-    return unimplemented("sceM4vdecDecodeFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecDecodeStop) {
-    return unimplemented("sceM4vdecDecodeStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecDecodeStopWithWorkPicture) {
-    return unimplemented("sceM4vdecDecodeStopWithWorkPicture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecDecodeWithWorkPicture) {
-    return unimplemented("sceM4vdecDecodeWithWorkPicture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecDeleteDecoder) {
-    return unimplemented("sceM4vdecDeleteDecoder");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecQueryDecoderMemSize) {
-    return unimplemented("sceM4vdecQueryDecoderMemSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceM4vdecQueryDecoderMemSizeInternal) {
-    return unimplemented("sceM4vdecQueryDecoderMemSizeInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecInitLibrary) {
-    return unimplemented("sceVideodecInitLibrary");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecInitLibraryInternal) {
-    return unimplemented("sceVideodecInitLibraryInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecInitLibraryNongameapp) {
-    return unimplemented("sceVideodecInitLibraryNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMem) {
-    return unimplemented("sceVideodecInitLibraryWithUnmapMem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMemInternal) {
-    return unimplemented("sceVideodecInitLibraryWithUnmapMemInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMemNongameapp) {
-    return unimplemented("sceVideodecInitLibraryWithUnmapMemNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecQueryInstanceNongameapp) {
-    return unimplemented("sceVideodecQueryInstanceNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecQueryMemSize) {
-    return unimplemented("sceVideodecQueryMemSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecQueryMemSizeInternal) {
-    return unimplemented("sceVideodecQueryMemSizeInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecQueryMemSizeNongameapp) {
-    return unimplemented("sceVideodecQueryMemSizeNongameapp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecSetConfig) {
-    return unimplemented("sceVideodecSetConfig");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecSetConfigInternal) {
-    return unimplemented("sceVideodecSetConfigInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVideodecTermLibrary) {
-    return unimplemented("sceVideodecTermLibrary");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceAvcdecCreateDecoder)

@@ -18,19 +18,19 @@
 #include "SceCodecEngineWrapper.h"
 
 EXPORT(int, _sceCodecEngineAllocMemoryFromUnmapMemBlock) {
-    return unimplemented("_sceCodecEngineAllocMemoryFromUnmapMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceCodecEngineCloseUnmapMemBlock) {
-    return unimplemented("_sceCodecEngineCloseUnmapMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceCodecEngineFreeMemoryFromUnmapMemBlock) {
-    return unimplemented("_sceCodecEngineFreeMemoryFromUnmapMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceCodecEngineOpenUnmapMemBlock) {
-    return unimplemented("_sceCodecEngineOpenUnmapMemBlock");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_sceCodecEngineAllocMemoryFromUnmapMemBlock)

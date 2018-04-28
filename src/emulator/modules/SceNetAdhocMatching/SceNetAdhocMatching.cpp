@@ -18,59 +18,59 @@
 #include "SceNetAdhocMatching.h"
 
 EXPORT(int, sceNetAdhocMatchingAbortSendData) {
-    return unimplemented("sceNetAdhocMatchingAbortSendData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingCancelTarget) {
-    return unimplemented("sceNetAdhocMatchingCancelTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingCancelTargetWithOpt) {
-    return unimplemented("sceNetAdhocMatchingCancelTargetWithOpt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingCreate) {
-    return unimplemented("sceNetAdhocMatchingCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingDelete) {
-    return unimplemented("sceNetAdhocMatchingDelete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingGetHelloOpt) {
-    return unimplemented("sceNetAdhocMatchingGetHelloOpt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingGetMembers) {
-    return unimplemented("sceNetAdhocMatchingGetMembers");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingInit) {
-    return unimplemented("sceNetAdhocMatchingInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingSelectTarget) {
-    return unimplemented("sceNetAdhocMatchingSelectTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingSendData) {
-    return unimplemented("sceNetAdhocMatchingSendData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingSetHelloOpt) {
-    return unimplemented("sceNetAdhocMatchingSetHelloOpt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingStart) {
-    return unimplemented("sceNetAdhocMatchingStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingStop) {
-    return unimplemented("sceNetAdhocMatchingStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetAdhocMatchingTerm) {
-    return unimplemented("sceNetAdhocMatchingTerm");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNetAdhocMatchingAbortSendData)

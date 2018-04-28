@@ -18,95 +18,95 @@
 #include "ScePgf.h"
 
 EXPORT(int, sceFontClose) {
-    return unimplemented("sceFontClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontDoneLib) {
-    return unimplemented("sceFontDoneLib");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontFindFont) {
-    return unimplemented("sceFontFindFont");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontFindOptimumFont) {
-    return unimplemented("sceFontFindOptimumFont");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontFlush) {
-    return unimplemented("sceFontFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontGetCharGlyphImage) {
-    return unimplemented("sceFontGetCharGlyphImage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontGetCharGlyphImage_Clip) {
-    return unimplemented("sceFontGetCharGlyphImage_Clip");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontGetCharImageRect) {
-    return unimplemented("sceFontGetCharImageRect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontGetCharInfo) {
-    return unimplemented("sceFontGetCharInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontGetFontInfo) {
-    return unimplemented("sceFontGetFontInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontGetFontInfoByIndexNumber) {
-    return unimplemented("sceFontGetFontInfoByIndexNumber");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontGetFontList) {
-    return unimplemented("sceFontGetFontList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontGetNumFontList) {
-    return unimplemented("sceFontGetNumFontList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontNewLib) {
-    return unimplemented("sceFontNewLib");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontOpen) {
-    return unimplemented("sceFontOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontOpenUserFile) {
-    return unimplemented("sceFontOpenUserFile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontOpenUserMemory) {
-    return unimplemented("sceFontOpenUserMemory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontPixelToPointH) {
-    return unimplemented("sceFontPixelToPointH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontPixelToPointV) {
-    return unimplemented("sceFontPixelToPointV");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontPointToPixelH) {
-    return unimplemented("sceFontPointToPixelH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontPointToPixelV) {
-    return unimplemented("sceFontPointToPixelV");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontSetAltCharacterCode) {
-    return unimplemented("sceFontSetAltCharacterCode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFontSetResolution) {
-    return unimplemented("sceFontSetResolution");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceFontClose)

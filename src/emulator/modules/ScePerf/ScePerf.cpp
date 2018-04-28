@@ -18,111 +18,111 @@
 #include "ScePerf.h"
 
 EXPORT(int, _pLibPerfCaptureFlagPtr) {
-    return unimplemented("_pLibPerfCaptureFlagPtr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceCpuRazorPopFiberUserMarker) {
-    return unimplemented("_sceCpuRazorPopFiberUserMarker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceCpuRazorPushFiberUserMarker) {
-    return unimplemented("_sceCpuRazorPushFiberUserMarker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceRazorCpuInit) {
-    return unimplemented("_sceRazorCpuInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceRazorCpuWriteFiberUltPkt) {
-    return unimplemented("_sceRazorCpuWriteFiberUltPkt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePerfArmPmonGetCounterValue) {
-    return unimplemented("scePerfArmPmonGetCounterValue");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePerfArmPmonReset) {
-    return unimplemented("scePerfArmPmonReset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePerfArmPmonSelectEvent) {
-    return unimplemented("scePerfArmPmonSelectEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePerfArmPmonSetCounterValue) {
-    return unimplemented("scePerfArmPmonSetCounterValue");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePerfArmPmonSoftwareIncrement) {
-    return unimplemented("scePerfArmPmonSoftwareIncrement");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePerfArmPmonStart) {
-    return unimplemented("scePerfArmPmonStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePerfArmPmonStop) {
-    return unimplemented("scePerfArmPmonStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePerfGetTimebaseFrequency) {
-    return unimplemented("scePerfGetTimebaseFrequency");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePerfGetTimebaseValue) {
-    return unimplemented("scePerfGetTimebaseValue");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuGetActivityMonitorTraceBuffer) {
-    return unimplemented("sceRazorCpuGetActivityMonitorTraceBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuGetUserMarkerTraceBuffer) {
-    return unimplemented("sceRazorCpuGetUserMarkerTraceBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuIsCapturing) {
-    return unimplemented("sceRazorCpuIsCapturing");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuPopMarker) {
-    return unimplemented("sceRazorCpuPopMarker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuPushMarker) {
-    return unimplemented("sceRazorCpuPushMarker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuPushMarkerWithHud) {
-    return unimplemented("sceRazorCpuPushMarkerWithHud");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuStartActivityMonitor) {
-    return unimplemented("sceRazorCpuStartActivityMonitor");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuStartCapture) {
-    return unimplemented("sceRazorCpuStartCapture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuStartUserMarkerTrace) {
-    return unimplemented("sceRazorCpuStartUserMarkerTrace");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuStopActivityMonitor) {
-    return unimplemented("sceRazorCpuStopActivityMonitor");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuStopCapture) {
-    return unimplemented("sceRazorCpuStopCapture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuStopUserMarkerTrace) {
-    return unimplemented("sceRazorCpuStopUserMarkerTrace");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuSync) {
-    return unimplemented("sceRazorCpuSync");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_pLibPerfCaptureFlagPtr)

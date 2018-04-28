@@ -18,695 +18,695 @@
 #include "SceSqlite.h"
 
 EXPORT(int, sceSqliteConfigMallocMethods) {
-    return unimplemented("sceSqliteConfigMallocMethods");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_aggregate_context) {
-    return unimplemented("sqlite3_aggregate_context");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_aggregate_count) {
-    return unimplemented("sqlite3_aggregate_count");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_auto_extension) {
-    return unimplemented("sqlite3_auto_extension");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_backup_finish) {
-    return unimplemented("sqlite3_backup_finish");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_backup_init) {
-    return unimplemented("sqlite3_backup_init");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_backup_pagecount) {
-    return unimplemented("sqlite3_backup_pagecount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_backup_remaining) {
-    return unimplemented("sqlite3_backup_remaining");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_backup_step) {
-    return unimplemented("sqlite3_backup_step");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_blob) {
-    return unimplemented("sqlite3_bind_blob");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_double) {
-    return unimplemented("sqlite3_bind_double");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_int) {
-    return unimplemented("sqlite3_bind_int");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_int64) {
-    return unimplemented("sqlite3_bind_int64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_null) {
-    return unimplemented("sqlite3_bind_null");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_parameter_count) {
-    return unimplemented("sqlite3_bind_parameter_count");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_parameter_index) {
-    return unimplemented("sqlite3_bind_parameter_index");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_parameter_name) {
-    return unimplemented("sqlite3_bind_parameter_name");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_text) {
-    return unimplemented("sqlite3_bind_text");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_text16) {
-    return unimplemented("sqlite3_bind_text16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_value) {
-    return unimplemented("sqlite3_bind_value");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_bind_zeroblob) {
-    return unimplemented("sqlite3_bind_zeroblob");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_blob_bytes) {
-    return unimplemented("sqlite3_blob_bytes");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_blob_close) {
-    return unimplemented("sqlite3_blob_close");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_blob_open) {
-    return unimplemented("sqlite3_blob_open");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_blob_read) {
-    return unimplemented("sqlite3_blob_read");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_blob_write) {
-    return unimplemented("sqlite3_blob_write");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_busy_handler) {
-    return unimplemented("sqlite3_busy_handler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_busy_timeout) {
-    return unimplemented("sqlite3_busy_timeout");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_changes) {
-    return unimplemented("sqlite3_changes");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_clear_bindings) {
-    return unimplemented("sqlite3_clear_bindings");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_close) {
-    return unimplemented("sqlite3_close");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_collation_needed) {
-    return unimplemented("sqlite3_collation_needed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_collation_needed16) {
-    return unimplemented("sqlite3_collation_needed16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_blob) {
-    return unimplemented("sqlite3_column_blob");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_bytes) {
-    return unimplemented("sqlite3_column_bytes");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_bytes16) {
-    return unimplemented("sqlite3_column_bytes16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_count) {
-    return unimplemented("sqlite3_column_count");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_decltype) {
-    return unimplemented("sqlite3_column_decltype");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_decltype16) {
-    return unimplemented("sqlite3_column_decltype16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_double) {
-    return unimplemented("sqlite3_column_double");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_int) {
-    return unimplemented("sqlite3_column_int");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_int64) {
-    return unimplemented("sqlite3_column_int64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_name) {
-    return unimplemented("sqlite3_column_name");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_name16) {
-    return unimplemented("sqlite3_column_name16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_text) {
-    return unimplemented("sqlite3_column_text");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_text16) {
-    return unimplemented("sqlite3_column_text16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_type) {
-    return unimplemented("sqlite3_column_type");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_column_value) {
-    return unimplemented("sqlite3_column_value");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_commit_hook) {
-    return unimplemented("sqlite3_commit_hook");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_complete) {
-    return unimplemented("sqlite3_complete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_complete16) {
-    return unimplemented("sqlite3_complete16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_config) {
-    return unimplemented("sqlite3_config");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_context_db_handle) {
-    return unimplemented("sqlite3_context_db_handle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_create_collation) {
-    return unimplemented("sqlite3_create_collation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_create_collation16) {
-    return unimplemented("sqlite3_create_collation16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_create_collation_v2) {
-    return unimplemented("sqlite3_create_collation_v2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_create_function) {
-    return unimplemented("sqlite3_create_function");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_create_function16) {
-    return unimplemented("sqlite3_create_function16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_create_module) {
-    return unimplemented("sqlite3_create_module");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_create_module_v2) {
-    return unimplemented("sqlite3_create_module_v2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_data_count) {
-    return unimplemented("sqlite3_data_count");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_db_config) {
-    return unimplemented("sqlite3_db_config");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_db_handle) {
-    return unimplemented("sqlite3_db_handle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_db_mutex) {
-    return unimplemented("sqlite3_db_mutex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_db_status) {
-    return unimplemented("sqlite3_db_status");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_declare_vtab) {
-    return unimplemented("sqlite3_declare_vtab");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_enable_load_extension) {
-    return unimplemented("sqlite3_enable_load_extension");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_enable_shared_cache) {
-    return unimplemented("sqlite3_enable_shared_cache");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_errcode) {
-    return unimplemented("sqlite3_errcode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_errmsg) {
-    return unimplemented("sqlite3_errmsg");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_errmsg16) {
-    return unimplemented("sqlite3_errmsg16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_exec) {
-    return unimplemented("sqlite3_exec");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_expired) {
-    return unimplemented("sqlite3_expired");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_extended_errcode) {
-    return unimplemented("sqlite3_extended_errcode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_extended_result_codes) {
-    return unimplemented("sqlite3_extended_result_codes");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_file_control) {
-    return unimplemented("sqlite3_file_control");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_finalize) {
-    return unimplemented("sqlite3_finalize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_free) {
-    return unimplemented("sqlite3_free");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_free_table) {
-    return unimplemented("sqlite3_free_table");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_get_autocommit) {
-    return unimplemented("sqlite3_get_autocommit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_get_auxdata) {
-    return unimplemented("sqlite3_get_auxdata");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_get_table) {
-    return unimplemented("sqlite3_get_table");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_global_recover) {
-    return unimplemented("sqlite3_global_recover");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_initialize) {
-    return unimplemented("sqlite3_initialize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_interrupt) {
-    return unimplemented("sqlite3_interrupt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_last_insert_rowid) {
-    return unimplemented("sqlite3_last_insert_rowid");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_libversion) {
-    return unimplemented("sqlite3_libversion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_libversion_number) {
-    return unimplemented("sqlite3_libversion_number");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_limit) {
-    return unimplemented("sqlite3_limit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_load_extension) {
-    return unimplemented("sqlite3_load_extension");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_malloc) {
-    return unimplemented("sqlite3_malloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_memory_alarm) {
-    return unimplemented("sqlite3_memory_alarm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_memory_highwater) {
-    return unimplemented("sqlite3_memory_highwater");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_memory_used) {
-    return unimplemented("sqlite3_memory_used");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_mprintf) {
-    return unimplemented("sqlite3_mprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_mutex_alloc) {
-    return unimplemented("sqlite3_mutex_alloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_mutex_enter) {
-    return unimplemented("sqlite3_mutex_enter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_mutex_free) {
-    return unimplemented("sqlite3_mutex_free");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_mutex_leave) {
-    return unimplemented("sqlite3_mutex_leave");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_mutex_try) {
-    return unimplemented("sqlite3_mutex_try");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_next_stmt) {
-    return unimplemented("sqlite3_next_stmt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_open) {
-    return unimplemented("sqlite3_open");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_open16) {
-    return unimplemented("sqlite3_open16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_open_v2) {
-    return unimplemented("sqlite3_open_v2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_os_end) {
-    return unimplemented("sqlite3_os_end");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_os_init) {
-    return unimplemented("sqlite3_os_init");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_overload_function) {
-    return unimplemented("sqlite3_overload_function");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_prepare) {
-    return unimplemented("sqlite3_prepare");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_prepare16) {
-    return unimplemented("sqlite3_prepare16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_prepare16_v2) {
-    return unimplemented("sqlite3_prepare16_v2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_prepare_v2) {
-    return unimplemented("sqlite3_prepare_v2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_profile) {
-    return unimplemented("sqlite3_profile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_progress_handler) {
-    return unimplemented("sqlite3_progress_handler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_randomness) {
-    return unimplemented("sqlite3_randomness");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_realloc) {
-    return unimplemented("sqlite3_realloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_release_memory) {
-    return unimplemented("sqlite3_release_memory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_reset) {
-    return unimplemented("sqlite3_reset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_reset_auto_extension) {
-    return unimplemented("sqlite3_reset_auto_extension");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_blob) {
-    return unimplemented("sqlite3_result_blob");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_double) {
-    return unimplemented("sqlite3_result_double");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_error) {
-    return unimplemented("sqlite3_result_error");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_error16) {
-    return unimplemented("sqlite3_result_error16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_error_code) {
-    return unimplemented("sqlite3_result_error_code");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_error_nomem) {
-    return unimplemented("sqlite3_result_error_nomem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_error_toobig) {
-    return unimplemented("sqlite3_result_error_toobig");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_int) {
-    return unimplemented("sqlite3_result_int");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_int64) {
-    return unimplemented("sqlite3_result_int64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_null) {
-    return unimplemented("sqlite3_result_null");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_text) {
-    return unimplemented("sqlite3_result_text");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_text16) {
-    return unimplemented("sqlite3_result_text16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_text16be) {
-    return unimplemented("sqlite3_result_text16be");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_text16le) {
-    return unimplemented("sqlite3_result_text16le");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_value) {
-    return unimplemented("sqlite3_result_value");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_result_zeroblob) {
-    return unimplemented("sqlite3_result_zeroblob");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_rollback_hook) {
-    return unimplemented("sqlite3_rollback_hook");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_set_authorizer) {
-    return unimplemented("sqlite3_set_authorizer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_set_auxdata) {
-    return unimplemented("sqlite3_set_auxdata");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_shutdown) {
-    return unimplemented("sqlite3_shutdown");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_sleep) {
-    return unimplemented("sqlite3_sleep");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_snprintf) {
-    return unimplemented("sqlite3_snprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_soft_heap_limit) {
-    return unimplemented("sqlite3_soft_heap_limit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_sourceid) {
-    return unimplemented("sqlite3_sourceid");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_sql) {
-    return unimplemented("sqlite3_sql");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_status) {
-    return unimplemented("sqlite3_status");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_step) {
-    return unimplemented("sqlite3_step");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_stmt_status) {
-    return unimplemented("sqlite3_stmt_status");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_strnicmp) {
-    return unimplemented("sqlite3_strnicmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_temp_directory) {
-    return unimplemented("sqlite3_temp_directory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_test_control) {
-    return unimplemented("sqlite3_test_control");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_thread_cleanup) {
-    return unimplemented("sqlite3_thread_cleanup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_threadsafe) {
-    return unimplemented("sqlite3_threadsafe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_total_changes) {
-    return unimplemented("sqlite3_total_changes");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_trace) {
-    return unimplemented("sqlite3_trace");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_transfer_bindings) {
-    return unimplemented("sqlite3_transfer_bindings");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_update_hook) {
-    return unimplemented("sqlite3_update_hook");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_user_data) {
-    return unimplemented("sqlite3_user_data");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_blob) {
-    return unimplemented("sqlite3_value_blob");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_bytes) {
-    return unimplemented("sqlite3_value_bytes");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_bytes16) {
-    return unimplemented("sqlite3_value_bytes16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_double) {
-    return unimplemented("sqlite3_value_double");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_int) {
-    return unimplemented("sqlite3_value_int");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_int64) {
-    return unimplemented("sqlite3_value_int64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_numeric_type) {
-    return unimplemented("sqlite3_value_numeric_type");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_text) {
-    return unimplemented("sqlite3_value_text");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_text16) {
-    return unimplemented("sqlite3_value_text16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_text16be) {
-    return unimplemented("sqlite3_value_text16be");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_text16le) {
-    return unimplemented("sqlite3_value_text16le");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_value_type) {
-    return unimplemented("sqlite3_value_type");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_version) {
-    return unimplemented("sqlite3_version");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_vfs_find) {
-    return unimplemented("sqlite3_vfs_find");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_vfs_register) {
-    return unimplemented("sqlite3_vfs_register");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_vfs_unregister) {
-    return unimplemented("sqlite3_vfs_unregister");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sqlite3_vmprintf) {
-    return unimplemented("sqlite3_vmprintf");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceSqliteConfigMallocMethods)

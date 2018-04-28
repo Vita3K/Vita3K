@@ -18,43 +18,43 @@
 #include "SceDeci4pUserp.h"
 
 EXPORT(int, sceKernelDeci4pClose) {
-    return unimplemented("sceKernelDeci4pClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeci4pCreateHostProcess) {
-    return unimplemented("sceKernelDeci4pCreateHostProcess");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeci4pCreateHostProcessAndWait) {
-    return unimplemented("sceKernelDeci4pCreateHostProcessAndWait");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeci4pDisableWatchpoint) {
-    return unimplemented("sceKernelDeci4pDisableWatchpoint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeci4pEnableWatchpoint) {
-    return unimplemented("sceKernelDeci4pEnableWatchpoint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeci4pIsProcessAttached) {
-    return unimplemented("sceKernelDeci4pIsProcessAttached");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeci4pOpen) {
-    return unimplemented("sceKernelDeci4pOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeci4pRead) {
-    return unimplemented("sceKernelDeci4pRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeci4pRegisterCallback) {
-    return unimplemented("sceKernelDeci4pRegisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeci4pWrite) {
-    return unimplemented("sceKernelDeci4pWrite");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceKernelDeci4pClose)

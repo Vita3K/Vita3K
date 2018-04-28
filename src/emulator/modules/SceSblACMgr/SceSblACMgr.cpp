@@ -18,7 +18,7 @@
 #include "SceSblACMgr.h"
 
 EXPORT(int, _sceSblACMgrIsGameProgram) {
-    return unimplemented("_sceSblACMgrIsGameProgram");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_sceSblACMgrIsGameProgram)

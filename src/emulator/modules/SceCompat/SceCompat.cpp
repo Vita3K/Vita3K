@@ -18,139 +18,139 @@
 #include "SceCompat.h"
 
 EXPORT(int, sceCompatAllocCdramWithHole) {
-    return unimplemented("sceCompatAllocCdramWithHole");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatAvailableColorSpaceSetting) {
-    return unimplemented("sceCompatAvailableColorSpaceSetting");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatCache) {
-    return unimplemented("sceCompatCache");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatCheckPocketStation) {
-    return unimplemented("sceCompatCheckPocketStation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatDatRead) {
-    return unimplemented("sceCompatDatRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatFrameBufferInit) {
-    return unimplemented("sceCompatFrameBufferInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatGetCurrentSecureTick) {
-    return unimplemented("sceCompatGetCurrentSecureTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatGetDevInf) {
-    return unimplemented("sceCompatGetDevInf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatGetPeripheralState) {
-    return unimplemented("sceCompatGetPeripheralState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatGetPrimaryHead) {
-    return unimplemented("sceCompatGetPrimaryHead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatGetPspSystemSoftwareVersion) {
-    return unimplemented("sceCompatGetPspSystemSoftwareVersion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatGetStatus) {
-    return unimplemented("sceCompatGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatGetTitleList) {
-    return unimplemented("sceCompatGetTitleList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatGetUpdateState) {
-    return unimplemented("sceCompatGetUpdateState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatIdStorageLookup) {
-    return unimplemented("sceCompatIdStorageLookup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatInitEx) {
-    return unimplemented("sceCompatInitEx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatInterrupt) {
-    return unimplemented("sceCompatInterrupt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatIsPocketStationTitle) {
-    return unimplemented("sceCompatIsPocketStationTitle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatLCDCSync) {
-    return unimplemented("sceCompatLCDCSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatReadShared32) {
-    return unimplemented("sceCompatReadShared32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatReturnValueEx) {
-    return unimplemented("sceCompatReturnValueEx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatSetDisplayConfig) {
-    return unimplemented("sceCompatSetDisplayConfig");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatSetRif) {
-    return unimplemented("sceCompatSetRif");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatSetSuspendSema) {
-    return unimplemented("sceCompatSetSuspendSema");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatSetUpdateState) {
-    return unimplemented("sceCompatSetUpdateState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatStart) {
-    return unimplemented("sceCompatStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatStop) {
-    return unimplemented("sceCompatStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatSuspendResume) {
-    return unimplemented("sceCompatSuspendResume");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatUninit) {
-    return unimplemented("sceCompatUninit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatWaitAndGetRequest) {
-    return unimplemented("sceCompatWaitAndGetRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatWaitIntr) {
-    return unimplemented("sceCompatWaitIntr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatWaitSpecialRequest) {
-    return unimplemented("sceCompatWaitSpecialRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatWriteShared32) {
-    return unimplemented("sceCompatWriteShared32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCompatWriteSharedCtrl) {
-    return unimplemented("sceCompatWriteSharedCtrl");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceCompatAllocCdramWithHole)

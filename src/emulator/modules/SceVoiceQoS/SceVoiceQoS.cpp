@@ -18,71 +18,71 @@
 #include "SceVoiceQoS.h"
 
 EXPORT(int, sceVoiceQoSConnect) {
-    return unimplemented("sceVoiceQoSConnect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSCreateLocalEndpoint) {
-    return unimplemented("sceVoiceQoSCreateLocalEndpoint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSCreateRemoteEndpoint) {
-    return unimplemented("sceVoiceQoSCreateRemoteEndpoint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSDeleteLocalEndpoint) {
-    return unimplemented("sceVoiceQoSDeleteLocalEndpoint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSDeleteRemoteEndpoint) {
-    return unimplemented("sceVoiceQoSDeleteRemoteEndpoint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSDisconnect) {
-    return unimplemented("sceVoiceQoSDisconnect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSEnd) {
-    return unimplemented("sceVoiceQoSEnd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSGetConnectionAttribute) {
-    return unimplemented("sceVoiceQoSGetConnectionAttribute");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSGetLocalEndpoint) {
-    return unimplemented("sceVoiceQoSGetLocalEndpoint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSGetLocalEndpointAttribute) {
-    return unimplemented("sceVoiceQoSGetLocalEndpointAttribute");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSGetRemoteEndpoint) {
-    return unimplemented("sceVoiceQoSGetRemoteEndpoint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSGetStatus) {
-    return unimplemented("sceVoiceQoSGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSInit) {
-    return unimplemented("sceVoiceQoSInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSReadPacket) {
-    return unimplemented("sceVoiceQoSReadPacket");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSSetConnectionAttribute) {
-    return unimplemented("sceVoiceQoSSetConnectionAttribute");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSSetLocalEndpointAttribute) {
-    return unimplemented("sceVoiceQoSSetLocalEndpointAttribute");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceQoSWritePacket) {
-    return unimplemented("sceVoiceQoSWritePacket");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceVoiceQoSConnect)

@@ -18,11 +18,11 @@
 #include "SceDebugLed.h"
 
 EXPORT(int, sceKernelGetGPI) {
-    return unimplemented("sceKernelGetGPI");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSetGPO) {
-    return unimplemented("sceKernelSetGPO");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceKernelGetGPI)

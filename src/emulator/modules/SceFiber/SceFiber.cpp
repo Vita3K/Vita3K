@@ -18,67 +18,67 @@
 #include "SceFiber.h"
 
 EXPORT(int, _sceFiberAttachContextAndRun) {
-    return unimplemented("_sceFiberAttachContextAndRun");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceFiberAttachContextAndSwitch) {
-    return unimplemented("_sceFiberAttachContextAndSwitch");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceFiberInitializeImpl) {
-    return unimplemented("_sceFiberInitializeImpl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceFiberInitializeWithInternalOptionImpl) {
-    return unimplemented("_sceFiberInitializeWithInternalOptionImpl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberFinalize) {
-    return unimplemented("sceFiberFinalize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberGetInfo) {
-    return unimplemented("sceFiberGetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberGetSelf) {
-    return unimplemented("sceFiberGetSelf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberOptParamInitialize) {
-    return unimplemented("sceFiberOptParamInitialize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberPopUserMarkerWithHud) {
-    return unimplemented("sceFiberPopUserMarkerWithHud");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberPushUserMarkerWithHud) {
-    return unimplemented("sceFiberPushUserMarkerWithHud");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberRenameSelf) {
-    return unimplemented("sceFiberRenameSelf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberReturnToThread) {
-    return unimplemented("sceFiberReturnToThread");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberRun) {
-    return unimplemented("sceFiberRun");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberStartContextSizeCheck) {
-    return unimplemented("sceFiberStartContextSizeCheck");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberStopContextSizeCheck) {
-    return unimplemented("sceFiberStopContextSizeCheck");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiberSwitch) {
-    return unimplemented("sceFiberSwitch");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_sceFiberAttachContextAndRun)

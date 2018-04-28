@@ -18,35 +18,35 @@
 #include "SceLiveAreaUtil.h"
 
 EXPORT(int, sceLiveAreaGetFrameRevision) {
-    return unimplemented("sceLiveAreaGetFrameRevision");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLiveAreaGetFrameUserData) {
-    return unimplemented("sceLiveAreaGetFrameUserData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLiveAreaGetRevision) {
-    return unimplemented("sceLiveAreaGetRevision");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLiveAreaGetStatus) {
-    return unimplemented("sceLiveAreaGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLiveAreaReplaceAllAsync) {
-    return unimplemented("sceLiveAreaReplaceAllAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLiveAreaReplaceAllSync) {
-    return unimplemented("sceLiveAreaReplaceAllSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLiveAreaUpdateFrameAsync) {
-    return unimplemented("sceLiveAreaUpdateFrameAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLiveAreaUpdateFrameSync) {
-    return unimplemented("sceLiveAreaUpdateFrameSync");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceLiveAreaGetFrameRevision)

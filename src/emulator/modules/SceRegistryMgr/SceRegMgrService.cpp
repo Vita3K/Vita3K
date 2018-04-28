@@ -18,23 +18,23 @@
 #include "SceRegMgrService.h"
 
 EXPORT(int, sceRegMgrSrvCnvRegionInt) {
-    return unimplemented("sceRegMgrSrvCnvRegionInt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrSrvCnvRegionPsCode) {
-    return unimplemented("sceRegMgrSrvCnvRegionPsCode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrSrvCnvRegionStr) {
-    return unimplemented("sceRegMgrSrvCnvRegionStr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrSrvGetRegion) {
-    return unimplemented("sceRegMgrSrvGetRegion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrSrvGetRegionStr) {
-    return unimplemented("sceRegMgrSrvGetRegionStr");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceRegMgrSrvCnvRegionInt)

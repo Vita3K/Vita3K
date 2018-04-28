@@ -18,375 +18,375 @@
 #include "SceHttp.h"
 
 EXPORT(int, sceHttpAbortRequest) {
-    return unimplemented("sceHttpAbortRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpAbortRequestForce) {
-    return unimplemented("sceHttpAbortRequestForce");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpAbortWaitRequest) {
-    return unimplemented("sceHttpAbortWaitRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpAddCookie) {
-    return unimplemented("sceHttpAddCookie");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpAddRequestHeader) {
-    return unimplemented("sceHttpAddRequestHeader");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpAddRequestHeaderRaw) {
-    return unimplemented("sceHttpAddRequestHeaderRaw");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpAuthCacheFlush) {
-    return unimplemented("sceHttpAuthCacheFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCookieExport) {
-    return unimplemented("sceHttpCookieExport");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCookieFlush) {
-    return unimplemented("sceHttpCookieFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCookieImport) {
-    return unimplemented("sceHttpCookieImport");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCreateConnection) {
-    return unimplemented("sceHttpCreateConnection");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCreateConnectionWithURL) {
-    return unimplemented("sceHttpCreateConnectionWithURL");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCreateEpoll) {
-    return unimplemented("sceHttpCreateEpoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCreateRequest) {
-    return unimplemented("sceHttpCreateRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCreateRequest2) {
-    return unimplemented("sceHttpCreateRequest2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCreateRequestWithURL) {
-    return unimplemented("sceHttpCreateRequestWithURL");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCreateRequestWithURL2) {
-    return unimplemented("sceHttpCreateRequestWithURL2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpCreateTemplate) {
-    return unimplemented("sceHttpCreateTemplate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpDeleteConnection) {
-    return unimplemented("sceHttpDeleteConnection");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpDeleteRequest) {
-    return unimplemented("sceHttpDeleteRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpDeleteTemplate) {
-    return unimplemented("sceHttpDeleteTemplate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpDestroyEpoll) {
-    return unimplemented("sceHttpDestroyEpoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetAcceptEncodingGZIPEnabled) {
-    return unimplemented("sceHttpGetAcceptEncodingGZIPEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetAllResponseHeaders) {
-    return unimplemented("sceHttpGetAllResponseHeaders");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetAuthEnabled) {
-    return unimplemented("sceHttpGetAuthEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetAutoRedirect) {
-    return unimplemented("sceHttpGetAutoRedirect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetCookie) {
-    return unimplemented("sceHttpGetCookie");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetCookieEnabled) {
-    return unimplemented("sceHttpGetCookieEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetCookieStats) {
-    return unimplemented("sceHttpGetCookieStats");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetEpoll) {
-    return unimplemented("sceHttpGetEpoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetEpollId) {
-    return unimplemented("sceHttpGetEpollId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetIcmOption) {
-    return unimplemented("sceHttpGetIcmOption");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetLastErrno) {
-    return unimplemented("sceHttpGetLastErrno");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetMemoryPoolStats) {
-    return unimplemented("sceHttpGetMemoryPoolStats");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetNonblock) {
-    return unimplemented("sceHttpGetNonblock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetResponseContentLength) {
-    return unimplemented("sceHttpGetResponseContentLength");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpGetStatusCode) {
-    return unimplemented("sceHttpGetStatusCode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpInit) {
-    return unimplemented("sceHttpInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpParseResponseHeader) {
-    return unimplemented("sceHttpParseResponseHeader");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpParseStatusLine) {
-    return unimplemented("sceHttpParseStatusLine");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpReadData) {
-    return unimplemented("sceHttpReadData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpRedirectCacheFlush) {
-    return unimplemented("sceHttpRedirectCacheFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpRemoveRequestHeader) {
-    return unimplemented("sceHttpRemoveRequestHeader");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpRequestGetAllHeaders) {
-    return unimplemented("sceHttpRequestGetAllHeaders");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSendRequest) {
-    return unimplemented("sceHttpSendRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetAcceptEncodingGZIPEnabled) {
-    return unimplemented("sceHttpSetAcceptEncodingGZIPEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetAuthEnabled) {
-    return unimplemented("sceHttpSetAuthEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetAuthInfoCallback) {
-    return unimplemented("sceHttpSetAuthInfoCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetAutoRedirect) {
-    return unimplemented("sceHttpSetAutoRedirect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetConnectTimeOut) {
-    return unimplemented("sceHttpSetConnectTimeOut");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetCookieEnabled) {
-    return unimplemented("sceHttpSetCookieEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetCookieMaxNum) {
-    return unimplemented("sceHttpSetCookieMaxNum");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetCookieMaxNumPerDomain) {
-    return unimplemented("sceHttpSetCookieMaxNumPerDomain");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetCookieMaxSize) {
-    return unimplemented("sceHttpSetCookieMaxSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetCookieRecvCallback) {
-    return unimplemented("sceHttpSetCookieRecvCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetCookieSendCallback) {
-    return unimplemented("sceHttpSetCookieSendCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetCookieTotalMaxSize) {
-    return unimplemented("sceHttpSetCookieTotalMaxSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetDefaultAcceptEncodingGZIPEnabled) {
-    return unimplemented("sceHttpSetDefaultAcceptEncodingGZIPEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetEpoll) {
-    return unimplemented("sceHttpSetEpoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetEpollId) {
-    return unimplemented("sceHttpSetEpollId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetIcmOption) {
-    return unimplemented("sceHttpSetIcmOption");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetInflateGZIPEnabled) {
-    return unimplemented("sceHttpSetInflateGZIPEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetNonblock) {
-    return unimplemented("sceHttpSetNonblock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetRecvTimeOut) {
-    return unimplemented("sceHttpSetRecvTimeOut");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetRedirectCallback) {
-    return unimplemented("sceHttpSetRedirectCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetRequestContentLength) {
-    return unimplemented("sceHttpSetRequestContentLength");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetResolveRetry) {
-    return unimplemented("sceHttpSetResolveRetry");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetResolveTimeOut) {
-    return unimplemented("sceHttpSetResolveTimeOut");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetResponseHeaderMaxSize) {
-    return unimplemented("sceHttpSetResponseHeaderMaxSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSetSendTimeOut) {
-    return unimplemented("sceHttpSetSendTimeOut");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpSslIsCtxCreated) {
-    return unimplemented("sceHttpSslIsCtxCreated");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpTerm) {
-    return unimplemented("sceHttpTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpUnsetEpoll) {
-    return unimplemented("sceHttpUnsetEpoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpUriBuild) {
-    return unimplemented("sceHttpUriBuild");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpUriEscape) {
-    return unimplemented("sceHttpUriEscape");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpUriMerge) {
-    return unimplemented("sceHttpUriMerge");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpUriParse) {
-    return unimplemented("sceHttpUriParse");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpUriSweepPath) {
-    return unimplemented("sceHttpUriSweepPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpUriUnescape) {
-    return unimplemented("sceHttpUriUnescape");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpWaitRequest) {
-    return unimplemented("sceHttpWaitRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpWaitRequestCB) {
-    return unimplemented("sceHttpWaitRequestCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsDisableOption) {
-    return unimplemented("sceHttpsDisableOption");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsDisableOption2) {
-    return unimplemented("sceHttpsDisableOption2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsDisableOptionPrivate) {
-    return unimplemented("sceHttpsDisableOptionPrivate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsEnableOption) {
-    return unimplemented("sceHttpsEnableOption");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsEnableOption2) {
-    return unimplemented("sceHttpsEnableOption2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsEnableOptionPrivate) {
-    return unimplemented("sceHttpsEnableOptionPrivate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsFreeCaList) {
-    return unimplemented("sceHttpsFreeCaList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsGetCaList) {
-    return unimplemented("sceHttpsGetCaList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsGetSslError) {
-    return unimplemented("sceHttpsGetSslError");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsLoadCert) {
-    return unimplemented("sceHttpsLoadCert");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsSetSslCallback) {
-    return unimplemented("sceHttpsSetSslCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceHttpsUnloadCert) {
-    return unimplemented("sceHttpsUnloadCert");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceHttpAbortRequest)

@@ -18,19 +18,19 @@
 #include "SceGameUpdate.h"
 
 EXPORT(int, sceGameUpdateAbort) {
-    return unimplemented("sceGameUpdateAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGameUpdateInit) {
-    return unimplemented("sceGameUpdateInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGameUpdateRun) {
-    return unimplemented("sceGameUpdateRun");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGameUpdateTerm) {
-    return unimplemented("sceGameUpdateTerm");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceGameUpdateAbort)

@@ -18,83 +18,83 @@
 #include "SceAvPlayer.h"
 
 EXPORT(int, sceAvPlayerAddSource) {
-    return unimplemented("sceAvPlayerAddSource");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerClose) {
-    return unimplemented("sceAvPlayerClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerCurrentTime) {
-    return unimplemented("sceAvPlayerCurrentTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerDisableStream) {
-    return unimplemented("sceAvPlayerDisableStream");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerEnableStream) {
-    return unimplemented("sceAvPlayerEnableStream");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerGetAudioData) {
-    return unimplemented("sceAvPlayerGetAudioData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerGetStreamInfo) {
-    return unimplemented("sceAvPlayerGetStreamInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerGetVideoData) {
-    return unimplemented("sceAvPlayerGetVideoData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerGetVideoDataEx) {
-    return unimplemented("sceAvPlayerGetVideoDataEx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerInit) {
-    return unimplemented("sceAvPlayerInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerIsActive) {
-    return unimplemented("sceAvPlayerIsActive");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerJumpToTime) {
-    return unimplemented("sceAvPlayerJumpToTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerPause) {
-    return unimplemented("sceAvPlayerPause");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerPostInit) {
-    return unimplemented("sceAvPlayerPostInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerResume) {
-    return unimplemented("sceAvPlayerResume");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerSetLooping) {
-    return unimplemented("sceAvPlayerSetLooping");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerSetTrickSpeed) {
-    return unimplemented("sceAvPlayerSetTrickSpeed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerStart) {
-    return unimplemented("sceAvPlayerStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerStop) {
-    return unimplemented("sceAvPlayerStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAvPlayerStreamCount) {
-    return unimplemented("sceAvPlayerStreamCount");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceAvPlayerAddSource)

@@ -18,31 +18,31 @@
 #include "SceUsbSerial.h"
 
 EXPORT(int, sceUsbSerialClose) {
-    return unimplemented("sceUsbSerialClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUsbSerialGetRecvBufferSize) {
-    return unimplemented("sceUsbSerialGetRecvBufferSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUsbSerialRecv) {
-    return unimplemented("sceUsbSerialRecv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUsbSerialSend) {
-    return unimplemented("sceUsbSerialSend");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUsbSerialSetup) {
-    return unimplemented("sceUsbSerialSetup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUsbSerialStart) {
-    return unimplemented("sceUsbSerialStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUsbSerialStatus) {
-    return unimplemented("sceUsbSerialStatus");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceUsbSerialClose)

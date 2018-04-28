@@ -18,43 +18,43 @@
 #include "SceJpegEncUser.h"
 
 EXPORT(int, sceJpegEncoderCsc) {
-    return unimplemented("sceJpegEncoderCsc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceJpegEncoderEncode) {
-    return unimplemented("sceJpegEncoderEncode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceJpegEncoderEnd) {
-    return unimplemented("sceJpegEncoderEnd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceJpegEncoderGetContextSize) {
-    return unimplemented("sceJpegEncoderGetContextSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceJpegEncoderInit) {
-    return unimplemented("sceJpegEncoderInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceJpegEncoderInitWithParam) {
-    return unimplemented("sceJpegEncoderInitWithParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceJpegEncoderSetCompressionRatio) {
-    return unimplemented("sceJpegEncoderSetCompressionRatio");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceJpegEncoderSetHeaderMode) {
-    return unimplemented("sceJpegEncoderSetHeaderMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceJpegEncoderSetOutputAddr) {
-    return unimplemented("sceJpegEncoderSetOutputAddr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceJpegEncoderSetValidRegion) {
-    return unimplemented("sceJpegEncoderSetValidRegion");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceJpegEncoderCsc)

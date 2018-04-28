@@ -18,63 +18,63 @@
 #include "SceLsdb.h"
 
 EXPORT(int, sceLsdbGetAppVer) {
-    return unimplemented("sceLsdbGetAppVer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetAttribute) {
-    return unimplemented("sceLsdbGetAttribute");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetBootable) {
-    return unimplemented("sceLsdbGetBootable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetCategory) {
-    return unimplemented("sceLsdbGetCategory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetDiscId) {
-    return unimplemented("sceLsdbGetDiscId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetGameDataId) {
-    return unimplemented("sceLsdbGetGameDataId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetMetaContentsPath) {
-    return unimplemented("sceLsdbGetMetaContentsPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetName) {
-    return unimplemented("sceLsdbGetName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetOriginalPath) {
-    return unimplemented("sceLsdbGetOriginalPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetParentalLevel) {
-    return unimplemented("sceLsdbGetParentalLevel");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetSelfPath) {
-    return unimplemented("sceLsdbGetSelfPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetStitle) {
-    return unimplemented("sceLsdbGetStitle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetSystemVersion) {
-    return unimplemented("sceLsdbGetSystemVersion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetTitle) {
-    return unimplemented("sceLsdbGetTitle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLsdbGetType) {
-    return unimplemented("sceLsdbGetType");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceLsdbGetAppVer)

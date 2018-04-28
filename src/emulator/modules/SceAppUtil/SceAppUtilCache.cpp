@@ -18,7 +18,7 @@
 #include "SceAppUtilCache.h"
 
 EXPORT(int, sceAppUtilCacheMount) {
-    return unimplemented("sceAppUtilCacheMount");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceAppUtilCacheMount)

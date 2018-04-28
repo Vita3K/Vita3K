@@ -18,131 +18,131 @@
 #include "SceNpScore.h"
 
 EXPORT(int, sceNpScoreAbortRequest) {
-    return unimplemented("sceNpScoreAbortRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreCensorComment) {
-    return unimplemented("sceNpScoreCensorComment");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreCensorCommentAsync) {
-    return unimplemented("sceNpScoreCensorCommentAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreChangeModeForOtherSaveDataOwners) {
-    return unimplemented("sceNpScoreChangeModeForOtherSaveDataOwners");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreCreateRequest) {
-    return unimplemented("sceNpScoreCreateRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreCreateTitleCtx) {
-    return unimplemented("sceNpScoreCreateTitleCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreDeleteRequest) {
-    return unimplemented("sceNpScoreDeleteRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreDeleteTitleCtx) {
-    return unimplemented("sceNpScoreDeleteTitleCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetBoardInfo) {
-    return unimplemented("sceNpScoreGetBoardInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetBoardInfoAsync) {
-    return unimplemented("sceNpScoreGetBoardInfoAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetFriendsRanking) {
-    return unimplemented("sceNpScoreGetFriendsRanking");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetFriendsRankingAsync) {
-    return unimplemented("sceNpScoreGetFriendsRankingAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetGameData) {
-    return unimplemented("sceNpScoreGetGameData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetGameDataAsync) {
-    return unimplemented("sceNpScoreGetGameDataAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetRankingByNpId) {
-    return unimplemented("sceNpScoreGetRankingByNpId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetRankingByNpIdAsync) {
-    return unimplemented("sceNpScoreGetRankingByNpIdAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetRankingByNpIdPcId) {
-    return unimplemented("sceNpScoreGetRankingByNpIdPcId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetRankingByNpIdPcIdAsync) {
-    return unimplemented("sceNpScoreGetRankingByNpIdPcIdAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetRankingByRange) {
-    return unimplemented("sceNpScoreGetRankingByRange");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreGetRankingByRangeAsync) {
-    return unimplemented("sceNpScoreGetRankingByRangeAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreInit) {
-    return unimplemented("sceNpScoreInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScorePollAsync) {
-    return unimplemented("sceNpScorePollAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreRecordGameData) {
-    return unimplemented("sceNpScoreRecordGameData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreRecordGameDataAsync) {
-    return unimplemented("sceNpScoreRecordGameDataAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreRecordScore) {
-    return unimplemented("sceNpScoreRecordScore");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreRecordScoreAsync) {
-    return unimplemented("sceNpScoreRecordScoreAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreSanitizeComment) {
-    return unimplemented("sceNpScoreSanitizeComment");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreSanitizeCommentAsync) {
-    return unimplemented("sceNpScoreSanitizeCommentAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreSetPlayerCharacterId) {
-    return unimplemented("sceNpScoreSetPlayerCharacterId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreSetTimeout) {
-    return unimplemented("sceNpScoreSetTimeout");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreTerm) {
-    return unimplemented("sceNpScoreTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpScoreWaitAsync) {
-    return unimplemented("sceNpScoreWaitAsync");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpScoreAbortRequest)

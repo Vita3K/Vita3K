@@ -18,119 +18,119 @@
 #include "SceNpBasic.h"
 
 EXPORT(int, sceNpBasicCheckCallback) {
-    return unimplemented("sceNpBasicCheckCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicCheckIfPlayerIsBlocked) {
-    return unimplemented("sceNpBasicCheckIfPlayerIsBlocked");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetBlockListEntries) {
-    return unimplemented("sceNpBasicGetBlockListEntries");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetBlockListEntryCount) {
-    return unimplemented("sceNpBasicGetBlockListEntryCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetFriendContextState) {
-    return unimplemented("sceNpBasicGetFriendContextState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetFriendListEntries) {
-    return unimplemented("sceNpBasicGetFriendListEntries");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetFriendListEntryCount) {
-    return unimplemented("sceNpBasicGetFriendListEntryCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetFriendOnlineStatus) {
-    return unimplemented("sceNpBasicGetFriendOnlineStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetFriendRequestEntries) {
-    return unimplemented("sceNpBasicGetFriendRequestEntries");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetFriendRequestEntryCount) {
-    return unimplemented("sceNpBasicGetFriendRequestEntryCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetGameJoiningPresence) {
-    return unimplemented("sceNpBasicGetGameJoiningPresence");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetGamePresenceOfFriend) {
-    return unimplemented("sceNpBasicGetGamePresenceOfFriend");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetPlaySessionLog) {
-    return unimplemented("sceNpBasicGetPlaySessionLog");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetPlaySessionLogSize) {
-    return unimplemented("sceNpBasicGetPlaySessionLogSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetRequestedFriendRequestEntries) {
-    return unimplemented("sceNpBasicGetRequestedFriendRequestEntries");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicGetRequestedFriendRequestEntryCount) {
-    return unimplemented("sceNpBasicGetRequestedFriendRequestEntryCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicInit) {
-    return unimplemented("sceNpBasicInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicJoinGameAckResponseSend) {
-    return unimplemented("sceNpBasicJoinGameAckResponseSend");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicRecordPlaySessionLog) {
-    return unimplemented("sceNpBasicRecordPlaySessionLog");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicRegisterHandler) {
-    return unimplemented("sceNpBasicRegisterHandler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicRegisterInGameDataMessageHandler) {
-    return unimplemented("sceNpBasicRegisterInGameDataMessageHandler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicRegisterJoinGameAckHandler) {
-    return unimplemented("sceNpBasicRegisterJoinGameAckHandler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicSendInGameDataMessage) {
-    return unimplemented("sceNpBasicSendInGameDataMessage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicSetInGamePresence) {
-    return unimplemented("sceNpBasicSetInGamePresence");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicTerm) {
-    return unimplemented("sceNpBasicTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicUnregisterHandler) {
-    return unimplemented("sceNpBasicUnregisterHandler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicUnregisterInGameDataMessageHandler) {
-    return unimplemented("sceNpBasicUnregisterInGameDataMessageHandler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicUnregisterJoinGameAckHandler) {
-    return unimplemented("sceNpBasicUnregisterJoinGameAckHandler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBasicUnsetInGamePresence) {
-    return unimplemented("sceNpBasicUnsetInGamePresence");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpBasicCheckCallback)

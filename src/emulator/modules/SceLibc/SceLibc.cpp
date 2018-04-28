@@ -22,369 +22,369 @@
 Ptr<void> g_dso;
 
 EXPORT(int, _Assert) {
-    return unimplemented("_Assert");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Btowc) {
-    return unimplemented("_Btowc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Ctype) {
-    return unimplemented("_Ctype");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Dbl) {
-    return unimplemented("_Dbl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Denorm) {
-    return unimplemented("_Denorm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Exit) {
-    return unimplemented("_Exit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _FCbuild) {
-    return unimplemented("_FCbuild");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _FDenorm) {
-    return unimplemented("_FDenorm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _FInf) {
-    return unimplemented("_FInf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _FNan) {
-    return unimplemented("_FNan");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _FSnan) {
-    return unimplemented("_FSnan");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Files) {
-    return unimplemented("_Files");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Flt) {
-    return unimplemented("_Flt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Fltrounds) {
-    return unimplemented("_Fltrounds");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Inf) {
-    return unimplemented("_Inf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Iswctype) {
-    return unimplemented("_Iswctype");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _LDenorm) {
-    return unimplemented("_LDenorm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _LInf) {
-    return unimplemented("_LInf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _LNan) {
-    return unimplemented("_LNan");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _LSnan) {
-    return unimplemented("_LSnan");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Ldbl) {
-    return unimplemented("_Ldbl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Lockfilelock) {
-    return unimplemented("_Lockfilelock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Locksyslock) {
-    return unimplemented("_Locksyslock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Mbtowc) {
-    return unimplemented("_Mbtowc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Nan) {
-    return unimplemented("_Nan");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _PJP_C_Copyright) {
-    return unimplemented("_PJP_C_Copyright");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _SCE_Assert) {
-    return unimplemented("_SCE_Assert");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Snan) {
-    return unimplemented("_Snan");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stderr) {
-    return unimplemented("_Stderr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stdin) {
-    return unimplemented("_Stdin");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stdout) {
-    return unimplemented("_Stdout");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stod) {
-    return unimplemented("_Stod");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stodx) {
-    return unimplemented("_Stodx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stof) {
-    return unimplemented("_Stof");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stofx) {
-    return unimplemented("_Stofx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stold) {
-    return unimplemented("_Stold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stoldx) {
-    return unimplemented("_Stoldx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stoll) {
-    return unimplemented("_Stoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stollx) {
-    return unimplemented("_Stollx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stolx) {
-    return unimplemented("_Stolx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stoul) {
-    return unimplemented("_Stoul");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stoull) {
-    return unimplemented("_Stoull");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stoullx) {
-    return unimplemented("_Stoullx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Stoulx) {
-    return unimplemented("_Stoulx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Tolotab) {
-    return unimplemented("_Tolotab");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Touptab) {
-    return unimplemented("_Touptab");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Towctrans) {
-    return unimplemented("_Towctrans");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Unlockfilelock) {
-    return unimplemented("_Unlockfilelock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Unlocksyslock) {
-    return unimplemented("_Unlocksyslock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _WStod) {
-    return unimplemented("_WStod");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _WStof) {
-    return unimplemented("_WStof");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _WStold) {
-    return unimplemented("_WStold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _WStoul) {
-    return unimplemented("_WStoul");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Wctob) {
-    return unimplemented("_Wctob");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _Wctomb) {
-    return unimplemented("_Wctomb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __aeabi_atexit) {
-    return unimplemented("__aeabi_atexit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __at_quick_exit) {
-    return unimplemented("__at_quick_exit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __cxa_atexit) {
-    return unimplemented("__cxa_atexit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __cxa_finalize) {
-    return unimplemented("__cxa_finalize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __cxa_guard_abort) {
-    return unimplemented("__cxa_guard_abort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __cxa_guard_acquire) {
-    return unimplemented("__cxa_guard_acquire");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __cxa_guard_release) {
-    return unimplemented("__cxa_guard_release");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, __cxa_set_dso_handle_main, Ptr<void> dso) {
     //LOG_WARN("__cxa_set_dso_handle_main(dso=*0x%x)", dso);
     g_dso = dso;
-    //return unimplemented("__cxa_set_dso_handle_main");
+    //return unimplemented(export_name);
 }
 
 EXPORT(int, __set_exidx_main) {
-    return unimplemented("__set_exidx_main");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __tls_get_addr) {
-    return unimplemented("__tls_get_addr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceLdTlsRegisterModuleInfo) {
-    return unimplemented("_sceLdTlsRegisterModuleInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceLdTlsUnregisterModuleInfo) {
-    return unimplemented("_sceLdTlsUnregisterModuleInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceLibcErrnoLoc) {
-    return unimplemented("_sceLibcErrnoLoc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, abort) {
-    return unimplemented("abort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, abort_handler_s) {
-    return unimplemented("abort_handler_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, abs) {
-    return unimplemented("abs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, asctime) {
-    return unimplemented("asctime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, asctime_s) {
-    return unimplemented("asctime_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, atof) {
-    return unimplemented("atof");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, atoff) {
-    return unimplemented("atoff");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, atoi) {
-    return unimplemented("atoi");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, atol) {
-    return unimplemented("atol");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, atoll) {
-    return unimplemented("atoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, bsearch) {
-    return unimplemented("bsearch");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, bsearch_s) {
-    return unimplemented("bsearch_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, btowc) {
-    return unimplemented("btowc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, c16rtomb) {
-    return unimplemented("c16rtomb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, c32rtomb) {
-    return unimplemented("c32rtomb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, calloc) {
-    return unimplemented("calloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, clearerr) {
-    return unimplemented("clearerr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, clock) {
-    return unimplemented("clock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, ctime) {
-    return unimplemented("ctime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, ctime_s) {
-    return unimplemented("ctime_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, difftime) {
-    return unimplemented("difftime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, div) {
-    return unimplemented("div");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, exit) {
-    return unimplemented("exit");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, fclose, SceUID file) {
@@ -392,43 +392,43 @@ EXPORT(void, fclose, SceUID file) {
 }
 
 EXPORT(int, fdopen) {
-    return unimplemented("fdopen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, feof) {
-    return unimplemented("feof");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, ferror) {
-    return unimplemented("ferror");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fflush) {
-    return unimplemented("fflush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fgetc) {
-    return unimplemented("fgetc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fgetpos) {
-    return unimplemented("fgetpos");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fgets) {
-    return unimplemented("fgets");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fgetwc) {
-    return unimplemented("fgetwc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fgetws) {
-    return unimplemented("fgetws");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fileno) {
-    return unimplemented("fileno");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fopen, const char *filename, const char *mode) {
@@ -436,35 +436,35 @@ EXPORT(int, fopen, const char *filename, const char *mode) {
 }
 
 EXPORT(int, fopen_s) {
-    return unimplemented("fopen_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fprintf) {
-    return unimplemented("fprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fprintf_s) {
-    return unimplemented("fprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fputc) {
-    return unimplemented("fputc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fputs) {
-    return unimplemented("fputs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fputwc) {
-    return unimplemented("fputwc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fputws) {
-    return unimplemented("fputws");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fread) {
-    return unimplemented("fread");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, free, Address mem) {
@@ -472,299 +472,299 @@ EXPORT(void, free, Address mem) {
 }
 
 EXPORT(int, freopen) {
-    return unimplemented("freopen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, freopen_s) {
-    return unimplemented("freopen_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fscanf) {
-    return unimplemented("fscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fscanf_s) {
-    return unimplemented("fscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fseek) {
-    return unimplemented("fseek");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fsetpos) {
-    return unimplemented("fsetpos");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, ftell) {
-    return unimplemented("ftell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fwide) {
-    return unimplemented("fwide");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fwprintf) {
-    return unimplemented("fwprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fwprintf_s) {
-    return unimplemented("fwprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fwrite) {
-    return unimplemented("fwrite");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fwscanf) {
-    return unimplemented("fwscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, fwscanf_s) {
-    return unimplemented("fwscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, getc) {
-    return unimplemented("getc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, getchar) {
-    return unimplemented("getchar");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, gets) {
-    return unimplemented("gets");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, gets_s) {
-    return unimplemented("gets_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, getwc) {
-    return unimplemented("getwc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, getwchar) {
-    return unimplemented("getwchar");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, gmtime) {
-    return unimplemented("gmtime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, gmtime_s) {
-    return unimplemented("gmtime_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, ignore_handler_s) {
-    return unimplemented("ignore_handler_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, imaxabs) {
-    return unimplemented("imaxabs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, imaxdiv) {
-    return unimplemented("imaxdiv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, isalnum) {
-    return unimplemented("isalnum");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, isalpha) {
-    return unimplemented("isalpha");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, isblank) {
-    return unimplemented("isblank");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iscntrl) {
-    return unimplemented("iscntrl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, isdigit) {
-    return unimplemented("isdigit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, isgraph) {
-    return unimplemented("isgraph");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, islower) {
-    return unimplemented("islower");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, isprint) {
-    return unimplemented("isprint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, ispunct) {
-    return unimplemented("ispunct");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, isspace) {
-    return unimplemented("isspace");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, isupper) {
-    return unimplemented("isupper");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswalnum) {
-    return unimplemented("iswalnum");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswalpha) {
-    return unimplemented("iswalpha");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswblank) {
-    return unimplemented("iswblank");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswcntrl) {
-    return unimplemented("iswcntrl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswctype) {
-    return unimplemented("iswctype");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswdigit) {
-    return unimplemented("iswdigit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswgraph) {
-    return unimplemented("iswgraph");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswlower) {
-    return unimplemented("iswlower");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswprint) {
-    return unimplemented("iswprint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswpunct) {
-    return unimplemented("iswpunct");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswspace) {
-    return unimplemented("iswspace");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswupper) {
-    return unimplemented("iswupper");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, iswxdigit) {
-    return unimplemented("iswxdigit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, isxdigit) {
-    return unimplemented("isxdigit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, labs) {
-    return unimplemented("labs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, ldiv) {
-    return unimplemented("ldiv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, llabs) {
-    return unimplemented("llabs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, lldiv) {
-    return unimplemented("lldiv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, localtime) {
-    return unimplemented("localtime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, localtime_s) {
-    return unimplemented("localtime_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, longjmp) {
-    return unimplemented("longjmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, malloc, SceSize size) {
-    return alloc(host.mem, size, ""); //return unimplemented("malloc");
+    return alloc(host.mem, size, ""); //return unimplemented(export_name);
 }
 
 EXPORT(int, malloc_stats) {
-    return unimplemented("malloc_stats");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, malloc_stats_fast) {
-    return unimplemented("malloc_stats_fast");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, malloc_usable_size) {
-    return unimplemented("malloc_usable_size");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mblen) {
-    return unimplemented("mblen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbrlen) {
-    return unimplemented("mbrlen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbrtoc16) {
-    return unimplemented("mbrtoc16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbrtoc32) {
-    return unimplemented("mbrtoc32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbrtowc) {
-    return unimplemented("mbrtowc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbsinit) {
-    return unimplemented("mbsinit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbsrtowcs) {
-    return unimplemented("mbsrtowcs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbsrtowcs_s) {
-    return unimplemented("mbsrtowcs_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbstowcs) {
-    return unimplemented("mbstowcs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbstowcs_s) {
-    return unimplemented("mbstowcs_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mbtowc) {
-    return unimplemented("mbtowc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, memalign) {
-    return unimplemented("memalign");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, memchr) {
-    return unimplemented("memchr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, memcmp) {
-    return unimplemented("memcmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, memcpy, void *destination, const void *source, size_t num) {
@@ -772,15 +772,15 @@ EXPORT(void, memcpy, void *destination, const void *source, size_t num) {
 }
 
 EXPORT(int, memcpy_s) {
-    return unimplemented("memcpy_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, memmove) {
-    return unimplemented("memmove");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, memmove_s) {
-    return unimplemented("memmove_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, memset, Ptr<void> str, int c, size_t n) {
@@ -788,63 +788,63 @@ EXPORT(void, memset, Ptr<void> str, int c, size_t n) {
 }
 
 EXPORT(int, mktime) {
-    return unimplemented("mktime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_calloc) {
-    return unimplemented("mspace_calloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_create) {
-    return unimplemented("mspace_create");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_create_with_flag) {
-    return unimplemented("mspace_create_with_flag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_destroy) {
-    return unimplemented("mspace_destroy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_free) {
-    return unimplemented("mspace_free");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_is_heap_empty) {
-    return unimplemented("mspace_is_heap_empty");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_malloc) {
-    return unimplemented("mspace_malloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_malloc_stats) {
-    return unimplemented("mspace_malloc_stats");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_malloc_stats_fast) {
-    return unimplemented("mspace_malloc_stats_fast");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_malloc_usable_size) {
-    return unimplemented("mspace_malloc_usable_size");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_memalign) {
-    return unimplemented("mspace_memalign");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_realloc) {
-    return unimplemented("mspace_realloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, mspace_reallocalign) {
-    return unimplemented("mspace_reallocalign");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, perror) {
-    return unimplemented("perror");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, printf, char *fmt, va_list va_args) {
@@ -853,147 +853,147 @@ EXPORT(int, printf, char *fmt, va_list va_args) {
 }
 
 EXPORT(int, printf_s) {
-    return unimplemented("printf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, putc) {
-    return unimplemented("putc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, putchar) {
-    return unimplemented("putchar");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, puts) {
-    return unimplemented("puts");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, putwc) {
-    return unimplemented("putwc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, putwchar) {
-    return unimplemented("putwchar");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, qsort) {
-    return unimplemented("qsort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, qsort_s) {
-    return unimplemented("qsort_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, quick_exit) {
-    return unimplemented("quick_exit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, rand) {
-    return unimplemented("rand");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, rand_r) {
-    return unimplemented("rand_r");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, realloc) {
-    return unimplemented("realloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, reallocalign) {
-    return unimplemented("reallocalign");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, remove) {
-    return unimplemented("remove");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, rename) {
-    return unimplemented("rename");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, rewind) {
-    return unimplemented("rewind");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scanf) {
-    return unimplemented("scanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scanf_s) {
-    return unimplemented("scanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLibcFopenWithFD) {
-    return unimplemented("sceLibcFopenWithFD");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLibcFopenWithFH) {
-    return unimplemented("sceLibcFopenWithFH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLibcGetFD) {
-    return unimplemented("sceLibcGetFD");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLibcGetFH) {
-    return unimplemented("sceLibcGetFH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLibcSetHeapInitError) {
-    return unimplemented("sceLibcSetHeapInitError");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, set_constraint_handler_s) {
-    return unimplemented("set_constraint_handler_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, setbuf) {
-    return unimplemented("setbuf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, setjmp) {
-    return unimplemented("setjmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, setvbuf, FILE *stream, char *buffer, int mode, size_t size) {
-    return unimplemented("setvbuf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, snprintf) {
-    return unimplemented("snprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, snprintf_s) {
-    return unimplemented("snprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, snwprintf_s) {
-    return unimplemented("snwprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sprintf) {
-    return unimplemented("sprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sprintf_s) {
-    return unimplemented("sprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, srand) {
-    return unimplemented("srand");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sscanf) {
-    return unimplemented("sscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sscanf_s) {
-    return unimplemented("sscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strcasecmp) {
-    return unimplemented("strcasecmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(Ptr<char>, strcat, Ptr<char> destination, Ptr<char> source) {
@@ -1002,19 +1002,19 @@ EXPORT(Ptr<char>, strcat, Ptr<char> destination, Ptr<char> source) {
 }
 
 EXPORT(int, strcat_s) {
-    return unimplemented("strcat_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strchr) {
-    return unimplemented("strchr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strcmp) {
-    return unimplemented("strcmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strcoll) {
-    return unimplemented("strcoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(Ptr<char>, strcpy, Ptr<char> destination, Ptr<char> source) {
@@ -1023,31 +1023,31 @@ EXPORT(Ptr<char>, strcpy, Ptr<char> destination, Ptr<char> source) {
 }
 
 EXPORT(int, strcpy_s) {
-    return unimplemented("strcpy_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strcspn) {
-    return unimplemented("strcspn");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strdup) {
-    return unimplemented("strdup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strerror) {
-    return unimplemented("strerror");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strerror_s) {
-    return unimplemented("strerror_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strerrorlen_s) {
-    return unimplemented("strerrorlen_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strftime) {
-    return unimplemented("strftime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strlen, char *str) {
@@ -1055,15 +1055,15 @@ EXPORT(int, strlen, char *str) {
 }
 
 EXPORT(int, strncasecmp) {
-    return unimplemented("strncasecmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strncat) {
-    return unimplemented("strncat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strncat_s) {
-    return unimplemented("strncat_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strncmp, const char *str1, const char *str2, size_t num) {
@@ -1076,15 +1076,15 @@ EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size
 }
 
 EXPORT(int, strncpy_s) {
-    return unimplemented("strncpy_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strnlen_s) {
-    return unimplemented("strnlen_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strpbrk) {
-    return unimplemented("strpbrk");
+    return unimplemented(export_name);
 }
 
 EXPORT(Ptr<char>, strrchr, Ptr<char> str, char ch) {
@@ -1102,159 +1102,159 @@ EXPORT(Ptr<char>, strrchr, Ptr<char> str, char ch) {
 }
 
 EXPORT(int, strspn) {
-    return unimplemented("strspn");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strstr) {
-    return unimplemented("strstr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtod) {
-    return unimplemented("strtod");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtof) {
-    return unimplemented("strtof");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtoimax) {
-    return unimplemented("strtoimax");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtok) {
-    return unimplemented("strtok");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtok_r) {
-    return unimplemented("strtok_r");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtok_s) {
-    return unimplemented("strtok_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtol) {
-    return unimplemented("strtol");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtold) {
-    return unimplemented("strtold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtoll) {
-    return unimplemented("strtoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtoul) {
-    return unimplemented("strtoul");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtoull) {
-    return unimplemented("strtoull");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strtoumax) {
-    return unimplemented("strtoumax");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, strxfrm) {
-    return unimplemented("strxfrm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, swprintf) {
-    return unimplemented("swprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, swprintf_s) {
-    return unimplemented("swprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, swscanf) {
-    return unimplemented("swscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, swscanf_s) {
-    return unimplemented("swscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, time) {
-    return unimplemented("time");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, tolower) {
-    return unimplemented("tolower");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, toupper) {
-    return unimplemented("toupper");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, towctrans) {
-    return unimplemented("towctrans");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, towlower) {
-    return unimplemented("towlower");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, towupper) {
-    return unimplemented("towupper");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, ungetc) {
-    return unimplemented("ungetc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, ungetwc) {
-    return unimplemented("ungetwc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vfprintf) {
-    return unimplemented("vfprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vfprintf_s) {
-    return unimplemented("vfprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vfscanf) {
-    return unimplemented("vfscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vfscanf_s) {
-    return unimplemented("vfscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vfwprintf) {
-    return unimplemented("vfwprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vfwprintf_s) {
-    return unimplemented("vfwprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vfwscanf) {
-    return unimplemented("vfwscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vfwscanf_s) {
-    return unimplemented("vfwscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vprintf) {
-    return unimplemented("vprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vprintf_s) {
-    return unimplemented("vprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vscanf) {
-    return unimplemented("vscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vscanf_s) {
-    return unimplemented("vscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vsnprintf, char *s, size_t n, const char *format, va_list arg) {
@@ -1262,275 +1262,275 @@ EXPORT(int, vsnprintf, char *s, size_t n, const char *format, va_list arg) {
 }
 
 EXPORT(int, vsnprintf_s) {
-    return unimplemented("vsnprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vsnwprintf_s) {
-    return unimplemented("vsnwprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vsprintf) {
-    return unimplemented("vsprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vsprintf_s) {
-    return unimplemented("vsprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vsscanf) {
-    return unimplemented("vsscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vsscanf_s) {
-    return unimplemented("vsscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vswprintf) {
-    return unimplemented("vswprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vswprintf_s) {
-    return unimplemented("vswprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vswscanf) {
-    return unimplemented("vswscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vswscanf_s) {
-    return unimplemented("vswscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vwprintf) {
-    return unimplemented("vwprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vwprintf_s) {
-    return unimplemented("vwprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vwscanf) {
-    return unimplemented("vwscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vwscanf_s) {
-    return unimplemented("vwscanf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcrtomb) {
-    return unimplemented("wcrtomb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcrtomb_s) {
-    return unimplemented("wcrtomb_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcscat) {
-    return unimplemented("wcscat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcscat_s) {
-    return unimplemented("wcscat_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcschr) {
-    return unimplemented("wcschr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcscmp) {
-    return unimplemented("wcscmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcscoll) {
-    return unimplemented("wcscoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcscpy) {
-    return unimplemented("wcscpy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcscpy_s) {
-    return unimplemented("wcscpy_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcscspn) {
-    return unimplemented("wcscspn");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsftime) {
-    return unimplemented("wcsftime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcslen) {
-    return unimplemented("wcslen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsncat) {
-    return unimplemented("wcsncat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsncat_s) {
-    return unimplemented("wcsncat_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsncmp) {
-    return unimplemented("wcsncmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsncpy) {
-    return unimplemented("wcsncpy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsncpy_s) {
-    return unimplemented("wcsncpy_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsnlen_s) {
-    return unimplemented("wcsnlen_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcspbrk) {
-    return unimplemented("wcspbrk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsrchr) {
-    return unimplemented("wcsrchr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsrtombs) {
-    return unimplemented("wcsrtombs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsrtombs_s) {
-    return unimplemented("wcsrtombs_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsspn) {
-    return unimplemented("wcsspn");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsstr) {
-    return unimplemented("wcsstr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstod) {
-    return unimplemented("wcstod");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstof) {
-    return unimplemented("wcstof");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstoimax) {
-    return unimplemented("wcstoimax");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstok) {
-    return unimplemented("wcstok");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstok_s) {
-    return unimplemented("wcstok_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstol) {
-    return unimplemented("wcstol");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstold) {
-    return unimplemented("wcstold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstoll) {
-    return unimplemented("wcstoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstombs) {
-    return unimplemented("wcstombs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstombs_s) {
-    return unimplemented("wcstombs_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstoul) {
-    return unimplemented("wcstoul");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstoull) {
-    return unimplemented("wcstoull");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcstoumax) {
-    return unimplemented("wcstoumax");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wcsxfrm) {
-    return unimplemented("wcsxfrm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wctob) {
-    return unimplemented("wctob");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wctomb) {
-    return unimplemented("wctomb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wctomb_s) {
-    return unimplemented("wctomb_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wctrans) {
-    return unimplemented("wctrans");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wctype) {
-    return unimplemented("wctype");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wmemchr) {
-    return unimplemented("wmemchr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wmemcmp) {
-    return unimplemented("wmemcmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wmemcpy) {
-    return unimplemented("wmemcpy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wmemcpy_s) {
-    return unimplemented("wmemcpy_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wmemmove) {
-    return unimplemented("wmemmove");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wmemmove_s) {
-    return unimplemented("wmemmove_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wmemset) {
-    return unimplemented("wmemset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wprintf) {
-    return unimplemented("wprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wprintf_s) {
-    return unimplemented("wprintf_s");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wscanf) {
-    return unimplemented("wscanf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, wscanf_s) {
-    return unimplemented("wscanf_s");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_Assert)

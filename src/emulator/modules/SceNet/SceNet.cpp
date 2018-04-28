@@ -144,7 +144,7 @@ EXPORT(int, sceNetBind, int s, const SceNetSockaddr *name, unsigned int addrlen)
 }
 
 EXPORT(int, sceNetClearDnsCache) {
-    return unimplemented("sceNetClearDnsCache");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetConnect, int s, const SceNetSockaddr *name, unsigned int namelen) {
@@ -157,83 +157,83 @@ EXPORT(int, sceNetConnect, int s, const SceNetSockaddr *name, unsigned int namel
 }
 
 EXPORT(int, sceNetDumpAbort) {
-    return unimplemented("sceNetDumpAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetDumpCreate) {
-    return unimplemented("sceNetDumpCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetDumpDestroy) {
-    return unimplemented("sceNetDumpDestroy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetDumpRead) {
-    return unimplemented("sceNetDumpRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEmulationGet) {
-    return unimplemented("sceNetEmulationGet");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEmulationSet) {
-    return unimplemented("sceNetEmulationSet");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEpollAbort) {
-    return unimplemented("sceNetEpollAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEpollControl) {
-    return unimplemented("sceNetEpollControl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEpollCreate) {
-    return unimplemented("sceNetEpollCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEpollDestroy) {
-    return unimplemented("sceNetEpollDestroy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEpollWait) {
-    return unimplemented("sceNetEpollWait");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEpollWaitCB) {
-    return unimplemented("sceNetEpollWaitCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetErrnoLoc) {
-    return unimplemented("sceNetErrnoLoc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEtherNtostr) {
-    return unimplemented("sceNetEtherNtostr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetEtherStrton) {
-    return unimplemented("sceNetEtherStrton");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetGetMacAddress) {
-    return unimplemented("sceNetGetMacAddress");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetGetSockIdInfo) {
-    return unimplemented("sceNetGetSockIdInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetGetSockInfo) {
-    return unimplemented("sceNetGetSockInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetGetStatisticsInfo) {
-    return unimplemented("sceNetGetStatisticsInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetGetpeername) {
-    return unimplemented("sceNetGetpeername");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetGetsockname, int s, SceNetSockaddr *name, unsigned int *namelen) {
@@ -246,7 +246,7 @@ EXPORT(int, sceNetGetsockname, int s, SceNetSockaddr *name, unsigned int *namele
 }
 
 EXPORT(int, sceNetGetsockopt) {
-    return unimplemented("sceNetGetsockopt");
+    return unimplemented(export_name);
 }
 
 EXPORT(unsigned int, sceNetHtonl, unsigned int n) {
@@ -254,7 +254,7 @@ EXPORT(unsigned int, sceNetHtonl, unsigned int n) {
 }
 
 EXPORT(int, sceNetHtonll) {
-    return unimplemented("sceNetHtonll");
+    return unimplemented(export_name);
 }
 
 EXPORT(unsigned short int, sceNetHtons, unsigned short int n) {
@@ -314,7 +314,7 @@ EXPORT(unsigned int, sceNetNtohl, unsigned int n) {
 }
 
 EXPORT(int, sceNetNtohll) {
-    return unimplemented("sceNetNtohll");
+    return unimplemented(export_name);
 }
 
 EXPORT(unsigned short int, sceNetNtohs, unsigned short int n) {
@@ -340,23 +340,23 @@ EXPORT(int, sceNetRecvfrom, int s, void *buf, unsigned int len, int flags, SceNe
 }
 
 EXPORT(int, sceNetRecvmsg) {
-    return unimplemented("sceNetRecvmsg");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetResolverAbort) {
-    return unimplemented("sceNetResolverAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetResolverCreate) {
-    return unimplemented("sceNetResolverCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetResolverDestroy) {
-    return unimplemented("sceNetResolverDestroy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetResolverGetError) {
-    return unimplemented("sceNetResolverGetError");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetResolverStartAton, int rid, const SceNetInAddr *addr, char *hostname, int len, int timeout, int retry, int flags) {
@@ -381,7 +381,7 @@ EXPORT(int, sceNetSend, int s, const void *msg, unsigned int len, int flags) {
 }
 
 EXPORT(int, sceNetSendmsg) {
-    return unimplemented("sceNetSendmsg");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetSendto, int s, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
@@ -394,7 +394,7 @@ EXPORT(int, sceNetSendto, int s, const void *msg, unsigned int len, int flags, c
 }
 
 EXPORT(int, sceNetSetDnsInfo) {
-    return unimplemented("sceNetSetDnsInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetSetsockopt, int s, int level, int optname, const void *optval, unsigned int optlen) {
@@ -407,7 +407,7 @@ EXPORT(int, sceNetSetsockopt, int s, int level, int optname, const void *optval,
 }
 
 EXPORT(int, sceNetShowIfconfig) {
-    return unimplemented("sceNetShowIfconfig");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetShowNetstat) {
@@ -418,11 +418,11 @@ EXPORT(int, sceNetShowNetstat) {
 }
 
 EXPORT(int, sceNetShowRoute) {
-    return unimplemented("sceNetShowRoute");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetShutdown) {
-    return unimplemented("sceNetShutdown");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetSocket, const char *name, int domain, int type, int protocol) {
@@ -438,7 +438,7 @@ EXPORT(int, sceNetSocket, const char *name, int domain, int type, int protocol) 
 }
 
 EXPORT(int, sceNetSocketAbort) {
-    return unimplemented("sceNetSocketAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetSocketClose, int s) {

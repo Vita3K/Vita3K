@@ -18,115 +18,115 @@
 #include "SceVoice.h"
 
 EXPORT(int, sceVoiceCheckTopology) {
-    return unimplemented("sceVoiceCheckTopology");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceConnectIPortToOPort) {
-    return unimplemented("sceVoiceConnectIPortToOPort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceCreatePort) {
-    return unimplemented("sceVoiceCreatePort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceDeletePort) {
-    return unimplemented("sceVoiceDeletePort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceDisconnectIPortFromOPort) {
-    return unimplemented("sceVoiceDisconnectIPortFromOPort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceEnd) {
-    return unimplemented("sceVoiceEnd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceGetBitRate) {
-    return unimplemented("sceVoiceGetBitRate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceGetMuteFlag) {
-    return unimplemented("sceVoiceGetMuteFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceGetPortAttr) {
-    return unimplemented("sceVoiceGetPortAttr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceGetPortInfo) {
-    return unimplemented("sceVoiceGetPortInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceGetResourceInfo) {
-    return unimplemented("sceVoiceGetResourceInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceGetVolume) {
-    return unimplemented("sceVoiceGetVolume");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceInit) {
-    return unimplemented("sceVoiceInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoicePausePort) {
-    return unimplemented("sceVoicePausePort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoicePausePortAll) {
-    return unimplemented("sceVoicePausePortAll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceReadFromOPort) {
-    return unimplemented("sceVoiceReadFromOPort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceResetPort) {
-    return unimplemented("sceVoiceResetPort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceResumePort) {
-    return unimplemented("sceVoiceResumePort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceResumePortAll) {
-    return unimplemented("sceVoiceResumePortAll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceSetBitRate) {
-    return unimplemented("sceVoiceSetBitRate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceSetMuteFlag) {
-    return unimplemented("sceVoiceSetMuteFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceSetMuteFlagAll) {
-    return unimplemented("sceVoiceSetMuteFlagAll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceSetPortAttr) {
-    return unimplemented("sceVoiceSetPortAttr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceSetVolume) {
-    return unimplemented("sceVoiceSetVolume");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceStart) {
-    return unimplemented("sceVoiceStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceStop) {
-    return unimplemented("sceVoiceStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceUpdatePort) {
-    return unimplemented("sceVoiceUpdatePort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceVoiceWriteToIPort) {
-    return unimplemented("sceVoiceWriteToIPort");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceVoiceCheckTopology)

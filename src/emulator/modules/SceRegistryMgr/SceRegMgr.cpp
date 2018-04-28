@@ -18,91 +18,91 @@
 #include "SceRegMgr.h"
 
 EXPORT(int, sceRegMgrAddRegistryCallback) {
-    return unimplemented("sceRegMgrAddRegistryCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrDbBackup) {
-    return unimplemented("sceRegMgrDbBackup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrDbRestore) {
-    return unimplemented("sceRegMgrDbRestore");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrGetInitVals) {
-    return unimplemented("sceRegMgrGetInitVals");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrGetKeyBin) {
-    return unimplemented("sceRegMgrGetKeyBin");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrGetKeyInt) {
-    return unimplemented("sceRegMgrGetKeyInt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrGetKeyStr) {
-    return unimplemented("sceRegMgrGetKeyStr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrGetKeys) {
-    return unimplemented("sceRegMgrGetKeys");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrGetKeysInfo) {
-    return unimplemented("sceRegMgrGetKeysInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrGetRegVersion) {
-    return unimplemented("sceRegMgrGetRegVersion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrIsBlueScreen) {
-    return unimplemented("sceRegMgrIsBlueScreen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrRegisterCallback) {
-    return unimplemented("sceRegMgrRegisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrRegisterDrvErrCallback) {
-    return unimplemented("sceRegMgrRegisterDrvErrCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrResetRegistryLv) {
-    return unimplemented("sceRegMgrResetRegistryLv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrSetKeyBin) {
-    return unimplemented("sceRegMgrSetKeyBin");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrSetKeyInt) {
-    return unimplemented("sceRegMgrSetKeyInt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrSetKeyStr) {
-    return unimplemented("sceRegMgrSetKeyStr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrSetKeys) {
-    return unimplemented("sceRegMgrSetKeys");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrStartCallback) {
-    return unimplemented("sceRegMgrStartCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrStopCallback) {
-    return unimplemented("sceRegMgrStopCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrUnregisterCallback) {
-    return unimplemented("sceRegMgrUnregisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRegMgrUnregisterDrvErrCallback) {
-    return unimplemented("sceRegMgrUnregisterDrvErrCallback");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceRegMgrAddRegistryCallback)

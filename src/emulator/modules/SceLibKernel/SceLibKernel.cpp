@@ -191,23 +191,23 @@ int delete_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, Sce
 }
 
 EXPORT(int, SceKernelStackChkGuard) {
-    return unimplemented("SceKernelStackChkGuard");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __sce_aeabi_idiv0) {
-    return unimplemented("__sce_aeabi_idiv0");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __sce_aeabi_ldiv0) {
-    return unimplemented("__sce_aeabi_ldiv0");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __stack_chk_fail) {
-    return unimplemented("__stack_chk_fail");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __stack_chk_guard) {
-    return unimplemented("__stack_chk_guard");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, int init_count, const SceKernelLwMutexOptParam *opt_param) {
@@ -221,47 +221,47 @@ EXPORT(int, _sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, co
 }
 
 EXPORT(int, sceClibAbort) {
-    return unimplemented("sceClibAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibDprintf) {
-    return unimplemented("sceClibDprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibLookCtypeTable) {
-    return unimplemented("sceClibLookCtypeTable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMemchr) {
-    return unimplemented("sceClibMemchr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMemcmp) {
-    return unimplemented("sceClibMemcmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMemcmpConstTime) {
-    return unimplemented("sceClibMemcmpConstTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMemcpy) {
-    return unimplemented("sceClibMemcpy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMemcpyChk) {
-    return unimplemented("sceClibMemcpyChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMemcpy_safe) {
-    return unimplemented("sceClibMemcpy_safe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMemmove) {
-    return unimplemented("sceClibMemmove");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMemmoveChk) {
-    return unimplemented("sceClibMemmoveChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(Ptr<void>, sceClibMemset, Ptr<void> s, int c, SceSize n) {
@@ -270,55 +270,55 @@ EXPORT(Ptr<void>, sceClibMemset, Ptr<void> s, int c, SceSize n) {
 }
 
 EXPORT(int, sceClibMemsetChk) {
-    return unimplemented("sceClibMemsetChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceCalloc) {
-    return unimplemented("sceClibMspaceCalloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceCreate) {
-    return unimplemented("sceClibMspaceCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceDestroy) {
-    return unimplemented("sceClibMspaceDestroy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceFree) {
-    return unimplemented("sceClibMspaceFree");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceIsHeapEmpty) {
-    return unimplemented("sceClibMspaceIsHeapEmpty");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceMalloc) {
-    return unimplemented("sceClibMspaceMalloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceMallocStats) {
-    return unimplemented("sceClibMspaceMallocStats");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceMallocStatsFast) {
-    return unimplemented("sceClibMspaceMallocStatsFast");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceMallocUsableSize) {
-    return unimplemented("sceClibMspaceMallocUsableSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceMemalign) {
-    return unimplemented("sceClibMspaceMemalign");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceRealloc) {
-    return unimplemented("sceClibMspaceRealloc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibMspaceReallocalign) {
-    return unimplemented("sceClibMspaceReallocalign");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibPrintf, const char *format, void *args) {
@@ -333,123 +333,123 @@ EXPORT(int, sceClibSnprintf, char *dest, SceSize size, const char *format, void 
 }
 
 EXPORT(int, sceClibSnprintfChk) {
-    return unimplemented("sceClibSnprintfChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrcatChk) {
-    return unimplemented("sceClibStrcatChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrchr) {
-    return unimplemented("sceClibStrchr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrcmp) {
-    return unimplemented("sceClibStrcmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrcpyChk) {
-    return unimplemented("sceClibStrcpyChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrlcat) {
-    return unimplemented("sceClibStrlcat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrlcatChk) {
-    return unimplemented("sceClibStrlcatChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrlcpy) {
-    return unimplemented("sceClibStrlcpy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrlcpyChk) {
-    return unimplemented("sceClibStrlcpyChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrncasecmp) {
-    return unimplemented("sceClibStrncasecmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrncat) {
-    return unimplemented("sceClibStrncat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrncatChk) {
-    return unimplemented("sceClibStrncatChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrncmp) {
-    return unimplemented("sceClibStrncmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrncpy) {
-    return unimplemented("sceClibStrncpy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrncpyChk) {
-    return unimplemented("sceClibStrncpyChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrnlen) {
-    return unimplemented("sceClibStrnlen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrrchr) {
-    return unimplemented("sceClibStrrchr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrstr) {
-    return unimplemented("sceClibStrstr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibStrtoll) {
-    return unimplemented("sceClibStrtoll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibTolower) {
-    return unimplemented("sceClibTolower");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibToupper) {
-    return unimplemented("sceClibToupper");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibVdprintf) {
-    return unimplemented("sceClibVdprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibVprintf) {
-    return unimplemented("sceClibVprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibVsnprintf) {
-    return unimplemented("sceClibVsnprintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClibVsnprintfChk) {
-    return unimplemented("sceClibVsnprintfChk");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoChstat) {
-    return unimplemented("sceIoChstat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoChstatAsync) {
-    return unimplemented("sceIoChstatAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoChstatByFd) {
-    return unimplemented("sceIoChstatByFd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoCompleteMultiple) {
-    return unimplemented("sceIoCompleteMultiple");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoDevctl) {
-    return unimplemented("sceIoDevctl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoDopen, const char *dir) {
@@ -457,7 +457,7 @@ EXPORT(int, sceIoDopen, const char *dir) {
 }
 
 EXPORT(int, sceIoDevctlAsync) {
-    return unimplemented("sceIoDevctlAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
@@ -469,19 +469,19 @@ EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
 }
 
 EXPORT(int, sceIoGetstatAsync) {
-    return unimplemented("sceIoGetstatAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoGetstatByFd) {
-    return unimplemented("sceIoGetstatByFd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoIoctl) {
-    return unimplemented("sceIoIoctl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoIoctlAsync) {
-    return unimplemented("sceIoIoctlAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
@@ -493,11 +493,11 @@ EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
 }
 
 EXPORT(int, sceIoMkdirAsync) {
-    return unimplemented("sceIoMkdirAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoLseekAsync) {
-    return unimplemented("sceIoLseekAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
@@ -509,7 +509,7 @@ EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
 }
 
 EXPORT(int, sceIoOpenAsync) {
-    return unimplemented("sceIoOpenAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
@@ -518,7 +518,7 @@ EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
 }
 
 EXPORT(int, sceIoPreadAsync) {
-    return unimplemented("sceIoPreadAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
@@ -527,7 +527,7 @@ EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offse
 }
 
 EXPORT(int, sceIoPwriteAsync) {
-    return unimplemented("sceIoPwriteAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoRemove, const char *path) {
@@ -538,15 +538,15 @@ EXPORT(int, sceIoRemove, const char *path) {
 }
 
 EXPORT(int, sceIoRemoveAsync) {
-    return unimplemented("sceIoRemoveAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoRename) {
-    return unimplemented("sceIoRename");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoRenameAsync) {
-    return unimplemented("sceIoRenameAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoRmdir, const char *path) {
@@ -557,375 +557,375 @@ EXPORT(int, sceIoRmdir, const char *path) {
 }
 
 EXPORT(int, sceIoRmdirAsync) {
-    return unimplemented("sceIoRmdirAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoSync) {
-    return unimplemented("sceIoSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoSyncAsync) {
-    return unimplemented("sceIoSyncAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAddAndGet16) {
-    return unimplemented("sceKernelAtomicAddAndGet16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAddAndGet32) {
-    return unimplemented("sceKernelAtomicAddAndGet32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAddAndGet64) {
-    return unimplemented("sceKernelAtomicAddAndGet64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAddAndGet8) {
-    return unimplemented("sceKernelAtomicAddAndGet8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAddUnless16) {
-    return unimplemented("sceKernelAtomicAddUnless16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAddUnless32) {
-    return unimplemented("sceKernelAtomicAddUnless32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAddUnless64) {
-    return unimplemented("sceKernelAtomicAddUnless64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAddUnless8) {
-    return unimplemented("sceKernelAtomicAddUnless8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAndAndGet16) {
-    return unimplemented("sceKernelAtomicAndAndGet16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAndAndGet32) {
-    return unimplemented("sceKernelAtomicAndAndGet32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAndAndGet64) {
-    return unimplemented("sceKernelAtomicAndAndGet64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicAndAndGet8) {
-    return unimplemented("sceKernelAtomicAndAndGet8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicClearAndGet16) {
-    return unimplemented("sceKernelAtomicClearAndGet16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicClearAndGet32) {
-    return unimplemented("sceKernelAtomicClearAndGet32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicClearAndGet64) {
-    return unimplemented("sceKernelAtomicClearAndGet64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicClearAndGet8) {
-    return unimplemented("sceKernelAtomicClearAndGet8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicClearMask16) {
-    return unimplemented("sceKernelAtomicClearMask16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicClearMask32) {
-    return unimplemented("sceKernelAtomicClearMask32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicClearMask64) {
-    return unimplemented("sceKernelAtomicClearMask64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicClearMask8) {
-    return unimplemented("sceKernelAtomicClearMask8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicCompareAndSet16) {
-    return unimplemented("sceKernelAtomicCompareAndSet16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicCompareAndSet32) {
-    return unimplemented("sceKernelAtomicCompareAndSet32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicCompareAndSet64) {
-    return unimplemented("sceKernelAtomicCompareAndSet64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicCompareAndSet8) {
-    return unimplemented("sceKernelAtomicCompareAndSet8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicDecIfPositive16) {
-    return unimplemented("sceKernelAtomicDecIfPositive16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicDecIfPositive32) {
-    return unimplemented("sceKernelAtomicDecIfPositive32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicDecIfPositive64) {
-    return unimplemented("sceKernelAtomicDecIfPositive64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicDecIfPositive8) {
-    return unimplemented("sceKernelAtomicDecIfPositive8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndAdd16) {
-    return unimplemented("sceKernelAtomicGetAndAdd16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndAdd32) {
-    return unimplemented("sceKernelAtomicGetAndAdd32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndAdd64) {
-    return unimplemented("sceKernelAtomicGetAndAdd64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndAdd8) {
-    return unimplemented("sceKernelAtomicGetAndAdd8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndAnd16) {
-    return unimplemented("sceKernelAtomicGetAndAnd16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndAnd32) {
-    return unimplemented("sceKernelAtomicGetAndAnd32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndAnd64) {
-    return unimplemented("sceKernelAtomicGetAndAnd64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndAnd8) {
-    return unimplemented("sceKernelAtomicGetAndAnd8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndClear16) {
-    return unimplemented("sceKernelAtomicGetAndClear16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndClear32) {
-    return unimplemented("sceKernelAtomicGetAndClear32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndClear64) {
-    return unimplemented("sceKernelAtomicGetAndClear64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndClear8) {
-    return unimplemented("sceKernelAtomicGetAndClear8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndOr16) {
-    return unimplemented("sceKernelAtomicGetAndOr16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndOr32) {
-    return unimplemented("sceKernelAtomicGetAndOr32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndOr64) {
-    return unimplemented("sceKernelAtomicGetAndOr64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndOr8) {
-    return unimplemented("sceKernelAtomicGetAndOr8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndSet16) {
-    return unimplemented("sceKernelAtomicGetAndSet16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndSet32) {
-    return unimplemented("sceKernelAtomicGetAndSet32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndSet64) {
-    return unimplemented("sceKernelAtomicGetAndSet64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndSet8) {
-    return unimplemented("sceKernelAtomicGetAndSet8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndSub16) {
-    return unimplemented("sceKernelAtomicGetAndSub16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndSub32) {
-    return unimplemented("sceKernelAtomicGetAndSub32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndSub64) {
-    return unimplemented("sceKernelAtomicGetAndSub64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndSub8) {
-    return unimplemented("sceKernelAtomicGetAndSub8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndXor16) {
-    return unimplemented("sceKernelAtomicGetAndXor16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndXor32) {
-    return unimplemented("sceKernelAtomicGetAndXor32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndXor64) {
-    return unimplemented("sceKernelAtomicGetAndXor64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicGetAndXor8) {
-    return unimplemented("sceKernelAtomicGetAndXor8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicOrAndGet16) {
-    return unimplemented("sceKernelAtomicOrAndGet16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicOrAndGet32) {
-    return unimplemented("sceKernelAtomicOrAndGet32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicOrAndGet64) {
-    return unimplemented("sceKernelAtomicOrAndGet64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicOrAndGet8) {
-    return unimplemented("sceKernelAtomicOrAndGet8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicSet16) {
-    return unimplemented("sceKernelAtomicSet16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicSet32) {
-    return unimplemented("sceKernelAtomicSet32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicSet64) {
-    return unimplemented("sceKernelAtomicSet64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicSet8) {
-    return unimplemented("sceKernelAtomicSet8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicSubAndGet16) {
-    return unimplemented("sceKernelAtomicSubAndGet16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicSubAndGet32) {
-    return unimplemented("sceKernelAtomicSubAndGet32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicSubAndGet64) {
-    return unimplemented("sceKernelAtomicSubAndGet64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicSubAndGet8) {
-    return unimplemented("sceKernelAtomicSubAndGet8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicXorAndGet16) {
-    return unimplemented("sceKernelAtomicXorAndGet16");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicXorAndGet32) {
-    return unimplemented("sceKernelAtomicXorAndGet32");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicXorAndGet64) {
-    return unimplemented("sceKernelAtomicXorAndGet64");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAtomicXorAndGet8) {
-    return unimplemented("sceKernelAtomicXorAndGet8");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelBacktrace) {
-    return unimplemented("sceKernelBacktrace");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelBacktraceSelf) {
-    return unimplemented("sceKernelBacktraceSelf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCallModuleExit) {
-    return unimplemented("sceKernelCallModuleExit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCallWithChangeStack) {
-    return unimplemented("sceKernelCallWithChangeStack");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCancelEvent) {
-    return unimplemented("sceKernelCancelEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCancelEventFlag) {
-    return unimplemented("sceKernelCancelEventFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCancelEventWithSetPattern) {
-    return unimplemented("sceKernelCancelEventWithSetPattern");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCancelMsgPipe) {
-    return unimplemented("sceKernelCancelMsgPipe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCancelMutex) {
-    return unimplemented("sceKernelCancelMutex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCancelRWLock) {
-    return unimplemented("sceKernelCancelRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCancelSema) {
-    return unimplemented("sceKernelCancelSema");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCancelTimer) {
-    return unimplemented("sceKernelCancelTimer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelChangeCurrentThreadAttr) {
-    return unimplemented("sceKernelChangeCurrentThreadAttr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCheckThreadStack) {
-    return unimplemented("sceKernelCheckThreadStack");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseModule) {
-    return unimplemented("sceKernelCloseModule");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCreateCond) {
-    return unimplemented("sceKernelCreateCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCreateEventFlag) {
-    return unimplemented("sceKernelCreateEventFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCreateLwCond) {
-    return unimplemented("sceKernelCreateLwCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, int init_count, const SceKernelLwMutexOptParam *opt_param) {
@@ -940,11 +940,11 @@ EXPORT(int, sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, con
 }
 
 EXPORT(int, sceKernelCreateMsgPipe) {
-    return unimplemented("sceKernelCreateMsgPipe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCreateMsgPipeWithLR) {
-    return unimplemented("sceKernelCreateMsgPipeWithLR");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
@@ -957,7 +957,7 @@ EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count
 }
 
 EXPORT(int, sceKernelCreateRWLock) {
-    return unimplemented("sceKernelCreateRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, SceKernelSemaOptParam *option) {
@@ -977,11 +977,11 @@ EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal,
 }
 
 EXPORT(int, sceKernelCreateSema_16XX) {
-    return unimplemented("sceKernelCreateSema_16XX");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCreateSimpleEvent) {
-    return unimplemented("sceKernelCreateSimpleEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntry entry, int init_priority, int stack_size, SceUInt attr, int cpu_affinity_mask, const SceKernelThreadOptParam *option) {
@@ -999,11 +999,11 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
 }
 
 EXPORT(int, sceKernelCreateTimer) {
-    return unimplemented("sceKernelCreateTimer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteLwCond) {
-    return unimplemented("sceKernelDeleteLwCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelDeleteLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea) {
@@ -1019,63 +1019,63 @@ EXPORT(int, sceKernelExitProcess, int res) {
 }
 
 EXPORT(int, sceKernelGetCallbackInfo) {
-    return unimplemented("sceKernelGetCallbackInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetCondInfo) {
-    return unimplemented("sceKernelGetCondInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetCurrentThreadVfpException) {
-    return unimplemented("sceKernelGetCurrentThreadVfpException");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetEventFlagInfo) {
-    return unimplemented("sceKernelGetEventFlagInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetEventInfo) {
-    return unimplemented("sceKernelGetEventInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetEventPattern) {
-    return unimplemented("sceKernelGetEventPattern");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetLwCondInfo) {
-    return unimplemented("sceKernelGetLwCondInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetLwCondInfoById) {
-    return unimplemented("sceKernelGetLwCondInfoById");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetLwMutexInfo) {
-    return unimplemented("sceKernelGetLwMutexInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetLwMutexInfoById) {
-    return unimplemented("sceKernelGetLwMutexInfoById");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetModuleInfoByAddr) {
-    return unimplemented("sceKernelGetModuleInfoByAddr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetMsgPipeInfo) {
-    return unimplemented("sceKernelGetMsgPipeInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetMutexInfo) {
-    return unimplemented("sceKernelGetMutexInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetOpenPsId) {
-    return unimplemented("sceKernelGetOpenPsId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetPMUSERENR) {
-    return unimplemented("sceKernelGetPMUSERENR");
+    return unimplemented(export_name);
 }
 
 EXPORT(SceUInt64, sceKernelGetProcessTime) {
@@ -1091,19 +1091,19 @@ EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
 }
 
 EXPORT(int, sceKernelGetRWLockInfo) {
-    return unimplemented("sceKernelGetRWLockInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetSemaInfo) {
-    return unimplemented("sceKernelGetSemaInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetSystemInfo) {
-    return unimplemented("sceKernelGetSystemInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetSystemTime) {
-    return unimplemented("sceKernelGetSystemTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(Ptr<Ptr<void>>, sceKernelGetTLSAddr, int key) {
@@ -1111,23 +1111,23 @@ EXPORT(Ptr<Ptr<void>>, sceKernelGetTLSAddr, int key) {
 }
 
 EXPORT(int, sceKernelGetThreadContextForVM) {
-    return unimplemented("sceKernelGetThreadContextForVM");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetThreadCpuAffinityMask) {
-    return unimplemented("sceKernelGetThreadCpuAffinityMask");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetThreadCurrentPriority) {
-    return unimplemented("sceKernelGetThreadCurrentPriority");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetThreadEventInfo) {
-    return unimplemented("sceKernelGetThreadEventInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetThreadExitStatus) {
-    return unimplemented("sceKernelGetThreadExitStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetThreadId) {
@@ -1135,27 +1135,27 @@ EXPORT(int, sceKernelGetThreadId) {
 }
 
 EXPORT(int, sceKernelGetThreadInfo) {
-    return unimplemented("sceKernelGetThreadInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetThreadRunStatus) {
-    return unimplemented("sceKernelGetThreadRunStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetTimerBase) {
-    return unimplemented("sceKernelGetTimerBase");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetTimerEventRemainingTime) {
-    return unimplemented("sceKernelGetTimerEventRemainingTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetTimerInfo) {
-    return unimplemented("sceKernelGetTimerInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetTimerTime) {
-    return unimplemented("sceKernelGetTimerTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
@@ -1216,7 +1216,7 @@ EXPORT(int, sceKernelLockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int l
 }
 
 EXPORT(int, sceKernelLockLwMutexCB) {
-    return unimplemented("sceKernelLockLwMutexCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
@@ -1224,119 +1224,119 @@ EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *ti
 }
 
 EXPORT(int, sceKernelLockMutexCB) {
-    return unimplemented("sceKernelLockMutexCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelLockReadRWLock) {
-    return unimplemented("sceKernelLockReadRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelLockReadRWLockCB) {
-    return unimplemented("sceKernelLockReadRWLockCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelLockWriteRWLock) {
-    return unimplemented("sceKernelLockWriteRWLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelLockWriteRWLockCB) {
-    return unimplemented("sceKernelLockWriteRWLockCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenModule) {
-    return unimplemented("sceKernelOpenModule");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelPMonThreadGetCounter) {
-    return unimplemented("sceKernelPMonThreadGetCounter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelPollEvent) {
-    return unimplemented("sceKernelPollEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelPollEventFlag) {
-    return unimplemented("sceKernelPollEventFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelPrintBacktrace) {
-    return unimplemented("sceKernelPrintBacktrace");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelPulseEventWithNotifyCallback) {
-    return unimplemented("sceKernelPulseEventWithNotifyCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelReceiveMsgPipe) {
-    return unimplemented("sceKernelReceiveMsgPipe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelReceiveMsgPipeCB) {
-    return unimplemented("sceKernelReceiveMsgPipeCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelReceiveMsgPipeVector) {
-    return unimplemented("sceKernelReceiveMsgPipeVector");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelReceiveMsgPipeVectorCB) {
-    return unimplemented("sceKernelReceiveMsgPipeVectorCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelRegisterThreadEventHandler) {
-    return unimplemented("sceKernelRegisterThreadEventHandler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSendMsgPipe) {
-    return unimplemented("sceKernelSendMsgPipe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSendMsgPipeCB) {
-    return unimplemented("sceKernelSendMsgPipeCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSendMsgPipeVector) {
-    return unimplemented("sceKernelSendMsgPipeVector");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSendMsgPipeVectorCB) {
-    return unimplemented("sceKernelSendMsgPipeVectorCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSetEventWithNotifyCallback) {
-    return unimplemented("sceKernelSetEventWithNotifyCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSetThreadContextForVM) {
-    return unimplemented("sceKernelSetThreadContextForVM");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSetTimerEvent) {
-    return unimplemented("sceKernelSetTimerEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSetTimerTime) {
-    return unimplemented("sceKernelSetTimerTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSignalLwCond) {
-    return unimplemented("sceKernelSignalLwCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSignalLwCondAll) {
-    return unimplemented("sceKernelSignalLwCondAll");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSignalLwCondTo) {
-    return unimplemented("sceKernelSignalLwCondTo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelStackChkFail) {
-    return unimplemented("sceKernelStackChkFail");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelStartModule) {
-    return unimplemented("sceKernelStartModule");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
@@ -1349,35 +1349,35 @@ EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
 }
 
 EXPORT(int, sceKernelStopModule) {
-    return unimplemented("sceKernelStopModule");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelStopUnloadModule) {
-    return unimplemented("sceKernelStopUnloadModule");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelTryLockLwMutex) {
-    return unimplemented("sceKernelTryLockLwMutex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelTryReceiveMsgPipe) {
-    return unimplemented("sceKernelTryReceiveMsgPipe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelTryReceiveMsgPipeVector) {
-    return unimplemented("sceKernelTryReceiveMsgPipeVector");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelTrySendMsgPipe) {
-    return unimplemented("sceKernelTrySendMsgPipe");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelTrySendMsgPipeVector) {
-    return unimplemented("sceKernelTrySendMsgPipeVector");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelUnloadModule) {
-    return unimplemented("sceKernelUnloadModule");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelUnlockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int unlock_count) {
@@ -1391,51 +1391,51 @@ EXPORT(int, sceKernelUnlockLwMutex2, Ptr<emu::SceKernelLwMutexWork> workarea, in
 }
 
 EXPORT(int, sceKernelWaitCond) {
-    return unimplemented("sceKernelWaitCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitCondCB) {
-    return unimplemented("sceKernelWaitCondCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitEvent) {
-    return unimplemented("sceKernelWaitEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitEventCB) {
-    return unimplemented("sceKernelWaitEventCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitEventFlag) {
-    return unimplemented("sceKernelWaitEventFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitEventFlagCB) {
-    return unimplemented("sceKernelWaitEventFlagCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitException) {
-    return unimplemented("sceKernelWaitException");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitExceptionCB) {
-    return unimplemented("sceKernelWaitExceptionCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitLwCond) {
-    return unimplemented("sceKernelWaitLwCond");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitLwCondCB) {
-    return unimplemented("sceKernelWaitLwCondCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitMultipleEvents) {
-    return unimplemented("sceKernelWaitMultipleEvents");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitMultipleEventsCB) {
-    return unimplemented("sceKernelWaitMultipleEventsCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
@@ -1467,15 +1467,15 @@ EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
 }
 
 EXPORT(int, sceKernelWaitSemaCB) {
-    return unimplemented("sceKernelWaitSemaCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitSignal) {
-    return unimplemented("sceKernelWaitSignal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitSignalCB) {
-    return unimplemented("sceKernelWaitSignalCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
@@ -1498,31 +1498,31 @@ EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
 }
 
 EXPORT(int, sceKernelWaitThreadEndCB) {
-    return unimplemented("sceKernelWaitThreadEndCB");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSblACMgrIsGameProgram) {
-    return unimplemented("sceSblACMgrIsGameProgram");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSblGcAuthMgrAdhocBB160Shutdown) {
-    return unimplemented("sceSblGcAuthMgrAdhocBB160Shutdown");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSblGcAuthMgrAdhocBB224Shutdown) {
-    return unimplemented("sceSblGcAuthMgrAdhocBB224Shutdown");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSblGcAuthMgrMsSaveBBCipherFinal) {
-    return unimplemented("sceSblGcAuthMgrMsSaveBBCipherFinal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSblGcAuthMgrMsSaveBBMacUpdate) {
-    return unimplemented("sceSblGcAuthMgrMsSaveBBMacUpdate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSblGcAuthMgrPcactActivation) {
-    return unimplemented("sceSblGcAuthMgrPcactActivation");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(SceKernelStackChkGuard)

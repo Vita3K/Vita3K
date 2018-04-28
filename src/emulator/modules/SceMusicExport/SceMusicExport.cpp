@@ -18,7 +18,7 @@
 #include "SceMusicExport.h"
 
 EXPORT(int, sceMusicExportFromFile) {
-    return unimplemented("sceMusicExportFromFile");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceMusicExportFromFile)

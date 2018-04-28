@@ -18,71 +18,71 @@
 #include "SceRazorHud.h"
 
 EXPORT(int, sceRazorCpuHudSetUserMarkerTraceBuffer) {
-    return unimplemented("sceRazorCpuHudSetUserMarkerTraceBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuHudUserMarkerEnableAllThreads) {
-    return unimplemented("sceRazorCpuHudUserMarkerEnableAllThreads");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorCpuHudUserMarkerEnableThreadId) {
-    return unimplemented("sceRazorCpuHudUserMarkerEnableThreadId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuLiveSetBuffer) {
-    return unimplemented("sceRazorGpuLiveSetBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuLiveSetMetricsGroup) {
-    return unimplemented("sceRazorGpuLiveSetMetricsGroup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuLiveStart) {
-    return unimplemented("sceRazorGpuLiveStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuLiveStop) {
-    return unimplemented("sceRazorGpuLiveStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuLiveTriggerDebugDump) {
-    return unimplemented("sceRazorGpuLiveTriggerDebugDump");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuPerfGetMode) {
-    return unimplemented("sceRazorGpuPerfGetMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuTraceRingBufferSize) {
-    return unimplemented("sceRazorGpuTraceRingBufferSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuTraceRingBufferUsed) {
-    return unimplemented("sceRazorGpuTraceRingBufferUsed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuTraceSetFilename) {
-    return unimplemented("sceRazorGpuTraceSetFilename");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuTraceSetMetricsGroup) {
-    return unimplemented("sceRazorGpuTraceSetMetricsGroup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorGpuTraceTrigger) {
-    return unimplemented("sceRazorGpuTraceTrigger");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorHudReloadSettings) {
-    return unimplemented("sceRazorHudReloadSettings");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorHudSetDisplayEnabled) {
-    return unimplemented("sceRazorHudSetDisplayEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRazorHudSetDisplayFrameCount) {
-    return unimplemented("sceRazorHudSetDisplayFrameCount");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceRazorCpuHudSetUserMarkerTraceBuffer)

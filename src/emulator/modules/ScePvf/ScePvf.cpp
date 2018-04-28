@@ -18,175 +18,175 @@
 #include "ScePvf.h"
 
 EXPORT(int, __scePvfSetFt2DoneLibCHook) {
-    return unimplemented("__scePvfSetFt2DoneLibCHook");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, __scePvfSetFt2LibCHook) {
-    return unimplemented("__scePvfSetFt2LibCHook");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfClose) {
-    return unimplemented("scePvfClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfDoneLib) {
-    return unimplemented("scePvfDoneLib");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfFindFont) {
-    return unimplemented("scePvfFindFont");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfFindOptimumFont) {
-    return unimplemented("scePvfFindOptimumFont");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfFlush) {
-    return unimplemented("scePvfFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetCharGlyphImage) {
-    return unimplemented("scePvfGetCharGlyphImage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetCharGlyphImage_Clip) {
-    return unimplemented("scePvfGetCharGlyphImage_Clip");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetCharGlyphOutline) {
-    return unimplemented("scePvfGetCharGlyphOutline");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetCharImageRect) {
-    return unimplemented("scePvfGetCharImageRect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetCharInfo) {
-    return unimplemented("scePvfGetCharInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetFontInfo) {
-    return unimplemented("scePvfGetFontInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetFontInfoByIndexNumber) {
-    return unimplemented("scePvfGetFontInfoByIndexNumber");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetFontList) {
-    return unimplemented("scePvfGetFontList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetKerningInfo) {
-    return unimplemented("scePvfGetKerningInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetNumFontList) {
-    return unimplemented("scePvfGetNumFontList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetVertCharGlyphImage) {
-    return unimplemented("scePvfGetVertCharGlyphImage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetVertCharGlyphImage_Clip) {
-    return unimplemented("scePvfGetVertCharGlyphImage_Clip");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetVertCharGlyphOutline) {
-    return unimplemented("scePvfGetVertCharGlyphOutline");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetVertCharImageRect) {
-    return unimplemented("scePvfGetVertCharImageRect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfGetVertCharInfo) {
-    return unimplemented("scePvfGetVertCharInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfIsElement) {
-    return unimplemented("scePvfIsElement");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfIsVertElement) {
-    return unimplemented("scePvfIsVertElement");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfNewLib) {
-    return unimplemented("scePvfNewLib");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfOpen) {
-    return unimplemented("scePvfOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfOpenDefaultJapaneseFontOnSharedMemory) {
-    return unimplemented("scePvfOpenDefaultJapaneseFontOnSharedMemory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfOpenDefaultLatinFontOnSharedMemory) {
-    return unimplemented("scePvfOpenDefaultLatinFontOnSharedMemory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfOpenUserFile) {
-    return unimplemented("scePvfOpenUserFile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfOpenUserFileWithSubfontIndex) {
-    return unimplemented("scePvfOpenUserFileWithSubfontIndex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfOpenUserMemory) {
-    return unimplemented("scePvfOpenUserMemory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfOpenUserMemoryWithSubfontIndex) {
-    return unimplemented("scePvfOpenUserMemoryWithSubfontIndex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfPixelToPointH) {
-    return unimplemented("scePvfPixelToPointH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfPixelToPointV) {
-    return unimplemented("scePvfPixelToPointV");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfPointToPixelH) {
-    return unimplemented("scePvfPointToPixelH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfPointToPixelV) {
-    return unimplemented("scePvfPointToPixelV");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfReleaseCharGlyphOutline) {
-    return unimplemented("scePvfReleaseCharGlyphOutline");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfSetAltCharacterCode) {
-    return unimplemented("scePvfSetAltCharacterCode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfSetCharSize) {
-    return unimplemented("scePvfSetCharSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfSetEM) {
-    return unimplemented("scePvfSetEM");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfSetEmboldenRate) {
-    return unimplemented("scePvfSetEmboldenRate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfSetResolution) {
-    return unimplemented("scePvfSetResolution");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePvfSetSkewValue) {
-    return unimplemented("scePvfSetSkewValue");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(__scePvfSetFt2DoneLibCHook)

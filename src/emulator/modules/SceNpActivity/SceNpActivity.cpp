@@ -18,19 +18,19 @@
 #include "SceNpActivity.h"
 
 EXPORT(int, sceNpActivityInit) {
-    return unimplemented("sceNpActivityInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpActivityPostAppStartupStatus) {
-    return unimplemented("sceNpActivityPostAppStartupStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpActivityPostStatus) {
-    return unimplemented("sceNpActivityPostStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpActivityTerm) {
-    return unimplemented("sceNpActivityTerm");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpActivityInit)

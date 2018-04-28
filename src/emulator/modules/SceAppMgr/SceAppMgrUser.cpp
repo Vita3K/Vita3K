@@ -20,39 +20,39 @@
 #include <psp2/appmgr.h>
 
 EXPORT(int, _sceAppMgrGetAppState) {
-    return unimplemented("_sceAppMgrGetAppState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAcidDirSet) {
-    return unimplemented("sceAppMgrAcidDirSet");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAcquireSoundOutExclusive3) {
-    return unimplemented("sceAppMgrAcquireSoundOutExclusive3");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAddContAddMount) {
-    return unimplemented("sceAppMgrAddContAddMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAddContMount) {
-    return unimplemented("sceAppMgrAddContMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAppDataMount) {
-    return unimplemented("sceAppMgrAppDataMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAppDataMountById) {
-    return unimplemented("sceAppMgrAppDataMountById");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAppMount) {
-    return unimplemented("sceAppMgrAppMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAppParamGetInt) {
-    return unimplemented("sceAppMgrAppParamGetInt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
@@ -65,459 +65,459 @@ EXPORT(int, sceAppMgrAppParamGetString, int pid, int param, char *string, int le
 }
 
 EXPORT(int, sceAppMgrAppParamSetString) {
-    return unimplemented("sceAppMgrAppParamSetString");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrAppUmount) {
-    return unimplemented("sceAppMgrAppUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrBgdlGetQueueStatus) {
-    return unimplemented("sceAppMgrBgdlGetQueueStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrCaptureFrameBufDMACByAppId) {
-    return unimplemented("sceAppMgrCaptureFrameBufDMACByAppId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrCaptureFrameBufIFTUByAppId) {
-    return unimplemented("sceAppMgrCaptureFrameBufIFTUByAppId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrCheckRifGD) {
-    return unimplemented("sceAppMgrCheckRifGD");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrContentInstallPeriodStart) {
-    return unimplemented("sceAppMgrContentInstallPeriodStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrContentInstallPeriodStop) {
-    return unimplemented("sceAppMgrContentInstallPeriodStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrConvertVs0UserDrivePath) {
-    return unimplemented("sceAppMgrConvertVs0UserDrivePath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrDeclareShellProcess2) {
-    return unimplemented("sceAppMgrDeclareShellProcess2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrDestroyAppByName) {
-    return unimplemented("sceAppMgrDestroyAppByName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrDrmClose) {
-    return unimplemented("sceAppMgrDrmClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrDrmOpen) {
-    return unimplemented("sceAppMgrDrmOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrForceUmount) {
-    return unimplemented("sceAppMgrForceUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGameDataMount) {
-    return unimplemented("sceAppMgrGameDataMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetAppInfo) {
-    return unimplemented("sceAppMgrGetAppInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetAppMgrState) {
-    return unimplemented("sceAppMgrGetAppMgrState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetAppParam) {
-    return unimplemented("sceAppMgrGetAppParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetAppParam2) {
-    return unimplemented("sceAppMgrGetAppParam2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetBootParam) {
-    return unimplemented("sceAppMgrGetBootParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetBudgetInfo) {
-    return unimplemented("sceAppMgrGetBudgetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetCoredumpStateForShell) {
-    return unimplemented("sceAppMgrGetCoredumpStateForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetCurrentBgmState) {
-    return unimplemented("sceAppMgrGetCurrentBgmState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetCurrentBgmState2) {
-    return unimplemented("sceAppMgrGetCurrentBgmState2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetDevInfo) {
-    return unimplemented("sceAppMgrGetDevInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetFgAppInfo) {
-    return unimplemented("sceAppMgrGetFgAppInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetIdByName) {
-    return unimplemented("sceAppMgrGetIdByName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetMediaTypeFromDrive) {
-    return unimplemented("sceAppMgrGetMediaTypeFromDrive");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetMediaTypeFromDriveByPid) {
-    return unimplemented("sceAppMgrGetMediaTypeFromDriveByPid");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetMountProcessNum) {
-    return unimplemented("sceAppMgrGetMountProcessNum");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetNameById) {
-    return unimplemented("sceAppMgrGetNameById");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetPfsDrive) {
-    return unimplemented("sceAppMgrGetPfsDrive");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetPidListForShell) {
-    return unimplemented("sceAppMgrGetPidListForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetRawPath) {
-    return unimplemented("sceAppMgrGetRawPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetRawPathOfApp0ByAppIdForShell) {
-    return unimplemented("sceAppMgrGetRawPathOfApp0ByAppIdForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetRawPathOfApp0ByPidForShell) {
-    return unimplemented("sceAppMgrGetRawPathOfApp0ByPidForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetRecommendedScreenOrientation) {
-    return unimplemented("sceAppMgrGetRecommendedScreenOrientation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetRunningAppIdListForShell) {
-    return unimplemented("sceAppMgrGetRunningAppIdListForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetSaveDataInfo) {
-    return unimplemented("sceAppMgrGetSaveDataInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetSaveDataInfoForSpecialExport) {
-    return unimplemented("sceAppMgrGetSaveDataInfoForSpecialExport");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetStatusByAppId) {
-    return unimplemented("sceAppMgrGetStatusByAppId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetStatusById) {
-    return unimplemented("sceAppMgrGetStatusById");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetStatusByName) {
-    return unimplemented("sceAppMgrGetStatusByName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetSystemDataFilePlayReady) {
-    return unimplemented("sceAppMgrGetSystemDataFilePlayReady");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetUserDirPath) {
-    return unimplemented("sceAppMgrGetUserDirPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetVs0UserDataDrive) {
-    return unimplemented("sceAppMgrGetVs0UserDataDrive");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrGetVs0UserModuleDrive) {
-    return unimplemented("sceAppMgrGetVs0UserModuleDrive");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrInitSafeMemoryById) {
-    return unimplemented("sceAppMgrInitSafeMemoryById");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrInstallDirMount) {
-    return unimplemented("sceAppMgrInstallDirMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrIsCameraActive) {
-    return unimplemented("sceAppMgrIsCameraActive");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByName) {
-    return unimplemented("sceAppMgrLaunchAppByName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByName2) {
-    return unimplemented("sceAppMgrLaunchAppByName2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByName2ForShell) {
-    return unimplemented("sceAppMgrLaunchAppByName2ForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByName2ndStage) {
-    return unimplemented("sceAppMgrLaunchAppByName2ndStage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByNameForShell) {
-    return unimplemented("sceAppMgrLaunchAppByNameForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByPath4) {
-    return unimplemented("sceAppMgrLaunchAppByPath4");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByUri) {
-    return unimplemented("sceAppMgrLaunchAppByUri");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByUri2) {
-    return unimplemented("sceAppMgrLaunchAppByUri2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLaunchVideoStreamingApp) {
-    return unimplemented("sceAppMgrLaunchVideoStreamingApp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLoadExec) {
-    return unimplemented("sceAppMgrLoadExec");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLoadSaveDataSystemFile) {
-    return unimplemented("sceAppMgrLoadSaveDataSystemFile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLoopBackFormat) {
-    return unimplemented("sceAppMgrLoopBackFormat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrLoopBackMount) {
-    return unimplemented("sceAppMgrLoopBackMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrMmsMount) {
-    return unimplemented("sceAppMgrMmsMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrOverwriteLaunchParamForShell) {
-    return unimplemented("sceAppMgrOverwriteLaunchParamForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrPeekLaunchParamForShell) {
-    return unimplemented("sceAppMgrPeekLaunchParamForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrPhotoMount) {
-    return unimplemented("sceAppMgrPhotoMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrPhotoUmount) {
-    return unimplemented("sceAppMgrPhotoUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrPspSaveDataGetParams) {
-    return unimplemented("sceAppMgrPspSaveDataGetParams");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrPspSaveDataRead) {
-    return unimplemented("sceAppMgrPspSaveDataRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrPspSaveDataRootMount) {
-    return unimplemented("sceAppMgrPspSaveDataRootMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrReceiveEvent) {
-    return unimplemented("sceAppMgrReceiveEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrReceiveEventNum) {
-    return unimplemented("sceAppMgrReceiveEventNum");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrReceiveNotificationRequestForShell) {
-    return unimplemented("sceAppMgrReceiveNotificationRequestForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrReceiveShellEvent) {
-    return unimplemented("sceAppMgrReceiveShellEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrReceiveSystemEvent) {
-    return unimplemented("sceAppMgrReceiveSystemEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataAddMount) {
-    return unimplemented("sceAppMgrSaveDataAddMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataDataRemove) {
-    return unimplemented("sceAppMgrSaveDataDataRemove");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataDataSave) {
-    return unimplemented("sceAppMgrSaveDataDataSave");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataGetQuota) {
-    return unimplemented("sceAppMgrSaveDataGetQuota");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataMount) {
-    return unimplemented("sceAppMgrSaveDataMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotCreate) {
-    return unimplemented("sceAppMgrSaveDataSlotCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotDelete) {
-    return unimplemented("sceAppMgrSaveDataSlotDelete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotFileClose) {
-    return unimplemented("sceAppMgrSaveDataSlotFileClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotFileGetParam) {
-    return unimplemented("sceAppMgrSaveDataSlotFileGetParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotFileOpen) {
-    return unimplemented("sceAppMgrSaveDataSlotFileOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotGetParam) {
-    return unimplemented("sceAppMgrSaveDataSlotGetParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotGetStatus) {
-    return unimplemented("sceAppMgrSaveDataSlotGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotInit) {
-    return unimplemented("sceAppMgrSaveDataSlotInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotSetParam) {
-    return unimplemented("sceAppMgrSaveDataSlotSetParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotSetStatus) {
-    return unimplemented("sceAppMgrSaveDataSlotSetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSaveDataUmount) {
-    return unimplemented("sceAppMgrSaveDataUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSendNotificationRequest) {
-    return unimplemented("sceAppMgrSendNotificationRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSendParam) {
-    return unimplemented("sceAppMgrSendParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSendSystemEvent) {
-    return unimplemented("sceAppMgrSendSystemEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSendSystemEvent2) {
-    return unimplemented("sceAppMgrSendSystemEvent2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSetBackRenderPortOwner) {
-    return unimplemented("sceAppMgrSetBackRenderPortOwner");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSetBgmProxyApp) {
-    return unimplemented("sceAppMgrSetBgmProxyApp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSetNetworkDisconnectionWarningDialogState) {
-    return unimplemented("sceAppMgrSetNetworkDisconnectionWarningDialogState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSetPowerSaveMode) {
-    return unimplemented("sceAppMgrSetPowerSaveMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSetRecommendedScreenOrientationForShell) {
-    return unimplemented("sceAppMgrSetRecommendedScreenOrientationForShell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSetShellScreenOrientation) {
-    return unimplemented("sceAppMgrSetShellScreenOrientation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSetSystemDataFile) {
-    return unimplemented("sceAppMgrSetSystemDataFile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSetSystemDataFilePlayReady) {
-    return unimplemented("sceAppMgrSetSystemDataFilePlayReady");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSystemParamDateTimeGetConf) {
-    return unimplemented("sceAppMgrSystemParamDateTimeGetConf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSystemParamGetInt) {
-    return unimplemented("sceAppMgrSystemParamGetInt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrSystemParamGetString) {
-    return unimplemented("sceAppMgrSystemParamGetString");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrTrophyMount) {
-    return unimplemented("sceAppMgrTrophyMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrTrophyMountById) {
-    return unimplemented("sceAppMgrTrophyMountById");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrUmount) {
-    return unimplemented("sceAppMgrUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrUmountByPid) {
-    return unimplemented("sceAppMgrUmountByPid");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrUpdateSaveDataParam) {
-    return unimplemented("sceAppMgrUpdateSaveDataParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrWorkDirMount) {
-    return unimplemented("sceAppMgrWorkDirMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppMgrWorkDirMountById) {
-    return unimplemented("sceAppMgrWorkDirMountById");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_sceAppMgrGetAppState)

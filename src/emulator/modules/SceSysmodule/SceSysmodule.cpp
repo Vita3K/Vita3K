@@ -24,7 +24,7 @@ EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId id) {
 }
 
 EXPORT(int, sceSysmoduleIsLoadedInternal) {
-    return unimplemented("sceSysmoduleIsLoadedInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId id) {
@@ -32,23 +32,23 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId id) {
 }
 
 EXPORT(int, sceSysmoduleLoadModuleInternal) {
-    return unimplemented("sceSysmoduleLoadModuleInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSysmoduleLoadModuleInternalWithArg) {
-    return unimplemented("sceSysmoduleLoadModuleInternalWithArg");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSysmoduleUnloadModule) {
-    return unimplemented("sceSysmoduleUnloadModule");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSysmoduleUnloadModuleInternal) {
-    return unimplemented("sceSysmoduleUnloadModuleInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSysmoduleUnloadModuleInternalWithArg) {
-    return unimplemented("sceSysmoduleUnloadModuleInternalWithArg");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceSysmoduleIsLoaded)

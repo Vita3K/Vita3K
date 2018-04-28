@@ -18,11 +18,11 @@
 #include "SceAppUtilExt.h"
 
 EXPORT(int, sceAppUtilExtVideoMount) {
-    return unimplemented("sceAppUtilExtVideoMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilExtVideoUmount) {
-    return unimplemented("sceAppUtilExtVideoUmount");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceAppUtilExtVideoMount)

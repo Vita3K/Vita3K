@@ -18,63 +18,63 @@
 #include "SceNpManager.h"
 
 EXPORT(int, sceNpAuthAbortOAuthRequest) {
-    return unimplemented("sceNpAuthAbortOAuthRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthCreateOAuthRequest) {
-    return unimplemented("sceNpAuthCreateOAuthRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthDeleteOAuthRequest) {
-    return unimplemented("sceNpAuthDeleteOAuthRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthGetAuthorizationCode) {
-    return unimplemented("sceNpAuthGetAuthorizationCode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpCheckCallback) {
-    return unimplemented("sceNpCheckCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpGetServiceState) {
-    return unimplemented("sceNpGetServiceState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpInit) {
-    return unimplemented("sceNpInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpManagerGetAccountRegion) {
-    return unimplemented("sceNpManagerGetAccountRegion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpManagerGetCachedParam) {
-    return unimplemented("sceNpManagerGetCachedParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpManagerGetChatRestrictionFlag) {
-    return unimplemented("sceNpManagerGetChatRestrictionFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpManagerGetContentRatingFlag) {
-    return unimplemented("sceNpManagerGetContentRatingFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpManagerGetNpId) {
-    return unimplemented("sceNpManagerGetNpId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpRegisterServiceStateCallback) {
-    return unimplemented("sceNpRegisterServiceStateCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTerm) {
-    return unimplemented("sceNpTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpUnregisterServiceStateCallback) {
-    return unimplemented("sceNpUnregisterServiceStateCallback");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpAuthAbortOAuthRequest)

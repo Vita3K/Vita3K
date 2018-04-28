@@ -18,119 +18,119 @@
 #include "SceNearUtil.h"
 
 EXPORT(int, sceNearCloseDiscoveredGiftImage) {
-    return unimplemented("sceNearCloseDiscoveredGiftImage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearCloseReceivedGiftData) {
-    return unimplemented("sceNearCloseReceivedGiftData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearConvertDiscoveredGiftParam) {
-    return unimplemented("sceNearConvertDiscoveredGiftParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearDeleteDiscoveredGift) {
-    return unimplemented("sceNearDeleteDiscoveredGift");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearDeleteGift) {
-    return unimplemented("sceNearDeleteGift");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearFinalize) {
-    return unimplemented("sceNearFinalize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearFinalizeAndLaunchNearApp) {
-    return unimplemented("sceNearFinalizeAndLaunchNearApp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetDiscoveredGiftInfo) {
-    return unimplemented("sceNearGetDiscoveredGiftInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetDiscoveredGiftSender) {
-    return unimplemented("sceNearGetDiscoveredGiftSender");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetDiscoveredGiftStatus) {
-    return unimplemented("sceNearGetDiscoveredGiftStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetDiscoveredGifts) {
-    return unimplemented("sceNearGetDiscoveredGifts");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetGift) {
-    return unimplemented("sceNearGetGift");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetGiftStatus) {
-    return unimplemented("sceNearGetGiftStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetLastNeighborFoundDateTime) {
-    return unimplemented("sceNearGetLastNeighborFoundDateTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetMyStatus) {
-    return unimplemented("sceNearGetMyStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetNeighbors) {
-    return unimplemented("sceNearGetNeighbors");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetNewNeighbors) {
-    return unimplemented("sceNearGetNewNeighbors");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearGetRecentNeighbors) {
-    return unimplemented("sceNearGetRecentNeighbors");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearIgnoreDiscoveredGift) {
-    return unimplemented("sceNearIgnoreDiscoveredGift");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearInitialize) {
-    return unimplemented("sceNearInitialize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearLaunchNearAppForDownload) {
-    return unimplemented("sceNearLaunchNearAppForDownload");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearLaunchNearAppForUpdate) {
-    return unimplemented("sceNearLaunchNearAppForUpdate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearOpenDiscoveredGiftImage) {
-    return unimplemented("sceNearOpenDiscoveredGiftImage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearOpenReceivedGiftData) {
-    return unimplemented("sceNearOpenReceivedGiftData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearReadDiscoveredGiftImage) {
-    return unimplemented("sceNearReadDiscoveredGiftImage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearReadReceivedGiftData) {
-    return unimplemented("sceNearReadReceivedGiftData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearRefresh) {
-    return unimplemented("sceNearRefresh");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearSetGift) {
-    return unimplemented("sceNearSetGift");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNearSetGift2) {
-    return unimplemented("sceNearSetGift2");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNearCloseDiscoveredGiftImage)

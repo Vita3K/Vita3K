@@ -18,31 +18,31 @@
 #include "SceNpSnsFacebook.h"
 
 EXPORT(int, sceNpSnsFacebookAbortRequest) {
-    return unimplemented("sceNpSnsFacebookAbortRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSnsFacebookCreateRequest) {
-    return unimplemented("sceNpSnsFacebookCreateRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSnsFacebookDeleteRequest) {
-    return unimplemented("sceNpSnsFacebookDeleteRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSnsFacebookGetAccessToken) {
-    return unimplemented("sceNpSnsFacebookGetAccessToken");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSnsFacebookGetLongAccessToken) {
-    return unimplemented("sceNpSnsFacebookGetLongAccessToken");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSnsFacebookInit) {
-    return unimplemented("sceNpSnsFacebookInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSnsFacebookTerm) {
-    return unimplemented("sceNpSnsFacebookTerm");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpSnsFacebookAbortRequest)

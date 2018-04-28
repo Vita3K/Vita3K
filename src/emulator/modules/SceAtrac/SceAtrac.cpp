@@ -18,99 +18,99 @@
 #include "SceAtrac.h"
 
 EXPORT(int, sceAtracAddStreamData) {
-    return unimplemented("sceAtracAddStreamData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracCreateDecoderGroup) {
-    return unimplemented("sceAtracCreateDecoderGroup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracDecode) {
-    return unimplemented("sceAtracDecode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracDeleteDecoderGroup) {
-    return unimplemented("sceAtracDeleteDecoderGroup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetContentInfo) {
-    return unimplemented("sceAtracGetContentInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetDecoderGroupInfo) {
-    return unimplemented("sceAtracGetDecoderGroupInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetDecoderStatus) {
-    return unimplemented("sceAtracGetDecoderStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetInternalError) {
-    return unimplemented("sceAtracGetInternalError");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetLoopInfo) {
-    return unimplemented("sceAtracGetLoopInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetNextOutputPosition) {
-    return unimplemented("sceAtracGetNextOutputPosition");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetOutputSamples) {
-    return unimplemented("sceAtracGetOutputSamples");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetOutputableSamples) {
-    return unimplemented("sceAtracGetOutputableSamples");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetRemainSamples) {
-    return unimplemented("sceAtracGetRemainSamples");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetStreamInfo) {
-    return unimplemented("sceAtracGetStreamInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetSubBufferInfo) {
-    return unimplemented("sceAtracGetSubBufferInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracGetVacantSize) {
-    return unimplemented("sceAtracGetVacantSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracIsSubBufferNeeded) {
-    return unimplemented("sceAtracIsSubBufferNeeded");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracQueryDecoderGroupMemSize) {
-    return unimplemented("sceAtracQueryDecoderGroupMemSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracReleaseHandle) {
-    return unimplemented("sceAtracReleaseHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracResetNextOutputPosition) {
-    return unimplemented("sceAtracResetNextOutputPosition");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracSetDataAndAcquireHandle) {
-    return unimplemented("sceAtracSetDataAndAcquireHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracSetLoopNum) {
-    return unimplemented("sceAtracSetLoopNum");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracSetOutputSamples) {
-    return unimplemented("sceAtracSetOutputSamples");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAtracSetSubBuffer) {
-    return unimplemented("sceAtracSetSubBuffer");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceAtracAddStreamData)

@@ -18,79 +18,79 @@
 #include "SceMotion.h"
 
 EXPORT(int, sceMotionGetAngleThreshold) {
-    return unimplemented("sceMotionGetAngleThreshold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionGetBasicOrientation) {
-    return unimplemented("sceMotionGetBasicOrientation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionGetDeadband) {
-    return unimplemented("sceMotionGetDeadband");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionGetDeviceLocation) {
-    return unimplemented("sceMotionGetDeviceLocation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionGetGyroBiasCorrection) {
-    return unimplemented("sceMotionGetGyroBiasCorrection");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionGetMagnetometerState) {
-    return unimplemented("sceMotionGetMagnetometerState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionGetSensorState) {
-    return unimplemented("sceMotionGetSensorState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionGetState) {
-    return unimplemented("sceMotionGetState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionGetTiltCorrection) {
-    return unimplemented("sceMotionGetTiltCorrection");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionMagnetometerOff) {
-    return unimplemented("sceMotionMagnetometerOff");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionMagnetometerOn) {
-    return unimplemented("sceMotionMagnetometerOn");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionReset) {
-    return unimplemented("sceMotionReset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionRotateYaw) {
-    return unimplemented("sceMotionRotateYaw");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionSetAngleThreshold) {
-    return unimplemented("sceMotionSetAngleThreshold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionSetDeadband) {
-    return unimplemented("sceMotionSetDeadband");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionSetGyroBiasCorrection) {
-    return unimplemented("sceMotionSetGyroBiasCorrection");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionSetTiltCorrection) {
-    return unimplemented("sceMotionSetTiltCorrection");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionStartSampling) {
-    return unimplemented("sceMotionStartSampling");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionStopSampling) {
-    return unimplemented("sceMotionStopSampling");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceMotionGetAngleThreshold)

@@ -18,11 +18,11 @@
 #include "SceClipboard.h"
 
 EXPORT(int, sceClipboardGetText) {
-    return unimplemented("sceClipboardGetText");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceClipboardSetText) {
-    return unimplemented("sceClipboardSetText");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceClipboardGetText)

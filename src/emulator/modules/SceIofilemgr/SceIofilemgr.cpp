@@ -20,7 +20,7 @@
 #include <io/functions.h>
 
 EXPORT(int, sceIoCancel) {
-    return unimplemented("sceIoCancel");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoClose, SceUID fd) {
@@ -29,11 +29,11 @@ EXPORT(int, sceIoClose, SceUID fd) {
 }
 
 EXPORT(int, sceIoCloseAsync) {
-    return unimplemented("sceIoCloseAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoComplete) {
-    return unimplemented("sceIoComplete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoDclose, SceUID fd) {
@@ -41,19 +41,19 @@ EXPORT(int, sceIoDclose, SceUID fd) {
 }
 
 EXPORT(int, sceIoFlockForSystem) {
-    return unimplemented("sceIoFlockForSystem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoGetPriority) {
-    return unimplemented("sceIoGetPriority");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoGetProcessDefaultPriority) {
-    return unimplemented("sceIoGetProcessDefaultPriority");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoGetThreadDefaultPriority) {
-    return unimplemented("sceIoGetThreadDefaultPriority");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoLseek32, SceUID fd, int offset, int whence) {
@@ -65,35 +65,35 @@ EXPORT(int, sceIoRead, SceUID fd, void *data, SceSize size) {
 }
 
 EXPORT(int, sceIoReadAsync) {
-    return unimplemented("sceIoReadAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoSetPriority) {
-    return unimplemented("sceIoSetPriority");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoSetPriorityForSystem) {
-    return unimplemented("sceIoSetPriorityForSystem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoSetProcessDefaultPriority) {
-    return unimplemented("sceIoSetProcessDefaultPriority");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoSetThreadDefaultPriority) {
-    return unimplemented("sceIoSetThreadDefaultPriority");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoSetThreadDefaultPriorityForSystem) {
-    return unimplemented("sceIoSetThreadDefaultPriorityForSystem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoSyncByFd) {
-    return unimplemented("sceIoSyncByFd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoSyncByFdAsync) {
-    return unimplemented("sceIoSyncByFdAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceIoWrite, SceUID fd, const void *data, SceSize size) {
@@ -101,7 +101,7 @@ EXPORT(int, sceIoWrite, SceUID fd, const void *data, SceSize size) {
 }
 
 EXPORT(int, sceIoWriteAsync) {
-    return unimplemented("sceIoWriteAsync");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceIoCancel)

@@ -18,7 +18,7 @@
 #include "SceLibRng.h"
 
 EXPORT(int, sceKernelGetRandomNumber) {
-    return unimplemented("sceKernelGetRandomNumber");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceKernelGetRandomNumber)

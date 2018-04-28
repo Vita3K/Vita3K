@@ -18,139 +18,139 @@
 #include "SceNpUtility.h"
 
 EXPORT(int, sceNpBandwidthTestAbort) {
-    return unimplemented("sceNpBandwidthTestAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBandwidthTestGetStatus) {
-    return unimplemented("sceNpBandwidthTestGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBandwidthTestInitStart) {
-    return unimplemented("sceNpBandwidthTestInitStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpBandwidthTestShutdown) {
-    return unimplemented("sceNpBandwidthTestShutdown");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupAbortRequest) {
-    return unimplemented("sceNpLookupAbortRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupAvatarImage) {
-    return unimplemented("sceNpLookupAvatarImage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupAvatarImageAsync) {
-    return unimplemented("sceNpLookupAvatarImageAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupCreateRequest) {
-    return unimplemented("sceNpLookupCreateRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupCreateTitleCtx) {
-    return unimplemented("sceNpLookupCreateTitleCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupDeleteRequest) {
-    return unimplemented("sceNpLookupDeleteRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupDeleteTitleCtx) {
-    return unimplemented("sceNpLookupDeleteTitleCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupInit) {
-    return unimplemented("sceNpLookupInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupNpId) {
-    return unimplemented("sceNpLookupNpId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupNpIdAsync) {
-    return unimplemented("sceNpLookupNpIdAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupPollAsync) {
-    return unimplemented("sceNpLookupPollAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupSetTimeout) {
-    return unimplemented("sceNpLookupSetTimeout");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupTerm) {
-    return unimplemented("sceNpLookupTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupUserProfile) {
-    return unimplemented("sceNpLookupUserProfile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupUserProfileAsync) {
-    return unimplemented("sceNpLookupUserProfileAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpLookupWaitAsync) {
-    return unimplemented("sceNpLookupWaitAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterAbortRequest) {
-    return unimplemented("sceNpWordFilterAbortRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterCensorComment) {
-    return unimplemented("sceNpWordFilterCensorComment");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterCensorCommentAsync) {
-    return unimplemented("sceNpWordFilterCensorCommentAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterCreateRequest) {
-    return unimplemented("sceNpWordFilterCreateRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterCreateTitleCtx) {
-    return unimplemented("sceNpWordFilterCreateTitleCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterDeleteRequest) {
-    return unimplemented("sceNpWordFilterDeleteRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterDeleteTitleCtx) {
-    return unimplemented("sceNpWordFilterDeleteTitleCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterInit) {
-    return unimplemented("sceNpWordFilterInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterPollAsync) {
-    return unimplemented("sceNpWordFilterPollAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterSanitizeComment) {
-    return unimplemented("sceNpWordFilterSanitizeComment");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterSanitizeCommentAsync) {
-    return unimplemented("sceNpWordFilterSanitizeCommentAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterSetTimeout) {
-    return unimplemented("sceNpWordFilterSetTimeout");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterTerm) {
-    return unimplemented("sceNpWordFilterTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWordFilterWaitAsync) {
-    return unimplemented("sceNpWordFilterWaitAsync");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpBandwidthTestAbort)

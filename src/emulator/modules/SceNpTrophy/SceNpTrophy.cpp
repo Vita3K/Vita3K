@@ -18,63 +18,63 @@
 #include "SceNpTrophy.h"
 
 EXPORT(int, sceNpTrophyAbortHandle) {
-    return unimplemented("sceNpTrophyAbortHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyCreateContext) {
-    return unimplemented("sceNpTrophyCreateContext");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyCreateHandle) {
-    return unimplemented("sceNpTrophyCreateHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyDestroyContext) {
-    return unimplemented("sceNpTrophyDestroyContext");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyDestroyHandle) {
-    return unimplemented("sceNpTrophyDestroyHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyGetGameIcon) {
-    return unimplemented("sceNpTrophyGetGameIcon");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyGetGameInfo) {
-    return unimplemented("sceNpTrophyGetGameInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyGetGroupIcon) {
-    return unimplemented("sceNpTrophyGetGroupIcon");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyGetGroupInfo) {
-    return unimplemented("sceNpTrophyGetGroupInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyGetTrophyIcon) {
-    return unimplemented("sceNpTrophyGetTrophyIcon");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyGetTrophyInfo) {
-    return unimplemented("sceNpTrophyGetTrophyInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyGetTrophyUnlockState) {
-    return unimplemented("sceNpTrophyGetTrophyUnlockState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyInit) {
-    return unimplemented("sceNpTrophyInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyTerm) {
-    return unimplemented("sceNpTrophyTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTrophyUnlockTrophy) {
-    return unimplemented("sceNpTrophyUnlockTrophy");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpTrophyAbortHandle)

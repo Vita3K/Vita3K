@@ -18,35 +18,35 @@
 #include "SceScreenShot.h"
 
 EXPORT(int, sceScreenShotCapture) {
-    return unimplemented("sceScreenShotCapture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceScreenShotDisable) {
-    return unimplemented("sceScreenShotDisable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceScreenShotDisableNotification) {
-    return unimplemented("sceScreenShotDisableNotification");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceScreenShotEnable) {
-    return unimplemented("sceScreenShotEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceScreenShotEnableNotification) {
-    return unimplemented("sceScreenShotEnableNotification");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceScreenShotGetParam) {
-    return unimplemented("sceScreenShotGetParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceScreenShotSetOverlayImage) {
-    return unimplemented("sceScreenShotSetOverlayImage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceScreenShotSetParam) {
-    return unimplemented("sceScreenShotSetParam");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceScreenShotCapture)

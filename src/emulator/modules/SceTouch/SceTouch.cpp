@@ -52,55 +52,55 @@ static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData) {
 }
 
 EXPORT(int, sceTouchActivateRegion) {
-    return unimplemented("sceTouchActivateRegion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchClearRegion) {
-    return unimplemented("sceTouchClearRegion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchDisableTouchForce) {
-    return unimplemented("sceTouchDisableTouchForce");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchDisableTouchForceExt) {
-    return unimplemented("sceTouchDisableTouchForceExt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchEnableIdleTimerCancelSetting) {
-    return unimplemented("sceTouchEnableIdleTimerCancelSetting");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchEnableTouchForce) {
-    return unimplemented("sceTouchEnableTouchForce");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchEnableTouchForceExt) {
-    return unimplemented("sceTouchEnableTouchForceExt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchGetDeviceInfo) {
-    return unimplemented("sceTouchGetDeviceInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchGetPanelInfo) {
-    return unimplemented("sceTouchGetPanelInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchGetPixelDensity) {
-    return unimplemented("sceTouchGetPixelDensity");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchGetProcessInfo) {
-    return unimplemented("sceTouchGetProcessInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchGetSamplingState) {
-    return unimplemented("sceTouchGetSamplingState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchGetSamplingStateExt) {
-    return unimplemented("sceTouchGetSamplingStateExt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -122,11 +122,11 @@ EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
 }
 
 EXPORT(int, sceTouchPeekRegion) {
-    return unimplemented("sceTouchPeekRegion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchPeekRegionExt) {
-    return unimplemented("sceTouchPeekRegionExt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -148,31 +148,31 @@ EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
 }
 
 EXPORT(int, sceTouchReadRegion) {
-    return unimplemented("sceTouchReadRegion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchReadRegionExt) {
-    return unimplemented("sceTouchReadRegionExt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchSetProcessPrivilege) {
-    return unimplemented("sceTouchSetProcessPrivilege");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchSetRegion) {
-    return unimplemented("sceTouchSetRegion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchSetRegionAttr) {
-    return unimplemented("sceTouchSetRegionAttr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchSetSamplingState) {
-    return unimplemented("sceTouchSetSamplingState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTouchSetSamplingStateExt) {
-    return unimplemented("sceTouchSetSamplingStateExt");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceTouchActivateRegion)

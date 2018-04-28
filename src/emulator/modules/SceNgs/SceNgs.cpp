@@ -18,275 +18,275 @@
 #include "SceNgs.h"
 
 EXPORT(int, sceNgsAT9GetSectionDetails) {
-    return unimplemented("sceNgsAT9GetSectionDetails");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsModuleGetNumPresets) {
-    return unimplemented("sceNgsModuleGetNumPresets");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsModuleGetPreset) {
-    return unimplemented("sceNgsModuleGetPreset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsPatchCreateRouting) {
-    return unimplemented("sceNgsPatchCreateRouting");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsPatchGetInfo) {
-    return unimplemented("sceNgsPatchGetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsPatchRemoveRouting) {
-    return unimplemented("sceNgsPatchRemoveRouting");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsRackGetRequiredMemorySize) {
-    return unimplemented("sceNgsRackGetRequiredMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsRackGetVoiceHandle) {
-    return unimplemented("sceNgsRackGetVoiceHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsRackInit) {
-    return unimplemented("sceNgsRackInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsRackRelease) {
-    return unimplemented("sceNgsRackRelease");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsRackSetParamErrorCallback) {
-    return unimplemented("sceNgsRackSetParamErrorCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsSystemGetRequiredMemorySize) {
-    return unimplemented("sceNgsSystemGetRequiredMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsSystemInit) {
-    return unimplemented("sceNgsSystemInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsSystemLock) {
-    return unimplemented("sceNgsSystemLock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsSystemRelease) {
-    return unimplemented("sceNgsSystemRelease");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsSystemSetFlags) {
-    return unimplemented("sceNgsSystemSetFlags");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsSystemSetParamErrorCallback) {
-    return unimplemented("sceNgsSystemSetParamErrorCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsSystemUnlock) {
-    return unimplemented("sceNgsSystemUnlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsSystemUpdate) {
-    return unimplemented("sceNgsSystemUpdate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceBypassModule) {
-    return unimplemented("sceNgsVoiceBypassModule");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetAtrac9Voice) {
-    return unimplemented("sceNgsVoiceDefGetAtrac9Voice");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetCompressorBuss) {
-    return unimplemented("sceNgsVoiceDefGetCompressorBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetCompressorSideChainBuss) {
-    return unimplemented("sceNgsVoiceDefGetCompressorSideChainBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetDelayBuss) {
-    return unimplemented("sceNgsVoiceDefGetDelayBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetDistortionBuss) {
-    return unimplemented("sceNgsVoiceDefGetDistortionBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetEnvelopeBuss) {
-    return unimplemented("sceNgsVoiceDefGetEnvelopeBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetEqBuss) {
-    return unimplemented("sceNgsVoiceDefGetEqBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetMasterBuss) {
-    return unimplemented("sceNgsVoiceDefGetMasterBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetMixerBuss) {
-    return unimplemented("sceNgsVoiceDefGetMixerBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetPauserBuss) {
-    return unimplemented("sceNgsVoiceDefGetPauserBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetPitchShiftBuss) {
-    return unimplemented("sceNgsVoiceDefGetPitchShiftBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetReverbBuss) {
-    return unimplemented("sceNgsVoiceDefGetReverbBuss");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetSasEmuVoice) {
-    return unimplemented("sceNgsVoiceDefGetSasEmuVoice");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetScreamAtrac9Voice) {
-    return unimplemented("sceNgsVoiceDefGetScreamAtrac9Voice");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetScreamVoice) {
-    return unimplemented("sceNgsVoiceDefGetScreamVoice");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetSimpleAtrac9Voice) {
-    return unimplemented("sceNgsVoiceDefGetSimpleAtrac9Voice");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetSimpleVoice) {
-    return unimplemented("sceNgsVoiceDefGetSimpleVoice");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceDefGetTemplate1) {
-    return unimplemented("sceNgsVoiceDefGetTemplate1");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceGetInfo) {
-    return unimplemented("sceNgsVoiceGetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceGetModuleBypass) {
-    return unimplemented("sceNgsVoiceGetModuleBypass");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceGetModuleType) {
-    return unimplemented("sceNgsVoiceGetModuleType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceGetOutputPatch) {
-    return unimplemented("sceNgsVoiceGetOutputPatch");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceGetParamsOutOfRange) {
-    return unimplemented("sceNgsVoiceGetParamsOutOfRange");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceGetStateData) {
-    return unimplemented("sceNgsVoiceGetStateData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceInit) {
-    return unimplemented("sceNgsVoiceInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceKeyOff) {
-    return unimplemented("sceNgsVoiceKeyOff");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceKill) {
-    return unimplemented("sceNgsVoiceKill");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceLockParams) {
-    return unimplemented("sceNgsVoiceLockParams");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoicePatchSetVolume) {
-    return unimplemented("sceNgsVoicePatchSetVolume");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoicePatchSetVolumes) {
-    return unimplemented("sceNgsVoicePatchSetVolumes");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoicePatchSetVolumesMatrix) {
-    return unimplemented("sceNgsVoicePatchSetVolumesMatrix");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoicePause) {
-    return unimplemented("sceNgsVoicePause");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoicePlay) {
-    return unimplemented("sceNgsVoicePlay");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceResume) {
-    return unimplemented("sceNgsVoiceResume");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceSetFinishedCallback) {
-    return unimplemented("sceNgsVoiceSetFinishedCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceSetModuleCallback) {
-    return unimplemented("sceNgsVoiceSetModuleCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceSetParamsBlock) {
-    return unimplemented("sceNgsVoiceSetParamsBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceSetPreset) {
-    return unimplemented("sceNgsVoiceSetPreset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNgsVoiceUnlockParams) {
-    return unimplemented("sceNgsVoiceUnlockParams");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSulphaNgsGetDefaultConfig) {
-    return unimplemented("sceSulphaNgsGetDefaultConfig");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSulphaNgsGetNeededMemory) {
-    return unimplemented("sceSulphaNgsGetNeededMemory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSulphaNgsInit) {
-    return unimplemented("sceSulphaNgsInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSulphaNgsSetRackName) {
-    return unimplemented("sceSulphaNgsSetRackName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSulphaNgsSetSampleName) {
-    return unimplemented("sceSulphaNgsSetSampleName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSulphaNgsSetSynthName) {
-    return unimplemented("sceSulphaNgsSetSynthName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSulphaNgsSetVoiceName) {
-    return unimplemented("sceSulphaNgsSetVoiceName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSulphaNgsShutdown) {
-    return unimplemented("sceSulphaNgsShutdown");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSulphaNgsTrace) {
-    return unimplemented("sceSulphaNgsTrace");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNgsAT9GetSectionDetails)

@@ -22,15 +22,15 @@
 #include <psp2/audioout.h>
 
 EXPORT(int, sceAudioOutGetAdopt) {
-    return unimplemented("sceAudioOutGetAdopt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioOutGetConfig) {
-    return unimplemented("sceAudioOutGetConfig");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioOutGetRestSample) {
-    return unimplemented("sceAudioOutGetRestSample");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, SceAudioOutMode mode) {
@@ -94,19 +94,19 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
 }
 
 EXPORT(int, sceAudioOutReleasePort) {
-    return unimplemented("sceAudioOutReleasePort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioOutSetAlcMode) {
-    return unimplemented("sceAudioOutSetAlcMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioOutSetConfig) {
-    return unimplemented("sceAudioOutSetConfig");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioOutSetVolume) {
-    return unimplemented("sceAudioOutSetVolume");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceAudioOutGetAdopt)

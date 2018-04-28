@@ -18,47 +18,47 @@
 #include "SceNpMessage.h"
 
 EXPORT(int, sceNpMessageAbort) {
-    return unimplemented("sceNpMessageAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageGetAttachedData) {
-    return unimplemented("sceNpMessageGetAttachedData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageGetMessage) {
-    return unimplemented("sceNpMessageGetMessage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageGetMessageEntries) {
-    return unimplemented("sceNpMessageGetMessageEntries");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageGetMessageEntry) {
-    return unimplemented("sceNpMessageGetMessageEntry");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageGetMessageEntryCount) {
-    return unimplemented("sceNpMessageGetMessageEntryCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageInit) {
-    return unimplemented("sceNpMessageInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageInitWithParam) {
-    return unimplemented("sceNpMessageInitWithParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageSetAttachedDataUsedFlag) {
-    return unimplemented("sceNpMessageSetAttachedDataUsedFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageSyncMessage) {
-    return unimplemented("sceNpMessageSyncMessage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpMessageTerm) {
-    return unimplemented("sceNpMessageTerm");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpMessageAbort)

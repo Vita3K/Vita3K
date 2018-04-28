@@ -18,43 +18,43 @@
 #include "SceNpWebApiCommonDialog.h"
 
 EXPORT(int, sceGameCustomDataDialogAbort) {
-    return unimplemented("sceGameCustomDataDialogAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGameCustomDataDialogGetResult) {
-    return unimplemented("sceGameCustomDataDialogGetResult");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGameCustomDataDialogGetStatus) {
-    return unimplemented("sceGameCustomDataDialogGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGameCustomDataDialogInit) {
-    return unimplemented("sceGameCustomDataDialogInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGameCustomDataDialogTerm) {
-    return unimplemented("sceGameCustomDataDialogTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceInvitationDialogAbort) {
-    return unimplemented("sceInvitationDialogAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceInvitationDialogGetResult) {
-    return unimplemented("sceInvitationDialogGetResult");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceInvitationDialogGetStatus) {
-    return unimplemented("sceInvitationDialogGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceInvitationDialogInit) {
-    return unimplemented("sceInvitationDialogInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceInvitationDialogTerm) {
-    return unimplemented("sceInvitationDialogTerm");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceGameCustomDataDialogAbort)

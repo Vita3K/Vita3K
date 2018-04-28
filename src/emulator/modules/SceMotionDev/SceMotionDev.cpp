@@ -18,127 +18,127 @@
 #include "SceMotionDev.h"
 
 EXPORT(int, sceMotionDevGetAccCalibData) {
-    return unimplemented("sceMotionDevGetAccCalibData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetAccCalibData2) {
-    return unimplemented("sceMotionDevGetAccCalibData2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetCalibrationData) {
-    return unimplemented("sceMotionDevGetCalibrationData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetCalibrationHeader) {
-    return unimplemented("sceMotionDevGetCalibrationHeader");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetControllerType) {
-    return unimplemented("sceMotionDevGetControllerType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetCurrentMagnCalibData) {
-    return unimplemented("sceMotionDevGetCurrentMagnCalibData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetCurrentMagnStabilityLevel) {
-    return unimplemented("sceMotionDevGetCurrentMagnStabilityLevel");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetDeviceInfo) {
-    return unimplemented("sceMotionDevGetDeviceInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetDeviceLocation) {
-    return unimplemented("sceMotionDevGetDeviceLocation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetDs3CalibData) {
-    return unimplemented("sceMotionDevGetDs3CalibData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetFactoryMagnCalibData) {
-    return unimplemented("sceMotionDevGetFactoryMagnCalibData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetGyroBias) {
-    return unimplemented("sceMotionDevGetGyroBias");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetGyroBias2) {
-    return unimplemented("sceMotionDevGetGyroBias2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetGyroCalibData) {
-    return unimplemented("sceMotionDevGetGyroCalibData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetGyroCalibData2) {
-    return unimplemented("sceMotionDevGetGyroCalibData2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevGetMeasMode) {
-    return unimplemented("sceMotionDevGetMeasMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevIsReady) {
-    return unimplemented("sceMotionDevIsReady");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevMagnSamplingStart) {
-    return unimplemented("sceMotionDevMagnSamplingStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevMagnSamplingStop) {
-    return unimplemented("sceMotionDevMagnSamplingStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevRead) {
-    return unimplemented("sceMotionDevRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevRead2) {
-    return unimplemented("sceMotionDevRead2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevRead3) {
-    return unimplemented("sceMotionDevRead3");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevReadForMagnCalib) {
-    return unimplemented("sceMotionDevReadForMagnCalib");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevSamplingStart) {
-    return unimplemented("sceMotionDevSamplingStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevSamplingStart2) {
-    return unimplemented("sceMotionDevSamplingStart2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevSamplingStop) {
-    return unimplemented("sceMotionDevSamplingStop");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevSamplingStop2) {
-    return unimplemented("sceMotionDevSamplingStop2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevSetGyroFeedBack) {
-    return unimplemented("sceMotionDevSetGyroFeedBack");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevSetSamplingMode) {
-    return unimplemented("sceMotionDevSetSamplingMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevUpdateMagnCalibData) {
-    return unimplemented("sceMotionDevUpdateMagnCalibData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMotionDevUpdateMagnStabilityLevel) {
-    return unimplemented("sceMotionDevUpdateMagnStabilityLevel");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceMotionDevGetAccCalibData)

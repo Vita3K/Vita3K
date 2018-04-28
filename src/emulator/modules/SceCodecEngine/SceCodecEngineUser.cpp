@@ -18,19 +18,19 @@
 #include "SceCodecEngineUser.h"
 
 EXPORT(int, sceCodecEngineAllocMemoryFromUnmapMemBlock) {
-    return unimplemented("sceCodecEngineAllocMemoryFromUnmapMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCodecEngineCloseUnmapMemBlock) {
-    return unimplemented("sceCodecEngineCloseUnmapMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCodecEngineFreeMemoryFromUnmapMemBlock) {
-    return unimplemented("sceCodecEngineFreeMemoryFromUnmapMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCodecEngineOpenUnmapMemBlock) {
-    return unimplemented("sceCodecEngineOpenUnmapMemBlock");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceCodecEngineAllocMemoryFromUnmapMemBlock)

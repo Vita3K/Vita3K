@@ -46,27 +46,27 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
 }
 
 EXPORT(int, sceKernelAllocMemBlockForVM) {
-    return unimplemented("sceKernelAllocMemBlockForVM");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelAllocUnmapMemBlock) {
-    return unimplemented("sceKernelAllocUnmapMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCheckModelCapability) {
-    return unimplemented("sceKernelCheckModelCapability");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseMemBlock) {
-    return unimplemented("sceKernelCloseMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelCloseVMDomain) {
-    return unimplemented("sceKernelCloseVMDomain");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelFindMemBlockByAddr) {
-    return unimplemented("sceKernelFindMemBlockByAddr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
@@ -83,11 +83,11 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
 }
 
 EXPORT(int, sceKernelFreeMemBlockForVM) {
-    return unimplemented("sceKernelFreeMemBlockForVM");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetFreeMemorySize) {
-    return unimplemented("sceKernelGetFreeMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
@@ -107,39 +107,39 @@ EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
 }
 
 EXPORT(int, sceKernelGetMemBlockInfoByAddr) {
-    return unimplemented("sceKernelGetMemBlockInfoByAddr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetMemBlockInfoByRange) {
-    return unimplemented("sceKernelGetMemBlockInfoByRange");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetModel) {
-    return unimplemented("sceKernelGetModel");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetModelForCDialog) {
-    return unimplemented("sceKernelGetModelForCDialog");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelGetSubbudgetInfo) {
-    return unimplemented("sceKernelGetSubbudgetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelIsPSVitaTV) {
-    return unimplemented("sceKernelIsPSVitaTV");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenMemBlock) {
-    return unimplemented("sceKernelOpenMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelOpenVMDomain) {
-    return unimplemented("sceKernelOpenVMDomain");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceKernelSyncVMDomain) {
-    return unimplemented("sceKernelSyncVMDomain");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceKernelAllocMemBlock)

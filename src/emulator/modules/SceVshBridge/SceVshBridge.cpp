@@ -18,827 +18,827 @@
 #include "SceVshBridge.h"
 
 EXPORT(int, _vshAppMgrAcInstGetAcdirParam) {
-    return unimplemented("_vshAppMgrAcInstGetAcdirParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrBgdlSetQueueStatus) {
-    return unimplemented("_vshAppMgrBgdlSetQueueStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrCheckPfsMounted) {
-    return unimplemented("_vshAppMgrCheckPfsMounted");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrCloudDataCreateHeader) {
-    return unimplemented("_vshAppMgrCloudDataCreateHeader");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrCloudDataDstCreateMount) {
-    return unimplemented("_vshAppMgrCloudDataDstCreateMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrCloudDataGetMcId) {
-    return unimplemented("_vshAppMgrCloudDataGetMcId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrCloudDataSetMcId) {
-    return unimplemented("_vshAppMgrCloudDataSetMcId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrCloudDataSetupKey) {
-    return unimplemented("_vshAppMgrCloudDataSetupKey");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrCloudDataSrcMount) {
-    return unimplemented("_vshAppMgrCloudDataSrcMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrCloudDataVerifyHeader) {
-    return unimplemented("_vshAppMgrCloudDataVerifyHeader");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrFakeSaveDataCreateMount) {
-    return unimplemented("_vshAppMgrFakeSaveDataCreateMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrIsExclusiveProcessRunning) {
-    return unimplemented("_vshAppMgrIsExclusiveProcessRunning");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrLocalBackupGetOfflineId) {
-    return unimplemented("_vshAppMgrLocalBackupGetOfflineId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrLocalBackupVerifyOfflineHeader) {
-    return unimplemented("_vshAppMgrLocalBackupVerifyOfflineHeader");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrRegisterPath) {
-    return unimplemented("_vshAppMgrRegisterPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrSaveDataLocalBackupTargetGetList) {
-    return unimplemented("_vshAppMgrSaveDataLocalBackupTargetGetList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrSaveDataLocalBackupTargetRemoveItem) {
-    return unimplemented("_vshAppMgrSaveDataLocalBackupTargetRemoveItem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrSaveDataNotifyBackupFinished) {
-    return unimplemented("_vshAppMgrSaveDataNotifyBackupFinished");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrSystemParamDateTimeSetConf) {
-    return unimplemented("_vshAppMgrSystemParamDateTimeSetConf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshAppMgrUpdateRifInfo) {
-    return unimplemented("_vshAppMgrUpdateRifInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshCoredumpCafCreateIv) {
-    return unimplemented("_vshCoredumpCafCreateIv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshCoredumpCafHeaderFinal) {
-    return unimplemented("_vshCoredumpCafHeaderFinal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshCoredumpCafHeaderTransform) {
-    return unimplemented("_vshCoredumpCafHeaderTransform");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshCoredumpCafSegmentFinal) {
-    return unimplemented("_vshCoredumpCafSegmentFinal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshCoredumpCafSegmentInit) {
-    return unimplemented("_vshCoredumpCafSegmentInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshCoredumpCafSegmentTransform) {
-    return unimplemented("_vshCoredumpCafSegmentTransform");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshCoredumpCreateDump) {
-    return unimplemented("_vshCoredumpCreateDump");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshDisplayGetActualViewportConf) {
-    return unimplemented("_vshDisplayGetActualViewportConf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshDisplaySetViewportConf) {
-    return unimplemented("_vshDisplaySetViewportConf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshEventLogPut) {
-    return unimplemented("_vshEventLogPut");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshIdStorageCreateAtomicLeaves) {
-    return unimplemented("_vshIdStorageCreateAtomicLeaves");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshIoChstat) {
-    return unimplemented("_vshIoChstat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshIoDread) {
-    return unimplemented("_vshIoDread");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshIoGetstat) {
-    return unimplemented("_vshIoGetstat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshIoMount) {
-    return unimplemented("_vshIoMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshKernelGetCompiledSdkVersionByPid) {
-    return unimplemented("_vshKernelGetCompiledSdkVersionByPid");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshKernelSearchModuleByName) {
-    return unimplemented("_vshKernelSearchModuleByName");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshKernelShutdownSystem) {
-    return unimplemented("_vshKernelShutdownSystem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshLedSetMode) {
-    return unimplemented("_vshLedSetMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshNpDrmEbootSigConvert) {
-    return unimplemented("_vshNpDrmEbootSigConvert");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshNpDrmEbootSigGenMultiDisc) {
-    return unimplemented("_vshNpDrmEbootSigGenMultiDisc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshNpDrmEbootSigGenPs1) {
-    return unimplemented("_vshNpDrmEbootSigGenPs1");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshNpDrmEbootSigGenPsp) {
-    return unimplemented("_vshNpDrmEbootSigGenPsp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshNpDrmEbootSigVerify) {
-    return unimplemented("_vshNpDrmEbootSigVerify");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshNpDrmGetLegacyDocKey) {
-    return unimplemented("_vshNpDrmGetLegacyDocKey");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshNpDrmPspEbootSigGen) {
-    return unimplemented("_vshNpDrmPspEbootSigGen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshNpDrmPspEbootVerify) {
-    return unimplemented("_vshNpDrmPspEbootVerify");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshPowerSetBatteryFakeStatus) {
-    return unimplemented("_vshPowerSetBatteryFakeStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshRtcGetAlarmTick) {
-    return unimplemented("_vshRtcGetAlarmTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshRtcGetCurrentSecureTick) {
-    return unimplemented("_vshRtcGetCurrentSecureTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshRtcGetSecureAlarmTick) {
-    return unimplemented("_vshRtcGetSecureAlarmTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshRtcSetAlarmTick) {
-    return unimplemented("_vshRtcSetAlarmTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshRtcSetCurrentDebugNetworkTick) {
-    return unimplemented("_vshRtcSetCurrentDebugNetworkTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshRtcSetCurrentNetworkTick) {
-    return unimplemented("_vshRtcSetCurrentNetworkTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshRtcSetCurrentSecureTick) {
-    return unimplemented("_vshRtcSetCurrentSecureTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshRtcSetCurrentTick) {
-    return unimplemented("_vshRtcSetCurrentTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshRtcSetSecureAlarmTick) {
-    return unimplemented("_vshRtcSetSecureAlarmTick");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSDfCtlSetBootParameter) {
-    return unimplemented("_vshSDfCtlSetBootParameter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblAimgrGetConsoleId) {
-    return unimplemented("_vshSblAimgrGetConsoleId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblAimgrGetPscode) {
-    return unimplemented("_vshSblAimgrGetPscode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblAimgrGetPscode2) {
-    return unimplemented("_vshSblAimgrGetPscode2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblAimgrGetSMI) {
-    return unimplemented("_vshSblAimgrGetSMI");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblAimgrGetVisibleId) {
-    return unimplemented("_vshSblAimgrGetVisibleId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblAuthMgrVerifySpsfo) {
-    return unimplemented("_vshSblAuthMgrVerifySpsfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblGcAuthMgrMlnpsnlAuth1) {
-    return unimplemented("_vshSblGcAuthMgrMlnpsnlAuth1");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblGcAuthMgrMlnpsnlAuth2) {
-    return unimplemented("_vshSblGcAuthMgrMlnpsnlAuth2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblGetSystemSwVersion) {
-    return unimplemented("_vshSblGetSystemSwVersion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblSsCreatePassPhrase) {
-    return unimplemented("_vshSblSsCreatePassPhrase");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblSsDecryptWithPortability) {
-    return unimplemented("_vshSblSsDecryptWithPortability");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblSsEncryptWithPortability) {
-    return unimplemented("_vshSblSsEncryptWithPortability");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblSsGenerateAppKey) {
-    return unimplemented("_vshSblSsGenerateAppKey");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblSsGetNvsData) {
-    return unimplemented("_vshSblSsGetNvsData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSblSsSetNvsData) {
-    return unimplemented("_vshSblSsSetNvsData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSysconCtrlManualChargeMode) {
-    return unimplemented("_vshSysconCtrlManualChargeMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSysconGetHardwareInfo) {
-    return unimplemented("_vshSysconGetHardwareInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSysconGetHardwareInfo2) {
-    return unimplemented("_vshSysconGetHardwareInfo2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSysconGetManualChargeMode) {
-    return unimplemented("_vshSysconGetManualChargeMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSysconGetManufacturesStatus) {
-    return unimplemented("_vshSysconGetManufacturesStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSysconGetTemperatureLog) {
-    return unimplemented("_vshSysconGetTemperatureLog");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSysconGetUsbDetStatus) {
-    return unimplemented("_vshSysconGetUsbDetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshSysconLogReadData) {
-    return unimplemented("_vshSysconLogReadData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _vshTouchSetTouchEmulationData) {
-    return unimplemented("_vshTouchSetTouchEmulationData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshAppMgrCheckContentInstallPeriod) {
-    return unimplemented("vshAppMgrCheckContentInstallPeriod");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshAppMgrCloudDataClearMcId) {
-    return unimplemented("vshAppMgrCloudDataClearMcId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshAppMgrDebugSettingNotifyUpdate) {
-    return unimplemented("vshAppMgrDebugSettingNotifyUpdate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshAppMgrGetPfsProcessStatus) {
-    return unimplemented("vshAppMgrGetPfsProcessStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCoredumpCafContextCreate) {
-    return unimplemented("vshCoredumpCafContextCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCoredumpCafContextDestroy) {
-    return unimplemented("vshCoredumpCafContextDestroy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCoredumpCafFinal) {
-    return unimplemented("vshCoredumpCafFinal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCoredumpCafHeaderInit) {
-    return unimplemented("vshCoredumpCafHeaderInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCoredumpCafInit) {
-    return unimplemented("vshCoredumpCafInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCoredumpDeleteCrashReportCaf) {
-    return unimplemented("vshCoredumpDeleteCrashReportCaf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCtrlChangePortAssign) {
-    return unimplemented("vshCtrlChangePortAssign");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCtrlGetActiveControllerPort) {
-    return unimplemented("vshCtrlGetActiveControllerPort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCtrlIsBdRemoconConnected) {
-    return unimplemented("vshCtrlIsBdRemoconConnected");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCtrlRegisterNotifyCallBack) {
-    return unimplemented("vshCtrlRegisterNotifyCallBack");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCtrlSetIdleCancelKey) {
-    return unimplemented("vshCtrlSetIdleCancelKey");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCtrlSetIdleCancelThreshold) {
-    return unimplemented("vshCtrlSetIdleCancelThreshold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCtrlSetTurnOffInterval) {
-    return unimplemented("vshCtrlSetTurnOffInterval");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCtrlSetVibrationSetting) {
-    return unimplemented("vshCtrlSetVibrationSetting");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshCtrlUnregisterNotifyCallBack) {
-    return unimplemented("vshCtrlUnregisterNotifyCallBack");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshDisplayRegisterFrameBufCallback) {
-    return unimplemented("vshDisplayRegisterFrameBufCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshDisplaySetInvertColors) {
-    return unimplemented("vshDisplaySetInvertColors");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshHdmiCecCmdForcedPollingMsg) {
-    return unimplemented("vshHdmiCecCmdForcedPollingMsg");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshHdmiDisableCec) {
-    return unimplemented("vshHdmiDisableCec");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshHdmiEnableCec) {
-    return unimplemented("vshHdmiEnableCec");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageCreateLeaf) {
-    return unimplemented("vshIdStorageCreateLeaf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageDeleteLeaf) {
-    return unimplemented("vshIdStorageDeleteLeaf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageFlush) {
-    return unimplemented("vshIdStorageFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageFormat) {
-    return unimplemented("vshIdStorageFormat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageGetFreeLeaves) {
-    return unimplemented("vshIdStorageGetFreeLeaves");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageGetLeafSize) {
-    return unimplemented("vshIdStorageGetLeafSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageIsDirty) {
-    return unimplemented("vshIdStorageIsDirty");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageIsFormatted) {
-    return unimplemented("vshIdStorageIsFormatted");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageIsReadOnly) {
-    return unimplemented("vshIdStorageIsReadOnly");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageLookup) {
-    return unimplemented("vshIdStorageLookup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageReadLeaf) {
-    return unimplemented("vshIdStorageReadLeaf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageRestart) {
-    return unimplemented("vshIdStorageRestart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageUnformat) {
-    return unimplemented("vshIdStorageUnformat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageUpdate) {
-    return unimplemented("vshIdStorageUpdate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIdStorageWriteLeaf) {
-    return unimplemented("vshIdStorageWriteLeaf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIoClearErrorEvent) {
-    return unimplemented("vshIoClearErrorEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIoCreateErrorEvent) {
-    return unimplemented("vshIoCreateErrorEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIoCreateMountEvent) {
-    return unimplemented("vshIoCreateMountEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIoDeleteErrorEvent) {
-    return unimplemented("vshIoDeleteErrorEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIoDeleteMountEvent) {
-    return unimplemented("vshIoDeleteMountEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIoFlock) {
-    return unimplemented("vshIoFlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIoGetProcessDefaultPriorityForSystem) {
-    return unimplemented("vshIoGetProcessDefaultPriorityForSystem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIoSetProcessDefaultPriorityForSystem) {
-    return unimplemented("vshIoSetProcessDefaultPriorityForSystem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshIoUmount) {
-    return unimplemented("vshIoUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshKernelCheckModelCapability) {
-    return unimplemented("vshKernelCheckModelCapability");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshKernelDisableAutoClockDown) {
-    return unimplemented("vshKernelDisableAutoClockDown");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshKernelEnableAutoClockDown) {
-    return unimplemented("vshKernelEnableAutoClockDown");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshKernelSendSysEvent) {
-    return unimplemented("vshKernelSendSysEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshMemoryCardEnableSlowMode) {
-    return unimplemented("vshMemoryCardEnableSlowMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshMemoryCardGetCardInsertState) {
-    return unimplemented("vshMemoryCardGetCardInsertState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshMotionNoiseFilterIsAvailable) {
-    return unimplemented("vshMotionNoiseFilterIsAvailable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshMsifGetMsInfo) {
-    return unimplemented("vshMsifGetMsInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshNpDrmIsLooseAccountBind) {
-    return unimplemented("vshNpDrmIsLooseAccountBind");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshNpDrmUpdateAccountId) {
-    return unimplemented("vshNpDrmUpdateAccountId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshNpDrmUpdateDebugSettings) {
-    return unimplemented("vshNpDrmUpdateDebugSettings");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshPowerGetWakeupFactor) {
-    return unimplemented("vshPowerGetWakeupFactor");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshPowerRequestColdReset) {
-    return unimplemented("vshPowerRequestColdReset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshPowerRequestHibernate) {
-    return unimplemented("vshPowerRequestHibernate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshPowerSetPowerSwMode) {
-    return unimplemented("vshPowerSetPowerSwMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshPowerSetPsButtonPushTime) {
-    return unimplemented("vshPowerSetPsButtonPushTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshPowerSetStandbyButtonPushTime) {
-    return unimplemented("vshPowerSetStandbyButtonPushTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshRemovableMemoryGetCardInsertState) {
-    return unimplemented("vshRemovableMemoryGetCardInsertState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshRtcIsAlarmed) {
-    return unimplemented("vshRtcIsAlarmed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshRtcIsSecureAlarmed) {
-    return unimplemented("vshRtcIsSecureAlarmed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshRtcRegisterCallback) {
-    return unimplemented("vshRtcRegisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshRtcRegisterSecureAlarmCallback) {
-    return unimplemented("vshRtcRegisterSecureAlarmCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshRtcSetConf) {
-    return unimplemented("vshRtcSetConf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshRtcUnregisterCallback) {
-    return unimplemented("vshRtcUnregisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshRtcUnregisterSecureAlarmCallback) {
-    return unimplemented("vshRtcUnregisterSecureAlarmCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblACMgrHasCapability) {
-    return unimplemented("vshSblACMgrHasCapability");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblAimgrIsCEX) {
-    return unimplemented("vshSblAimgrIsCEX");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblAimgrIsDEX) {
-    return unimplemented("vshSblAimgrIsDEX");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblAimgrIsDolce) {
-    return unimplemented("vshSblAimgrIsDolce");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblAimgrIsGenuineDolce) {
-    return unimplemented("vshSblAimgrIsGenuineDolce");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblAimgrIsGenuineVITA) {
-    return unimplemented("vshSblAimgrIsGenuineVITA");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblAimgrIsTest) {
-    return unimplemented("vshSblAimgrIsTest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblAimgrIsTool) {
-    return unimplemented("vshSblAimgrIsTool");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblAimgrIsVITA) {
-    return unimplemented("vshSblAimgrIsVITA");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblPmMgrSetSdModeOff) {
-    return unimplemented("vshSblPmMgrSetSdModeOff");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowControlIduAutoUpdate) {
-    return unimplemented("vshSblQafMgrIsAllowControlIduAutoUpdate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowDtcpIpReset) {
-    return unimplemented("vshSblQafMgrIsAllowDtcpIpReset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowFakeACInstall) {
-    return unimplemented("vshSblQafMgrIsAllowFakeACInstall");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowKeepCoreFile) {
-    return unimplemented("vshSblQafMgrIsAllowKeepCoreFile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowLiblocationChangeModel) {
-    return unimplemented("vshSblQafMgrIsAllowLiblocationChangeModel");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowLoadMagicGate) {
-    return unimplemented("vshSblQafMgrIsAllowLoadMagicGate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowLoadPSPEmuWhiteList) {
-    return unimplemented("vshSblQafMgrIsAllowLoadPSPEmuWhiteList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowMarlinTest) {
-    return unimplemented("vshSblQafMgrIsAllowMarlinTest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowNearTest) {
-    return unimplemented("vshSblQafMgrIsAllowNearTest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowPSPEmuDeleteParameter) {
-    return unimplemented("vshSblQafMgrIsAllowPSPEmuDeleteParameter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowPSPEmuScreenShot) {
-    return unimplemented("vshSblQafMgrIsAllowPSPEmuScreenShot");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowPSPEmuSelectNPEnv) {
-    return unimplemented("vshSblQafMgrIsAllowPSPEmuSelectNPEnv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowPSPEmuShowQAInfo) {
-    return unimplemented("vshSblQafMgrIsAllowPSPEmuShowQAInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowRemotePlayDebug) {
-    return unimplemented("vshSblQafMgrIsAllowRemotePlayDebug");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowShowTitleUpgradeInfo) {
-    return unimplemented("vshSblQafMgrIsAllowShowTitleUpgradeInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblQafMgrIsAllowSystemAppDebug) {
-    return unimplemented("vshSblQafMgrIsAllowSystemAppDebug");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblSsIsDevelopmentMode) {
-    return unimplemented("vshSblSsIsDevelopmentMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblUtMgrHasComTestFlag) {
-    return unimplemented("vshSblUtMgrHasComTestFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblUtMgrHasNpTestFlag) {
-    return unimplemented("vshSblUtMgrHasNpTestFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSblUtMgrHasStoreFlag) {
-    return unimplemented("vshSblUtMgrHasStoreFlag");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSdGetCardInfo) {
-    return unimplemented("vshSdGetCardInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconBeginConfigstorageTransaction) {
-    return unimplemented("vshSysconBeginConfigstorageTransaction");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconClearTemperatureLog) {
-    return unimplemented("vshSysconClearTemperatureLog");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconCommitConfigstorageTransaction) {
-    return unimplemented("vshSysconCommitConfigstorageTransaction");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconEnableHibernateIO) {
-    return unimplemented("vshSysconEnableHibernateIO");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconEndConfigstorageTransaction) {
-    return unimplemented("vshSysconEndConfigstorageTransaction");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconGetBatteryCalibData) {
-    return unimplemented("vshSysconGetBatteryCalibData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconGetLogInfo) {
-    return unimplemented("vshSysconGetLogInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconHasWWAN) {
-    return unimplemented("vshSysconHasWWAN");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconIduModeClear) {
-    return unimplemented("vshSysconIduModeClear");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconIduModeSet) {
-    return unimplemented("vshSysconIduModeSet");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconIsDownLoaderMode) {
-    return unimplemented("vshSysconIsDownLoaderMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconIsIduMode) {
-    return unimplemented("vshSysconIsIduMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconIsMCEmuCapable) {
-    return unimplemented("vshSysconIsMCEmuCapable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconIsShowMode) {
-    return unimplemented("vshSysconIsShowMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconLoadConfigstorageScript) {
-    return unimplemented("vshSysconLoadConfigstorageScript");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconLogStart) {
-    return unimplemented("vshSysconLogStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconLogStartWaiting) {
-    return unimplemented("vshSysconLogStartWaiting");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconShowModeClear) {
-    return unimplemented("vshSysconShowModeClear");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconShowModeSet) {
-    return unimplemented("vshSysconShowModeSet");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, vshSysconVerifyConfigstorageScript) {
-    return unimplemented("vshSysconVerifyConfigstorageScript");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_vshAppMgrAcInstGetAcdirParam)

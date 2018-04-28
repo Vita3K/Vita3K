@@ -24,47 +24,47 @@
 #include <psp2/net/netctl.h>
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {
-    return unimplemented("sceNetCtlAdhocDisconnect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlAdhocGetInAddr) {
-    return unimplemented("sceNetCtlAdhocGetInAddr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlAdhocGetPeerList) {
-    return unimplemented("sceNetCtlAdhocGetPeerList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlAdhocGetResult) {
-    return unimplemented("sceNetCtlAdhocGetResult");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlAdhocGetState) {
-    return unimplemented("sceNetCtlAdhocGetState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlAdhocRegisterCallback) {
-    return unimplemented("sceNetCtlAdhocRegisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlAdhocUnregisterCallback) {
-    return unimplemented("sceNetCtlAdhocUnregisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlCheckCallback) {
-    return unimplemented("sceNetCtlCheckCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlGetIfStat) {
-    return unimplemented("sceNetCtlGetIfStat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlGetNatInfo) {
-    return unimplemented("sceNetCtlGetNatInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlGetPhoneMaxDownloadableSize) {
-    return unimplemented("sceNetCtlGetPhoneMaxDownloadableSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
@@ -88,27 +88,27 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
 }
 
 EXPORT(int, sceNetCtlInetGetResult) {
-    return unimplemented("sceNetCtlInetGetResult");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlInetGetState) {
-    return unimplemented("sceNetCtlInetGetState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlInetRegisterCallback) {
-    return unimplemented("sceNetCtlInetRegisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlInetUnregisterCallback) {
-    return unimplemented("sceNetCtlInetUnregisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlInit) {
-    return unimplemented("sceNetCtlInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNetCtlTerm) {
-    return unimplemented("sceNetCtlTerm");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNetCtlAdhocDisconnect)

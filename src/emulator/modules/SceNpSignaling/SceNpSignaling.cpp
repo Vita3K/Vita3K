@@ -18,75 +18,75 @@
 #include "SceNpSignaling.h"
 
 EXPORT(int, sceNpSignalingActivateConnection) {
-    return unimplemented("sceNpSignalingActivateConnection");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingCancelPeerNetInfo) {
-    return unimplemented("sceNpSignalingCancelPeerNetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingCreateCtx) {
-    return unimplemented("sceNpSignalingCreateCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingDeactivateConnection) {
-    return unimplemented("sceNpSignalingDeactivateConnection");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingDestroyCtx) {
-    return unimplemented("sceNpSignalingDestroyCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingGetConnectionFromNpId) {
-    return unimplemented("sceNpSignalingGetConnectionFromNpId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingGetConnectionFromPeerAddress) {
-    return unimplemented("sceNpSignalingGetConnectionFromPeerAddress");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingGetConnectionInfo) {
-    return unimplemented("sceNpSignalingGetConnectionInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingGetConnectionStatus) {
-    return unimplemented("sceNpSignalingGetConnectionStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingGetCtxOpt) {
-    return unimplemented("sceNpSignalingGetCtxOpt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingGetLocalNetInfo) {
-    return unimplemented("sceNpSignalingGetLocalNetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingGetMemoryInfo) {
-    return unimplemented("sceNpSignalingGetMemoryInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingGetPeerNetInfo) {
-    return unimplemented("sceNpSignalingGetPeerNetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingGetPeerNetInfoResult) {
-    return unimplemented("sceNpSignalingGetPeerNetInfoResult");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingInit) {
-    return unimplemented("sceNpSignalingInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingSetCtxOpt) {
-    return unimplemented("sceNpSignalingSetCtxOpt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingTerm) {
-    return unimplemented("sceNpSignalingTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSignalingTerminateConnection) {
-    return unimplemented("sceNpSignalingTerminateConnection");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpSignalingActivateConnection)

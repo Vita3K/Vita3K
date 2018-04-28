@@ -37,11 +37,11 @@ using namespace emu;
 using namespace glbinding;
 
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
-    return unimplemented("sceGxmAddRazorGpuCaptureBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmBeginCommandList) {
-    return unimplemented("sceGxmBeginCommandList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, SceGxmSyncObject *fragmentSyncObject, const emu::SceGxmColorSurface *colorSurface, const emu::SceGxmDepthStencilSurface *depthStencil) {
@@ -100,39 +100,39 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
 }
 
 EXPORT(int, sceGxmBeginSceneEx) {
-    return unimplemented("sceGxmBeginSceneEx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetClip) {
-    return unimplemented("sceGxmColorSurfaceGetClip");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetData) {
-    return unimplemented("sceGxmColorSurfaceGetData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetDitherMode) {
-    return unimplemented("sceGxmColorSurfaceGetDitherMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetFormat) {
-    return unimplemented("sceGxmColorSurfaceGetFormat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetGammaMode) {
-    return unimplemented("sceGxmColorSurfaceGetGammaMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetScaleMode) {
-    return unimplemented("sceGxmColorSurfaceGetScaleMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetStrideInPixels) {
-    return unimplemented("sceGxmColorSurfaceGetStrideInPixels");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetType) {
-    return unimplemented("sceGxmColorSurfaceGetType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceInit, emu::SceGxmColorSurface *surface, SceGxmColorFormat colorFormat, SceGxmColorSurfaceType surfaceType, SceGxmColorSurfaceScaleMode scaleMode, SceGxmOutputRegisterSize outputRegisterSize, unsigned int width, unsigned int height, unsigned int strideInPixels, Ptr<void> data) {
@@ -157,35 +157,35 @@ EXPORT(int, sceGxmColorSurfaceInit, emu::SceGxmColorSurface *surface, SceGxmColo
 }
 
 EXPORT(int, sceGxmColorSurfaceInitDisabled) {
-    return unimplemented("sceGxmColorSurfaceInitDisabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceIsEnabled) {
-    return unimplemented("sceGxmColorSurfaceIsEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceSetClip) {
-    return unimplemented("sceGxmColorSurfaceSetClip");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceSetData) {
-    return unimplemented("sceGxmColorSurfaceSetData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceSetDitherMode) {
-    return unimplemented("sceGxmColorSurfaceSetDitherMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceSetFormat) {
-    return unimplemented("sceGxmColorSurfaceSetFormat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceSetGammaMode) {
-    return unimplemented("sceGxmColorSurfaceSetGammaMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmColorSurfaceSetScaleMode) {
-    return unimplemented("sceGxmColorSurfaceSetScaleMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<SceGxmContext> *context) {
@@ -230,7 +230,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
 }
 
 EXPORT(int, sceGxmCreateDeferredContext) {
-    return unimplemented("sceGxmCreateDeferredContext");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Ptr<SceGxmRenderTarget> *renderTarget) {
@@ -263,31 +263,31 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetBackgroundDepth) {
-    return unimplemented("sceGxmDepthStencilSurfaceGetBackgroundDepth");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetBackgroundMask) {
-    return unimplemented("sceGxmDepthStencilSurfaceGetBackgroundMask");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetBackgroundStencil) {
-    return unimplemented("sceGxmDepthStencilSurfaceGetBackgroundStencil");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetForceLoadMode) {
-    return unimplemented("sceGxmDepthStencilSurfaceGetForceLoadMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetForceStoreMode) {
-    return unimplemented("sceGxmDepthStencilSurfaceGetForceStoreMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetFormat) {
-    return unimplemented("sceGxmDepthStencilSurfaceGetFormat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetStrideInSamples) {
-    return unimplemented("sceGxmDepthStencilSurfaceGetStrideInSamples");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceInit, emu::SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, unsigned int strideInSamples, Ptr<void> depthData, Ptr<void> stencilData) {
@@ -306,31 +306,31 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, emu::SceGxmDepthStencilSurface *surfa
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceInitDisabled) {
-    return unimplemented("sceGxmDepthStencilSurfaceInitDisabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceIsEnabled) {
-    return unimplemented("sceGxmDepthStencilSurfaceIsEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceSetBackgroundDepth) {
-    return unimplemented("sceGxmDepthStencilSurfaceSetBackgroundDepth");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceSetBackgroundMask) {
-    return unimplemented("sceGxmDepthStencilSurfaceSetBackgroundMask");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceSetBackgroundStencil) {
-    return unimplemented("sceGxmDepthStencilSurfaceSetBackgroundStencil");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceSetForceLoadMode) {
-    return unimplemented("sceGxmDepthStencilSurfaceSetForceLoadMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceSetForceStoreMode) {
-    return unimplemented("sceGxmDepthStencilSurfaceSetForceStoreMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
@@ -342,7 +342,7 @@ EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
 }
 
 EXPORT(int, sceGxmDestroyDeferredContext) {
-    return unimplemented("sceGxmDestroyDeferredContext");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
@@ -403,15 +403,15 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
 }
 
 EXPORT(int, sceGxmDrawInstanced) {
-    return unimplemented("sceGxmDrawInstanced");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmDrawPrecomputed) {
-    return unimplemented("sceGxmDrawPrecomputed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmEndCommandList) {
-    return unimplemented("sceGxmEndCommandList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotification *vertexNotification, const emu::SceGxmNotification *fragmentNotification) {
@@ -441,7 +441,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
 }
 
 EXPORT(int, sceGxmExecuteCommandList) {
-    return unimplemented("sceGxmExecuteCommandList");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, sceGxmFinish, SceGxmContext *context) {
@@ -450,31 +450,31 @@ EXPORT(void, sceGxmFinish, SceGxmContext *context) {
 }
 
 EXPORT(int, sceGxmFragmentProgramGetPassType) {
-    return unimplemented("sceGxmFragmentProgramGetPassType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmFragmentProgramGetProgram) {
-    return unimplemented("sceGxmFragmentProgramGetProgram");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmFragmentProgramIsEnabled) {
-    return unimplemented("sceGxmFragmentProgramIsEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmGetContextType) {
-    return unimplemented("sceGxmGetContextType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmGetDeferredContextFragmentBuffer) {
-    return unimplemented("sceGxmGetDeferredContextFragmentBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmGetDeferredContextVdmBuffer) {
-    return unimplemented("sceGxmGetDeferredContextVdmBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmGetDeferredContextVertexBuffer) {
-    return unimplemented("sceGxmGetDeferredContextVertexBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(uint32_t, sceGxmGetNotificationRegion) {
@@ -482,23 +482,23 @@ EXPORT(uint32_t, sceGxmGetNotificationRegion) {
 }
 
 EXPORT(int, sceGxmGetParameterBufferThreshold) {
-    return unimplemented("sceGxmGetParameterBufferThreshold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmGetPrecomputedDrawSize) {
-    return unimplemented("sceGxmGetPrecomputedDrawSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmGetPrecomputedFragmentStateSize) {
-    return unimplemented("sceGxmGetPrecomputedFragmentStateSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmGetPrecomputedVertexStateSize) {
-    return unimplemented("sceGxmGetPrecomputedVertexStateSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSizes) {
-    return unimplemented("sceGxmGetRenderTargetMemSizes");
+    return unimplemented(export_name);
 }
 
 struct GxmThreadParams {
@@ -576,7 +576,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
 }
 
 EXPORT(int, sceGxmIsDebugVersion) {
-    return unimplemented("sceGxmIsDebugVersion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, SceSize size, unsigned int *offset) {
@@ -610,11 +610,11 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, SceSize size, unsigned in
 }
 
 EXPORT(int, sceGxmMidSceneFlush) {
-    return unimplemented("sceGxmMidSceneFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmNotificationWait) {
-    return unimplemented("sceGxmNotificationWait");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPadHeartbeat, const emu::SceGxmColorSurface *displaySurface, SceGxmSyncObject *displaySyncObject) {
@@ -625,91 +625,91 @@ EXPORT(int, sceGxmPadHeartbeat, const emu::SceGxmColorSurface *displaySurface, S
 }
 
 EXPORT(int, sceGxmPadTriggerGpuPaTrace) {
-    return unimplemented("sceGxmPadTriggerGpuPaTrace");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPopUserMarker) {
-    return unimplemented("sceGxmPopUserMarker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedDrawInit) {
-    return unimplemented("sceGxmPrecomputedDrawInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetAllVertexStreams) {
-    return unimplemented("sceGxmPrecomputedDrawSetAllVertexStreams");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetParams) {
-    return unimplemented("sceGxmPrecomputedDrawSetParams");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetParamsInstanced) {
-    return unimplemented("sceGxmPrecomputedDrawSetParamsInstanced");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetVertexStream) {
-    return unimplemented("sceGxmPrecomputedDrawSetVertexStream");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer) {
-    return unimplemented("sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateInit) {
-    return unimplemented("sceGxmPrecomputedFragmentStateInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces) {
-    return unimplemented("sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetAllTextures) {
-    return unimplemented("sceGxmPrecomputedFragmentStateSetAllTextures");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetAllUniformBuffers) {
-    return unimplemented("sceGxmPrecomputedFragmentStateSetAllUniformBuffers");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer) {
-    return unimplemented("sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetTexture) {
-    return unimplemented("sceGxmPrecomputedFragmentStateSetTexture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetUniformBuffer) {
-    return unimplemented("sceGxmPrecomputedFragmentStateSetUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateGetDefaultUniformBuffer) {
-    return unimplemented("sceGxmPrecomputedVertexStateGetDefaultUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateInit) {
-    return unimplemented("sceGxmPrecomputedVertexStateInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetAllTextures) {
-    return unimplemented("sceGxmPrecomputedVertexStateSetAllTextures");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetAllUniformBuffers) {
-    return unimplemented("sceGxmPrecomputedVertexStateSetAllUniformBuffers");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetDefaultUniformBuffer) {
-    return unimplemented("sceGxmPrecomputedVertexStateSetDefaultUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetTexture) {
-    return unimplemented("sceGxmPrecomputedVertexStateSetTexture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetUniformBuffer) {
-    return unimplemented("sceGxmPrecomputedVertexStateSetUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
@@ -740,19 +740,19 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, const SceG
 }
 
 EXPORT(int, sceGxmProgramFindParameterBySemantic) {
-    return unimplemented("sceGxmProgramFindParameterBySemantic");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize) {
-    return unimplemented("sceGxmProgramGetDefaultUniformBufferSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramGetFragmentProgramInputs) {
-    return unimplemented("sceGxmProgramGetFragmentProgramInputs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramGetOutputRegisterFormat) {
-    return unimplemented("sceGxmProgramGetOutputRegisterFormat");
+    return unimplemented(export_name);
 }
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram *program, unsigned int index) {
@@ -770,43 +770,43 @@ EXPORT(int, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
 }
 
 EXPORT(int, sceGxmProgramGetSize) {
-    return unimplemented("sceGxmProgramGetSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramGetType) {
-    return unimplemented("sceGxmProgramGetType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramGetVertexProgramOutputs) {
-    return unimplemented("sceGxmProgramGetVertexProgramOutputs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramIsDepthReplaceUsed) {
-    return unimplemented("sceGxmProgramIsDepthReplaceUsed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramIsDiscardUsed) {
-    return unimplemented("sceGxmProgramIsDiscardUsed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramIsEquivalent) {
-    return unimplemented("sceGxmProgramIsEquivalent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramIsFragColorUsed) {
-    return unimplemented("sceGxmProgramIsFragColorUsed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramIsNativeColorUsed) {
-    return unimplemented("sceGxmProgramIsNativeColorUsed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramIsSpriteCoordUsed) {
-    return unimplemented("sceGxmProgramIsSpriteCoordUsed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramParameterGetArraySize) {
-    return unimplemented("sceGxmProgramParameterGetArraySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramParameterGetCategory, const SceGxmProgramParameter *parameter) {
@@ -816,15 +816,15 @@ EXPORT(int, sceGxmProgramParameterGetCategory, const SceGxmProgramParameter *par
 }
 
 EXPORT(int, sceGxmProgramParameterGetComponentCount) {
-    return unimplemented("sceGxmProgramParameterGetComponentCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramParameterGetContainerIndex) {
-    return unimplemented("sceGxmProgramParameterGetContainerIndex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramParameterGetIndex) {
-    return unimplemented("sceGxmProgramParameterGetIndex");
+    return unimplemented(export_name);
 }
 
 EXPORT(Ptr<void>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramParameter> parameter) {
@@ -838,35 +838,35 @@ EXPORT(unsigned int, sceGxmProgramParameterGetResourceIndex, const SceGxmProgram
 }
 
 EXPORT(int, sceGxmProgramParameterGetSemantic) {
-    return unimplemented("sceGxmProgramParameterGetSemantic");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramParameterGetSemanticIndex) {
-    return unimplemented("sceGxmProgramParameterGetSemanticIndex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramParameterGetType) {
-    return unimplemented("sceGxmProgramParameterGetType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramParameterIsRegFormat) {
-    return unimplemented("sceGxmProgramParameterIsRegFormat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmProgramParameterIsSamplerCube) {
-    return unimplemented("sceGxmProgramParameterIsSamplerCube");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmPushUserMarker) {
-    return unimplemented("sceGxmPushUserMarker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmRemoveRazorGpuCaptureBuffer) {
-    return unimplemented("sceGxmRemoveRazorGpuCaptureBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmRenderTargetGetDriverMemBlock) {
-    return unimplemented("sceGxmRenderTargetGetDriverMemBlock");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
@@ -889,7 +889,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
 }
 
 EXPORT(int, sceGxmRenderTargetGetHostMem) {
-    return unimplemented("sceGxmRenderTargetGetHostMem");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
@@ -912,35 +912,35 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
 }
 
 EXPORT(int, sceGxmSetAuxiliarySurface) {
-    return unimplemented("sceGxmSetAuxiliarySurface");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetBackDepthBias) {
-    return unimplemented("sceGxmSetBackDepthBias");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetBackDepthFunc) {
-    return unimplemented("sceGxmSetBackDepthFunc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetBackDepthWriteEnable) {
-    return unimplemented("sceGxmSetBackDepthWriteEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetBackFragmentProgramEnable) {
-    return unimplemented("sceGxmSetBackFragmentProgramEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetBackLineFillLastPixelEnable) {
-    return unimplemented("sceGxmSetBackLineFillLastPixelEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetBackPointLineWidth) {
-    return unimplemented("sceGxmSetBackPointLineWidth");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetBackPolygonMode) {
-    return unimplemented("sceGxmSetBackPolygonMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
@@ -974,15 +974,15 @@ EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref)
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestEnable) {
-    return unimplemented("sceGxmSetBackVisibilityTestEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestIndex) {
-    return unimplemented("sceGxmSetBackVisibilityTestIndex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestOp) {
-    return unimplemented("sceGxmSetBackVisibilityTestOp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
@@ -1004,23 +1004,23 @@ EXPORT(int, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
 }
 
 EXPORT(int, sceGxmSetDefaultRegionClipAndViewport) {
-    return unimplemented("sceGxmSetDefaultRegionClipAndViewport");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetDeferredContextFragmentBuffer) {
-    return unimplemented("sceGxmSetDeferredContextFragmentBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetDeferredContextVdmBuffer) {
-    return unimplemented("sceGxmSetDeferredContextVdmBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetDeferredContextVertexBuffer) {
-    return unimplemented("sceGxmSetDeferredContextVertexBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer) {
-    return unimplemented("sceGxmSetFragmentDefaultUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmFragmentProgram> fragmentProgram) {
@@ -1129,15 +1129,15 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
 }
 
 EXPORT(int, sceGxmSetFragmentUniformBuffer) {
-    return unimplemented("sceGxmSetFragmentUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetFrontDepthBias) {
-    return unimplemented("sceGxmSetFrontDepthBias");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetFrontDepthFunc) {
-    return unimplemented("sceGxmSetFrontDepthFunc");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
@@ -1149,19 +1149,19 @@ EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepth
 }
 
 EXPORT(int, sceGxmSetFrontFragmentProgramEnable) {
-    return unimplemented("sceGxmSetFrontFragmentProgramEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetFrontLineFillLastPixelEnable) {
-    return unimplemented("sceGxmSetFrontLineFillLastPixelEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetFrontPointLineWidth) {
-    return unimplemented("sceGxmSetFrontPointLineWidth");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetFrontPolygonMode) {
-    return unimplemented("sceGxmSetFrontPolygonMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
@@ -1194,27 +1194,27 @@ EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref
 }
 
 EXPORT(int, sceGxmSetFrontVisibilityTestEnable) {
-    return unimplemented("sceGxmSetFrontVisibilityTestEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetFrontVisibilityTestIndex) {
-    return unimplemented("sceGxmSetFrontVisibilityTestIndex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetFrontVisibilityTestOp) {
-    return unimplemented("sceGxmSetFrontVisibilityTestOp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetPrecomputedFragmentState) {
-    return unimplemented("sceGxmSetPrecomputedFragmentState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetPrecomputedVertexState) {
-    return unimplemented("sceGxmSetPrecomputedVertexState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetRegionClip) {
-    return unimplemented("sceGxmSetRegionClip");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
@@ -1236,15 +1236,15 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
 }
 
 EXPORT(int, sceGxmSetUserMarker) {
-    return unimplemented("sceGxmSetUserMarker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetValidationEnable) {
-    return unimplemented("sceGxmSetValidationEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetVertexDefaultUniformBuffer) {
-    return unimplemented("sceGxmSetVertexDefaultUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVertexProgram> vertexProgram) {
@@ -1280,43 +1280,43 @@ EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIn
 }
 
 EXPORT(int, sceGxmSetVertexTexture) {
-    return unimplemented("sceGxmSetVertexTexture");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetVertexUniformBuffer) {
-    return unimplemented("sceGxmSetVertexUniformBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetViewport) {
-    return unimplemented("sceGxmSetViewport");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetViewportEnable) {
-    return unimplemented("sceGxmSetViewportEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
-    return unimplemented("sceGxmSetVisibilityBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetWBufferEnable) {
-    return unimplemented("sceGxmSetWBufferEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetWClampEnable) {
-    return unimplemented("sceGxmSetWClampEnable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetWClampValue) {
-    return unimplemented("sceGxmSetWClampValue");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetWarningEnabled) {
-    return unimplemented("sceGxmSetWarningEnabled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmSetYuvProfile) {
-    return unimplemented("sceGxmSetYuvProfile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmFragmentProgram *fragmentProgram) {
@@ -1410,7 +1410,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
 }
 
 EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram) {
-    return unimplemented("sceGxmShaderPatcherCreateMaskUpdateFragmentProgram");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, const emu::SceGxmVertexAttribute *attributes, unsigned int attributeCount, const SceGxmVertexStream *streams, unsigned int streamCount, Ptr<SceGxmVertexProgram> *vertexProgram) {
@@ -1448,23 +1448,23 @@ EXPORT(int, sceGxmShaderPatcherDestroy, Ptr<SceGxmShaderPatcher> shaderPatcher) 
 }
 
 EXPORT(int, sceGxmShaderPatcherForceUnregisterProgram) {
-    return unimplemented("sceGxmShaderPatcherForceUnregisterProgram");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherGetBufferMemAllocated) {
-    return unimplemented("sceGxmShaderPatcherGetBufferMemAllocated");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherGetFragmentProgramRefCount) {
-    return unimplemented("sceGxmShaderPatcherGetFragmentProgramRefCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherGetFragmentUsseMemAllocated) {
-    return unimplemented("sceGxmShaderPatcherGetFragmentUsseMemAllocated");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherGetHostMemAllocated) {
-    return unimplemented("sceGxmShaderPatcherGetHostMemAllocated");
+    return unimplemented(export_name);
 }
 
 EXPORT(Ptr<const SceGxmProgram>, sceGxmShaderPatcherGetProgramFromId, emu::SceGxmShaderPatcherId programId) {
@@ -1476,15 +1476,15 @@ EXPORT(Ptr<const SceGxmProgram>, sceGxmShaderPatcherGetProgramFromId, emu::SceGx
 }
 
 EXPORT(int, sceGxmShaderPatcherGetUserData) {
-    return unimplemented("sceGxmShaderPatcherGetUserData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherGetVertexProgramRefCount) {
-    return unimplemented("sceGxmShaderPatcherGetVertexProgramRefCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherGetVertexUsseMemAllocated) {
-    return unimplemented("sceGxmShaderPatcherGetVertexUsseMemAllocated");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatcher, Ptr<const SceGxmProgram> programHeader, emu::SceGxmShaderPatcherId *programId) {
@@ -1537,11 +1537,11 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
 }
 
 EXPORT(int, sceGxmShaderPatcherSetAuxiliarySurface) {
-    return unimplemented("sceGxmShaderPatcherSetAuxiliarySurface");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherSetUserData) {
-    return unimplemented("sceGxmShaderPatcherSetUserData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPatcher, emu::SceGxmShaderPatcherId programId) {
@@ -1662,7 +1662,7 @@ EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTextureGetStride) {
-    return unimplemented("sceGxmTextureGetStride");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
@@ -1702,11 +1702,11 @@ EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTextureInitCube) {
-    return unimplemented("sceGxmTextureInitCube");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureInitCubeArbitrary) {
-    return unimplemented("sceGxmTextureInitCubeArbitrary");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
@@ -1762,19 +1762,19 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
 }
 
 EXPORT(int, sceGxmTextureInitLinearStrided) {
-    return unimplemented("sceGxmTextureInitLinearStrided");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureInitSwizzled) {
-    return unimplemented("sceGxmTextureInitSwizzled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureInitSwizzledArbitrary) {
-    return unimplemented("sceGxmTextureInitSwizzledArbitrary");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureInitTiled) {
-    return unimplemented("sceGxmTextureInitTiled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) {
@@ -1787,11 +1787,11 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
 }
 
 EXPORT(int, sceGxmTextureSetFormat) {
-    return unimplemented("sceGxmTextureSetFormat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureSetGammaMode) {
-    return unimplemented("sceGxmTextureSetGammaMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height) {
@@ -1823,11 +1823,11 @@ EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height)
 }
 
 EXPORT(int, sceGxmTextureSetLodBias) {
-    return unimplemented("sceGxmTextureSetLodBias");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureSetLodMin) {
-    return unimplemented("sceGxmTextureSetLodMin");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
@@ -1849,15 +1849,15 @@ EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilt
 }
 
 EXPORT(int, sceGxmTextureSetMipFilter) {
-    return unimplemented("sceGxmTextureSetMipFilter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureSetMipmapCount) {
-    return unimplemented("sceGxmTextureSetMipmapCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureSetNormalizeMode) {
-    return unimplemented("sceGxmTextureSetNormalizeMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteData) {
@@ -1872,7 +1872,7 @@ EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteDa
 }
 
 EXPORT(int, sceGxmTextureSetStride) {
-    return unimplemented("sceGxmTextureSetStride");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
@@ -1993,23 +1993,23 @@ EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
 }
 
 EXPORT(int, sceGxmTextureValidate) {
-    return unimplemented("sceGxmTextureValidate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTransferCopy) {
-    return unimplemented("sceGxmTransferCopy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTransferDownscale) {
-    return unimplemented("sceGxmTransferDownscale");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTransferFill) {
-    return unimplemented("sceGxmTransferFill");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmTransferFinish) {
-    return unimplemented("sceGxmTransferFinish");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmUnmapFragmentUsseMemory, void *base) {
@@ -2031,15 +2031,15 @@ EXPORT(int, sceGxmUnmapVertexUsseMemory, void *base) {
 }
 
 EXPORT(int, sceGxmVertexFence) {
-    return unimplemented("sceGxmVertexFence");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmVertexProgramGetProgram) {
-    return unimplemented("sceGxmVertexProgramGetProgram");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGxmWaitEvent) {
-    return unimplemented("sceGxmWaitEvent");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceGxmAddRazorGpuCaptureBuffer)

@@ -18,675 +18,675 @@
 #include "SceFios2.h"
 
 EXPORT(int, sceFiosArchiveGetDecompressorThreadCount) {
-    return unimplemented("sceFiosArchiveGetDecompressorThreadCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosArchiveGetMountBufferSize) {
-    return unimplemented("sceFiosArchiveGetMountBufferSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosArchiveGetMountBufferSizeSync) {
-    return unimplemented("sceFiosArchiveGetMountBufferSizeSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosArchiveMount) {
-    return unimplemented("sceFiosArchiveMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosArchiveMountSync) {
-    return unimplemented("sceFiosArchiveMountSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosArchiveSetDecompressorThreadCount) {
-    return unimplemented("sceFiosArchiveSetDecompressorThreadCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosArchiveUnmount) {
-    return unimplemented("sceFiosArchiveUnmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosArchiveUnmountSync) {
-    return unimplemented("sceFiosArchiveUnmountSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCacheContainsFileRangeSync) {
-    return unimplemented("sceFiosCacheContainsFileRangeSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCacheContainsFileSync) {
-    return unimplemented("sceFiosCacheContainsFileSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCacheFlushFileRangeSync) {
-    return unimplemented("sceFiosCacheFlushFileRangeSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCacheFlushFileSync) {
-    return unimplemented("sceFiosCacheFlushFileSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCacheFlushSync) {
-    return unimplemented("sceFiosCacheFlushSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCachePrefetchFH) {
-    return unimplemented("sceFiosCachePrefetchFH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCachePrefetchFHRange) {
-    return unimplemented("sceFiosCachePrefetchFHRange");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCachePrefetchFHRangeSync) {
-    return unimplemented("sceFiosCachePrefetchFHRangeSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCachePrefetchFHSync) {
-    return unimplemented("sceFiosCachePrefetchFHSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCachePrefetchFile) {
-    return unimplemented("sceFiosCachePrefetchFile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCachePrefetchFileRange) {
-    return unimplemented("sceFiosCachePrefetchFileRange");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCancelAllOps) {
-    return unimplemented("sceFiosCancelAllOps");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosChangeStat) {
-    return unimplemented("sceFiosChangeStat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosChangeStatSync) {
-    return unimplemented("sceFiosChangeStatSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosCloseAllFiles) {
-    return unimplemented("sceFiosCloseAllFiles");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDHClose) {
-    return unimplemented("sceFiosDHClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDHCloseSync) {
-    return unimplemented("sceFiosDHCloseSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDHGetPath) {
-    return unimplemented("sceFiosDHGetPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDHOpen) {
-    return unimplemented("sceFiosDHOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDHOpenSync) {
-    return unimplemented("sceFiosDHOpenSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDHRead) {
-    return unimplemented("sceFiosDHRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDHReadSync) {
-    return unimplemented("sceFiosDHReadSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDateFromComponents) {
-    return unimplemented("sceFiosDateFromComponents");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDateFromSceDateTime) {
-    return unimplemented("sceFiosDateFromSceDateTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDateGetCurrent) {
-    return unimplemented("sceFiosDateGetCurrent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDateToComponents) {
-    return unimplemented("sceFiosDateToComponents");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDateToSceDateTime) {
-    return unimplemented("sceFiosDateToSceDateTime");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDeallocatePassthruFH) {
-    return unimplemented("sceFiosDeallocatePassthruFH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDebugDumpDH) {
-    return unimplemented("sceFiosDebugDumpDH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDebugDumpDate) {
-    return unimplemented("sceFiosDebugDumpDate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDebugDumpError) {
-    return unimplemented("sceFiosDebugDumpError");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDebugDumpFH) {
-    return unimplemented("sceFiosDebugDumpFH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDebugDumpOp) {
-    return unimplemented("sceFiosDebugDumpOp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDelete) {
-    return unimplemented("sceFiosDelete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDeleteSync) {
-    return unimplemented("sceFiosDeleteSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDevctl) {
-    return unimplemented("sceFiosDevctl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDevctlSync) {
-    return unimplemented("sceFiosDevctlSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDirectoryCreate) {
-    return unimplemented("sceFiosDirectoryCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDirectoryCreateSync) {
-    return unimplemented("sceFiosDirectoryCreateSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDirectoryCreateWithMode) {
-    return unimplemented("sceFiosDirectoryCreateWithMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDirectoryCreateWithModeSync) {
-    return unimplemented("sceFiosDirectoryCreateWithModeSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDirectoryDelete) {
-    return unimplemented("sceFiosDirectoryDelete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDirectoryDeleteSync) {
-    return unimplemented("sceFiosDirectoryDeleteSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDirectoryExists) {
-    return unimplemented("sceFiosDirectoryExists");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosDirectoryExistsSync) {
-    return unimplemented("sceFiosDirectoryExistsSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosExists) {
-    return unimplemented("sceFiosExists");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosExistsSync) {
-    return unimplemented("sceFiosExistsSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHClose) {
-    return unimplemented("sceFiosFHClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHCloseSync) {
-    return unimplemented("sceFiosFHCloseSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHGetOpenParams) {
-    return unimplemented("sceFiosFHGetOpenParams");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHGetPath) {
-    return unimplemented("sceFiosFHGetPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHGetSize) {
-    return unimplemented("sceFiosFHGetSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHIoctl) {
-    return unimplemented("sceFiosFHIoctl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHIoctlSync) {
-    return unimplemented("sceFiosFHIoctlSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHOpen) {
-    return unimplemented("sceFiosFHOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHOpenSync) {
-    return unimplemented("sceFiosFHOpenSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHOpenWithMode) {
-    return unimplemented("sceFiosFHOpenWithMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHOpenWithModeSync) {
-    return unimplemented("sceFiosFHOpenWithModeSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHPread) {
-    return unimplemented("sceFiosFHPread");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHPreadSync) {
-    return unimplemented("sceFiosFHPreadSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHPreadv) {
-    return unimplemented("sceFiosFHPreadv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHPreadvSync) {
-    return unimplemented("sceFiosFHPreadvSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHPwrite) {
-    return unimplemented("sceFiosFHPwrite");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHPwriteSync) {
-    return unimplemented("sceFiosFHPwriteSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHPwritev) {
-    return unimplemented("sceFiosFHPwritev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHPwritevSync) {
-    return unimplemented("sceFiosFHPwritevSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHRead) {
-    return unimplemented("sceFiosFHRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHReadSync) {
-    return unimplemented("sceFiosFHReadSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHReadv) {
-    return unimplemented("sceFiosFHReadv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHReadvSync) {
-    return unimplemented("sceFiosFHReadvSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHSeek) {
-    return unimplemented("sceFiosFHSeek");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHStat) {
-    return unimplemented("sceFiosFHStat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHStatSync) {
-    return unimplemented("sceFiosFHStatSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHSync) {
-    return unimplemented("sceFiosFHSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHSyncSync) {
-    return unimplemented("sceFiosFHSyncSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHTell) {
-    return unimplemented("sceFiosFHTell");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHToFileno) {
-    return unimplemented("sceFiosFHToFileno");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHTruncate) {
-    return unimplemented("sceFiosFHTruncate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHTruncateSync) {
-    return unimplemented("sceFiosFHTruncateSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHWrite) {
-    return unimplemented("sceFiosFHWrite");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHWriteSync) {
-    return unimplemented("sceFiosFHWriteSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHWritev) {
-    return unimplemented("sceFiosFHWritev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFHWritevSync) {
-    return unimplemented("sceFiosFHWritevSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileDelete) {
-    return unimplemented("sceFiosFileDelete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileDeleteSync) {
-    return unimplemented("sceFiosFileDeleteSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileExists) {
-    return unimplemented("sceFiosFileExists");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileExistsSync) {
-    return unimplemented("sceFiosFileExistsSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileGetSize) {
-    return unimplemented("sceFiosFileGetSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileGetSizeSync) {
-    return unimplemented("sceFiosFileGetSizeSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileRead) {
-    return unimplemented("sceFiosFileRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileReadSync) {
-    return unimplemented("sceFiosFileReadSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileTruncate) {
-    return unimplemented("sceFiosFileTruncate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileTruncateSync) {
-    return unimplemented("sceFiosFileTruncateSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileWrite) {
-    return unimplemented("sceFiosFileWrite");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFileWriteSync) {
-    return unimplemented("sceFiosFileWriteSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosFilenoToFH) {
-    return unimplemented("sceFiosFilenoToFH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosGetAllDHs) {
-    return unimplemented("sceFiosGetAllDHs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosGetAllFHs) {
-    return unimplemented("sceFiosGetAllFHs");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosGetAllOps) {
-    return unimplemented("sceFiosGetAllOps");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosGetDefaultOpAttr) {
-    return unimplemented("sceFiosGetDefaultOpAttr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosGetGlobalDefaultOpAttr) {
-    return unimplemented("sceFiosGetGlobalDefaultOpAttr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosGetSuspendCount) {
-    return unimplemented("sceFiosGetSuspendCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosIOFilterAdd) {
-    return unimplemented("sceFiosIOFilterAdd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosIOFilterCache) {
-    return unimplemented("sceFiosIOFilterCache");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosIOFilterGetInfo) {
-    return unimplemented("sceFiosIOFilterGetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosIOFilterPsarcDearchiver) {
-    return unimplemented("sceFiosIOFilterPsarcDearchiver");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosIOFilterRemove) {
-    return unimplemented("sceFiosIOFilterRemove");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosInitialize) {
-    return unimplemented("sceFiosInitialize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosIsIdle) {
-    return unimplemented("sceFiosIsIdle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosIsInitialized) {
-    return unimplemented("sceFiosIsInitialized");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosIsSuspended) {
-    return unimplemented("sceFiosIsSuspended");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosIsValidHandle) {
-    return unimplemented("sceFiosIsValidHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpCancel) {
-    return unimplemented("sceFiosOpCancel");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpDelete) {
-    return unimplemented("sceFiosOpDelete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpGetActualCount) {
-    return unimplemented("sceFiosOpGetActualCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpGetAttr) {
-    return unimplemented("sceFiosOpGetAttr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpGetBuffer) {
-    return unimplemented("sceFiosOpGetBuffer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpGetError) {
-    return unimplemented("sceFiosOpGetError");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpGetOffset) {
-    return unimplemented("sceFiosOpGetOffset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpGetPath) {
-    return unimplemented("sceFiosOpGetPath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpGetRequestCount) {
-    return unimplemented("sceFiosOpGetRequestCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpIsCancelled) {
-    return unimplemented("sceFiosOpIsCancelled");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpIsDone) {
-    return unimplemented("sceFiosOpIsDone");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpReschedule) {
-    return unimplemented("sceFiosOpReschedule");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpRescheduleWithPriority) {
-    return unimplemented("sceFiosOpRescheduleWithPriority");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpSyncWait) {
-    return unimplemented("sceFiosOpSyncWait");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpSyncWaitForIO) {
-    return unimplemented("sceFiosOpSyncWaitForIO");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpWait) {
-    return unimplemented("sceFiosOpWait");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOpWaitUntil) {
-    return unimplemented("sceFiosOpWaitUntil");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOverlayAdd) {
-    return unimplemented("sceFiosOverlayAdd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOverlayGetInfo) {
-    return unimplemented("sceFiosOverlayGetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOverlayGetList) {
-    return unimplemented("sceFiosOverlayGetList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOverlayModify) {
-    return unimplemented("sceFiosOverlayModify");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOverlayRemove) {
-    return unimplemented("sceFiosOverlayRemove");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosOverlayResolveSync) {
-    return unimplemented("sceFiosOverlayResolveSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosPathNormalize) {
-    return unimplemented("sceFiosPathNormalize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosPathcmp) {
-    return unimplemented("sceFiosPathcmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosPathncmp) {
-    return unimplemented("sceFiosPathncmp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosPrintf) {
-    return unimplemented("sceFiosPrintf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosRename) {
-    return unimplemented("sceFiosRename");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosRenameSync) {
-    return unimplemented("sceFiosRenameSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosResolve) {
-    return unimplemented("sceFiosResolve");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosResolveSync) {
-    return unimplemented("sceFiosResolveSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosResume) {
-    return unimplemented("sceFiosResume");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosSetGlobalDefaultOpAttr) {
-    return unimplemented("sceFiosSetGlobalDefaultOpAttr");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosShutdownAndCancelOps) {
-    return unimplemented("sceFiosShutdownAndCancelOps");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosStat) {
-    return unimplemented("sceFiosStat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosStatSync) {
-    return unimplemented("sceFiosStatSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosStatisticsGet) {
-    return unimplemented("sceFiosStatisticsGet");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosStatisticsPrint) {
-    return unimplemented("sceFiosStatisticsPrint");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosStatisticsReset) {
-    return unimplemented("sceFiosStatisticsReset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosSuspend) {
-    return unimplemented("sceFiosSuspend");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosSync) {
-    return unimplemented("sceFiosSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosSyncSync) {
-    return unimplemented("sceFiosSyncSync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosTerminate) {
-    return unimplemented("sceFiosTerminate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosTimeGetCurrent) {
-    return unimplemented("sceFiosTimeGetCurrent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosTimeIntervalFromNanoseconds) {
-    return unimplemented("sceFiosTimeIntervalFromNanoseconds");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosTimeIntervalToNanoseconds) {
-    return unimplemented("sceFiosTimeIntervalToNanoseconds");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosUpdateParameters) {
-    return unimplemented("sceFiosUpdateParameters");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFiosVprintf) {
-    return unimplemented("sceFiosVprintf");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceFiosArchiveGetDecompressorThreadCount)

@@ -18,155 +18,155 @@
 #include "SceNpWebApi.h"
 
 EXPORT(int, sceNpWebApiAbortHandle) {
-    return unimplemented("sceNpWebApiAbortHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiAbortRequest) {
-    return unimplemented("sceNpWebApiAbortRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiAddHttpRequestHeader) {
-    return unimplemented("sceNpWebApiAddHttpRequestHeader");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiAddMultipartPart) {
-    return unimplemented("sceNpWebApiAddMultipartPart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiCheckCallback) {
-    return unimplemented("sceNpWebApiCheckCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiCreateExtdPushEventFilter) {
-    return unimplemented("sceNpWebApiCreateExtdPushEventFilter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiCreateHandle) {
-    return unimplemented("sceNpWebApiCreateHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiCreateMultipartRequest) {
-    return unimplemented("sceNpWebApiCreateMultipartRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiCreatePushEventFilter) {
-    return unimplemented("sceNpWebApiCreatePushEventFilter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiCreateRequest) {
-    return unimplemented("sceNpWebApiCreateRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiCreateServicePushEventFilter) {
-    return unimplemented("sceNpWebApiCreateServicePushEventFilter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiDeleteExtdPushEventFilter) {
-    return unimplemented("sceNpWebApiDeleteExtdPushEventFilter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiDeleteHandle) {
-    return unimplemented("sceNpWebApiDeleteHandle");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiDeletePushEventFilter) {
-    return unimplemented("sceNpWebApiDeletePushEventFilter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiDeleteRequest) {
-    return unimplemented("sceNpWebApiDeleteRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiDeleteServicePushEventFilter) {
-    return unimplemented("sceNpWebApiDeleteServicePushEventFilter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiGetErrorCode) {
-    return unimplemented("sceNpWebApiGetErrorCode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiGetHttpResponseHeaderValue) {
-    return unimplemented("sceNpWebApiGetHttpResponseHeaderValue");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiGetHttpResponseHeaderValueLength) {
-    return unimplemented("sceNpWebApiGetHttpResponseHeaderValueLength");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiGetHttpStatusCode) {
-    return unimplemented("sceNpWebApiGetHttpStatusCode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiGetMemoryPoolStats) {
-    return unimplemented("sceNpWebApiGetMemoryPoolStats");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiGetNpTitleId) {
-    return unimplemented("sceNpWebApiGetNpTitleId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiInitialize) {
-    return unimplemented("sceNpWebApiInitialize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiReadData) {
-    return unimplemented("sceNpWebApiReadData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiRegisterExtdPushEventCallback) {
-    return unimplemented("sceNpWebApiRegisterExtdPushEventCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiRegisterPushEventCallback) {
-    return unimplemented("sceNpWebApiRegisterPushEventCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiRegisterServicePushEventCallback) {
-    return unimplemented("sceNpWebApiRegisterServicePushEventCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiSendMultipartRequest) {
-    return unimplemented("sceNpWebApiSendMultipartRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiSendMultipartRequest2) {
-    return unimplemented("sceNpWebApiSendMultipartRequest2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiSendRequest) {
-    return unimplemented("sceNpWebApiSendRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiSendRequest2) {
-    return unimplemented("sceNpWebApiSendRequest2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiSetMultipartContentType) {
-    return unimplemented("sceNpWebApiSetMultipartContentType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiSetNpTitleId) {
-    return unimplemented("sceNpWebApiSetNpTitleId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiTerminate) {
-    return unimplemented("sceNpWebApiTerminate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiUnregisterExtdPushEventCallback) {
-    return unimplemented("sceNpWebApiUnregisterExtdPushEventCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiUnregisterPushEventCallback) {
-    return unimplemented("sceNpWebApiUnregisterPushEventCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiUnregisterServicePushEventCallback) {
-    return unimplemented("sceNpWebApiUnregisterServicePushEventCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpWebApiUtilityParseNpId) {
-    return unimplemented("sceNpWebApiUtilityParseNpId");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpWebApiAbortHandle)

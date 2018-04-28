@@ -25,11 +25,11 @@
 #define LOW_BATTERY_PERCENT 10
 
 EXPORT(int, scePowerBatteryUpdateInfo) {
-    return unimplemented("scePowerBatteryUpdateInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerCancelRequest) {
-    return unimplemented("scePowerCancelRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetArmClockFrequency) {
@@ -37,19 +37,19 @@ EXPORT(int, scePowerGetArmClockFrequency) {
 }
 
 EXPORT(int, scePowerGetBatteryChargingStatus) {
-    return unimplemented("scePowerGetBatteryChargingStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBatteryCycleCount) {
-    return unimplemented("scePowerGetBatteryCycleCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBatteryElec) {
-    return unimplemented("scePowerGetBatteryElec");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBatteryFullCapacity) {
-    return unimplemented("scePowerGetBatteryFullCapacity");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBatteryLifePercent) {
@@ -71,27 +71,27 @@ EXPORT(int, scePowerGetBatteryLifeTime) {
 }
 
 EXPORT(int, scePowerGetBatteryRemainCapacity) {
-    return unimplemented("scePowerGetBatteryRemainCapacity");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBatteryRemainLevel) {
-    return unimplemented("scePowerGetBatteryRemainLevel");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBatteryRemainMaxLevel) {
-    return unimplemented("scePowerGetBatteryRemainMaxLevel");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBatterySOH) {
-    return unimplemented("scePowerGetBatterySOH");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBatteryTemp) {
-    return unimplemented("scePowerGetBatteryTemp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBatteryVolt) {
-    return unimplemented("scePowerGetBatteryVolt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetBusClockFrequency) {
@@ -99,7 +99,7 @@ EXPORT(int, scePowerGetBusClockFrequency) {
 }
 
 EXPORT(int, scePowerGetCaseTemp) {
-    return unimplemented("scePowerGetCaseTemp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerGetGpuClockFrequency) {
@@ -111,7 +111,7 @@ EXPORT(int, scePowerGetGpuXbarClockFrequency) {
 }
 
 EXPORT(int, scePowerGetUsingWireless) {
-    return unimplemented("scePowerGetUsingWireless");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerIsBatteryCharging) {
@@ -134,11 +134,11 @@ EXPORT(int, scePowerIsLowBattery) {
 }
 
 EXPORT(int, scePowerIsLowBatteryInhibitUpdateDownload) {
-    return unimplemented("scePowerIsLowBatteryInhibitUpdateDownload");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerIsLowBatteryInhibitUpdateReboot) {
-    return unimplemented("scePowerIsLowBatteryInhibitUpdateReboot");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerIsPowerOnline) {
@@ -147,35 +147,35 @@ EXPORT(int, scePowerIsPowerOnline) {
 }
 
 EXPORT(int, scePowerIsRequest) {
-    return unimplemented("scePowerIsRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerIsSuspendRequired) {
-    return unimplemented("scePowerIsSuspendRequired");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerRegisterCallback) {
-    return unimplemented("scePowerRegisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerRequestColdReset) {
-    return unimplemented("scePowerRequestColdReset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerRequestDisplayOff) {
-    return unimplemented("scePowerRequestDisplayOff");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerRequestDisplayOn) {
-    return unimplemented("scePowerRequestDisplayOn");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerRequestStandby) {
-    return unimplemented("scePowerRequestStandby");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerRequestSuspend) {
-    return unimplemented("scePowerRequestSuspend");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerSetArmClockFrequency, int freq) {
@@ -214,7 +214,7 @@ EXPORT(int, scePowerSetGpuXbarClockFrequency, int freq) {
 }
 
 EXPORT(int, scePowerSetIdleTimerCount) {
-    return unimplemented("scePowerSetIdleTimerCount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, scePowerSetUsingWireless, SceBool enabled) {
@@ -225,7 +225,7 @@ EXPORT(int, scePowerSetUsingWireless, SceBool enabled) {
 }
 
 EXPORT(int, scePowerUnregisterCallback) {
-    return unimplemented("scePowerUnregisterCallback");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(scePowerBatteryUpdateInfo)

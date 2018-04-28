@@ -39,19 +39,19 @@ namespace emu {
 using namespace emu;
 
 EXPORT(int, sceDisplayGetFrameBuf) {
-    return unimplemented("sceDisplayGetFrameBuf");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceDisplayGetFrameBufInternal) {
-    return unimplemented("sceDisplayGetFrameBufInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceDisplayGetMaximumFrameBufResolution) {
-    return unimplemented("sceDisplayGetMaximumFrameBufResolution");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceDisplayGetResolutionInfoInternal) {
-    return unimplemented("sceDisplayGetResolutionInfoInternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync) {
@@ -85,11 +85,11 @@ EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDis
 }
 
 EXPORT(int, sceDisplaySetFrameBufForCompat) {
-    return unimplemented("sceDisplaySetFrameBufForCompat");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceDisplaySetFrameBufInternal) {
-    return unimplemented("sceDisplaySetFrameBufInternal");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceDisplayGetFrameBuf)

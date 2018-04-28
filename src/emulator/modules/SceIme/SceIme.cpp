@@ -18,27 +18,27 @@
 #include "SceIme.h"
 
 EXPORT(int, sceImeClose) {
-    return unimplemented("sceImeClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceImeOpen) {
-    return unimplemented("sceImeOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceImeSetCaret) {
-    return unimplemented("sceImeSetCaret");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceImeSetPreeditGeometry) {
-    return unimplemented("sceImeSetPreeditGeometry");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceImeSetText) {
-    return unimplemented("sceImeSetText");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceImeUpdate) {
-    return unimplemented("sceImeUpdate");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceImeClose)

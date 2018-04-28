@@ -18,31 +18,31 @@
 #include "SceGpuEs4ForUser.h"
 
 EXPORT(int, PVRSRVOpen) {
-    return unimplemented("PVRSRVOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, PVRSRVRelease) {
-    return unimplemented("PVRSRVRelease");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, PVRSRV_BridgeDispatchKM) {
-    return unimplemented("PVRSRV_BridgeDispatchKM");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGpuRegisterSalvage) {
-    return unimplemented("sceGpuRegisterSalvage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGpuSignalWait) {
-    return unimplemented("sceGpuSignalWait");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGpuSignalWaitLockup) {
-    return unimplemented("sceGpuSignalWaitLockup");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceGpuUnregisterSalvage) {
-    return unimplemented("sceGpuUnregisterSalvage");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(PVRSRVOpen)

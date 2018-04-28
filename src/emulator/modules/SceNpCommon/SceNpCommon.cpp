@@ -18,63 +18,63 @@
 #include "SceNpCommon.h"
 
 EXPORT(int, sceNpAuthAbortRequest) {
-    return unimplemented("sceNpAuthAbortRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthCreateStartRequest) {
-    return unimplemented("sceNpAuthCreateStartRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthDestroyRequest) {
-    return unimplemented("sceNpAuthDestroyRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthGetEntitlementById) {
-    return unimplemented("sceNpAuthGetEntitlementById");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthGetEntitlementByIdPrefix) {
-    return unimplemented("sceNpAuthGetEntitlementByIdPrefix");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthGetEntitlementIdList) {
-    return unimplemented("sceNpAuthGetEntitlementIdList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthGetTicket) {
-    return unimplemented("sceNpAuthGetTicket");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthGetTicketParam) {
-    return unimplemented("sceNpAuthGetTicketParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthInit) {
-    return unimplemented("sceNpAuthInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpAuthTerm) {
-    return unimplemented("sceNpAuthTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpCmpNpId) {
-    return unimplemented("sceNpCmpNpId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpCmpNpIdInOrder) {
-    return unimplemented("sceNpCmpNpIdInOrder");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpCmpOnlineId) {
-    return unimplemented("sceNpCmpOnlineId");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpGetPlatformType) {
-    return unimplemented("sceNpGetPlatformType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpSetPlatformType) {
-    return unimplemented("sceNpSetPlatformType");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpAuthAbortRequest)

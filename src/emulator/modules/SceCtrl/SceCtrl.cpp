@@ -189,59 +189,59 @@ static int peek_buffer_positive(HostState &host, SceCtrlData *&pad_data) {
 }
 
 EXPORT(int, sceCtrlClearRapidFire) {
-    return unimplemented("sceCtrlClearRapidFire");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlDisconnect) {
-    return unimplemented("sceCtrlDisconnect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlGetAnalogStickCheckMode) {
-    return unimplemented("sceCtrlGetAnalogStickCheckMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlGetAnalogStickCheckTarget) {
-    return unimplemented("sceCtrlGetAnalogStickCheckTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlGetBatteryInfo) {
-    return unimplemented("sceCtrlGetBatteryInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlGetButtonIntercept) {
-    return unimplemented("sceCtrlGetButtonIntercept");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlGetControllerPortInfo) {
-    return unimplemented("sceCtrlGetControllerPortInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlGetProcessStatus) {
-    return unimplemented("sceCtrlGetProcessStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlGetSamplingMode) {
-    return unimplemented("sceCtrlGetSamplingMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlGetSamplingModeExt) {
-    return unimplemented("sceCtrlGetSamplingModeExt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlGetWirelessControllerInfo) {
-    return unimplemented("sceCtrlGetWirelessControllerInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlIsMultiControllerSupported) {
-    return unimplemented("sceCtrlIsMultiControllerSupported");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlPeekBufferNegative) {
-    return unimplemented("sceCtrlPeekBufferNegative");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlPeekBufferNegative2) {
-    return unimplemented("sceCtrlPeekBufferNegative2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
@@ -252,23 +252,23 @@ EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int coun
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive2) {
-    return unimplemented("sceCtrlPeekBufferPositive2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositiveExt) {
-    return unimplemented("sceCtrlPeekBufferPositiveExt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositiveExt2) {
-    return unimplemented("sceCtrlPeekBufferPositiveExt2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlReadBufferNegative) {
-    return unimplemented("sceCtrlReadBufferNegative");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlReadBufferNegative2) {
-    return unimplemented("sceCtrlReadBufferNegative2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int count) {
@@ -276,67 +276,67 @@ EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int coun
 }
 
 EXPORT(int, sceCtrlReadBufferPositive2) {
-    return unimplemented("sceCtrlReadBufferPositive2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlReadBufferPositiveExt) {
-    return unimplemented("sceCtrlReadBufferPositiveExt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlReadBufferPositiveExt2) {
-    return unimplemented("sceCtrlReadBufferPositiveExt2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlRegisterBdRMCCallback) {
-    return unimplemented("sceCtrlRegisterBdRMCCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlResetLightBar) {
-    return unimplemented("sceCtrlResetLightBar");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSetActuator) {
-    return unimplemented("sceCtrlSetActuator");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSetAnalogStickCheckMode) {
-    return unimplemented("sceCtrlSetAnalogStickCheckMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSetAnalogStickCheckTarget) {
-    return unimplemented("sceCtrlSetAnalogStickCheckTarget");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSetButtonIntercept) {
-    return unimplemented("sceCtrlSetButtonIntercept");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSetButtonRemappingInfo) {
-    return unimplemented("sceCtrlSetButtonRemappingInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSetLightBar) {
-    return unimplemented("sceCtrlSetLightBar");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSetRapidFire) {
-    return unimplemented("sceCtrlSetRapidFire");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSetSamplingMode) {
-    return unimplemented("sceCtrlSetSamplingMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSetSamplingModeExt) {
-    return unimplemented("sceCtrlSetSamplingModeExt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlSingleControllerMode) {
-    return unimplemented("sceCtrlSingleControllerMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCtrlUnregisterBdRMCCallback) {
-    return unimplemented("sceCtrlUnregisterBdRMCCallback");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceCtrlClearRapidFire)

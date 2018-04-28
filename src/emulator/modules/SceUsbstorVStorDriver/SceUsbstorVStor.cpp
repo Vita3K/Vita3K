@@ -18,19 +18,19 @@
 #include "SceUsbstorVStor.h"
 
 EXPORT(int, sceUsbstorVStorSetDeviceInfo) {
-    return unimplemented("sceUsbstorVStorSetDeviceInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUsbstorVStorSetImgFilePath) {
-    return unimplemented("sceUsbstorVStorSetImgFilePath");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUsbstorVStorStart) {
-    return unimplemented("sceUsbstorVStorStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUsbstorVStorStop) {
-    return unimplemented("sceUsbstorVStorStop");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceUsbstorVStorSetDeviceInfo)

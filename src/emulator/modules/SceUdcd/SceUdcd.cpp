@@ -18,27 +18,27 @@
 #include "SceUdcd.h"
 
 EXPORT(int, sceUdcdGetDeviceInfo) {
-    return unimplemented("sceUdcdGetDeviceInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUdcdGetDeviceState) {
-    return unimplemented("sceUdcdGetDeviceState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUdcdGetDrvState) {
-    return unimplemented("sceUdcdGetDrvState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUdcdRegisterCallback) {
-    return unimplemented("sceUdcdRegisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUdcdUnregisterCallback) {
-    return unimplemented("sceUdcdUnregisterCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceUdcdWaitState) {
-    return unimplemented("sceUdcdWaitState");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceUdcdGetDeviceInfo)

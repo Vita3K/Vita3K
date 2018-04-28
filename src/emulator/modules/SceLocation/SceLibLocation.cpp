@@ -18,91 +18,91 @@
 #include "SceLibLocation.h"
 
 EXPORT(int, sceLocationCancelGetLocation) {
-    return unimplemented("sceLocationCancelGetLocation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationClose) {
-    return unimplemented("sceLocationClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationConfirm) {
-    return unimplemented("sceLocationConfirm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationConfirmAbort) {
-    return unimplemented("sceLocationConfirmAbort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationConfirmGetResult) {
-    return unimplemented("sceLocationConfirmGetResult");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationConfirmGetStatus) {
-    return unimplemented("sceLocationConfirmGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationDenyApplication) {
-    return unimplemented("sceLocationDenyApplication");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationGetHeading) {
-    return unimplemented("sceLocationGetHeading");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationGetLocation) {
-    return unimplemented("sceLocationGetLocation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationGetLocationWithTimeout) {
-    return unimplemented("sceLocationGetLocationWithTimeout");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationGetMethod) {
-    return unimplemented("sceLocationGetMethod");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationGetPermission) {
-    return unimplemented("sceLocationGetPermission");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationInit) {
-    return unimplemented("sceLocationInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationOpen) {
-    return unimplemented("sceLocationOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationReopen) {
-    return unimplemented("sceLocationReopen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationSetGpsEmulationFile) {
-    return unimplemented("sceLocationSetGpsEmulationFile");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationSetThreadParameter) {
-    return unimplemented("sceLocationSetThreadParameter");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationStartHeadingCallback) {
-    return unimplemented("sceLocationStartHeadingCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationStartLocationCallback) {
-    return unimplemented("sceLocationStartLocationCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationStopHeadingCallback) {
-    return unimplemented("sceLocationStopHeadingCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationStopLocationCallback) {
-    return unimplemented("sceLocationStopLocationCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceLocationTerm) {
-    return unimplemented("sceLocationTerm");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceLocationCancelGetLocation)

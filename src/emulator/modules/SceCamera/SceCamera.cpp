@@ -18,159 +18,159 @@
 #include "SceCamera.h"
 
 EXPORT(int, sceCameraClose) {
-    return unimplemented("sceCameraClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetAntiFlicker) {
-    return unimplemented("sceCameraGetAntiFlicker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetAutoControlHold) {
-    return unimplemented("sceCameraGetAutoControlHold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetBacklight) {
-    return unimplemented("sceCameraGetBacklight");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetBrightness) {
-    return unimplemented("sceCameraGetBrightness");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetContrast) {
-    return unimplemented("sceCameraGetContrast");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetDeviceLocation) {
-    return unimplemented("sceCameraGetDeviceLocation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetEV) {
-    return unimplemented("sceCameraGetEV");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetEffect) {
-    return unimplemented("sceCameraGetEffect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetExposureCeiling) {
-    return unimplemented("sceCameraGetExposureCeiling");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetGain) {
-    return unimplemented("sceCameraGetGain");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetISO) {
-    return unimplemented("sceCameraGetISO");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetNightmode) {
-    return unimplemented("sceCameraGetNightmode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetReverse) {
-    return unimplemented("sceCameraGetReverse");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetSaturation) {
-    return unimplemented("sceCameraGetSaturation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetSharpness) {
-    return unimplemented("sceCameraGetSharpness");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetWhiteBalance) {
-    return unimplemented("sceCameraGetWhiteBalance");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraGetZoom) {
-    return unimplemented("sceCameraGetZoom");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraIsActive) {
-    return unimplemented("sceCameraIsActive");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraOpen) {
-    return unimplemented("sceCameraOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraRead) {
-    return unimplemented("sceCameraRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetAntiFlicker) {
-    return unimplemented("sceCameraSetAntiFlicker");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetAutoControlHold) {
-    return unimplemented("sceCameraSetAutoControlHold");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetBacklight) {
-    return unimplemented("sceCameraSetBacklight");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetBrightness) {
-    return unimplemented("sceCameraSetBrightness");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetContrast) {
-    return unimplemented("sceCameraSetContrast");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetEV) {
-    return unimplemented("sceCameraSetEV");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetEffect) {
-    return unimplemented("sceCameraSetEffect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetExposureCeiling) {
-    return unimplemented("sceCameraSetExposureCeiling");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetGain) {
-    return unimplemented("sceCameraSetGain");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetISO) {
-    return unimplemented("sceCameraSetISO");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetNightmode) {
-    return unimplemented("sceCameraSetNightmode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetReverse) {
-    return unimplemented("sceCameraSetReverse");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetSaturation) {
-    return unimplemented("sceCameraSetSaturation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetSharpness) {
-    return unimplemented("sceCameraSetSharpness");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetWhiteBalance) {
-    return unimplemented("sceCameraSetWhiteBalance");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraSetZoom) {
-    return unimplemented("sceCameraSetZoom");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraStart) {
-    return unimplemented("sceCameraStart");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceCameraStop) {
-    return unimplemented("sceCameraStop");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceCameraClose)

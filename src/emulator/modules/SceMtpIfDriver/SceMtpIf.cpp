@@ -18,63 +18,63 @@
 #include "SceMtpIf.h"
 
 EXPORT(int, sceMtpIfCancelTransfer) {
-    return unimplemented("sceMtpIfCancelTransfer");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfChangePhase) {
-    return unimplemented("sceMtpIfChangePhase");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfGetPort) {
-    return unimplemented("sceMtpIfGetPort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfIsConnected) {
-    return unimplemented("sceMtpIfIsConnected");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfRecvCommand) {
-    return unimplemented("sceMtpIfRecvCommand");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfRecvDataWithParam) {
-    return unimplemented("sceMtpIfRecvDataWithParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfReset) {
-    return unimplemented("sceMtpIfReset");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfSendDataWithParam) {
-    return unimplemented("sceMtpIfSendDataWithParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfSendEvent) {
-    return unimplemented("sceMtpIfSendEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfSendResponse) {
-    return unimplemented("sceMtpIfSendResponse");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfStartDriver) {
-    return unimplemented("sceMtpIfStartDriver");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfStartPort) {
-    return unimplemented("sceMtpIfStartPort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfStopDriver) {
-    return unimplemented("sceMtpIfStopDriver");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfStopPort) {
-    return unimplemented("sceMtpIfStopPort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceMtpIfWaitConnect) {
-    return unimplemented("sceMtpIfWaitConnect");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceMtpIfCancelTransfer)

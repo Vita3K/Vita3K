@@ -18,59 +18,59 @@
 #include "SceAudioencUser.h"
 
 EXPORT(int, sceAudioencClearContext) {
-    return unimplemented("sceAudioencClearContext");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencCreateEncoder) {
-    return unimplemented("sceAudioencCreateEncoder");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencCreateEncoderExternal) {
-    return unimplemented("sceAudioencCreateEncoderExternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencCreateEncoderResident) {
-    return unimplemented("sceAudioencCreateEncoderResident");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencDeleteEncoder) {
-    return unimplemented("sceAudioencDeleteEncoder");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencDeleteEncoderExternal) {
-    return unimplemented("sceAudioencDeleteEncoderExternal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencDeleteEncoderResident) {
-    return unimplemented("sceAudioencDeleteEncoderResident");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencEncode) {
-    return unimplemented("sceAudioencEncode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencEncodeNFrames) {
-    return unimplemented("sceAudioencEncodeNFrames");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencGetContextSize) {
-    return unimplemented("sceAudioencGetContextSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencGetInternalError) {
-    return unimplemented("sceAudioencGetInternalError");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencGetOptInfo) {
-    return unimplemented("sceAudioencGetOptInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencInitLibrary) {
-    return unimplemented("sceAudioencInitLibrary");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAudioencTermLibrary) {
-    return unimplemented("sceAudioencTermLibrary");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceAudioencClearContext)

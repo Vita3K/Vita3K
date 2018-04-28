@@ -18,95 +18,95 @@
 #include "SceFace.h"
 
 EXPORT(int, sceFaceAgeGetWorkingMemorySize) {
-    return unimplemented("sceFaceAgeGetWorkingMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceAgeRangeEstimate) {
-    return unimplemented("sceFaceAgeRangeEstimate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceAgeRangeIntegrate) {
-    return unimplemented("sceFaceAgeRangeIntegrate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceAllParts) {
-    return unimplemented("sceFaceAllParts");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceAllPartsGetWorkingMemorySize) {
-    return unimplemented("sceFaceAllPartsGetWorkingMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceAttribute) {
-    return unimplemented("sceFaceAttribute");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceAttributeGetWorkingMemorySize) {
-    return unimplemented("sceFaceAttributeGetWorkingMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceDetection) {
-    return unimplemented("sceFaceDetection");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceDetectionEx) {
-    return unimplemented("sceFaceDetectionEx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceDetectionGetDefaultParam) {
-    return unimplemented("sceFaceDetectionGetDefaultParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceDetectionGetWorkingMemorySize) {
-    return unimplemented("sceFaceDetectionGetWorkingMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceDetectionLocal) {
-    return unimplemented("sceFaceDetectionLocal");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceEstimatePoseRegion) {
-    return unimplemented("sceFaceEstimatePoseRegion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceIdentifyGetFeature) {
-    return unimplemented("sceFaceIdentifyGetFeature");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceIdentifyGetWorkingMemorySize) {
-    return unimplemented("sceFaceIdentifyGetWorkingMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceIdentifySimilarity) {
-    return unimplemented("sceFaceIdentifySimilarity");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceParts) {
-    return unimplemented("sceFaceParts");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFacePartsEx) {
-    return unimplemented("sceFacePartsEx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFacePartsGetWorkingMemorySize) {
-    return unimplemented("sceFacePartsGetWorkingMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFacePartsResultCheck) {
-    return unimplemented("sceFacePartsResultCheck");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceShapeFit) {
-    return unimplemented("sceFaceShapeFit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceShapeGetWorkingMemorySize) {
-    return unimplemented("sceFaceShapeGetWorkingMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceFaceShapeTrack) {
-    return unimplemented("sceFaceShapeTrack");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceFaceAgeGetWorkingMemorySize)

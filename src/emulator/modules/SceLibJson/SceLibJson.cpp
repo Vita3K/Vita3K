@@ -18,723 +18,723 @@
 #include "SceLibJson.h"
 
 EXPORT(int, _ZN3sce4Json11Initializer10initializeEPKNS0_13InitParameterE) {
-    return unimplemented("_ZN3sce4Json11Initializer10initializeEPKNS0_13InitParameterE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json11Initializer24setAllocatorInfoCallBackEPFviNS0_9ValueTypeEPvES3_) {
-    return unimplemented("_ZN3sce4Json11Initializer24setAllocatorInfoCallBackEPFviNS0_9ValueTypeEPvES3_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json11Initializer9terminateEv) {
-    return unimplemented("_ZN3sce4Json11Initializer9terminateEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json11InitializerC1Ev) {
-    return unimplemented("_ZN3sce4Json11InitializerC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json11InitializerC2Ev) {
-    return unimplemented("_ZN3sce4Json11InitializerC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json11InitializerD1Ev) {
-    return unimplemented("_ZN3sce4Json11InitializerD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json11InitializerD2Ev) {
-    return unimplemented("_ZN3sce4Json11InitializerD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json12MemAllocator11notifyErrorEijPv) {
-    return unimplemented("_ZN3sce4Json12MemAllocator11notifyErrorEijPv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json12MemAllocatorC1Ev) {
-    return unimplemented("_ZN3sce4Json12MemAllocatorC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json12MemAllocatorC2Ev) {
-    return unimplemented("_ZN3sce4Json12MemAllocatorC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json12MemAllocatorD0Ev) {
-    return unimplemented("_ZN3sce4Json12MemAllocatorD0Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json12MemAllocatorD1Ev) {
-    return unimplemented("_ZN3sce4Json12MemAllocatorD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json12MemAllocatorD2Ev) {
-    return unimplemented("_ZN3sce4Json12MemAllocatorD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array5clearEv) {
-    return unimplemented("_ZN3sce4Json5Array5clearEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array5eraseERKNS1_8iteratorE) {
-    return unimplemented("_ZN3sce4Json5Array5eraseERKNS1_8iteratorE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array6insertERKNS1_8iteratorERKNS0_5ValueE) {
-    return unimplemented("_ZN3sce4Json5Array6insertERKNS1_8iteratorERKNS0_5ValueE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iterator7advanceEj) {
-    return unimplemented("_ZN3sce4Json5Array8iterator7advanceEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iteratorC1ERKS2_) {
-    return unimplemented("_ZN3sce4Json5Array8iteratorC1ERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iteratorC1Ev) {
-    return unimplemented("_ZN3sce4Json5Array8iteratorC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iteratorC2ERKS2_) {
-    return unimplemented("_ZN3sce4Json5Array8iteratorC2ERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iteratorC2Ev) {
-    return unimplemented("_ZN3sce4Json5Array8iteratorC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iteratorD1Ev) {
-    return unimplemented("_ZN3sce4Json5Array8iteratorD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iteratorD2Ev) {
-    return unimplemented("_ZN3sce4Json5Array8iteratorD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iteratoraSERKS2_) {
-    return unimplemented("_ZN3sce4Json5Array8iteratoraSERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iteratorppEi) {
-    return unimplemented("_ZN3sce4Json5Array8iteratorppEi");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8iteratorppEv) {
-    return unimplemented("_ZN3sce4Json5Array8iteratorppEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array8pop_backEv) {
-    return unimplemented("_ZN3sce4Json5Array8pop_backEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Array9push_backERKNS0_5ValueE) {
-    return unimplemented("_ZN3sce4Json5Array9push_backERKNS0_5ValueE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ArrayC1ERKS1_) {
-    return unimplemented("_ZN3sce4Json5ArrayC1ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ArrayC1Ev) {
-    return unimplemented("_ZN3sce4Json5ArrayC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ArrayC2ERKS1_) {
-    return unimplemented("_ZN3sce4Json5ArrayC2ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ArrayC2Ev) {
-    return unimplemented("_ZN3sce4Json5ArrayC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ArrayD1Ev) {
-    return unimplemented("_ZN3sce4Json5ArrayD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ArrayD2Ev) {
-    return unimplemented("_ZN3sce4Json5ArrayD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ArrayaSERKS1_) {
-    return unimplemented("_ZN3sce4Json5ArrayaSERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value10referArrayEv) {
-    return unimplemented("_ZN3sce4Json5Value10referArrayEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value10referValueERKNS0_6StringE) {
-    return unimplemented("_ZN3sce4Json5Value10referValueERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value10referValueEj) {
-    return unimplemented("_ZN3sce4Json5Value10referValueEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value11referObjectEv) {
-    return unimplemented("_ZN3sce4Json5Value11referObjectEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value11referStringEv) {
-    return unimplemented("_ZN3sce4Json5Value11referStringEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value12referBooleanEv) {
-    return unimplemented("_ZN3sce4Json5Value12referBooleanEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value12referIntegerEv) {
-    return unimplemented("_ZN3sce4Json5Value12referIntegerEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value13referUIntegerEv) {
-    return unimplemented("_ZN3sce4Json5Value13referUIntegerEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value21setNullAccessCallBackEPFRKS1_NS0_9ValueTypeEPS2_PvES6_) {
-    return unimplemented("_ZN3sce4Json5Value21setNullAccessCallBackEPFRKS1_NS0_9ValueTypeEPS2_PvES6_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value3setENS0_9ValueTypeE) {
-    return unimplemented("_ZN3sce4Json5Value3setENS0_9ValueTypeE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value3setERKNS0_5ArrayE) {
-    return unimplemented("_ZN3sce4Json5Value3setERKNS0_5ArrayE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value3setERKNS0_6ObjectE) {
-    return unimplemented("_ZN3sce4Json5Value3setERKNS0_6ObjectE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value3setERKNS0_6StringE) {
-    return unimplemented("_ZN3sce4Json5Value3setERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value3setERKS1_) {
-    return unimplemented("_ZN3sce4Json5Value3setERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value3setEb) {
-    return unimplemented("_ZN3sce4Json5Value3setEb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value3setEd) {
-    return unimplemented("_ZN3sce4Json5Value3setEd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value3setEx) {
-    return unimplemented("_ZN3sce4Json5Value3setEx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value3setEy) {
-    return unimplemented("_ZN3sce4Json5Value3setEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value4swapERS1_) {
-    return unimplemented("_ZN3sce4Json5Value4swapERS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value5clearEv) {
-    return unimplemented("_ZN3sce4Json5Value5clearEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value9referRealEv) {
-    return unimplemented("_ZN3sce4Json5Value9referRealEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value9serializeERNS0_6StringE) {
-    return unimplemented("_ZN3sce4Json5Value9serializeERNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5Value9serializeERNS0_6StringEPFiS3_PvES4_) {
-    return unimplemented("_ZN3sce4Json5Value9serializeERNS0_6StringEPFiS3_PvES4_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1ENS0_9ValueTypeE) {
-    return unimplemented("_ZN3sce4Json5ValueC1ENS0_9ValueTypeE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1ERKNS0_5ArrayE) {
-    return unimplemented("_ZN3sce4Json5ValueC1ERKNS0_5ArrayE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1ERKNS0_6ObjectE) {
-    return unimplemented("_ZN3sce4Json5ValueC1ERKNS0_6ObjectE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1ERKNS0_6StringE) {
-    return unimplemented("_ZN3sce4Json5ValueC1ERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1ERKS1_) {
-    return unimplemented("_ZN3sce4Json5ValueC1ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1Eb) {
-    return unimplemented("_ZN3sce4Json5ValueC1Eb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1Ed) {
-    return unimplemented("_ZN3sce4Json5ValueC1Ed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1Ev) {
-    return unimplemented("_ZN3sce4Json5ValueC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1Ex) {
-    return unimplemented("_ZN3sce4Json5ValueC1Ex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC1Ey) {
-    return unimplemented("_ZN3sce4Json5ValueC1Ey");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2ENS0_9ValueTypeE) {
-    return unimplemented("_ZN3sce4Json5ValueC2ENS0_9ValueTypeE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2ERKNS0_5ArrayE) {
-    return unimplemented("_ZN3sce4Json5ValueC2ERKNS0_5ArrayE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2ERKNS0_6ObjectE) {
-    return unimplemented("_ZN3sce4Json5ValueC2ERKNS0_6ObjectE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2ERKNS0_6StringE) {
-    return unimplemented("_ZN3sce4Json5ValueC2ERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2ERKS1_) {
-    return unimplemented("_ZN3sce4Json5ValueC2ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2Eb) {
-    return unimplemented("_ZN3sce4Json5ValueC2Eb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2Ed) {
-    return unimplemented("_ZN3sce4Json5ValueC2Ed");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2Ev) {
-    return unimplemented("_ZN3sce4Json5ValueC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2Ex) {
-    return unimplemented("_ZN3sce4Json5ValueC2Ex");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueC2Ey) {
-    return unimplemented("_ZN3sce4Json5ValueC2Ey");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueD1Ev) {
-    return unimplemented("_ZN3sce4Json5ValueD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueD2Ev) {
-    return unimplemented("_ZN3sce4Json5ValueD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json5ValueaSERKS1_) {
-    return unimplemented("_ZN3sce4Json5ValueaSERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object4PairC1ERKNS0_6StringERKNS0_5ValueE) {
-    return unimplemented("_ZN3sce4Json6Object4PairC1ERKNS0_6StringERKNS0_5ValueE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object4PairC1Ev) {
-    return unimplemented("_ZN3sce4Json6Object4PairC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object4PairC2ERKNS0_6StringERKNS0_5ValueE) {
-    return unimplemented("_ZN3sce4Json6Object4PairC2ERKNS0_6StringERKNS0_5ValueE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object4PairC2Ev) {
-    return unimplemented("_ZN3sce4Json6Object4PairC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object4PairD1Ev) {
-    return unimplemented("_ZN3sce4Json6Object4PairD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object4PairD2Ev) {
-    return unimplemented("_ZN3sce4Json6Object4PairD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object5clearEv) {
-    return unimplemented("_ZN3sce4Json6Object5clearEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object5eraseERKNS0_6StringE) {
-    return unimplemented("_ZN3sce4Json6Object5eraseERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object6insertERKNS1_4PairE) {
-    return unimplemented("_ZN3sce4Json6Object6insertERKNS1_4PairE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iterator7advanceEj) {
-    return unimplemented("_ZN3sce4Json6Object8iterator7advanceEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iteratorC1ERKS2_) {
-    return unimplemented("_ZN3sce4Json6Object8iteratorC1ERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iteratorC1Ev) {
-    return unimplemented("_ZN3sce4Json6Object8iteratorC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iteratorC2ERKS2_) {
-    return unimplemented("_ZN3sce4Json6Object8iteratorC2ERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iteratorC2Ev) {
-    return unimplemented("_ZN3sce4Json6Object8iteratorC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iteratorD1Ev) {
-    return unimplemented("_ZN3sce4Json6Object8iteratorD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iteratorD2Ev) {
-    return unimplemented("_ZN3sce4Json6Object8iteratorD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iteratoraSERKS2_) {
-    return unimplemented("_ZN3sce4Json6Object8iteratoraSERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iteratorppEi) {
-    return unimplemented("_ZN3sce4Json6Object8iteratorppEi");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Object8iteratorppEv) {
-    return unimplemented("_ZN3sce4Json6Object8iteratorppEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6ObjectC1ERKS1_) {
-    return unimplemented("_ZN3sce4Json6ObjectC1ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6ObjectC1Ev) {
-    return unimplemented("_ZN3sce4Json6ObjectC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6ObjectC2ERKS1_) {
-    return unimplemented("_ZN3sce4Json6ObjectC2ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6ObjectC2Ev) {
-    return unimplemented("_ZN3sce4Json6ObjectC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6ObjectD1Ev) {
-    return unimplemented("_ZN3sce4Json6ObjectD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6ObjectD2Ev) {
-    return unimplemented("_ZN3sce4Json6ObjectD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6ObjectaSERKS1_) {
-    return unimplemented("_ZN3sce4Json6ObjectaSERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6ObjectixERKNS0_6StringE) {
-    return unimplemented("_ZN3sce4Json6ObjectixERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Parser5parseERNS0_5ValueEPFiRcPvES5_) {
-    return unimplemented("_ZN3sce4Json6Parser5parseERNS0_5ValueEPFiRcPvES5_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Parser5parseERNS0_5ValueEPKc) {
-    return unimplemented("_ZN3sce4Json6Parser5parseERNS0_5ValueEPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6Parser5parseERNS0_5ValueEPKcj) {
-    return unimplemented("_ZN3sce4Json6Parser5parseERNS0_5ValueEPKcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6String4nposE) {
-    return unimplemented("_ZN3sce4Json6String4nposE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6String5clearEv) {
-    return unimplemented("_ZN3sce4Json6String5clearEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6String6appendEPKc) {
-    return unimplemented("_ZN3sce4Json6String6appendEPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6String6appendEPKcj) {
-    return unimplemented("_ZN3sce4Json6String6appendEPKcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6String6appendERKS1_) {
-    return unimplemented("_ZN3sce4Json6String6appendERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6String6resizeEj) {
-    return unimplemented("_ZN3sce4Json6String6resizeEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringC1EPKc) {
-    return unimplemented("_ZN3sce4Json6StringC1EPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringC1ERKS1_) {
-    return unimplemented("_ZN3sce4Json6StringC1ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringC1Ev) {
-    return unimplemented("_ZN3sce4Json6StringC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringC2EPKc) {
-    return unimplemented("_ZN3sce4Json6StringC2EPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringC2ERKS1_) {
-    return unimplemented("_ZN3sce4Json6StringC2ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringC2Ev) {
-    return unimplemented("_ZN3sce4Json6StringC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringD1Ev) {
-    return unimplemented("_ZN3sce4Json6StringD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringD2Ev) {
-    return unimplemented("_ZN3sce4Json6StringD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringaSERKS1_) {
-    return unimplemented("_ZN3sce4Json6StringaSERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringpLEPKc) {
-    return unimplemented("_ZN3sce4Json6StringpLEPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce4Json6StringpLEh) {
-    return unimplemented("_ZN3sce4Json6StringpLEh");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Array3endEv) {
-    return unimplemented("_ZNK3sce4Json5Array3endEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Array4backEv) {
-    return unimplemented("_ZNK3sce4Json5Array4backEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Array4sizeEv) {
-    return unimplemented("_ZNK3sce4Json5Array4sizeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Array5beginEv) {
-    return unimplemented("_ZNK3sce4Json5Array5beginEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Array5emptyEv) {
-    return unimplemented("_ZNK3sce4Json5Array5emptyEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Array8iteratordeEv) {
-    return unimplemented("_ZNK3sce4Json5Array8iteratordeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Array8iteratorneES2_) {
-    return unimplemented("_ZNK3sce4Json5Array8iteratorneES2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Array8iteratorptEv) {
-    return unimplemented("_ZNK3sce4Json5Array8iteratorptEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value10getBooleanEv) {
-    return unimplemented("_ZNK3sce4Json5Value10getBooleanEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value10getIntegerEv) {
-    return unimplemented("_ZNK3sce4Json5Value10getIntegerEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value11getUIntegerEv) {
-    return unimplemented("_ZNK3sce4Json5Value11getUIntegerEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value5countEv) {
-    return unimplemented("_ZNK3sce4Json5Value5countEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value7getRealEv) {
-    return unimplemented("_ZNK3sce4Json5Value7getRealEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value7getRootEv) {
-    return unimplemented("_ZNK3sce4Json5Value7getRootEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value7getTypeEv) {
-    return unimplemented("_ZNK3sce4Json5Value7getTypeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value8getArrayEv) {
-    return unimplemented("_ZNK3sce4Json5Value8getArrayEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value8getValueERKNS0_6StringE) {
-    return unimplemented("_ZNK3sce4Json5Value8getValueERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value8getValueEj) {
-    return unimplemented("_ZNK3sce4Json5Value8getValueEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value8toStringERNS0_6StringE) {
-    return unimplemented("_ZNK3sce4Json5Value8toStringERNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value9getObjectEv) {
-    return unimplemented("_ZNK3sce4Json5Value9getObjectEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5Value9getStringEv) {
-    return unimplemented("_ZNK3sce4Json5Value9getStringEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5ValuecvbEv) {
-    return unimplemented("_ZNK3sce4Json5ValuecvbEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5ValueixEPKc) {
-    return unimplemented("_ZNK3sce4Json5ValueixEPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5ValueixERKNS0_6StringE) {
-    return unimplemented("_ZNK3sce4Json5ValueixERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json5ValueixEj) {
-    return unimplemented("_ZNK3sce4Json5ValueixEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6Object3endEv) {
-    return unimplemented("_ZNK3sce4Json6Object3endEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6Object4findERKNS0_6StringE) {
-    return unimplemented("_ZNK3sce4Json6Object4findERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6Object4sizeEv) {
-    return unimplemented("_ZNK3sce4Json6Object4sizeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6Object5beginEv) {
-    return unimplemented("_ZNK3sce4Json6Object5beginEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6Object5emptyEv) {
-    return unimplemented("_ZNK3sce4Json6Object5emptyEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6Object8iteratordeEv) {
-    return unimplemented("_ZNK3sce4Json6Object8iteratordeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6Object8iteratoreqES2_) {
-    return unimplemented("_ZNK3sce4Json6Object8iteratoreqES2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6Object8iteratorneES2_) {
-    return unimplemented("_ZNK3sce4Json6Object8iteratorneES2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6Object8iteratorptEv) {
-    return unimplemented("_ZNK3sce4Json6Object8iteratorptEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String2atEj) {
-    return unimplemented("_ZNK3sce4Json6String2atEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String4findEPKcj) {
-    return unimplemented("_ZNK3sce4Json6String4findEPKcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String4findEPKcjj) {
-    return unimplemented("_ZNK3sce4Json6String4findEPKcjj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String4findERKS1_j) {
-    return unimplemented("_ZNK3sce4Json6String4findERKS1_j");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String4findEcj) {
-    return unimplemented("_ZNK3sce4Json6String4findEcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String4sizeEv) {
-    return unimplemented("_ZNK3sce4Json6String4sizeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String5c_strEv) {
-    return unimplemented("_ZNK3sce4Json6String5c_strEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String5emptyEv) {
-    return unimplemented("_ZNK3sce4Json6String5emptyEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String5rfindEPKcj) {
-    return unimplemented("_ZNK3sce4Json6String5rfindEPKcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String5rfindEPKcjj) {
-    return unimplemented("_ZNK3sce4Json6String5rfindEPKcjj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String5rfindERKS1_j) {
-    return unimplemented("_ZNK3sce4Json6String5rfindERKS1_j");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String5rfindEcj) {
-    return unimplemented("_ZNK3sce4Json6String5rfindEcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String6lengthEv) {
-    return unimplemented("_ZNK3sce4Json6String6lengthEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String6substrEjj) {
-    return unimplemented("_ZNK3sce4Json6String6substrEjj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String7compareEPKc) {
-    return unimplemented("_ZNK3sce4Json6String7compareEPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6String7compareERKS1_) {
-    return unimplemented("_ZNK3sce4Json6String7compareERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6StringeqEPKc) {
-    return unimplemented("_ZNK3sce4Json6StringeqEPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce4Json6StringeqERKS1_) {
-    return unimplemented("_ZNK3sce4Json6StringeqERKS1_");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_ZN3sce4Json11Initializer10initializeEPKNS0_13InitParameterE)

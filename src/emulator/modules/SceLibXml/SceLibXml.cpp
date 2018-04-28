@@ -18,747 +18,747 @@
 #include "SceLibXml.h"
 
 EXPORT(int, _ZN3sce3Xml10SimpleDataC1EPKcj) {
-    return unimplemented("_ZN3sce3Xml10SimpleDataC1EPKcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml10SimpleDataC1Ev) {
-    return unimplemented("_ZN3sce3Xml10SimpleDataC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml10SimpleDataC2EPKcj) {
-    return unimplemented("_ZN3sce3Xml10SimpleDataC2EPKcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml10SimpleDataC2Ev) {
-    return unimplemented("_ZN3sce3Xml10SimpleDataC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml11Initializer10initializeEPKNS0_13InitParameterE) {
-    return unimplemented("_ZN3sce3Xml11Initializer10initializeEPKNS0_13InitParameterE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml11Initializer9terminateEv) {
-    return unimplemented("_ZN3sce3Xml11Initializer9terminateEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml11InitializerC1Ev) {
-    return unimplemented("_ZN3sce3Xml11InitializerC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml11InitializerC2Ev) {
-    return unimplemented("_ZN3sce3Xml11InitializerC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml11InitializerD1Ev) {
-    return unimplemented("_ZN3sce3Xml11InitializerD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml11InitializerD2Ev) {
-    return unimplemented("_ZN3sce3Xml11InitializerD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml12MemAllocatorC1Ev) {
-    return unimplemented("_ZN3sce3Xml12MemAllocatorC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml12MemAllocatorC2Ev) {
-    return unimplemented("_ZN3sce3Xml12MemAllocatorC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml12MemAllocatorD0Ev) {
-    return unimplemented("_ZN3sce3Xml12MemAllocatorD0Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml12MemAllocatorD1Ev) {
-    return unimplemented("_ZN3sce3Xml12MemAllocatorD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml12MemAllocatorD2Ev) {
-    return unimplemented("_ZN3sce3Xml12MemAllocatorD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeList10initializeEPKNS0_11InitializerE) {
-    return unimplemented("_ZN3sce3Xml13AttributeList10initializeEPKNS0_11InitializerE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeList12addAttributeEPKNS0_6StringES4_) {
-    return unimplemented("_ZN3sce3Xml13AttributeList12addAttributeEPKNS0_6StringES4_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeList5clearEv) {
-    return unimplemented("_ZN3sce3Xml13AttributeList5clearEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeList9terminateEv) {
-    return unimplemented("_ZN3sce3Xml13AttributeList9terminateEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeListC1ERKS1_) {
-    return unimplemented("_ZN3sce3Xml13AttributeListC1ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeListC1Ev) {
-    return unimplemented("_ZN3sce3Xml13AttributeListC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeListC2ERKS1_) {
-    return unimplemented("_ZN3sce3Xml13AttributeListC2ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeListC2Ev) {
-    return unimplemented("_ZN3sce3Xml13AttributeListC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeListD1Ev) {
-    return unimplemented("_ZN3sce3Xml13AttributeListD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml13AttributeListD2Ev) {
-    return unimplemented("_ZN3sce3Xml13AttributeListD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBuffer4copyEPKhjb) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBuffer4copyEPKhjb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBuffer5clearEv) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBuffer5clearEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBuffer7copyStrEPKcj) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBuffer7copyStrEPKcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBuffer7copyStrERKNS0_6StringE) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBuffer7copyStrERKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBuffer7reserveEj) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBuffer7reserveEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBuffer9terminateEv) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBuffer9terminateEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBufferC1EPKNS0_11InitializerE) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBufferC1EPKNS0_11InitializerE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBufferC2EPKNS0_11InitializerE) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBufferC2EPKNS0_11InitializerE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBufferD0Ev) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBufferD0Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBufferD1Ev) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBufferD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml14VarAllocBufferD2Ev) {
-    return unimplemented("_ZN3sce3Xml14VarAllocBufferD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml18SerializeParameterC1Ev) {
-    return unimplemented("_ZN3sce3Xml18SerializeParameterC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml18SerializeParameterC2Ev) {
-    return unimplemented("_ZN3sce3Xml18SerializeParameterC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml20bXResultToResultTypeEi) {
-    return unimplemented("_ZN3sce3Xml20bXResultToResultTypeEi");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml23getMemManagerDebugLevelEv) {
-    return unimplemented("_ZN3sce3Xml23getMemManagerDebugLevelEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml23setMemManagerDebugLevelEi) {
-    return unimplemented("_ZN3sce3Xml23setMemManagerDebugLevelEi");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilder10initializeEPKNS0_11InitializerE) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilder10initializeEPKNS0_11InitializerE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilder11getDocumentEv) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilder11getDocumentEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilder16setResolveEntityEb) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilder16setResolveEntityEb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilder20setSkipIgnorableTextEb) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilder20setSkipIgnorableTextEb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilder26setSkipIgnorableWhiteSpaceEb) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilder26setSkipIgnorableWhiteSpaceEb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilder5parseEPKNS0_6StringEb) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilder5parseEPKNS0_6StringEb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilder9terminateEv) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilder9terminateEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilderC1Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilderC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilderC2Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilderC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilderD1Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilderD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom15DocumentBuilderD2Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom15DocumentBuilderD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom4Node11appendChildEy) {
-    return unimplemented("_ZN3sce3Xml3Dom4Node11appendChildEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom4Node11removeChildEy) {
-    return unimplemented("_ZN3sce3Xml3Dom4Node11removeChildEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom4Node12insertBeforeEyy) {
-    return unimplemented("_ZN3sce3Xml3Dom4Node12insertBeforeEyy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom4NodeC1Ey) {
-    return unimplemented("_ZN3sce3Xml3Dom4NodeC1Ey");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom4NodeC2Ey) {
-    return unimplemented("_ZN3sce3Xml3Dom4NodeC2Ey");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom4NodeD1Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom4NodeD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom4NodeD2Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom4NodeD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document10importNodeEyyPKS2_y) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document10importNodeEyyPKS2_y");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document10initializeEPKNS0_11InitializerE) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document10initializeEPKNS0_11InitializerE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document10insertNodeEyyy) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document10insertNodeEyyy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document11removeChildEyy) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document11removeChildEyy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document11resetStatusEv) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document11resetStatusEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document11setWritableEv) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document11setWritableEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document12importParentEPKS2_y) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document12importParentEPKS2_y");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document12setAttrValueEyPKNS0_6StringES5_) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document12setAttrValueEyPKNS0_6StringES5_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document12setAttributeEyPKNS0_6StringES5_) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document12setAttributeEyPKNS0_6StringES5_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document13createElementEPKNS0_6StringEPKNS0_13AttributeListES5_) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document13createElementEPKNS0_6StringEPKNS0_13AttributeListES5_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document13recurseDeleteEy) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document13recurseDeleteEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document14createTextNodeEPKNS0_6StringE) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document14createTextNodeEPKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document15addElementChildEyPKNS0_6StringEPKNS0_13AttributeListES5_) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document15addElementChildEyPKNS0_6StringEPKNS0_13AttributeListES5_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document15removeAttributeEyPKNS0_6StringE) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document15removeAttributeEyPKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document16removeAttributesEy) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document16removeAttributesEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document16setAttributeListEyPKNS0_13AttributeListE) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document16setAttributeListEyPKNS0_13AttributeListE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document7setTextEyPKNS0_6StringE) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document7setTextEyPKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document9serializeEPKNS0_18SerializeParameterEPNS0_6StringE) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document9serializeEPKNS0_18SerializeParameterEPNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8Document9terminateEv) {
-    return unimplemented("_ZN3sce3Xml3Dom8Document9terminateEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8DocumentC1ERKS2_) {
-    return unimplemented("_ZN3sce3Xml3Dom8DocumentC1ERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8DocumentC1Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom8DocumentC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8DocumentC2ERKS2_) {
-    return unimplemented("_ZN3sce3Xml3Dom8DocumentC2ERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8DocumentC2Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom8DocumentC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8DocumentD1Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom8DocumentD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8DocumentD2Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom8DocumentD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8DocumentaSERKS2_) {
-    return unimplemented("_ZN3sce3Xml3Dom8DocumentaSERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeList10initializeEPKNS0_11InitializerE) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeList10initializeEPKNS0_11InitializerE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeList10insertLastEy) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeList10insertLastEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeList10removeItemEy) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeList10removeItemEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeList11insertFirstEy) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeList11insertFirstEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeList5clearEv) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeList5clearEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeList9terminateEv) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeList9terminateEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeListC1ERKS2_) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeListC1ERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeListC1Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeListC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeListC2ERKS2_) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeListC2ERKS2_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeListC2Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeListC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeListD1Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeListD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Dom8NodeListD2Ev) {
-    return unimplemented("_ZN3sce3Xml3Dom8NodeListD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6Parser10initializeEPKNS0_11InitializerE) {
-    return unimplemented("_ZN3sce3Xml3Sax6Parser10initializeEPKNS0_11InitializerE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6Parser11setUserDataEPv) {
-    return unimplemented("_ZN3sce3Xml3Sax6Parser11setUserDataEPv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6Parser16setResolveEntityEb) {
-    return unimplemented("_ZN3sce3Xml3Sax6Parser16setResolveEntityEb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6Parser18setDocumentHandlerEPNS1_15DocumentHandlerE) {
-    return unimplemented("_ZN3sce3Xml3Sax6Parser18setDocumentHandlerEPNS1_15DocumentHandlerE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6Parser26setSkipIgnorableWhiteSpaceEb) {
-    return unimplemented("_ZN3sce3Xml3Sax6Parser26setSkipIgnorableWhiteSpaceEb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6Parser5parseEPKNS0_6StringEb) {
-    return unimplemented("_ZN3sce3Xml3Sax6Parser5parseEPKNS0_6StringEb");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6Parser5resetEv) {
-    return unimplemented("_ZN3sce3Xml3Sax6Parser5resetEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6Parser9terminateEv) {
-    return unimplemented("_ZN3sce3Xml3Sax6Parser9terminateEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6ParserC1Ev) {
-    return unimplemented("_ZN3sce3Xml3Sax6ParserC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6ParserC2Ev) {
-    return unimplemented("_ZN3sce3Xml3Sax6ParserC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6ParserD1Ev) {
-    return unimplemented("_ZN3sce3Xml3Sax6ParserD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml3Sax6ParserD2Ev) {
-    return unimplemented("_ZN3sce3Xml3Sax6ParserD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4Attr10initializeEPKNS0_11InitializerE) {
-    return unimplemented("_ZN3sce3Xml4Attr10initializeEPKNS0_11InitializerE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4Attr7setNameEPKNS0_6StringE) {
-    return unimplemented("_ZN3sce3Xml4Attr7setNameEPKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4Attr8setValueEPKNS0_6StringE) {
-    return unimplemented("_ZN3sce3Xml4Attr8setValueEPKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4Attr9terminateEv) {
-    return unimplemented("_ZN3sce3Xml4Attr9terminateEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4AttrC1ERKS1_) {
-    return unimplemented("_ZN3sce3Xml4AttrC1ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4AttrC1Ev) {
-    return unimplemented("_ZN3sce3Xml4AttrC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4AttrC2ERKS1_) {
-    return unimplemented("_ZN3sce3Xml4AttrC2ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4AttrC2Ev) {
-    return unimplemented("_ZN3sce3Xml4AttrC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4AttrD1Ev) {
-    return unimplemented("_ZN3sce3Xml4AttrD1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4AttrD2Ev) {
-    return unimplemented("_ZN3sce3Xml4AttrD2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4AttraSERKS1_) {
-    return unimplemented("_ZN3sce3Xml4AttraSERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml4Util9strResultEi) {
-    return unimplemented("_ZN3sce3Xml4Util9strResultEi");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml6StringC1EPKc) {
-    return unimplemented("_ZN3sce3Xml6StringC1EPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml6StringC1EPKcj) {
-    return unimplemented("_ZN3sce3Xml6StringC1EPKcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml6StringC1ERKS1_) {
-    return unimplemented("_ZN3sce3Xml6StringC1ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml6StringC1Ev) {
-    return unimplemented("_ZN3sce3Xml6StringC1Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml6StringC2EPKc) {
-    return unimplemented("_ZN3sce3Xml6StringC2EPKc");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml6StringC2EPKcj) {
-    return unimplemented("_ZN3sce3Xml6StringC2EPKcj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml6StringC2ERKS1_) {
-    return unimplemented("_ZN3sce3Xml6StringC2ERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml6StringC2Ev) {
-    return unimplemented("_ZN3sce3Xml6StringC2Ev");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZN3sce3Xml6StringaSERKS1_) {
-    return unimplemented("_ZN3sce3Xml6StringaSERKS1_");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml13AttributeList11isAvailableEv) {
-    return unimplemented("_ZNK3sce3Xml13AttributeList11isAvailableEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml13AttributeList12getAttributeEPKNS0_6StringE) {
-    return unimplemented("_ZNK3sce3Xml13AttributeList12getAttributeEPKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml13AttributeList12getAttributeEj) {
-    return unimplemented("_ZNK3sce3Xml13AttributeList12getAttributeEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml13AttributeList9getLengthEv) {
-    return unimplemented("_ZNK3sce3Xml13AttributeList9getLengthEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom13DocumentDebug13getStructSizeEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom13DocumentDebug13getStructSizeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom13DocumentDebug16getAttrTableSizeEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom13DocumentDebug16getAttrTableSizeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom13DocumentDebug16getCharTableSizeEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom13DocumentDebug16getCharTableSizeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom13DocumentDebug19getElementTableSizeEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom13DocumentDebug19getElementTableSizeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node11getNodeNameEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node11getNodeNameEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node11getNodeTypeEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node11getNodeTypeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node11isAvailableEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node11isAvailableEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node12getLastChildEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node12getLastChildEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node12getNodeValueEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node12getNodeValueEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node13getAttributesEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node13getAttributesEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node13getChildNodesEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node13getChildNodesEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node13getFirstChildEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node13getFirstChildEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node13getParentNodeEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node13getParentNodeEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node13hasAttributesEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node13hasAttributesEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node13hasChildNodesEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node13hasChildNodesEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node14getNextSiblingEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node14getNextSiblingEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom4Node16getOwnerDocumentEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom4Node16getOwnerDocumentEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document10getDocRootEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document10getDocRootEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document10getSiblingEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document10getSiblingEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document10getXmlMetaEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document10getXmlMetaEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document10isReadOnlyEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document10isReadOnlyEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document11getAttrNameEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document11getAttrNameEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document11getNextAttrEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document11getNextAttrEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document11getNodeNameEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document11getNodeNameEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document11getNodeTypeEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document11getNodeTypeEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document11isAvailableEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document11isAvailableEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document12getAttrValueEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document12getAttrValueEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document12getAttributeEyPKNS0_6StringE) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document12getAttributeEyPKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document12getFirstAttrEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document12getFirstAttrEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document12getLastChildEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document12getLastChildEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document13getAttributesEyPNS1_8NodeListE) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document13getAttributesEyPNS1_8NodeListE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document13getChildNodesEyPNS1_8NodeListE) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document13getChildNodesEyPNS1_8NodeListE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document13getEntityTypeEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document13getEntityTypeEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document13getFirstChildEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document13getFirstChildEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document13hasAttributesEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document13hasAttributesEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document13hasChildNodesEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document13hasChildNodesEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document14getSkippedTextEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document14getSkippedTextEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document20getElementsByTagNameEyPKNS0_6StringEPNS1_8NodeListE) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document20getElementsByTagNameEyPKNS0_6StringEPNS1_8NodeListE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document7getRootEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document7getRootEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document7getTextEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document7getTextEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document9getEntityEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document9getEntityEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document9getParentEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document9getParentEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8Document9getStatusEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom8Document9getStatusEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8NodeList11isAvailableEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom8NodeList11isAvailableEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8NodeList4itemEj) {
-    return unimplemented("_ZNK3sce3Xml3Dom8NodeList4itemEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8NodeList8findItemEPKNS0_6StringE) {
-    return unimplemented("_ZNK3sce3Xml3Dom8NodeList8findItemEPKNS0_6StringE");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8NodeList8findItemEy) {
-    return unimplemented("_ZNK3sce3Xml3Dom8NodeList8findItemEy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8NodeList9getLengthEv) {
-    return unimplemented("_ZNK3sce3Xml3Dom8NodeList9getLengthEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml3Dom8NodeListixEj) {
-    return unimplemented("_ZNK3sce3Xml3Dom8NodeListixEj");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml4Attr11isAvailableEv) {
-    return unimplemented("_ZNK3sce3Xml4Attr11isAvailableEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml4Attr7getNameEv) {
-    return unimplemented("_ZNK3sce3Xml4Attr7getNameEv");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, _ZNK3sce3Xml4Attr8getValueEv) {
-    return unimplemented("_ZNK3sce3Xml4Attr8getValueEv");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_ZN3sce3Xml10SimpleDataC1EPKcj)

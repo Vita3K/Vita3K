@@ -18,55 +18,55 @@
 #include "SceTeleportClient.h"
 
 EXPORT(int, sceTeleportClientClearCacheInfo) {
-    return unimplemented("sceTeleportClientClearCacheInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientDeleteRemoteApp) {
-    return unimplemented("sceTeleportClientDeleteRemoteApp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientEndSearchDevice) {
-    return unimplemented("sceTeleportClientEndSearchDevice");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientFinalize) {
-    return unimplemented("sceTeleportClientFinalize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientGetCacheInfo) {
-    return unimplemented("sceTeleportClientGetCacheInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientGetDeviceDescription) {
-    return unimplemented("sceTeleportClientGetDeviceDescription");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientGetRemoteAppInfo) {
-    return unimplemented("sceTeleportClientGetRemoteAppInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientGetRemoteAppInfoNum) {
-    return unimplemented("sceTeleportClientGetRemoteAppInfoNum");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientInitialize) {
-    return unimplemented("sceTeleportClientInitialize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientLaunchRemoteApp) {
-    return unimplemented("sceTeleportClientLaunchRemoteApp");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientRegisterGetDeviceInfoCallback) {
-    return unimplemented("sceTeleportClientRegisterGetDeviceInfoCallback");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientStartSearchDevice) {
-    return unimplemented("sceTeleportClientStartSearchDevice");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceTeleportClientWakeupLatestDevice) {
-    return unimplemented("sceTeleportClientWakeupLatestDevice");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceTeleportClientClearCacheInfo)

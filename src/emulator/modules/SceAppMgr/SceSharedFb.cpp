@@ -18,51 +18,51 @@
 #include "SceSharedFb.h"
 
 EXPORT(int, _sceSharedFbOpen) {
-    return unimplemented("_sceSharedFbOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbBegin) {
-    return unimplemented("sceSharedFbBegin");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbClose) {
-    return unimplemented("sceSharedFbClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbCreate) {
-    return unimplemented("sceSharedFbCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbDelete) {
-    return unimplemented("sceSharedFbDelete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbEnd) {
-    return unimplemented("sceSharedFbEnd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbGetInfo) {
-    return unimplemented("sceSharedFbGetInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbGetRenderingInfo) {
-    return unimplemented("sceSharedFbGetRenderingInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbGetShellRenderPort) {
-    return unimplemented("sceSharedFbGetShellRenderPort");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbUpdateProcess) {
-    return unimplemented("sceSharedFbUpdateProcess");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbUpdateProcessBegin) {
-    return unimplemented("sceSharedFbUpdateProcessBegin");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSharedFbUpdateProcessEnd) {
-    return unimplemented("sceSharedFbUpdateProcessEnd");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(_sceSharedFbOpen)

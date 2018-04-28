@@ -18,127 +18,127 @@
 #include "SceLibRudp.h"
 
 EXPORT(int, sceRudpActivate) {
-    return unimplemented("sceRudpActivate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpBind) {
-    return unimplemented("sceRudpBind");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpCreateContext) {
-    return unimplemented("sceRudpCreateContext");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpEnableInternalIOThread) {
-    return unimplemented("sceRudpEnableInternalIOThread");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpEnableInternalIOThread2) {
-    return unimplemented("sceRudpEnableInternalIOThread2");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpEnd) {
-    return unimplemented("sceRudpEnd");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpFlush) {
-    return unimplemented("sceRudpFlush");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpGetContextStatus) {
-    return unimplemented("sceRudpGetContextStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpGetLocalInfo) {
-    return unimplemented("sceRudpGetLocalInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpGetMaxSegmentSize) {
-    return unimplemented("sceRudpGetMaxSegmentSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpGetNumberOfPacketsToRead) {
-    return unimplemented("sceRudpGetNumberOfPacketsToRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpGetOption) {
-    return unimplemented("sceRudpGetOption");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpGetRemoteInfo) {
-    return unimplemented("sceRudpGetRemoteInfo");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpGetSizeReadable) {
-    return unimplemented("sceRudpGetSizeReadable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpGetSizeWritable) {
-    return unimplemented("sceRudpGetSizeWritable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpGetStatus) {
-    return unimplemented("sceRudpGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpInit) {
-    return unimplemented("sceRudpInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpInitiate) {
-    return unimplemented("sceRudpInitiate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpNetReceived) {
-    return unimplemented("sceRudpNetReceived");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpPollCancel) {
-    return unimplemented("sceRudpPollCancel");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpPollControl) {
-    return unimplemented("sceRudpPollControl");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpPollCreate) {
-    return unimplemented("sceRudpPollCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpPollDestroy) {
-    return unimplemented("sceRudpPollDestroy");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpPollWait) {
-    return unimplemented("sceRudpPollWait");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpProcessEvents) {
-    return unimplemented("sceRudpProcessEvents");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpRead) {
-    return unimplemented("sceRudpRead");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpSetEventHandler) {
-    return unimplemented("sceRudpSetEventHandler");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpSetMaxSegmentSize) {
-    return unimplemented("sceRudpSetMaxSegmentSize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpSetOption) {
-    return unimplemented("sceRudpSetOption");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpTerminate) {
-    return unimplemented("sceRudpTerminate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceRudpWrite) {
-    return unimplemented("sceRudpWrite");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceRudpActivate)

@@ -21,179 +21,179 @@
 #include <psp2/system_param.h>
 
 EXPORT(int, sceAppUtilAddCookieWebBrowser) {
-    return unimplemented("sceAppUtilAddCookieWebBrowser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAddcontMount) {
-    return unimplemented("sceAppUtilAddcontMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAddcontUmount) {
-    return unimplemented("sceAppUtilAddcontUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseGameCustomData) {
-    return unimplemented("sceAppUtilAppEventParseGameCustomData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseIncomingDialog) {
-    return unimplemented("sceAppUtilAppEventParseIncomingDialog");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseLiveArea) {
-    return unimplemented("sceAppUtilAppEventParseLiveArea");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseNearGift) {
-    return unimplemented("sceAppUtilAppEventParseNearGift");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseNpActivity) {
-    return unimplemented("sceAppUtilAppEventParseNpActivity");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseNpAppDataMessage) {
-    return unimplemented("sceAppUtilAppEventParseNpAppDataMessage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseNpBasicJoinablePresence) {
-    return unimplemented("sceAppUtilAppEventParseNpBasicJoinablePresence");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseNpInviteMessage) {
-    return unimplemented("sceAppUtilAppEventParseNpInviteMessage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseScreenShotNotification) {
-    return unimplemented("sceAppUtilAppEventParseScreenShotNotification");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseSessionInvitation) {
-    return unimplemented("sceAppUtilAppEventParseSessionInvitation");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseTeleport) {
-    return unimplemented("sceAppUtilAppEventParseTeleport");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseTriggerUtil) {
-    return unimplemented("sceAppUtilAppEventParseTriggerUtil");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppEventParseWebBrowser) {
-    return unimplemented("sceAppUtilAppEventParseWebBrowser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilAppParamGetInt) {
-    return unimplemented("sceAppUtilAppParamGetInt");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilBgdlGetStatus) {
-    return unimplemented("sceAppUtilBgdlGetStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilDrmClose) {
-    return unimplemented("sceAppUtilDrmClose");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilDrmOpen) {
-    return unimplemented("sceAppUtilDrmOpen");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilInit) {
-    return unimplemented("sceAppUtilInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilLaunchWebBrowser) {
-    return unimplemented("sceAppUtilLaunchWebBrowser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilLoadSafeMemory) {
-    return unimplemented("sceAppUtilLoadSafeMemory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilMusicMount) {
-    return unimplemented("sceAppUtilMusicMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilMusicUmount) {
-    return unimplemented("sceAppUtilMusicUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilPhotoMount) {
-    return unimplemented("sceAppUtilPhotoMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilPhotoUmount) {
-    return unimplemented("sceAppUtilPhotoUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilPspSaveDataGetDirNameList) {
-    return unimplemented("sceAppUtilPspSaveDataGetDirNameList");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilPspSaveDataLoad) {
-    return unimplemented("sceAppUtilPspSaveDataLoad");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilReceiveAppEvent) {
-    return unimplemented("sceAppUtilReceiveAppEvent");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilResetCookieWebBrowser) {
-    return unimplemented("sceAppUtilResetCookieWebBrowser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataDataRemove) {
-    return unimplemented("sceAppUtilSaveDataDataRemove");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataDataSave) {
-    return unimplemented("sceAppUtilSaveDataDataSave");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataGetQuota) {
-    return unimplemented("sceAppUtilSaveDataGetQuota");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataMount) {
-    return unimplemented("sceAppUtilSaveDataMount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotCreate) {
-    return unimplemented("sceAppUtilSaveDataSlotCreate");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotDelete) {
-    return unimplemented("sceAppUtilSaveDataSlotDelete");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotGetParam) {
-    return unimplemented("sceAppUtilSaveDataSlotGetParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotSearch) {
-    return unimplemented("sceAppUtilSaveDataSlotSearch");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotSetParam) {
-    return unimplemented("sceAppUtilSaveDataSlotSetParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveDataUmount) {
-    return unimplemented("sceAppUtilSaveDataUmount");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSaveSafeMemory) {
-    return unimplemented("sceAppUtilSaveSafeMemory");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilShutdown) {
-    return unimplemented("sceAppUtilShutdown");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilStoreBrowse) {
-    return unimplemented("sceAppUtilStoreBrowse");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {

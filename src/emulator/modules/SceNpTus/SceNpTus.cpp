@@ -18,271 +18,271 @@
 #include "SceNpTus.h"
 
 EXPORT(int, sceNpTssGetData) {
-    return unimplemented("sceNpTssGetData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTssGetDataAsync) {
-    return unimplemented("sceNpTssGetDataAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTssGetDataNoLimit) {
-    return unimplemented("sceNpTssGetDataNoLimit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTssGetDataNoLimitAsync) {
-    return unimplemented("sceNpTssGetDataNoLimitAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTssGetSmallStorage) {
-    return unimplemented("sceNpTssGetSmallStorage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTssGetSmallStorageAsync) {
-    return unimplemented("sceNpTssGetSmallStorageAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTssGetStorage) {
-    return unimplemented("sceNpTssGetStorage");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTssGetStorageAsync) {
-    return unimplemented("sceNpTssGetStorageAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusAbortRequest) {
-    return unimplemented("sceNpTusAbortRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusAddAndGetVariable) {
-    return unimplemented("sceNpTusAddAndGetVariable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusAddAndGetVariableAsync) {
-    return unimplemented("sceNpTusAddAndGetVariableAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusAddAndGetVariableVUser) {
-    return unimplemented("sceNpTusAddAndGetVariableVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusAddAndGetVariableVUserAsync) {
-    return unimplemented("sceNpTusAddAndGetVariableVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusChangeModeForOtherSaveDataOwners) {
-    return unimplemented("sceNpTusChangeModeForOtherSaveDataOwners");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusCreateRequest) {
-    return unimplemented("sceNpTusCreateRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusCreateTitleCtx) {
-    return unimplemented("sceNpTusCreateTitleCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteMultiSlotData) {
-    return unimplemented("sceNpTusDeleteMultiSlotData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteMultiSlotDataAsync) {
-    return unimplemented("sceNpTusDeleteMultiSlotDataAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteMultiSlotDataVUser) {
-    return unimplemented("sceNpTusDeleteMultiSlotDataVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteMultiSlotDataVUserAsync) {
-    return unimplemented("sceNpTusDeleteMultiSlotDataVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteMultiSlotVariable) {
-    return unimplemented("sceNpTusDeleteMultiSlotVariable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteMultiSlotVariableAsync) {
-    return unimplemented("sceNpTusDeleteMultiSlotVariableAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteMultiSlotVariableVUser) {
-    return unimplemented("sceNpTusDeleteMultiSlotVariableVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteMultiSlotVariableVUserAsync) {
-    return unimplemented("sceNpTusDeleteMultiSlotVariableVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteRequest) {
-    return unimplemented("sceNpTusDeleteRequest");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusDeleteTitleCtx) {
-    return unimplemented("sceNpTusDeleteTitleCtx");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetData) {
-    return unimplemented("sceNpTusGetData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetDataAsync) {
-    return unimplemented("sceNpTusGetDataAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetDataVUser) {
-    return unimplemented("sceNpTusGetDataVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetDataVUserAsync) {
-    return unimplemented("sceNpTusGetDataVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetFriendsDataStatus) {
-    return unimplemented("sceNpTusGetFriendsDataStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetFriendsDataStatusAsync) {
-    return unimplemented("sceNpTusGetFriendsDataStatusAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetFriendsVariable) {
-    return unimplemented("sceNpTusGetFriendsVariable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetFriendsVariableAsync) {
-    return unimplemented("sceNpTusGetFriendsVariableAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiSlotDataStatus) {
-    return unimplemented("sceNpTusGetMultiSlotDataStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiSlotDataStatusAsync) {
-    return unimplemented("sceNpTusGetMultiSlotDataStatusAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiSlotDataStatusVUser) {
-    return unimplemented("sceNpTusGetMultiSlotDataStatusVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiSlotDataStatusVUserAsync) {
-    return unimplemented("sceNpTusGetMultiSlotDataStatusVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiSlotVariable) {
-    return unimplemented("sceNpTusGetMultiSlotVariable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiSlotVariableAsync) {
-    return unimplemented("sceNpTusGetMultiSlotVariableAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiSlotVariableVUser) {
-    return unimplemented("sceNpTusGetMultiSlotVariableVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiSlotVariableVUserAsync) {
-    return unimplemented("sceNpTusGetMultiSlotVariableVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiUserDataStatus) {
-    return unimplemented("sceNpTusGetMultiUserDataStatus");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiUserDataStatusAsync) {
-    return unimplemented("sceNpTusGetMultiUserDataStatusAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiUserDataStatusVUser) {
-    return unimplemented("sceNpTusGetMultiUserDataStatusVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiUserDataStatusVUserAsync) {
-    return unimplemented("sceNpTusGetMultiUserDataStatusVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiUserVariable) {
-    return unimplemented("sceNpTusGetMultiUserVariable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiUserVariableAsync) {
-    return unimplemented("sceNpTusGetMultiUserVariableAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiUserVariableVUser) {
-    return unimplemented("sceNpTusGetMultiUserVariableVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusGetMultiUserVariableVUserAsync) {
-    return unimplemented("sceNpTusGetMultiUserVariableVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusInit) {
-    return unimplemented("sceNpTusInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusPollAsync) {
-    return unimplemented("sceNpTusPollAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusSetData) {
-    return unimplemented("sceNpTusSetData");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusSetDataAsync) {
-    return unimplemented("sceNpTusSetDataAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusSetDataVUser) {
-    return unimplemented("sceNpTusSetDataVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusSetDataVUserAsync) {
-    return unimplemented("sceNpTusSetDataVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusSetMultiSlotVariable) {
-    return unimplemented("sceNpTusSetMultiSlotVariable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusSetMultiSlotVariableAsync) {
-    return unimplemented("sceNpTusSetMultiSlotVariableAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusSetMultiSlotVariableVUser) {
-    return unimplemented("sceNpTusSetMultiSlotVariableVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusSetMultiSlotVariableVUserAsync) {
-    return unimplemented("sceNpTusSetMultiSlotVariableVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusSetTimeout) {
-    return unimplemented("sceNpTusSetTimeout");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusTerm) {
-    return unimplemented("sceNpTusTerm");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusTryAndSetVariable) {
-    return unimplemented("sceNpTusTryAndSetVariable");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusTryAndSetVariableAsync) {
-    return unimplemented("sceNpTusTryAndSetVariableAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusTryAndSetVariableVUser) {
-    return unimplemented("sceNpTusTryAndSetVariableVUser");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusTryAndSetVariableVUserAsync) {
-    return unimplemented("sceNpTusTryAndSetVariableVUserAsync");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceNpTusWaitAsync) {
-    return unimplemented("sceNpTusWaitAsync");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceNpTssGetData)

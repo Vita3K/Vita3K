@@ -18,11 +18,11 @@
 #include "SceSblSsUpdateMgr.h"
 
 EXPORT(int, sceSblSsUpdateMgrGetBootMode) {
-    return unimplemented("sceSblSsUpdateMgrGetBootMode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSblSsUpdateMgrSetBootMode) {
-    return unimplemented("sceSblSsUpdateMgrSetBootMode");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceSblSsUpdateMgrGetBootMode)

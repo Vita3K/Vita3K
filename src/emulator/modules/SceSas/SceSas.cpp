@@ -18,135 +18,135 @@
 #include "SceSas.h"
 
 EXPORT(int, sceSasCore) {
-    return unimplemented("sceSasCore");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasCoreWithMix) {
-    return unimplemented("sceSasCoreWithMix");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasExit) {
-    return unimplemented("sceSasExit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasGetDryPeak) {
-    return unimplemented("sceSasGetDryPeak");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasGetEndState) {
-    return unimplemented("sceSasGetEndState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasGetEnvelope) {
-    return unimplemented("sceSasGetEnvelope");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasGetGrain) {
-    return unimplemented("sceSasGetGrain");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasGetNeededMemorySize) {
-    return unimplemented("sceSasGetNeededMemorySize");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasGetOutputmode) {
-    return unimplemented("sceSasGetOutputmode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasGetPauseState) {
-    return unimplemented("sceSasGetPauseState");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasGetPreMasterPeak) {
-    return unimplemented("sceSasGetPreMasterPeak");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasGetWetPeak) {
-    return unimplemented("sceSasGetWetPeak");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasInit) {
-    return unimplemented("sceSasInit");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasInitWithGrain) {
-    return unimplemented("sceSasInitWithGrain");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetADSR) {
-    return unimplemented("sceSasSetADSR");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetADSRmode) {
-    return unimplemented("sceSasSetADSRmode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetDistortion) {
-    return unimplemented("sceSasSetDistortion");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetEffect) {
-    return unimplemented("sceSasSetEffect");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetEffectParam) {
-    return unimplemented("sceSasSetEffectParam");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetEffectType) {
-    return unimplemented("sceSasSetEffectType");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetEffectVolume) {
-    return unimplemented("sceSasSetEffectVolume");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetGrain) {
-    return unimplemented("sceSasSetGrain");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetKeyOff) {
-    return unimplemented("sceSasSetKeyOff");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetKeyOn) {
-    return unimplemented("sceSasSetKeyOn");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetNoise) {
-    return unimplemented("sceSasSetNoise");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetOutputmode) {
-    return unimplemented("sceSasSetOutputmode");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetPause) {
-    return unimplemented("sceSasSetPause");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetPitch) {
-    return unimplemented("sceSasSetPitch");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetSL) {
-    return unimplemented("sceSasSetSL");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetSimpleADSR) {
-    return unimplemented("sceSasSetSimpleADSR");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetVoice) {
-    return unimplemented("sceSasSetVoice");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetVoicePCM) {
-    return unimplemented("sceSasSetVoicePCM");
+    return unimplemented(export_name);
 }
 
 EXPORT(int, sceSasSetVolume) {
-    return unimplemented("sceSasSetVolume");
+    return unimplemented(export_name);
 }
 
 BRIDGE_IMPL(sceSasCore)
