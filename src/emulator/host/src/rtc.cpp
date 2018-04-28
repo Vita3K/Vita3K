@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <host/rtc.h>
-
 #include <util/log.h>
 
 std::uint64_t rtc_base_ticks() {
@@ -40,13 +39,28 @@ std::uint64_t rtc_get_ticks(const HostState &host) {
     return base_ticks + now_ticks;
 }
 
+#ifdef WIN32
+std::uint64_t convert_filetime(const _FILETIME &filetime) {
+    // Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
+    static const uint64_t EPOCH_DIFFERENCE_MICROS = 11644473600000000ull;
+
+    // First convert 100-ns intervals to microseconds, then adjust for the
+    // epoch difference
+    uint64_t total_us = (((uint64_t)filetime.dwHighDateTime << 32) | (uint64_t)filetime.dwLowDateTime) / 10;
+    total_us -= EPOCH_DIFFERENCE_MICROS;
+    return total_us;
+}
+#else
+std::uint64_t convert_timespec(const timespec &timespec) {
+    return timespec.tv_sec * 1'000'000 + timespec.tv_nsec / 1'000;
+}
+#endif
+
 // The following functions are from PPSSPP
 // Copyright (c) 2012- PPSSPP Project.
 
 #if defined(_WIN32)
-time_t rtc_timegm(struct tm *tm) {
-    return _mkgmtime(tm);
-}
+time_t rtc_timegm(struct tm *tm) { return _mkgmtime(tm); }
 #elif (defined(__GLIBC__) && !defined(__ANDROID__))
 #define rtc_timegm timegm
 #else
