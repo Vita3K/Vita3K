@@ -451,6 +451,10 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path) {
 
     std::string file_path;
 
+    // read and execute access rights
+    statp->st_mode = SCE_S_IRUSR | SCE_S_IRGRP | SCE_S_IROTH |
+        SCE_S_IXUSR | SCE_S_IXGRP | SCE_S_IXOTH;
+
     switch (device) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
