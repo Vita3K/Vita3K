@@ -549,7 +549,7 @@ EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(file, stat, host.pref_path.c_str());
+    return stat_file(file, stat, host.pref_path.c_str(), host);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
