@@ -204,8 +204,8 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
         return fd;
     }
     case VitaIoDevice::APP0: {
-        if (flags == SCE_O_RDONLY)
-            LOG_WARN("Writing to app0(.vpk) unimplemented");
+        if (flags & SCE_O_WRONLY)
+            LOG_WARN("Attempt to open a read-only partition (app0) with writing privileges.");
 
         if (!io.vpk) {
             return -1;
