@@ -64,21 +64,23 @@ bool load_sfo(SfoFile &sfile, const std::vector<uint8_t> &content) {
     return true;
 }
 
-std::string find_data(SfoFile &file, const std::string &key) {
+bool find_data(std::string& out_data, SfoFile &file, const std::string &key) {
     auto res = std::find_if(file.entries.begin(), file.entries.end(),
         [key](auto et) { return et.data.first == key; });
 
     if (res == file.entries.end()) {
-        return "";
+        return false;
     }
+    out_data = res->data.second;
 
-    return res->data.second;
+    return true;
 }
 
-std::string get_data(SfoFile &file, int id) {
+bool get_data(std::string& out_data, SfoFile &file, int id) {
     if (file.entries.size() < id) {
-        return "";
+        return false;
     }
 
-    return file.entries.at(id).data.second;
+    out_data = file.entries.at(id).data.second;
+    return true;
 }
