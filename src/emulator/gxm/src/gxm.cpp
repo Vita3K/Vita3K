@@ -141,7 +141,9 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
             parameter_name(parameter), parameter.category, parameter.type, parameter.component_count, parameter.container_index);
         switch (parameter.category) {
         case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
-            glsl << "in ";
+            if (std::atof(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION))) < 1.3) {
+                glsl << "in ";
+            }
             output_glsl_decl(glsl, parameter);
             break;
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
