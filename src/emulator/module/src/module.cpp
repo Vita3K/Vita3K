@@ -41,7 +41,7 @@ int unimplemented(const char *name) {
     return 0;
 }
 
-int error(const char *name, std::uint32_t error) {
+int ret_error_impl(const char *name, const char* error_str, std::uint32_t error_val) {
     bool inserted = false;
 
     {
@@ -50,8 +50,8 @@ int error(const char *name, std::uint32_t error) {
     }
 
     if (inserted) {
-        LOG_ERROR(">>> {} <<< returned {:#x}", name, error);
+        LOG_ERROR(">>> {} <<< returned {} ({:#x})", name, error_str, error_val);
     }
 
-    return error;
+    return error_val;
 }
