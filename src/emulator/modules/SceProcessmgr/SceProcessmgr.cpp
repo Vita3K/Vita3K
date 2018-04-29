@@ -17,7 +17,7 @@
 
 #include "SceProcessmgr.h"
 
-#include <host/rtc.h>
+#include <rtc/rtc.h>
 #include <io/functions.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/processmgr.h>
@@ -63,7 +63,7 @@ EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> t
     if (timeAddr) {
         auto *tv = timeAddr.get(host.mem);
 
-        const auto ticks = rtc_get_ticks(host);
+        const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick);
 
         tv->tv_sec = ticks / VITA_CLOCKS_PER_SEC;
         tv->tv_usec = ticks % VITA_CLOCKS_PER_SEC;
@@ -85,7 +85,7 @@ EXPORT(int, sceKernelLibcMktime) {
 }
 
 EXPORT(int, sceKernelLibcTime, uint32_t *time) {
-    const auto ticks = rtc_get_ticks(host) / VITA_CLOCKS_PER_SEC;
+    const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick) / VITA_CLOCKS_PER_SEC;
 
     if (time) {
         *time = ticks;

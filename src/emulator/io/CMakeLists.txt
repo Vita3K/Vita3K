@@ -11,5 +11,5 @@ add_library(
 )
 
 target_include_directories(io PUBLIC include)
-target_link_libraries(io PUBLIC host miniz vita-headers dirent)
+target_link_libraries(io PUBLIC rtc miniz vita-headers dirent)
 target_link_libraries(io PRIVATE util)

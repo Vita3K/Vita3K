@@ -19,7 +19,7 @@
 
 #include <cpu/functions.h>
 #include <host/functions.h>
-#include <host/rtc.h>
+#include <rtc/rtc.h>
 #include <io/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread_functions.h>
@@ -549,7 +549,7 @@ EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(file, stat, host.pref_path.c_str(), host);
+    return stat_file(file, stat, host.pref_path.c_str(), host.io.vpk.get(), host.kernel.base_tick.tick);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
@@ -1150,15 +1150,15 @@ EXPORT(int, sceKernelGetPMUSERENR) {
 }
 
 EXPORT(SceUInt64, sceKernelGetProcessTime) {
-    return rtc_get_ticks(host);
+    return rtc_get_ticks(host.kernel.base_tick.tick);
 }
 
 EXPORT(SceUInt32, sceKernelGetProcessTimeLow) {
-    return static_cast<SceUInt32>(rtc_get_ticks(host));
+    return static_cast<SceUInt32>(rtc_get_ticks(host.kernel.base_tick.tick));
 }
 
 EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
-    return rtc_get_ticks(host);
+    return rtc_get_ticks(host.kernel.base_tick.tick);
 }
 
 EXPORT(int, sceKernelGetRWLockInfo) {

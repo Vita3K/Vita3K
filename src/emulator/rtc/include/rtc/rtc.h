@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <host/state.h>
 #include <psp2/types.h>
 
 #include <chrono>
@@ -38,7 +37,7 @@ constexpr auto VITA_CLOCKS_PER_SEC = 1'000'000;
 using VitaClocks = std::chrono::duration<std::uint64_t, std::ratio<1, VITA_CLOCKS_PER_SEC>>;
 
 std::uint64_t rtc_base_ticks();
-std::uint64_t rtc_get_ticks(const HostState &host);
+std::uint64_t rtc_get_ticks(uint64_t base_tick);
 #ifdef WIN32
 std::uint64_t convert_filetime(const _FILETIME &filetime);
 #else
