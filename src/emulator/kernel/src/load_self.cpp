@@ -364,7 +364,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     sceKernelModuleInfo->module_start = entry_point;
 
-    const std::unique_lock<std::mutex> lock(kernel.mutex);
+    const std::lock_guard<std::mutex> lock(kernel.mutex);
     const SceUID uid = kernel.next_uid++;
     sceKernelModuleInfo->handle = uid;
     kernel.loaded_modules.emplace(uid, sceKernelModuleInfo);

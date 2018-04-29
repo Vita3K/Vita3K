@@ -64,7 +64,7 @@ SceUID create_mutex(SceUID *uid_out, HostState &host, SceUID thread_id, MutexPtr
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         mutex->owner = thread;
     }
-    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host_mutexes.emplace(uid, mutex);
 
@@ -94,7 +94,7 @@ int lock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUI
             mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count);
     }
 
-    const std::unique_lock<std::mutex> lock(mutex->mutex);
+    const std::lock_guard<std::mutex> lock(mutex->mutex);
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
@@ -117,7 +117,7 @@ int lock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUI
             // Owned by someone else
             // Sleep thread!
 
-            const std::unique_lock<std::mutex> lock2(thread->mutex);
+            const std::lock_guard<std::mutex> lock2(thread->mutex);
             assert(thread->to_do == ThreadToDo::run);
             thread->to_do = ThreadToDo::wait;
             mutex->waiting_threads.emplace(thread, lock_count, is_fifo ? 0 : thread->priority);
@@ -145,7 +145,7 @@ int unlock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, Sce
             mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count, unlock_count);
     }
 
-    const std::unique_lock<std::mutex> lock(mutex->mutex);
+    const std::lock_guard<std::mutex> lock(mutex->mutex);
 
     const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (cur_thread == mutex->owner) {
@@ -184,7 +184,7 @@ int delete_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, Sce
     }
 
     if (mutex->waiting_threads.empty()) {
-        const std::unique_lock<std::mutex> lock(mutex->mutex);
+        const std::lock_guard<std::mutex> lock(mutex->mutex);
         host_mutexes.erase(mutexid);
     } else {
         // TODO:
@@ -207,7 +207,7 @@ SceUID create_semaphore(HostState& host, const char* name, SceUInt attr, int ini
     semaphore->max = maxVal;
     semaphore->attr = attr;
     std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, semaphore->name);
-    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host.kernel.semaphores.emplace(uid, semaphore);
 
@@ -226,14 +226,14 @@ int wait_semaphore(HostState& host, SceUID thread_id, SceUID semaid, int signal,
         return error("sceKernelWaitSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
 
-    const std::unique_lock<std::mutex> lock(semaphore->mutex);
+    const std::lock_guard<std::mutex> lock(semaphore->mutex);
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     bool is_fifo = (semaphore->attr & SCE_KERNEL_ATTR_TH_FIFO);
 
     if (semaphore->val <= 0) {
-        const std::unique_lock<std::mutex> lock2(thread->mutex);
+        const std::lock_guard<std::mutex> lock2(thread->mutex);
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
         semaphore->waiting_threads.emplace(thread, signal, is_fifo ? 0 : thread->priority);
@@ -253,7 +253,7 @@ int signal_sema(HostState& host, SceUID semaid, int signal) {
         return error("sceKernelSignalSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
 
-    const std::unique_lock<std::mutex> lock(semaphore->mutex);
+    const std::lock_guard<std::mutex> lock(semaphore->mutex);
 
     if (semaphore->val + signal > semaphore->max) {
         return error("sceKernelSignalSema", SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
@@ -1529,7 +1529,7 @@ EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     {
-        const std::unique_lock<std::mutex> lock(cur_thread->mutex);
+        const std::lock_guard<std::mutex> lock(cur_thread->mutex);
         assert(cur_thread->to_do == ThreadToDo::run);
         cur_thread->to_do = ThreadToDo::wait;
         stop(*cur_thread->cpu);
@@ -1537,7 +1537,7 @@ EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
 
     {
         const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
-        const std::unique_lock<std::mutex> lock(thread->mutex);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
         thread->waiting_threads.push_back(cur_thread);
     }
 

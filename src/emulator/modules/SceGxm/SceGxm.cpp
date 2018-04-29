@@ -528,7 +528,7 @@ static int SDLCALL thread_function(void *data) {
         const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
         run_callback(*display_thread, display_callback->pc, display_callback->data);
         const Ptr<SceGxmSyncObject> newBuffer(display_callback->new_buffer);
-        std::unique_lock<std::mutex> lock(newBuffer.get(*params.mem)->mutex);
+        std::lock_guard<std::mutex> lock(newBuffer.get(*params.mem)->mutex);
         newBuffer.get(*params.mem)->value = 1;
         newBuffer.get(*params.mem)->cond_var.notify_all();
         free(*params.mem, display_callback->data);
@@ -560,7 +560,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
 
     const std::function<void(SDL_Thread *)> delete_thread = [display_thread](SDL_Thread *running_thread) {
         {
-            const std::unique_lock<std::mutex> lock(display_thread->mutex);
+            const std::lock_guard<std::mutex> lock(display_thread->mutex);
             display_thread->to_do = ThreadToDo::exit;
         }
         display_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?

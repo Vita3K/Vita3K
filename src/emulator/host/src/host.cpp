@@ -73,7 +73,7 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
 
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
-        const std::unique_lock<std::mutex> lock(thread->mutex);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
         if (thread->to_do == ThreadToDo::wait) {
             thread->to_do = ThreadToDo::run;
         }
@@ -148,7 +148,7 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
             LOG_TRACE("THREAD_ID {} EXPORTED NID {:#08x} at {:#08x} ({})) called", thread_id, nid, export_pc, name);
         }
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        const std::unique_lock<std::mutex> lock(thread->mutex);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
         write_pc(*thread->cpu, export_pc);
     }
 }
