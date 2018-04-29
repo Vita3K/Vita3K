@@ -12,11 +12,15 @@ execute_process(
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	OUTPUT_VARIABLE GIT_HASH
 	OUTPUT_STRIP_TRAILING_WHITESPACE)
-	
+
 if(GIT_HASH STREQUAL "")
 	set(VITA3K_GIT_REV "Development version")
 else()
 	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}")
+endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set(LINUX TRUE)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -83,6 +87,11 @@ if(APPLE)
 	set_target_properties(emulator PROPERTIES LINK_FLAGS "-rpath @executable_path/../Frameworks/")
 	target_sources(emulator PRIVATE Vita3K.icns)
 	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
+elseif(LINUX)
+	add_custom_command(
+		TARGET emulator
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders" "$<TARGET_FILE_DIR:emulator>/shaders")
 elseif(WIN32)
 	target_sources(emulator PRIVATE resource.h Vita3K.ico Vita3K.rc)
 	add_custom_command(
