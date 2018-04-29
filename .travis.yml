@@ -1,24 +1,51 @@
 language: cpp
-os: osx
-osx_image: xcode9.3
+
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode9.3
+      before_script:
+      - export CMAKE=cmake
+      before_deploy:
+      - git config --global user.email "builds@travis-ci.com"
+      - git config --global user.name "Travis CI"
+      - cd ${TRAVIS_BUILD_DIR}/build/bin
+      - zip -r Vita3K-mac-nightly.zip Vita3K.app
+      deploy:
+        provider: script
+        overwrite: true
+        skip_cleanup: true
+        script: bash $TRAVIS_BUILD_DIR/deploy-mac-nightly.sh
+        on:
+          repo: Vita3K/Vita3K
+          tags: false
+    - os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+          - ubuntu-toolchain-r-test
+          packages:
+          - gcc-7
+          - g++-7
+      before_script:
+      - mkdir tmp && cd tmp
+      - curl -Ls https://www.archlinux.org/packages/community/x86_64/unicorn/download | tar xJ
+      - curl -Ls https://www.archlinux.org/packages/extra/x86_64/sdl2/download | tar xJ
+      - sudo cp -r usr/* /usr/local/
+      - cd .. && rm -rf tmp
+      - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
+      - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
+      - curl -Ls https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh -o cmake-3.10.3-Linux-x86_64.sh
+      - bash cmake-3.10.3-Linux-x86_64.sh --skip-license
+      - export CMAKE=$(pwd)/bin/cmake
+
 script:
 - mkdir build
 - cd build/
-- cmake -DCMAKE_BUILD_TYPE=Release ..
+- ${CMAKE} -DCMAKE_BUILD_TYPE=Release ..
 - make -j4
-before_deploy:
-- git config --global user.email "builds@travis-ci.com"
-- git config --global user.name "Travis CI"
-- cd ${TRAVIS_BUILD_DIR}/build/bin
-- zip -r Vita3K-mac-nightly.zip Vita3K.app
-deploy:
-  provider: script
-  overwrite: true
-  skip_cleanup: true
-  script: bash $TRAVIS_BUILD_DIR/deploy-mac-nightly.sh
-  on:
-    repo: Vita3K/Vita3K
-    tags: false
+
 env:
   global:
     secure: BNMTgPAb7mywkv/LH+SyXApneR/YGIUVmLlmddNVS82BuE/+zuPAyHziiBtsDJRrYjqRVkBXYQ566q83WiAKILIrKVOgNrp+5nTkMEAZREPTUFG7IO63M0nthrPXrgR5QTc1iPF+XNWjE+inuBSZjFvBxaj461eth0XvY0Cu7eKxd3g3xdNA0ejmiLNDxr7SegCsjsuxbeVC8EcNzlYQiWq0jKX9WgBYdAB6XT6toNJ5OonRS7T5XxnjvF0NtBerysKTYd14aAoGTXXoLU4nXesF7YRaxBo6FAzBaKQnLX3OPMRAVCaGEcGWUtEJcb9qv05AtTKuUzrXpRYEvsGO8dPdl/oAiniOncZkzTrjlIF1u7WDMN+MB603hTIti0k9R/RtQPQEEyNg8Et0O7qS5uGOWbdCeSppOuw5PzD4JtCOvZweO0D5RVrRe5f2xRVncoiF5jZJ55RPavbGcug5JqtR+MjVVnQJSx69i5AX3pLw08jXM7cpgitCKo9sk0YVwUSltmoVQ9TNu2hTRkcq46Dy4TNtZYc9HriJPRdQSg11juetOzpXduSPOJpehTlv4fgXBXGz1DwQTApMv46khlbWKrNxtYXNH0eXHzVQNzpgwiz5BNv8tCZRqeqmpvX69z3AWaRsmESQTWxV7eoTuKwZjnWa+SJmvXRTULr289s=
