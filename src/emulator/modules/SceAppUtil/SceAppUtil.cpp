@@ -205,7 +205,7 @@ EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
         *value = SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS;
         return 0;
     default:
-        return error(__func__, SCE_APPUTIL_ERROR_PARAMETER);
+        return RET_ERROR(__func__, SCE_APPUTIL_ERROR_PARAMETER);
     }
 }
 
@@ -221,7 +221,7 @@ EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf,
 #endif
         break;
     default:
-        return error("sceAppUtilSystemParamGetString", SCE_APPUTIL_ERROR_PARAMETER);
+        return RET_ERROR("sceAppUtilSystemParamGetString", SCE_APPUTIL_ERROR_PARAMETER);
     }
     return 0;
 }

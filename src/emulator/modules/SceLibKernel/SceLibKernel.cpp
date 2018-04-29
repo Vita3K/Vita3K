@@ -46,13 +46,13 @@ static const bool LOG_SYNC_PRIMITIVES = false;
 
 SceUID create_mutex(SceUID *uid_out, HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, const char *name, SceUInt attr, int init_count, bool is_lw) {
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
-        return error("sceKernelCreate(Lw)Mutex", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+        return RET_ERROR("sceKernelCreate(Lw)Mutex", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
     if (init_count < 0) {
-        return error("sceKernelCreate(Lw)Mutex", SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+        return RET_ERROR("sceKernelCreate(Lw)Mutex", SCE_KERNEL_ERROR_ILLEGAL_COUNT);
     }
     if (init_count > 1 && (attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE)) {
-        return error("sceKernelCreate(Lw)Mutex", SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+        return RET_ERROR("sceKernelCreate(Lw)Mutex", SCE_KERNEL_ERROR_ILLEGAL_COUNT);
     }
 
     const MutexPtr mutex = std::make_shared<Mutex>();
@@ -86,7 +86,7 @@ int lock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUI
     // TODO Don't lock twice.
     const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
     if (!mutex) {
-        return error("sceKernelLock(Lw)Mutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+        return RET_ERROR("sceKernelLock(Lw)Mutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
     }
 
     if (LOG_SYNC_PRIMITIVES) {
@@ -137,7 +137,7 @@ int lock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUI
 int unlock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int unlock_count) {
     const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
     if (!mutex) {
-        return error("sceKernelUnlock(Lw)Mutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+        return RET_ERROR("sceKernelUnlock(Lw)Mutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
     }
 
     if (LOG_SYNC_PRIMITIVES) {
@@ -150,7 +150,7 @@ int unlock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, Sce
     const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (cur_thread == mutex->owner) {
         if (unlock_count > mutex->lock_count) {
-            return error("sceKernelUnlock(Lw)Mutex", SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
+            return RET_ERROR("sceKernelUnlock(Lw)Mutex", SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
         }
         mutex->lock_count -= unlock_count;
         if (mutex->lock_count == 0) {
@@ -176,7 +176,7 @@ int unlock_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, Sce
 int delete_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid) {
     const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
     if (!mutex) {
-        return error("sceKernel(Lw)UnlockMutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+        return RET_ERROR("sceKernel(Lw)UnlockMutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
     }
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("Deleting mutex: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{} waiting_threads:{}",
@@ -199,7 +199,7 @@ int delete_mutex(HostState &host, SceUID thread_id, MutexPtrs &host_mutexes, Sce
 
 SceUID create_semaphore(HostState& host, const char* name, SceUInt attr, int initVal, int maxVal) {
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
-        return error("sceKernelCreateSema", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+        return RET_ERROR("sceKernelCreateSema", SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
 
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
@@ -223,7 +223,7 @@ int wait_semaphore(HostState& host, SceUID thread_id, SceUID semaid, int signal,
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
     if (!semaphore) {
-        return error("sceKernelWaitSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+        return RET_ERROR("sceKernelWaitSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
 
     const std::lock_guard<std::mutex> lock(semaphore->mutex);
@@ -250,13 +250,13 @@ int signal_sema(HostState& host, SceUID semaid, int signal) {
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
     if (!semaphore) {
-        return error("sceKernelSignalSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+        return RET_ERROR("sceKernelSignalSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
 
     const std::lock_guard<std::mutex> lock(semaphore->mutex);
 
     if (semaphore->val + signal > semaphore->max) {
-        return error("sceKernelSignalSema", SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
+        return RET_ERROR("sceKernelSignalSema", SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
     }
     semaphore->val += signal;
 
@@ -586,7 +586,7 @@ EXPORT(int, sceIoLseekAsync) {
 
 EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
     if (file == nullptr) {
-        return error("sceIoOpen", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+        return RET_ERROR("sceIoOpen", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     LOG_INFO("Opening file: {}", file);
     return open_file(host.io, file, flags, host.pref_path.c_str());
@@ -616,7 +616,7 @@ EXPORT(int, sceIoPwriteAsync) {
 
 EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
-        return error("sceIoRemove", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+        return RET_ERROR("sceIoRemove", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     return remove_file(path, host.pref_path.c_str());
 }
@@ -635,7 +635,7 @@ EXPORT(int, sceIoRenameAsync) {
 
 EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
-        return error("sceIoRmdir", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+        return RET_ERROR("sceIoRmdir", 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     return remove_dir(path, host.pref_path.c_str());
 }
@@ -1057,7 +1057,7 @@ EXPORT(int, sceKernelCreateSimpleEvent) {
 
 EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntry entry, int init_priority, int stack_size, SceUInt attr, int cpu_affinity_mask, const SceKernelThreadOptParam *option) {
     if (cpu_affinity_mask > 0x70000) {
-        return error("sceKernelCreateThread", SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
+        return RET_ERROR("sceKernelCreateThread", SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
     const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
         ::call_import(host, nid, thread_id);
@@ -1065,7 +1065,7 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
 
     const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, stack_size, call_import, false);
     if (thid < 0)
-        return error("sceKernelCreateThread", thid);
+        return RET_ERROR("sceKernelCreateThread", thid);
     return thid;
 }
 
@@ -1239,7 +1239,7 @@ EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *optio
     close_file(host.io, file);
     free(data);
     if (modId < 0) {
-        return error("sceKernelLoadModule", modId);
+        return RET_ERROR("sceKernelLoadModule", modId);
     };
     return modId;
 }
@@ -1247,15 +1247,15 @@ EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *optio
 EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, int flags, SceKernelLMOption *option, int *status) {
     SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str());
     if (file < 0)
-        return error("sceKernelLoadStartModule", file);
+        return RET_ERROR("sceKernelLoadStartModule", file);
     int size = seek_file(file, 0, SCE_SEEK_END, host.io);
     if (size < 0)
-        return error("sceKernelLoadStartModule", size);
+        return RET_ERROR("sceKernelLoadStartModule", size);
     void *data = malloc(size);
     if (seek_file(file, 0, SCE_SEEK_SET, host.io) < 0)
-        return error("sceKernelLoadStartModule", size);
+        return RET_ERROR("sceKernelLoadStartModule", size);
     if (read_file(data, host.io, file, size) < 0) {
-        return error("sceKernelLoadStartModule", size);
+        return RET_ERROR("sceKernelLoadStartModule", size);
     };
 
     Ptr<const void> entry_point;
@@ -1263,7 +1263,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     close_file(host.io, file);
     free(data);
     if (modId < 0) {
-        return error("sceKernelLoadStartModule", modId);
+        return RET_ERROR("sceKernelLoadStartModule", modId);
     };
 
     const SceKernelModuleInfoPtrs::const_iterator module = host.kernel.loaded_modules.find(modId);
@@ -1414,7 +1414,7 @@ EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
     Ptr<void> new_argp = copy_stack(thid, thread_id, argp, host.kernel, host.mem);
     const int res = start_thread(host.kernel, thid, arglen, new_argp);
     if (res < 0) {
-        return error("sceKernelStartThread", res);
+        return RET_ERROR("sceKernelStartThread", res);
     }
     return res;
 }
