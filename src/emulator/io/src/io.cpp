@@ -41,6 +41,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <array>
 
 static ReadOnlyInMemFile open_zip(mz_zip_archive &zip, const char *entry_path) {
     const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
@@ -170,20 +171,25 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
     std::string device_name;
     std::tie(device, device_name) = translate_device(path);
 
-    const std::string ux_app_path{ "ux0:/app/" };
+    const std::array<std::string, 2> ux_app_paths = { "ux0:/app/", "ux0:app/" };
 
     // Redirect ux0:/app/<title_id> to app0:
     if (device == VitaIoDevice::UX0) {
-        if (path.compare(0, ux_app_path.size(), ux_app_path) == 0) {
+        for (auto ux_app_path : ux_app_paths) {
+            if (path.compare(0, ux_app_path.size(), ux_app_path) != 0) {
+                continue;
+            }
             std::string fixed_path = path.substr(ux_app_path.length());
             auto start_path = fixed_path.find('/');
-            if (start_path != std::string::npos) {
-                fixed_path = fixed_path.substr(start_path);
-                fixed_path.insert(0, "app0:");
-
-                path = fixed_path;
-                device = VitaIoDevice::APP0;
+            if (start_path == std::string::npos) {
+                continue;
             }
+            fixed_path = fixed_path.substr(start_path);
+            fixed_path.insert(0, "app0:");
+
+            path = fixed_path;
+            device = VitaIoDevice::APP0;
+            break;
         }
     }
 
