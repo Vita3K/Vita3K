@@ -15,7 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <host/rtc.h>
+#include <rtc/rtc.h>
+
 #include <util/log.h>
 
 std::uint64_t rtc_base_ticks() {
@@ -29,9 +30,7 @@ std::uint64_t rtc_base_ticks() {
     return RTC_OFFSET + clocks_since_unix_time - host_clock_offset;
 }
 
-std::uint64_t rtc_get_ticks(const HostState &host) {
-    const uint64_t base_ticks = host.kernel.base_tick.tick;
-
+std::uint64_t rtc_get_ticks(uint64_t base_ticks) {
     const auto now = std::chrono::high_resolution_clock::now();
     const auto now_timepoint = std::chrono::time_point_cast<VitaClocks>(now);
     const uint64_t now_ticks = now_timepoint.time_since_epoch().count();

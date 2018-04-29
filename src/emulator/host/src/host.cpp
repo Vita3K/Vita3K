@@ -18,7 +18,7 @@
 #include <host/functions.h>
 
 #include <host/import_fn.h>
-#include <host/rtc.h>
+#include <rtc/rtc.h>
 #include <host/state.h>
 #include <host/version.h>
 

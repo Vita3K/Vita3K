@@ -3,12 +3,10 @@ host
 STATIC
 include/host/functions.h
 include/host/import_fn.h
-include/host/rtc.h
 include/host/sfo.h
 include/host/state.h
 include/host/version.h
 src/host.cpp
-src/rtc.cpp
 src/sfo.cpp
 version.cpp
 )
@@ -16,5 +14,5 @@ version.cpp
 configure_file(src/version.cpp.in version.cpp)
 
 target_include_directories(host PUBLIC include)
-target_link_libraries(host PUBLIC audio cpu ctrl gxm io kernel mem net util gui)
+target_link_libraries(host PUBLIC audio cpu ctrl gxm io kernel mem net rtc util gui)
 target_link_libraries(host PRIVATE glutil nids sdl2)

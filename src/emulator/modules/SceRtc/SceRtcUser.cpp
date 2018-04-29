@@ -17,7 +17,7 @@
 
 #include "SceRtcUser.h"
 
-#include <host/rtc.h>
+#include <rtc/rtc.h>
 
 #include <chrono>
 
@@ -119,7 +119,7 @@ EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
         return error(__func__, SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    tick->tick = rtc_get_ticks(host);
+    tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
 
     return 0;
 }
