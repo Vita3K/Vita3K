@@ -57,7 +57,7 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
     port->ro.len_bytes = len * channels * sizeof(int16_t);
     port->callback.stream = stream;
 
-    const std::unique_lock<std::mutex> lock(host.audio.shared.mutex);
+    const std::lock_guard<std::mutex> lock(host.audio.shared.mutex);
     const int port_id = host.audio.shared.next_port_id++;
     host.audio.shared.out_ports.emplace(port_id, port);
 
@@ -75,7 +75,7 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return error("sceAudioOutOutput", SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
-    const std::unique_lock<std::mutex> lock(thread->mutex);
+    const std::lock_guard<std::mutex> lock(thread->mutex);
     assert(thread->to_do == ThreadToDo::run);
     thread->to_do = ThreadToDo::wait;
     stop(*thread->cpu);
@@ -86,7 +86,7 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
     output.thread = thread_id;
 
     {
-        const std::unique_lock<std::mutex> lock(prt->shared.mutex);
+        const std::lock_guard<std::mutex> lock(prt->shared.mutex);
         prt->shared.outputs.push(output);
     }
 
