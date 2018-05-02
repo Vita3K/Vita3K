@@ -14,3 +14,11 @@ add_library(
 
 target_include_directories(module PUBLIC include)
 target_link_libraries(module PUBLIC host microprofile rpcs3)
+
+add_executable(
+	module-tests
+	tests/arg_layout_tests.cpp
+)
+
+target_include_directories(module-tests PRIVATE include)
+target_link_libraries(module-tests PRIVATE googletest)
