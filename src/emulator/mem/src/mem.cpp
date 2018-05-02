@@ -117,6 +117,15 @@ Address alloc(MemState &state, size_t size, const char *name) {
     return address;
 }
 
+Address alloc_at(MemState &state, Address address, size_t size, const char *name) {
+    const size_t page_count = (size + (state.page_size - 1)) / state.page_size;
+    const Allocated::iterator block = state.allocated_pages.begin() + (address / state.page_size);
+
+    alloc_inner(state, address, page_count, block, name);
+
+    return address;
+}
+
 void free(MemState &state, Address address) {
     const size_t page = address / state.page_size;
     assert(page >= 0);
