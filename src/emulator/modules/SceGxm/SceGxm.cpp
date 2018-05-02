@@ -94,7 +94,12 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     }
     
     glEnable(GL_SCISSOR_TEST);
-    glViewport(0, 0, host.display.window_width, host.display.window_height);
+    
+    context->viewport.x = 0;
+    context->viewport.y = 0;
+    context->viewport.w = host.display.window_width;
+    context->viewport.h = host.display.window_height;
+    glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
     glScissor(0, 0, host.display.window_width, host.display.window_height);
     
     // TODO This is just for debugging.
@@ -1315,11 +1320,22 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
-    glViewport(xOffset - xScale, host.display.window_height + yScale - yOffset, xScale * 2, -(yScale * 2));
+    context->viewport.x = xOffset- xScale;
+    context->viewport.y = host.display.window_height + yScale;
+    context->viewport.w = xScale * 2;
+    context->viewport.h = -(yScale * 2);
+    if (context->viewport.enabled) {
+        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+    }
 }
 
-EXPORT(int, sceGxmSetViewportEnable) {
-    return unimplemented("sceGxmSetViewportEnable");
+EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
+    context->viewport.enabled = enable == SCE_GXM_VIEWPORT_ENABLED ? true : false;
+    if (context->viewport.enabled) {
+        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+    } else {
+        glViewport(0, 0, host.display.window_width, host.display.window_height);
+    }
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
