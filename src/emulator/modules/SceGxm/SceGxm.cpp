@@ -1140,8 +1140,13 @@ EXPORT(int, sceGxmSetFrontDepthBias) {
     return unimplemented("sceGxmSetFrontDepthBias");
 }
 
-EXPORT(int, sceGxmSetFrontDepthFunc) {
-    return unimplemented("sceGxmSetFrontDepthFunc");
+EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
+    glEnable(GL_DEPTH_TEST);
+    if (context->two_sided) {
+        // TODO: Find a way to implement this since glDepthFuncSeparate doesn't exist
+        LOG_WARN("sceGxmSetFrontDepthFunc called with a two sided context, graphical glitches may happen.");
+    }
+    glDepthFunc(translate_depth_func(depthFunc));
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
