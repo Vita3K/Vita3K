@@ -56,6 +56,16 @@ typedef std::tuple<std::string, std::string> ProgramGLSLs;
 typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 typedef std::array<Ptr<void>, 16> UniformBuffers;
 
+struct SceGxmViewport {
+    bool enabled = false;
+    GLint x;
+    GLint y;
+    GLint w;
+    GLint h;
+    double nearVal;
+    double farVal;
+};
+
 struct SceGxmContext {
     // This is an opaque type.
     emu::SceGxmContextParams params;
@@ -71,6 +81,7 @@ struct SceGxmContext {
     GLObjectArray<1> texture;
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
     bool two_sided = false;
+    SceGxmViewport viewport;
 };
 
 namespace emu {

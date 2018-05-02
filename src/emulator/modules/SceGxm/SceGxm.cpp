@@ -94,8 +94,16 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     }
     
     glEnable(GL_SCISSOR_TEST);
-    glViewport(0, 0, host.display.window_width, host.display.window_height);
     glScissor(0, 0, host.display.window_width, host.display.window_height);
+    
+    context->viewport.x = 0;
+    context->viewport.y = 0;
+    context->viewport.w = host.display.window_width;
+    context->viewport.h = host.display.window_height;
+    context->viewport.nearVal = 0.0f;
+    context->viewport.farVal = 1.0f;
+    glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+    glDepthRange(context->viewport.nearVal, context->viewport.farVal);
     
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
@@ -1140,8 +1148,13 @@ EXPORT(int, sceGxmSetFrontDepthBias) {
     return unimplemented("sceGxmSetFrontDepthBias");
 }
 
-EXPORT(int, sceGxmSetFrontDepthFunc) {
-    return unimplemented("sceGxmSetFrontDepthFunc");
+EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
+    glEnable(GL_DEPTH_TEST);
+    if (context->two_sided) {
+        // TODO: Find a way to implement this since glDepthFuncSeparate doesn't exist
+        LOG_WARN("sceGxmSetFrontDepthFunc called with a two sided context, graphical glitches may happen.");
+    }
+    glDepthFunc(translate_depth_func(depthFunc));
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
@@ -1310,11 +1323,27 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
-    glViewport(xOffset - xScale, host.display.window_height + yScale - yOffset, xScale * 2, -(yScale * 2));
+    context->viewport.x = xOffset- xScale;
+    context->viewport.y = host.display.window_height + yScale;
+    context->viewport.w = xScale * 2;
+    context->viewport.h = -(yScale * 2);
+    context->viewport.nearVal = zOffset - zScale;
+    context->viewport.farVal = zOffset + zScale;
+    if (context->viewport.enabled) {
+        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+        glDepthRange(context->viewport.nearVal, context->viewport.farVal);
+    }
 }
 
-EXPORT(int, sceGxmSetViewportEnable) {
-    return unimplemented("sceGxmSetViewportEnable");
+EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
+    context->viewport.enabled = enable == SCE_GXM_VIEWPORT_ENABLED ? true : false;
+    if (context->viewport.enabled) {
+        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+        glDepthRange(context->viewport.nearVal, context->viewport.farVal);
+    } else {
+        glViewport(0, 0, host.display.window_width, host.display.window_height);
+        glDepthRange(0.0f, 1.0f);
+    }
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
