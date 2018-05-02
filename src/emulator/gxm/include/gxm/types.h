@@ -62,8 +62,8 @@ struct SceGxmViewport {
     GLint y;
     GLint w;
     GLint h;
-    GLdouble near;
-    GLdouble far;
+    double nearVal;
+    double farVal;
 };
 
 struct SceGxmContext {
