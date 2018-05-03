@@ -1278,6 +1278,11 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 
     run_on_current(*thread, entry_point, args, argp);
+    char * module_name = module->second.get()->module_name;
+    if(!strncmp(module_name, "PlayStation", strlen("PlayStation"))){
+        const ThreadStatePtr thread2 = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+        add_code_hook(*thread2->cpu);
+    }
     return modId;
 }
 
