@@ -22,6 +22,8 @@
 #define s_addr s_addr
 #endif
 #include <psp2/net/netctl.h>
+#include <kernel/thread_functions.h>
+
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {
     return unimplemented("sceNetCtlAdhocDisconnect");
@@ -52,7 +54,13 @@ EXPORT(int, sceNetCtlAdhocUnregisterCallback) {
 }
 
 EXPORT(int, sceNetCtlCheckCallback) {
-    return unimplemented("sceNetCtlCheckCallback");
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    for (auto &callback : host.net.cbs){
+        Ptr<void> argp = Ptr<void>(callback.second.data);
+        run_on_current(*thread, Ptr<void>(callback.second.pc), 0, argp);
+    }
+    unimplemented("sceNetCtlGetIfStat - Stub");
+    return 0;
 }
 
 EXPORT(int, sceNetCtlGetIfStat) {
@@ -91,12 +99,20 @@ EXPORT(int, sceNetCtlInetGetResult) {
     return unimplemented("sceNetCtlInetGetResult");
 }
 
-EXPORT(int, sceNetCtlInetGetState) {
-    return unimplemented("sceNetCtlInetGetState");
+EXPORT(int, sceNetCtlInetGetState, uint32_t* state) {
+    *state = SCE_NETCTL_STATE_DISCONNECTED;
+    unimplemented("sceNetCtlInetGetState => SCE_NETCTL_STATE_DISCONNECTED");
+    return 0;
 }
 
-EXPORT(int, sceNetCtlInetRegisterCallback) {
-    return unimplemented("sceNetCtlInetRegisterCallback");
+EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, uint32_t* cid) {
+    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    *cid = host.kernel.next_uid++;
+    emu::SceNetCtlCallback sceNetCtlCallback;
+    sceNetCtlCallback.pc = callback.address();
+    sceNetCtlCallback.data = data.address();
+    host.net.cbs.emplace(*cid,sceNetCtlCallback);
+    return 0;
 }
 
 EXPORT(int, sceNetCtlInetUnregisterCallback) {
@@ -104,7 +120,8 @@ EXPORT(int, sceNetCtlInetUnregisterCallback) {
 }
 
 EXPORT(int, sceNetCtlInit) {
-    return unimplemented("sceNetCtlInit");
+    unimplemented("sceNetCtlInit - Stub");
+    return 0;
 }
 
 EXPORT(int, sceNetCtlTerm) {

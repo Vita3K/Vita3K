@@ -37,10 +37,21 @@ typedef int socklen_t;
 typedef int abs_socket;
 #endif
 
+#include <mem/mem.h> // Address.
+
+namespace emu {
+    struct SceNetCtlCallback {
+        Address pc;
+        Address data;
+    };
+}
+
 typedef std::map<int, abs_socket> sockets;
+typedef std::map<int, emu::SceNetCtlCallback> callbacks;
 
 struct NetState {
     bool inited = false;
     int next_id = 0;
     sockets socks;
+    callbacks cbs;
 };
