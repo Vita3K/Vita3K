@@ -192,7 +192,8 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
     }
 
     switch (device) {
-    case VitaIoDevice::TTY0: {
+    case VitaIoDevice::TTY0:
+    case VitaIoDevice::TTY1: {
         assert(flags >= 0);
 
         TtyType type;
