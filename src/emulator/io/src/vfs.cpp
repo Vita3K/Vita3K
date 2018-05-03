@@ -1,23 +1,108 @@
 #include <io/vfs.h>
+
 #include <random>
+#include <optional>
 
 std::string get_dvc(const std::string& path) {
     return path.substr(0, path.find_first_of(':'));
 }
 
+std::optional<DeviceName> gen_actual_mount_dvc_name(MountID id, VfsState& state) {
+    auto random_dvc_gen = [=](std::string dvc_name) -> std::string {
+        auto res = gen_temp_device_name(dvc_name) + "0:";
+        return res;
+    };
+
+    // AD drive
+    if (id <= 0x70 || (id >= 0x190 && id <= 0x1F5))
+        return random_dvc_gen("ad");
+
+    switch (id) {
+        case 0xC8: case 0xC9: case 0xCB: case 0xCC: case 0xCE: case 0xCF: {
+            return random_dvc_gen("td");
+        }
+
+        case 0xCA: {
+            MountPointDataEntry entry = get_entry(id, state);
+
+            // Don't mount ms0 yet. Don't have the method of checking auth id
+            return random_dvc_gen("ms");
+        }
+
+        case 0xCD: {
+            return "cache0:";
+        }
+
+        case 0x12E: {
+            return "trophy_sys0:";
+        }
+
+        case 0x12F: {
+            return "trophy_dat0:";
+        }
+
+        case 0x130: {
+            return "trophy_dbk0:";
+        }
+
+        case 0x1F8: {
+            return "sdimport0:";
+        }
+
+        case 0x1F9: {
+            return "sdimport_tmp0:";
+        }
+
+        case 0x258: {
+            return random_dvc_gen("lm");
+        }
+
+        case 0x3E8: case 0x3E9: {
+            return "app0";
+        }
+
+        case 0x3EA: case 0x3EB: {
+            return "appcont0:";
+        }
+
+        case 0x3ED: case 0x3EE: {
+            return "savedata0:";
+        }
+
+        case 0x3EF: case 0x3F0: {
+            return random_dvc_gen("sd");
+        }
+
+        case 0x3F1: {
+            return random_dvc_gen("ud");
+        }
+
+
+        default:
+            break;
+    }
+
+    // fallback
+    return std::optional<DeviceName>{};
+}
+
 DeviceName gen_temp_device_name(DeviceName dvc) {
     std::random_device rdvc;
     std::mt19937 tw(rdvc());
-    std::uniform_int_distribution<uint8_t> rdg(0, 255);
+    std::uniform_int_distribution<char> rdg(0, 255);
     std::string randomid;
 
-    randomid.resize(11);
+    randomid.resize(6);
 
     for (auto& randomidc: randomid) {
         randomidc = std::to_string(rdg(tw))[0];
     }
 
     return dvc + randomid;
+}
+
+MountPointDataEntry get_entry(const MountID id, VfsState& state) {
+
 }
 
 MountID add_entry(const std::string& mount_point, const std::string& path, const std::string& title_id, uint64_t auth_id[], VfsState& state) {

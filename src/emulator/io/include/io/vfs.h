@@ -39,4 +39,6 @@ void remove_entry(MountID mount_id, VfsState& state);
 // Force an entry to take a id
 bool add_entry_force_id(const MountID mount_id, const std::string& mount_point, const std::string& title_id, uint64_t auth_id[], VfsState& state);
 
+MountPointDataEntry get_entry(const MountID id, VfsState& state);
+
 bool mount_gd(const std::string& path, const std::string& patch_path, const std::string& rif_file_path, std::string mp, VfsState& state);
