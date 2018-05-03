@@ -274,3 +274,15 @@ void write_lr(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &value);
     assert(err == UC_ERR_OK);
 }
+
+void add_code_hook(CPUState &state){
+    uc_hook hh = 0;
+    uc_err err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_CODE, reinterpret_cast<void *>(&code_hook), &state, 1, 0);
+    assert(err == UC_ERR_OK);
+    
+    err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_MEM_READ, reinterpret_cast<void *>(&read_hook), &state, 1, 0);
+    assert(err == UC_ERR_OK);
+    
+    err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_MEM_WRITE, reinterpret_cast<void *>(&write_hook), &state, 1, 0);
+    assert(err == UC_ERR_OK);
+}
