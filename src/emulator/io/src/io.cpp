@@ -44,14 +44,16 @@
 #include <string>
 #include <tuple>
 
-static ReadOnlyInMemFile open_zip(mz_zip_archive &zip, const char *entry_path) {
-    const int index = mz_zip_reader_locate_file(&zip, entry_path, nullptr, 0);
+static ReadOnlyInMemFile open_zip(IOState &io, const char *entry_path) {
+    std::string full_path = io.app0_prefix + entry_path;
+
+    const int index = mz_zip_reader_locate_file(io.vpk.get(), full_path.c_str(), nullptr, 0);
 
     if (index < 0) {
         return ReadOnlyInMemFile();
     }
 
-    const auto zip_file = mz_zip_reader_extract_iter_new(&zip, index, 0);
+    const auto zip_file = mz_zip_reader_extract_iter_new(io.vpk.get(), index, 0);
 
     if (!zip_file) {
         return ReadOnlyInMemFile();
@@ -217,7 +219,7 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
         if (path[5] == '/')
             i++;
 
-        const ReadOnlyInMemFile file = open_zip(*io.vpk, &path[i]);
+        const ReadOnlyInMemFile file = open_zip(io, &path[i]);
 
         const SceUID fd = io.next_fd++;
         io.app_files.emplace(fd, file);
@@ -452,9 +454,8 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path, mz_zip_
     std::tie(device, device_name) = translate_device(file);
 
     // read and execute access rights
-    statp->st_mode = SCE_S_IRUSR | SCE_S_IRGRP | SCE_S_IROTH |
-        SCE_S_IXUSR | SCE_S_IXGRP | SCE_S_IXOTH;
-    
+    statp->st_mode = SCE_S_IRUSR | SCE_S_IRGRP | SCE_S_IROTH | SCE_S_IXUSR | SCE_S_IXGRP | SCE_S_IXOTH;
+
     std::uint64_t last_access_time_ticks;
     std::uint64_t last_modification_time_ticks;
     std::uint64_t creation_time_ticks{ 0 };

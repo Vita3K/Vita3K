@@ -53,6 +53,7 @@ typedef std::map<SceUID, ReadOnlyInMemFile> AppFiles;
 typedef std::map<SceUID, DirPtr> DirEntries;
 
 struct IOState {
+    std::string app0_prefix;
     ZipPtr vpk;
     SceUID next_fd = 0;
     TtyFiles tty_files;
