@@ -1277,7 +1277,19 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 
-    run_on_current(*thread, entry_point, args, argp);
+    uint32_t result = run_on_current(*thread, entry_point, args, argp);
+    char *module_name = module->second.get()->module_name;
+
+    LOG_INFO("{} returned {:#08x}", module_name, result);
+
+    if (status)
+        *status = result;
+
+    thread->to_do = ThreadToDo::exit;
+    thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+    host.kernel.running_threads.erase(thid);
+    host.kernel.threads.erase(thid);
+
     return modId;
 }
 
