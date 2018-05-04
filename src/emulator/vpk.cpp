@@ -47,10 +47,6 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
 }
 
 static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, const ZipPtr zip) {
-    if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
-        return false;
-    }
-
     const int file_index = mz_zip_reader_locate_file(zip.get(), file, nullptr, 0);
     if (file_index < 0) {
         return false;
@@ -67,26 +63,6 @@ bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
-    {
-        FILE *vpk_fp;
-
-#ifdef WIN32
-        if (_wfopen_s(&vpk_fp, path.c_str(), L"rb")) {
-#else
-        if (!(vpk_fp = fopen(wide_to_utf(path).c_str(), "rb"))) {
-#endif
-            return false;
-        }
-        Buffer libc;
-        if (read_file_from_zip(libc, vpk_fp, "sce_module/libc.suprx", zip)) {
-            if (load_self(entry_point, kernel, mem, libc.data(), "app0:sce_module/libc.suprx") == 0) {
-                LOG_INFO("LIBC loaded");
-            }
-        }
-    }
-
-    std::memset(zip.get(), 0, sizeof(*zip));
-
     FILE *vpk_fp;
 
 #ifdef WIN32
@@ -96,6 +72,17 @@ bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string
 #endif
         return false;
     }
+    
+    if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
+        return false;
+    }
+    
+    Buffer libc;
+    if (read_file_from_zip(libc, vpk_fp, "sce_module/libc.suprx", zip)) {
+        if (load_self(entry_point, kernel, mem, libc.data(), "app0:sce_module/libc.suprx") == 0) {
+            LOG_INFO("LIBC loaded");
+        }
+    }
 
     Buffer eboot;
     if (!read_file_from_zip(eboot, vpk_fp, "eboot.bin", zip)) {
@@ -103,7 +90,7 @@ bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string
     }
 
     Buffer params;
-    if (!mz_zip_reader_extract_file_to_callback(zip.get(), "sce_sys/param.sfo", &write_to_buffer, &params, 0)) {
+    if (!read_file_from_zip(params, vpk_fp, "sce_sys/param.sfo", zip)) {
         return false;
     }
 
