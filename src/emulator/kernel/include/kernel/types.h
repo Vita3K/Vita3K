@@ -1,6 +1,28 @@
 #pragma once
 #include <mem/ptr.h>
+
+#include <psp2/kernel/threadmgr.h>
 #include <psp2/types.h>
+
+#include <atomic>
+
+#define SCE_KERNEL_DEFAULT_PRIORITY static_cast<SceInt32>(0x10000100)
+#define SCE_KERNEL_DEFAULT_PRIORITY_USER SCE_KERNEL_DEFAULT_PRIORITY
+#define SCE_KERNEL_DEFAULT_PRIORITY_USER_INTERNAL SCE_KERNEL_DEFAULT_PRIORITY
+#define SCE_KERNEL_HIGHEST_PRIORITY_USER 64
+#define SCE_KERNEL_LOWEST_PRIORITY_USER 191
+
+#define SCE_KERNEL_STACK_SIZE_USER_MAIN KB(256)
+#define SCE_KERNEL_STACK_SIZE_USER_DEFAULT KB(4)
+
+#define SCE_KERNEL_ATTR_TH_FIFO 0x00000000U
+#define SCE_KERNEL_ATTR_TH_PRIO 0x00002000U
+// #define SCE_KERNEL_MUTEX_ATTR_RECURSIVE 0x2U
+
+#define SCE_KERNEL_LW_MUTEX_ATTR_TH_FIFO SCE_KERNEL_ATTR_TH_FIFO
+#define SCE_KERNEL_LW_MUTEX_ATTR_TH_PRIO SCE_KERNEL_ATTR_TH_PRIO
+
+#define KERNELOBJECT_MAX_NAME_LENGTH 31
 
 namespace emu {
     struct SceKernelSegmentInfo {
@@ -32,4 +54,13 @@ namespace emu {
         SceKernelSegmentInfo segments[4];
         SceUInt type; //!< 6 = user-mode PRX?
     };
+
+    // We only use workarea for uid
+    struct SceKernelLwMutexWork {
+        SceUID uid;
+
+        std::uint8_t padding[28];
+    };
+
+    static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
 }

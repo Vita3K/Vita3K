@@ -19,12 +19,15 @@
 
 #include <psp2/types.h>
 
+#include <string>
+#include <miniz.h>
+
 struct IOState;
 struct SceIoStat;
 struct SceIoDirent;
 
 bool init(IOState &io, const char *pref_path);
-SceUID open_file(IOState &io, const char *path, int flags, const char *pref_path);
+SceUID open_file(IOState &io, const std::string &path_, int flags, const char *pref_path);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io);
 int seek_file(SceUID fd, int offset, int whence, IOState &io);
@@ -33,7 +36,7 @@ int create_dir(const char *dir, int mode, const char *pref_path);
 int remove_file(const char *file, const char *pref_path);
 int create_dir(const char *dir, int mode, const char *pref_path);
 int remove_dir(const char *dir, const char *pref_path);
-int stat_file(const char *file, SceIoStat *stat, const char *pref_path);
+int stat_file(const char *file, SceIoStat *stat, const char *pref_path, mz_zip_archive *vpk, uint64_t base_tick);
 
 int open_dir(IOState &io, const char *path, const char *pref_path);
 int read_dir(IOState &io, SceUID fd, SceIoDirent *dent);

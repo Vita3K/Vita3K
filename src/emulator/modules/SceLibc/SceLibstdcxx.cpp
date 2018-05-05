@@ -4478,7 +4478,7 @@ EXPORT(int, _ZdlPvS_) {
 }
 
 EXPORT(int, _Znaj, int test) {
-    return alloc(host.mem,test,"");
+    return alloc(host.mem, test, "");
 }
 
 EXPORT(int, _ZnajRKSt9nothrow_t) {
@@ -4486,7 +4486,7 @@ EXPORT(int, _ZnajRKSt9nothrow_t) {
 }
 
 EXPORT(int, _Znwj, int test) {
-    return alloc(host.mem,test,"");
+    return alloc(host.mem, test, "");
 }
 
 EXPORT(int, _ZnwjRKSt9nothrow_t) {

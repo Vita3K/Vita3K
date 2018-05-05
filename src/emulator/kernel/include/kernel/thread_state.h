@@ -37,6 +37,7 @@ enum class ThreadToDo {
 
 struct ThreadState {
     ThreadStackPtr stack;
+    int priority;
     int stack_size;
     CPUStatePtr cpu;
     ThreadToDo to_do = ThreadToDo::run;

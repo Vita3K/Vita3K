@@ -20,8 +20,8 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstring>
 #include <cmath>
+#include <cstring>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -117,6 +117,15 @@ Address alloc(MemState &state, size_t size, const char *name) {
     return address;
 }
 
+Address alloc_at(MemState &state, Address address, size_t size, const char *name) {
+    const size_t page_count = (size + (state.page_size - 1)) / state.page_size;
+    const Allocated::iterator block = state.allocated_pages.begin() + (address / state.page_size);
+
+    alloc_inner(state, address, page_count, block, name);
+
+    return address;
+}
+
 void free(MemState &state, Address address) {
     const size_t page = address / state.page_size;
     assert(page >= 0);
@@ -125,7 +134,7 @@ void free(MemState &state, Address address) {
     const Generation generation = state.allocated_pages[page];
     assert(generation != 0);
 
-    const std::binder1st<std::not_equal_to<Generation>> different_generation = std::bind1st(std::not_equal_to<Generation>(), generation);
+    const auto different_generation = std::bind(std::not_equal_to<Generation>(), std::placeholders::_1, generation);
     const Allocated::iterator first_page = state.allocated_pages.begin() + page;
     const Allocated::iterator last_page = std::find_if(first_page, state.allocated_pages.end(), different_generation);
     std::fill(first_page, last_page, 0);

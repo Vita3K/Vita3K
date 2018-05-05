@@ -61,6 +61,11 @@ public:
         return addr != 0;
     }
 
+    Ptr &operator=(const Address &address) {
+        addr = address;
+        return *this;
+    }
+
 private:
     Address addr;
 };

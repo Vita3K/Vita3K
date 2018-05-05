@@ -18,7 +18,7 @@
 #include <host/functions.h>
 
 #include <host/import_fn.h>
-#include <host/rtc.h>
+#include <rtc/rtc.h>
 #include <host/state.h>
 #include <host/version.h>
 
@@ -42,18 +42,20 @@
 #include <iomanip>
 #include <iostream>
 
+// clang-format off
 #include <imgui.h>
 #include <gui/imgui_impl_sdl_gl2.h>
+// clang-format on
 
 using namespace glbinding;
 
 static const bool LOG_IMPORT_CALLS = false;
 
-#define NID(name, nid) extern ImportFn *const import_##name;
+#define NID(name, nid) extern const ImportFn import_##name;
 #include <nids/nids.h>
 #undef NID
 
-static ImportFn *resolve_import(uint32_t nid) {
+static ImportFn resolve_import(uint32_t nid) {
     switch (nid) {
 #define NID(name, nid) \
     case nid:          \
@@ -62,7 +64,7 @@ static ImportFn *resolve_import(uint32_t nid) {
 #undef NID
     }
 
-    return nullptr;
+    return ImportFn();
 }
 
 bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_width, std::uint32_t window_height, std::uint32_t border_height) {
@@ -71,7 +73,7 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
 
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
-        const std::unique_lock<std::mutex> lock(thread->mutex);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
         if (thread->to_do == ThreadToDo::wait) {
             thread->to_do = ThreadToDo::run;
         }
@@ -132,11 +134,11 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
 
         if (LOG_IMPORT_CALLS) {
             const char *const name = import_name(nid);
-            LOG_TRACE("THREAD_ID {} NID {:#08x} ({})) called", thread_id, nid, name);
+            LOG_TRACE("THREAD_ID {} NID {:#08x} ({}) called", thread_id, nid, name);
         }
-        ImportFn *const fn = resolve_import(nid);
-        if (fn != nullptr) {
-            (*fn)(host, thread_id);
+        const ImportFn fn = resolve_import(nid);
+        if (fn) {
+            fn(host, thread_id);
         }
     } else {
         // LLE - directly run ARM code imported from some loaded module
@@ -146,7 +148,7 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
             LOG_TRACE("THREAD_ID {} EXPORTED NID {:#08x} at {:#08x} ({})) called", thread_id, nid, export_pc, name);
         }
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        const std::unique_lock<std::mutex> lock(thread->mutex);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
         write_pc(*thread->cpu, export_pc);
     }
 }

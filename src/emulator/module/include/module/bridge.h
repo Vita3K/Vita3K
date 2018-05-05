@@ -17,6 +17,11 @@
 
 #pragma once
 
+#include "lay_out_args.h"
+#include "read_arg.h"
+#include "write_return_value.h"
+
+#include <host/import_fn.h>
 #include <host/state.h>
 #include <kernel/thread_state.h>
 #include <util/lock_and_find.h>
@@ -27,46 +32,30 @@
 
 struct CPUState;
 
-template <typename... Args>
-struct ArgLayout;
-
-template <typename Ret>
-struct BridgeReturn;
-
-template <typename Fn, Fn, typename Indices>
-struct CallAndBridgeReturn;
-
-// Function returns a value that requires bridging.
-template <typename Ret, typename... Args, Ret (*export_fn)(HostState &, SceUID, Args...), size_t... Indices>
-struct CallAndBridgeReturn<Ret (*)(HostState &, SceUID, Args...), export_fn, std::index_sequence<Indices...>> {
-    static void call(SceUID thread_id, CPUState &cpu, HostState &host) {
-        using ArgLayoutType = ArgLayout<Args...>;
-        const Ret ret = (*export_fn)(host, thread_id, ArgLayoutType::template read<Args, Indices>(cpu, host.mem)...);
-        BridgeReturn<Ret>::write(cpu, ret);
-    }
-};
+// Function returns a value that is written to CPU registers.
+template <typename Ret, typename... Args, size_t... indices>
+void call(Ret (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+    const Ret ret = (*export_fn)(host, thread_id, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
+    write_return_value(cpu, ret);
+}
 
 // Function does not return a value.
-template <typename... Args, void (*export_fn)(HostState &, SceUID, Args...), size_t... Indices>
-struct CallAndBridgeReturn<void (*)(HostState &, SceUID, Args...), export_fn, std::index_sequence<Indices...>> {
-    static void call(SceUID thread_id, CPUState &cpu, HostState &host) {
-        using ArgLayoutType = ArgLayout<Args...>;
-        (*export_fn)(host, thread_id, ArgLayoutType::template read<Args, Indices>(cpu, host.mem)...);
-    }
-};
+template <typename... Args, size_t... indices>
+void call(void (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+    (*export_fn)(host, thread_id, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
+}
 
-template <typename FnPtr, FnPtr>
-struct Bridge;
-
-template <typename Ret, typename... Args, Ret (*export_fn)(HostState &, SceUID, Args...)>
-struct Bridge<Ret (*)(HostState &, SceUID, Args...), export_fn> {
-    static void call(HostState &host, SceUID thread_id) {
+template <typename Ret, typename... Args>
+ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, Args...)) {
+    constexpr ArgsLayout<Args...> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
+    
+    return [export_fn, args_layout](HostState &host, SceUID thread_id) {
         MICROPROFILE_SCOPEI("HLE", "", MP_YELLOW);
 
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         assert(thread);
 
         using Indices = std::index_sequence_for<Args...>;
-        CallAndBridgeReturn<Ret (*)(HostState &, SceUID, Args...), export_fn, Indices>::call(thread_id, *thread->cpu, host);
-    }
-};
+        call(export_fn, args_layout, Indices(), thread_id, *thread->cpu, host);
+    };
+}

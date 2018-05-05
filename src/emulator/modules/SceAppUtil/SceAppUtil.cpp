@@ -197,29 +197,31 @@ EXPORT(int, sceAppUtilStoreBrowse) {
 }
 
 EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
-    switch(paramId){
-        case SCE_SYSTEM_PARAM_ID_LANG:
-            *value = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
-            return 0;
-            break;
-        default:
-            return error(__func__, SCE_APPUTIL_ERROR_PARAMETER);
+    switch (paramId) {
+    case SCE_SYSTEM_PARAM_ID_LANG:
+        *value = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
+        return 0;
+    case SCE_SYSTEM_PARAM_ID_ENTER_BUTTON:
+        *value = SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS;
+        return 0;
+    default:
+        return RET_ERROR(__func__, SCE_APPUTIL_ERROR_PARAMETER);
     }
 }
 
 EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize) {
     char devname[80];
-    switch (paramId){
+    switch (paramId) {
     case SCE_SYSTEM_PARAM_ID_USERNAME:
         gethostname(devname, 80);
 #ifdef WIN32
-        strcpy_s((char*)buf, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE, devname);
+        strcpy_s((char *)buf, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE, devname);
 #else
-        strcpy((char*)buf, devname);
+        strcpy((char *)buf, devname);
 #endif
         break;
     default:
-        return error("sceAppUtilSystemParamGetString", SCE_APPUTIL_ERROR_PARAMETER);
+        return RET_ERROR("sceAppUtilSystemParamGetString", SCE_APPUTIL_ERROR_PARAMETER);
     }
     return 0;
 }

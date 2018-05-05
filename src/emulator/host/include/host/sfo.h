@@ -30,7 +30,7 @@ struct SfoHeader {
     uint32_t tables_entries;
 };
 
-struct SfoIndexTableEntry{
+struct SfoIndexTableEntry {
     uint16_t key_offset;
     uint16_t data_fmt;
     uint32_t data_len;
@@ -50,5 +50,5 @@ struct SfoFile {
 };
 
 bool load_sfo(SfoFile &file, const std::vector<uint8_t> &data);
-std::string find_data(SfoFile &file, const std::string &key);
-std::string get_data(SfoFile &file, int id);
+bool find_data(std::string& out_data, SfoFile &file, const std::string &key);
+bool get_data(std::string& out_data, SfoFile &file, int id);

@@ -53,10 +53,7 @@ static int SDLCALL thread_function(void *data) {
     return r0;
 }
 
-SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int stack_size, CallImport call_import, bool log_code) {
-    WaitingThreadState waiting;
-    waiting.name = name;
-
+SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CallImport call_import, bool log_code) {
     SceUID thid = kernel.next_uid++;
 
     const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {
@@ -64,7 +61,13 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     };
 
     const ThreadStatePtr thread = std::make_shared<ThreadState>();
-    strcpy(thread->name, name);
+    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, thread->name);
+    // TODO: needs testing
+    if (init_priority & (SCE_KERNEL_DEFAULT_PRIORITY & 0xF0000000)) {
+        thread->priority = init_priority - SCE_KERNEL_DEFAULT_PRIORITY + SCE_KERNEL_DEFAULT_PRIORITY_USER_INTERNAL;
+    } else {
+        thread->priority = init_priority;
+    }
     thread->stack_size = stack_size;
     thread->stack = std::make_shared<ThreadStack>(alloc(mem, stack_size, "Stack"), stack_deleter);
     const Address stack_top = thread->stack->get() + stack_size;
@@ -81,6 +84,8 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         return SCE_KERNEL_ERROR_ERROR;
     }
 
+    WaitingThreadState waiting{ name };
+
     const std::unique_lock<std::mutex> lock(kernel.mutex);
     kernel.threads.emplace(thid, thread);
     kernel.waiting_threads.emplace(thid, waiting);
@@ -91,7 +96,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp) {
     const std::unique_lock<std::mutex> lock(kernel.mutex);
 
-    const WaitingThreadStates::const_iterator waiting = kernel.waiting_threads.find(thid);
+    const KernelWaitingThreadStates::const_iterator waiting = kernel.waiting_threads.find(thid);
     if (waiting == kernel.waiting_threads.end()) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
@@ -185,11 +190,13 @@ bool run_callback(ThreadState &thread, Address &pc, Address &data) {
     return run_thread(thread, true);
 }
 
-bool run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp) {
+uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp) {
     std::unique_lock<std::mutex> lock(thread.mutex);
+    stop(*thread.cpu);
     write_reg(*thread.cpu, 0, arglen);
     write_reg(*thread.cpu, 1, argp.address());
     write_pc(*thread.cpu, entry_point.address());
     lock.unlock();
-    return run_thread(thread, true);
+    run_thread(thread, false);
+    return read_reg(*thread.cpu, 0);
 }

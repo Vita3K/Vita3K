@@ -112,17 +112,17 @@ EXPORT(int, sceImeDialogGetStatus) {
 
 EXPORT(int, sceImeDialogInit, const Ptr<emu::SceImeDialogParam> param) {
     if (host.gui.common_dialog.type != NO_DIALOG) {
-        return error(__func__, SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+        return RET_ERROR(__func__, SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    
+
     emu::SceImeDialogParam *p = param.get(host.mem);
-    
+
     std::u16string title = reinterpret_cast<char16_t *>(p->title.get(host.mem));
     std::u16string text = reinterpret_cast<char16_t *>(p->initialText.get(host.mem));
-    
+
     host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     host.gui.common_dialog.type = IME_DIALOG;
-    
+
     host.gui.common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_NONE;
     host.gui.common_dialog.ime.title = utf16_to_utf8(title);
     sprintf(host.gui.common_dialog.ime.text, utf16_to_utf8(text).c_str());
@@ -130,13 +130,13 @@ EXPORT(int, sceImeDialogInit, const Ptr<emu::SceImeDialogParam> param) {
     host.gui.common_dialog.ime.multiline = (p->option & SCE_IME_OPTION_MULTILINE);
     host.gui.common_dialog.ime.cancelable = (p->dialogMode == SCE_IME_DIALOG_DIALOG_MODE_WITH_CANCEL);
     host.gui.common_dialog.ime.result = reinterpret_cast<uint16_t *>(p->inputTextBuffer.get(host.mem));
-    
+
     return 0;
 }
 
 EXPORT(int, sceImeDialogTerm) {
     if (host.gui.common_dialog.type != IME_DIALOG) {
-        return error(__func__, SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+        return RET_ERROR(__func__, SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
     host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     host.gui.common_dialog.type = NO_DIALOG;

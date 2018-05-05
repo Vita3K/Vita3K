@@ -15,25 +15,28 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <imgui.h>
 #include <gui/functions.h>
+#include <imgui.h>
 
 #include <host/state.h>
 #include <kernel/thread_functions.h>
 #include <kernel/thread_state.h>
 #include <util/resource.h>
 
-void DrawSemaphoresDialog(HostState& host){
+void DrawSemaphoresDialog(HostState &host) {
     ImGui::Begin("Semaphores", &host.gui.semaphores_dialog);
-    ImGui::TextColored(ImVec4(255,255,0,255), "%-16s %-32s   %-16s   %-16s", "ID", "Semaphore Name", "Status", "Locked Threads");
+    ImGui::TextColored(ImVec4(255, 255, 0, 255), "%-16s %-32s   %-16s   %-16s", "ID", "Semaphore Name", "Status", "Locked Threads");
+
+    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+
     for (auto semaphore : host.kernel.semaphores) {
         std::shared_ptr<Semaphore> sema_state = semaphore.second;
         ImGui::Text("0x%08X       %-32s   %02d/%02d              %02u",
             semaphore.first,
-            sema_state->name.c_str(),
+            sema_state->name,
             sema_state->val,
             sema_state->max,
-            sema_state->locked.size());
+            sema_state->waiting_threads.size());
     }
     ImGui::End();
 }

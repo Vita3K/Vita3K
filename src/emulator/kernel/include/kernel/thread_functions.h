@@ -30,9 +30,9 @@ struct ThreadState;
 typedef std::function<void(uint32_t, SceUID)> CallImport;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 
-SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int stackSize, CallImport call_import, bool log_code);
+SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stackSize, CallImport call_import, bool log_code);
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp);
 Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, KernelState &kernel, MemState &mem);
 bool run_thread(ThreadState &thread, bool callback);
 bool run_callback(ThreadState &thread, Address &pc, Address &data);
-bool run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp);
+uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp);

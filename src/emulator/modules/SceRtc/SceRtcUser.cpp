@@ -17,59 +17,59 @@
 
 #include "SceRtcUser.h"
 
-#include <host/rtc.h>
+#include <rtc/rtc.h>
 
 #include <chrono>
 
 #define VITA_CLOCKS_PER_SEC 1000000
 
 EXPORT(int, sceRtcCheckValid, const SceDateTime *pTime) {
-    if (pTime == nullptr){
-        return error(__func__, SCE_RTC_ERROR_INVALID_POINTER);
+    if (pTime == nullptr) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_POINTER);
     }
-    if (pTime->month < 1 || pTime->month > 12){
-        return error(__func__, SCE_RTC_ERROR_INVALID_MONTH);
+    if (pTime->month < 1 || pTime->month > 12) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_MONTH);
     }
-    if (pTime->day < 1){
-        return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+    if (pTime->day < 1) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
     }
-    switch (pTime->month){
-    case 4:  // April
-    case 6:  // June
-    case 9:  // September
+    switch (pTime->month) {
+    case 4: // April
+    case 6: // June
+    case 9: // September
     case 11: // November
-        if (pTime->day > 30){
-            return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+        if (pTime->day > 30) {
+            return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
         }
         break;
     case 2: // February
-        if ((pTime->year % 400 == 0) || (pTime->year % 100 != 0 && pTime->year % 4 == 0)){
-            if (pTime->day > 29){
-                return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+        if ((pTime->year % 400 == 0) || (pTime->year % 100 != 0 && pTime->year % 4 == 0)) {
+            if (pTime->day > 29) {
+                return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
             }
-        }else{
-            if (pTime->day > 28){
-                return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+        } else {
+            if (pTime->day > 28) {
+                return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
             }
         }
         break;
     default:
-        if (pTime->day > 31){
-            return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+        if (pTime->day > 31) {
+            return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
         }
         break;
     }
-    if (pTime->hour > 23){
-        return error(__func__, SCE_RTC_ERROR_INVALID_HOUR);
+    if (pTime->hour > 23) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_HOUR);
     }
-    if (pTime->minute > 59){
-        return error(__func__, SCE_RTC_ERROR_INVALID_MINUTE);
+    if (pTime->minute > 59) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_MINUTE);
     }
-    if (pTime->second > 59){
-        return error(__func__, SCE_RTC_ERROR_INVALID_SECOND);
+    if (pTime->second > 59) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_SECOND);
     }
-    if (pTime->microsecond > 99999){
-        return error(__func__, SCE_RTC_ERROR_INVALID_MICROSECOND);
+    if (pTime->microsecond > 99999) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_MICROSECOND);
     }
     return 0;
 }
@@ -115,54 +115,54 @@ EXPORT(int, sceRtcGetCurrentNetworkTick) {
 }
 
 EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
-    if (tick == nullptr){
-        return error(__func__, SCE_RTC_ERROR_INVALID_POINTER);
+    if (tick == nullptr) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    tick->tick = rtc_get_ticks(host);
+    tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
 
     return 0;
 }
 
 EXPORT(int, sceRtcGetDayOfWeek, int year, int month, int day) {
-    if (month < 1 || month > 12){
-        return error(__func__, SCE_RTC_ERROR_INVALID_MONTH);
+    if (month < 1 || month > 12) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_MONTH);
     }
-    if (year < 0){
-        return error(__func__, SCE_RTC_ERROR_INVALID_YEAR);
+    if (year < 0) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_YEAR);
     }
-    if (day < 1){
-        return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+    if (day < 1) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
     }
-    switch (month){
-    case 4:  // April
-    case 6:  // June
-    case 9:  // September
+    switch (month) {
+    case 4: // April
+    case 6: // June
+    case 9: // September
     case 11: // November
-        if (day > 30){
-            return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+        if (day > 30) {
+            return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
         }
         break;
     case 2: // February
-        if ((year % 400 == 0) || (year % 100 != 0 && year % 4 == 0)){
-            if (day > 29){
-                return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+        if ((year % 400 == 0) || (year % 100 != 0 && year % 4 == 0)) {
+            if (day > 29) {
+                return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
             }
-        }else{
-            if (day > 28){
-                return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+        } else {
+            if (day > 28) {
+                return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
             }
         }
         break;
     default:
-        if (day > 31){
-            return error(__func__, SCE_RTC_ERROR_INVALID_DAY);
+        if (day > 31) {
+            return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_DAY);
         }
         break;
     }
 
     // https://en.wikipedia.org/wiki/Determination_of_the_day_of_the_week#Implementation-dependent_methods
-    int weekday  = (day += month < 3 ? year-- : year - 2, 23*month/9 + day + 4 + year/4- year/100 + year/400)%7;
+    int weekday = (day += month < 3 ? year-- : year - 2, 23 * month / 9 + day + 4 + year / 4 - year / 100 + year / 400) % 7;
     return weekday;
 }
 
@@ -171,23 +171,23 @@ EXPORT(int, sceRtcGetDayOfYear) {
 }
 
 EXPORT(int, sceRtcGetDaysInMonth, int year, int month) {
-    if (month < 1 || month > 12){
-        return error(__func__, SCE_RTC_ERROR_INVALID_MONTH);
+    if (month < 1 || month > 12) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_MONTH);
     }
-    if (year < 0){
-        return error(__func__, SCE_RTC_ERROR_INVALID_YEAR);
+    if (year < 0) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_YEAR);
     }
 
-    switch (month){
-    case 4:  // April
-    case 6:  // June
-    case 9:  // September
+    switch (month) {
+    case 4: // April
+    case 6: // June
+    case 9: // September
     case 11: // November
         return 30;
     case 2: // February
-        if ((year % 400 == 0) || (year % 100 != 0 && year % 4 == 0)){
+        if ((year % 400 == 0) || (year % 100 != 0 && year % 4 == 0)) {
             return 29;
-        }else{
+        } else {
             return 28;
         }
     }
@@ -214,8 +214,8 @@ EXPORT(unsigned int, sceRtcGetTickResolution) {
     return VITA_CLOCKS_PER_SEC;
 }
 
-template<typename TimePtrType>
-int sceRtcGetTime(MemState& mem, Ptr<SceDateTime> datePtr, TimePtrType timePtr) {
+template <typename TimePtrType>
+int sceRtcGetTime(MemState &mem, Ptr<SceDateTime> datePtr, TimePtrType timePtr) {
     if (datePtr && timePtr) {
         const auto datetime = *datePtr.get(mem);
         const auto ticks = __RtcPspTimeToTicks(datetime);
@@ -242,11 +242,11 @@ EXPORT(int, sceRtcGetWin32FileTime) {
 }
 
 EXPORT(int, sceRtcIsLeapYear, int year) {
-    if (year < 0){
-        return error(__func__, SCE_RTC_ERROR_INVALID_YEAR);
+    if (year < 0) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_YEAR);
     }
 
-    if ((year % 400 == 0) || (year % 100 != 0 && year % 4 == 0)){
+    if ((year % 400 == 0) || (year % 100 != 0 && year % 4 == 0)) {
         return 1;
     }
     return 0;
@@ -281,8 +281,8 @@ EXPORT(int, sceRtcSetWin32FileTime) {
 }
 
 EXPORT(int, sceRtcTickAddDays, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
-    if (pTick0 == nullptr || pTick1 == nullptr){
-        return error(__func__, SCE_RTC_ERROR_INVALID_POINTER);
+    if (pTick0 == nullptr || pTick1 == nullptr) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_POINTER);
     }
 
     pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 86400ull);
@@ -290,8 +290,8 @@ EXPORT(int, sceRtcTickAddDays, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sce
 }
 
 EXPORT(int, sceRtcTickAddHours, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
-    if (pTick0 == nullptr || pTick1 == nullptr){
-        return error(__func__, SCE_RTC_ERROR_INVALID_POINTER);
+    if (pTick0 == nullptr || pTick1 == nullptr) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_POINTER);
     }
 
     pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 3600ull);
@@ -299,8 +299,8 @@ EXPORT(int, sceRtcTickAddHours, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
 }
 
 EXPORT(int, sceRtcTickAddMicroseconds, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
-    if (pTick0 == nullptr || pTick1 == nullptr){
-        return error(__func__, SCE_RTC_ERROR_INVALID_POINTER);
+    if (pTick0 == nullptr || pTick1 == nullptr) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_POINTER);
     }
 
     pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC / 1000);
@@ -308,8 +308,8 @@ EXPORT(int, sceRtcTickAddMicroseconds, SceRtcTick *pTick0, const SceRtcTick *pTi
 }
 
 EXPORT(int, sceRtcTickAddMinutes, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
-    if (pTick0 == nullptr || pTick1 == nullptr){
-        return error(__func__, SCE_RTC_ERROR_INVALID_POINTER);
+    if (pTick0 == nullptr || pTick1 == nullptr) {
+        return RET_ERROR(__func__, SCE_RTC_ERROR_INVALID_POINTER);
     }
 
     pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 60);
@@ -321,8 +321,8 @@ EXPORT(int, sceRtcTickAddMonths) {
 }
 
 EXPORT(int, sceRtcTickAddSeconds, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
-    if (pTick0 == nullptr || pTick1 == nullptr){
-        return error("sceRtcTickAddSeconds", SCE_RTC_ERROR_INVALID_POINTER);
+    if (pTick0 == nullptr || pTick1 == nullptr) {
+        return RET_ERROR("sceRtcTickAddSeconds", SCE_RTC_ERROR_INVALID_POINTER);
     }
 
     pTick0->tick = pTick1->tick + lAdd * VITA_CLOCKS_PER_SEC;
@@ -330,8 +330,8 @@ EXPORT(int, sceRtcTickAddSeconds, SceRtcTick *pTick0, const SceRtcTick *pTick1, 
 }
 
 EXPORT(int, sceRtcTickAddTicks, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
-    if (pTick0 == nullptr || pTick1 == nullptr){
-        return error("sceRtcTickAddTicks", SCE_RTC_ERROR_INVALID_POINTER);
+    if (pTick0 == nullptr || pTick1 == nullptr) {
+        return RET_ERROR("sceRtcTickAddTicks", SCE_RTC_ERROR_INVALID_POINTER);
     }
 
     pTick0->tick = pTick1->tick + lAdd;
@@ -339,8 +339,8 @@ EXPORT(int, sceRtcTickAddTicks, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
 }
 
 EXPORT(int, sceRtcTickAddWeeks, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
-    if (pTick0 == nullptr || pTick1 == nullptr){
-        return error("sceRtcTickAddWeeks", SCE_RTC_ERROR_INVALID_POINTER);
+    if (pTick0 == nullptr || pTick1 == nullptr) {
+        return RET_ERROR("sceRtcTickAddWeeks", SCE_RTC_ERROR_INVALID_POINTER);
     }
 
     pTick0->tick = pTick1->tick + lAdd * (VITA_CLOCKS_PER_SEC * 604800ull);

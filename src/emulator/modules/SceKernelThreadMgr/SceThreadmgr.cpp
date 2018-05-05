@@ -140,8 +140,8 @@ EXPORT(int, sceKernelDeleteMsgPipe) {
     return unimplemented("sceKernelDeleteMsgPipe");
 }
 
-EXPORT(int, sceKernelDeleteMutex) {
-    return unimplemented("sceKernelDeleteMutex");
+EXPORT(int, sceKernelDeleteMutex, SceInt32 mutexid) {
+    return delete_mutex(host, thread_id, host.kernel.mutexes, mutexid);
 }
 
 EXPORT(int, sceKernelDeleteRWLock) {
@@ -282,30 +282,7 @@ EXPORT(int, sceKernelSignalCondTo) {
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
-    
-    // TODO Don't lock twice.
-    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
-    if (!semaphore) {
-        return error("sceKernelSignalSema", SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
-    }
-    
-    const std::unique_lock<std::mutex> lock(semaphore->mutex);
-    
-    semaphore->val += signal;
-    if (semaphore->val > semaphore->max){
-        semaphore->val = semaphore->max;
-    }
-    
-    while (semaphore->val > 0 && semaphore->locked.size() > 0){
-        const ThreadStatePtr thread = semaphore->locked.back();
-        assert(thread->to_do == ThreadToDo::wait);
-        thread->to_do = ThreadToDo::run;
-        semaphore->locked.pop_back();
-        semaphore->val--;
-        thread->something_to_do.notify_one();
-    }
-    
-    return 0;
+    return signal_sema(host, semaid, signal);
 }
 
 EXPORT(int, sceKernelStartTimer) {
@@ -328,37 +305,8 @@ EXPORT(int, sceKernelTryLockWriteRWLock) {
     return unimplemented("sceKernelTryLockWriteRWLock");
 }
 
-EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlockCount) {
-    
-    // TODO Don't lock twice.
-    const MutexPtr mutex = lock_and_find(mutexid, host.kernel.mutexes, host.kernel.mutex);
-    if (!mutex) {
-        return error("sceKernelUnlockMutex", SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
-    }
-    
-    const std::unique_lock<std::mutex> lock(mutex->mutex);
-    
-    const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    if (cur_thread == mutex->owner) {
-        mutex->lock_count -= unlockCount;
-        if (mutex->lock_count < 0) {
-            mutex->lock_count = 0;
-        }
-        if (mutex->lock_count == 0) {
-            mutex->owner = nullptr;
-            if (mutex->locked.size() > 0) {
-                const ThreadStatePtr thread = mutex->locked.back();
-                assert(thread->to_do == ThreadToDo::wait);
-                thread->to_do = ThreadToDo::run;
-                mutex->locked.pop_back();
-                mutex->lock_count++;
-                mutex->owner = thread;
-                thread->something_to_do.notify_one();
-            }
-        }
-    }
-    
-    return 0;
+EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
+    return unlock_mutex(host, thread_id, host.kernel.mutexes, mutexid, unlock_count);
 }
 
 EXPORT(int, sceKernelUnlockReadRWLock) {

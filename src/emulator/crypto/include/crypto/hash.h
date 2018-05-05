@@ -26,7 +26,7 @@ Sha256Hash sha256(const void *data, size_t size);
 template <size_t N>
 constexpr std::array<char, (N * 2) + 1> hex(const std::array<uint8_t, N> &hash) {
     std::array<char, (N * 2) + 1> dst;
-    
+
     const char hex[17] = "0123456789abcdef";
     for (size_t i = 0, j = 0; i < N; ++i) {
         const uint8_t byte = hash[i];
@@ -35,8 +35,8 @@ constexpr std::array<char, (N * 2) + 1> hex(const std::array<uint8_t, N> &hash) 
         dst[j++] = hi;
         dst[j++] = lo;
     }
-    
+
     dst.back() = '\0';
-    
+
     return dst;
 }

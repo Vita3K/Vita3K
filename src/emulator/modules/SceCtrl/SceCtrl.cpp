@@ -169,22 +169,22 @@ static int peek_buffer_positive(HostState &host, SceCtrlData *&pad_data) {
     CtrlState &state = host.ctrl;
     remove_disconnected_controllers(state);
     add_new_controllers(state);
-    
+
     memset(pad_data, 0, sizeof(*pad_data));
     pad_data->timeStamp = timestamp++; // TODO Use the real time and units.
-    
+
     std::array<float, 4> axes;
     axes.fill(0);
     apply_keyboard(&pad_data->buttons, axes.data());
     for (const GameControllerList::value_type &controller : state.controllers) {
         apply_controller(&pad_data->buttons, axes.data(), controller.second.get());
     }
-    
+
     pad_data->lx = float_to_byte(axes[0]);
     pad_data->ly = float_to_byte(axes[1]);
     pad_data->rx = float_to_byte(axes[2]);
     pad_data->ry = float_to_byte(axes[3]);
-    
+
     return 0;
 }
 
