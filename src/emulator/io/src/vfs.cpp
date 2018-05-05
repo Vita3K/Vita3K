@@ -7,7 +7,7 @@ std::string get_dvc(const std::string& path) {
     return path.substr(0, path.find_first_of(':'));
 }
 
-std::optional<DeviceName> gen_actual_mount_dvc_name(MountID id, VfsState& state) {
+std::optional<DeviceName> gen_mount_dvc_name(MountID id, VfsState& state) {
     auto random_dvc_gen = [=](std::string dvc_name) -> std::string {
         auto res = gen_temp_device_name(dvc_name) + "0:";
         return res;
@@ -23,7 +23,7 @@ std::optional<DeviceName> gen_actual_mount_dvc_name(MountID id, VfsState& state)
         }
 
         case 0xCA: {
-            MountPointDataEntry entry = get_entry(id, state);
+            auto entry = get_entry(id, state);
 
             // Don't mount ms0 yet. Don't have the method of checking auth id
             return random_dvc_gen("ms");
@@ -77,7 +77,6 @@ std::optional<DeviceName> gen_actual_mount_dvc_name(MountID id, VfsState& state)
             return random_dvc_gen("ud");
         }
 
-
         default:
             break;
     }
@@ -101,8 +100,14 @@ DeviceName gen_temp_device_name(DeviceName dvc) {
     return dvc + randomid;
 }
 
-MountPointDataEntry get_entry(const MountID id, VfsState& state) {
+std::optional<MountPointDataEntry> get_entry(const MountID id, VfsState& state) {
+    auto res = state.mount_entries.find(id);
 
+    if (res != state.mount_entries.end()) {
+        return std::optional<MountPointDataEntry>{};
+    }
+
+    return res->second;
 }
 
 MountID add_entry(const std::string& mount_point, const std::string& path, const std::string& title_id, uint64_t auth_id[], VfsState& state) {
@@ -164,8 +169,6 @@ bool mount_gd(const std::string& path, const std::string& patch_path, const std:
     if (!patch_path.empty()) {
         add_entry_force_id(0xE39, rd_dvc_patch + "/" + mp, patch_path, state.crr_title_id, auth_id, state);
     }
-
-    // UNFINISHED
 
     return true;
 }
