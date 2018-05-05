@@ -29,6 +29,11 @@ matrix:
           - gcc-7
           - g++-7
       before_script:
+      
+      - mkdir tmp && cd tmp
+      - curl -Ls https://www.archlinux.org/packages/extra/x86_64/sdl2/download | tar xJ
+      - sudo cp -r usr/* /usr/local/
+      - cd .. && rm -rf tmp
       - sudo apt-get install binutils-2.26
       - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
       - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
