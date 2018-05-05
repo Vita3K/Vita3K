@@ -29,11 +29,7 @@ matrix:
           - gcc-7
           - g++-7
       before_script:
-      - mkdir tmp && cd tmp
-      - curl -Ls https://www.archlinux.org/packages/community/x86_64/unicorn/download | tar xJ
-      - curl -Ls https://www.archlinux.org/packages/extra/x86_64/sdl2/download | tar xJ
-      - sudo cp -r usr/* /usr/local/
-      - cd .. && rm -rf tmp
+      - sudo apt-get install binutils-2.26
       - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
       - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
       - curl -Ls https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh -o cmake-3.10.3-Linux-x86_64.sh
