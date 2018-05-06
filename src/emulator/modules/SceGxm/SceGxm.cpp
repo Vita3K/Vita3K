@@ -92,10 +92,10 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         glDisable(GL_CULL_FACE);
         break;
     }
-    
+
     glEnable(GL_SCISSOR_TEST);
     glScissor(0, 0, host.display.window_width, host.display.window_height);
-    
+
     context->viewport.x = 0;
     context->viewport.y = 0;
     context->viewport.w = host.display.window_width;
@@ -104,7 +104,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     context->viewport.farVal = 1.0f;
     glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
     glDepthRange(context->viewport.nearVal, context->viewport.farVal);
-    
+
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1323,7 +1323,7 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
-    context->viewport.x = xOffset- xScale;
+    context->viewport.x = xOffset - xScale;
     context->viewport.y = host.display.window_height + yScale;
     context->viewport.w = xScale * 2;
     context->viewport.h = -(yScale * 2);

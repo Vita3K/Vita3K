@@ -862,7 +862,7 @@ GLenum translate_depth_func(SceGxmDepthFunc depth_func) {
     case SCE_GXM_DEPTH_FUNC_ALWAYS:
         return GL_ALWAYS;
     }
-    
+
     return GL_ALWAYS;
 }
 
