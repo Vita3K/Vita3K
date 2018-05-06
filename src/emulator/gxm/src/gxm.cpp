@@ -47,6 +47,33 @@ static SceGxmParameterType parameter_type(const SceGxmProgramParameter &paramete
         static_cast<uint16_t>(parameter.type));
 }
 
+static void log_parameter(const SceGxmProgramParameter& parameter)
+{
+    std::string type;
+    switch (parameter.category) {
+    case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
+        type = "Vertex attribute";
+        break;
+    case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
+        type = "Uniform";
+        break;
+    case SCE_GXM_PARAMETER_CATEGORY_SAMPLER:
+        type = "Sampler";
+        break;
+    case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE:
+        type = "Auxiliary surface";
+        break;
+    case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER:
+        type = "Uniform buffer";
+        break;
+    default:
+        type = "Other type";
+        break;
+    }
+    LOG_DEBUG("{}: name:{:s} type:{:d} component_count:{:x} container_index:{:x}",
+        type, parameter_name_raw(parameter), parameter.type, parameter.component_count, parameter.container_index);
+}
+
 static const char *scalar_type(SceGxmParameterType type) {
     switch (type) {
     case SCE_GXM_PARAMETER_TYPE_F16:
@@ -137,8 +164,8 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
     const SceGxmProgramParameter *const parameters = program_parameters(program);
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
-        LOG_DEBUG("Vertex attribute: name:{:s} category:{:x} type:{:x} component_count:{:x} container_index:{:x}",
-            parameter_name(parameter), parameter.category, parameter.type, parameter.component_count, parameter.container_index);
+        log_parameter(parameter);
+
         switch (parameter.category) {
         case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
             if (std::atof(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION))) < 1.3) {
@@ -170,8 +197,6 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
 static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
 
-    LOG_DEBUG("Generating fragment shader");
-
     std::ostringstream glsl;
     glsl << "// Fragment shader.\n";
     glsl << "#version 120\n";
@@ -186,9 +211,7 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
 
 static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
-
-    LOG_DEBUG("Generating vertex shader");
-
+    
     std::ostringstream glsl;
     glsl << "// Vertex shader.\n";
     glsl << "#version 120\n";
@@ -202,8 +225,6 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
 }
 
 static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source) {
-    LOG_DEBUG("Dumping GXM and GLSL shaders: {}", hash);
-
     // Dump missing shader GLSL.
     std::ostringstream glsl_path;
     glsl_path << hash << "." << extension;
