@@ -23,7 +23,7 @@
 template <typename HostType>
 struct BridgeTypes {
     typedef HostType ArmType;
-    
+
     static HostType arm_to_host(const ArmType &t, const MemState &mem) {
         return t;
     }
@@ -33,7 +33,7 @@ struct BridgeTypes {
 template <typename Pointee>
 struct BridgeTypes<Pointee *> {
     typedef Ptr<Pointee> ArmType;
-    
+
     static Pointee *arm_to_host(const ArmType &t, const MemState &mem) {
         return t.get(mem);
     }

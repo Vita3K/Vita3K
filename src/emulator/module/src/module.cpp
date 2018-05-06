@@ -41,7 +41,7 @@ int unimplemented(const char *name) {
     return 0;
 }
 
-int ret_error_impl(const char *name, const char* error_str, std::uint32_t error_val) {
+int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_val) {
     bool inserted = false;
 
     {
