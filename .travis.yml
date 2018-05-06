@@ -28,9 +28,9 @@ matrix:
           packages:
           - gcc-7
           - g++-7
+          - binutils-2.26
       before_script:
       - mkdir tmp && cd tmp
-      - curl -Ls https://www.archlinux.org/packages/community/x86_64/unicorn/download | tar xJ
       - curl -Ls https://www.archlinux.org/packages/extra/x86_64/sdl2/download | tar xJ
       - sudo cp -r usr/* /usr/local/
       - cd .. && rm -rf tmp
@@ -39,7 +39,11 @@ matrix:
       - curl -Ls https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh -o cmake-3.10.3-Linux-x86_64.sh
       - bash cmake-3.10.3-Linux-x86_64.sh --skip-license
       - export CMAKE=$(pwd)/bin/cmake
-
+      - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
+      - export CFLAGS=-Wl,--no-relax
+      - export CXXFLAGS=-Wl,--no-relax
+      - ld -v
+      
 script:
 - mkdir build
 - cd build/
