@@ -142,6 +142,20 @@ void free(MemState &state, Address address) {
     // TODO Decommit/protect freed memory.
 }
 
+uint32_t mem_available(MemState &state) {
+    const size_t page_count = 1;
+    const Allocated::iterator block = std::search_n(state.allocated_pages.begin(), state.allocated_pages.end(), page_count, 0);
+    if (block == state.allocated_pages.end()) {
+        assert(false);
+        return 0;
+    }
+
+    const size_t block_page_index = block - state.allocated_pages.begin();
+    const Address address = GB(4) - static_cast<Address>(block_page_index * state.page_size);
+
+    return address;
+}
+
 const char *mem_name(Address address, const MemState &state) {
     const size_t page = address / state.page_size;
     assert(page >= 0);

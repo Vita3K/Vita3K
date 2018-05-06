@@ -53,4 +53,5 @@ bool init(MemState &state);
 Address alloc(MemState &state, size_t size, const char *name);
 Address alloc_at(MemState &state, Address address, size_t size, const char *name);
 void free(MemState &state, Address address);
+uint32_t mem_available(MemState &state);
 const char *mem_name(Address address, const MemState &state);
