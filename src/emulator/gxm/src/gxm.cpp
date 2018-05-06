@@ -671,6 +671,8 @@ namespace texture {
             return GL_RGBA8;
         case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
             return GL_RGBA4;
+        case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
+            return GL_RGB5_A1;
         case SCE_GXM_TEXTURE_FORMAT_U8_R111: // TODO: this is inaccurate
         case SCE_GXM_TEXTURE_FORMAT_U8_111R: // TODO: this is inaccurate
         case SCE_GXM_TEXTURE_FORMAT_U8_1RRR: // TODO: this is inaccurate
@@ -691,6 +693,7 @@ namespace texture {
         switch (src) {
         case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
         case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
+        case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
             return GL_RGBA;
         case SCE_GXM_TEXTURE_FORMAT_U8_R111: // TODO: this is inaccurate
             return GL_RED;
