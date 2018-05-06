@@ -54,4 +54,5 @@ struct NetState {
     int next_id = 0;
     sockets socks;
     callbacks cbs;
+    int state = -1;
 };
