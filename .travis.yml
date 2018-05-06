@@ -40,8 +40,6 @@ matrix:
       - bash cmake-3.10.3-Linux-x86_64.sh --skip-license
       - export CMAKE=$(pwd)/bin/cmake
       - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
-      - export CFLAGS=-Wl,--no-relax
-      - export CXXFLAGS=-Wl,--no-relax
       - ld -v
       
 script:
