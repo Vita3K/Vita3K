@@ -181,13 +181,18 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
             assert(parameter.component_count == 4);
             glsl << "uniform sampler2D " << parameter_name(parameter);
             break;
-        case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE:
+        case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE: {
             assert(parameter.component_count == 0);
-            glsl << "auxiliary_surface";
+            LOG_CRITICAL("auxiliary_surface used in shader");
             break;
-        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER:
+        }
+        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER: {
             assert(parameter.component_count == 0);
-            glsl << "uniform_buffer";
+            LOG_CRITICAL("uniform_buffer used in shader");
+            break;
+        }
+        default: {
+            LOG_CRITICAL("Unknown parameter type used in shader.");
             break;
         }
         glsl << ";\n";
