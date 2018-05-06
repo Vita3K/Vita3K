@@ -86,8 +86,12 @@ EXPORT(int, sceKernelFreeMemBlockForVM) {
     return unimplemented("sceKernelFreeMemBlockForVM");
 }
 
-EXPORT(int, sceKernelGetFreeMemorySize) {
-    return unimplemented("sceKernelGetFreeMemorySize");
+EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
+    Address free_memory = mem_available(host.mem);
+    info->size_cdram = free_memory;
+    info->size_user = free_memory;
+    info->size_phycont = free_memory;
+    return unimplemented("sceKernelGetFreeMemorySize => Only one pool");
 }
 
 EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
