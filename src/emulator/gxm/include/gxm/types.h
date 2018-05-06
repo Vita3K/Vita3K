@@ -186,7 +186,7 @@ struct SceGxmProgramParameter {
         bf_t<uint16_t, 8, 4> component_count; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
         bf_t<uint16_t, 12, 4> container_index; // applicable for constants, not applicable for samplers (buffer, default, texture)
     };
-    uint16_t unknown; // Maybe relevant to SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE or SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER.
+    uint16_t semantic;
     uint32_t array_size;
     int32_t resource_index;
 };
