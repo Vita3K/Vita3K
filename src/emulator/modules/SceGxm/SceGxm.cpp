@@ -444,7 +444,11 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     glPixelStorei(GL_PACK_ROW_LENGTH, stride_in_pixels); // TODO Reset to 0?
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     flip_vertically(pixels, width, height, stride_in_pixels);
-
+    if (fragmentNotification) {
+        volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
+        *fragment_address = fragmentNotification->value;
+    }
+    
     host.gxm.isInScene = false;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -489,8 +493,8 @@ EXPORT(int, sceGxmGetDeferredContextVertexBuffer) {
     return unimplemented("sceGxmGetDeferredContextVertexBuffer");
 }
 
-EXPORT(uint32_t, sceGxmGetNotificationRegion) {
-    return host.gxm.notification_region.address();
+EXPORT(Ptr<uint32_t>, sceGxmGetNotificationRegion) {
+    return host.gxm.notification_region;
 }
 
 EXPORT(int, sceGxmGetParameterBufferThreshold) {
@@ -584,6 +588,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
     host.kernel.running_threads.emplace(display_thread_id, running_thread);
     host.gxm.notification_region = Ptr<uint32_t>(alloc(host.mem, MB(1), "SceGxmNotificationRegion"));
+    memset(host.gxm.notification_region.get(host.mem), 0, MB(1));
     return 0;
 }
 
