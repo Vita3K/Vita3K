@@ -92,10 +92,10 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         glDisable(GL_CULL_FACE);
         break;
     }
-    
+
     glEnable(GL_SCISSOR_TEST);
     glScissor(0, 0, host.display.window_width, host.display.window_height);
-    
+
     context->viewport.x = 0;
     context->viewport.y = 0;
     context->viewport.w = host.display.window_width;
@@ -104,7 +104,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     context->viewport.farVal = 1.0f;
     glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
     glDepthRange(context->viewport.nearVal, context->viewport.farVal);
-    
+
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -119,8 +119,8 @@ EXPORT(int, sceGxmColorSurfaceGetClip) {
     return unimplemented("sceGxmColorSurfaceGetClip");
 }
 
-EXPORT(int, sceGxmColorSurfaceGetData) {
-    return unimplemented("sceGxmColorSurfaceGetData");
+EXPORT(Ptr<void>, sceGxmColorSurfaceGetData, emu::SceGxmColorSurface *surface) {
+    return Ptr<void>(surface->pbeEmitWords[3]);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetDitherMode) {
@@ -139,8 +139,8 @@ EXPORT(int, sceGxmColorSurfaceGetScaleMode) {
     return unimplemented("sceGxmColorSurfaceGetScaleMode");
 }
 
-EXPORT(int, sceGxmColorSurfaceGetStrideInPixels) {
-    return unimplemented("sceGxmColorSurfaceGetStrideInPixels");
+EXPORT(int, sceGxmColorSurfaceGetStrideInPixels, emu::SceGxmColorSurface *surface) {
+    return surface->pbeEmitWords[2];
 }
 
 EXPORT(int, sceGxmColorSurfaceGetType) {
@@ -1323,7 +1323,7 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
-    context->viewport.x = xOffset- xScale;
+    context->viewport.x = xOffset - xScale;
     context->viewport.y = host.display.window_height + yScale;
     context->viewport.w = xScale * 2;
     context->viewport.h = -(yScale * 2);
@@ -1774,6 +1774,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     switch (texFormat) {
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
