@@ -28,7 +28,7 @@ matrix:
           packages:
           - gcc-7
           - g++-7
-          - binutils-2.26
+          - binutils-2.30
       before_script:
       - mkdir tmp && cd tmp
       - curl -Ls https://www.archlinux.org/packages/extra/x86_64/sdl2/download | tar xJ
@@ -39,10 +39,9 @@ matrix:
       - curl -Ls https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh -o cmake-3.10.3-Linux-x86_64.sh
       - bash cmake-3.10.3-Linux-x86_64.sh --skip-license
       - export CMAKE=$(pwd)/bin/cmake
-      - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
-      - export CXXFLAGS=-Wa,-mrelax-relocations=no
-      - export CFLAGS=-Wa,-mrelax-relocations=no
-
+      - export PATH=/usr/lib/binutils-2.30/bin:${PATH}
+      - ld -v
+      
 script:
 - mkdir build
 - cd build/
