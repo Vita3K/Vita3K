@@ -336,8 +336,9 @@ EXPORT(int, sceClibMemcpyChk) {
     return unimplemented("sceClibMemcpyChk");
 }
 
-EXPORT(int, sceClibMemcpy_safe) {
-    return unimplemented("sceClibMemcpy_safe");
+EXPORT(int, sceClibMemcpy_safe, void *destination, const void *source, SceSize num) {
+    memcpy(destination, source, num);
+    return 0;
 }
 
 EXPORT(int, sceClibMemmove) {
