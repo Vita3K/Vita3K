@@ -119,8 +119,8 @@ EXPORT(int, sceGxmColorSurfaceGetClip) {
     return unimplemented("sceGxmColorSurfaceGetClip");
 }
 
-EXPORT(int, sceGxmColorSurfaceGetData) {
-    return unimplemented("sceGxmColorSurfaceGetData");
+EXPORT(Ptr<void>, sceGxmColorSurfaceGetData, emu::SceGxmColorSurface *surface) {
+    return Ptr<void>(surface->pbeEmitWords[3]);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetDitherMode) {
@@ -139,8 +139,8 @@ EXPORT(int, sceGxmColorSurfaceGetScaleMode) {
     return unimplemented("sceGxmColorSurfaceGetScaleMode");
 }
 
-EXPORT(int, sceGxmColorSurfaceGetStrideInPixels) {
-    return unimplemented("sceGxmColorSurfaceGetStrideInPixels");
+EXPORT(int, sceGxmColorSurfaceGetStrideInPixels, emu::SceGxmColorSurface *surface) {
+    return surface->pbeEmitWords[2];
 }
 
 EXPORT(int, sceGxmColorSurfaceGetType) {
