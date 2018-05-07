@@ -45,6 +45,7 @@ script:
 - cd build/
 - ${CMAKE} -DCMAKE_BUILD_TYPE=Release ..
 - make -j4
+- make CTEST_OUTPUT_ON_FAILURE=1 test
 
 env:
   global:
