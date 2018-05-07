@@ -19,6 +19,66 @@
 
 #include <gtest/gtest.h>
 
-TEST(lay_out, dummy) {
-    ASSERT_TRUE(true);
+static bool operator==(const ArgLayout &a, const ArgLayout &b) {
+    return (a.location == b.location) && (a.offset == b.offset);
+}
+
+static std::ostream &operator<<(std::ostream &out, const ArgLayout &layout) {
+    switch (layout.location) {
+        case ArgLocation::gpr:
+            out << "r" << layout.offset;
+            break;
+        case ArgLocation::stack:
+            out << "stack + " << layout.offset;
+            break;
+    }
+    
+    return out;
+}
+
+TEST(lay_out, gpr_overflows_to_stack) {
+    const auto actual = lay_out<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t>();
+    const std::array<ArgLayout, 6> expected = {{
+        { ArgLocation::gpr, 0 },
+        { ArgLocation::gpr, 1 },
+        { ArgLocation::gpr, 2 },
+        { ArgLocation::gpr, 3 },
+        { ArgLocation::stack, 0 },
+        { ArgLocation::stack, 4 },
+    }};
+    
+    ASSERT_EQ(actual, expected);
+}
+
+TEST(lay_out, dword_uses_two_gpr) {
+    const auto actual = lay_out<int64_t, int32_t>();
+    const std::array<ArgLayout, 2> expected = {{
+        { ArgLocation::gpr, 0 },
+        { ArgLocation::gpr, 2 },
+    }};
+    
+    ASSERT_EQ(actual, expected);
+}
+
+TEST(lay_out, dword_aligned_to_two_gpr) {
+    const auto actual = lay_out<int32_t, int64_t>();
+    const std::array<ArgLayout, 2> expected = {{
+        { ArgLocation::gpr, 0 },
+        { ArgLocation::gpr, 2 },
+    }};
+    
+    ASSERT_EQ(actual, expected);
+}
+
+TEST(lay_out, dword_alignment_can_waste_gprs) {
+    // Arg 3 could fit in r1, but alignment of arg 2 skipped it.
+    // I've not observed this, but this is the current behaviour.
+    const auto actual = lay_out<int32_t, int64_t, int32_t>();
+    const std::array<ArgLayout, 3> expected = {{
+        { ArgLocation::gpr, 0 },
+        { ArgLocation::gpr, 2 },
+        { ArgLocation::stack, 0 },
+    }};
+    
+    ASSERT_EQ(actual, expected);
 }
