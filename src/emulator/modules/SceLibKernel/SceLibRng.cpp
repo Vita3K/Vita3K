@@ -17,8 +17,35 @@
 
 #include "SceLibRng.h"
 
-EXPORT(int, sceKernelGetRandomNumber) {
-    return unimplemented("sceKernelGetRandomNumber");
+#include <psp2/kernel/error.h>
+
+#include <algorithm>
+#include <random>
+
+#define SCE_RNG_ERROR_INVALID_ARGUMENT 0x810C0000
+
+EXPORT(int, sceKernelGetRandomNumber, uint64_t *output, unsigned int size) {
+    if (size > 64) {
+        return RET_ERROR("sceKernelGetRandomNumber", SCE_RNG_ERROR_INVALID_ARGUMENT);
+    }
+
+    thread_local std::random_device dev;
+    thread_local std::mt19937_64 mt(dev());
+    thread_local auto rng = [&]() { return mt(); };
+
+    int repeat = size / sizeof(uint64_t);
+    int remain = size % sizeof(uint64_t);
+
+    std::generate_n(output, repeat, rng);
+
+    if (remain == 0) {
+        return SCE_KERNEL_OK;
+    }
+
+    uint64_t value = rng();
+    char *ptr = reinterpret_cast<char*>(&value);
+    std::copy(ptr, ptr + remain, reinterpret_cast<char*>(&output[repeat]));
+    return SCE_KERNEL_OK;
 }
 
 BRIDGE_IMPL(sceKernelGetRandomNumber)
