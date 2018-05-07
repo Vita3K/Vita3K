@@ -31,6 +31,11 @@
 
 typedef std::unique_ptr<uc_struct, std::function<void(uc_struct *)>> UnicornPtr;
 
+union DoubleReg {
+    double d;
+    float f[2];
+};
+
 struct CPUState {
     MemState *mem = nullptr;
     CallSVC call_svc;
@@ -231,11 +236,12 @@ uint32_t read_reg(CPUState &state, size_t index) {
 float read_float_reg(CPUState &state, size_t index) {
     assert(index >= 0);
 
-    float value = 0;
-    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_S0 + index, &value);
-    assert(err == UC_ERR_OK);
+    DoubleReg value;
 
-    return value;
+    int single_index = index / 2;
+    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_D0 + single_index, &value);
+    assert(err == UC_ERR_OK);
+    return value.f[index % 2];
 }
 
 uint32_t read_sp(CPUState &state) {
