@@ -6,6 +6,7 @@ include/host/import_fn.h
 include/host/sfo.h
 include/host/state.h
 include/host/version.h
+include/host/app_util.h
 src/host.cpp
 src/sfo.cpp
 version.cpp

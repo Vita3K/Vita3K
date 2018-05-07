@@ -124,18 +124,27 @@ bool init(IOState &io, const char *pref_path) {
     uma0 += "uma0";
     const std::string ux0_data = ux0 + "/data";
     const std::string uma0_data = uma0 + "/data";
+    const std::string ux0_user = ux0 + "/user";
+    const std::string ux0_user00 = ux0_user + "/00";
+    const std::string ux0_savedata = ux0_user00 + "/savedata";
 
 #ifdef WIN32
     CreateDirectoryA(ux0.c_str(), nullptr);
     CreateDirectoryA(ux0_data.c_str(), nullptr);
     CreateDirectoryA(uma0.c_str(), nullptr);
     CreateDirectoryA(uma0_data.c_str(), nullptr);
+    CreateDirectoryA(ux0_user.c_str(), nullptr);
+    CreateDirectoryA(ux0_user00.c_str(), nullptr);
+    CreateDirectoryA(ux0_savedata.c_str(), nullptr);
 #else
     const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     mkdir(ux0.c_str(), mode);
     mkdir(ux0_data.c_str(), mode);
     mkdir(uma0.c_str(), mode);
     mkdir(uma0_data.c_str(), mode);
+    mkdir(ux0_user.c_str(), mode);
+    mkdir(ux0_user00.c_str(), mode);
+    mkdir(ux0_savedata.c_str(), mode);
 #endif
 
     return true;
@@ -188,6 +197,19 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
                 path = fixed_path;
                 device = VitaIoDevice::APP0;
             }
+        }
+    }
+
+    // Redirect savedata0:/ to ux0:/user/00/savedata/<title_id>
+    if (device == VitaIoDevice::SAVEDATA0) {
+        std::string fixed_path = path.substr(10);
+        auto start_path = fixed_path.find('/');
+        if (start_path != std::string::npos) {
+            fixed_path = fixed_path.substr(start_path);
+            fixed_path.insert(0, io.savedata0_path);
+
+            path = fixed_path;
+            device = VitaIoDevice::UX0;
         }
     }
 
