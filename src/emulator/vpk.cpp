@@ -21,6 +21,7 @@
 #include <kernel/state.h>
 
 #include <host/sfo.h>
+#include <host/state.h>
 #include <io/state.h>
 #include <util/log.h>
 #include <util/string_convert.h>
@@ -59,7 +60,7 @@ static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, con
     return true;
 }
 
-bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string &title_id, KernelState &kernel, IOState &io, MemState &mem, SfoFile &sfo_file, const std::wstring &path) {
+bool load_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
@@ -97,43 +98,53 @@ bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string
         return false;
     }
 
-    load_sfo(sfo_file, params);
+    load_sfo(host.sfo_handle, params);
 
-    find_data(game_title, sfo_file, "TITLE");
-    find_data(title_id, sfo_file, "TITLE_ID");
+    find_data(host.game_title, host.sfo_handle, "TITLE");
+    find_data(host.title_id, host.sfo_handle, "TITLE_ID");
     std::string category;
-    find_data(category, sfo_file, "CATEGORY");
+    find_data(category, host.sfo_handle, "CATEGORY");
 
     LOG_INFO("Path: {}", wide_to_utf(path));
-    LOG_INFO("Title: {}", game_title);
-    LOG_INFO("Serial: {}", title_id);
+    LOG_INFO("Title: {}", host.game_title);
+    LOG_INFO("Serial: {}", host.title_id);
     LOG_INFO("Category: {}", category);
 
-    io.app0_prefix = "";
+    host.io.app0_prefix = "";
 
     Buffer eboot;
     if (!read_file_from_zip(eboot, vpk_fp, "eboot.bin", zip)) {
-        std::string eboot_path = title_id + "/eboot.bin";
+        std::string eboot_path = host.title_id + "/eboot.bin";
         if (!read_file_from_zip(eboot, vpk_fp, eboot_path.c_str(), zip)) {
             return false;
         } else {
-            io.app0_prefix = title_id + "/";
+            host.io.app0_prefix = host.title_id + "/";
         }
     }
 
     Buffer libc;
-    std::string libc_path = io.app0_prefix + "sce_module/libc.suprx";
+    std::string libc_path = host.io.app0_prefix + "sce_module/libc.suprx";
     if (read_file_from_zip(libc, vpk_fp, libc_path.c_str(), zip)) {
-        if (load_self(entry_point, kernel, mem, libc.data(), "app0:sce_module/libc.suprx") == 0) {
+        if (load_self(entry_point, host.kernel, host.mem, libc.data(), "app0:sce_module/libc.suprx") == 0) {
             LOG_INFO("LIBC loaded");
         }
     }
 
-    if (load_self(entry_point, kernel, mem, eboot.data(), "app0:eboot.bin") < 0) {
+    if (load_self(entry_point, host.kernel, host.mem, eboot.data(), "app0:eboot.bin") < 0) {
         return false;
     }
 
-    io.vpk = zip;
+    std::string savedata_path = host.pref_path + "ux0/user/00/savedata/" + host.title_id;
+
+#ifdef WIN32
+    CreateDirectoryA(savedata_path.c_str(), nullptr);
+#else
+    const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+    mkdir(savedata_path.c_str(), mode);
+#endif
+
+    host.io.savedata0_path = "ux0:/user/00/savedata/" + host.title_id + "/";
+    host.io.vpk = zip;
 
     return true;
 }
