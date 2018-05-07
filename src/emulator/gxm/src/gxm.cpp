@@ -8,6 +8,7 @@
 #include <glbinding/FunctionCall.h>
 #include <microprofile.h>
 
+#include <algorithm>
 #include <cstring> // memcmp
 #include <fstream>
 #include <sstream>
@@ -37,14 +38,59 @@ static const SceGxmProgramParameter *program_parameters(const SceGxmProgram &pro
     return reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program.parameters_offset) + program.parameters_offset);
 }
 
-static const char *parameter_name(const SceGxmProgramParameter &parameter) {
+/**
+* \brief Returns raw parameter name from GXP
+*        Therefore, if parameter belongs in a struct, includes it in the form of "struct_name.field_name"
+*/
+static std::string parameter_name_raw(const SceGxmProgramParameter &parameter) {
     const uint8_t *const bytes = reinterpret_cast<const uint8_t *>(&parameter);
     return reinterpret_cast<const char *>(bytes + parameter.name_offset);
+}
+
+/**
+ * \brief If parameter belongs in a struct, returns the struct field name only
+ */
+static std::string parameter_name(const SceGxmProgramParameter &parameter) {
+    auto full_name = parameter_name_raw(parameter);
+    auto struct_idx = full_name.find('.');
+    bool is_struct_field = struct_idx != std::string::npos;
+
+    if (is_struct_field)
+        return full_name.substr(struct_idx + 1, full_name.length());
+    else
+        return full_name;
 }
 
 static SceGxmParameterType parameter_type(const SceGxmProgramParameter &parameter) {
     return static_cast<SceGxmParameterType>(
         static_cast<uint16_t>(parameter.type));
+}
+
+static void log_parameter(const SceGxmProgramParameter& parameter)
+{
+    std::string type;
+    switch (parameter.category) {
+    case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
+        type = "Vertex attribute";
+        break;
+    case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
+        type = "Uniform";
+        break;
+    case SCE_GXM_PARAMETER_CATEGORY_SAMPLER:
+        type = "Sampler";
+        break;
+    case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE:
+        type = "Auxiliary surface";
+        break;
+    case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER:
+        type = "Uniform buffer";
+        break;
+    default:
+        type = "Other type";
+        break;
+    }
+    LOG_DEBUG("{}: name:{:s} type:{:d} component_count:{:x} container_index:{:x}",
+        type, parameter_name_raw(parameter), parameter.type, parameter.component_count, parameter.container_index);
 }
 
 static const char *scalar_type(SceGxmParameterType type) {
@@ -82,6 +128,11 @@ static const char *vector_prefix(SceGxmParameterType type) {
     return "?";
 }
 
+static void output_uniform_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
+    assert(parameter.component_count == 4);
+    glsl << " sampler2D " << parameter_name_raw(parameter);
+}
+
 static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
     assert(parameter.component_count == 1);
 
@@ -92,7 +143,7 @@ static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter 
 }
 
 static void output_vector_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
-    assert(parameter.component_count >= 2);
+    assert(parameter.component_count > 1);
     assert(parameter.component_count <= 4);
 
     const auto vector = vector_prefix(parameter_type(parameter));
@@ -104,7 +155,7 @@ static void output_vector_decl(std::ostream &glsl, const SceGxmProgramParameter 
 }
 
 static void output_matrix_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
-    assert(parameter.component_count >= 2);
+    assert(parameter.component_count > 1);
     assert(parameter.array_size >= 2);
     assert(parameter.array_size <= 4);
 
@@ -117,9 +168,44 @@ static void output_matrix_decl(std::ostream &glsl, const SceGxmProgramParameter 
     glsl << " " << parameter_name(parameter);
 }
 
-static void output_glsl_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
-    if (parameter.component_count >= 2) {
-        if ((parameter.array_size >= 2) && (parameter.array_size <= 4)) {
+void output_struct_decl_begin(std::ostream &glsl, const std::string &qualifier) {
+    if (!qualifier.empty())
+        glsl << qualifier << " ";
+    glsl << "struct {\n";
+}
+
+void output_struct_decl_end(std::ostream &glsl, const std::string &struct_name) {
+    glsl << "} " << struct_name;
+    glsl << ";\n";
+}
+
+static void output_glsl_decl(std::ostream &glsl, std::string &cur_struct_decl, const SceGxmProgramParameter &parameter, const std::string &qualifier, bool is_sampler = false) {
+    const std::string param_name_raw = parameter_name_raw(parameter);
+    const auto struct_idx = param_name_raw.find('.');
+    const bool is_struct_field = struct_idx != std::string::npos;
+    const std::string struct_name = is_struct_field ? param_name_raw.substr(0, struct_idx) : ""; // empty if not a struct
+    const bool struct_started = is_struct_field && cur_struct_decl != struct_name; // previous param was no struct, or a different struct
+    const bool struct_ended = !is_struct_field && !cur_struct_decl.empty(); // previous param was a struct but this one isn't
+
+    if (struct_started)
+        output_struct_decl_begin(glsl, qualifier);
+
+    if (struct_ended)
+        output_struct_decl_end(glsl, cur_struct_decl);
+
+    // Indent if struct field
+    if (is_struct_field)
+        glsl << "   ";
+
+    // No qualifier if struct field. They're only present once in the struct declaration.
+    if (!is_struct_field)
+        glsl << qualifier << " ";
+
+    // TODO: Should be using param type here
+    if (is_sampler) {
+        output_uniform_decl(glsl, parameter);
+    } else if (parameter.component_count > 1) {
+        if (parameter.array_size > 1 && parameter.array_size <= 4) {
             output_matrix_decl(glsl, parameter);
         } else {
             output_vector_decl(glsl, parameter);
@@ -127,50 +213,67 @@ static void output_glsl_decl(std::ostream &glsl, const SceGxmProgramParameter &p
     } else {
         output_scalar_decl(glsl, parameter);
     }
+
+    glsl << ";\n";
+
+    cur_struct_decl = struct_name;
 }
 
 static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &program) {
+    static auto gl_version = std::atof(reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
+
     if (program.parameter_count > 0) {
         glsl << "\n";
     }
 
+    // Keeps track of current struct declaration
+    std::string cur_struct_decl;
+
     const SceGxmProgramParameter *const parameters = program_parameters(program);
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
-        LOG_DEBUG("Vertex attribute: name:{:s} category:{:x} type:{:x} component_count:{:x} container_index:{:x}",
-            parameter_name(parameter), parameter.category, parameter.type, parameter.component_count, parameter.container_index);
+        log_parameter(parameter);
+
         switch (parameter.category) {
-        case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
-            if (std::atof(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION))) < 1.3) {
-                glsl << "in ";
-            }
-            output_glsl_decl(glsl, parameter);
-            break;
-        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
-            glsl << "uniform ";
-            output_glsl_decl(glsl, parameter);
-            break;
-        case SCE_GXM_PARAMETER_CATEGORY_SAMPLER:
-            assert(parameter.component_count == 4);
-            glsl << "uniform sampler2D " << parameter_name(parameter);
-            break;
-        case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE:
-            assert(parameter.component_count == 0);
-            glsl << "auxiliary_surface";
-            break;
-        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER:
-            assert(parameter.component_count == 0);
-            glsl << "uniform_buffer";
+        case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE: {
+            const auto qualifier = (gl_version < 1.3)
+                ? ""
+                : "in";
+            output_glsl_decl(glsl, cur_struct_decl, parameter, qualifier);
             break;
         }
-        glsl << ";\n";
+        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM: {
+            output_glsl_decl(glsl, cur_struct_decl, parameter, "uniform");
+            break;
+        }
+        case SCE_GXM_PARAMETER_CATEGORY_SAMPLER: {
+            output_glsl_decl(glsl, cur_struct_decl, parameter, "uniform ", true);
+            break;
+        }
+        case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE: {
+            assert(parameter.component_count == 0);
+            LOG_CRITICAL("auxiliary_surface used in shader");
+            break;
+        }
+        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER: {
+            assert(parameter.component_count == 0);
+            LOG_CRITICAL("uniform_buffer used in shader");
+            break;
+        }
+        default: {
+            LOG_CRITICAL("Unknown parameter type used in shader.");
+            break;
+        }
+        }
+    }
+
+    if (!cur_struct_decl.empty()) {
+        output_struct_decl_end(glsl, cur_struct_decl);
     }
 }
 
 static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
-
-    LOG_DEBUG("Generating fragment shader");
 
     std::ostringstream glsl;
     glsl << "// Fragment shader.\n";
@@ -186,9 +289,7 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
 
 static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
-
-    LOG_DEBUG("Generating vertex shader");
-
+    
     std::ostringstream glsl;
     glsl << "// Vertex shader.\n";
     glsl << "#version 120\n";
@@ -202,8 +303,6 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
 }
 
 static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source) {
-    LOG_DEBUG("Dumping GXM and GLSL shaders: {}", hash);
-
     // Dump missing shader GLSL.
     std::ostringstream glsl_path;
     glsl_path << hash << "." << extension;
@@ -327,8 +426,8 @@ static void set_uniforms(GLuint gl_program, const UniformBuffers &uniform_buffer
             continue;
         }
 
-        const char *const name = parameter_name(parameter);
-        const GLint location = glGetUniformLocation(gl_program, name);
+        auto name = parameter_name(parameter);
+        const GLint location = glGetUniformLocation(gl_program, name.c_str());
         if (location < 0) {
             LOG_WARN("Uniform parameter {} not found in current OpenGL program.", name);
             continue;
@@ -426,7 +525,7 @@ AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
     for (uint32_t i = 0; i < vertex_program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            locations.emplace(parameter.resource_index, parameter_name(parameter));
+            locations.emplace(parameter.resource_index, parameter_name_raw(parameter));
         }
     }
 
