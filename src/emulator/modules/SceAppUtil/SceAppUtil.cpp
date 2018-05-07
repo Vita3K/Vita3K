@@ -20,6 +20,9 @@
 #include <psp2/apputil.h>
 #include <psp2/system_param.h>
 
+#include <host/app_util.h>
+#include <io/functions.h>
+
 EXPORT(int, sceAppUtilAddCookieWebBrowser) {
     return unimplemented("sceAppUtilAddCookieWebBrowser");
 }
@@ -144,12 +147,40 @@ EXPORT(int, sceAppUtilResetCookieWebBrowser) {
     return unimplemented("sceAppUtilResetCookieWebBrowser");
 }
 
-EXPORT(int, sceAppUtilSaveDataDataRemove) {
-    return unimplemented("sceAppUtilSaveDataDataRemove");
+EXPORT(int, sceAppUtilSaveDataDataRemove, emu::SceAppUtilSaveDataFileSlot *slot, emu::SceAppUtilSaveDataRemoveItem *files, unsigned int fileNum, SceAppUtilSaveDataMountPoint *mountPoint) {
+    for (unsigned int i = 0; i < fileNum; i++) {
+        std::string file_path = "savedata0:/";
+        file_path += files[i].dataPath.get(host.mem);
+        switch (files[i].mode) {
+        case SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT:
+            remove_file(file_path.c_str(), host.pref_path.c_str());
+            break;
+        default: // Directory remotion
+            remove_dir(file_path.c_str(), host.pref_path.c_str());
+            break;
+        }
+    }
+    return 0;
 }
 
-EXPORT(int, sceAppUtilSaveDataDataSave) {
-    return unimplemented("sceAppUtilSaveDataDataSave");
+EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, emu::SceAppUtilSaveDataFile *files, unsigned int fileNum, SceAppUtilSaveDataMountPoint *mountPoint, SceSize *requiredSizeKB) {
+    for (unsigned int i = 0; i < fileNum; i++) {
+        std::string file_path = "savedata0:/";
+        file_path += files[i].filePath.get(host.mem);
+        SceUID fd;
+        switch (files[i].mode) {
+        case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE:
+            fd = open_file(host.io, file_path, SCE_O_WRONLY | SCE_O_CREAT, host.pref_path.c_str());
+            seek_file(fd, files[i].offset, SCE_SEEK_SET, host.io);
+            write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io);
+            close_file(host.io, fd);
+            break;
+        default: // Directory creation
+            create_dir(file_path.c_str(), 0777, host.pref_path.c_str());
+            break;
+        }
+    }
+    return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataGetQuota) {
