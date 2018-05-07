@@ -32,6 +32,7 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
 int run(CPUState &state, bool callback);
 void stop(CPUState &state);
 uint32_t read_reg(CPUState &state, size_t index);
+float read_float_reg(CPUState &state, size_t index);
 uint32_t read_sp(CPUState &state);
 uint32_t read_pc(CPUState &state);
 uint32_t read_lr(CPUState &state);

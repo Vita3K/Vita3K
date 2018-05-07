@@ -92,11 +92,19 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         glDisable(GL_CULL_FACE);
         break;
     }
-    
+
     glEnable(GL_SCISSOR_TEST);
-    glViewport(0, 0, host.display.window_width, host.display.window_height);
     glScissor(0, 0, host.display.window_width, host.display.window_height);
-    
+
+    context->viewport.x = 0;
+    context->viewport.y = 0;
+    context->viewport.w = host.display.window_width;
+    context->viewport.h = host.display.window_height;
+    context->viewport.nearVal = 0.0f;
+    context->viewport.farVal = 1.0f;
+    glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+    glDepthRange(context->viewport.nearVal, context->viewport.farVal);
+
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -111,8 +119,8 @@ EXPORT(int, sceGxmColorSurfaceGetClip) {
     return unimplemented("sceGxmColorSurfaceGetClip");
 }
 
-EXPORT(int, sceGxmColorSurfaceGetData) {
-    return unimplemented("sceGxmColorSurfaceGetData");
+EXPORT(Ptr<void>, sceGxmColorSurfaceGetData, emu::SceGxmColorSurface *surface) {
+    return Ptr<void>(surface->pbeEmitWords[3]);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetDitherMode) {
@@ -131,8 +139,8 @@ EXPORT(int, sceGxmColorSurfaceGetScaleMode) {
     return unimplemented("sceGxmColorSurfaceGetScaleMode");
 }
 
-EXPORT(int, sceGxmColorSurfaceGetStrideInPixels) {
-    return unimplemented("sceGxmColorSurfaceGetStrideInPixels");
+EXPORT(int, sceGxmColorSurfaceGetStrideInPixels, emu::SceGxmColorSurface *surface) {
+    return surface->pbeEmitWords[2];
 }
 
 EXPORT(int, sceGxmColorSurfaceGetType) {
@@ -436,7 +444,11 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     glPixelStorei(GL_PACK_ROW_LENGTH, stride_in_pixels); // TODO Reset to 0?
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     flip_vertically(pixels, width, height, stride_in_pixels);
-
+    if (fragmentNotification) {
+        volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
+        *fragment_address = fragmentNotification->value;
+    }
+    
     host.gxm.isInScene = false;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -481,8 +493,8 @@ EXPORT(int, sceGxmGetDeferredContextVertexBuffer) {
     return unimplemented("sceGxmGetDeferredContextVertexBuffer");
 }
 
-EXPORT(uint32_t, sceGxmGetNotificationRegion) {
-    return host.gxm.notification_region.address();
+EXPORT(Ptr<uint32_t>, sceGxmGetNotificationRegion) {
+    return host.gxm.notification_region;
 }
 
 EXPORT(int, sceGxmGetParameterBufferThreshold) {
@@ -576,6 +588,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
     host.kernel.running_threads.emplace(display_thread_id, running_thread);
     host.gxm.notification_region = Ptr<uint32_t>(alloc(host.mem, MB(1), "SceGxmNotificationRegion"));
+    memset(host.gxm.notification_region.get(host.mem), 0, MB(1));
     return 0;
 }
 
@@ -743,8 +756,25 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, const SceG
     return Ptr<SceGxmProgramParameter>();
 }
 
-EXPORT(int, sceGxmProgramFindParameterBySemantic) {
-    return unimplemented("sceGxmProgramFindParameterBySemantic");
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const SceGxmProgram *program, SceGxmParameterSemantic semantic, uint32_t index) {
+    const MemState &mem = host.mem;
+    assert(program != nullptr);
+
+    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
+    uint32_t current_index = 0;
+    for (uint32_t i = 0; i < program->parameter_count; ++i) {
+        const SceGxmProgramParameter *const parameter = &parameters[i];
+        const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
+        if (parameter->semantic == semantic) {
+            if (current_index == index) {
+                const Address parameter_address = static_cast<Address>(parameter_bytes - &mem.memory[0]);
+                return Ptr<SceGxmProgramParameter>(parameter_address);
+            }
+            current_index++;
+        }
+    }
+
+    return Ptr<SceGxmProgramParameter>();
 }
 
 EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize) {
@@ -1140,8 +1170,13 @@ EXPORT(int, sceGxmSetFrontDepthBias) {
     return unimplemented("sceGxmSetFrontDepthBias");
 }
 
-EXPORT(int, sceGxmSetFrontDepthFunc) {
-    return unimplemented("sceGxmSetFrontDepthFunc");
+EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
+    glEnable(GL_DEPTH_TEST);
+    if (context->two_sided) {
+        // TODO: Find a way to implement this since glDepthFuncSeparate doesn't exist
+        LOG_WARN("sceGxmSetFrontDepthFunc called with a two sided context, graphical glitches may happen.");
+    }
+    glDepthFunc(translate_depth_func(depthFunc));
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
@@ -1310,11 +1345,27 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
-    glViewport(xOffset - xScale, host.display.window_height + yScale - yOffset, xScale * 2, -(yScale * 2));
+    context->viewport.x = xOffset - xScale;
+    context->viewport.y = host.display.window_height + yScale;
+    context->viewport.w = xScale * 2;
+    context->viewport.h = -(yScale * 2);
+    context->viewport.nearVal = zOffset - zScale;
+    context->viewport.farVal = zOffset + zScale;
+    if (context->viewport.enabled) {
+        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+        glDepthRange(context->viewport.nearVal, context->viewport.farVal);
+    }
 }
 
-EXPORT(int, sceGxmSetViewportEnable) {
-    return unimplemented("sceGxmSetViewportEnable");
+EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
+    context->viewport.enabled = enable == SCE_GXM_VIEWPORT_ENABLED ? true : false;
+    if (context->viewport.enabled) {
+        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+        glDepthRange(context->viewport.nearVal, context->viewport.farVal);
+    } else {
+        glViewport(0, 0, host.display.window_width, host.display.window_height);
+        glDepthRange(0.0f, 1.0f);
+    }
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
@@ -1745,6 +1796,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     switch (texFormat) {
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:

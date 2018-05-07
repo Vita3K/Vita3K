@@ -48,7 +48,7 @@ void call(void (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args
 template <typename Ret, typename... Args>
 ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, Args...)) {
     constexpr ArgsLayout<Args...> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
-    
+
     return [export_fn, args_layout](HostState &host, SceUID thread_id) {
         MICROPROFILE_SCOPEI("HLE", "", MP_YELLOW);
 

@@ -150,6 +150,10 @@ int main(int argc, char *argv[]) {
         const SceUID libc_thread_id = create_thread(host.kernel.loaded_modules.begin()->second->module_start, host.kernel, host.mem, "libc", SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, call_import, false);
         const ThreadStatePtr libc_thread = find(libc_thread_id, host.kernel.threads);
         run_on_current(*libc_thread, host.kernel.loaded_modules.begin()->second->module_start, 0, argp);
+        libc_thread->to_do = ThreadToDo::exit;
+        libc_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+        host.kernel.running_threads.erase(libc_thread_id);
+        host.kernel.threads.erase(libc_thread_id);
     }
 
     if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {

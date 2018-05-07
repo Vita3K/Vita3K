@@ -117,6 +117,15 @@ Address alloc(MemState &state, size_t size, const char *name) {
     return address;
 }
 
+Address alloc_at(MemState &state, Address address, size_t size, const char *name) {
+    const size_t page_count = (size + (state.page_size - 1)) / state.page_size;
+    const Allocated::iterator block = state.allocated_pages.begin() + (address / state.page_size);
+
+    alloc_inner(state, address, page_count, block, name);
+
+    return address;
+}
+
 void free(MemState &state, Address address) {
     const size_t page = address / state.page_size;
     assert(page >= 0);
@@ -131,6 +140,20 @@ void free(MemState &state, Address address) {
     std::fill(first_page, last_page, 0);
 
     // TODO Decommit/protect freed memory.
+}
+
+uint32_t mem_available(MemState &state) {
+    const size_t page_count = 1;
+    const Allocated::iterator block = std::search_n(state.allocated_pages.begin(), state.allocated_pages.end(), page_count, 0);
+    if (block == state.allocated_pages.end()) {
+        assert(false);
+        return 0;
+    }
+
+    const size_t block_page_index = block - state.allocated_pages.begin();
+    const Address address = GB(4) - static_cast<Address>(block_page_index * state.page_size);
+
+    return address;
 }
 
 const char *mem_name(Address address, const MemState &state) {

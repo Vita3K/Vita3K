@@ -20,8 +20,9 @@
 #include <host/sfo.h>
 #include <psp2/appmgr.h>
 
-EXPORT(int, _sceAppMgrGetAppState) {
-    return unimplemented("_sceAppMgrGetAppState");
+EXPORT(int, _sceAppMgrGetAppState, void *appState, uint32_t len, uint32_t version) {
+    memset(appState, 0, len);
+    return unimplemented("_sceAppMgrGetAppState => 0");
 }
 
 EXPORT(int, sceAppMgrAcidDirSet) {
@@ -366,8 +367,9 @@ EXPORT(int, sceAppMgrReceiveShellEvent) {
     return unimplemented("sceAppMgrReceiveShellEvent");
 }
 
-EXPORT(int, sceAppMgrReceiveSystemEvent) {
-    return unimplemented("sceAppMgrReceiveSystemEvent");
+EXPORT(int, sceAppMgrReceiveSystemEvent, SceAppMgrSystemEvent *systemEvent) {
+    systemEvent->systemEvent = SCE_APPMGR_SYSTEMEVENT_ON_RESUME;
+    return unimplemented("sceAppMgrReceiveSystemEvent => SCE_APPMGR_SYSTEMEVENT_ON_RESUME");
 }
 
 EXPORT(int, sceAppMgrSaveDataAddMount) {

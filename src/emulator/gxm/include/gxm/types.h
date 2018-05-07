@@ -56,6 +56,16 @@ typedef std::tuple<std::string, std::string> ProgramGLSLs;
 typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 typedef std::array<Ptr<void>, 16> UniformBuffers;
 
+struct SceGxmViewport {
+    bool enabled = false;
+    GLint x;
+    GLint y;
+    GLint w;
+    GLint h;
+    double nearVal;
+    double farVal;
+};
+
 struct SceGxmContext {
     // This is an opaque type.
     emu::SceGxmContextParams params;
@@ -71,6 +81,7 @@ struct SceGxmContext {
     GLObjectArray<1> texture;
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
     bool two_sided = false;
+    SceGxmViewport viewport;
 };
 
 namespace emu {
@@ -175,7 +186,7 @@ struct SceGxmProgramParameter {
         bf_t<uint16_t, 8, 4> component_count; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
         bf_t<uint16_t, 12, 4> container_index; // applicable for constants, not applicable for samplers (buffer, default, texture)
     };
-    uint16_t unknown; // Maybe relevant to SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE or SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER.
+    uint16_t semantic;
     uint32_t array_size;
     int32_t resource_index;
 };

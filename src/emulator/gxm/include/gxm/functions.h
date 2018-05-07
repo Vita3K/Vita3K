@@ -49,5 +49,6 @@ namespace texture {
 }
 GLenum translate_primitive(SceGxmPrimitiveType primType);
 GLenum translate_stencil_func(SceGxmStencilFunc stencil_func);
+GLenum translate_depth_func(SceGxmDepthFunc depth_func);
 GLenum translate_stencil_op(SceGxmStencilOp stencil_op);
 bool operator<(const FragmentProgramCacheKey &a, const FragmentProgramCacheKey &b);

@@ -22,6 +22,7 @@
 enum class ArgLocation {
     gpr,
     stack,
+    fp
 };
 
 struct ArgLayout {

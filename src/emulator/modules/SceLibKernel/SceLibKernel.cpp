@@ -19,10 +19,10 @@
 
 #include <cpu/functions.h>
 #include <host/functions.h>
-#include <rtc/rtc.h>
 #include <io/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread_functions.h>
+#include <rtc/rtc.h>
 #include <util/log.h>
 
 #include <kernel/load_self.h>
@@ -336,8 +336,9 @@ EXPORT(int, sceClibMemcpyChk) {
     return unimplemented("sceClibMemcpyChk");
 }
 
-EXPORT(int, sceClibMemcpy_safe) {
-    return unimplemented("sceClibMemcpy_safe");
+EXPORT(int, sceClibMemcpy_safe, void *destination, const void *source, SceSize num) {
+    memcpy(destination, source, num);
+    return 0;
 }
 
 EXPORT(int, sceClibMemmove) {
@@ -1149,8 +1150,10 @@ EXPORT(int, sceKernelGetPMUSERENR) {
     return unimplemented("sceKernelGetPMUSERENR");
 }
 
-EXPORT(SceUInt64, sceKernelGetProcessTime) {
-    return rtc_get_ticks(host.kernel.base_tick.tick);
+EXPORT(int, sceKernelGetProcessTime, SceUInt64 *time) {
+    if (time)
+        *time = rtc_get_ticks(host.kernel.base_tick.tick);
+    return 0;
 }
 
 EXPORT(SceUInt32, sceKernelGetProcessTimeLow) {
@@ -1277,7 +1280,19 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 
-    run_on_current(*thread, entry_point, args, argp);
+    uint32_t result = run_on_current(*thread, entry_point, args, argp);
+    char *module_name = module->second.get()->module_name;
+
+    LOG_INFO("{} returned {:#08x}", module_name, result);
+
+    if (status)
+        *status = result;
+
+    thread->to_do = ThreadToDo::exit;
+    thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+    host.kernel.running_threads.erase(thid);
+    host.kernel.threads.erase(thid);
+
     return modId;
 }
 

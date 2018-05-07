@@ -190,11 +190,13 @@ bool run_callback(ThreadState &thread, Address &pc, Address &data) {
     return run_thread(thread, true);
 }
 
-bool run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp) {
+uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp) {
     std::unique_lock<std::mutex> lock(thread.mutex);
+    stop(*thread.cpu);
     write_reg(*thread.cpu, 0, arglen);
     write_reg(*thread.cpu, 1, argp.address());
     write_pc(*thread.cpu, entry_point.address());
     lock.unlock();
-    return run_thread(thread, true);
+    run_thread(thread, false);
+    return read_reg(*thread.cpu, 0);
 }

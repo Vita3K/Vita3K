@@ -38,18 +38,27 @@ std::enable_if_t<sizeof(T) == 8, T> read_from_gpr(CPUState &cpu, const ArgLayout
     return static_cast<T>(both);
 }
 
+// Read float value from register.
+template <typename T>
+T read_from_fp(CPUState &cpu, const ArgLayout &arg) {
+    const float reg = read_float_reg(cpu, arg.offset);
+    return static_cast<T>(reg);
+}
+
 // Read variable from register or stack, as specified by arg layout.
 template <typename T>
 T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
     switch (arg.location) {
-        case ArgLocation::gpr:
-            return read_from_gpr<T>(cpu, arg);
-        case ArgLocation::stack:
-        {
-            const Address sp = read_sp(cpu);
-            const Address address_on_stack = static_cast<Address>(sp + arg.offset);
-            return *Ptr<T>(address_on_stack).get(mem);
-        }
+    case ArgLocation::gpr:
+        return read_from_gpr<T>(cpu, arg);
+    case ArgLocation::stack: {
+        const Address sp = read_sp(cpu);
+        const Address address_on_stack = static_cast<Address>(sp + arg.offset);
+        return *Ptr<T>(address_on_stack).get(mem);
+    }
+    case ArgLocation::fp:
+        if constexpr (std::is_same_v<T, float>)
+            return read_from_fp<T>(cpu, arg);
     }
 
     return T();
@@ -58,7 +67,7 @@ T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
 template <typename Arg, size_t index, typename... Args>
 Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, const MemState &mem) {
     using ArmType = typename BridgeTypes<Arg>::ArmType;
-    
+
     const ArmType bridged = read<ArmType>(cpu, args[index], mem);
     return BridgeTypes<Arg>::arm_to_host(bridged, mem);
 }
