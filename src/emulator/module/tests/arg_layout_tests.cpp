@@ -20,5 +20,5 @@
 #include <gtest/gtest.h>
 
 TEST(lay_out, dummy) {
-    ASSERT_TRUE(true);
+    ASSERT_TRUE(false);
 }
