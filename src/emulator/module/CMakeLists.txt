@@ -22,3 +22,4 @@ add_executable(
 
 target_include_directories(module-tests PRIVATE include)
 target_link_libraries(module-tests PRIVATE googletest)
+add_test(NAME module COMMAND module-tests)
