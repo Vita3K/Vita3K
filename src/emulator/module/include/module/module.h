@@ -27,7 +27,7 @@
 int unimplemented(const char *name);
 
 int ret_error_impl(const char *name, const char* error_str, std::uint32_t error_val);
-#define RET_ERROR(name, error) ret_error_impl(name, #error, error)
+#define RET_ERROR(error) ret_error_impl(export_name, #error, error)
 
 #define BRIDGE_DECL(name) extern const ImportFn import_##name;
 #define BRIDGE_IMPL(name) const ImportFn import_##name = bridge(&export_##name, #name);

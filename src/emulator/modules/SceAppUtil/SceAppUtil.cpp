@@ -228,7 +228,7 @@ EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveD
     slot_path += ".bin";
     SceUID fd = open_file(host.io, slot_path, SCE_O_RDONLY, host.pref_path.c_str());
     if (fd < 0)
-        return RET_ERROR(export_name, SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
+        return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
     read_file(param, host.io, fd, sizeof(SceAppUtilSaveDataSlotParam));
     close_file(host.io, fd);
     return 0;
@@ -244,7 +244,7 @@ EXPORT(int, sceAppUtilSaveDataSlotSetParam, unsigned int slotId, SceAppUtilSaveD
     slot_path += ".bin";
     SceUID fd = open_file(host.io, slot_path, SCE_O_WRONLY, host.pref_path.c_str());
     if (fd < 0)
-        return RET_ERROR(export_name, SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
+        return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
     write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io);
     close_file(host.io, fd);
     return 0;
@@ -275,7 +275,7 @@ EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
         *value = SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS;
         return 0;
     default:
-        return RET_ERROR(export_name, SCE_APPUTIL_ERROR_PARAMETER);
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
     }
 }
 
@@ -291,7 +291,7 @@ EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf,
 #endif
         break;
     default:
-        return RET_ERROR(export_name, SCE_APPUTIL_ERROR_PARAMETER);
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
     }
     return 0;
 }

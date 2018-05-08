@@ -112,7 +112,7 @@ EXPORT(int, sceImeDialogGetStatus) {
 
 EXPORT(int, sceImeDialogInit, const Ptr<emu::SceImeDialogParam> param) {
     if (host.gui.common_dialog.type != NO_DIALOG) {
-        return RET_ERROR(export_name, SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
 
     emu::SceImeDialogParam *p = param.get(host.mem);
@@ -136,7 +136,7 @@ EXPORT(int, sceImeDialogInit, const Ptr<emu::SceImeDialogParam> param) {
 
 EXPORT(int, sceImeDialogTerm) {
     if (host.gui.common_dialog.type != IME_DIALOG) {
-        return RET_ERROR(export_name, SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
     host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     host.gui.common_dialog.type = NO_DIALOG;
