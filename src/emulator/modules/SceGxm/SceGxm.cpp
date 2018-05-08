@@ -1346,13 +1346,13 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
     context->viewport.x = xOffset - xScale;
-    context->viewport.y = host.display.window_height + yScale;
-    context->viewport.w = xScale * 2;
-    context->viewport.h = -(yScale * 2);
+    context->viewport.y = yOffset + yScale;
+    context->viewport.w = xOffset + xScale;
+    context->viewport.h = yOffset - yScale;
     context->viewport.nearVal = zOffset - zScale;
     context->viewport.farVal = zOffset + zScale;
     if (context->viewport.enabled) {
-        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+        glViewport(context->viewport.x, context->viewport.y, abs(context->viewport.w), abs(context->viewport.h));
         glDepthRange(context->viewport.nearVal, context->viewport.farVal);
     }
 }
