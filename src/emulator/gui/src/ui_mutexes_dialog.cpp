@@ -31,7 +31,7 @@ void DrawMutexesDialog(HostState &host) {
 
     for (auto mutex : host.kernel.mutexes) {
         std::shared_ptr<Mutex> mutex_state = mutex.second;
-        ImGui::Text("0x%08X       %-32s   %02d        %01d            %02u                 %s",
+        ImGui::Text("0x%08X       %-32s   %02d        %01d            %02lu                 %s",
             mutex.first,
             mutex_state->name,
             mutex_state->lock_count,
@@ -49,7 +49,7 @@ void DrawLwMutexesDialog(HostState &host) {
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     for (auto mutex : host.kernel.lwmutexes) {
         std::shared_ptr<Mutex> mutex_state = mutex.second;
-        ImGui::Text("0x%08X       %-32s   %02d        %01d           %02u                 %s",
+        ImGui::Text("0x%08X       %-32s   %02d        %01d           %02lu                 %s",
             mutex.first,
             mutex_state->name,
             mutex_state->lock_count,

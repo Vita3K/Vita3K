@@ -125,7 +125,7 @@ EXPORT(int, sceImeDialogInit, const Ptr<emu::SceImeDialogParam> param) {
 
     host.gui.common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_NONE;
     host.gui.common_dialog.ime.title = utf16_to_utf8(title);
-    sprintf(host.gui.common_dialog.ime.text, utf16_to_utf8(text).c_str());
+    sprintf(host.gui.common_dialog.ime.text, "%s", utf16_to_utf8(text).c_str());
     host.gui.common_dialog.ime.max_length = p->maxTextLength;
     host.gui.common_dialog.ime.multiline = (p->option & SCE_IME_OPTION_MULTILINE);
     host.gui.common_dialog.ime.cancelable = (p->dialogMode == SCE_IME_DIALOG_DIALOG_MODE_WITH_CANCEL);

@@ -285,9 +285,9 @@ EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf,
     case SCE_SYSTEM_PARAM_ID_USERNAME:
         gethostname(devname, 80);
 #ifdef WIN32
-        strcpy_s((char *)buf, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE, devname);
+        strlcpy_s((char *)buf, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE, devname);
 #else
-        strcpy((char *)buf, devname);
+        strlcpy((char *)buf, devname);
 #endif
         break;
     default:

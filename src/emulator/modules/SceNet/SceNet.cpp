@@ -361,7 +361,7 @@ EXPORT(int, sceNetResolverGetError) {
 
 EXPORT(int, sceNetResolverStartAton, int rid, const SceNetInAddr *addr, char *hostname, int len, int timeout, int retry, int flags) {
     struct hostent *resolved = gethostbyaddr((const char *)addr, len, AF_INET);
-    strcpy(hostname, resolved->h_name);
+    strlcpy(hostname, resolved->h_name);
     return 0;
 }
 
