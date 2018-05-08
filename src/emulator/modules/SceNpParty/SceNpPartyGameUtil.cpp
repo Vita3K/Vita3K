@@ -18,47 +18,47 @@
 #include "SceNpPartyGameUtil.h"
 
 EXPORT(int, sceNpPartyCheckCallback) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetGameSessionReadyState) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetId) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetMemberInfo) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetMemberSessionInfo) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetMemberVoiceInfo) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetMembers) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetState) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyInit) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyRegisterHandler) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyTerm) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNpPartyCheckCallback)

@@ -18,7 +18,7 @@
 #include "SceCoredumpNounlink.h"
 
 EXPORT(int, sceCoredumpWriteUserData) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceCoredumpWriteUserData)

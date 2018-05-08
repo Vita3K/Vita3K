@@ -18,19 +18,19 @@
 #include "SceHid.h"
 
 EXPORT(int, sceHidKeyboardEnumerate) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHidKeyboardRead) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHidMouseEnumerate) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHidMouseRead) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceHidKeyboardEnumerate)

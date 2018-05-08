@@ -24,7 +24,8 @@
 
 #include <cassert>
 
-int unimplemented(const char *name);
+int unimplemented_impl(const char *name);
+#define UNIMPLEMENTED() unimplemented_impl(export_name)
 
 int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_val);
 #define RET_ERROR(error) ret_error_impl(export_name, #error, error)

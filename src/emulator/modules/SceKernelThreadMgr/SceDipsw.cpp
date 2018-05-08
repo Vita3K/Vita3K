@@ -18,15 +18,15 @@
 #include "SceDipsw.h"
 
 EXPORT(int, sceKernelCheckDipsw) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelClearDipsw) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelSetDipsw) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceKernelCheckDipsw)

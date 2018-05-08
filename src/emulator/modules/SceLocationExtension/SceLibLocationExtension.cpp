@@ -18,15 +18,15 @@
 #include "SceLibLocationExtension.h"
 
 EXPORT(int, sceLocationCancelQueryLocationWifiHistory) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceLocationGetLocationWifiHistory) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceLocationQueryLocationWifiHistory) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceLocationCancelQueryLocationWifiHistory)

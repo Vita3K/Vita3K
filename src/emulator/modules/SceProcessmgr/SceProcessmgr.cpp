@@ -28,7 +28,7 @@ struct VitaTimeval {
 };
 
 EXPORT(int, sceKernelCallAbortHandler) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void *args) {
@@ -48,15 +48,15 @@ EXPORT(int, sceKernelGetStdout) {
 }
 
 EXPORT(int, sceKernelIsCDialogAvailable) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelIsGameBudget) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcClock) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> tzAddr) {
@@ -73,15 +73,15 @@ EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> t
 }
 
 EXPORT(int, sceKernelLibcGmtime_r) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcLocaltime_r) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcMktime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcTime, uint32_t *time) {
@@ -95,7 +95,7 @@ EXPORT(int, sceKernelLibcTime, uint32_t *time) {
 }
 
 EXPORT(int, sceKernelPowerLock) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelPowerTick, SceKernelPowerTickType type) {
@@ -103,15 +103,15 @@ EXPORT(int, sceKernelPowerTick, SceKernelPowerTickType type) {
 }
 
 EXPORT(int, sceKernelPowerUnlock) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelRegisterProcessTerminationCallback) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceKernelCallAbortHandler)

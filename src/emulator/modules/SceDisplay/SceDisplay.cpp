@@ -22,35 +22,35 @@
 #include <psp2/display.h>
 
 EXPORT(int, _sceDisplayGetFrameBuf) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceDisplayGetFrameBufInternal) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceDisplayGetMaximumFrameBufResolution) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceDisplayGetResolutionInfoInternal) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceDisplaySetFrameBuf) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceDisplaySetFrameBufForCompat) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceDisplaySetFrameBufInternal) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayGetPrimaryHead) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayGetRefreshRate, float *pFps) {
@@ -59,35 +59,35 @@ EXPORT(int, sceDisplayGetRefreshRate, float *pFps) {
 }
 
 EXPORT(int, sceDisplayGetVcount) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayGetVcountInternal) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayRegisterVblankStartCallback) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayUnregisterVblankStartCallback) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayWaitSetFrameBuf) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayWaitSetFrameBufCB) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayWaitSetFrameBufMulti) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayWaitSetFrameBufMultiCB) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayWaitVblankStart) {
@@ -105,15 +105,15 @@ EXPORT(int, sceDisplayWaitVblankStart) {
 }
 
 EXPORT(int, sceDisplayWaitVblankStartCB) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayWaitVblankStartMulti) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayWaitVblankStartMultiCB) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(_sceDisplayGetFrameBuf)

@@ -18,7 +18,7 @@
 #include "ScePafMisc.h"
 
 EXPORT(int, sce_paf_misc_does_file_exist) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sce_paf_misc_does_file_exist)

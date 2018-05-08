@@ -27,7 +27,7 @@ typedef std::set<std::string> NameSet;
 static std::mutex mutex;
 static NameSet logged;
 
-int unimplemented(const char *name) {
+int unimplemented_impl(const char *name) {
     bool inserted = false;
     {
         const std::lock_guard<std::mutex> lock(mutex);

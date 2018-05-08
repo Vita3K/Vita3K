@@ -75,43 +75,43 @@ EXPORT(int, sceRtcCheckValid, const SceDateTime *pTime) {
 }
 
 EXPORT(int, sceRtcCompareTick) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcConvertLocalTimeToUtc) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcConvertUtcToLocalTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcFormatRFC2822) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcFormatRFC2822LocalTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcFormatRFC3339) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcFormatRFC3339LocalTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetCurrentClock) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetCurrentClockLocalTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetCurrentNetworkTick) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
@@ -167,7 +167,7 @@ EXPORT(int, sceRtcGetDayOfWeek, int year, int month, int day) {
 }
 
 EXPORT(int, sceRtcGetDayOfYear) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetDaysInMonth, int year, int month) {
@@ -195,19 +195,19 @@ EXPORT(int, sceRtcGetDaysInMonth, int year, int month) {
 }
 
 EXPORT(int, sceRtcGetDosTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetLastAdjustedTick) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetLastReincarnatedTick) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetTick) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(unsigned int, sceRtcGetTickResolution) {
@@ -238,7 +238,7 @@ EXPORT(int, sceRtcGetTime64_t, Ptr<SceDateTime> datePtr, Ptr<std::uint64_t> time
 }
 
 EXPORT(int, sceRtcGetWin32FileTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcIsLeapYear, int year) {
@@ -253,31 +253,31 @@ EXPORT(int, sceRtcIsLeapYear, int year) {
 }
 
 EXPORT(int, sceRtcParseDateTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcParseRFC3339) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcSetDosTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcSetTick) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcSetTime64_t) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcSetTime_t) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcSetWin32FileTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcTickAddDays, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
@@ -317,7 +317,7 @@ EXPORT(int, sceRtcTickAddMinutes, SceRtcTick *pTick0, const SceRtcTick *pTick1, 
 }
 
 EXPORT(int, sceRtcTickAddMonths) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcTickAddSeconds, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
@@ -348,7 +348,7 @@ EXPORT(int, sceRtcTickAddWeeks, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
 }
 
 EXPORT(int, sceRtcTickAddYears) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceRtcCheckValid)

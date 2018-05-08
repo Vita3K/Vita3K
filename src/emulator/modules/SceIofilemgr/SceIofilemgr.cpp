@@ -20,7 +20,7 @@
 #include <io/functions.h>
 
 EXPORT(int, sceIoCancel) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoClose, SceUID fd) {
@@ -29,11 +29,11 @@ EXPORT(int, sceIoClose, SceUID fd) {
 }
 
 EXPORT(int, sceIoCloseAsync) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoComplete) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoDclose, SceUID fd) {
@@ -41,19 +41,19 @@ EXPORT(int, sceIoDclose, SceUID fd) {
 }
 
 EXPORT(int, sceIoFlockForSystem) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoGetPriority) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoGetProcessDefaultPriority) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoGetThreadDefaultPriority) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoLseek32, SceUID fd, int offset, int whence) {
@@ -65,35 +65,35 @@ EXPORT(int, sceIoRead, SceUID fd, void *data, SceSize size) {
 }
 
 EXPORT(int, sceIoReadAsync) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoSetPriority) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoSetPriorityForSystem) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoSetProcessDefaultPriority) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoSetThreadDefaultPriority) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoSetThreadDefaultPriorityForSystem) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoSyncByFd) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoSyncByFdAsync) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceIoWrite, SceUID fd, const void *data, SceSize size) {
@@ -101,7 +101,7 @@ EXPORT(int, sceIoWrite, SceUID fd, const void *data, SceSize size) {
 }
 
 EXPORT(int, sceIoWriteAsync) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceIoCancel)

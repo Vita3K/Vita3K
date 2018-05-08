@@ -18,7 +18,7 @@
 #include "SceRtc.h"
 
 EXPORT(int, sceRtcGetAccumulativeTime) {
-    return unimplemented(export_name);
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceRtcGetAccumulativeTime)
