@@ -50,7 +50,6 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(renderTarget != nullptr);
     assert(validRegion == nullptr);
     assert(vertexSyncObject == nullptr);
-    assert(fragmentSyncObject != nullptr);
     assert(colorSurface != nullptr);
     assert(depthStencil != nullptr);
 
