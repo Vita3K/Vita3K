@@ -777,8 +777,9 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const 
     return Ptr<SceGxmProgramParameter>();
 }
 
-EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize, const SceGxmProgram *program) {
+    STUBBED("Full program size");
+    return program->size;
 }
 
 EXPORT(int, sceGxmProgramGetFragmentProgramInputs) {
