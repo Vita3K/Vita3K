@@ -158,7 +158,8 @@ EXPORT(int, sceMsgDialogGetResult) {
 }
 
 EXPORT(int, sceMsgDialogGetStatus) {
-    return UNIMPLEMENTED();
+    STUBBED("Close");
+    return 2;
 }
 
 EXPORT(int, sceMsgDialogInit) {
