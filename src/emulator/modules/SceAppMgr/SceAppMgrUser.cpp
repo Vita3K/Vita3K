@@ -16,10 +16,12 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceAppMgrUser.h"
+
 #include <host/sfo.h>
 #include <psp2/appmgr.h>
 
-EXPORT(int, _sceAppMgrGetAppState) {
+EXPORT(int, _sceAppMgrGetAppState, void *appState, uint32_t len, uint32_t version) {
+    memset(appState, 0, len);
     return unimplemented(export_name);
 }
 
@@ -56,12 +58,13 @@ EXPORT(int, sceAppMgrAppParamGetInt) {
 }
 
 EXPORT(int, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
-    std::string res = get_data(host.sfo_handle, param);
-    if (res.length() <= 0) {
-        return error(export_name, SCE_APPMGR_ERROR_INVALID);
+    std::string res;
+    if (!get_data(res, host.sfo_handle, param)) {
+        return RET_ERROR(export_name, SCE_APPMGR_ERROR_INVALID);
+    } else {
+        res.copy(string, length);
+        return 0;
     }
-    res.copy(string, length);
-    return 0;
 }
 
 EXPORT(int, sceAppMgrAppParamSetString) {
@@ -364,7 +367,8 @@ EXPORT(int, sceAppMgrReceiveShellEvent) {
     return unimplemented(export_name);
 }
 
-EXPORT(int, sceAppMgrReceiveSystemEvent) {
+EXPORT(int, sceAppMgrReceiveSystemEvent, SceAppMgrSystemEvent *systemEvent) {
+    systemEvent->systemEvent = SCE_APPMGR_SYSTEMEVENT_ON_RESUME;
     return unimplemented(export_name);
 }
 

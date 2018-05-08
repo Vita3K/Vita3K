@@ -57,19 +57,19 @@ EXPORT(int, sceDisplayGetResolutionInfoInternal) {
 EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync) {
     assert(pParam != nullptr); // Todo: pParam can be NULL, in that case black screen is shown
     if (pParam->size != sizeof(emu::SceDisplayFrameBuf)) {
-        return error(export_name, SCE_DISPLAY_ERROR_INVALID_VALUE);
+        return RET_ERROR(export_name, SCE_DISPLAY_ERROR_INVALID_VALUE);
     }
     if (!pParam->base) {
-        return error(export_name, SCE_DISPLAY_ERROR_INVALID_ADDR);
+        return RET_ERROR(export_name, SCE_DISPLAY_ERROR_INVALID_ADDR);
     }
     if (pParam->pitch < pParam->width) {
-        return error(export_name, SCE_DISPLAY_ERROR_INVALID_PITCH);
+        return RET_ERROR(export_name, SCE_DISPLAY_ERROR_INVALID_PITCH);
     }
     if (pParam->pixelformat != SCE_DISPLAY_PIXELFORMAT_A8B8G8R8) {
-        return error(export_name, SCE_DISPLAY_ERROR_INVALID_PIXELFORMAT);
+        return RET_ERROR(export_name, SCE_DISPLAY_ERROR_INVALID_PIXELFORMAT);
     }
     if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE) {
-        return error(export_name, SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
+        return RET_ERROR(export_name, SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
     }
 
     host.display.base = pParam->base;

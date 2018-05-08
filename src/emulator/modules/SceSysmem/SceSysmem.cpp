@@ -86,7 +86,11 @@ EXPORT(int, sceKernelFreeMemBlockForVM) {
     return unimplemented(export_name);
 }
 
-EXPORT(int, sceKernelGetFreeMemorySize) {
+EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
+    Address free_memory = mem_available(host.mem);
+    info->size_cdram = free_memory;
+    info->size_user = free_memory;
+    info->size_phycont = free_memory;
     return unimplemented(export_name);
 }
 

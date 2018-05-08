@@ -17,11 +17,12 @@
 
 #pragma once
 
-#include <host/state.h>
 #include <psp2/types.h>
 
 #include <chrono>
 #include <cstdint>
+
+struct _FILETIME;
 
 // This is the # of microseconds between January 1, 0001 and January 1, 1970.
 // Grabbed from JPSCP
@@ -36,7 +37,12 @@ constexpr auto VITA_CLOCKS_PER_SEC = 1'000'000;
 using VitaClocks = std::chrono::duration<std::uint64_t, std::ratio<1, VITA_CLOCKS_PER_SEC>>;
 
 std::uint64_t rtc_base_ticks();
-std::uint64_t rtc_get_ticks(const HostState &host);
+std::uint64_t rtc_get_ticks(uint64_t base_tick);
+#ifdef WIN32
+std::uint64_t convert_filetime(const _FILETIME &filetime);
+#else
+std::uint64_t convert_timespec(const timespec &timespec);
+#endif
 time_t rtc_timegm(struct tm *tm);
 void __RtcPspTimeToTm(tm &val, const SceDateTime &pt);
 void __RtcTicksToPspTime(SceDateTime &t, std::uint64_t ticks);

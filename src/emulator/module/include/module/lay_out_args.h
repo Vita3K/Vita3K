@@ -18,10 +18,12 @@
 #pragma once
 
 #include "args_layout.h"
+#include <tuple>
 
 struct LayoutArgsState {
     size_t gpr_used;
     size_t stack_used;
+    size_t float_used;
 };
 
 constexpr size_t align(size_t current, size_t alignment) {
@@ -35,8 +37,8 @@ constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_stack(const LayoutArgsSt
     const size_t stack_offset = align(state.stack_used, stack_alignment);
     const size_t next_stack_used = stack_offset + stack_required;
     const ArgLayout layout = { ArgLocation::stack, stack_offset };
-    const LayoutArgsState next_state = { state.gpr_used, next_stack_used };
-    
+    const LayoutArgsState next_state = { state.gpr_used, next_stack_used, state.float_used };
+
     return { layout, next_state };
 }
 
@@ -46,23 +48,39 @@ constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_gpr_or_stack(const Layou
     const size_t gpr_alignment = gpr_required;
     const size_t gpr_index = align(state.gpr_used, gpr_alignment);
     const size_t next_gpr_used = gpr_index + gpr_required;
-    
+
     // Does variable not fit in register file?
     if (next_gpr_used > 4) {
         return add_to_stack<Arg>(state);
     }
-    
+
     // Lay out in registers.
     const ArgLayout layout = { ArgLocation::gpr, gpr_index };
-    const LayoutArgsState next_state = { next_gpr_used, state.stack_used };
-    
+    const LayoutArgsState next_state = { next_gpr_used, state.stack_used, state.float_used };
+
+    return { layout, next_state };
+}
+
+template <typename Arg>
+constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_float(const LayoutArgsState &state) {
+    const size_t float_index = state.float_used;
+    const size_t next_float_used = state.float_used + 1;
+
+    // Lay out in registers.
+    const ArgLayout layout = { ArgLocation::fp, float_index };
+    const LayoutArgsState next_state = { state.gpr_used, state.stack_used, next_float_used };
+
     return { layout, next_state };
 }
 
 template <typename Arg>
 constexpr std::tuple<ArgLayout, LayoutArgsState> add_arg_to_layout(const LayoutArgsState &state) {
     // TODO Support floats and vectors.
-    return add_to_gpr_or_stack<Arg>(state);
+    if constexpr (std::is_same_v<Arg, float>) {
+        return add_to_float<Arg>(state);
+    } else {
+        return add_to_gpr_or_stack<Arg>(state);
+    }
 }
 
 // Empty argument list -- no arguments to add.
@@ -78,7 +96,7 @@ constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
     const std::tuple<ArgLayout, LayoutArgsState> result = add_arg_to_layout<Head>(state);
     head = std::get<0>(result);
     state = std::get<1>(result);
-    
+
     // Recursively add the remaining arguments.
     add_args_to_layout<Tail...>(*(&head + 1), state);
 }
@@ -88,6 +106,6 @@ constexpr ArgsLayout<Args...> lay_out() {
     ArgsLayout<Args...> layout = {};
     LayoutArgsState state = {};
     add_args_to_layout<Args...>(*layout.data(), state);
-    
+
     return layout;
 }

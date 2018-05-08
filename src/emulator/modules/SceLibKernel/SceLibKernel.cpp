@@ -19,10 +19,10 @@
 
 #include <cpu/functions.h>
 #include <host/functions.h>
-#include <host/rtc.h>
 #include <io/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread_functions.h>
+#include <rtc/rtc.h>
 #include <util/log.h>
 
 #include <kernel/load_self.h>
@@ -46,13 +46,13 @@ static const bool LOG_SYNC_PRIMITIVES = false;
 
 SceUID create_mutex(SceUID *uid_out, HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, const char *name, SceUInt attr, int init_count, bool is_lw) {
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
-        return error(export_name, SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
     if (init_count < 0) {
-        return error(export_name, SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_ILLEGAL_COUNT);
     }
     if (init_count > 1 && (attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE)) {
-        return error(export_name, SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_ILLEGAL_COUNT);
     }
 
     const MutexPtr mutex = std::make_shared<Mutex>();
@@ -64,7 +64,7 @@ SceUID create_mutex(SceUID *uid_out, HostState &host, const char *export_name, S
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         mutex->owner = thread;
     }
-    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host_mutexes.emplace(uid, mutex);
 
@@ -80,13 +80,13 @@ SceUID create_mutex(SceUID *uid_out, HostState &host, const char *export_name, S
     return SCE_KERNEL_OK;
 }
 
-static int lock_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int lock_count, unsigned int *timeout, bool is_lw) {
+int lock_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int lock_count, unsigned int *timeout, bool is_lw) {
     assert(!timeout);
 
     // TODO Don't lock twice.
     const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
     if (!mutex) {
-        return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
     }
 
     if (LOG_SYNC_PRIMITIVES) {
@@ -94,7 +94,7 @@ static int lock_mutex(HostState &host, const char *export_name, SceUID thread_id
             mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count);
     }
 
-    const std::unique_lock<std::mutex> lock(mutex->mutex);
+    const std::lock_guard<std::mutex> lock(mutex->mutex);
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
@@ -117,7 +117,7 @@ static int lock_mutex(HostState &host, const char *export_name, SceUID thread_id
             // Owned by someone else
             // Sleep thread!
 
-            const std::unique_lock<std::mutex> lock2(thread->mutex);
+            const std::lock_guard<std::mutex> lock2(thread->mutex);
             assert(thread->to_do == ThreadToDo::run);
             thread->to_do = ThreadToDo::wait;
             mutex->waiting_threads.emplace(thread, lock_count, is_fifo ? 0 : thread->priority);
@@ -137,7 +137,7 @@ static int lock_mutex(HostState &host, const char *export_name, SceUID thread_id
 int unlock_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int unlock_count) {
     const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
     if (!mutex) {
-        return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
     }
 
     if (LOG_SYNC_PRIMITIVES) {
@@ -145,12 +145,12 @@ int unlock_mutex(HostState &host, const char *export_name, SceUID thread_id, Mut
             mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count, unlock_count);
     }
 
-    const std::unique_lock<std::mutex> lock(mutex->mutex);
+    const std::lock_guard<std::mutex> lock(mutex->mutex);
 
     const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (cur_thread == mutex->owner) {
         if (unlock_count > mutex->lock_count) {
-            return error(export_name, SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
+            return RET_ERROR(export_name, SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
         }
         mutex->lock_count -= unlock_count;
         if (mutex->lock_count == 0) {
@@ -176,7 +176,7 @@ int unlock_mutex(HostState &host, const char *export_name, SceUID thread_id, Mut
 int delete_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid) {
     const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
     if (!mutex) {
-        return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
     }
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("Deleting mutex: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{} waiting_threads:{}",
@@ -184,7 +184,7 @@ int delete_mutex(HostState &host, const char *export_name, SceUID thread_id, Mut
     }
 
     if (mutex->waiting_threads.empty()) {
-        const std::unique_lock<std::mutex> lock(mutex->mutex);
+        const std::lock_guard<std::mutex> lock(mutex->mutex);
         host_mutexes.erase(mutexid);
     } else {
         // TODO:
@@ -199,7 +199,7 @@ int delete_mutex(HostState &host, const char *export_name, SceUID thread_id, Mut
 
 static SceUID create_semaphore(HostState& host, const char *export_name, const char* name, SceUInt attr, int initVal, int maxVal) {
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
-        return error(export_name, SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
 
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
@@ -207,14 +207,14 @@ static SceUID create_semaphore(HostState& host, const char *export_name, const c
     semaphore->max = maxVal;
     semaphore->attr = attr;
     std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, semaphore->name);
-    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     const SceUID uid = host.kernel.next_uid++;
     host.kernel.semaphores.emplace(uid, semaphore);
 
     return uid;
 }
 
-static int wait_semaphore(HostState& host, const char *export_name, SceUID thread_id, SceUID semaid, int signal, SceUInt* timeout)
+int wait_semaphore(HostState& host, const char *export_name, SceUID thread_id, SceUID semaid, int signal, SceUInt* timeout)
 {
     assert(semaid >= 0);
     assert(signal == 1);
@@ -223,17 +223,17 @@ static int wait_semaphore(HostState& host, const char *export_name, SceUID threa
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
     if (!semaphore) {
-        return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
 
-    const std::unique_lock<std::mutex> lock(semaphore->mutex);
+    const std::lock_guard<std::mutex> lock(semaphore->mutex);
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     bool is_fifo = (semaphore->attr & SCE_KERNEL_ATTR_TH_FIFO);
 
     if (semaphore->val <= 0) {
-        const std::unique_lock<std::mutex> lock2(thread->mutex);
+        const std::lock_guard<std::mutex> lock2(thread->mutex);
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
         semaphore->waiting_threads.emplace(thread, signal, is_fifo ? 0 : thread->priority);
@@ -250,13 +250,13 @@ int signal_sema(HostState& host, const char *export_name, SceUID semaid, int sig
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
     if (!semaphore) {
-        return error(export_name, SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
 
-    const std::unique_lock<std::mutex> lock(semaphore->mutex);
+    const std::lock_guard<std::mutex> lock(semaphore->mutex);
 
     if (semaphore->val + signal > semaphore->max) {
-        return error(export_name, SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
     }
     semaphore->val += signal;
 
@@ -336,8 +336,9 @@ EXPORT(int, sceClibMemcpyChk) {
     return unimplemented(export_name);
 }
 
-EXPORT(int, sceClibMemcpy_safe) {
-    return unimplemented(export_name);
+EXPORT(int, sceClibMemcpy_safe, void *destination, const void *source, SceSize num) {
+    memcpy(destination, source, num);
+    return 0;
 }
 
 EXPORT(int, sceClibMemmove) {
@@ -549,7 +550,7 @@ EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(file, stat, host.pref_path.c_str());
+    return stat_file(file, stat, host.pref_path.c_str(), host.io.vpk.get(), host.kernel.base_tick.tick);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
@@ -586,7 +587,7 @@ EXPORT(int, sceIoLseekAsync) {
 
 EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
     if (file == nullptr) {
-        return error(export_name, 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+        return RET_ERROR(export_name, 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     LOG_INFO("Opening file: {}", file);
     return open_file(host.io, file, flags, host.pref_path.c_str());
@@ -616,7 +617,7 @@ EXPORT(int, sceIoPwriteAsync) {
 
 EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
-        return error(export_name, 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+        return RET_ERROR(export_name, 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     return remove_file(path, host.pref_path.c_str());
 }
@@ -635,7 +636,7 @@ EXPORT(int, sceIoRenameAsync) {
 
 EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
-        return error(export_name, 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+        return RET_ERROR(export_name, 0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     return remove_dir(path, host.pref_path.c_str());
 }
@@ -1057,7 +1058,7 @@ EXPORT(int, sceKernelCreateSimpleEvent) {
 
 EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntry entry, int init_priority, int stack_size, SceUInt attr, int cpu_affinity_mask, const SceKernelThreadOptParam *option) {
     if (cpu_affinity_mask > 0x70000) {
-        return error(export_name, SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
+        return RET_ERROR(export_name, SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
     const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
         ::call_import(host, nid, thread_id);
@@ -1065,7 +1066,7 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
 
     const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, stack_size, call_import, false);
     if (thid < 0)
-        return error(export_name, thid);
+        return RET_ERROR(export_name, thid);
     return thid;
 }
 
@@ -1149,16 +1150,18 @@ EXPORT(int, sceKernelGetPMUSERENR) {
     return unimplemented(export_name);
 }
 
-EXPORT(SceUInt64, sceKernelGetProcessTime) {
-    return rtc_get_ticks(host);
+EXPORT(int, sceKernelGetProcessTime, SceUInt64 *time) {
+    if (time)
+        *time = rtc_get_ticks(host.kernel.base_tick.tick);
+    return 0;
 }
 
 EXPORT(SceUInt32, sceKernelGetProcessTimeLow) {
-    return static_cast<SceUInt32>(rtc_get_ticks(host));
+    return static_cast<SceUInt32>(rtc_get_ticks(host.kernel.base_tick.tick));
 }
 
 EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
-    return rtc_get_ticks(host);
+    return rtc_get_ticks(host.kernel.base_tick.tick);
 }
 
 EXPORT(int, sceKernelGetRWLockInfo) {
@@ -1239,7 +1242,7 @@ EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *optio
     close_file(host.io, file);
     free(data);
     if (modId < 0) {
-        return error(export_name, modId);
+        return RET_ERROR(export_name, modId);
     };
     return modId;
 }
@@ -1247,15 +1250,15 @@ EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *optio
 EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, int flags, SceKernelLMOption *option, int *status) {
     SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str());
     if (file < 0)
-        return error(export_name, file);
+        return RET_ERROR(export_name, file);
     int size = seek_file(file, 0, SCE_SEEK_END, host.io);
     if (size < 0)
-        return error(export_name, size);
+        return RET_ERROR(export_name, size);
     void *data = malloc(size);
     if (seek_file(file, 0, SCE_SEEK_SET, host.io) < 0)
-        return error(export_name, size);
+        return RET_ERROR(export_name, size);
     if (read_file(data, host.io, file, size) < 0) {
-        return error(export_name, size);
+        return RET_ERROR(export_name, size);
     };
 
     Ptr<const void> entry_point;
@@ -1263,7 +1266,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     close_file(host.io, file);
     free(data);
     if (modId < 0) {
-        return error(export_name, modId);
+        return RET_ERROR(export_name, modId);
     };
 
     const SceKernelModuleInfoPtrs::const_iterator module = host.kernel.loaded_modules.find(modId);
@@ -1277,7 +1280,19 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 
-    run_on_current(*thread, entry_point, args, argp);
+    uint32_t result = run_on_current(*thread, entry_point, args, argp);
+    char *module_name = module->second.get()->module_name;
+
+    LOG_INFO("{} returned {:#08x}", module_name, result);
+
+    if (status)
+        *status = result;
+
+    thread->to_do = ThreadToDo::exit;
+    thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+    host.kernel.running_threads.erase(thid);
+    host.kernel.threads.erase(thid);
+
     return modId;
 }
 
@@ -1414,7 +1429,7 @@ EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
     Ptr<void> new_argp = copy_stack(thid, thread_id, argp, host.kernel, host.mem);
     const int res = start_thread(host.kernel, thid, arglen, new_argp);
     if (res < 0) {
-        return error(export_name, res);
+        return RET_ERROR(export_name, res);
     }
     return res;
 }
@@ -1529,7 +1544,7 @@ EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     {
-        const std::unique_lock<std::mutex> lock(cur_thread->mutex);
+        const std::lock_guard<std::mutex> lock(cur_thread->mutex);
         assert(cur_thread->to_do == ThreadToDo::run);
         cur_thread->to_do = ThreadToDo::wait;
         stop(*cur_thread->cpu);
@@ -1537,7 +1552,7 @@ EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
 
     {
         const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
-        const std::unique_lock<std::mutex> lock(thread->mutex);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
         thread->waiting_threads.push_back(cur_thread);
     }
 

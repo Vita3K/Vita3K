@@ -69,7 +69,7 @@ static void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
     std::vector<AudioOutPortPtr> ports;
     {
         // Read from shared state.
-        const std::unique_lock<std::mutex> lock(state.shared.mutex);
+        const std::lock_guard<std::mutex> lock(state.shared.mutex);
         ports.reserve(state.shared.out_ports.size());
         for (const AudioOutPortPtrs::value_type &port : state.shared.out_ports) {
             ports.push_back(port.second);

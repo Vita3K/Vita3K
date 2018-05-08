@@ -21,6 +21,7 @@
 #undef s_addr
 #define s_addr s_addr
 #endif
+#include <kernel/thread_functions.h>
 #include <psp2/net/netctl.h>
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {
@@ -52,7 +53,18 @@ EXPORT(int, sceNetCtlAdhocUnregisterCallback) {
 }
 
 EXPORT(int, sceNetCtlCheckCallback) {
-    return unimplemented(export_name);
+    if (host.net.state == 0)
+        return 0;
+
+    host.net.state = 0;
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    for (auto &callback : host.net.cbs) {
+        Ptr<void> argp = Ptr<void>(callback.second.data);
+        run_on_current(*thread, Ptr<void>(callback.second.pc), host.net.state, argp);
+    }
+    unimplemented(export_name);
+    return 0;
 }
 
 EXPORT(int, sceNetCtlGetIfStat) {
@@ -91,12 +103,20 @@ EXPORT(int, sceNetCtlInetGetResult) {
     return unimplemented(export_name);
 }
 
-EXPORT(int, sceNetCtlInetGetState) {
-    return unimplemented(export_name);
+EXPORT(int, sceNetCtlInetGetState, uint32_t *state) {
+    *state = SCE_NETCTL_STATE_DISCONNECTED;
+    unimplemented(export_name);
+    return 0;
 }
 
-EXPORT(int, sceNetCtlInetRegisterCallback) {
-    return unimplemented(export_name);
+EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, uint32_t *cid) {
+    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    *cid = host.kernel.next_uid++;
+    emu::SceNetCtlCallback sceNetCtlCallback;
+    sceNetCtlCallback.pc = callback.address();
+    sceNetCtlCallback.data = data.address();
+    host.net.cbs.emplace(*cid, sceNetCtlCallback);
+    return 0;
 }
 
 EXPORT(int, sceNetCtlInetUnregisterCallback) {
@@ -104,7 +124,8 @@ EXPORT(int, sceNetCtlInetUnregisterCallback) {
 }
 
 EXPORT(int, sceNetCtlInit) {
-    return unimplemented(export_name);
+    unimplemented(export_name);
+    return 0;
 }
 
 EXPORT(int, sceNetCtlTerm) {

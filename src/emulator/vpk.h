@@ -19,11 +19,8 @@
 
 #include <string>
 
-struct KernelState;
-struct IOState;
-struct MemState;
-struct SfoFile;
+struct HostState;
 template <class T>
 class Ptr;
 
-bool load_vpk(Ptr<const void> &entry_point, std::string &game_title, std::string &title_id, KernelState &kernel, IOState &io, MemState &mem, SfoFile &sfo_file, const std::wstring &path);
+bool load_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path);

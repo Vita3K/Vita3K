@@ -55,10 +55,10 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(depthStencil != nullptr);
 
     if (host.gxm.isInScene) {
-        return error(export_name, SCE_GXM_ERROR_WITHIN_SCENE);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_WITHIN_SCENE);
     }
     if (depthStencil == nullptr && colorSurface == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     if (fragmentSyncObject != nullptr) {
@@ -92,11 +92,19 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         glDisable(GL_CULL_FACE);
         break;
     }
-    
+
     glEnable(GL_SCISSOR_TEST);
-    glViewport(0, 0, host.display.window_width, host.display.window_height);
     glScissor(0, 0, host.display.window_width, host.display.window_height);
-    
+
+    context->viewport.x = 0;
+    context->viewport.y = 0;
+    context->viewport.w = host.display.window_width;
+    context->viewport.h = host.display.window_height;
+    context->viewport.nearVal = 0.0f;
+    context->viewport.farVal = 1.0f;
+    glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+    glDepthRange(context->viewport.nearVal, context->viewport.farVal);
+
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -111,8 +119,8 @@ EXPORT(int, sceGxmColorSurfaceGetClip) {
     return unimplemented(export_name);
 }
 
-EXPORT(int, sceGxmColorSurfaceGetData) {
-    return unimplemented(export_name);
+EXPORT(Ptr<void>, sceGxmColorSurfaceGetData, emu::SceGxmColorSurface *surface) {
+    return Ptr<void>(surface->pbeEmitWords[3]);
 }
 
 EXPORT(int, sceGxmColorSurfaceGetDitherMode) {
@@ -131,8 +139,8 @@ EXPORT(int, sceGxmColorSurfaceGetScaleMode) {
     return unimplemented(export_name);
 }
 
-EXPORT(int, sceGxmColorSurfaceGetStrideInPixels) {
-    return unimplemented(export_name);
+EXPORT(int, sceGxmColorSurfaceGetStrideInPixels, emu::SceGxmColorSurface *surface) {
+    return surface->pbeEmitWords[2];
 }
 
 EXPORT(int, sceGxmColorSurfaceGetType) {
@@ -196,9 +204,9 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     assert(params != nullptr);
     assert(context != nullptr);
 
-    *context = alloc<SceGxmContext>(host.mem, export_name);
+    *context = alloc<SceGxmContext>(host.mem, __FUNCTION__);
     if (!*context) {
-        return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmContext *const ctx = context->get(host.mem);
@@ -227,7 +235,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
         free(host.mem, *context);
         context->reset();
 
-        return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     return 0;
@@ -241,15 +249,15 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     assert(params != nullptr);
     assert(renderTarget != nullptr);
 
-    *renderTarget = alloc<SceGxmRenderTarget>(host.mem, export_name);
+    *renderTarget = alloc<SceGxmRenderTarget>(host.mem, __FUNCTION__);
     if (!*renderTarget) {
-        return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmRenderTarget *const rt = renderTarget->get(host.mem);
     if (!rt->renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) || !rt->framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
         free(host.mem, *renderTarget);
-        return error(export_name, SCE_GXM_ERROR_DRIVER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_DRIVER);
     }
 
     glBindRenderbuffer(GL_RENDERBUFFER, rt->renderbuffers[0]);
@@ -364,7 +372,7 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     assert(callbackData);
     DisplayCallback *display_callback = new DisplayCallback();
 
-    const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, export_name);
+    const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
     const Ptr<void> ptr(address);
     memcpy(ptr.get(host.mem), callbackData.get(host.mem), host.gxm.params.displayQueueCallbackDataSize);
 
@@ -386,13 +394,13 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     assert(indexData != nullptr);
 
     if (!host.gxm.isInScene) {
-        return error(export_name, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
     // TODO Use some kind of caching to avoid setting every draw call?
     const SharedGLObject program = get_program(*context, host.mem);
     if (!program) {
-        return error(export_name, SCE_GXM_ERROR_DRIVER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_DRIVER);
     }
     glUseProgram(program->get());
 
@@ -425,7 +433,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.isInScene) {
-        return error(export_name, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
     const GLsizei width = context->color_surface.pbeEmitWords[0];
@@ -436,7 +444,11 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     glPixelStorei(GL_PACK_ROW_LENGTH, stride_in_pixels); // TODO Reset to 0?
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     flip_vertically(pixels, width, height, stride_in_pixels);
-
+    if (fragmentNotification) {
+        volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
+        *fragment_address = fragmentNotification->value;
+    }
+    
     host.gxm.isInScene = false;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -481,8 +493,8 @@ EXPORT(int, sceGxmGetDeferredContextVertexBuffer) {
     return unimplemented(export_name);
 }
 
-EXPORT(uint32_t, sceGxmGetNotificationRegion) {
-    return host.gxm.notification_region.address();
+EXPORT(Ptr<uint32_t>, sceGxmGetNotificationRegion) {
+    return host.gxm.notification_region;
 }
 
 EXPORT(int, sceGxmGetParameterBufferThreshold) {
@@ -528,7 +540,7 @@ static int SDLCALL thread_function(void *data) {
         const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
         run_callback(*display_thread, display_callback->pc, display_callback->data);
         const Ptr<SceGxmSyncObject> newBuffer(display_callback->new_buffer);
-        std::unique_lock<std::mutex> lock(newBuffer.get(*params.mem)->mutex);
+        std::lock_guard<std::mutex> lock(newBuffer.get(*params.mem)->mutex);
         newBuffer.get(*params.mem)->value = 1;
         newBuffer.get(*params.mem)->cond_var.notify_all();
         free(*params.mem, display_callback->data);
@@ -553,14 +565,14 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, call_import, false);
 
     if (display_thread_id < 0) {
-        return error(export_name, SCE_GXM_ERROR_DRIVER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_DRIVER);
     }
 
     const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
 
     const std::function<void(SDL_Thread *)> delete_thread = [display_thread](SDL_Thread *running_thread) {
         {
-            const std::unique_lock<std::mutex> lock(display_thread->mutex);
+            const std::lock_guard<std::mutex> lock(display_thread->mutex);
             display_thread->to_do = ThreadToDo::exit;
         }
         display_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
@@ -576,6 +588,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
     host.kernel.running_threads.emplace(display_thread_id, running_thread);
     host.gxm.notification_region = Ptr<uint32_t>(alloc(host.mem, MB(1), "SceGxmNotificationRegion"));
+    memset(host.gxm.notification_region.get(host.mem), 0, MB(1));
     return 0;
 }
 
@@ -743,8 +756,25 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, const SceG
     return Ptr<SceGxmProgramParameter>();
 }
 
-EXPORT(int, sceGxmProgramFindParameterBySemantic) {
-    return unimplemented(export_name);
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const SceGxmProgram *program, SceGxmParameterSemantic semantic, uint32_t index) {
+    const MemState &mem = host.mem;
+    assert(program != nullptr);
+
+    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
+    uint32_t current_index = 0;
+    for (uint32_t i = 0; i < program->parameter_count; ++i) {
+        const SceGxmProgramParameter *const parameter = &parameters[i];
+        const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
+        if (parameter->semantic == semantic) {
+            if (current_index == index) {
+                const Address parameter_address = static_cast<Address>(parameter_bytes - &mem.memory[0]);
+                return Ptr<SceGxmProgramParameter>(parameter_address);
+            }
+            current_index++;
+        }
+    }
+
+    return Ptr<SceGxmProgramParameter>();
 }
 
 EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize) {
@@ -881,7 +911,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     const size_t next_used = context->fragment_ring_buffer_used + size;
     assert(next_used <= context->params.fragmentRingBufferMemSize);
     if (next_used > context->params.fragmentRingBufferMemSize) {
-        return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     *uniformBuffer = context->params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->fragment_ring_buffer_used);
@@ -904,7 +934,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     const size_t next_used = context->vertex_ring_buffer_used + size;
     assert(next_used <= context->params.vertexRingBufferMemSize);
     if (next_used > context->params.vertexRingBufferMemSize) {
-        return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     *uniformBuffer = context->params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->vertex_ring_buffer_used);
@@ -1140,8 +1170,13 @@ EXPORT(int, sceGxmSetFrontDepthBias) {
     return unimplemented(export_name);
 }
 
-EXPORT(int, sceGxmSetFrontDepthFunc) {
-    return unimplemented(export_name);
+EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
+    glEnable(GL_DEPTH_TEST);
+    if (context->two_sided) {
+        // TODO: Find a way to implement this since glDepthFuncSeparate doesn't exist
+        LOG_WARN("sceGxmSetFrontDepthFunc called with a two sided context, graphical glitches may happen.");
+    }
+    glDepthFunc(translate_depth_func(depthFunc));
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
@@ -1310,11 +1345,27 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
-    glViewport(xOffset - xScale, host.display.window_height + yScale - yOffset, xScale * 2, -(yScale * 2));
+    context->viewport.x = xOffset - xScale;
+    context->viewport.y = host.display.window_height + yScale;
+    context->viewport.w = xScale * 2;
+    context->viewport.h = -(yScale * 2);
+    context->viewport.nearVal = zOffset - zScale;
+    context->viewport.farVal = zOffset + zScale;
+    if (context->viewport.enabled) {
+        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+        glDepthRange(context->viewport.nearVal, context->viewport.farVal);
+    }
 }
 
-EXPORT(int, sceGxmSetViewportEnable) {
-    return unimplemented(export_name);
+EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
+    context->viewport.enabled = enable == SCE_GXM_VIEWPORT_ENABLED ? true : false;
+    if (context->viewport.enabled) {
+        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+        glDepthRange(context->viewport.nearVal, context->viewport.farVal);
+    } else {
+        glViewport(0, 0, host.display.window_width, host.display.window_height);
+        glDepthRange(0.0f, 1.0f);
+    }
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
@@ -1363,10 +1414,10 @@ EXPORT(int, sceGxmShaderPatcherCreate, const emu::SceGxmShaderPatcherParams *par
     assert(params != nullptr);
     assert(shaderPatcher != nullptr);
 
-    *shaderPatcher = alloc<SceGxmShaderPatcher>(host.mem, export_name);
+    *shaderPatcher = alloc<SceGxmShaderPatcher>(host.mem, __FUNCTION__);
     assert(*shaderPatcher);
     if (!*shaderPatcher) {
-        return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     return 0;
@@ -1401,10 +1452,10 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         return 0;
     }
 
-    *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, export_name);
+    *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
-        return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
@@ -1445,10 +1496,10 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     assert(streamCount > 0);
     assert(vertexProgram != nullptr);
 
-    *vertexProgram = alloc<SceGxmVertexProgram>(mem, export_name);
+    *vertexProgram = alloc<SceGxmVertexProgram>(mem, __FUNCTION__);
     assert(*vertexProgram);
     if (!*vertexProgram) {
-        return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
@@ -1514,10 +1565,10 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
     assert(programHeader);
     assert(programId != nullptr);
 
-    *programId = alloc<SceGxmRegisteredProgram>(host.mem, export_name);
+    *programId = alloc<SceGxmRegisteredProgram>(host.mem, __FUNCTION__);
     assert(*programId);
     if (!*programId) {
-        return error(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     SceGxmRegisteredProgram *const rp = programId->get(host.mem);
@@ -1581,7 +1632,7 @@ EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPat
 EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
     assert(syncObject != nullptr);
 
-    *syncObject = alloc<SceGxmSyncObject>(host.mem, export_name);
+    *syncObject = alloc<SceGxmSyncObject>(host.mem, __FUNCTION__);
     if (!*syncObject) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
@@ -1733,11 +1784,11 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary) {
 
 EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_VALUE);
     } else if (!data) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_ALIGNMENT);
     } else if (!texture) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     // Add supported formats here
@@ -1745,6 +1796,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     switch (texFormat) {
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
@@ -1801,7 +1853,7 @@ EXPORT(int, sceGxmTextureInitTiled) {
 
 EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     texture->data_addr = data.address() >> 2;
@@ -1818,9 +1870,9 @@ EXPORT(int, sceGxmTextureSetGammaMode) {
 
 EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     } else if (height > 4096) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED) {
@@ -1829,7 +1881,7 @@ EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height)
                 goto LINEAR;
             }
         }
-        return error(export_name, SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)) {
@@ -1854,7 +1906,7 @@ EXPORT(int, sceGxmTextureSetLodMin) {
 
 EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     texture->mag_filter = (uint32_t)magFilter;
@@ -1863,7 +1915,7 @@ EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilt
 
 EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     texture->min_filter = (uint32_t)minFilter;
@@ -1884,9 +1936,9 @@ EXPORT(int, sceGxmTextureSetNormalizeMode) {
 
 EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteData) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     } else if ((uint8_t)paletteData.address() & 0x3F) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_ALIGNMENT);
     }
 
     texture->palette_addr = ((unsigned int)paletteData.address() >> 6);
@@ -1899,20 +1951,20 @@ EXPORT(int, sceGxmTextureSetStride) {
 
 EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     }
     if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == SCE_GXM_TEXTURE_CUBE_ARBITRARY) {
         if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP) {
-            return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+            return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
         }
     } else {
         if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER && mode >= SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER) {
             if ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) {
-                return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+                return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
         if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)) {
-            return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+            return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
         }
     }
     texture->uaddr_mode = mode;
@@ -1921,43 +1973,43 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
 
 EXPORT(int, sceGxmTextureSetUAddrModeSafe, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     }
     if ((texture->type << 29) != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER) {
             if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)) {
-                return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+                return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
             }
         } else if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) || ((texture->type << 29) == SCE_GXM_TEXTURE_SWIZZLED)) {
-            return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+            return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
         } else {
-            return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+            return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
         }
         texture->uaddr_mode = mode;
         return 0;
     }
     if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP) {
-        return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
     }
     return 0;
 }
 
 EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     }
     if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == SCE_GXM_TEXTURE_CUBE_ARBITRARY) {
         if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP) {
-            return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+            return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
         }
     } else {
         if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER && mode >= SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER) {
             if ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) {
-                return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+                return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
             }
         }
         if (mode == SCE_GXM_TEXTURE_ADDR_MIRROR && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)) {
-            return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+            return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
         }
     }
     texture->vaddr_mode = mode;
@@ -1966,32 +2018,32 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
 
 EXPORT(int, sceGxmTextureSetVAddrModeSafe, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     }
     if ((texture->type << 29) != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         if (mode <= SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER) {
             if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) && ((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED)) {
-                return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+                return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
             }
         } else if ((mode == SCE_GXM_TEXTURE_ADDR_MIRROR) || ((texture->type << 29) == SCE_GXM_TEXTURE_SWIZZLED)) {
-            return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+            return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
         } else {
-            return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+            return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
         }
         texture->vaddr_mode = mode;
         return 0;
     }
     if (mode != SCE_GXM_TEXTURE_ADDR_CLAMP) {
-        return error(export_name, SCE_GXM_ERROR_UNSUPPORTED);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_UNSUPPORTED);
     }
     return 0;
 }
 
 EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
     if (texture == nullptr) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_POINTER);
     } else if (width > 4096) {
-        return error(export_name, SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     if ((texture->type << 29) == SCE_GXM_TEXTURE_TILED) {
@@ -2000,7 +2052,7 @@ EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
                 goto LINEAR;
             }
         }
-        return error(export_name, SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(export_name, SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)) {

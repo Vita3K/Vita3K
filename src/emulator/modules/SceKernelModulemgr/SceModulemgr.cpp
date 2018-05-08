@@ -44,7 +44,7 @@ EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
 }
 
 EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
-    const std::unique_lock<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     int i = 0;
     for (SceKernelModuleInfoPtrs::iterator module = host.kernel.loaded_modules.begin(); module != host.kernel.loaded_modules.end(); ++module) {
         modids[i] = module->first;

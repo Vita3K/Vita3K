@@ -29,6 +29,8 @@
 #undef SCE_ELF_DEFS_TARGET
 #include <self.h>
 
+#define ET_SCE_EXEC 0xFE00
+
 #define NID_MODULE_STOP 0x79F8E492
 #define NID_MODULE_EXIT 0x913482A9
 #define NID_MODULE_START 0x935CD196
@@ -279,7 +281,13 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
         assert(segment_infos[segment_index].encryption == 2);
         if (src.p_type == PT_LOAD) {
-            const Ptr<void> address(alloc(mem, src.p_memsz, path));
+            Address segment_address = 0;
+            if (elf.e_type == ET_SCE_EXEC) {
+                segment_address = alloc_at(mem, src.p_vaddr, src.p_memsz, path);
+            } else {
+                segment_address = alloc(mem, src.p_memsz, path);
+            }
+            const Ptr<void> address(segment_address);
             if (!address) {
                 LOG_ERROR("Failed to allocate memory for segment.");
                 return -1;
@@ -364,7 +372,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     sceKernelModuleInfo->module_start = entry_point;
 
-    const std::unique_lock<std::mutex> lock(kernel.mutex);
+    const std::lock_guard<std::mutex> lock(kernel.mutex);
     const SceUID uid = kernel.next_uid++;
     sceKernelModuleInfo->handle = uid;
     kernel.loaded_modules.emplace(uid, sceKernelModuleInfo);
