@@ -27,6 +27,8 @@
 
 // TODO Move elsewhere.
 static uint64_t timestamp;
+static SceCtrlPadInputMode input_mode;
+static SceCtrlPadInputMode input_mode_ext;
 
 struct KeyBinding {
     SDL_Scancode scancode;
@@ -323,12 +325,24 @@ EXPORT(int, sceCtrlSetRapidFire) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceCtrlSetSamplingMode) {
-    return UNIMPLEMENTED();
+#define SCE_CTRL_MODE_UNKNOWN 3 // missing in vita-headers
+
+EXPORT(int, sceCtrlSetSamplingMode, SceCtrlPadInputMode mode) {
+    SceCtrlPadInputMode old = input_mode;
+    if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_UNKNOWN) {
+        return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
+    }
+    input_mode = mode;
+    return old;
 }
 
-EXPORT(int, sceCtrlSetSamplingModeExt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlSetSamplingModeExt, SceCtrlPadInputMode mode) {
+    SceCtrlPadInputMode old = input_mode_ext;
+    if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_UNKNOWN) {
+        return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
+    }
+    input_mode_ext = mode;
+    return old;
 }
 
 EXPORT(int, sceCtrlSingleControllerMode) {
