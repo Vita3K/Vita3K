@@ -323,8 +323,8 @@ EXPORT(int, atoff) {
     return unimplemented("atoff");
 }
 
-EXPORT(int, atoi) {
-    return unimplemented("atoi");
+EXPORT(int, atoi, const char *str) {
+    return atoi(str);
 }
 
 EXPORT(int, atol) {
@@ -696,7 +696,7 @@ EXPORT(int, longjmp) {
 }
 
 EXPORT(int, malloc, SceSize size) {
-    return alloc(host.mem, size, ""); //return unimplemented("malloc");
+    return alloc(host.mem, size, "");
 }
 
 EXPORT(int, malloc_stats) {
@@ -775,8 +775,8 @@ EXPORT(int, memcpy_s) {
     return unimplemented("memcpy_s");
 }
 
-EXPORT(int, memmove) {
-    return unimplemented("memmove");
+EXPORT(void, memmove, void *destination, const void *source, size_t num) {
+    memmove(destination, source, num);
 }
 
 EXPORT(int, memmove_s) {
@@ -1066,7 +1066,7 @@ EXPORT(int, strncat_s) {
     return unimplemented("strncat_s");
 }
 
-EXPORT(int, strncmp, const char *str1, const char *str2, size_t num) {
+EXPORT(int, strncmp, const char *str1, const char *str2, SceSize num) {
     return strncmp(str1, str2, num);
 }
 
