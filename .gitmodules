@@ -34,3 +34,6 @@
 [submodule "src/external/imgui"]
 	path = src/external/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "src/external/googletest"]
+	path = src/external/googletest
+	url = https://github.com/google/googletest.git
