@@ -31,6 +31,9 @@ static std::ostream &operator<<(std::ostream &out, const ArgLayout &layout) {
         case ArgLocation::stack:
             out << "stack + " << layout.offset;
             break;
+        case ArgLocation::fp:
+            out << "s" << layout.offset;
+            break;
     }
     
     return out;
