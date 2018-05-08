@@ -18,6 +18,7 @@
 #include "SceCtrl.h"
 
 #include <psp2/ctrl.h>
+#include <psp2/kernel/error.h>
 
 #include <SDL_gamecontroller.h>
 #include <SDL_keyboard.h>
@@ -229,12 +230,20 @@ EXPORT(int, sceCtrlGetProcessStatus) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceCtrlGetSamplingMode) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlGetSamplingMode, SceCtrlPadInputMode *mode) {
+    if (mode == nullptr) {
+        return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
+    }
+    *mode = input_mode;
+    return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceCtrlGetSamplingModeExt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlGetSamplingModeExt, SceCtrlPadInputMode *mode) {
+    if (mode == nullptr) {
+        return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
+    }
+    *mode = input_mode_ext;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceCtrlGetWirelessControllerInfo) {
