@@ -1283,7 +1283,6 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(uniformBuffer != nullptr);
     assert(parameter != nullptr);
     assert(parameter->container_index == 14);
-    assert(componentOffset == 0);
     assert(componentCount > 0);
     assert(sourceData != nullptr);
 
