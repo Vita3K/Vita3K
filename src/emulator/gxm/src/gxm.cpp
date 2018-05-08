@@ -521,7 +521,12 @@ AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
     for (uint32_t i = 0; i < vertex_program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            locations.emplace(parameter.resource_index, parameter_name_raw(parameter));
+            std::string name = parameter_name_raw(parameter);
+            const auto struct_idx = name.find('.');
+            const bool is_struct_field = struct_idx != std::string::npos;
+            if (is_struct_field)
+                name.replace(struct_idx, 1, "");  //Workaround for input.field on glsl version 120
+            locations.emplace(parameter.resource_index, name);
         }
     }
 
