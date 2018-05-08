@@ -19,6 +19,7 @@
 
 #include <host/functions.h>
 #include <kernel/functions.h>
+#include <kernel/thread/sync_primitives.h>
 
 #include <SDL_timer.h>
 #include <psp2/kernel/error.h>
@@ -141,7 +142,7 @@ EXPORT(int, sceKernelDeleteMsgPipe) {
 }
 
 EXPORT(int, sceKernelDeleteMutex, SceInt32 mutexid) {
-    return delete_mutex(host, export_name, thread_id, host.kernel.mutexes, mutexid);
+    return delete_mutex(host.kernel, export_name, thread_id, mutexid, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelDeleteRWLock) {
@@ -282,7 +283,7 @@ EXPORT(int, sceKernelSignalCondTo) {
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
-    return signal_sema(host, export_name, semaid, signal);
+    return signal_sema(host.kernel, export_name, semaid, signal);
 }
 
 EXPORT(int, sceKernelStartTimer) {
@@ -306,7 +307,7 @@ EXPORT(int, sceKernelTryLockWriteRWLock) {
 }
 
 EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
-    return unlock_mutex(host, export_name, thread_id, host.kernel.mutexes, mutexid, unlock_count);
+    return unlock_mutex(host.kernel, export_name, thread_id, mutexid, unlock_count, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelUnlockReadRWLock) {
