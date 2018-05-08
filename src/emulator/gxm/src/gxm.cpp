@@ -399,13 +399,10 @@ void set_uniform(GLint location, size_t component_count, GLsizei array_size, con
         }
         break;
     case 4:
-        switch (array_size) {
-        case 4:
-            uniform_matrix_4<T>(location, 1, GL_FALSE, value);
-            break;
-        default:
+        if (array_size % 4 == 0) {
+            uniform_matrix_4<T>(location, array_size / 4, GL_FALSE, value);
+        } else {
             uniform_4<T>(location, array_size, value);
-            break;
         }
         break;
 
