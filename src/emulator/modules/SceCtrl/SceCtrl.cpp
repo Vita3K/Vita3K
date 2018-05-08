@@ -182,10 +182,17 @@ static int peek_buffer_positive(HostState &host, SceCtrlData *&pad_data) {
         apply_controller(&pad_data->buttons, axes.data(), controller.second.get());
     }
 
-    pad_data->lx = float_to_byte(axes[0]);
-    pad_data->ly = float_to_byte(axes[1]);
-    pad_data->rx = float_to_byte(axes[2]);
-    pad_data->ry = float_to_byte(axes[3]);
+    if (input_mode == SCE_CTRL_MODE_DIGITAL) {
+        pad_data->lx = 0x80;
+        pad_data->ly = 0x80;
+        pad_data->rx = 0x80;
+        pad_data->ry = 0x80;
+    } else {
+        pad_data->lx = float_to_byte(axes[0]);
+        pad_data->ly = float_to_byte(axes[1]);
+        pad_data->rx = float_to_byte(axes[2]);
+        pad_data->ry = float_to_byte(axes[3]);
+    }
 
     return 0;
 }
