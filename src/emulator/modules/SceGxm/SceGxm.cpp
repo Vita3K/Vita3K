@@ -448,7 +448,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
         volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
         *fragment_address = fragmentNotification->value;
     }
-    
+
     host.gxm.isInScene = false;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

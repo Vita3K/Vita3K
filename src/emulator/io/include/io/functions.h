@@ -19,8 +19,8 @@
 
 #include <psp2/types.h>
 
-#include <string>
 #include <miniz.h>
+#include <string>
 
 struct IOState;
 struct SceIoStat;

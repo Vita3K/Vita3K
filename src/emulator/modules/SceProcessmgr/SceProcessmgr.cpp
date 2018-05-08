@@ -17,10 +17,10 @@
 
 #include "SceProcessmgr.h"
 
-#include <rtc/rtc.h>
 #include <io/functions.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/processmgr.h>
+#include <rtc/rtc.h>
 
 struct VitaTimeval {
     uint32_t tv_sec;

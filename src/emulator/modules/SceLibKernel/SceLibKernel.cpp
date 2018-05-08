@@ -197,7 +197,7 @@ int delete_mutex(HostState &host, const char *export_name, SceUID thread_id, Mut
 // * Sempaphore *
 // **************
 
-static SceUID create_semaphore(HostState& host, const char *export_name, const char* name, SceUInt attr, int initVal, int maxVal) {
+static SceUID create_semaphore(HostState &host, const char *export_name, const char *name, SceUInt attr, int initVal, int maxVal) {
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -214,8 +214,7 @@ static SceUID create_semaphore(HostState& host, const char *export_name, const c
     return uid;
 }
 
-int wait_semaphore(HostState& host, const char *export_name, SceUID thread_id, SceUID semaid, int signal, SceUInt* timeout)
-{
+int wait_semaphore(HostState &host, const char *export_name, SceUID thread_id, SceUID semaid, int signal, SceUInt *timeout) {
     assert(semaid >= 0);
     assert(signal == 1);
     assert(timeout == nullptr);
@@ -238,15 +237,14 @@ int wait_semaphore(HostState& host, const char *export_name, SceUID thread_id, S
         thread->to_do = ThreadToDo::wait;
         semaphore->waiting_threads.emplace(thread, signal, is_fifo ? 0 : thread->priority);
         stop(*thread->cpu);
-    }
-    else {
+    } else {
         semaphore->val -= signal;
     }
 
     return SCE_KERNEL_OK;
 }
 
-int signal_sema(HostState& host, const char *export_name, SceUID semaid, int signal) {
+int signal_sema(HostState &host, const char *export_name, SceUID semaid, int signal) {
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
     if (!semaphore) {

@@ -20,8 +20,8 @@ public:
                 condempty_.wait(mlock);
             }
             if (aborted) {
-                // releasing the mutex on Windows results in it not
-                // being unlocked by the destructor
+// releasing the mutex on Windows results in it not
+// being unlocked by the destructor
 #ifndef WIN32
                 mlock.release();
 #endif
@@ -42,8 +42,8 @@ public:
                 cond_.wait(mlock);
             }
             if (aborted) {
-                // releasing the mutex on Windows results in it not
-                // being unlocked by the destructor
+// releasing the mutex on Windows results in it not
+// being unlocked by the destructor
 #ifndef WIN32
                 mlock.release();
 #endif

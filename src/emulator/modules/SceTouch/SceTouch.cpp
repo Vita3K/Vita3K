@@ -47,7 +47,7 @@ static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData) {
         pData->report[pData->reportNum].y = static_cast<uint16_t>(normalised_y * 1088);
         ++pData->reportNum;
     }
-    
+
     return 0;
 }
 
