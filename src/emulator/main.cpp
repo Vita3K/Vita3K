@@ -20,8 +20,8 @@
 #include <host/functions.h>
 #include <host/state.h>
 #include <host/version.h>
-#include <kernel/thread_functions.h>
-#include <kernel/thread_state.h>
+#include <kernel/thread/thread_functions.h>
+#include <kernel/thread/thread_state.h>
 #include <util/find.h>
 #include <util/log.h>
 #include <util/resource.h>
