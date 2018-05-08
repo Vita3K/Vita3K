@@ -23,7 +23,7 @@
 
 #include <host/import_fn.h>
 #include <host/state.h>
-#include <kernel/thread_state.h>
+#include <kernel/thread/thread_state.h>
 #include <util/lock_and_find.h>
 
 #include <microprofile.h>

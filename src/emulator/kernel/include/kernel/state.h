@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <kernel/thread_state.h>
+#include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mem/ptr.h>
 

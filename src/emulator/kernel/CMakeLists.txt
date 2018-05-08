@@ -4,12 +4,12 @@ add_library(
 	include/kernel/functions.h
 	include/kernel/state.h
 	include/kernel/types.h
-	include/kernel/thread_functions.h
-	include/kernel/thread_state.h
+	include/kernel/thread/thread_functions.h
+	include/kernel/thread/thread_state.h
 	include/kernel/load_self.h
 	include/kernel/relocation.h
 	src/kernel.cpp
-	src/thread.cpp
+	src/thread/thread.cpp
 	src/load_self.cpp
 	src/relocation.cpp
 )

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <kernel/thread_functions.h>
+#include <kernel/thread/thread_functions.h>
 #include <mem/ptr.h>
 #include <psp2/types.h>
 

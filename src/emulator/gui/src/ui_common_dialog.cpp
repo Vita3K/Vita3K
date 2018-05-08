@@ -19,8 +19,8 @@
 #include <imgui.h>
 
 #include <host/state.h>
-#include <kernel/thread_functions.h>
-#include <kernel/thread_state.h>
+#include <kernel/thread/thread_functions.h>
+#include <kernel/thread/thread_state.h>
 #include <util/resource.h>
 #include <util/string_convert.h>
 
