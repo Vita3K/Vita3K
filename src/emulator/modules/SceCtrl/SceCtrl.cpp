@@ -18,6 +18,7 @@
 #include "SceCtrl.h"
 
 #include <psp2/ctrl.h>
+#include <psp2/kernel/error.h>
 
 #include <SDL_gamecontroller.h>
 #include <SDL_keyboard.h>
@@ -27,6 +28,8 @@
 
 // TODO Move elsewhere.
 static uint64_t timestamp;
+static SceCtrlPadInputMode input_mode;
+static SceCtrlPadInputMode input_mode_ext;
 
 struct KeyBinding {
     SDL_Scancode scancode;
@@ -180,10 +183,17 @@ static int peek_buffer_positive(HostState &host, SceCtrlData *&pad_data) {
         apply_controller(&pad_data->buttons, axes.data(), controller.second.get());
     }
 
-    pad_data->lx = float_to_byte(axes[0]);
-    pad_data->ly = float_to_byte(axes[1]);
-    pad_data->rx = float_to_byte(axes[2]);
-    pad_data->ry = float_to_byte(axes[3]);
+    if (input_mode == SCE_CTRL_MODE_DIGITAL) {
+        pad_data->lx = 0x80;
+        pad_data->ly = 0x80;
+        pad_data->rx = 0x80;
+        pad_data->ry = 0x80;
+    } else {
+        pad_data->lx = float_to_byte(axes[0]);
+        pad_data->ly = float_to_byte(axes[1]);
+        pad_data->rx = float_to_byte(axes[2]);
+        pad_data->ry = float_to_byte(axes[3]);
+    }
 
     return 0;
 }
@@ -220,12 +230,20 @@ EXPORT(int, sceCtrlGetProcessStatus) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceCtrlGetSamplingMode) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlGetSamplingMode, SceCtrlPadInputMode *mode) {
+    if (mode == nullptr) {
+        return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
+    }
+    *mode = input_mode;
+    return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceCtrlGetSamplingModeExt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlGetSamplingModeExt, SceCtrlPadInputMode *mode) {
+    if (mode == nullptr) {
+        return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
+    }
+    *mode = input_mode_ext;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceCtrlGetWirelessControllerInfo) {
@@ -323,12 +341,24 @@ EXPORT(int, sceCtrlSetRapidFire) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceCtrlSetSamplingMode) {
-    return UNIMPLEMENTED();
+#define SCE_CTRL_MODE_UNKNOWN 3 // missing in vita-headers
+
+EXPORT(int, sceCtrlSetSamplingMode, SceCtrlPadInputMode mode) {
+    SceCtrlPadInputMode old = input_mode;
+    if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_UNKNOWN) {
+        return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
+    }
+    input_mode = mode;
+    return old;
 }
 
-EXPORT(int, sceCtrlSetSamplingModeExt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlSetSamplingModeExt, SceCtrlPadInputMode mode) {
+    SceCtrlPadInputMode old = input_mode_ext;
+    if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_UNKNOWN) {
+        return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
+    }
+    input_mode_ext = mode;
+    return old;
 }
 
 EXPORT(int, sceCtrlSingleControllerMode) {
