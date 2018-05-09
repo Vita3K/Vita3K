@@ -513,8 +513,9 @@ EXPORT(int, sceGxmGetPrecomputedVertexStateSize) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmGetRenderTargetMemSizes) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmGetRenderTargetMemSizes, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
+    *hostMemSize = 2 * 1024 * 1024;
+    return STUBBED("2MB host mem");
 }
 
 struct GxmThreadParams {
