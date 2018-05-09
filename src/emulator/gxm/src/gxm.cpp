@@ -774,10 +774,9 @@ namespace texture {
         case SCE_GXM_TEXTURE_FORMAT_U8_R111: // TODO: this is inaccurate
         case SCE_GXM_TEXTURE_FORMAT_U8_111R: // TODO: this is inaccurate
         case SCE_GXM_TEXTURE_FORMAT_U8_1RRR: // TODO: this is inaccurate
-            return GL_INTENSITY8;
-        default: {
+            return GL_R8;
+        default:
             return GL_RGBA8;
-        }
         }
     }
 
@@ -785,7 +784,7 @@ namespace texture {
         GXM_PROFILE(__FUNCTION__);
 
         if (is_paletted_format(src)) {
-            return GL_COLOR_INDEX;
+            return GL_RGBA;
         }
 
         switch (src) {
@@ -802,10 +801,9 @@ namespace texture {
         case SCE_GXM_TEXTURE_FORMAT_U8_111R: // TODO: this is inaccurate
             return GL_ALPHA;
         case SCE_GXM_TEXTURE_FORMAT_U8_1RRR: // TODO: this is inaccurate
-            return GL_INTENSITY;
-        default: {
+            return GL_RED;
+        default:
             return GL_RGBA;
-        }
         }
     }
 
@@ -818,7 +816,7 @@ namespace texture {
         case SCE_GXM_TEXTURE_ADDR_CLAMP:
             return GL_CLAMP_TO_EDGE;
         case SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP:
-            return GL_MIRROR_CLAMP_TO_EDGE;
+            return GL_CLAMP_TO_EDGE; // FIXME: Not supported in OpenGL 4.1 core.
         case SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER:
             return GL_REPEAT; // FIXME: Is this correct?
         case SCE_GXM_TEXTURE_ADDR_CLAMP_FULL_BORDER:
@@ -827,10 +825,9 @@ namespace texture {
             return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
         case SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER:
             return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
-        default: {
+        default:
             LOG_WARN("Unsupported texture wrap mode translated: {:#08X}", src);
             return GL_CLAMP_TO_EDGE;
-        }
         }
     }
 
@@ -842,10 +839,9 @@ namespace texture {
             return GL_NEAREST;
         case SCE_GXM_TEXTURE_FILTER_LINEAR:
             return GL_LINEAR;
-        default: {
+        default:
             LOG_WARN("Unsupported texture min/mag filter translated: {:#08X}", src);
             return GL_LINEAR;
-        }
         }
     }
 

@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <glbinding/gl21/gl.h>
-#include <glbinding/gl21ext/gl.h>
+#include <glbinding/gl41core/gl.h>
 
-using namespace gl21;
-using namespace gl21ext;
+using namespace gl41core;

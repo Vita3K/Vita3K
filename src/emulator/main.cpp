@@ -169,12 +169,7 @@ int main(int argc, char *argv[]) {
             glClearColor(1.0, 0.0, 0.5, 1.0);
             glClearDepth(1.0f);
             glViewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT);
-            glMatrixMode(GL_PROJECTION);
-            glLoadIdentity();
-            glOrtho(0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0, 1, -1);
-            glMatrixMode(GL_MODELVIEW);
             glEnable(GL_TEXTURE_2D);
-            glLoadIdentity();
         }
 
         ImGui_ImplSdlGL2_NewFrame(host.window.get());
@@ -182,8 +177,6 @@ int main(int argc, char *argv[]) {
         // Clear back buffer
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glLoadIdentity();
 
         {
             if (host.display.width > 0) {

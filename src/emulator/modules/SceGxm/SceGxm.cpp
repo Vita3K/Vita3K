@@ -1092,60 +1092,20 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(texture->uaddr_mode);
     SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(texture->vaddr_mode);
 
+    const void *const texture_data = data.get(host.mem);
+    std::vector<uint32_t> palette_texture_pixels;
+    const void *pixels = nullptr;
     if (texture::is_paletted_format(fmt)) {
         const auto base_format = texture::get_base_format(fmt);
         const auto is_byte_indexed = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8); // only altenative is SCE_GXM_TEXTURE_BASE_FORMAT_P4
         const auto palette_indexes = is_byte_indexed ? 256 : 16;
-
-        glPixelTransferi(GL_MAP_COLOR, GL_TRUE);
-
-        // second dimension should be palette_indexes sized instead of 256, but prefer to keep it constant/stack-allocated
-        // TODO: Cache palette map instead of calculating here every time
-        GLfloat map[4][256];
-
-        const uint8_t(*const src)[4] = static_cast<uint8_t(*)[4]>(palette.get(host.mem));
-        for (size_t i = 0; i < palette_indexes; ++i) {
-            map[0][i] = src[i][0] / 255.0f;
-            map[1][i] = src[i][1] / 255.0f;
-            map[2][i] = src[i][2] / 255.0f;
-            map[3][i] = src[i][3] / 255.0f;
-        }
-
-        // map channel indexes for each channel
-        // A == A_max means alpha channel is unused (max)
-        std::uint8_t R = 0, G = 0, B = 0, A = 0;
-        constexpr auto A_max = std::numeric_limits<decltype(A)>::max();
-
-        // clang-format off
-        switch (texture::get_swizzle(fmt)) {
-        case SCE_GXM_TEXTURE_SWIZZLE4_ABGR: R = 0; G = 1; B = 2; A = 3; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_ARGB: R = 2; G = 1; B = 0; A = 3; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA: R = 3; G = 2; B = 1; A = 0; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA: R = 1; G = 2; B = 3; A = 0; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1BGR: R = 0; G = 1; B = 2; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1RGB: R = 2; G = 1; B = 0; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1: R = 3; G = 2; B = 1; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1: R = 1; G = 2; B = 3; A = A_max; break;
-        default:
-        {
-            LOG_ERROR("Invalid swizzle for paletted texture foramt.");
-        }
-        }
-        // clang-format on
-
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_R, palette_indexes, map[R]);
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_G, palette_indexes, map[G]);
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_B, palette_indexes, map[B]);
-        if (A == A_max) {
-            static std::array<GLfloat, 255> max_alpha;
-            std::fill(max_alpha.begin(), max_alpha.end(), 255.0);
-            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, palette_indexes, (GLfloat *)max_alpha.data());
-        } else {
-            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, palette_indexes, map[A]);
-        }
+        palette_texture_pixels.resize(width * height);
+        // TODO Fill palette_texture_pixels.
+        pixels = palette_texture_pixels.data();
+    } else {
+        pixels = texture_data;
     }
 
-    const void *const pixels = data.get(host.mem);
     const GLenum internal_format = texture::translate_internal_format(fmt);
     const GLenum format = texture::translate_format(fmt);
     const GLenum type = texture::translate_type(fmt);
@@ -1157,7 +1117,6 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->min_filter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->mag_filter));
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glPixelTransferi(GL_MAP_COLOR, GL_FALSE);
 
     return 0;
 }

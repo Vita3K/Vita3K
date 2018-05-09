@@ -105,8 +105,8 @@ struct SceGxmFragmentProgram {
     GLboolean color_mask_blue = GL_TRUE;
     GLboolean color_mask_alpha = GL_TRUE;
     bool blend_enabled = false;
-    GLenum color_func = GL_ADD;
-    GLenum alpha_func = GL_ADD;
+    GLenum color_func = GL_FUNC_ADD;
+    GLenum alpha_func = GL_FUNC_ADD;
     GLenum color_src = GL_ONE;
     GLenum color_dst = GL_ZERO;
     GLenum alpha_src = GL_ONE;
