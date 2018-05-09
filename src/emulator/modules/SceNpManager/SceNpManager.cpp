@@ -18,63 +18,63 @@
 #include "SceNpManager.h"
 
 EXPORT(int, sceNpAuthAbortOAuthRequest) {
-    return unimplemented("sceNpAuthAbortOAuthRequest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthCreateOAuthRequest) {
-    return unimplemented("sceNpAuthCreateOAuthRequest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthDeleteOAuthRequest) {
-    return unimplemented("sceNpAuthDeleteOAuthRequest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetAuthorizationCode) {
-    return unimplemented("sceNpAuthGetAuthorizationCode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCheckCallback) {
-    return unimplemented("sceNpCheckCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpGetServiceState) {
-    return unimplemented("sceNpGetServiceState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpInit) {
-    return unimplemented("sceNpInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpManagerGetAccountRegion) {
-    return unimplemented("sceNpManagerGetAccountRegion");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpManagerGetCachedParam) {
-    return unimplemented("sceNpManagerGetCachedParam");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpManagerGetChatRestrictionFlag) {
-    return unimplemented("sceNpManagerGetChatRestrictionFlag");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpManagerGetContentRatingFlag) {
-    return unimplemented("sceNpManagerGetContentRatingFlag");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpManagerGetNpId) {
-    return unimplemented("sceNpManagerGetNpId");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpRegisterServiceStateCallback) {
-    return unimplemented("sceNpRegisterServiceStateCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTerm) {
-    return unimplemented("sceNpTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpUnregisterServiceStateCallback) {
-    return unimplemented("sceNpUnregisterServiceStateCallback");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNpAuthAbortOAuthRequest)

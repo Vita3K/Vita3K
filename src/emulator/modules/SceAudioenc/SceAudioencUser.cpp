@@ -18,59 +18,59 @@
 #include "SceAudioencUser.h"
 
 EXPORT(int, sceAudioencClearContext) {
-    return unimplemented("sceAudioencClearContext");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencCreateEncoder) {
-    return unimplemented("sceAudioencCreateEncoder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencCreateEncoderExternal) {
-    return unimplemented("sceAudioencCreateEncoderExternal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencCreateEncoderResident) {
-    return unimplemented("sceAudioencCreateEncoderResident");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencDeleteEncoder) {
-    return unimplemented("sceAudioencDeleteEncoder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencDeleteEncoderExternal) {
-    return unimplemented("sceAudioencDeleteEncoderExternal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencDeleteEncoderResident) {
-    return unimplemented("sceAudioencDeleteEncoderResident");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencEncode) {
-    return unimplemented("sceAudioencEncode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencEncodeNFrames) {
-    return unimplemented("sceAudioencEncodeNFrames");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencGetContextSize) {
-    return unimplemented("sceAudioencGetContextSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencGetInternalError) {
-    return unimplemented("sceAudioencGetInternalError");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencGetOptInfo) {
-    return unimplemented("sceAudioencGetOptInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencInitLibrary) {
-    return unimplemented("sceAudioencInitLibrary");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioencTermLibrary) {
-    return unimplemented("sceAudioencTermLibrary");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceAudioencClearContext)

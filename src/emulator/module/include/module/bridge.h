@@ -34,28 +34,28 @@ struct CPUState;
 
 // Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>
-void call(Ret (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
-    const Ret ret = (*export_fn)(host, thread_id, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
+void call(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+    const Ret ret = (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
     write_return_value(cpu, ret);
 }
 
 // Function does not return a value.
 template <typename... Args, size_t... indices>
-void call(void (*export_fn)(HostState &, SceUID, Args...), const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
-    (*export_fn)(host, thread_id, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
+void call(void (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+    (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
 }
 
 template <typename Ret, typename... Args>
-ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, Args...)) {
+ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name) {
     constexpr ArgsLayout<Args...> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
 
-    return [export_fn, args_layout](HostState &host, SceUID thread_id) {
-        MICROPROFILE_SCOPEI("HLE", "", MP_YELLOW);
+    return [export_fn, export_name, args_layout](HostState &host, SceUID thread_id) {
+        MICROPROFILE_SCOPEI("HLE", export_name, MP_YELLOW);
 
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         assert(thread);
 
         using Indices = std::index_sequence_for<Args...>;
-        call(export_fn, args_layout, Indices(), thread_id, *thread->cpu, host);
+        call(export_fn, export_name, args_layout, Indices(), thread_id, *thread->cpu, host);
     };
 }

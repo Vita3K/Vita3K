@@ -30,9 +30,21 @@ void init_logging();
 #define LOG_ERROR(fmt, ...) g_logger->error("|E| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define LOG_CRITICAL(fmt, ...) g_logger->critical("|C| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 
-#define LOG_TRACE_IF(flag, fmt, ...) if (flag) g_logger->trace(flag, "|T| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_DEBUG_IF(flag, fmt, ...) if (flag) g_logger->debug(flag, "|D| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_INFO_IF(flag, fmt, ...) if (flag) g_logger->info(flag, "|I| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_WARN_IF(flag, fmt, ...) if (flag) g_logger->warn(flag, "|W| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_ERROR_IF(flag, fmt, ...) if (flag) g_logger->error(flag, "|E| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_CRITICAL_IF(flag, fmt, ...) if (flag) g_logger->critical(flag, "|C| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_TRACE_IF(flag, fmt, ...) \
+    if (flag)                        \
+    g_logger->trace(flag, "|T| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_DEBUG_IF(flag, fmt, ...) \
+    if (flag)                        \
+    g_logger->debug(flag, "|D| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_INFO_IF(flag, fmt, ...) \
+    if (flag)                       \
+    g_logger->info(flag, "|I| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_WARN_IF(flag, fmt, ...) \
+    if (flag)                       \
+    g_logger->warn(flag, "|W| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_ERROR_IF(flag, fmt, ...) \
+    if (flag)                        \
+    g_logger->error(flag, "|E| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_CRITICAL_IF(flag, fmt, ...) \
+    if (flag)                           \
+    g_logger->critical(flag, "|C| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)

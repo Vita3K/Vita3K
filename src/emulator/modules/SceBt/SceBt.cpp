@@ -18,219 +18,219 @@
 #include "SceBt.h"
 
 EXPORT(int, sceBtAvrcpReadVolume) {
-    return unimplemented("sceBtAvrcpReadVolume");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtAvrcpSendButton) {
-    return unimplemented("sceBtAvrcpSendButton");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtAvrcpSendVolume) {
-    return unimplemented("sceBtAvrcpSendVolume");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtAvrcpSetPlayStatus) {
-    return unimplemented("sceBtAvrcpSetPlayStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtAvrcpSetTitle) {
-    return unimplemented("sceBtAvrcpSetTitle");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtDeleteRegisteredInfo) {
-    return unimplemented("sceBtDeleteRegisteredInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtFreqAudio) {
-    return unimplemented("sceBtFreqAudio");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtGetConfiguration) {
-    return unimplemented("sceBtGetConfiguration");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtGetConnectingInfo) {
-    return unimplemented("sceBtGetConnectingInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtGetDeviceId) {
-    return unimplemented("sceBtGetDeviceId");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtGetDeviceName) {
-    return unimplemented("sceBtGetDeviceName");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtGetInfoForTest) {
-    return unimplemented("sceBtGetInfoForTest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtGetLastError) {
-    return unimplemented("sceBtGetLastError");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtGetRegisteredInfo) {
-    return unimplemented("sceBtGetRegisteredInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtGetStatusForTest) {
-    return unimplemented("sceBtGetStatusForTest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHfpGetCurrentPhoneNumber) {
-    return unimplemented("sceBtHfpGetCurrentPhoneNumber");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHfpRequest) {
-    return unimplemented("sceBtHfpRequest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidGetReportDescriptor) {
-    return unimplemented("sceBtHidGetReportDescriptor");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidTransfer) {
-    return unimplemented("sceBtHidTransfer");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidVuGetReportFeature) {
-    return unimplemented("sceBtHidVuGetReportFeature");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidVuGetReportInput) {
-    return unimplemented("sceBtHidVuGetReportInput");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidVuReadEvent) {
-    return unimplemented("sceBtHidVuReadEvent");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidVuRegisterCallback) {
-    return unimplemented("sceBtHidVuRegisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidVuSetInterruptOutput) {
-    return unimplemented("sceBtHidVuSetInterruptOutput");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidVuSetReportFeature) {
-    return unimplemented("sceBtHidVuSetReportFeature");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidVuSetReportOutput) {
-    return unimplemented("sceBtHidVuSetReportOutput");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtHidVuUnregisterCallback) {
-    return unimplemented("sceBtHidVuUnregisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtPairingOOB) {
-    return unimplemented("sceBtPairingOOB");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtPushBip) {
-    return unimplemented("sceBtPushBip");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtPushOpp) {
-    return unimplemented("sceBtPushOpp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtReadEvent) {
-    return unimplemented("sceBtReadEvent");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtRecvAudio) {
-    return unimplemented("sceBtRecvAudio");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtRecvBip) {
-    return unimplemented("sceBtRecvBip");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtRecvOpp) {
-    return unimplemented("sceBtRecvOpp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtRecvSpp) {
-    return unimplemented("sceBtRecvSpp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtRegisterCallback) {
-    return unimplemented("sceBtRegisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtReplyPinCode) {
-    return unimplemented("sceBtReplyPinCode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtReplyUserConfirmation) {
-    return unimplemented("sceBtReplyUserConfirmation");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtSendAudio) {
-    return unimplemented("sceBtSendAudio");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtSendL2capEchoRequestForTest) {
-    return unimplemented("sceBtSendL2capEchoRequestForTest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtSendSpp) {
-    return unimplemented("sceBtSendSpp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtSetConfiguration) {
-    return unimplemented("sceBtSetConfiguration");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtSetContentProtection) {
-    return unimplemented("sceBtSetContentProtection");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtSetInquiryResultForTest) {
-    return unimplemented("sceBtSetInquiryResultForTest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtSetInquiryScan) {
-    return unimplemented("sceBtSetInquiryScan");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtSetL2capEchoResponseBufferForTest) {
-    return unimplemented("sceBtSetL2capEchoResponseBufferForTest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtSetStatusForTest) {
-    return unimplemented("sceBtSetStatusForTest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtStartAudio) {
-    return unimplemented("sceBtStartAudio");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtStartConnect) {
-    return unimplemented("sceBtStartConnect");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtStartDisconnect) {
-    return unimplemented("sceBtStartDisconnect");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtStartInquiry) {
-    return unimplemented("sceBtStartInquiry");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtStopAudio) {
-    return unimplemented("sceBtStopAudio");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtStopInquiry) {
-    return unimplemented("sceBtStopInquiry");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceBtUnregisterCallback) {
-    return unimplemented("sceBtUnregisterCallback");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceBtAvrcpReadVolume)

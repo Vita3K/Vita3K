@@ -18,47 +18,47 @@
 #include "SceSsl.h"
 
 EXPORT(int, sceSslFreeSslCertName) {
-    return unimplemented("sceSslFreeSslCertName");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetIssuerName) {
-    return unimplemented("sceSslGetIssuerName");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetMemoryPoolStats) {
-    return unimplemented("sceSslGetMemoryPoolStats");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetNameEntryCount) {
-    return unimplemented("sceSslGetNameEntryCount");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetNameEntryInfo) {
-    return unimplemented("sceSslGetNameEntryInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetNotAfter) {
-    return unimplemented("sceSslGetNotAfter");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetNotBefore) {
-    return unimplemented("sceSslGetNotBefore");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetSerialNumber) {
-    return unimplemented("sceSslGetSerialNumber");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetSubjectName) {
-    return unimplemented("sceSslGetSubjectName");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslInit) {
-    return unimplemented("sceSslInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslTerm) {
-    return unimplemented("sceSslTerm");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceSslFreeSslCertName)

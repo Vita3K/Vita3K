@@ -18,59 +18,59 @@
 #include "SceNetAdhocMatching.h"
 
 EXPORT(int, sceNetAdhocMatchingAbortSendData) {
-    return unimplemented("sceNetAdhocMatchingAbortSendData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingCancelTarget) {
-    return unimplemented("sceNetAdhocMatchingCancelTarget");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingCancelTargetWithOpt) {
-    return unimplemented("sceNetAdhocMatchingCancelTargetWithOpt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingCreate) {
-    return unimplemented("sceNetAdhocMatchingCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingDelete) {
-    return unimplemented("sceNetAdhocMatchingDelete");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingGetHelloOpt) {
-    return unimplemented("sceNetAdhocMatchingGetHelloOpt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingGetMembers) {
-    return unimplemented("sceNetAdhocMatchingGetMembers");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingInit) {
-    return unimplemented("sceNetAdhocMatchingInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingSelectTarget) {
-    return unimplemented("sceNetAdhocMatchingSelectTarget");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingSendData) {
-    return unimplemented("sceNetAdhocMatchingSendData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingSetHelloOpt) {
-    return unimplemented("sceNetAdhocMatchingSetHelloOpt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingStart) {
-    return unimplemented("sceNetAdhocMatchingStart");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingStop) {
-    return unimplemented("sceNetAdhocMatchingStop");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocMatchingTerm) {
-    return unimplemented("sceNetAdhocMatchingTerm");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNetAdhocMatchingAbortSendData)

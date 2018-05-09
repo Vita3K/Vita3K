@@ -18,47 +18,47 @@
 #include "SceNpPartyGameUtil.h"
 
 EXPORT(int, sceNpPartyCheckCallback) {
-    return unimplemented("sceNpPartyCheckCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetGameSessionReadyState) {
-    return unimplemented("sceNpPartyGetGameSessionReadyState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetId) {
-    return unimplemented("sceNpPartyGetId");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetMemberInfo) {
-    return unimplemented("sceNpPartyGetMemberInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetMemberSessionInfo) {
-    return unimplemented("sceNpPartyGetMemberSessionInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetMemberVoiceInfo) {
-    return unimplemented("sceNpPartyGetMemberVoiceInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetMembers) {
-    return unimplemented("sceNpPartyGetMembers");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyGetState) {
-    return unimplemented("sceNpPartyGetState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyInit) {
-    return unimplemented("sceNpPartyInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyRegisterHandler) {
-    return unimplemented("sceNpPartyRegisterHandler");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpPartyTerm) {
-    return unimplemented("sceNpPartyTerm");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNpPartyCheckCallback)

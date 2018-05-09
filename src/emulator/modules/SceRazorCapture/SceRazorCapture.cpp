@@ -18,43 +18,43 @@
 #include "SceRazorCapture.h"
 
 EXPORT(int, sceRazorCaptureIsInProgress) {
-    return unimplemented("sceRazorCaptureIsInProgress");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRazorCaptureSetTrigger) {
-    return unimplemented("sceRazorCaptureSetTrigger");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRazorCaptureSetTriggerNextFrame) {
-    return unimplemented("sceRazorCaptureSetTriggerNextFrame");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRazorGpuCaptureEnableSalvage) {
-    return unimplemented("sceRazorGpuCaptureEnableSalvage");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRazorGpuCaptureIsInProgress) {
-    return unimplemented("sceRazorGpuCaptureIsInProgress");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRazorGpuCaptureSetCaptureAllMemory) {
-    return unimplemented("sceRazorGpuCaptureSetCaptureAllMemory");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRazorGpuCaptureSetCaptureBeforeKick) {
-    return unimplemented("sceRazorGpuCaptureSetCaptureBeforeKick");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRazorGpuCaptureSetTrigger) {
-    return unimplemented("sceRazorGpuCaptureSetTrigger");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRazorGpuCaptureSetTriggerNextFrame) {
-    return unimplemented("sceRazorGpuCaptureSetTriggerNextFrame");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRazorGpuCaptureStartSalvageMode) {
-    return unimplemented("sceRazorGpuCaptureStartSalvageMode");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceRazorCaptureIsInProgress)

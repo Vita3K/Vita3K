@@ -18,11 +18,11 @@
 #include "SceCoredump.h"
 
 EXPORT(int, sceCoredumpRegisterCoredumpHandler) {
-    return unimplemented("sceCoredumpRegisterCoredumpHandler");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCoredumpUnregisterCoredumpHandler) {
-    return unimplemented("sceCoredumpUnregisterCoredumpHandler");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceCoredumpRegisterCoredumpHandler)

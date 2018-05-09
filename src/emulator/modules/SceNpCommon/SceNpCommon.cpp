@@ -18,63 +18,63 @@
 #include "SceNpCommon.h"
 
 EXPORT(int, sceNpAuthAbortRequest) {
-    return unimplemented("sceNpAuthAbortRequest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthCreateStartRequest) {
-    return unimplemented("sceNpAuthCreateStartRequest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthDestroyRequest) {
-    return unimplemented("sceNpAuthDestroyRequest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetEntitlementById) {
-    return unimplemented("sceNpAuthGetEntitlementById");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetEntitlementByIdPrefix) {
-    return unimplemented("sceNpAuthGetEntitlementByIdPrefix");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetEntitlementIdList) {
-    return unimplemented("sceNpAuthGetEntitlementIdList");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetTicket) {
-    return unimplemented("sceNpAuthGetTicket");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetTicketParam) {
-    return unimplemented("sceNpAuthGetTicketParam");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthInit) {
-    return unimplemented("sceNpAuthInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthTerm) {
-    return unimplemented("sceNpAuthTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCmpNpId) {
-    return unimplemented("sceNpCmpNpId");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCmpNpIdInOrder) {
-    return unimplemented("sceNpCmpNpIdInOrder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCmpOnlineId) {
-    return unimplemented("sceNpCmpOnlineId");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpGetPlatformType) {
-    return unimplemented("sceNpGetPlatformType");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSetPlatformType) {
-    return unimplemented("sceNpSetPlatformType");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNpAuthAbortRequest)

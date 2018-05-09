@@ -18,7 +18,7 @@
 #include "SceTeleportServer.h"
 
 EXPORT(int, sceTeleportServerSendInitialInfo) {
-    return unimplemented("sceTeleportServerSendInitialInfo");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceTeleportServerSendInitialInfo)

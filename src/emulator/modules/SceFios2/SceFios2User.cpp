@@ -18,43 +18,43 @@
 #include "SceFios2User.h"
 
 EXPORT(int, sceFiosOverlayAddForProcess02) {
-    return unimplemented("sceFiosOverlayAddForProcess02");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayGetInfoForProcess02) {
-    return unimplemented("sceFiosOverlayGetInfoForProcess02");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayGetList02) {
-    return unimplemented("sceFiosOverlayGetList02");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayGetRecommendedScheduler02) {
-    return unimplemented("sceFiosOverlayGetRecommendedScheduler02");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayModifyForProcess02) {
-    return unimplemented("sceFiosOverlayModifyForProcess02");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayRemoveForProcess02) {
-    return unimplemented("sceFiosOverlayRemoveForProcess02");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayResolveSync02) {
-    return unimplemented("sceFiosOverlayResolveSync02");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayResolveWithRangeSync02) {
-    return unimplemented("sceFiosOverlayResolveWithRangeSync02");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayThreadIsDisabled02) {
-    return unimplemented("sceFiosOverlayThreadIsDisabled02");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayThreadSetDisabled02) {
-    return unimplemented("sceFiosOverlayThreadSetDisabled02");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceFiosOverlayAddForProcess02)

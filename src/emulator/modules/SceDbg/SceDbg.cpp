@@ -18,23 +18,23 @@
 #include "SceDbg.h"
 
 EXPORT(int, sceDbgAssertionHandler) {
-    return unimplemented("sceDbgAssertionHandler");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDbgLoggingHandler) {
-    return unimplemented("sceDbgLoggingHandler");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDbgSetBreakOnErrorState) {
-    return unimplemented("sceDbgSetBreakOnErrorState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDbgSetBreakOnWarningState) {
-    return unimplemented("sceDbgSetBreakOnWarningState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDbgSetMinimumLogLevel) {
-    return unimplemented("sceDbgSetMinimumLogLevel");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceDbgAssertionHandler)

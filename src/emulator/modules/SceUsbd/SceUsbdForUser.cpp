@@ -18,95 +18,95 @@
 #include "SceUsbdForUser.h"
 
 EXPORT(int, sceUsbdAttach) {
-    return unimplemented("sceUsbdAttach");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdAttachCompositeLdd) {
-    return unimplemented("sceUsbdAttachCompositeLdd");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdClosePipe) {
-    return unimplemented("sceUsbdClosePipe");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdEnd) {
-    return unimplemented("sceUsbdEnd");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdGetDescriptor) {
-    return unimplemented("sceUsbdGetDescriptor");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdGetDescriptorSize) {
-    return unimplemented("sceUsbdGetDescriptorSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdGetDeviceAddress) {
-    return unimplemented("sceUsbdGetDeviceAddress");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdGetDeviceList) {
-    return unimplemented("sceUsbdGetDeviceList");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdGetDeviceSpeed) {
-    return unimplemented("sceUsbdGetDeviceSpeed");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdGetIsochTransferStatus) {
-    return unimplemented("sceUsbdGetIsochTransferStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdGetTransferStatus) {
-    return unimplemented("sceUsbdGetTransferStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdInit) {
-    return unimplemented("sceUsbdInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdIsochTransferData) {
-    return unimplemented("sceUsbdIsochTransferData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdOpenDefaultPipe) {
-    return unimplemented("sceUsbdOpenDefaultPipe");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdOpenPipe) {
-    return unimplemented("sceUsbdOpenPipe");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdReceiveEvent) {
-    return unimplemented("sceUsbdReceiveEvent");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdRegisterCallback) {
-    return unimplemented("sceUsbdRegisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdRegisterCompositeLdd) {
-    return unimplemented("sceUsbdRegisterCompositeLdd");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdRegisterLdd) {
-    return unimplemented("sceUsbdRegisterLdd");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdResetDevice) {
-    return unimplemented("sceUsbdResetDevice");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdTransferData) {
-    return unimplemented("sceUsbdTransferData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdUnregisterCallback) {
-    return unimplemented("sceUsbdUnregisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbdUnregisterLdd) {
-    return unimplemented("sceUsbdUnregisterLdd");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceUsbdAttach)

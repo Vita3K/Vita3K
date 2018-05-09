@@ -18,59 +18,59 @@
 #include "SceLibm.h"
 
 EXPORT(int, _Cosh) {
-    return unimplemented("_Cosh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _Dclass) {
-    return unimplemented("_Dclass");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _Dsign) {
-    return unimplemented("_Dsign");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _Dtest) {
-    return unimplemented("_Dtest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _Exp) {
-    return unimplemented("_Exp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FCosh) {
-    return unimplemented("_FCosh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FDclass) {
-    return unimplemented("_FDclass");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FDsign) {
-    return unimplemented("_FDsign");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FDtest) {
-    return unimplemented("_FDtest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FExp) {
-    return unimplemented("_FExp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FFpcomp) {
-    return unimplemented("_FFpcomp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FLog) {
-    return unimplemented("_FLog");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FSin) {
-    return unimplemented("_FSin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FSinh) {
-    return unimplemented("_FSinh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _FSinx, float a, unsigned int tag, int c) {
@@ -81,747 +81,747 @@ EXPORT(int, _FSinx, float a, unsigned int tag, int c) {
 }
 
 EXPORT(int, _Fpcomp) {
-    return unimplemented("_Fpcomp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LCosh) {
-    return unimplemented("_LCosh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LDclass) {
-    return unimplemented("_LDclass");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LDsign) {
-    return unimplemented("_LDsign");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LDtest) {
-    return unimplemented("_LDtest");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LExp) {
-    return unimplemented("_LExp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LFpcomp) {
-    return unimplemented("_LFpcomp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LLog) {
-    return unimplemented("_LLog");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LSin) {
-    return unimplemented("_LSin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LSinh) {
-    return unimplemented("_LSinh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _LSinx) {
-    return unimplemented("_LSinx");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _Log) {
-    return unimplemented("_Log");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _Sin) {
-    return unimplemented("_Sin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _Sinh) {
-    return unimplemented("_Sinh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _Sinx) {
-    return unimplemented("_Sinx");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, acos) {
-    return unimplemented("acos");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, acosf) {
-    return unimplemented("acosf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, acosh) {
-    return unimplemented("acosh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, acoshf) {
-    return unimplemented("acoshf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, acoshl) {
-    return unimplemented("acoshl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, acosl) {
-    return unimplemented("acosl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, asin) {
-    return unimplemented("asin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, asinf) {
-    return unimplemented("asinf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, asinh) {
-    return unimplemented("asinh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, asinhf) {
-    return unimplemented("asinhf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, asinhl) {
-    return unimplemented("asinhl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, asinl) {
-    return unimplemented("asinl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, atan) {
-    return unimplemented("atan");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, atan2) {
-    return unimplemented("atan2");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, atan2f) {
-    return unimplemented("atan2f");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, atan2l) {
-    return unimplemented("atan2l");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, atanf) {
-    return unimplemented("atanf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, atanh) {
-    return unimplemented("atanh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, atanhf) {
-    return unimplemented("atanhf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, atanhl) {
-    return unimplemented("atanhl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, atanl) {
-    return unimplemented("atanl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, cbrt) {
-    return unimplemented("cbrt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, cbrtf) {
-    return unimplemented("cbrtf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, cbrtl) {
-    return unimplemented("cbrtl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, ceil) {
-    return unimplemented("ceil");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, ceilf) {
-    return unimplemented("ceilf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, ceill) {
-    return unimplemented("ceill");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, copysign) {
-    return unimplemented("copysign");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, copysignf) {
-    return unimplemented("copysignf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, copysignl) {
-    return unimplemented("copysignl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, cos) {
-    return unimplemented("cos");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, cosf) {
-    return unimplemented("cosf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, cosh) {
-    return unimplemented("cosh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, coshf) {
-    return unimplemented("coshf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, coshl) {
-    return unimplemented("coshl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, cosl) {
-    return unimplemented("cosl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, erf) {
-    return unimplemented("erf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, erfc) {
-    return unimplemented("erfc");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, erfcf) {
-    return unimplemented("erfcf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, erfcl) {
-    return unimplemented("erfcl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, erff) {
-    return unimplemented("erff");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, erfl) {
-    return unimplemented("erfl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, exp) {
-    return unimplemented("exp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, exp2) {
-    return unimplemented("exp2");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, exp2f) {
-    return unimplemented("exp2f");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, exp2l) {
-    return unimplemented("exp2l");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, expf) {
-    return unimplemented("expf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, expl) {
-    return unimplemented("expl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, expm1) {
-    return unimplemented("expm1");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, expm1f) {
-    return unimplemented("expm1f");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, expm1l) {
-    return unimplemented("expm1l");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fabs) {
-    return unimplemented("fabs");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fabsf) {
-    return unimplemented("fabsf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fabsl) {
-    return unimplemented("fabsl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fdim) {
-    return unimplemented("fdim");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fdimf) {
-    return unimplemented("fdimf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fdiml) {
-    return unimplemented("fdiml");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, floor) {
-    return unimplemented("floor");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, floorf) {
-    return unimplemented("floorf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, floorl) {
-    return unimplemented("floorl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fma) {
-    return unimplemented("fma");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fmaf) {
-    return unimplemented("fmaf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fmal) {
-    return unimplemented("fmal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fmax) {
-    return unimplemented("fmax");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fmaxf) {
-    return unimplemented("fmaxf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fmaxl) {
-    return unimplemented("fmaxl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fmin) {
-    return unimplemented("fmin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fminf) {
-    return unimplemented("fminf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fminl) {
-    return unimplemented("fminl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fmod) {
-    return unimplemented("fmod");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fmodf) {
-    return unimplemented("fmodf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, fmodl) {
-    return unimplemented("fmodl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, frexp) {
-    return unimplemented("frexp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, frexpf) {
-    return unimplemented("frexpf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, frexpl) {
-    return unimplemented("frexpl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, hypot) {
-    return unimplemented("hypot");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, hypotf) {
-    return unimplemented("hypotf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, hypotl) {
-    return unimplemented("hypotl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, ilogb) {
-    return unimplemented("ilogb");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, ilogbf) {
-    return unimplemented("ilogbf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, ilogbl) {
-    return unimplemented("ilogbl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, ldexp) {
-    return unimplemented("ldexp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, ldexpf) {
-    return unimplemented("ldexpf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, ldexpl) {
-    return unimplemented("ldexpl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, lgamma) {
-    return unimplemented("lgamma");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, lgammaf) {
-    return unimplemented("lgammaf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, lgammal) {
-    return unimplemented("lgammal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, llrint) {
-    return unimplemented("llrint");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, llrintf) {
-    return unimplemented("llrintf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, llrintl) {
-    return unimplemented("llrintl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, llround) {
-    return unimplemented("llround");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, llroundf) {
-    return unimplemented("llroundf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, llroundl) {
-    return unimplemented("llroundl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log) {
-    return unimplemented("log");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log10) {
-    return unimplemented("log10");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log10f) {
-    return unimplemented("log10f");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log10l) {
-    return unimplemented("log10l");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log1p) {
-    return unimplemented("log1p");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log1pf) {
-    return unimplemented("log1pf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log1pl) {
-    return unimplemented("log1pl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log2) {
-    return unimplemented("log2");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log2f) {
-    return unimplemented("log2f");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, log2l) {
-    return unimplemented("log2l");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, logb) {
-    return unimplemented("logb");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, logbf) {
-    return unimplemented("logbf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, logbl) {
-    return unimplemented("logbl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, logf) {
-    return unimplemented("logf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, logl) {
-    return unimplemented("logl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, lrint) {
-    return unimplemented("lrint");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, lrintf) {
-    return unimplemented("lrintf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, lrintl) {
-    return unimplemented("lrintl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, lround) {
-    return unimplemented("lround");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, lroundf) {
-    return unimplemented("lroundf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, lroundl) {
-    return unimplemented("lroundl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, modf) {
-    return unimplemented("modf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, modff) {
-    return unimplemented("modff");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, modfl) {
-    return unimplemented("modfl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nan) {
-    return unimplemented("nan");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nanf) {
-    return unimplemented("nanf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nanl) {
-    return unimplemented("nanl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nearbyint) {
-    return unimplemented("nearbyint");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nearbyintf) {
-    return unimplemented("nearbyintf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nearbyintl) {
-    return unimplemented("nearbyintl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nextafter) {
-    return unimplemented("nextafter");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nextafterf) {
-    return unimplemented("nextafterf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nextafterl) {
-    return unimplemented("nextafterl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nexttoward) {
-    return unimplemented("nexttoward");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nexttowardf) {
-    return unimplemented("nexttowardf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, nexttowardl) {
-    return unimplemented("nexttowardl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, pow) {
-    return unimplemented("pow");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, powf) {
-    return unimplemented("powf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, powl) {
-    return unimplemented("powl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, remainder) {
-    return unimplemented("remainder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, remainderf) {
-    return unimplemented("remainderf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, remainderl) {
-    return unimplemented("remainderl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, remquo) {
-    return unimplemented("remquo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, remquof) {
-    return unimplemented("remquof");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, remquol) {
-    return unimplemented("remquol");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, rint) {
-    return unimplemented("rint");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, rintf) {
-    return unimplemented("rintf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, rintl) {
-    return unimplemented("rintl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, round) {
-    return unimplemented("round");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, roundf) {
-    return unimplemented("roundf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, roundl) {
-    return unimplemented("roundl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scalbln) {
-    return unimplemented("scalbln");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scalblnf) {
-    return unimplemented("scalblnf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scalblnl) {
-    return unimplemented("scalblnl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scalbn) {
-    return unimplemented("scalbn");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scalbnf) {
-    return unimplemented("scalbnf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scalbnl) {
-    return unimplemented("scalbnl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sin) {
-    return unimplemented("sin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sinf) {
-    return unimplemented("sinf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sinh) {
-    return unimplemented("sinh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sinhf) {
-    return unimplemented("sinhf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sinhl) {
-    return unimplemented("sinhl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sinl) {
-    return unimplemented("sinl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sqrt) {
-    return unimplemented("sqrt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sqrtf) {
-    return unimplemented("sqrtf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sqrtl) {
-    return unimplemented("sqrtl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, tan) {
-    return unimplemented("tan");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, tanf) {
-    return unimplemented("tanf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, tanh) {
-    return unimplemented("tanh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, tanhf) {
-    return unimplemented("tanhf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, tanhl) {
-    return unimplemented("tanhl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, tanl) {
-    return unimplemented("tanl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, tgamma) {
-    return unimplemented("tgamma");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, tgammaf) {
-    return unimplemented("tgammaf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, tgammal) {
-    return unimplemented("tgammal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, trunc) {
-    return unimplemented("trunc");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, truncf) {
-    return unimplemented("truncf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, truncl) {
-    return unimplemented("truncl");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(_Cosh)

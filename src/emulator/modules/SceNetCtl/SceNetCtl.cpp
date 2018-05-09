@@ -25,31 +25,31 @@
 #include <psp2/net/netctl.h>
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {
-    return unimplemented("sceNetCtlAdhocDisconnect");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlAdhocGetInAddr) {
-    return unimplemented("sceNetCtlAdhocGetInAddr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlAdhocGetPeerList) {
-    return unimplemented("sceNetCtlAdhocGetPeerList");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlAdhocGetResult) {
-    return unimplemented("sceNetCtlAdhocGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlAdhocGetState) {
-    return unimplemented("sceNetCtlAdhocGetState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlAdhocRegisterCallback) {
-    return unimplemented("sceNetCtlAdhocRegisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlAdhocUnregisterCallback) {
-    return unimplemented("sceNetCtlAdhocUnregisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlCheckCallback) {
@@ -63,20 +63,20 @@ EXPORT(int, sceNetCtlCheckCallback) {
         Ptr<void> argp = Ptr<void>(callback.second.data);
         run_on_current(*thread, Ptr<void>(callback.second.pc), host.net.state, argp);
     }
-    unimplemented("sceNetCtlGetIfStat - Stub");
+    UNIMPLEMENTED();
     return 0;
 }
 
 EXPORT(int, sceNetCtlGetIfStat) {
-    return unimplemented("sceNetCtlGetIfStat");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlGetNatInfo) {
-    return unimplemented("sceNetCtlGetNatInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlGetPhoneMaxDownloadableSize) {
-    return unimplemented("sceNetCtlGetPhoneMaxDownloadableSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
@@ -100,12 +100,12 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
 }
 
 EXPORT(int, sceNetCtlInetGetResult) {
-    return unimplemented("sceNetCtlInetGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlInetGetState, uint32_t *state) {
     *state = SCE_NETCTL_STATE_DISCONNECTED;
-    unimplemented("sceNetCtlInetGetState => SCE_NETCTL_STATE_DISCONNECTED");
+    UNIMPLEMENTED();
     return 0;
 }
 
@@ -120,16 +120,16 @@ EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, u
 }
 
 EXPORT(int, sceNetCtlInetUnregisterCallback) {
-    return unimplemented("sceNetCtlInetUnregisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlInit) {
-    unimplemented("sceNetCtlInit - Stub");
+    UNIMPLEMENTED();
     return 0;
 }
 
 EXPORT(int, sceNetCtlTerm) {
-    return unimplemented("sceNetCtlTerm");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNetCtlAdhocDisconnect)

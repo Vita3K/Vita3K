@@ -18,43 +18,43 @@
 #include "SceLibMp4Recorder.h"
 
 EXPORT(int, sceMp4RecAddAudioSample) {
-    return unimplemented("sceMp4RecAddAudioSample");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4RecAddVideoSample) {
-    return unimplemented("sceMp4RecAddVideoSample");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4RecCreateRecorder) {
-    return unimplemented("sceMp4RecCreateRecorder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4RecCsc) {
-    return unimplemented("sceMp4RecCsc");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4RecDeleteRecorder) {
-    return unimplemented("sceMp4RecDeleteRecorder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4RecInit) {
-    return unimplemented("sceMp4RecInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4RecQueryPhysicalMemSize) {
-    return unimplemented("sceMp4RecQueryPhysicalMemSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4RecRecorderEnd) {
-    return unimplemented("sceMp4RecRecorderEnd");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4RecRecorderInit) {
-    return unimplemented("sceMp4RecRecorderInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4RecTerm) {
-    return unimplemented("sceMp4RecTerm");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceMp4RecAddAudioSample)

@@ -18,47 +18,47 @@
 #include "SceJpegUser.h"
 
 EXPORT(int, sceJpegCreateSplitDecoder) {
-    return unimplemented("sceJpegCreateSplitDecoder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegCsc) {
-    return unimplemented("sceJpegCsc");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegDecodeMJpeg) {
-    return unimplemented("sceJpegDecodeMJpeg");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegDecodeMJpegYCbCr) {
-    return unimplemented("sceJpegDecodeMJpegYCbCr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegDeleteSplitDecoder) {
-    return unimplemented("sceJpegDeleteSplitDecoder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegFinishMJpeg) {
-    return unimplemented("sceJpegFinishMJpeg");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegGetOutputInfo) {
-    return unimplemented("sceJpegGetOutputInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegInitMJpeg) {
-    return unimplemented("sceJpegInitMJpeg");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegInitMJpegWithParam) {
-    return unimplemented("sceJpegInitMJpegWithParam");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegMJpegCsc) {
-    return unimplemented("sceJpegMJpegCsc");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegSplitDecodeMJpeg) {
-    return unimplemented("sceJpegSplitDecodeMJpeg");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceJpegCreateSplitDecoder)

@@ -18,19 +18,19 @@
 #include "SceShellUtil.h"
 
 EXPORT(int, sceShellUtilInitEvents) {
-    return unimplemented("sceShellUtilInitEvents");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceShellUtilLock) {
-    return unimplemented("sceShellUtilLock");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceShellUtilRegisterEventHandler) {
-    return unimplemented("sceShellUtilRegisterEventHandler");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceShellUtilUnlock) {
-    return unimplemented("sceShellUtilUnlock");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceShellUtilInitEvents)

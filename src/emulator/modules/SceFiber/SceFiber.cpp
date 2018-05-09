@@ -18,67 +18,67 @@
 #include "SceFiber.h"
 
 EXPORT(int, _sceFiberAttachContextAndRun) {
-    return unimplemented("_sceFiberAttachContextAndRun");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceFiberAttachContextAndSwitch) {
-    return unimplemented("_sceFiberAttachContextAndSwitch");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceFiberInitializeImpl) {
-    return unimplemented("_sceFiberInitializeImpl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceFiberInitializeWithInternalOptionImpl) {
-    return unimplemented("_sceFiberInitializeWithInternalOptionImpl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberFinalize) {
-    return unimplemented("sceFiberFinalize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberGetInfo) {
-    return unimplemented("sceFiberGetInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberGetSelf) {
-    return unimplemented("sceFiberGetSelf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberOptParamInitialize) {
-    return unimplemented("sceFiberOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberPopUserMarkerWithHud) {
-    return unimplemented("sceFiberPopUserMarkerWithHud");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberPushUserMarkerWithHud) {
-    return unimplemented("sceFiberPushUserMarkerWithHud");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberRenameSelf) {
-    return unimplemented("sceFiberRenameSelf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberReturnToThread) {
-    return unimplemented("sceFiberReturnToThread");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberRun) {
-    return unimplemented("sceFiberRun");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberStartContextSizeCheck) {
-    return unimplemented("sceFiberStartContextSizeCheck");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberStopContextSizeCheck) {
-    return unimplemented("sceFiberStopContextSizeCheck");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiberSwitch) {
-    return unimplemented("sceFiberSwitch");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(_sceFiberAttachContextAndRun)

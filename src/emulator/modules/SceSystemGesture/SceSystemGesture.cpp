@@ -18,71 +18,71 @@
 #include "SceSystemGesture.h"
 
 EXPORT(int, sceSystemGestureCreateTouchRecognizer) {
-    return unimplemented("sceSystemGestureCreateTouchRecognizer");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureFinalizePrimitiveTouchRecognizer) {
-    return unimplemented("sceSystemGestureFinalizePrimitiveTouchRecognizer");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureGetPrimitiveTouchEventByIndex) {
-    return unimplemented("sceSystemGestureGetPrimitiveTouchEventByIndex");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureGetPrimitiveTouchEventByPrimitiveID) {
-    return unimplemented("sceSystemGestureGetPrimitiveTouchEventByPrimitiveID");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureGetPrimitiveTouchEvents) {
-    return unimplemented("sceSystemGestureGetPrimitiveTouchEvents");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureGetPrimitiveTouchEventsCount) {
-    return unimplemented("sceSystemGestureGetPrimitiveTouchEventsCount");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureGetTouchEventByEventID) {
-    return unimplemented("sceSystemGestureGetTouchEventByEventID");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureGetTouchEventByIndex) {
-    return unimplemented("sceSystemGestureGetTouchEventByIndex");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureGetTouchEvents) {
-    return unimplemented("sceSystemGestureGetTouchEvents");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureGetTouchEventsCount) {
-    return unimplemented("sceSystemGestureGetTouchEventsCount");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureGetTouchRecognizerInformation) {
-    return unimplemented("sceSystemGestureGetTouchRecognizerInformation");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureInitializePrimitiveTouchRecognizer) {
-    return unimplemented("sceSystemGestureInitializePrimitiveTouchRecognizer");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureResetPrimitiveTouchRecognizer) {
-    return unimplemented("sceSystemGestureResetPrimitiveTouchRecognizer");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureResetTouchRecognizer) {
-    return unimplemented("sceSystemGestureResetTouchRecognizer");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureUpdatePrimitiveTouchRecognizer) {
-    return unimplemented("sceSystemGestureUpdatePrimitiveTouchRecognizer");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureUpdateTouchRecognizer) {
-    return unimplemented("sceSystemGestureUpdateTouchRecognizer");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSystemGestureUpdateTouchRecognizerRectangle) {
-    return unimplemented("sceSystemGestureUpdateTouchRecognizerRectangle");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceSystemGestureCreateTouchRecognizer)

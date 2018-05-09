@@ -18,51 +18,51 @@
 #include "SceUsbPspcm.h"
 
 EXPORT(int, sceUsbPspcmClose) {
-    return unimplemented("sceUsbPspcmClose");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmDevctl) {
-    return unimplemented("sceUsbPspcmDevctl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmIoctlCancelWaitData) {
-    return unimplemented("sceUsbPspcmIoctlCancelWaitData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmIoctlPollData) {
-    return unimplemented("sceUsbPspcmIoctlPollData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmIoctlReset) {
-    return unimplemented("sceUsbPspcmIoctlReset");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmIoctlWaitData) {
-    return unimplemented("sceUsbPspcmIoctlWaitData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmOpen) {
-    return unimplemented("sceUsbPspcmOpen");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmRead) {
-    return unimplemented("sceUsbPspcmRead");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmSetTitle) {
-    return unimplemented("sceUsbPspcmSetTitle");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmStartDevice) {
-    return unimplemented("sceUsbPspcmStartDevice");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmStopDevice) {
-    return unimplemented("sceUsbPspcmStopDevice");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUsbPspcmWrite) {
-    return unimplemented("sceUsbPspcmWrite");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceUsbPspcmClose)

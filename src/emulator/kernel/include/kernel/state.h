@@ -89,7 +89,7 @@ namespace emu {
 }
 
 struct WaitingThreadState {
-    std::string name;   // for debugging
+    std::string name; // for debugging
 };
 
 typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;

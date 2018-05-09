@@ -18,115 +18,115 @@
 #include "SceVoice.h"
 
 EXPORT(int, sceVoiceCheckTopology) {
-    return unimplemented("sceVoiceCheckTopology");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceConnectIPortToOPort) {
-    return unimplemented("sceVoiceConnectIPortToOPort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceCreatePort) {
-    return unimplemented("sceVoiceCreatePort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceDeletePort) {
-    return unimplemented("sceVoiceDeletePort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceDisconnectIPortFromOPort) {
-    return unimplemented("sceVoiceDisconnectIPortFromOPort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceEnd) {
-    return unimplemented("sceVoiceEnd");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceGetBitRate) {
-    return unimplemented("sceVoiceGetBitRate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceGetMuteFlag) {
-    return unimplemented("sceVoiceGetMuteFlag");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceGetPortAttr) {
-    return unimplemented("sceVoiceGetPortAttr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceGetPortInfo) {
-    return unimplemented("sceVoiceGetPortInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceGetResourceInfo) {
-    return unimplemented("sceVoiceGetResourceInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceGetVolume) {
-    return unimplemented("sceVoiceGetVolume");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceInit) {
-    return unimplemented("sceVoiceInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoicePausePort) {
-    return unimplemented("sceVoicePausePort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoicePausePortAll) {
-    return unimplemented("sceVoicePausePortAll");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceReadFromOPort) {
-    return unimplemented("sceVoiceReadFromOPort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceResetPort) {
-    return unimplemented("sceVoiceResetPort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceResumePort) {
-    return unimplemented("sceVoiceResumePort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceResumePortAll) {
-    return unimplemented("sceVoiceResumePortAll");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceSetBitRate) {
-    return unimplemented("sceVoiceSetBitRate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceSetMuteFlag) {
-    return unimplemented("sceVoiceSetMuteFlag");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceSetMuteFlagAll) {
-    return unimplemented("sceVoiceSetMuteFlagAll");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceSetPortAttr) {
-    return unimplemented("sceVoiceSetPortAttr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceSetVolume) {
-    return unimplemented("sceVoiceSetVolume");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceStart) {
-    return unimplemented("sceVoiceStart");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceStop) {
-    return unimplemented("sceVoiceStop");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceUpdatePort) {
-    return unimplemented("sceVoiceUpdatePort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVoiceWriteToIPort) {
-    return unimplemented("sceVoiceWriteToIPort");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceVoiceCheckTopology)

@@ -18,79 +18,79 @@
 #include "ScePafStdc.h"
 
 EXPORT(int, sce_paf_private_free) {
-    return unimplemented("sce_paf_private_free");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_malloc) {
-    return unimplemented("sce_paf_private_malloc");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_memchr) {
-    return unimplemented("sce_paf_private_memchr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_memclr) {
-    return unimplemented("sce_paf_private_memclr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_memcmp) {
-    return unimplemented("sce_paf_private_memcmp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_memcmp2) {
-    return unimplemented("sce_paf_private_memcmp2");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_memcpy) {
-    return unimplemented("sce_paf_private_memcpy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_memcpy2) {
-    return unimplemented("sce_paf_private_memcpy2");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_memmove) {
-    return unimplemented("sce_paf_private_memmove");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_memmove2) {
-    return unimplemented("sce_paf_private_memmove2");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_memset) {
-    return unimplemented("sce_paf_private_memset");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_snprintf) {
-    return unimplemented("sce_paf_private_snprintf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_strcasecmp) {
-    return unimplemented("sce_paf_private_strcasecmp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_strchr) {
-    return unimplemented("sce_paf_private_strchr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_strcmp) {
-    return unimplemented("sce_paf_private_strcmp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_strlen) {
-    return unimplemented("sce_paf_private_strlen");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_strncasecmp) {
-    return unimplemented("sce_paf_private_strncasecmp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_strncmp) {
-    return unimplemented("sce_paf_private_strncmp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sce_paf_private_strrchr) {
-    return unimplemented("sce_paf_private_strrchr");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sce_paf_private_free)

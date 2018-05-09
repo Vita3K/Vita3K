@@ -18,47 +18,47 @@
 #include "SceHandwriting.h"
 
 EXPORT(int, sceHandwritingGetBufferSize) {
-    return unimplemented("sceHandwritingGetBufferSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingInit) {
-    return unimplemented("sceHandwritingInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingRecognize) {
-    return unimplemented("sceHandwritingRecognize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingRegisterDelete) {
-    return unimplemented("sceHandwritingRegisterDelete");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingRegisterGetResult) {
-    return unimplemented("sceHandwritingRegisterGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingRegisterInfo) {
-    return unimplemented("sceHandwritingRegisterInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingRegisterInit) {
-    return unimplemented("sceHandwritingRegisterInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingRegisterSet) {
-    return unimplemented("sceHandwritingRegisterSet");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingRegisterTerm) {
-    return unimplemented("sceHandwritingRegisterTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingSetMode) {
-    return unimplemented("sceHandwritingSetMode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHandwritingTerm) {
-    return unimplemented("sceHandwritingTerm");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceHandwritingGetBufferSize)

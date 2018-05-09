@@ -18,19 +18,19 @@
 #include "SceCodecEnginePerf.h"
 
 EXPORT(int, sceCodecEnginePmonGetProcessorLoad) {
-    return unimplemented("sceCodecEnginePmonGetProcessorLoad");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCodecEnginePmonReset) {
-    return unimplemented("sceCodecEnginePmonReset");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCodecEnginePmonStart) {
-    return unimplemented("sceCodecEnginePmonStart");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCodecEnginePmonStop) {
-    return unimplemented("sceCodecEnginePmonStop");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceCodecEnginePmonGetProcessorLoad)

@@ -18,67 +18,67 @@
 #include "SceNpDrmPackage.h"
 
 EXPORT(int, _sceNpDrmPackageCheck) {
-    return unimplemented("_sceNpDrmPackageCheck");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmPackageDecrypt) {
-    return unimplemented("_sceNpDrmPackageDecrypt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmPackageInstallFinished) {
-    return unimplemented("_sceNpDrmPackageInstallFinished");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmPackageInstallStarted) {
-    return unimplemented("_sceNpDrmPackageInstallStarted");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmPackageTransform) {
-    return unimplemented("_sceNpDrmPackageTransform");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmPackageUninstallFinished) {
-    return unimplemented("_sceNpDrmPackageUninstallFinished");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmPackageUninstallStarted) {
-    return unimplemented("_sceNpDrmPackageUninstallStarted");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmSaveDataFormatFinished) {
-    return unimplemented("_sceNpDrmSaveDataFormatFinished");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmSaveDataFormatStarted) {
-    return unimplemented("_sceNpDrmSaveDataFormatStarted");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmSaveDataInstallFinished) {
-    return unimplemented("_sceNpDrmSaveDataInstallFinished");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmSaveDataInstallStarted) {
-    return unimplemented("_sceNpDrmSaveDataInstallStarted");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpDrmPackageInstallOngoing) {
-    return unimplemented("sceNpDrmPackageInstallOngoing");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpDrmPackageIsGameExist) {
-    return unimplemented("sceNpDrmPackageIsGameExist");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpDrmPackageUninstallOngoing) {
-    return unimplemented("sceNpDrmPackageUninstallOngoing");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpDrmSaveDataFormatOngoing) {
-    return unimplemented("sceNpDrmSaveDataFormatOngoing");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpDrmSaveDataInstallOngoing) {
-    return unimplemented("sceNpDrmSaveDataInstallOngoing");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(_sceNpDrmPackageCheck)

@@ -18,95 +18,95 @@
 #include "SceSulpha.h"
 
 EXPORT(int, sceSulphaAgentsGetNeededMemory) {
-    return unimplemented("sceSulphaAgentsGetNeededMemory");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaAgentsRegister) {
-    return unimplemented("sceSulphaAgentsRegister");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaAgentsUnregister) {
-    return unimplemented("sceSulphaAgentsUnregister");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaEventAdd) {
-    return unimplemented("sceSulphaEventAdd");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaEventDelete) {
-    return unimplemented("sceSulphaEventDelete");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaEventNew) {
-    return unimplemented("sceSulphaEventNew");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaEventReport) {
-    return unimplemented("sceSulphaEventReport");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaFileConnect) {
-    return unimplemented("sceSulphaFileConnect");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaFileDisconnect) {
-    return unimplemented("sceSulphaFileDisconnect");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaGetAgent) {
-    return unimplemented("sceSulphaGetAgent");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaGetDefaultConfig) {
-    return unimplemented("sceSulphaGetDefaultConfig");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaGetNeededMemory) {
-    return unimplemented("sceSulphaGetNeededMemory");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaGetTimestamp) {
-    return unimplemented("sceSulphaGetTimestamp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaInit) {
-    return unimplemented("sceSulphaInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaLogHandler) {
-    return unimplemented("sceSulphaLogHandler");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaLogSetLevel) {
-    return unimplemented("sceSulphaLogSetLevel");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNetworkInit) {
-    return unimplemented("sceSulphaNetworkInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNetworkShutdown) {
-    return unimplemented("sceSulphaNetworkShutdown");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNodeDelete) {
-    return unimplemented("sceSulphaNodeDelete");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNodeNew) {
-    return unimplemented("sceSulphaNodeNew");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaSetBookmark) {
-    return unimplemented("sceSulphaSetBookmark");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaShutdown) {
-    return unimplemented("sceSulphaShutdown");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaUpdate) {
-    return unimplemented("sceSulphaUpdate");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceSulphaAgentsGetNeededMemory)

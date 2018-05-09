@@ -18,11 +18,11 @@
 #include "SceDmacmgr.h"
 
 EXPORT(int, sceDmacMemcpy) {
-    return unimplemented("sceDmacMemcpy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDmacMemset) {
-    return unimplemented("sceDmacMemset");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceDmacMemcpy)

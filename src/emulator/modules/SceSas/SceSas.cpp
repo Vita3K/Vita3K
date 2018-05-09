@@ -18,135 +18,135 @@
 #include "SceSas.h"
 
 EXPORT(int, sceSasCore) {
-    return unimplemented("sceSasCore");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasCoreWithMix) {
-    return unimplemented("sceSasCoreWithMix");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasExit) {
-    return unimplemented("sceSasExit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasGetDryPeak) {
-    return unimplemented("sceSasGetDryPeak");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasGetEndState) {
-    return unimplemented("sceSasGetEndState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasGetEnvelope) {
-    return unimplemented("sceSasGetEnvelope");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasGetGrain) {
-    return unimplemented("sceSasGetGrain");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasGetNeededMemorySize) {
-    return unimplemented("sceSasGetNeededMemorySize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasGetOutputmode) {
-    return unimplemented("sceSasGetOutputmode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasGetPauseState) {
-    return unimplemented("sceSasGetPauseState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasGetPreMasterPeak) {
-    return unimplemented("sceSasGetPreMasterPeak");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasGetWetPeak) {
-    return unimplemented("sceSasGetWetPeak");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasInit) {
-    return unimplemented("sceSasInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasInitWithGrain) {
-    return unimplemented("sceSasInitWithGrain");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetADSR) {
-    return unimplemented("sceSasSetADSR");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetADSRmode) {
-    return unimplemented("sceSasSetADSRmode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetDistortion) {
-    return unimplemented("sceSasSetDistortion");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetEffect) {
-    return unimplemented("sceSasSetEffect");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetEffectParam) {
-    return unimplemented("sceSasSetEffectParam");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetEffectType) {
-    return unimplemented("sceSasSetEffectType");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetEffectVolume) {
-    return unimplemented("sceSasSetEffectVolume");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetGrain) {
-    return unimplemented("sceSasSetGrain");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetKeyOff) {
-    return unimplemented("sceSasSetKeyOff");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetKeyOn) {
-    return unimplemented("sceSasSetKeyOn");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetNoise) {
-    return unimplemented("sceSasSetNoise");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetOutputmode) {
-    return unimplemented("sceSasSetOutputmode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetPause) {
-    return unimplemented("sceSasSetPause");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetPitch) {
-    return unimplemented("sceSasSetPitch");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetSL) {
-    return unimplemented("sceSasSetSL");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetSimpleADSR) {
-    return unimplemented("sceSasSetSimpleADSR");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetVoice) {
-    return unimplemented("sceSasSetVoice");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetVoicePCM) {
-    return unimplemented("sceSasSetVoicePCM");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSasSetVolume) {
-    return unimplemented("sceSasSetVolume");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceSasCore)

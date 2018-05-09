@@ -18,63 +18,63 @@
 #include "SceNpTrophy.h"
 
 EXPORT(int, sceNpTrophyAbortHandle) {
-    return unimplemented("sceNpTrophyAbortHandle");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyCreateContext) {
-    return unimplemented("sceNpTrophyCreateContext");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyCreateHandle) {
-    return unimplemented("sceNpTrophyCreateHandle");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyDestroyContext) {
-    return unimplemented("sceNpTrophyDestroyContext");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyDestroyHandle) {
-    return unimplemented("sceNpTrophyDestroyHandle");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyGetGameIcon) {
-    return unimplemented("sceNpTrophyGetGameIcon");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyGetGameInfo) {
-    return unimplemented("sceNpTrophyGetGameInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyGetGroupIcon) {
-    return unimplemented("sceNpTrophyGetGroupIcon");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyGetGroupInfo) {
-    return unimplemented("sceNpTrophyGetGroupInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyGetTrophyIcon) {
-    return unimplemented("sceNpTrophyGetTrophyIcon");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyGetTrophyInfo) {
-    return unimplemented("sceNpTrophyGetTrophyInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyGetTrophyUnlockState) {
-    return unimplemented("sceNpTrophyGetTrophyUnlockState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyInit) {
-    return unimplemented("sceNpTrophyInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyTerm) {
-    return unimplemented("sceNpTrophyTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyUnlockTrophy) {
-    return unimplemented("sceNpTrophyUnlockTrophy");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNpTrophyAbortHandle)

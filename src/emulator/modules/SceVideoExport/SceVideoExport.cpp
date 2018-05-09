@@ -18,7 +18,7 @@
 #include "SceVideoExport.h"
 
 EXPORT(int, sceVideoExportFromFile) {
-    return unimplemented("sceVideoExportFromFile");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceVideoExportFromFile)

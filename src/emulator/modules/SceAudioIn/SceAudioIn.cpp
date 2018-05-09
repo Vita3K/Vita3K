@@ -18,23 +18,23 @@
 #include "SceAudioIn.h"
 
 EXPORT(int, sceAudioInGetAdopt) {
-    return unimplemented("sceAudioInGetAdopt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInGetStatus) {
-    return unimplemented("sceAudioInGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInInput) {
-    return unimplemented("sceAudioInInput");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInOpenPort) {
-    return unimplemented("sceAudioInOpenPort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInReleasePort) {
-    return unimplemented("sceAudioInReleasePort");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceAudioInGetAdopt)

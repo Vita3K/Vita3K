@@ -18,27 +18,27 @@
 #include "SceDTrace.h"
 
 EXPORT(int, sceDTraceAddHelperDof) {
-    return unimplemented("sceDTraceAddHelperDof");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDTraceClientClose) {
-    return unimplemented("sceDTraceClientClose");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDTraceClientIoctl) {
-    return unimplemented("sceDTraceClientIoctl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDTraceClientOpen) {
-    return unimplemented("sceDTraceClientOpen");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDTraceHelperIoctl) {
-    return unimplemented("sceDTraceHelperIoctl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDTraceRemoveHelperDof) {
-    return unimplemented("sceDTraceRemoveHelperDof");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceDTraceAddHelperDof)

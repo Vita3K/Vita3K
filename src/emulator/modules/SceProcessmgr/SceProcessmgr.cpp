@@ -17,10 +17,10 @@
 
 #include "SceProcessmgr.h"
 
-#include <rtc/rtc.h>
 #include <io/functions.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/processmgr.h>
+#include <rtc/rtc.h>
 
 struct VitaTimeval {
     uint32_t tv_sec;
@@ -28,7 +28,7 @@ struct VitaTimeval {
 };
 
 EXPORT(int, sceKernelCallAbortHandler) {
-    return unimplemented("sceKernelCallAbortHandler");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void *args) {
@@ -48,15 +48,15 @@ EXPORT(int, sceKernelGetStdout) {
 }
 
 EXPORT(int, sceKernelIsCDialogAvailable) {
-    return unimplemented("sceKernelIsCDialogAvailable");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelIsGameBudget) {
-    return unimplemented("sceKernelIsGameBudget");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcClock) {
-    return unimplemented("sceKernelLibcClock");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> tzAddr) {
@@ -73,15 +73,15 @@ EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> t
 }
 
 EXPORT(int, sceKernelLibcGmtime_r) {
-    return unimplemented("sceKernelLibcGmtime_r");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcLocaltime_r) {
-    return unimplemented("sceKernelLibcLocaltime_r");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcMktime) {
-    return unimplemented("sceKernelLibcMktime");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelLibcTime, uint32_t *time) {
@@ -95,7 +95,7 @@ EXPORT(int, sceKernelLibcTime, uint32_t *time) {
 }
 
 EXPORT(int, sceKernelPowerLock) {
-    return unimplemented("sceKernelPowerLock");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelPowerTick, SceKernelPowerTickType type) {
@@ -103,15 +103,15 @@ EXPORT(int, sceKernelPowerTick, SceKernelPowerTickType type) {
 }
 
 EXPORT(int, sceKernelPowerUnlock) {
-    return unimplemented("sceKernelPowerUnlock");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelRegisterProcessTerminationCallback) {
-    return unimplemented("sceKernelRegisterProcessTerminationCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
-    return unimplemented("sceKernelUnregisterProcessTerminationCallback");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceKernelCallAbortHandler)

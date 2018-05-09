@@ -18,27 +18,27 @@
 #include "SceRegMgrForGame.h"
 
 EXPORT(int, sceRegMgrSystemParamGetBin) {
-    return unimplemented("sceRegMgrSystemParamGetBin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrSystemParamGetInt) {
-    return unimplemented("sceRegMgrSystemParamGetInt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrSystemParamGetStr) {
-    return unimplemented("sceRegMgrSystemParamGetStr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrSystemParamSetBin) {
-    return unimplemented("sceRegMgrSystemParamSetBin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrSystemParamSetInt) {
-    return unimplemented("sceRegMgrSystemParamSetInt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrSystemParamSetStr) {
-    return unimplemented("sceRegMgrSystemParamSetStr");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceRegMgrSystemParamGetBin)

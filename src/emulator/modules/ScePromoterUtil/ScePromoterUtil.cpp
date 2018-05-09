@@ -18,43 +18,43 @@
 #include "ScePromoterUtil.h"
 
 EXPORT(int, scePromoterUtilityCheckExist) {
-    return unimplemented("scePromoterUtilityCheckExist");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePromoterUtilityDeletePkg) {
-    return unimplemented("scePromoterUtilityDeletePkg");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePromoterUtilityExit) {
-    return unimplemented("scePromoterUtilityExit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePromoterUtilityGetResult) {
-    return unimplemented("scePromoterUtilityGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePromoterUtilityGetState) {
-    return unimplemented("scePromoterUtilityGetState");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePromoterUtilityInit) {
-    return unimplemented("scePromoterUtilityInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePromoterUtilityPromoteBackup) {
-    return unimplemented("scePromoterUtilityPromoteBackup");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePromoterUtilityPromotePkg) {
-    return unimplemented("scePromoterUtilityPromotePkg");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePromoterUtilityPromotePkgWithRif) {
-    return unimplemented("scePromoterUtilityPromotePkgWithRif");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePromoterUtilityUpdateLiveArea) {
-    return unimplemented("scePromoterUtilityUpdateLiveArea");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(scePromoterUtilityCheckExist)

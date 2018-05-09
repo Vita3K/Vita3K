@@ -18,19 +18,19 @@
 #include "ScePhotoExport.h"
 
 EXPORT(int, scePhotoExportFromData) {
-    return unimplemented("scePhotoExportFromData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoExportFromFile) {
-    return unimplemented("scePhotoExportFromFile");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoExportIsAvailableFromData) {
-    return unimplemented("scePhotoExportIsAvailableFromData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoExportIsAvailableFromFile) {
-    return unimplemented("scePhotoExportIsAvailableFromFile");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(scePhotoExportFromData)

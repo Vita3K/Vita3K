@@ -18,127 +18,127 @@
 #include "SceLibRudp.h"
 
 EXPORT(int, sceRudpActivate) {
-    return unimplemented("sceRudpActivate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpBind) {
-    return unimplemented("sceRudpBind");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpCreateContext) {
-    return unimplemented("sceRudpCreateContext");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpEnableInternalIOThread) {
-    return unimplemented("sceRudpEnableInternalIOThread");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpEnableInternalIOThread2) {
-    return unimplemented("sceRudpEnableInternalIOThread2");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpEnd) {
-    return unimplemented("sceRudpEnd");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpFlush) {
-    return unimplemented("sceRudpFlush");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpGetContextStatus) {
-    return unimplemented("sceRudpGetContextStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpGetLocalInfo) {
-    return unimplemented("sceRudpGetLocalInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpGetMaxSegmentSize) {
-    return unimplemented("sceRudpGetMaxSegmentSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpGetNumberOfPacketsToRead) {
-    return unimplemented("sceRudpGetNumberOfPacketsToRead");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpGetOption) {
-    return unimplemented("sceRudpGetOption");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpGetRemoteInfo) {
-    return unimplemented("sceRudpGetRemoteInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpGetSizeReadable) {
-    return unimplemented("sceRudpGetSizeReadable");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpGetSizeWritable) {
-    return unimplemented("sceRudpGetSizeWritable");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpGetStatus) {
-    return unimplemented("sceRudpGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpInit) {
-    return unimplemented("sceRudpInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpInitiate) {
-    return unimplemented("sceRudpInitiate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpNetReceived) {
-    return unimplemented("sceRudpNetReceived");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpPollCancel) {
-    return unimplemented("sceRudpPollCancel");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpPollControl) {
-    return unimplemented("sceRudpPollControl");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpPollCreate) {
-    return unimplemented("sceRudpPollCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpPollDestroy) {
-    return unimplemented("sceRudpPollDestroy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpPollWait) {
-    return unimplemented("sceRudpPollWait");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpProcessEvents) {
-    return unimplemented("sceRudpProcessEvents");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpRead) {
-    return unimplemented("sceRudpRead");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpSetEventHandler) {
-    return unimplemented("sceRudpSetEventHandler");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpSetMaxSegmentSize) {
-    return unimplemented("sceRudpSetMaxSegmentSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpSetOption) {
-    return unimplemented("sceRudpSetOption");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpTerminate) {
-    return unimplemented("sceRudpTerminate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRudpWrite) {
-    return unimplemented("sceRudpWrite");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceRudpActivate)

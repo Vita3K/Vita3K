@@ -18,87 +18,87 @@
 #include "SceVideoencUser.h"
 
 EXPORT(int, sceAvcencCreateEncoder) {
-    return unimplemented("sceAvcencCreateEncoder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencCreateEncoderBasic) {
-    return unimplemented("sceAvcencCreateEncoderBasic");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencCreateEncoderInternal) {
-    return unimplemented("sceAvcencCreateEncoderInternal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencCsc) {
-    return unimplemented("sceAvcencCsc");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencDeleteEncoder) {
-    return unimplemented("sceAvcencDeleteEncoder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencEncode) {
-    return unimplemented("sceAvcencEncode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencEncodeFlush) {
-    return unimplemented("sceAvcencEncodeFlush");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencEncodeStop) {
-    return unimplemented("sceAvcencEncodeStop");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencGetNalUnit) {
-    return unimplemented("sceAvcencGetNalUnit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencQueryEncoderMemSize) {
-    return unimplemented("sceAvcencQueryEncoderMemSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencQueryEncoderMemSizeBasic) {
-    return unimplemented("sceAvcencQueryEncoderMemSizeBasic");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencQueryEncoderMemSizeInternal) {
-    return unimplemented("sceAvcencQueryEncoderMemSizeInternal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencSetAvailablePreset) {
-    return unimplemented("sceAvcencSetAvailablePreset");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcencSetEncoderParameter) {
-    return unimplemented("sceAvcencSetEncoderParameter");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoencInitLibrary) {
-    return unimplemented("sceVideoencInitLibrary");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoencInitLibraryInternal) {
-    return unimplemented("sceVideoencInitLibraryInternal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoencInitLibraryWithUnmapMem) {
-    return unimplemented("sceVideoencInitLibraryWithUnmapMem");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoencInitLibraryWithUnmapMemInternal) {
-    return unimplemented("sceVideoencInitLibraryWithUnmapMemInternal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoencQueryMemSize) {
-    return unimplemented("sceVideoencQueryMemSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoencQueryMemSizeInternal) {
-    return unimplemented("sceVideoencQueryMemSizeInternal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoencTermLibrary) {
-    return unimplemented("sceVideoencTermLibrary");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceAvcencCreateEncoder)

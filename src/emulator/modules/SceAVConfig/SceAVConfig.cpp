@@ -18,139 +18,139 @@
 #include "SceAVConfig.h"
 
 EXPORT(int, sceAVConfigChangeReg) {
-    return unimplemented("sceAVConfigChangeReg");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigClearAutoSuspend2) {
-    return unimplemented("sceAVConfigClearAutoSuspend2");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigDisplayOn) {
-    return unimplemented("sceAVConfigDisplayOn");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigGetAcStatus) {
-    return unimplemented("sceAVConfigGetAcStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigGetBtVol) {
-    return unimplemented("sceAVConfigGetBtVol");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigGetConnectedAudioDevice) {
-    return unimplemented("sceAVConfigGetConnectedAudioDevice");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigGetDisplayMaxBrightness) {
-    return unimplemented("sceAVConfigGetDisplayMaxBrightness");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigGetMasterVol) {
-    return unimplemented("sceAVConfigGetMasterVol");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigGetShutterVol) {
-    return unimplemented("sceAVConfigGetShutterVol");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigGetSystemVol) {
-    return unimplemented("sceAVConfigGetSystemVol");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigGetVolCtrlEnable) {
-    return unimplemented("sceAVConfigGetVolCtrlEnable");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiCecCmdOneTouchPlay) {
-    return unimplemented("sceAVConfigHdmiCecCmdOneTouchPlay");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiCecDisable) {
-    return unimplemented("sceAVConfigHdmiCecDisable");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiCecEnable) {
-    return unimplemented("sceAVConfigHdmiCecEnable");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiClearCecInfo) {
-    return unimplemented("sceAVConfigHdmiClearCecInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiGetCecInfo) {
-    return unimplemented("sceAVConfigHdmiGetCecInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiGetMonitorInfo) {
-    return unimplemented("sceAVConfigHdmiGetMonitorInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiGetOutScalingRatio) {
-    return unimplemented("sceAVConfigHdmiGetOutScalingRatio");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiSetOutScalingRatio) {
-    return unimplemented("sceAVConfigHdmiSetOutScalingRatio");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiSetResolution) {
-    return unimplemented("sceAVConfigHdmiSetResolution");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigHdmiSetRgbRangeMode) {
-    return unimplemented("sceAVConfigHdmiSetRgbRangeMode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigMuteOn) {
-    return unimplemented("sceAVConfigMuteOn");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigRegisterCallback) {
-    return unimplemented("sceAVConfigRegisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigSendVolKey) {
-    return unimplemented("sceAVConfigSendVolKey");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigSetAutoDisplayDimming) {
-    return unimplemented("sceAVConfigSetAutoDisplayDimming");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigSetAutoSuspend) {
-    return unimplemented("sceAVConfigSetAutoSuspend");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigSetAutoSuspend2) {
-    return unimplemented("sceAVConfigSetAutoSuspend2");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigSetDisplayBrightness) {
-    return unimplemented("sceAVConfigSetDisplayBrightness");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigSetDisplayColorSpaceMode) {
-    return unimplemented("sceAVConfigSetDisplayColorSpaceMode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigSetMasterVol) {
-    return unimplemented("sceAVConfigSetMasterVol");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigSetSystemVol) {
-    return unimplemented("sceAVConfigSetSystemVol");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigUnRegisterCallback) {
-    return unimplemented("sceAVConfigUnRegisterCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigWriteMasterVol) {
-    return unimplemented("sceAVConfigWriteMasterVol");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAVConfigWriteRegSystemVol) {
-    return unimplemented("sceAVConfigWriteRegSystemVol");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceAVConfigChangeReg)

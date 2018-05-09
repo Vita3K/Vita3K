@@ -18,63 +18,63 @@
 #include "SceAudiodecUser.h"
 
 EXPORT(int, sceAudiodecClearContext) {
-    return unimplemented("sceAudiodecClearContext");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecCreateDecoder) {
-    return unimplemented("sceAudiodecCreateDecoder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecCreateDecoderExternal) {
-    return unimplemented("sceAudiodecCreateDecoderExternal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecCreateDecoderResident) {
-    return unimplemented("sceAudiodecCreateDecoderResident");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecDecode) {
-    return unimplemented("sceAudiodecDecode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecDecodeNFrames) {
-    return unimplemented("sceAudiodecDecodeNFrames");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecDecodeNStreams) {
-    return unimplemented("sceAudiodecDecodeNStreams");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecDeleteDecoder) {
-    return unimplemented("sceAudiodecDeleteDecoder");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderExternal) {
-    return unimplemented("sceAudiodecDeleteDecoderExternal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderResident) {
-    return unimplemented("sceAudiodecDeleteDecoderResident");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecGetContextSize) {
-    return unimplemented("sceAudiodecGetContextSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecGetInternalError) {
-    return unimplemented("sceAudiodecGetInternalError");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecInitLibrary) {
-    return unimplemented("sceAudiodecInitLibrary");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecPartlyDecode) {
-    return unimplemented("sceAudiodecPartlyDecode");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecTermLibrary) {
-    return unimplemented("sceAudiodecTermLibrary");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceAudiodecClearContext)

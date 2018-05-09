@@ -18,119 +18,119 @@
 #include "SceNearUtil.h"
 
 EXPORT(int, sceNearCloseDiscoveredGiftImage) {
-    return unimplemented("sceNearCloseDiscoveredGiftImage");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearCloseReceivedGiftData) {
-    return unimplemented("sceNearCloseReceivedGiftData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearConvertDiscoveredGiftParam) {
-    return unimplemented("sceNearConvertDiscoveredGiftParam");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearDeleteDiscoveredGift) {
-    return unimplemented("sceNearDeleteDiscoveredGift");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearDeleteGift) {
-    return unimplemented("sceNearDeleteGift");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearFinalize) {
-    return unimplemented("sceNearFinalize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearFinalizeAndLaunchNearApp) {
-    return unimplemented("sceNearFinalizeAndLaunchNearApp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetDiscoveredGiftInfo) {
-    return unimplemented("sceNearGetDiscoveredGiftInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetDiscoveredGiftSender) {
-    return unimplemented("sceNearGetDiscoveredGiftSender");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetDiscoveredGiftStatus) {
-    return unimplemented("sceNearGetDiscoveredGiftStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetDiscoveredGifts) {
-    return unimplemented("sceNearGetDiscoveredGifts");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetGift) {
-    return unimplemented("sceNearGetGift");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetGiftStatus) {
-    return unimplemented("sceNearGetGiftStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetLastNeighborFoundDateTime) {
-    return unimplemented("sceNearGetLastNeighborFoundDateTime");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetMyStatus) {
-    return unimplemented("sceNearGetMyStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetNeighbors) {
-    return unimplemented("sceNearGetNeighbors");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetNewNeighbors) {
-    return unimplemented("sceNearGetNewNeighbors");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearGetRecentNeighbors) {
-    return unimplemented("sceNearGetRecentNeighbors");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearIgnoreDiscoveredGift) {
-    return unimplemented("sceNearIgnoreDiscoveredGift");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearInitialize) {
-    return unimplemented("sceNearInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearLaunchNearAppForDownload) {
-    return unimplemented("sceNearLaunchNearAppForDownload");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearLaunchNearAppForUpdate) {
-    return unimplemented("sceNearLaunchNearAppForUpdate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearOpenDiscoveredGiftImage) {
-    return unimplemented("sceNearOpenDiscoveredGiftImage");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearOpenReceivedGiftData) {
-    return unimplemented("sceNearOpenReceivedGiftData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearReadDiscoveredGiftImage) {
-    return unimplemented("sceNearReadDiscoveredGiftImage");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearReadReceivedGiftData) {
-    return unimplemented("sceNearReadReceivedGiftData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearRefresh) {
-    return unimplemented("sceNearRefresh");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearSetGift) {
-    return unimplemented("sceNearSetGift");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNearSetGift2) {
-    return unimplemented("sceNearSetGift2");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNearCloseDiscoveredGiftImage)

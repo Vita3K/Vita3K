@@ -18,115 +18,115 @@
 #include "ScePspnetAdhoc.h"
 
 EXPORT(int, sceNetAdhocGetPdpStat) {
-    return unimplemented("sceNetAdhocGetPdpStat");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocGetPtpStat) {
-    return unimplemented("sceNetAdhocGetPtpStat");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocGetSocketAlert) {
-    return unimplemented("sceNetAdhocGetSocketAlert");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocInit) {
-    return unimplemented("sceNetAdhocInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPdpCreate) {
-    return unimplemented("sceNetAdhocPdpCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPdpDelete) {
-    return unimplemented("sceNetAdhocPdpDelete");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPdpRecv) {
-    return unimplemented("sceNetAdhocPdpRecv");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPdpSend) {
-    return unimplemented("sceNetAdhocPdpSend");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPollSocket) {
-    return unimplemented("sceNetAdhocPollSocket");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPtpAccept) {
-    return unimplemented("sceNetAdhocPtpAccept");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPtpClose) {
-    return unimplemented("sceNetAdhocPtpClose");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPtpConnect) {
-    return unimplemented("sceNetAdhocPtpConnect");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPtpFlush) {
-    return unimplemented("sceNetAdhocPtpFlush");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPtpListen) {
-    return unimplemented("sceNetAdhocPtpListen");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPtpOpen) {
-    return unimplemented("sceNetAdhocPtpOpen");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPtpRecv) {
-    return unimplemented("sceNetAdhocPtpRecv");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocPtpSend) {
-    return unimplemented("sceNetAdhocPtpSend");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocSetSocketAlert) {
-    return unimplemented("sceNetAdhocSetSocketAlert");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocTerm) {
-    return unimplemented("sceNetAdhocTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocctlGetAddrByName) {
-    return unimplemented("sceNetAdhocctlGetAddrByName");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocctlGetAdhocId) {
-    return unimplemented("sceNetAdhocctlGetAdhocId");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocctlGetEtherAddr) {
-    return unimplemented("sceNetAdhocctlGetEtherAddr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocctlGetNameByAddr) {
-    return unimplemented("sceNetAdhocctlGetNameByAddr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocctlGetParameter) {
-    return unimplemented("sceNetAdhocctlGetParameter");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocctlGetPeerInfo) {
-    return unimplemented("sceNetAdhocctlGetPeerInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocctlGetPeerList) {
-    return unimplemented("sceNetAdhocctlGetPeerList");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocctlInit) {
-    return unimplemented("sceNetAdhocctlInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetAdhocctlTerm) {
-    return unimplemented("sceNetAdhocctlTerm");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNetAdhocGetPdpStat)

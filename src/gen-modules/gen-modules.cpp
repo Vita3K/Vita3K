@@ -119,7 +119,7 @@ static void gen_library_cpp(std::ostream &dst, const Library &library) {
     for (const Function &function : library.second) {
         dst << std::endl;
         dst << "EXPORT(int, " << function.first << ") {" << std::endl;
-        dst << indent << "return unimplemented(\"" << function.first << "\");" << std::endl;
+        dst << indent << "return UNIMPLEMENTED();" << std::endl;
         dst << "}" << std::endl;
     }
 

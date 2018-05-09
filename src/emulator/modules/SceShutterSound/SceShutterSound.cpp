@@ -18,7 +18,7 @@
 #include "SceShutterSound.h"
 
 EXPORT(int, sceShutterSoundPlay) {
-    return unimplemented("sceShutterSoundPlay");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceShutterSoundPlay)

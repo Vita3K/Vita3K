@@ -18,15 +18,15 @@
 #include "SceStdio.h"
 
 EXPORT(int, sceKernelStderr) {
-    return unimplemented("sceKernelStderr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelStdin) {
-    return unimplemented("sceKernelStdin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelStdout) {
-    return unimplemented("sceKernelStdout");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceKernelStderr)

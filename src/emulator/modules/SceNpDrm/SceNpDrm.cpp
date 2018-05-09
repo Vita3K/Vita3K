@@ -18,35 +18,35 @@
 #include "SceNpDrm.h"
 
 EXPORT(int, _sceNpDrmCheckActData) {
-    return unimplemented("_sceNpDrmCheckActData");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmCheckDrmReset) {
-    return unimplemented("_sceNpDrmCheckDrmReset");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmGetFixedRifName) {
-    return unimplemented("_sceNpDrmGetFixedRifName");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmGetRifInfo) {
-    return unimplemented("_sceNpDrmGetRifInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmGetRifName) {
-    return unimplemented("_sceNpDrmGetRifName");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmGetRifNameForInstall) {
-    return unimplemented("_sceNpDrmGetRifNameForInstall");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmPresetRifProvisionalFlag) {
-    return unimplemented("_sceNpDrmPresetRifProvisionalFlag");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceNpDrmRemoveActData) {
-    return unimplemented("_sceNpDrmRemoveActData");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(_sceNpDrmCheckActData)

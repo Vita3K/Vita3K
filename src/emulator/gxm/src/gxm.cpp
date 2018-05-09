@@ -66,8 +66,7 @@ static SceGxmParameterType parameter_type(const SceGxmProgramParameter &paramete
         static_cast<uint16_t>(parameter.type));
 }
 
-static void log_parameter(const SceGxmProgramParameter& parameter)
-{
+static void log_parameter(const SceGxmProgramParameter &parameter) {
     std::string type;
     switch (parameter.category) {
     case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
@@ -289,7 +288,7 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
 
 static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     std::ostringstream glsl;
     glsl << "// Vertex shader.\n";
     glsl << "#version 120\n";

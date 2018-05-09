@@ -18,251 +18,251 @@
 #include "SceUlt.h"
 
 EXPORT(int, _sceUltConditionVariableCreate) {
-    return unimplemented("_sceUltConditionVariableCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltConditionVariableOptParamInitialize) {
-    return unimplemented("_sceUltConditionVariableOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltMutexCreate) {
-    return unimplemented("_sceUltMutexCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltMutexOptParamInitialize) {
-    return unimplemented("_sceUltMutexOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltQueueCreate) {
-    return unimplemented("_sceUltQueueCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltQueueDataResourcePoolCreate) {
-    return unimplemented("_sceUltQueueDataResourcePoolCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltQueueDataResourcePoolOptParamInitialize) {
-    return unimplemented("_sceUltQueueDataResourcePoolOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltQueueOptParamInitialize) {
-    return unimplemented("_sceUltQueueOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltReaderWriterLockCreate) {
-    return unimplemented("_sceUltReaderWriterLockCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltReaderWriterLockOptParamInitialize) {
-    return unimplemented("_sceUltReaderWriterLockOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltSemaphoreCreate) {
-    return unimplemented("_sceUltSemaphoreCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltSemaphoreOptParamInitialize) {
-    return unimplemented("_sceUltSemaphoreOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltUlthreadCreate) {
-    return unimplemented("_sceUltUlthreadCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltUlthreadOptParamInitialize) {
-    return unimplemented("_sceUltUlthreadOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltUlthreadRuntimeCreate) {
-    return unimplemented("_sceUltUlthreadRuntimeCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltUlthreadRuntimeOptParamInitialize) {
-    return unimplemented("_sceUltUlthreadRuntimeOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltWaitingQueueResourcePoolCreate) {
-    return unimplemented("_sceUltWaitingQueueResourcePoolCreate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceUltWaitingQueueResourcePoolOptParamInitialize) {
-    return unimplemented("_sceUltWaitingQueueResourcePoolOptParamInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltConditionVariableDestroy) {
-    return unimplemented("sceUltConditionVariableDestroy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltConditionVariableSignal) {
-    return unimplemented("sceUltConditionVariableSignal");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltConditionVariableSignalAll) {
-    return unimplemented("sceUltConditionVariableSignalAll");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltConditionVariableWait) {
-    return unimplemented("sceUltConditionVariableWait");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltGetConditionVariableInfo) {
-    return unimplemented("sceUltGetConditionVariableInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltGetMutexInfo) {
-    return unimplemented("sceUltGetMutexInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltGetQueueDataResourcePoolInfo) {
-    return unimplemented("sceUltGetQueueDataResourcePoolInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltGetQueueInfo) {
-    return unimplemented("sceUltGetQueueInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltGetReaderWriterLockInfo) {
-    return unimplemented("sceUltGetReaderWriterLockInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltGetSemaphoreInfo) {
-    return unimplemented("sceUltGetSemaphoreInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltGetUlthreadInfo) {
-    return unimplemented("sceUltGetUlthreadInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltGetUlthreadRuntimeInfo) {
-    return unimplemented("sceUltGetUlthreadRuntimeInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltGetWaitingQueueResourcePoolInfo) {
-    return unimplemented("sceUltGetWaitingQueueResourcePoolInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltMutexDestroy) {
-    return unimplemented("sceUltMutexDestroy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltMutexLock) {
-    return unimplemented("sceUltMutexLock");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltMutexTryLock) {
-    return unimplemented("sceUltMutexTryLock");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltMutexUnlock) {
-    return unimplemented("sceUltMutexUnlock");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltQueueDataResourcePoolDestroy) {
-    return unimplemented("sceUltQueueDataResourcePoolDestroy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltQueueDataResourcePoolGetWorkAreaSize) {
-    return unimplemented("sceUltQueueDataResourcePoolGetWorkAreaSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltQueueDestroy) {
-    return unimplemented("sceUltQueueDestroy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltQueuePop) {
-    return unimplemented("sceUltQueuePop");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltQueuePush) {
-    return unimplemented("sceUltQueuePush");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltQueueTryPop) {
-    return unimplemented("sceUltQueueTryPop");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltQueueTryPush) {
-    return unimplemented("sceUltQueueTryPush");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltReaderWriterLockDestroy) {
-    return unimplemented("sceUltReaderWriterLockDestroy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltReaderWriterLockLockRead) {
-    return unimplemented("sceUltReaderWriterLockLockRead");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltReaderWriterLockLockWrite) {
-    return unimplemented("sceUltReaderWriterLockLockWrite");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltReaderWriterLockTryLockRead) {
-    return unimplemented("sceUltReaderWriterLockTryLockRead");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltReaderWriterLockTryLockWrite) {
-    return unimplemented("sceUltReaderWriterLockTryLockWrite");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltReaderWriterLockUnlockRead) {
-    return unimplemented("sceUltReaderWriterLockUnlockRead");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltReaderWriterLockUnlockWrite) {
-    return unimplemented("sceUltReaderWriterLockUnlockWrite");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltSemaphoreAcquire) {
-    return unimplemented("sceUltSemaphoreAcquire");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltSemaphoreDestroy) {
-    return unimplemented("sceUltSemaphoreDestroy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltSemaphoreRelease) {
-    return unimplemented("sceUltSemaphoreRelease");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltSemaphoreTryAcquire) {
-    return unimplemented("sceUltSemaphoreTryAcquire");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltUlthreadExit) {
-    return unimplemented("sceUltUlthreadExit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltUlthreadGetSelf) {
-    return unimplemented("sceUltUlthreadGetSelf");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltUlthreadJoin) {
-    return unimplemented("sceUltUlthreadJoin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltUlthreadRuntimeDestroy) {
-    return unimplemented("sceUltUlthreadRuntimeDestroy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltUlthreadRuntimeGetWorkAreaSize) {
-    return unimplemented("sceUltUlthreadRuntimeGetWorkAreaSize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltUlthreadTryJoin) {
-    return unimplemented("sceUltUlthreadTryJoin");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltUlthreadYield) {
-    return unimplemented("sceUltUlthreadYield");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltWaitingQueueResourcePoolDestroy) {
-    return unimplemented("sceUltWaitingQueueResourcePoolDestroy");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceUltWaitingQueueResourcePoolGetWorkAreaSize) {
-    return unimplemented("sceUltWaitingQueueResourcePoolGetWorkAreaSize");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(_sceUltConditionVariableCreate)

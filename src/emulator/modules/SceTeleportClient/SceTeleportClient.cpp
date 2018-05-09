@@ -18,55 +18,55 @@
 #include "SceTeleportClient.h"
 
 EXPORT(int, sceTeleportClientClearCacheInfo) {
-    return unimplemented("sceTeleportClientClearCacheInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientDeleteRemoteApp) {
-    return unimplemented("sceTeleportClientDeleteRemoteApp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientEndSearchDevice) {
-    return unimplemented("sceTeleportClientEndSearchDevice");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientFinalize) {
-    return unimplemented("sceTeleportClientFinalize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientGetCacheInfo) {
-    return unimplemented("sceTeleportClientGetCacheInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientGetDeviceDescription) {
-    return unimplemented("sceTeleportClientGetDeviceDescription");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientGetRemoteAppInfo) {
-    return unimplemented("sceTeleportClientGetRemoteAppInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientGetRemoteAppInfoNum) {
-    return unimplemented("sceTeleportClientGetRemoteAppInfoNum");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientInitialize) {
-    return unimplemented("sceTeleportClientInitialize");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientLaunchRemoteApp) {
-    return unimplemented("sceTeleportClientLaunchRemoteApp");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientRegisterGetDeviceInfoCallback) {
-    return unimplemented("sceTeleportClientRegisterGetDeviceInfoCallback");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientStartSearchDevice) {
-    return unimplemented("sceTeleportClientStartSearchDevice");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTeleportClientWakeupLatestDevice) {
-    return unimplemented("sceTeleportClientWakeupLatestDevice");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceTeleportClientClearCacheInfo)

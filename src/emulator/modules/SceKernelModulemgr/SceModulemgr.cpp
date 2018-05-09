@@ -22,15 +22,15 @@
 #include <psp2/kernel/modulemgr.h>
 
 EXPORT(int, sceKernelGetAllowedSdkVersionOnSystem) {
-    return unimplemented("sceKernelGetAllowedSdkVersionOnSystem");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetLibraryInfoByNID) {
-    return unimplemented("sceKernelGetLibraryInfoByNID");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetModuleIdByAddr) {
-    return unimplemented("sceKernelGetModuleIdByAddr");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
@@ -55,15 +55,15 @@ EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
 }
 
 EXPORT(int, sceKernelGetSystemSwVersion) {
-    return unimplemented("sceKernelGetSystemSwVersion");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelInhibitLoadingModule) {
-    return unimplemented("sceKernelInhibitLoadingModule");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelIsCalledFromSysModule) {
-    return unimplemented("sceKernelIsCalledFromSysModule");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceKernelGetAllowedSdkVersionOnSystem)

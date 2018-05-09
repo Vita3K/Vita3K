@@ -22,83 +22,83 @@
 #include "SceCommonDialog.h"
 
 EXPORT(int, sceCameraImportDialogAbort) {
-    return unimplemented("sceCameraImportDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCameraImportDialogGetResult) {
-    return unimplemented("sceCameraImportDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCameraImportDialogGetStatus) {
-    return unimplemented("sceCameraImportDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCameraImportDialogInit) {
-    return unimplemented("sceCameraImportDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCameraImportDialogTerm) {
-    return unimplemented("sceCameraImportDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCommonDialogGetWorkerThreadId) {
-    return unimplemented("sceCommonDialogGetWorkerThreadId");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCommonDialogIsRunning) {
-    return unimplemented("sceCommonDialogIsRunning");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCommonDialogSetConfigParam) {
-    return unimplemented("sceCommonDialogSetConfigParam");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCommonDialogUpdate) {
-    return unimplemented("sceCommonDialogUpdate");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogAbort) {
-    return unimplemented("sceCompanionUtilDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogGetResult) {
-    return unimplemented("sceCompanionUtilDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogGetStatus) {
-    return unimplemented("sceCompanionUtilDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogInit) {
-    return unimplemented("sceCompanionUtilDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogTerm) {
-    return unimplemented("sceCompanionUtilDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogAbort) {
-    return unimplemented("sceCrossControllerDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogGetResult) {
-    return unimplemented("sceCrossControllerDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogGetStatus) {
-    return unimplemented("sceCrossControllerDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogInit) {
-    return unimplemented("sceCrossControllerDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogTerm) {
-    return unimplemented("sceCrossControllerDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceImeDialogAbort) {
-    return unimplemented("sceImeDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceImeDialogGetResult, SceImeDialogResult *result) {
@@ -112,7 +112,7 @@ EXPORT(int, sceImeDialogGetStatus) {
 
 EXPORT(int, sceImeDialogInit, const Ptr<emu::SceImeDialogParam> param) {
     if (host.gui.common_dialog.type != NO_DIALOG) {
-        return RET_ERROR(__func__, SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
 
     emu::SceImeDialogParam *p = param.get(host.mem);
@@ -136,7 +136,7 @@ EXPORT(int, sceImeDialogInit, const Ptr<emu::SceImeDialogParam> param) {
 
 EXPORT(int, sceImeDialogTerm) {
     if (host.gui.common_dialog.type != IME_DIALOG) {
-        return RET_ERROR(__func__, SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
     host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     host.gui.common_dialog.type = NO_DIALOG;
@@ -144,383 +144,383 @@ EXPORT(int, sceImeDialogTerm) {
 }
 
 EXPORT(int, sceMsgDialogAbort) {
-    return unimplemented("sceMsgDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMsgDialogClose) {
-    return unimplemented("sceMsgDialogClose");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMsgDialogGetResult) {
-    return unimplemented("sceMsgDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMsgDialogGetStatus) {
-    return unimplemented("sceMsgDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMsgDialogInit) {
-    return unimplemented("sceMsgDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMsgDialogProgressBarInc) {
-    return unimplemented("sceMsgDialogProgressBarInc");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMsgDialogProgressBarSetMsg) {
-    return unimplemented("sceMsgDialogProgressBarSetMsg");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMsgDialogProgressBarSetValue) {
-    return unimplemented("sceMsgDialogProgressBarSetValue");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMsgDialogTerm) {
-    return unimplemented("sceMsgDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogAbort) {
-    return unimplemented("sceNetCheckDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogGetPS3ConnectInfo) {
-    return unimplemented("sceNetCheckDialogGetPS3ConnectInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogGetResult) {
-    return unimplemented("sceNetCheckDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogGetStatus) {
-    return unimplemented("sceNetCheckDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogInit) {
-    return unimplemented("sceNetCheckDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogTerm) {
-    return unimplemented("sceNetCheckDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogAbort) {
-    return unimplemented("sceNpFriendList2DialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogGetResult) {
-    return unimplemented("sceNpFriendList2DialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogGetStatus) {
-    return unimplemented("sceNpFriendList2DialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogInit) {
-    return unimplemented("sceNpFriendList2DialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogTerm) {
-    return unimplemented("sceNpFriendList2DialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogAbort) {
-    return unimplemented("sceNpFriendListDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogGetResult) {
-    return unimplemented("sceNpFriendListDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogGetStatus) {
-    return unimplemented("sceNpFriendListDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogInit) {
-    return unimplemented("sceNpFriendListDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogTerm) {
-    return unimplemented("sceNpFriendListDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogAbort) {
-    return unimplemented("sceNpMessageDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogGetResult) {
-    return unimplemented("sceNpMessageDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogGetStatus) {
-    return unimplemented("sceNpMessageDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogInit) {
-    return unimplemented("sceNpMessageDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogTerm) {
-    return unimplemented("sceNpMessageDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogAbort) {
-    return unimplemented("sceNpProfileDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogGetResult) {
-    return unimplemented("sceNpProfileDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogGetStatus) {
-    return unimplemented("sceNpProfileDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogInit) {
-    return unimplemented("sceNpProfileDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogTerm) {
-    return unimplemented("sceNpProfileDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogAbort) {
-    return unimplemented("sceNpSnsFacebookDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogGetResult) {
-    return unimplemented("sceNpSnsFacebookDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogGetResultLongToken) {
-    return unimplemented("sceNpSnsFacebookDialogGetResultLongToken");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogGetStatus) {
-    return unimplemented("sceNpSnsFacebookDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogInit) {
-    return unimplemented("sceNpSnsFacebookDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogTerm) {
-    return unimplemented("sceNpSnsFacebookDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophySetupDialogAbort) {
-    return unimplemented("sceNpTrophySetupDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetResult) {
-    return unimplemented("sceNpTrophySetupDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetStatus) {
-    return unimplemented("sceNpTrophySetupDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophySetupDialogInit) {
-    return unimplemented("sceNpTrophySetupDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophySetupDialogTerm) {
-    return unimplemented("sceNpTrophySetupDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoImportDialogAbort) {
-    return unimplemented("scePhotoImportDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoImportDialogGetResult) {
-    return unimplemented("scePhotoImportDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoImportDialogGetStatus) {
-    return unimplemented("scePhotoImportDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoImportDialogInit) {
-    return unimplemented("scePhotoImportDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoImportDialogTerm) {
-    return unimplemented("scePhotoImportDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogAbort) {
-    return unimplemented("scePhotoReviewDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogGetResult) {
-    return unimplemented("scePhotoReviewDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogGetStatus) {
-    return unimplemented("scePhotoReviewDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogInit) {
-    return unimplemented("scePhotoReviewDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogTerm) {
-    return unimplemented("scePhotoReviewDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePspSaveDataDialogContinue) {
-    return unimplemented("scePspSaveDataDialogContinue");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePspSaveDataDialogGetResult) {
-    return unimplemented("scePspSaveDataDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePspSaveDataDialogInit) {
-    return unimplemented("scePspSaveDataDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePspSaveDataDialogTerm) {
-    return unimplemented("scePspSaveDataDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogAbort) {
-    return unimplemented("sceRemoteOSKDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogGetResult) {
-    return unimplemented("sceRemoteOSKDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogGetStatus) {
-    return unimplemented("sceRemoteOSKDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogInit) {
-    return unimplemented("sceRemoteOSKDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogTerm) {
-    return unimplemented("sceRemoteOSKDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogAbort) {
-    return unimplemented("sceSaveDataDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogContinue) {
-    return unimplemented("sceSaveDataDialogContinue");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogFinish) {
-    return unimplemented("sceSaveDataDialogFinish");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogGetResult) {
-    return unimplemented("sceSaveDataDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogGetStatus) {
-    return unimplemented("sceSaveDataDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogGetSubStatus) {
-    return unimplemented("sceSaveDataDialogGetSubStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogInit) {
-    return unimplemented("sceSaveDataDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogProgressBarInc) {
-    return unimplemented("sceSaveDataDialogProgressBarInc");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogProgressBarSetValue) {
-    return unimplemented("sceSaveDataDialogProgressBarSetValue");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogSubClose) {
-    return unimplemented("sceSaveDataDialogSubClose");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogTerm) {
-    return unimplemented("sceSaveDataDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceStoreCheckoutDialogAbort) {
-    return unimplemented("sceStoreCheckoutDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceStoreCheckoutDialogGetResult) {
-    return unimplemented("sceStoreCheckoutDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceStoreCheckoutDialogGetStatus) {
-    return unimplemented("sceStoreCheckoutDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceStoreCheckoutDialogInit) {
-    return unimplemented("sceStoreCheckoutDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceStoreCheckoutDialogTerm) {
-    return unimplemented("sceStoreCheckoutDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogAbort) {
-    return unimplemented("sceTwDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogGetResult) {
-    return unimplemented("sceTwDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogGetStatus) {
-    return unimplemented("sceTwDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogInit) {
-    return unimplemented("sceTwDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogTerm) {
-    return unimplemented("sceTwDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwLoginDialogAbort) {
-    return unimplemented("sceTwLoginDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwLoginDialogGetResult) {
-    return unimplemented("sceTwLoginDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwLoginDialogGetStatus) {
-    return unimplemented("sceTwLoginDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwLoginDialogTerm) {
-    return unimplemented("sceTwLoginDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogAbort) {
-    return unimplemented("sceVideoImportDialogAbort");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogGetResult) {
-    return unimplemented("sceVideoImportDialogGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogGetStatus) {
-    return unimplemented("sceVideoImportDialogGetStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogInit) {
-    return unimplemented("sceVideoImportDialogInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogTerm) {
-    return unimplemented("sceVideoImportDialogTerm");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceCameraImportDialogAbort)

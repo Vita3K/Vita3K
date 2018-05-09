@@ -18,75 +18,75 @@
 #include "SceNpSignaling.h"
 
 EXPORT(int, sceNpSignalingActivateConnection) {
-    return unimplemented("sceNpSignalingActivateConnection");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingCancelPeerNetInfo) {
-    return unimplemented("sceNpSignalingCancelPeerNetInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingCreateCtx) {
-    return unimplemented("sceNpSignalingCreateCtx");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingDeactivateConnection) {
-    return unimplemented("sceNpSignalingDeactivateConnection");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingDestroyCtx) {
-    return unimplemented("sceNpSignalingDestroyCtx");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingGetConnectionFromNpId) {
-    return unimplemented("sceNpSignalingGetConnectionFromNpId");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingGetConnectionFromPeerAddress) {
-    return unimplemented("sceNpSignalingGetConnectionFromPeerAddress");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingGetConnectionInfo) {
-    return unimplemented("sceNpSignalingGetConnectionInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingGetConnectionStatus) {
-    return unimplemented("sceNpSignalingGetConnectionStatus");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingGetCtxOpt) {
-    return unimplemented("sceNpSignalingGetCtxOpt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingGetLocalNetInfo) {
-    return unimplemented("sceNpSignalingGetLocalNetInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingGetMemoryInfo) {
-    return unimplemented("sceNpSignalingGetMemoryInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingGetPeerNetInfo) {
-    return unimplemented("sceNpSignalingGetPeerNetInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingGetPeerNetInfoResult) {
-    return unimplemented("sceNpSignalingGetPeerNetInfoResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingInit) {
-    return unimplemented("sceNpSignalingInit");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingSetCtxOpt) {
-    return unimplemented("sceNpSignalingSetCtxOpt");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingTerm) {
-    return unimplemented("sceNpSignalingTerm");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSignalingTerminateConnection) {
-    return unimplemented("sceNpSignalingTerminateConnection");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNpSignalingActivateConnection)

@@ -18,171 +18,171 @@
 #include "SceNpCommerce2.h"
 
 EXPORT(int, sceNpCommerce2AbortReq) {
-    return unimplemented("sceNpCommerce2AbortReq");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2CreateCtx) {
-    return unimplemented("sceNpCommerce2CreateCtx");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2CreateSessionCreateReq) {
-    return unimplemented("sceNpCommerce2CreateSessionCreateReq");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2CreateSessionGetResult) {
-    return unimplemented("sceNpCommerce2CreateSessionGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2CreateSessionStart) {
-    return unimplemented("sceNpCommerce2CreateSessionStart");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2DestroyCtx) {
-    return unimplemented("sceNpCommerce2DestroyCtx");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2DestroyGetCategoryContentsResult) {
-    return unimplemented("sceNpCommerce2DestroyGetCategoryContentsResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2DestroyGetProductInfoListResult) {
-    return unimplemented("sceNpCommerce2DestroyGetProductInfoListResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2DestroyGetProductInfoResult) {
-    return unimplemented("sceNpCommerce2DestroyGetProductInfoResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2DestroyReq) {
-    return unimplemented("sceNpCommerce2DestroyReq");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetCategoryContentsCreateReq) {
-    return unimplemented("sceNpCommerce2GetCategoryContentsCreateReq");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetCategoryContentsGetResult) {
-    return unimplemented("sceNpCommerce2GetCategoryContentsGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetCategoryContentsStart) {
-    return unimplemented("sceNpCommerce2GetCategoryContentsStart");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetCategoryInfo) {
-    return unimplemented("sceNpCommerce2GetCategoryInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetCategoryInfoFromContentInfo) {
-    return unimplemented("sceNpCommerce2GetCategoryInfoFromContentInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetContentInfo) {
-    return unimplemented("sceNpCommerce2GetContentInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetContentRatingDescriptor) {
-    return unimplemented("sceNpCommerce2GetContentRatingDescriptor");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetContentRatingInfoFromCategoryInfo) {
-    return unimplemented("sceNpCommerce2GetContentRatingInfoFromCategoryInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetContentRatingInfoFromGameProductInfo) {
-    return unimplemented("sceNpCommerce2GetContentRatingInfoFromGameProductInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetGameProductInfo) {
-    return unimplemented("sceNpCommerce2GetGameProductInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetGameProductInfoFromContentInfo) {
-    return unimplemented("sceNpCommerce2GetGameProductInfoFromContentInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetGameProductInfoFromGetProductInfoListResult) {
-    return unimplemented("sceNpCommerce2GetGameProductInfoFromGetProductInfoListResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetGameSkuInfoFromGameProductInfo) {
-    return unimplemented("sceNpCommerce2GetGameSkuInfoFromGameProductInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetPrice) {
-    return unimplemented("sceNpCommerce2GetPrice");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetProductInfoCreateReq) {
-    return unimplemented("sceNpCommerce2GetProductInfoCreateReq");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetProductInfoGetResult) {
-    return unimplemented("sceNpCommerce2GetProductInfoGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetProductInfoListCreateReq) {
-    return unimplemented("sceNpCommerce2GetProductInfoListCreateReq");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetProductInfoListGetResult) {
-    return unimplemented("sceNpCommerce2GetProductInfoListGetResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetProductInfoListStart) {
-    return unimplemented("sceNpCommerce2GetProductInfoListStart");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetProductInfoStart) {
-    return unimplemented("sceNpCommerce2GetProductInfoStart");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetSessionInfo) {
-    return unimplemented("sceNpCommerce2GetSessionInfo");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetShortfallOfLibhttpPool) {
-    return unimplemented("sceNpCommerce2GetShortfallOfLibhttpPool");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2GetShortfallOfLibsslPool) {
-    return unimplemented("sceNpCommerce2GetShortfallOfLibsslPool");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2HidePsStoreIcon) {
-    return unimplemented("sceNpCommerce2HidePsStoreIcon");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2Init) {
-    return unimplemented("sceNpCommerce2Init");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2InitGetCategoryContentsResult) {
-    return unimplemented("sceNpCommerce2InitGetCategoryContentsResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2InitGetProductInfoListResult) {
-    return unimplemented("sceNpCommerce2InitGetProductInfoListResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2InitGetProductInfoResult) {
-    return unimplemented("sceNpCommerce2InitGetProductInfoResult");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2ShowPsStoreIcon) {
-    return unimplemented("sceNpCommerce2ShowPsStoreIcon");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2StartEmptyStoreCheck) {
-    return unimplemented("sceNpCommerce2StartEmptyStoreCheck");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2StopEmptyStoreCheck) {
-    return unimplemented("sceNpCommerce2StopEmptyStoreCheck");
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommerce2Term) {
-    return unimplemented("sceNpCommerce2Term");
+    return UNIMPLEMENTED();
 }
 
 BRIDGE_IMPL(sceNpCommerce2AbortReq)
