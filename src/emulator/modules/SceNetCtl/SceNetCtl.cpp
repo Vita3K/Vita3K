@@ -63,8 +63,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
         Ptr<void> argp = Ptr<void>(callback.second.data);
         run_on_current(*thread, Ptr<void>(callback.second.pc), host.net.state, argp);
     }
-    UNIMPLEMENTED();
-    return 0;
+    return STUBBED("Stub");
 }
 
 EXPORT(int, sceNetCtlGetIfStat) {
@@ -105,8 +104,7 @@ EXPORT(int, sceNetCtlInetGetResult) {
 
 EXPORT(int, sceNetCtlInetGetState, uint32_t *state) {
     *state = SCE_NETCTL_STATE_DISCONNECTED;
-    UNIMPLEMENTED();
-    return 0;
+    return STUBBED("state = SCE_NETCTL_STATE_DISCONNECTED");
 }
 
 EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, uint32_t *cid) {
@@ -124,8 +122,7 @@ EXPORT(int, sceNetCtlInetUnregisterCallback) {
 }
 
 EXPORT(int, sceNetCtlInit) {
-    UNIMPLEMENTED();
-    return 0;
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlTerm) {

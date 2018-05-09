@@ -35,7 +35,21 @@ int unimplemented_impl(const char *name) {
     }
 
     if (inserted) {
-        LOG_WARN(">>> {} <<< Unimplemented import called.", name);
+        LOG_WARN("Unimplemented {} import called.", name);
+    }
+
+    return 0;
+}
+
+int stubbed_impl(const char *name, const char *info) {
+    bool inserted = false;
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        inserted = logged.insert(name).second;
+    }
+
+    if (inserted) {
+        LOG_WARN("Stubbed {} import called. ({})", name, info);
     }
 
     return 0;
@@ -50,7 +64,7 @@ int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_
     }
 
     if (inserted) {
-        LOG_ERROR(">>> {} <<< returned {} ({:#x})", name, error_str, error_val);
+        LOG_ERROR("{} returned {} ({:#x})", name, error_str, error_val);
     }
 
     return error_val;

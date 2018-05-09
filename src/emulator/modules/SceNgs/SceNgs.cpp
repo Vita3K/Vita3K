@@ -45,8 +45,7 @@ EXPORT(int, sceNgsPatchRemoveRouting) {
 
 EXPORT(int, sceNgsRackGetRequiredMemorySize, uint32_t hSysHandle, void *unk, uint32_t *size) {
     *size = 1;
-    LOG_WARN("Stubbed sceNgsRackGetRequiredMemorySize called (size = 1)");
-    return 0;
+    return STUBBED("size = 1");
 }
 
 EXPORT(int, sceNgsRackGetVoiceHandle) {
@@ -67,8 +66,7 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
 
 EXPORT(int, sceNgsSystemGetRequiredMemorySize, void *params, uint32_t *size) {
     *size = 1;
-    LOG_WARN("Stubbed sceNgsSystemGetRequiredMemorySize called (size = 1)");
-    return 0;
+    return STUBBED("size = 1");
 }
 
 EXPORT(int, sceNgsSystemInit) {
