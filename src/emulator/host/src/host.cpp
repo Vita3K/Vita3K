@@ -88,6 +88,11 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
     }
 
     state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
+    if (!state.glcontext) {
+        LOG_ERROR("Could not create OpenGL context.");
+        return false;
+    }
+    
     Binding::initialize(false);
     state.kernel.base_tick = { rtc_base_ticks() };
     state.display.set_window_dims(window_width, window_height);
