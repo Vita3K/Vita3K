@@ -19,6 +19,8 @@
 #include <host/functions.h>
 #include <util/string_convert.h>
 
+#include <SDL.h>
+
 #include "SceCommonDialog.h"
 
 EXPORT(int, sceCameraImportDialogAbort) {
@@ -316,15 +318,27 @@ EXPORT(int, sceNpTrophySetupDialogGetResult) {
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetStatus) {
-    return UNIMPLEMENTED();
+    return host.gui.common_dialog.status;
 }
 
-EXPORT(int, sceNpTrophySetupDialogInit) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophySetupDialogInit, const Ptr<emu::SceNpTrophySetupDialogParam> param) {
+    if (host.gui.common_dialog.type != NO_DIALOG) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+    }
+
+    host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    host.gui.common_dialog.type = TROPHY_SETUP_DIALOG;
+    host.gui.common_dialog.trophy.tick = SDL_GetTicks() + (param.get(host.mem)->options & 0x01) ? 3000 : 0;
+    return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogTerm) {
-    return UNIMPLEMENTED();
+    if (host.gui.common_dialog.type != TROPHY_SETUP_DIALOG) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+    }
+    host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
+    host.gui.common_dialog.type = NO_DIALOG;
+    return 0;
 }
 
 EXPORT(int, scePhotoImportDialogAbort) {

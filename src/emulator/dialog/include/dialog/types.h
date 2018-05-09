@@ -52,4 +52,14 @@ namespace emu {
         SceUChar8 enterLabel;
         SceChar8 reserved[35];
     };
+
+    struct SceNpTrophySetupDialogParam {
+        SceUInt32 sdkVersion;
+
+        emu::SceCommonDialogParam commonParam;
+        SceUInt32 context;
+        SceUInt32 options;
+
+        SceChar8 reserved[128];
+    };
 }
