@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <util/log.h>
+
 #include "SceNgs.h"
 
 EXPORT(int, sceNgsAT9GetSectionDetails) {
@@ -41,8 +43,10 @@ EXPORT(int, sceNgsPatchRemoveRouting) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsRackGetRequiredMemorySize) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsRackGetRequiredMemorySize, uint32_t hSysHandle, void *unk, uint32_t *size) {
+    *size = 1;
+    LOG_WARN("Stubbed sceNgsRackGetRequiredMemorySize called (size = 1)");
+    return 0;
 }
 
 EXPORT(int, sceNgsRackGetVoiceHandle) {
@@ -61,8 +65,10 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsSystemGetRequiredMemorySize) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsSystemGetRequiredMemorySize, void *params, uint32_t *size) {
+    *size = 1;
+    LOG_WARN("Stubbed sceNgsSystemGetRequiredMemorySize called (size = 1)");
+    return 0;
 }
 
 EXPORT(int, sceNgsSystemInit) {
