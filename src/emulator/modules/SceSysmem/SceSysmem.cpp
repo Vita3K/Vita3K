@@ -91,7 +91,7 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     info->size_cdram = free_memory;
     info->size_user = free_memory;
     info->size_phycont = free_memory;
-    return UNIMPLEMENTED();
+    return STUBBED("Single pool");
 }
 
 EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {

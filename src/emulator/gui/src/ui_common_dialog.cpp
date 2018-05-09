@@ -24,6 +24,8 @@
 #include <util/resource.h>
 #include <util/string_convert.h>
 
+#include <SDL.h>
+
 void DrawImeDialog(HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin(host.gui.common_dialog.ime.title.c_str());
@@ -56,11 +58,31 @@ void DrawImeDialog(HostState &host) {
     ImGui::End();
 }
 
+void DrawTrophySetupDialog(HostState &host) {
+    int timer = (host.gui.common_dialog.trophy.tick - SDL_GetTicks()) / 1000;
+    if (timer > 0) {
+        ImGui::SetNextWindowPos(ImVec2(30, 30));
+        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        ImGui::Begin("Trophy system ready");
+        ImGui::Text("Trophy dialog setup correctly");
+        std::string closeup_text = "This dialog will close automatically in ";
+        closeup_text += std::to_string(timer);
+        closeup_text += " seconds.";
+        ImGui::Text(closeup_text.c_str());
+        ImGui::End();
+    } else {
+        host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    }
+}
+
 void DrawCommonDialog(HostState &host) {
     if (host.gui.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         switch (host.gui.common_dialog.type) {
         case IME_DIALOG:
             DrawImeDialog(host);
+            break;
+        case TROPHY_SETUP_DIALOG:
+            DrawTrophySetupDialog(host);
             break;
         default:
             break;
