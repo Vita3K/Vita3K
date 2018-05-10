@@ -37,7 +37,7 @@
 
 // clang-format off
 #include <imgui.h>
-#include <gui/imgui_impl_sdl_gl2.h>
+#include <gui/imgui_impl_sdl_gl3.h>
 // clang-format on
 #include <gui/functions.h>
 
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
     }
 
     ImGui::CreateContext();
-    ImGui_ImplSdlGL2_Init(host.window.get());
+    ImGui_ImplSdlGL3_Init(host.window.get());
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
             glEnable(GL_TEXTURE_2D);
         }
 
-        ImGui_ImplSdlGL2_NewFrame(host.window.get());
+        ImGui_ImplSdlGL3_NewFrame(host.window.get());
 
         // Clear back buffer
 
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
 
         glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
         ImGui::Render();
-        ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(host.window.get());
 
         {

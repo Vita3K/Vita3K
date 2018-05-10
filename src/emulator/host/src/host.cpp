@@ -44,7 +44,7 @@
 
 // clang-format off
 #include <imgui.h>
-#include <gui/imgui_impl_sdl_gl2.h>
+#include <gui/imgui_impl_sdl_gl3.h>
 // clang-format on
 
 using namespace glbinding;
@@ -107,7 +107,7 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
 bool handle_events(HostState &host) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        ImGui_ImplSdlGL2_ProcessEvent(&event);
+        ImGui_ImplSdlGL3_ProcessEvent(&event);
         if (event.type == SDL_QUIT) {
             stop_all_threads(host.kernel);
             host.gxm.display_queue.abort();
