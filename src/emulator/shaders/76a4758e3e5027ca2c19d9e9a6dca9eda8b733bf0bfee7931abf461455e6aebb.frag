@@ -1,16 +1,17 @@
 // Fragment shader.
-#version 120
+#version 410
 
 uniform float textureEnable;
 uniform sampler2D tex;
 
-varying vec2 vTexcoord;
-varying vec4 vColor;
+in vec2 vTexcoord;
+in vec4 vColor;
+out vec4 fragColor;
 
 void main() {
 	if (textureEnable > 0.5f) {
-		gl_FragColor = vColor * texture2D(tex, vTexcoord);
+		fragColor = vColor * texture(tex, vTexcoord);
 	} else {
-		gl_FragColor = vColor;
+		fragColor = vColor;
 	}
 }

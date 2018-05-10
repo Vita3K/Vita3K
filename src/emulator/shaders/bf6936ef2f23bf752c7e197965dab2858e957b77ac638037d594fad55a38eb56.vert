@@ -1,11 +1,11 @@
 // https://github.com/Rinnegatamante/vitaQuake/blob/master/shaders/rgba_v.cg
-#version 120
+#version 410
 
 uniform mat4 wvp;
-attribute vec3 aPosition;
-attribute vec4 aColor;
+in vec3 aPosition;
+in vec4 aColor;
 
-varying vec4 vColor;
+out vec4 vColor;
 
 void main()
 {

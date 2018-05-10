@@ -1,8 +1,8 @@
 // https://github.com/Rinnegatamante/vitaQuake/blob/master/shaders/vertex_v.cg
-#version 120
+#version 410
 
 uniform mat4 wvp;
-attribute vec3 aPosition;
+in vec3 aPosition;
 
 void main()
 {

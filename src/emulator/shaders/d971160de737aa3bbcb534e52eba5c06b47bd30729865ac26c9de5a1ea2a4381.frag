@@ -1,10 +1,11 @@
 // https://github.com/Rinnegatamante/vitaQuake/blob/master/shaders/replace_f.cg
-#version 120
+#version 410
 
 uniform sampler2D tex;
-varying vec2 vTexcoord;
+in vec2 vTexcoord;
+out vec4 fragColor;
 
 void main()
 {
-    gl_FragColor = texture2D(tex, vTexcoord);
+    fragColor = texture(tex, vTexcoord);
 }

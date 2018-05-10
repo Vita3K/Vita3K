@@ -1,11 +1,11 @@
 // https://github.com/Rinnegatamante/vitaQuake/blob/master/shaders/texture2d_v.cg
-#version 120
+#version 410
 
 uniform mat4 wvp;
-attribute vec3 position;
-attribute vec2 texcoord;
+in vec3 position;
+in vec2 texcoord;
 
-varying vec2 vTexcoord;
+out vec2 vTexcoord;
 
 void main()
 {

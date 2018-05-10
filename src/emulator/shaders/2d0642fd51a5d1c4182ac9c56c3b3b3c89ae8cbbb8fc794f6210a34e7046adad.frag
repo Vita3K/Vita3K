@@ -1,9 +1,10 @@
 // https://github.com/Rinnegatamante/vitaQuake/blob/master/shaders/rgba_f.cg
-#version 120
+#version 410
 
-varying vec4 vColor;
+in vec4 vColor;
+out vec4 fragColor;
 
 void main()
 {
-    gl_FragColor = vColor;
+    fragColor = vColor;
 }

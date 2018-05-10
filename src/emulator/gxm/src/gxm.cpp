@@ -219,8 +219,6 @@ static void output_glsl_decl(std::ostream &glsl, std::string &cur_struct_decl, c
 }
 
 static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &program) {
-    static auto gl_version = std::atof(reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
-
     if (program.parameter_count > 0) {
         glsl << "\n";
     }
@@ -235,10 +233,7 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
 
         switch (parameter.category) {
         case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE: {
-            const auto qualifier = (gl_version < 1.3)
-                ? ""
-                : "in";
-            output_glsl_decl(glsl, cur_struct_decl, parameter, qualifier);
+            output_glsl_decl(glsl, cur_struct_decl, parameter, "in");
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM: {
@@ -276,7 +271,7 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
 
     std::ostringstream glsl;
     glsl << "// Fragment shader.\n";
-    glsl << "#version 120\n";
+    glsl << "#version 410\n";
     output_glsl_parameters(glsl, program);
     glsl << "\n";
     glsl << "void main() {\n";
@@ -291,7 +286,7 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
 
     std::ostringstream glsl;
     glsl << "// Vertex shader.\n";
-    glsl << "#version 120\n";
+    glsl << "#version 410\n";
     output_glsl_parameters(glsl, program);
     glsl << "\n";
     glsl << "void main() {\n";

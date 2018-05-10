@@ -1,14 +1,15 @@
 // https://github.com/Rinnegatamante/vitaQuake/blob/master/shaders/modulate_rgba_fog_f.cg
-#version 120
+#version 410
 
 uniform sampler2D tex;
-varying vec4 vColor;
-varying vec2 vTexcoord;
-varying float vFog;
+in vec4 vColor;
+in vec2 vTexcoord;
+in float vFog;
+out vec4 fragColor;
 
 void main()
 {
-    vec4 c = texture2D(tex, vTexcoord) * vColor;
+    vec4 c = texture(tex, vTexcoord) * vColor;
     c.rgb = c.rgb *vFog;
-    gl_FragColor = c;
+    fragColor = c;
 }

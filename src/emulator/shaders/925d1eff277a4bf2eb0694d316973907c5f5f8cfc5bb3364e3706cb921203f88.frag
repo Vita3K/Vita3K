@@ -1,9 +1,10 @@
 // https://github.com/xerpi/libvita2d/blob/master/libvita2d/shader/color_f.cg
-#version 120
+#version 410
 
-varying vec4 vColor;
+in vec4 vColor;
+out vec4 fragColor;
 
 void main()
 {
-    gl_FragColor = vColor;
+    fragColor = vColor;
 }
