@@ -314,7 +314,7 @@ EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(file, stat, host.pref_path.c_str(), host.io.vpk.get(), host.kernel.base_tick.tick);
+    return stat_file(host.io, file, stat, host.pref_path.c_str(), host.kernel.base_tick.tick);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
@@ -773,7 +773,7 @@ EXPORT(int, sceKernelCreateEventFlag) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCreateLwCond) {
+EXPORT(int, sceKernelCreateLwCond, SceKernelLwCondWork *workarea, const char *name, unsigned int attr, SceKernelLwMutexWork *mutex, const SceKernelLwCondOptParam *opt_param) {
     return UNIMPLEMENTED();
 }
 

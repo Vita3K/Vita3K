@@ -23,4 +23,4 @@ struct HostState;
 template <class T>
 class Ptr;
 
-bool load_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path);
+bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, bool is_vpk);

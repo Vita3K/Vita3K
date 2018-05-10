@@ -44,30 +44,6 @@
 #include <string>
 #include <tuple>
 
-static ReadOnlyInMemFile open_zip(IOState &io, const char *entry_path) {
-    std::string full_path = io.app0_prefix + entry_path;
-
-    const int index = mz_zip_reader_locate_file(io.vpk.get(), full_path.c_str(), nullptr, 0);
-
-    if (index < 0) {
-        return ReadOnlyInMemFile();
-    }
-
-    const auto zip_file = mz_zip_reader_extract_iter_new(io.vpk.get(), index, 0);
-
-    if (!zip_file) {
-        return ReadOnlyInMemFile();
-    }
-
-    ReadOnlyInMemFile res;
-    char *data = res.alloc_data(zip_file->file_stat.m_uncomp_size);
-
-    mz_zip_reader_extract_iter_read(zip_file, data, zip_file->file_stat.m_uncomp_size);
-    mz_zip_reader_extract_iter_free(zip_file);
-
-    return res;
-}
-
 static void delete_file(FILE *file) {
     if (file != nullptr) {
         fclose(file);
@@ -124,6 +100,7 @@ bool init(IOState &io, const char *pref_path) {
     uma0 += "uma0";
     const std::string ux0_data = ux0 + "/data";
     const std::string uma0_data = uma0 + "/data";
+    const std::string ux0_app = ux0 + "/app";
     const std::string ux0_user = ux0 + "/user";
     const std::string ux0_user00 = ux0_user + "/00";
     const std::string ux0_savedata = ux0_user00 + "/savedata";
@@ -131,6 +108,7 @@ bool init(IOState &io, const char *pref_path) {
 #ifdef WIN32
     CreateDirectoryA(ux0.c_str(), nullptr);
     CreateDirectoryA(ux0_data.c_str(), nullptr);
+    CreateDirectoryA(ux0_app.c_str(), nullptr);
     CreateDirectoryA(uma0.c_str(), nullptr);
     CreateDirectoryA(uma0_data.c_str(), nullptr);
     CreateDirectoryA(ux0_user.c_str(), nullptr);
@@ -140,6 +118,7 @@ bool init(IOState &io, const char *pref_path) {
     const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     mkdir(ux0.c_str(), mode);
     mkdir(ux0_data.c_str(), mode);
+    mkdir(ux0_app.c_str(), mode);
     mkdir(uma0.c_str(), mode);
     mkdir(uma0_data.c_str(), mode);
     mkdir(ux0_user.c_str(), mode);
@@ -183,23 +162,6 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
     std::string device_name;
     std::tie(device, device_name) = translate_device(path);
 
-    const std::string ux_app_path{ "ux0:/app/" };
-
-    // Redirect ux0:/app/<title_id> to app0:
-    if (device == VitaIoDevice::UX0) {
-        if (path.compare(0, ux_app_path.size(), ux_app_path) == 0) {
-            std::string fixed_path = path.substr(ux_app_path.length());
-            auto start_path = fixed_path.find('/');
-            if (start_path != std::string::npos) {
-                fixed_path = fixed_path.substr(start_path);
-                fixed_path.insert(0, "app0:");
-
-                path = fixed_path;
-                device = VitaIoDevice::APP0;
-            }
-        }
-    }
-
     // Redirect savedata0:/ to ux0:/user/00/savedata/<title_id>
     if (device == VitaIoDevice::SAVEDATA0) {
         std::string fixed_path = path.substr(10);
@@ -210,7 +172,22 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
 
             path = fixed_path;
             device = VitaIoDevice::UX0;
+            std::tie(device, device_name) = translate_device(path);
         }
+    }
+    
+    // Redirect app0:/ to ux0:/app/<title_id>
+    char file[256];
+    sprintf(file, "%s", path.c_str());
+    if (device == VitaIoDevice::APP0) {
+        int i = 5;
+        if (file[5] == '/')
+            i++;
+        std::string ux0_path = "ux0:/app/" + io.title_id + "/";
+        ux0_path += &file[i];
+        path = ux0_path;
+        device = VitaIoDevice::UX0;
+        std::tie(device, device_name) = translate_device(path);
     }
 
     switch (device) {
@@ -230,29 +207,9 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
 
         return fd;
     }
-    case VitaIoDevice::APP0: {
-        if (flags & SCE_O_WRONLY)
-            LOG_WARN("Attempt to open a read-only partition (app0) with writing privileges.");
-
-        if (!io.vpk) {
-            return -1;
-        }
-
-        int i = 5;
-        if (path[5] == '/')
-            i++;
-
-        const ReadOnlyInMemFile file = open_zip(io, &path[i]);
-
-        const SceUID fd = io.next_fd++;
-        io.app_files.emplace(fd, file);
-
-        return fd;
-    }
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string file_path = translate_path(device_name, path, pref_path);
-
         const char *const open_mode = translate_open_mode(flags);
 #ifdef WIN32
         const FilePtr file(_wfopen(utf_to_wide(file_path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
@@ -285,12 +242,6 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size) {
     assert(data != nullptr);
     assert(fd >= 0);
     assert(size >= 0);
-
-    AppFiles::iterator app_file = io.app_files.find(fd);
-    if (app_file != io.app_files.end()) {
-        auto is = app_file->second.read(data, size);
-        return is;
-    }
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
@@ -345,11 +296,10 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io) {
     assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
 
     const StdFiles::const_iterator std_file = io.std_files.find(fd);
-    AppFiles::iterator app_file = io.app_files.find(fd);
 
-    assert(std_file != io.std_files.end() || app_file != io.app_files.end());
+    assert(std_file != io.std_files.end());
 
-    if (std_file == io.std_files.end() && app_file == io.app_files.end()) {
+    if (std_file == io.std_files.end()) {
         return -1;
     }
 
@@ -371,8 +321,6 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io) {
 
     if (std_file != io.std_files.end()) {
         ret = fseek(std_file->second.get(), offset, base);
-    } else {
-        ret = !(app_file->second.seek(offset, whence));
     }
 
     if (ret != 0) {
@@ -381,8 +329,6 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io) {
 
     if (std_file != io.std_files.end()) {
         pos = ftell(std_file->second.get());
-    } else {
-        pos = app_file->second.tell();
     }
     return pos;
 }
@@ -392,7 +338,6 @@ void close_file(IOState &io, SceUID fd) {
 
     io.tty_files.erase(fd);
     io.std_files.erase(fd);
-    io.app_files.erase(fd);
 }
 
 int remove_file(const char *file, const char *pref_path) {
@@ -467,7 +412,7 @@ int remove_dir(const char *dir, const char *pref_path) {
     }
 }
 
-int stat_file(const char *file, SceIoStat *statp, const char *pref_path, mz_zip_archive *vpk, uint64_t base_tick) {
+int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_path, uint64_t base_tick) {
     assert(statp != NULL);
 
     memset(statp, '\0', sizeof(SceIoStat));
@@ -483,25 +428,21 @@ int stat_file(const char *file, SceIoStat *statp, const char *pref_path, mz_zip_
     std::uint64_t last_modification_time_ticks;
     std::uint64_t creation_time_ticks{ 0 };
 
-    switch (device) {
-    case VitaIoDevice::APP0: {
-        const mz_uint32 file_index = mz_zip_reader_locate_file(vpk, file + 5, nullptr, 0);
-        mz_zip_archive_file_stat stat;
-        mz_zip_reader_file_stat(vpk, file_index, &stat);
-
-        statp->st_size = stat.m_uncomp_size;
-
-        last_access_time_ticks = rtc_get_ticks(base_tick);
-        last_modification_time_ticks = RTC_OFFSET + stat.m_time * 1'000'000;
-        creation_time_ticks = last_modification_time_ticks; // hack
-
-        if (stat.m_is_directory)
-            statp->st_mode |= SCE_S_IFDIR;
-        else
-            statp->st_mode |= SCE_S_IFREG;
-
-        break;
+    // Redirect app0:/ to ux0:/app/<title_id>
+    char fpath[256];
+    if (device == VitaIoDevice::APP0) {
+        int i = 5;
+        if (file[5] == '/')
+            i++;
+        std::string ux0_path = "ux0:/app/" + io.title_id + "/";
+        ux0_path += &file[i];
+        sprintf(fpath, "%s", ux0_path.c_str());
+        file = fpath;
+        device = VitaIoDevice::UX0;
+        std::tie(device, device_name) = translate_device(file);
     }
+    
+    switch (device) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string file_path = translate_path(device_name, file, pref_path);

@@ -49,16 +49,14 @@ enum TtyType {
 
 typedef std::map<SceUID, TtyType> TtyFiles;
 typedef std::map<SceUID, FilePtr> StdFiles;
-typedef std::map<SceUID, ReadOnlyInMemFile> AppFiles;
 typedef std::map<SceUID, DirPtr> DirEntries;
 
 struct IOState {
     std::string app0_prefix;
     std::string savedata0_path;
-    ZipPtr vpk;
+    std::string title_id;
     SceUID next_fd = 0;
     TtyFiles tty_files;
     StdFiles std_files;
-    AppFiles app_files;
     DirEntries dir_entries;
 };
