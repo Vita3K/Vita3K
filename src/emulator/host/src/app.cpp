@@ -155,6 +155,17 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
             mkdir(output_path.c_str(), mode);
 #endif
         } else {
+            const size_t slash = output_path.rfind('/');
+            if (std::string::npos != slash){
+                std::string directory = output_path.substr(0, slash);
+#ifdef WIN32
+                CreateDirectoryA(directory.c_str(), nullptr);
+#else
+                const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+                mkdir(directory.c_str(), mode);
+#endif
+            }
+            
             mz_zip_reader_extract_to_file(zip.get(), i, output_path.c_str(), 0);
         }
     }
