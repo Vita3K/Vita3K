@@ -52,8 +52,6 @@ add_executable(
 emulator
 MACOSX_BUNDLE
 main.cpp
-vpk.cpp
-vpk.h
 )
 
 target_link_libraries(emulator PRIVATE cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util)

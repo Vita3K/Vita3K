@@ -40,8 +40,11 @@ void DrawGameSelector(HostState &host, bool *is_vpk) {
     case SELECT_APP:
         ImGui::TextColored(ImVec4(255, 255, 0, 255), "Select the game/application to start");
         ImGui::Separator();
+        int i = 0;
         for (auto titleid : host.gui.game_selector.title_ids) {
-            if (ImGui::Button(titleid.c_str())){
+            std::string button_text = host.gui.game_selector.titles.at(i++);
+            button_text += " (" + titleid + ")";
+            if (ImGui::Button(button_text.c_str())){
                 host.gui.game_selector.title_id = titleid;
                 *is_vpk = false;
             }

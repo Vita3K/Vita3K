@@ -15,11 +15,10 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "vpk.h"
-
 #include <kernel/load_self.h>
 #include <kernel/state.h>
 
+#include <host/app.h>
 #include <host/sfo.h>
 #include <host/state.h>
 #include <io/state.h>
@@ -31,9 +30,7 @@
 #include <fstream>
 #include <iostream>
 #include <istream>
-#include <vector>
-
-typedef std::vector<uint8_t> Buffer;
+#include <iterator>
 
 static void delete_zip(mz_zip_archive *zip) {
     mz_zip_reader_end(zip);
@@ -50,7 +47,7 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
     return n;
 }
 
-static bool read_file_from_disk(Buffer &buf, const char *file, HostState &host) {
+bool read_file_from_disk(Buffer &buf, const char *file, HostState &host) {
     std::string file_path = host.pref_path + "ux0/app/" + host.io.title_id + "/" + file;
     std::ifstream f(file_path, std::ifstream::binary);
     if (f.fail()) {
@@ -167,7 +164,6 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
 #ifdef WIN32
     CreateDirectoryA(savedata_path.c_str(), nullptr);
 #else
-    const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     mkdir(savedata_path.c_str(), mode);
 #endif
 

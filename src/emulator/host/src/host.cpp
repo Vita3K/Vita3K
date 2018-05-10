@@ -17,6 +17,7 @@
 
 #include <host/functions.h>
 
+#include <host/app.h>
 #include <host/import_fn.h>
 #include <host/state.h>
 #include <host/version.h>
@@ -111,16 +112,23 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
     dirent *dp;
 #endif
     do {
+        std::string d_name_utf8;
 #ifdef WIN32
         if ((dp = _wreaddir(d)) != NULL) {
-            std::string d_name_utf8 = wide_to_utf(dp->d_name);
-            if ((strcmp(d_name_utf8.c_str(), ".")) && (strcmp(d_name_utf8.c_str(), ".."))) {
-                state.gui.game_selector.title_ids.push_back(std::string(d_name_utf8));
+            d_name_utf8 = wide_to_utf(dp->d_name);
 #else
         if ((dp = readdir(d)) != NULL) {
-            if ((strcmp(dp->d_name, ".")) && (strcmp(dp->d_name, ".."))) {
-                state.gui.game_selector.title_ids.push_back(std::string(dp->d_name));
+            d_name_utf8 = dp->d_name;
 #endif
+            if ((strcmp(d_name_utf8.c_str(), ".")) && (strcmp(d_name_utf8.c_str(), ".."))) {
+                Buffer params;
+                state.io.title_id = d_name_utf8;
+                if (read_file_from_disk(params, "sce_sys/param.sfo", state)) {
+                    load_sfo(state.sfo_handle, params);
+                    find_data(state.game_title, state.sfo_handle, "TITLE");
+                    state.gui.game_selector.title_ids.push_back(std::string(state.io.title_id));
+                    state.gui.game_selector.titles.push_back(std::string(state.game_title));
+                }
             }
         }
     } while (dp);

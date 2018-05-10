@@ -18,9 +18,13 @@
 #pragma once
 
 #include <string>
+#include <vector>
+
+typedef std::vector<uint8_t> Buffer;
 
 struct HostState;
 template <class T>
 class Ptr;
 
 bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, bool is_vpk);
+bool read_file_from_disk(Buffer &buf, const char *file, HostState &host);
