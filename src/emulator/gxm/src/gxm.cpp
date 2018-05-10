@@ -617,6 +617,29 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
     }
 }
 
+size_t attribute_format_size(SceGxmAttributeFormat format) {
+    GXM_PROFILE(__FUNCTION__);
+    
+    switch (format) {
+    case SCE_GXM_ATTRIBUTE_FORMAT_U8:
+    case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
+    case SCE_GXM_ATTRIBUTE_FORMAT_S8:
+    case SCE_GXM_ATTRIBUTE_FORMAT_S8N:
+        return 1;
+    case SCE_GXM_ATTRIBUTE_FORMAT_U16:
+    case SCE_GXM_ATTRIBUTE_FORMAT_U16N:
+    case SCE_GXM_ATTRIBUTE_FORMAT_S16:
+    case SCE_GXM_ATTRIBUTE_FORMAT_S16N:
+    case SCE_GXM_ATTRIBUTE_FORMAT_F16:
+        return 2;
+    case SCE_GXM_ATTRIBUTE_FORMAT_F32:
+        return 4;
+    default:
+        LOG_ERROR("Unsupported attribute format {:#x}", format);
+        return 4;
+    }
+}
+
 bool attribute_format_normalised(SceGxmAttributeFormat format) {
     GXM_PROFILE(__FUNCTION__);
 

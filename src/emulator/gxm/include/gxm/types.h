@@ -79,6 +79,10 @@ struct SceGxmContext {
     UniformBuffers fragment_uniform_buffers;
     UniformBuffers vertex_uniform_buffers;
     GLObjectArray<1> texture;
+    GLObjectArray<1> vertex_array;
+    GLObjectArray<1> element_buffer;
+    std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
+    GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
     bool two_sided = false;
     SceGxmViewport viewport;

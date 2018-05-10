@@ -29,6 +29,7 @@ std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmPro
 AttributeLocations attribute_locations(const SceGxmProgram &vertex_program);
 SharedGLObject get_program(SceGxmContext &context, const MemState &mem);
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format);
+size_t attribute_format_size(SceGxmAttributeFormat format);
 bool attribute_format_normalised(SceGxmAttributeFormat format);
 void set_uniforms(GLuint program, const SceGxmContext &context, const MemState &mem);
 void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels);
