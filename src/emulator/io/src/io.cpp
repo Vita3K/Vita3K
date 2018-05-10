@@ -24,6 +24,7 @@
 #include <psp2/io/stat.h>
 
 #include <io/state.h>
+#include <util/fs.h>
 #include <util/log.h>
 
 #include <psp2/io/fcntl.h>
@@ -105,26 +106,14 @@ bool init(IOState &io, const char *pref_path) {
     const std::string ux0_user00 = ux0_user + "/00";
     const std::string ux0_savedata = ux0_user00 + "/savedata";
 
-#ifdef WIN32
-    CreateDirectoryA(ux0.c_str(), nullptr);
-    CreateDirectoryA(ux0_data.c_str(), nullptr);
-    CreateDirectoryA(ux0_app.c_str(), nullptr);
-    CreateDirectoryA(uma0.c_str(), nullptr);
-    CreateDirectoryA(uma0_data.c_str(), nullptr);
-    CreateDirectoryA(ux0_user.c_str(), nullptr);
-    CreateDirectoryA(ux0_user00.c_str(), nullptr);
-    CreateDirectoryA(ux0_savedata.c_str(), nullptr);
-#else
-    const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-    mkdir(ux0.c_str(), mode);
-    mkdir(ux0_data.c_str(), mode);
-    mkdir(ux0_app.c_str(), mode);
-    mkdir(uma0.c_str(), mode);
-    mkdir(uma0_data.c_str(), mode);
-    mkdir(ux0_user.c_str(), mode);
-    mkdir(ux0_user00.c_str(), mode);
-    mkdir(ux0_savedata.c_str(), mode);
-#endif
+    fs::create_directory(ux0);
+    fs::create_directory(ux0_data);
+    fs::create_directory(ux0_app);
+    fs::create_directory(ux0_user);
+    fs::create_directory(ux0_user00);
+    fs::create_directory(ux0_savedata);
+    fs::create_directory(uma0);
+    fs::create_directory(uma0_data);
 
     return true;
 }
@@ -175,7 +164,7 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
             std::tie(device, device_name) = translate_device(path);
         }
     }
-    
+
     // Redirect app0:/ to ux0:/app/<title_id>
     char file[256];
     sprintf(file, "%s", path.c_str());
@@ -349,13 +338,8 @@ int remove_file(const char *file, const char *pref_path) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string file_path = translate_path(device_name, file, pref_path);
-
-#ifdef WIN32
-        DeleteFileA(file_path.c_str());
+        fs::remove(file_path);
         return 0;
-#else
-        return unlink(file_path.c_str());
-#endif
     }
     default: {
         LOG_CRITICAL("Unknown file {} used. Report this to developers!", file);
@@ -374,12 +358,8 @@ int create_dir(const char *dir, int mode, const char *pref_path) {
     case VitaIoDevice::UMA0: {
         std::string dir_path = translate_path(device_name, dir, pref_path);
 
-#ifdef WIN32
-        CreateDirectoryA(dir_path.c_str(), nullptr);
+        fs::create_directory(dir_path);
         return 0;
-#else
-        return mkdir(dir_path.c_str(), mode);
-#endif
     }
     default: {
         LOG_CRITICAL("Unknown dir {} used. Report this to developers!", dir);
@@ -397,13 +377,8 @@ int remove_dir(const char *dir, const char *pref_path) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string dir_path = translate_path(device_name, dir, pref_path);
-
-#ifdef WIN32
-        RemoveDirectoryA(dir_path.c_str());
+        fs::remove(dir_path);
         return 0;
-#else
-        return rmdir(dir_path.c_str());
-#endif
     }
     default: {
         LOG_CRITICAL("Unknown dir {} used. Report this to developers!", dir);
@@ -441,7 +416,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
         device = VitaIoDevice::UX0;
         std::tie(device, device_name) = translate_device(file);
     }
-    
+
     switch (device) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {

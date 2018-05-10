@@ -22,6 +22,7 @@
 #include <host/sfo.h>
 #include <host/state.h>
 #include <io/state.h>
+#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_convert.h>
 
@@ -81,7 +82,7 @@ static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, con
 bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
-    
+
     FILE *vpk_fp;
 
 #ifdef WIN32
@@ -99,7 +100,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     }
 
     int num_files = mz_zip_reader_get_num_files(zip.get());
-    
+
     std::string sfo_path = "sce_sys/param.sfo";
 
     for (int i = 0; i < num_files; i++) {
@@ -112,7 +113,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
             break;
         }
     }
-    
+
     Buffer params;
     if (!read_file_from_zip(params, vpk_fp, sfo_path.c_str(), zip)) {
         return false;
@@ -120,7 +121,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
 
     load_sfo(host.sfo_handle, params);
     find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
-    
+
     std::string output_base_path;
     output_base_path = host.pref_path + "ux0/app/";
     std::string title_base_path = output_base_path;
@@ -128,12 +129,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         output_base_path += host.io.title_id;
     }
     title_base_path += host.io.title_id;
-#ifdef WIN32
-    bool exists = (!CreateDirectoryA(title_base_path.c_str(), nullptr));
-#else
-    const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-    bool exists = mkdir(title_base_path.c_str(), mode);
-#endif
+    bool exists = fs::create_directory(title_base_path);
     if (exists) {
         LOG_INFO("{} already installed, launching application...", host.io.title_id);
         return true;
@@ -148,45 +144,29 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         output_path += "/";
         output_path += file_stat.m_filename;
         if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
-#ifdef WIN32
-            CreateDirectoryA(output_path.c_str(), nullptr);
-#else
-            const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-            mkdir(output_path.c_str(), mode);
-#endif
+            fs::create_directory(output_path);
         } else {
             const size_t slash = output_path.rfind('/');
-            if (std::string::npos != slash){
+            if (std::string::npos != slash) {
                 std::string directory = output_path.substr(0, slash);
-#ifdef WIN32
-                CreateDirectoryA(directory.c_str(), nullptr);
-#else
-                const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-                mkdir(directory.c_str(), mode);
-#endif
+                fs::create_directory(directory);
             }
-            
+
             mz_zip_reader_extract_to_file(zip.get(), i, output_path.c_str(), 0);
         }
     }
-    
+
     std::string savedata_path = host.pref_path + "ux0/user/00/savedata/" + host.io.title_id;
-
-#ifdef WIN32
-    CreateDirectoryA(savedata_path.c_str(), nullptr);
-#else
-    mkdir(savedata_path.c_str(), mode);
-#endif
-
+    fs::create_directory(savedata_path);
     host.io.savedata0_path = "ux0:/user/00/savedata/" + host.io.title_id + "/";
-    
+
     LOG_INFO("{} installed succesfully!", host.io.title_id);
     return true;
 }
 
 bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, bool is_vpk) {
     if (is_vpk) {
-        if (!install_vpk(entry_point, host, path)){
+        if (!install_vpk(entry_point, host, path)) {
             return false;
         }
     }
@@ -194,7 +174,7 @@ bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring 
     if (!is_vpk) {
         host.io.title_id = wide_to_utf(path);
     }
-    
+
     Buffer params;
     if (!read_file_from_disk(params, "sce_sys/param.sfo", host)) {
         return false;
