@@ -37,7 +37,7 @@ void DrawMutexesDialog(HostState &host) {
             mutex_state->lock_count,
             mutex_state->attr,
             mutex_state->waiting_threads.size(),
-            mutex_state->owner == nullptr ? "not owned" : mutex_state->owner->name);
+            mutex_state->owner == nullptr ? "not owned" : mutex_state->owner->name.c_str());
     }
     ImGui::End();
 }
@@ -55,7 +55,7 @@ void DrawLwMutexesDialog(HostState &host) {
             mutex_state->lock_count,
             mutex_state->attr,
             mutex_state->waiting_threads.size(),
-            mutex_state->owner == nullptr ? "not owned" : mutex_state->owner->name);
+            mutex_state->owner == nullptr ? "not owned" : mutex_state->owner->name.c_str());
     }
     ImGui::End();
 }

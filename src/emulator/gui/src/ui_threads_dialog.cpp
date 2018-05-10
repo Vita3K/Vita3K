@@ -45,7 +45,7 @@ void DrawThreadsDialog(HostState &host) {
         }
         ImGui::Text("0x%08X       %-32s   %-16s   0x%08X       ",
             thread.first,
-            th_state->name,
+            th_state->name.c_str(),
             run_state.c_str(),
             th_state->stack.get()->get());
     }
