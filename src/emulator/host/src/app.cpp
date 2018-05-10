@@ -129,8 +129,8 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         output_base_path += host.io.title_id;
     }
     title_base_path += host.io.title_id;
-    bool exists = fs::create_directory(title_base_path);
-    if (exists) {
+    bool created = fs::create_directory(title_base_path);
+    if (!created) {
         LOG_INFO("{} already installed, launching application...", host.io.title_id);
         return true;
     }
@@ -144,14 +144,15 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         output_path += "/";
         output_path += file_stat.m_filename;
         if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
-            fs::create_directory(output_path);
+            fs::create_directories(output_path);
         } else {
             const size_t slash = output_path.rfind('/');
             if (std::string::npos != slash) {
                 std::string directory = output_path.substr(0, slash);
-                fs::create_directory(directory);
+                fs::create_directories(directory);
             }
-
+            
+            LOG_INFO("Extracting {}", output_path);
             mz_zip_reader_extract_to_file(zip.get(), i, output_path.c_str(), 0);
         }
     }
@@ -187,7 +188,6 @@ bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring 
     std::string category;
     find_data(category, host.sfo_handle, "CATEGORY");
 
-    LOG_INFO("Path: {}", wide_to_utf(path));
     LOG_INFO("Title: {}", host.game_title);
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Category: {}", category);
