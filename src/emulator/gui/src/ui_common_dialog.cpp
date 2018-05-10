@@ -59,7 +59,7 @@ void DrawImeDialog(HostState &host) {
 }
 
 void DrawTrophySetupDialog(HostState &host) {
-    int timer = (host.gui.common_dialog.trophy.tick - SDL_GetTicks()) / 1000;
+    int timer = (static_cast<int64_t>(host.gui.common_dialog.trophy.tick) - static_cast<int64_t>(SDL_GetTicks())) / 1000;
     if (timer > 0) {
         ImGui::SetNextWindowPos(ImVec2(30, 30));
         ImGui::SetNextWindowSize(ImVec2(0, 0));
