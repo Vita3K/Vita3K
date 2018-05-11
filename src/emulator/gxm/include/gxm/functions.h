@@ -47,6 +47,8 @@ namespace texture {
     SceGxmTextureFormat get_format(const SceGxmTexture *texture);
     unsigned int get_width(const SceGxmTexture *texture);
     unsigned int get_height(const SceGxmTexture *texture);
+    void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
+    void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
 }
 GLenum translate_primitive(SceGxmPrimitiveType primType);
 GLenum translate_stencil_func(SceGxmStencilFunc stencil_func);

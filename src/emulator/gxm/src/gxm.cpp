@@ -879,7 +879,34 @@ namespace texture {
         }
         }
     }
+    
+    void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
+        LOG_WARN("4-bit palettes are not yet tested.");
+        
+        const size_t stride = ((width + 7) & ~7) / 2;
+        for (size_t y = 0; y < height; ++y) {
+            uint32_t *const dst_row = &dst[y * width];
+            const uint8_t *const src_row = &src[y * stride];
+            for (size_t x = 0; x < width; ++x) {
+                const uint8_t lohi = src_row[x / 2];
+                const uint8_t lo = lohi & 0xf;
+                const uint8_t hi = lohi >> 4;
+                dst_row[x + 0] = palette[lo];
+                dst_row[x + 1] = palette[hi];
+            }
+        }
+    }
 
+    void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
+        const size_t stride = (width + 7) & ~7;
+        for (size_t y = 0; y < height; ++y) {
+            uint32_t *const dst_row = &dst[y * width];
+            const uint8_t *const src_row = &src[y * stride];
+            for (size_t x = 0; x < width; ++x) {
+                dst_row[x] = palette[src_row[x]];
+            }
+        }
+    }
 } // namespace texture
 
 GLenum translate_primitive(SceGxmPrimitiveType primType) {
