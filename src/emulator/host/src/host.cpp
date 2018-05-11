@@ -124,8 +124,9 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
                 Buffer params;
                 state.io.title_id = d_name_utf8;
                 if (read_file_from_disk(params, "sce_sys/param.sfo", state)) {
-                    load_sfo(state.sfo_handle, params);
-                    find_data(state.game_title, state.sfo_handle, "TITLE");
+                    SfoFile sfo_handle;
+                    load_sfo(sfo_handle, params);
+                    find_data(state.game_title, sfo_handle, "TITLE");
                     state.gui.game_selector.title_ids.push_back(std::string(state.io.title_id));
                     state.gui.game_selector.titles.push_back(std::string(state.game_title));
                 }

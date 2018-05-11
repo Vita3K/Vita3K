@@ -118,9 +118,10 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     if (!read_file_from_zip(params, vpk_fp, sfo_path.c_str(), zip)) {
         return false;
     }
-
-    load_sfo(host.sfo_handle, params);
-    find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
+    
+    SfoFile sfo_handle;
+    load_sfo(sfo_handle, params);
+    find_data(host.io.title_id, sfo_handle, "TITLE_ID");
 
     std::string output_base_path;
     output_base_path = host.pref_path + "ux0/app/";
