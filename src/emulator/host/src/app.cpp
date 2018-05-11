@@ -171,9 +171,7 @@ bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring 
         if (!install_vpk(entry_point, host, path)) {
             return false;
         }
-    }
-
-    if (!is_vpk) {
+    } else {
         host.io.title_id = wide_to_utf(path);
     }
 

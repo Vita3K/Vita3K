@@ -338,7 +338,7 @@ EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
-    return create_dir(dir, mode, host.pref_path.c_str());
+    return create_dir(host.io, dir, mode, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoMkdirAsync) {
@@ -383,7 +383,7 @@ EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
-    return remove_file(path, host.pref_path.c_str());
+    return remove_file(host.io, path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoRemoveAsync) {
@@ -402,7 +402,7 @@ EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
-    return remove_dir(path, host.pref_path.c_str());
+    return remove_dir(host.io, path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoRmdirAsync) {

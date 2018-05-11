@@ -329,15 +329,30 @@ void close_file(IOState &io, SceUID fd) {
     io.std_files.erase(fd);
 }
 
-int remove_file(const char *file, const char *pref_path) {
+int remove_file(IOState &io, const char *file, const char *pref_path) {
     VitaIoDevice device;
     std::string device_name;
     std::tie(device, device_name) = translate_device(file);
+    std::string path = file;
+    
+    // Redirect savedata0:/ to ux0:/user/00/savedata/<title_id>
+    if (device == VitaIoDevice::SAVEDATA0) {
+        std::string fixed_path = path.substr(10);
+        auto start_path = fixed_path.find('/');
+        if (start_path != std::string::npos) {
+            fixed_path = fixed_path.substr(start_path);
+            fixed_path.insert(0, io.savedata0_path);
 
+            path = fixed_path;
+            device = VitaIoDevice::UX0;
+            std::tie(device, device_name) = translate_device(path);
+        }
+    }
+    
     switch (device) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
-        std::string file_path = translate_path(device_name, file, pref_path);
+        std::string file_path = translate_path(device_name, path, pref_path);
         fs::remove(file_path);
         return 0;
     }
@@ -348,15 +363,30 @@ int remove_file(const char *file, const char *pref_path) {
     }
 }
 
-int create_dir(const char *dir, int mode, const char *pref_path) {
+int create_dir(IOState &io, const char *dir, int mode, const char *pref_path) {
     VitaIoDevice device;
     std::string device_name;
     std::tie(device, device_name) = translate_device(dir);
+    std::string path = dir;
+    
+    // Redirect savedata0:/ to ux0:/user/00/savedata/<title_id>
+    if (device == VitaIoDevice::SAVEDATA0) {
+        std::string fixed_path = path.substr(10);
+        auto start_path = fixed_path.find('/');
+        if (start_path != std::string::npos) {
+            fixed_path = fixed_path.substr(start_path);
+            fixed_path.insert(0, io.savedata0_path);
+
+            path = fixed_path;
+            device = VitaIoDevice::UX0;
+            std::tie(device, device_name) = translate_device(path);
+        }
+    }
 
     switch (device) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
-        std::string dir_path = translate_path(device_name, dir, pref_path);
+        std::string dir_path = translate_path(device_name, path, pref_path);
 
         fs::create_directory(dir_path);
         return 0;
@@ -368,15 +398,30 @@ int create_dir(const char *dir, int mode, const char *pref_path) {
     }
 }
 
-int remove_dir(const char *dir, const char *pref_path) {
+int remove_dir(IOState &io, const char *dir, const char *pref_path) {
     VitaIoDevice device;
     std::string device_name;
     std::tie(device, device_name) = translate_device(dir);
+    std::string path = dir;
+    
+    // Redirect savedata0:/ to ux0:/user/00/savedata/<title_id>
+    if (device == VitaIoDevice::SAVEDATA0) {
+        std::string fixed_path = path.substr(10);
+        auto start_path = fixed_path.find('/');
+        if (start_path != std::string::npos) {
+            fixed_path = fixed_path.substr(start_path);
+            fixed_path.insert(0, io.savedata0_path);
+
+            path = fixed_path;
+            device = VitaIoDevice::UX0;
+            std::tie(device, device_name) = translate_device(path);
+        }
+    }
 
     switch (device) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
-        std::string dir_path = translate_path(device_name, dir, pref_path);
+        std::string dir_path = translate_path(device_name, path, pref_path);
         fs::remove(dir_path);
         return 0;
     }
@@ -395,7 +440,8 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
     VitaIoDevice device;
     std::string device_name;
     std::tie(device, device_name) = translate_device(file);
-
+    std::string path = file;
+    
     // read and execute access rights
     statp->st_mode = SCE_S_IRUSR | SCE_S_IRGRP | SCE_S_IROTH | SCE_S_IXUSR | SCE_S_IXGRP | SCE_S_IXOTH;
 
@@ -404,23 +450,34 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
     std::uint64_t creation_time_ticks{ 0 };
 
     // Redirect app0:/ to ux0:/app/<title_id>
-    char fpath[256];
     if (device == VitaIoDevice::APP0) {
         int i = 5;
         if (file[5] == '/')
             i++;
         std::string ux0_path = "ux0:/app/" + io.title_id + "/";
         ux0_path += &file[i];
-        sprintf(fpath, "%s", ux0_path.c_str());
-        file = fpath;
+        path = ux0_path;
         device = VitaIoDevice::UX0;
-        std::tie(device, device_name) = translate_device(file);
+        std::tie(device, device_name) = translate_device(path);
+    }
+    
+    // Redirect savedata0:/ to ux0:/user/00/savedata/<title_id>
+    if (device == VitaIoDevice::SAVEDATA0) {
+        std::string fixed_path = path.substr(10);
+        auto start_path = fixed_path.find('/');
+        if (start_path != std::string::npos) {
+            fixed_path = fixed_path.substr(start_path);
+            fixed_path.insert(0, io.savedata0_path);
+            path = fixed_path;
+            device = VitaIoDevice::UX0;
+            std::tie(device, device_name) = translate_device(path);
+        }
     }
 
     switch (device) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
-        std::string file_path = translate_path(device_name, file, pref_path);
+        std::string file_path = translate_path(device_name, path, pref_path);
 
 #ifdef WIN32
         WIN32_FIND_DATAW find_data;
@@ -480,12 +537,38 @@ int open_dir(IOState &io, const char *path, const char *pref_path) {
     VitaIoDevice device;
     std::string device_name;
     std::tie(device, device_name) = translate_device(path);
-
+    std::string spath;
+    
+    // Redirect app0:/ to ux0:/app/<title_id>
+    if (device == VitaIoDevice::APP0) {
+        int i = 5;
+        if (path[5] == '/')
+            i++;
+        std::string ux0_path = "ux0:/app/" + io.title_id + "/";
+        ux0_path += &path[i];
+        spath = ux0_path;
+        device = VitaIoDevice::UX0;
+        std::tie(device, device_name) = translate_device(spath);
+    }
+    
+    // Redirect savedata0:/ to ux0:/user/00/savedata/<title_id>
+    if (device == VitaIoDevice::SAVEDATA0) {
+        std::string fixed_path = spath.substr(10);
+        auto start_path = fixed_path.find('/');
+        if (start_path != std::string::npos) {
+            fixed_path = fixed_path.substr(start_path);
+            fixed_path.insert(0, io.savedata0_path);
+            spath = fixed_path;
+            device = VitaIoDevice::UX0;
+            std::tie(device, device_name) = translate_device(spath);
+        }
+    }
+    
     std::string dir_path;
     switch (device) {
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
-        dir_path = translate_path(device_name, path, pref_path);
+        dir_path = translate_path(device_name, spath, pref_path);
         break;
     }
     default: {

@@ -32,10 +32,9 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io);
 int seek_file(SceUID fd, int offset, int whence, IOState &io);
 void close_file(IOState &io, SceUID fd);
-int create_dir(const char *dir, int mode, const char *pref_path);
-int remove_file(const char *file, const char *pref_path);
-int create_dir(const char *dir, int mode, const char *pref_path);
-int remove_dir(const char *dir, const char *pref_path);
+int create_dir(IOState &io, const char *dir, int mode, const char *pref_path);
+int remove_file(IOState &io, const char *file, const char *pref_path);
+int remove_dir(IOState &io, const char *dir, const char *pref_path);
 int stat_file(IOState &io, const char *file, SceIoStat *stat, const char *pref_path, uint64_t base_tick);
 
 int open_dir(IOState &io, const char *path, const char *pref_path);
