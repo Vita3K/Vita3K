@@ -54,7 +54,11 @@ MACOSX_BUNDLE
 main.cpp
 )
 
-target_link_libraries(emulator PRIVATE cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util)
+if(LINUX)
+    target_link_libraries(emulator PRIVATE cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util stdc++fs)
+else()
+    target_link_libraries(emulator PRIVATE cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util)
+endif()
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
