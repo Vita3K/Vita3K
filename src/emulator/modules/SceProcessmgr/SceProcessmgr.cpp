@@ -27,12 +27,52 @@ struct VitaTimeval {
     uint32_t tv_usec;
 };
 
+EXPORT(int, sceKernelCDialogSessionClose) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelCDialogSetLeaseLimit) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceKernelCallAbortHandler) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelGetCurrentProcess) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelGetExtraTty) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelGetProcessName) {
     return UNIMPLEMENTED();
 }
 
 EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void *args) {
     return host.kernel.process_param;
+}
+
+EXPORT(int, sceKernelGetProcessTimeCore) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelGetProcessTimeLowCore) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelGetProcessTimeWideCore) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelGetProcessTitleId) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelGetRemoteProcessTime) {
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetStderr) {
@@ -114,8 +154,18 @@ EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(sceKernelCDialogSessionClose)
+BRIDGE_IMPL(sceKernelCDialogSetLeaseLimit)
 BRIDGE_IMPL(sceKernelCallAbortHandler)
+BRIDGE_IMPL(sceKernelGetCurrentProcess)
+BRIDGE_IMPL(sceKernelGetExtraTty)
+BRIDGE_IMPL(sceKernelGetProcessName)
 BRIDGE_IMPL(sceKernelGetProcessParam)
+BRIDGE_IMPL(sceKernelGetProcessTimeCore)
+BRIDGE_IMPL(sceKernelGetProcessTimeLowCore)
+BRIDGE_IMPL(sceKernelGetProcessTimeWideCore)
+BRIDGE_IMPL(sceKernelGetProcessTitleId)
+BRIDGE_IMPL(sceKernelGetRemoteProcessTime)
 BRIDGE_IMPL(sceKernelGetStderr)
 BRIDGE_IMPL(sceKernelGetStdin)
 BRIDGE_IMPL(sceKernelGetStdout)
