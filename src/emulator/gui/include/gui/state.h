@@ -20,7 +20,6 @@
 #include <dialog/state.h>
 
 enum SelectorState {
-    MAIN_MENU,
     SELECT_APP
 };
 
@@ -28,7 +27,7 @@ struct GamesSelector {
     std::vector<std::string> titles;
     std::vector<std::string> title_ids;
     std::string title_id;
-    SelectorState state = MAIN_MENU;
+    SelectorState state = SELECT_APP;
 };
 
 struct GuiState {
