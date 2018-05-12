@@ -87,6 +87,8 @@ std::string translate_path(const std::string &part_name, const std::string &path
     int i = part_name.length();
     res += "/";
 
+    if (path.empty())
+        return res;
     if (path[i + 1] == '/')
         i++;
     res += &path[i + 1];
