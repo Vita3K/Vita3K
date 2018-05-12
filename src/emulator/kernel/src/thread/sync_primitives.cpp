@@ -50,6 +50,8 @@ SceUID create_mutex(SceUID *uid_out, KernelState &kernel, const char *export_nam
     }
 
     const MutexPtr mutex = std::make_shared<Mutex>();
+    const SceUID uid = kernel.get_next_uid();
+    mutex->uid = uid;
     mutex->lock_count = init_count;
     std::copy(mutex_name, mutex_name + KERNELOBJECT_MAX_NAME_LENGTH, mutex->name);
     mutex->attr = attr;
@@ -201,6 +203,8 @@ SceUID create_semaphore(KernelState &kernel, const char *export_name, const char
     }
 
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
+    const SceUID uid = kernel.get_next_uid();
+    semaphore->uid = uid;
     semaphore->val = initVal;
     semaphore->max = maxVal;
     semaphore->attr = attr;

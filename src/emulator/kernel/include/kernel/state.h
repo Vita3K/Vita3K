@@ -97,7 +97,6 @@ typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
 struct KernelState {
     std::mutex mutex;
     Blocks blocks;
-    SceUID next_uid = 0;
     ThreadToSlotToAddress tls;
     SemaphorePtrs semaphores;
     MutexPtrs mutexes;
@@ -109,4 +108,11 @@ struct KernelState {
     ExportNids export_nids;
     SceRtcTick base_tick;
     Ptr<uint32_t> process_param;
+
+    SceUID get_next_uid() {
+        return next_uid++;
+    }
+
+private:
+    std::atomic<SceUID> next_uid{ 0 };
 };

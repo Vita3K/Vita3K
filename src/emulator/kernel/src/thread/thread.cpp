@@ -54,7 +54,7 @@ static int SDLCALL thread_function(void *data) {
 }
 
 SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CallImport call_import, bool log_code) {
-    SceUID thid = kernel.next_uid++;
+    SceUID thid = kernel.get_next_uid();
 
     const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {
         free(mem, stack);
