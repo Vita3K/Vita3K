@@ -1,4 +1,4 @@
-﻿// Vita3K emulator project
+// Vita3K emulator project
 // Copyright (C) 2018 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -68,9 +68,28 @@ struct WaitingThreadData {
     bool operator>(const WaitingThreadData &rhs) const {
         return priority > rhs.priority;
     }
+
+    bool operator==(const WaitingThreadData &rhs) const {
+        return thread == rhs.thread;
+    }
 };
 
-using WaitingThreadQueue = std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>, std::greater<WaitingThreadData>>;
+template <typename T>
+class random_priority_queue : public std::priority_queue<T, std::vector<T>, std::greater<T>> {
+public:
+    bool remove(const T &value) {
+        auto it = std::find(this->c.begin(), this->c.end(), value);
+        if (it != this->c.end()) {
+            this->c.erase(it);
+            std::make_heap(this->c.begin(), this->c.end(), this->comp);
+            return true;
+        } else {
+            return false;
+        }
+    }
+};
+
+using WaitingThreadQueue = random_priority_queue<WaitingThreadData>;
 
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
@@ -96,8 +115,21 @@ struct Mutex {
     ThreadStatePtr owner;
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
+
+struct EventFlag {
+    int flags;
+    uint32_t attr;
+    std::mutex mutex;
+    WaitingThreadQueue waiting_threads;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+};
+
+typedef std::shared_ptr<Semaphore> SemaphorePtr;
+typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 typedef std::shared_ptr<Mutex> MutexPtr;
 typedef std::map<SceUID, MutexPtr> MutexPtrs;
+typedef std::shared_ptr<EventFlag> EventFlagPtr;
+typedef std::map<SceUID, EventFlagPtr> EventFlagPtrs;
 
 struct Condvar {
     struct SignalTarget {
@@ -146,6 +178,7 @@ struct KernelState {
     CondvarPtrs lwcondvars;
     MutexPtrs mutexes;
     MutexPtrs lwmutexes; // also Mutexes for now
+    EventFlagPtrs eventflags;
     ThreadStatePtrs threads;
     ThreadPtrs running_threads;
     KernelWaitingThreadStates waiting_threads;

@@ -778,8 +778,8 @@ EXPORT(int, sceKernelCreateCond, const char *name, SceUInt attr, SceUID mutexid,
     return uid;
 }
 
-EXPORT(int, sceKernelCreateEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCreateEventFlag, const char *name, unsigned int attr, unsigned int flags, SceKernelEventFlagOptParam *opt) {
+    return create_eventflag(host.kernel, export_name, thread_id, name, attr, flags);
 }
 
 EXPORT(int, sceKernelCreateLwCond, Ptr<emu::SceKernelLwCondWork> workarea, const char *name, SceUInt attr, Ptr<emu::SceKernelLwMutexWork> workarea_mutex, const SceKernelLwCondOptParam *opt_param) {
@@ -1274,8 +1274,8 @@ EXPORT(int, sceKernelWaitEventCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelWaitEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelWaitEventFlag, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout) {
+    return wait_eventflag(host.kernel, export_name, thread_id, event_id, flags, wait, timeout);
 }
 
 EXPORT(int, sceKernelWaitEventFlagCB) {
