@@ -506,3 +506,139 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
 
     return SCE_KERNEL_OK;
 }
+
+SceUID create_eventflag(KernelState &kernel, const char *export_name, SceUID thread_id, const char *event_name, SceUInt attr, unsigned int flags) {
+    if ((strlen(event_name) > 31) && ((attr & 0x80) == 0x80)) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+
+    const EventFlagPtr event = std::make_shared<EventFlag>();
+    event->flags = flags;
+    std::copy(event_name, event_name + KERNELOBJECT_MAX_NAME_LENGTH, event->name);
+    event->attr = attr;
+
+    const std::lock_guard<std::mutex> lock(kernel.mutex);
+    const SceUID uid = kernel.get_next_uid();
+    kernel.eventflags.emplace(uid, event);
+
+    return uid;
+}
+
+int wait_eventflag(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, SceUInt *timeout) {
+    assert(event_id >= 0);
+    assert(timeout == nullptr);
+
+    // TODO Don't lock twice.
+    const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    }
+
+    const std::lock_guard<std::mutex> lock(event->mutex);
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+
+    bool is_fifo = (event->attr & SCE_KERNEL_ATTR_TH_FIFO);
+
+    bool condition = false;
+
+    if (wait & SCE_EVENT_WAITOR) {
+        condition = event->flags & flags;
+    } else {
+        condition = (event->flags & flags) == flags;
+    }
+
+    if (condition) {
+        if (wait & SCE_EVENT_WAITCLEAR) {
+            event->flags = 0;
+        }
+
+        if (wait & SCE_EVENT_WAITCLEAR_PAT) {
+            event->flags &= flags;
+        }
+    } else {
+        const std::lock_guard<std::mutex> lock2(thread->mutex);
+        assert(thread->to_do == ThreadToDo::run);
+        thread->to_do = ThreadToDo::wait;
+
+        WaitingThreadData data;
+        data.thread = thread;
+        data.wait = wait;
+        data.flags = flags;
+        data.priority = is_fifo ? 0 : thread->priority;
+
+        event->waiting_threads.emplace(data);
+        stop(*thread->cpu);
+    }
+
+    return SCE_KERNEL_OK;
+}
+
+int set_eventflag(KernelState &kernel, const char *export_name, SceUID event_id, unsigned int flags) {
+    // TODO Don't lock twice.
+    const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    }
+
+    const std::lock_guard<std::mutex> lock(event->mutex);
+    event->flags |= flags;
+
+    WaitingThreadQueue waiting_threads_copy = event->waiting_threads;
+    while (!waiting_threads_copy.empty()) {
+        bool condition = false;
+
+        auto waiter = waiting_threads_copy.top();
+
+        if (waiter.wait & SCE_EVENT_WAITOR) {
+            condition = event->flags & waiter.flags;
+        } else {
+            condition = (event->flags & waiter.flags) == waiter.flags;
+        }
+
+        if (condition) {
+            if (waiter.wait & SCE_EVENT_WAITCLEAR) {
+                event->flags = 0;
+            }
+
+            if (waiter.wait & SCE_EVENT_WAITCLEAR_PAT) {
+                event->flags &= ~waiter.flags;
+            }
+
+            event->waiting_threads.remove(waiter);
+
+            const ThreadStatePtr waiting_thread = waiter.thread;
+            const std::lock_guard<std::mutex> lock2(waiting_thread->mutex);
+            assert(waiting_thread->to_do == ThreadToDo::wait);
+            waiting_thread->to_do = ThreadToDo::run;
+            waiting_thread->something_to_do.notify_one();
+        }
+
+        waiting_threads_copy.pop();
+    }
+
+    return 0;
+}
+
+int delete_eventflag(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id) {
+    const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    }
+
+    const std::lock_guard<std::mutex> lock(event->mutex);
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("Deleting eventflag: uid:{} thread_id:{} name:\"{}\" attr:{} waiting_threads:{}",
+            event_id, thread_id, event->name, event->attr, event->waiting_threads.size());
+    }
+
+    if (event->waiting_threads.empty()) {
+        const std::lock_guard<std::mutex> lock(event->mutex);
+        kernel.eventflags.erase(event_id);
+    } else {
+        // TODO:
+    }
+
+    return SCE_KERNEL_OK;
+}
