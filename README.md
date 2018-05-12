@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/Vita3K/Vita3K.svg?branch=master)](https://travis-ci.org/Vita3K/Vita3K)
 [![Build status](https://ci.appveyor.com/api/projects/status/tlvkwrsj13vq3gor/branch/master?svg=true)](https://ci.appveyor.com/project/Vita3K/vita3k/branch/master)
 ## Introduction
-Vita3K is an experimental PlayStation Vita emulator for Windows and macOS.
+Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS.
 
 * [Website](https://Vita3K.github.io/) (information for users)
 * [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
@@ -45,7 +45,7 @@ Vita3K binaries for Windows can be downloaded on [AppVeyor](https://ci.appveyor.
 4. Build.
 
 ### Linux
-1. Get [SDL](https://wiki.libsdl.org/Installation#Linux.2FUnix) (2.0.7+) and [unicorn](http://www.unicorn-engine.org)
+1. Get [SDL](https://wiki.libsdl.org/Installation#Linux.2FUnix) (2.0.7+)
 2. `git submodule init && git submodule update`
 3. `mkdir build-linux && cd build-linux`
 4. `cmake ..`
