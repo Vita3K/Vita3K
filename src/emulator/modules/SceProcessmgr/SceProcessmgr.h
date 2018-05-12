@@ -19,8 +19,18 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(sceKernelCDialogSessionClose)
+BRIDGE_DECL(sceKernelCDialogSetLeaseLimit)
 BRIDGE_DECL(sceKernelCallAbortHandler)
+BRIDGE_DECL(sceKernelGetCurrentProcess)
+BRIDGE_DECL(sceKernelGetExtraTty)
+BRIDGE_DECL(sceKernelGetProcessName)
 BRIDGE_DECL(sceKernelGetProcessParam)
+BRIDGE_DECL(sceKernelGetProcessTimeCore)
+BRIDGE_DECL(sceKernelGetProcessTimeLowCore)
+BRIDGE_DECL(sceKernelGetProcessTimeWideCore)
+BRIDGE_DECL(sceKernelGetProcessTitleId)
+BRIDGE_DECL(sceKernelGetRemoteProcessTime)
 BRIDGE_DECL(sceKernelGetStderr)
 BRIDGE_DECL(sceKernelGetStdin)
 BRIDGE_DECL(sceKernelGetStdout)

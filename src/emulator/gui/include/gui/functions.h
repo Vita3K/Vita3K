@@ -26,3 +26,4 @@ void DrawMutexesDialog(HostState &host);
 void DrawLwMutexesDialog(HostState &host);
 void DrawUI(HostState &host);
 void DrawCommonDialog(HostState &host);
+void DrawGameSelector(HostState &host, bool *is_vpk);

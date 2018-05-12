@@ -15,22 +15,23 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "vpk.h"
-
 #include <kernel/load_self.h>
 #include <kernel/state.h>
 
+#include <host/app.h>
 #include <host/sfo.h>
 #include <host/state.h>
 #include <io/state.h>
+#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_convert.h>
 
 #include <cassert>
 #include <cstring>
-#include <vector>
-
-typedef std::vector<uint8_t> Buffer;
+#include <fstream>
+#include <iostream>
+#include <istream>
+#include <iterator>
 
 static void delete_zip(mz_zip_archive *zip) {
     mz_zip_reader_end(zip);
@@ -47,20 +48,38 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
     return n;
 }
 
+bool read_file_from_disk(Buffer &buf, const char *file, HostState &host) {
+    std::string file_path = host.pref_path + "ux0/app/" + host.io.title_id + "/" + file;
+    std::ifstream f(file_path, std::ifstream::binary);
+    if (f.fail()) {
+        return false;
+    }
+    f.unsetf(std::ios::skipws);
+    std::streampos size;
+    f.seekg(0, std::ios::end);
+    size = f.tellg();
+    f.seekg(0, std::ios::beg);
+    buf.reserve(size);
+    buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
+    return true;
+}
+
 static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, const ZipPtr zip) {
     const int file_index = mz_zip_reader_locate_file(zip.get(), file, nullptr, 0);
     if (file_index < 0) {
+        LOG_CRITICAL("Failed to locate {}.", file);
         return false;
     }
 
     if (!mz_zip_reader_extract_file_to_callback(zip.get(), file, &write_to_buffer, &buf, 0)) {
+        LOG_CRITICAL("Failed to extract {}.", file);
         return false;
     }
 
     return true;
 }
 
-bool load_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
+bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
@@ -71,10 +90,12 @@ bool load_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring 
 #else
     if (!(vpk_fp = fopen(wide_to_utf(path).c_str(), "rb"))) {
 #endif
+        LOG_CRITICAL("Failed to open the vpk.");
         return false;
     }
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
+        LOG_CRITICAL("Cannot init miniz reader");
         return false;
     }
 
@@ -97,34 +118,87 @@ bool load_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring 
     if (!read_file_from_zip(params, vpk_fp, sfo_path.c_str(), zip)) {
         return false;
     }
+    
+    SfoFile sfo_handle;
+    load_sfo(sfo_handle, params);
+    find_data(host.io.title_id, sfo_handle, "TITLE_ID");
+
+    std::string output_base_path;
+    output_base_path = host.pref_path + "ux0/app/";
+    std::string title_base_path = output_base_path;
+    if (sfo_path.length() < 20) {
+        output_base_path += host.io.title_id;
+    }
+    title_base_path += host.io.title_id;
+    bool created = fs::create_directory(title_base_path);
+    if (!created) {
+        LOG_INFO("{} already installed, launching application...", host.io.title_id);
+        return true;
+    }
+
+    for (int i = 0; i < num_files; i++) {
+        mz_zip_archive_file_stat file_stat;
+        if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
+            continue;
+        }
+        std::string output_path = output_base_path;
+        output_path += "/";
+        output_path += file_stat.m_filename;
+        if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
+            fs::create_directories(output_path);
+        } else {
+            const size_t slash = output_path.rfind('/');
+            if (std::string::npos != slash) {
+                std::string directory = output_path.substr(0, slash);
+                fs::create_directories(directory);
+            }
+            
+            LOG_INFO("Extracting {}", output_path);
+            mz_zip_reader_extract_to_file(zip.get(), i, output_path.c_str(), 0);
+        }
+    }
+
+    std::string savedata_path = host.pref_path + "ux0/user/00/savedata/" + host.io.title_id;
+    fs::create_directory(savedata_path);
+
+    LOG_INFO("{} installed succesfully!", host.io.title_id);
+    return true;
+}
+
+bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, bool is_vpk) {
+    if (is_vpk) {
+        if (!install_vpk(entry_point, host, path)) {
+            return false;
+        }
+    } else {
+        host.io.title_id = wide_to_utf(path);
+    }
+
+    Buffer params;
+    if (!read_file_from_disk(params, "sce_sys/param.sfo", host)) {
+        return false;
+    }
 
     load_sfo(host.sfo_handle, params);
 
     find_data(host.game_title, host.sfo_handle, "TITLE");
-    find_data(host.title_id, host.sfo_handle, "TITLE_ID");
+    find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
     std::string category;
     find_data(category, host.sfo_handle, "CATEGORY");
 
-    LOG_INFO("Path: {}", wide_to_utf(path));
     LOG_INFO("Title: {}", host.game_title);
-    LOG_INFO("Serial: {}", host.title_id);
+    LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Category: {}", category);
-
-    host.io.app0_prefix = "";
+    
+    host.io.savedata0_path = "ux0:/user/00/savedata/" + host.io.title_id + "/";
 
     Buffer eboot;
-    if (!read_file_from_zip(eboot, vpk_fp, "eboot.bin", zip)) {
-        std::string eboot_path = host.title_id + "/eboot.bin";
-        if (!read_file_from_zip(eboot, vpk_fp, eboot_path.c_str(), zip)) {
-            return false;
-        } else {
-            host.io.app0_prefix = host.title_id + "/";
-        }
+    if (!read_file_from_disk(eboot, "eboot.bin", host)) {
+        return false;
     }
 
     Buffer libc;
-    std::string libc_path = host.io.app0_prefix + "sce_module/libc.suprx";
-    if (read_file_from_zip(libc, vpk_fp, libc_path.c_str(), zip)) {
+    if (read_file_from_disk(libc, "sce_module/libc.suprx", host)) {
         if (load_self(entry_point, host.kernel, host.mem, libc.data(), "app0:sce_module/libc.suprx") == 0) {
             LOG_INFO("LIBC loaded");
         }
@@ -133,18 +207,6 @@ bool load_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring 
     if (load_self(entry_point, host.kernel, host.mem, eboot.data(), "app0:eboot.bin") < 0) {
         return false;
     }
-
-    std::string savedata_path = host.pref_path + "ux0/user/00/savedata/" + host.title_id;
-
-#ifdef WIN32
-    CreateDirectoryA(savedata_path.c_str(), nullptr);
-#else
-    const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-    mkdir(savedata_path.c_str(), mode);
-#endif
-
-    host.io.savedata0_path = "ux0:/user/00/savedata/" + host.title_id + "/";
-    host.io.vpk = zip;
 
     return true;
 }
