@@ -1173,6 +1173,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     const GLenum internal_format = texture::translate_internal_format(fmt);
     const GLenum format = texture::translate_format(fmt);
     const GLenum type = texture::translate_type(fmt);
+    const GLenum *const swizzle = texture::translate_swizzle(fmt);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, pixels);
@@ -1180,6 +1181,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture::translate_wrap_mode(vaddr));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->min_filter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->mag_filter));
+    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
     return 0;

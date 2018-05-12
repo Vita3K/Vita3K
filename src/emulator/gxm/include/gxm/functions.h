@@ -31,12 +31,12 @@ GLenum translate_blend_func(SceGxmBlendFunc src);
 GLenum translate_blend_factor(SceGxmBlendFactor src);
 namespace texture {
     SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
-    std::uint32_t get_swizzle(SceGxmTextureFormat src);
     bool is_paletted_format(SceGxmTextureFormat src);
     GLenum translate_internal_format(SceGxmTextureFormat src);
     GLenum translate_format(SceGxmTextureFormat src);
     GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
     GLenum translate_type(SceGxmTextureFormat format);
+    const GLenum *translate_swizzle(SceGxmTextureFormat fmt);
     GLenum translate_minmag_filter(SceGxmTextureFilter src);
     SceGxmTextureFormat get_format(const SceGxmTexture *texture);
     unsigned int get_width(const SceGxmTexture *texture);
