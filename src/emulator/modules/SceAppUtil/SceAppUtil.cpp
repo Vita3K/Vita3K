@@ -153,7 +153,7 @@ EXPORT(int, sceAppUtilSaveDataDataRemove, emu::SceAppUtilSaveDataFileSlot *slot,
         file_path += files[i].dataPath.get(host.mem);
         remove_file(host.io, file_path.c_str(), host.pref_path.c_str());
     }
-    
+
     if (files[0].mode == SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT) {
         std::string slot_path = "savedata0:/SlotParam_";
         slot_path += std::to_string(slot->id);

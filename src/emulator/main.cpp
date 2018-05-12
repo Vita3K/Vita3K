@@ -103,20 +103,20 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    
+
     HostState host;
     if (!init(host, DEFAULT_RES_WIDTH, WINDOW_BORDER_WIDTH, DEFAULT_RES_HEIGHT, WINDOW_BORDER_HEIGHT)) {
         error("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }
-    
+
     ImGui::CreateContext();
     ImGui_ImplSdlGL2_Init(host.window.get());
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    
+
     bool is_vpk = true;
-    
+
     while (path.empty() && handle_events(host) && is_vpk) {
         ImGui_ImplSdlGL2_NewFrame(host.window.get());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -127,11 +127,11 @@ int main(int argc, char *argv[]) {
         ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(host.window.get());
     }
-    
+
     if (!is_vpk) {
         path = utf_to_wide(host.gui.game_selector.title_id);
     }
-    
+
     if (path.empty()) {
         return Success;
     }

@@ -21,8 +21,8 @@
 #include <host/functions.h>
 #include <io/functions.h>
 #include <kernel/functions.h>
-#include <kernel/thread/thread_functions.h>
 #include <kernel/thread/sync_primitives.h>
+#include <kernel/thread/thread_functions.h>
 #include <rtc/rtc.h>
 #include <util/log.h>
 

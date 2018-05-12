@@ -102,7 +102,7 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
     Binding::initialize(false);
     state.kernel.base_tick = { rtc_base_ticks() };
     state.display.set_window_dims(window_width, window_height);
-    
+
     std::string dir_path = state.pref_path + "ux0/app";
 #ifdef WIN32
     _WDIR *d = _wopendir((utf_to_wide(dir_path)).c_str());
@@ -134,12 +134,12 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
         }
     } while (dp);
 
-#ifdef WIN32    
+#ifdef WIN32
     _wclosedir(d);
 #else
     closedir(d);
 #endif
-    
+
     return true;
 }
 
