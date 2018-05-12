@@ -160,7 +160,6 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
 
     std::string savedata_path = host.pref_path + "ux0/user/00/savedata/" + host.io.title_id;
     fs::create_directory(savedata_path);
-    host.io.savedata0_path = "ux0:/user/00/savedata/" + host.io.title_id + "/";
 
     LOG_INFO("{} installed succesfully!", host.io.title_id);
     return true;
@@ -190,6 +189,8 @@ bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring 
     LOG_INFO("Title: {}", host.game_title);
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Category: {}", category);
+    
+    host.io.savedata0_path = "ux0:/user/00/savedata/" + host.io.title_id + "/";
 
     Buffer eboot;
     if (!read_file_from_disk(eboot, "eboot.bin", host)) {
