@@ -58,6 +58,21 @@ void DrawImeDialog(HostState &host) {
     ImGui::End();
 }
 
+void DrawMessageDialog(HostState &host) {
+    ImGui::SetNextWindowPosCenter();
+    ImGui::SetNextWindowSize(ImVec2(0, 0));
+    ImGui::Begin("Message Dialog");
+    ImGui::Text(host.gui.common_dialog.msg.message.c_str());
+    for (int i = 0; i < host.gui.common_dialog.msg.btn_num; i++) {
+        if (ImGui::Button(host.gui.common_dialog.msg.btn[i].c_str())) {
+            host.gui.common_dialog.msg.status = host.gui.common_dialog.msg.btn_val[i];
+            host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        }
+        ImGui::SameLine();
+    }
+    ImGui::End();
+}
+
 void DrawTrophySetupDialog(HostState &host) {
     int timer = (static_cast<int64_t>(host.gui.common_dialog.trophy.tick) - static_cast<int64_t>(SDL_GetTicks())) / 1000;
     if (timer > 0) {
@@ -80,6 +95,9 @@ void DrawCommonDialog(HostState &host) {
         switch (host.gui.common_dialog.type) {
         case IME_DIALOG:
             DrawImeDialog(host);
+            break;
+        case MESSAGE_DIALOG:
+            DrawMessageDialog(host);
             break;
         case TROPHY_SETUP_DIALOG:
             DrawTrophySetupDialog(host);
