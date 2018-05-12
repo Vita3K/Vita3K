@@ -60,8 +60,8 @@ SceUID create_mutex(SceUID *uid_out, KernelState &kernel, const char *export_nam
         const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
         mutex->owner = thread;
     }
+
     const std::lock_guard<std::mutex> lock(kernel.mutex);
-    const SceUID uid = kernel.next_uid++;
     auto &mutexes = get_mutexes(kernel, weight);
     mutexes.emplace(uid, mutex);
 
@@ -209,8 +209,8 @@ SceUID create_semaphore(KernelState &kernel, const char *export_name, const char
     semaphore->max = maxVal;
     semaphore->attr = attr;
     std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, semaphore->name);
+
     const std::lock_guard<std::mutex> lock(kernel.mutex);
-    const SceUID uid = kernel.next_uid++;
     kernel.semaphores.emplace(uid, semaphore);
 
     return uid;

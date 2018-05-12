@@ -61,7 +61,11 @@ struct WaitingThreadData {
 
 using WaitingThreadQueue = std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>, std::greater<WaitingThreadData>>;
 
+// NOTE: uid is copied to sync primitives here for debugging,
+//       not really needed since they are put in std::map's
+
 struct Semaphore {
+    SceUID uid;
     int val;
     int max;
     uint32_t attr;
@@ -69,8 +73,11 @@ struct Semaphore {
     WaitingThreadQueue waiting_threads;
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
+typedef std::shared_ptr<Semaphore> SemaphorePtr;
+typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 
 struct Mutex {
+    SceUID uid;
     int lock_count;
     uint32_t attr;
     std::mutex mutex;
@@ -78,9 +85,6 @@ struct Mutex {
     ThreadStatePtr owner;
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
-
-typedef std::shared_ptr<Semaphore> SemaphorePtr;
-typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 typedef std::shared_ptr<Mutex> MutexPtr;
 typedef std::map<SceUID, MutexPtr> MutexPtrs;
 
