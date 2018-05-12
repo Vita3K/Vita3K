@@ -136,6 +136,7 @@ bool init(IOState &io, const char *pref_path) {
     CreateDirectoryA(ux0_user.c_str(), nullptr);
     CreateDirectoryA(ux0_user00.c_str(), nullptr);
     CreateDirectoryA(ux0_savedata.c_str(), nullptr);
+    CreateDirectoryA("shaders", nullptr);
 #else
     const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     mkdir(ux0.c_str(), mode);
@@ -145,6 +146,7 @@ bool init(IOState &io, const char *pref_path) {
     mkdir(ux0_user.c_str(), mode);
     mkdir(ux0_user00.c_str(), mode);
     mkdir(ux0_savedata.c_str(), mode);
+    mkdir("shaders", mode);
 #endif
 
     return true;

@@ -301,10 +301,17 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     return glsl.str();
 }
 
-static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source) {
+static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source, const std::string &title_id) {
     // Dump missing shader GLSL.
     std::ostringstream glsl_path;
-    glsl_path << hash << "." << extension;
+    std::string shaders_path = std::string("shaders/") + title_id + "/";
+#ifdef WIN32
+    CreateDirectoryA(shaders_path.c_str(), nullptr);
+#else
+    const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+    mkdir(shaders_path.c_str(), mode);
+#endif
+    glsl_path << shaders_path << hash << "." << extension;
     std::ofstream glsl_file(glsl_path.str());
     if (!glsl_file.fail()) {
         glsl_file << source;
@@ -313,7 +320,7 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
 
     // Dump missing shader binary.
     std::ostringstream gxp_path;
-    gxp_path << hash << ".gxp";
+    gxp_path << shaders_path << hash << ".gxp";
     std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
     if (!gxp.fail()) {
         gxp.write(reinterpret_cast<const char *>(&program), program.size);
@@ -474,7 +481,7 @@ void after_callback(const glbinding::FunctionCall &fn) {
     }
 }
 
-std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path) {
+std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path, const std::string &title_id) {
     const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
     const GLSLCache::const_iterator cached = shader_patcher.fragment_glsl_cache.find(hash_bytes);
     if (cached != shader_patcher.fragment_glsl_cache.end()) {
@@ -486,7 +493,7 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
     if (source.empty()) {
         LOG_ERROR("Missing fragment shader {}", hash_text.data());
         source = generate_fragment_glsl(fragment_program);
-        dump_missing_shader(hash_text.data(), "frag", fragment_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "frag", fragment_program, source.c_str(), title_id);
     }
 
     shader_patcher.fragment_glsl_cache.emplace(hash_bytes, source);
@@ -494,7 +501,7 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
     return source;
 }
 
-std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path) {
+std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path, const std::string &title_id) {
     const Sha256Hash hash_bytes = sha256(&vertex_program, vertex_program.size);
     const GLSLCache::const_iterator cached = shader_patcher.vertex_glsl_cache.find(hash_bytes);
     if (cached != shader_patcher.vertex_glsl_cache.end()) {
@@ -506,7 +513,7 @@ std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmPro
     if (source.empty()) {
         LOG_ERROR("Missing vertex shader {}", hash_text.data());
         source = generate_vertex_glsl(vertex_program);
-        dump_missing_shader(hash_text.data(), "vert", vertex_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "vert", vertex_program, source.c_str(), title_id);
     }
 
     shader_patcher.vertex_glsl_cache.emplace(hash_bytes, source);
@@ -525,7 +532,7 @@ AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
             const auto struct_idx = name.find('.');
             const bool is_struct_field = struct_idx != std::string::npos;
             if (is_struct_field)
-                name.replace(struct_idx, 1, "");  //Workaround for input.field on glsl version 120
+                name.replace(struct_idx, 1, ""); //Workaround for input.field on glsl version 120
             locations.emplace(parameter.resource_index, name);
         }
     }

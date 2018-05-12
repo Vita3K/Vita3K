@@ -24,8 +24,8 @@ typedef std::map<GLuint, std::string> AttributeLocations;
 
 void before_callback(const glbinding::FunctionCall &fn);
 void after_callback(const glbinding::FunctionCall &fn);
-std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path);
-std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path);
+std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path, const std::string &title_id);
+std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path, const std::string &title_id);
 AttributeLocations attribute_locations(const SceGxmProgram &vertex_program);
 SharedGLObject get_program(SceGxmContext &context, const MemState &mem);
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format);
