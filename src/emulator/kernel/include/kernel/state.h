@@ -24,6 +24,7 @@
 #include <psp2/rtc.h>
 #include <psp2/types.h>
 
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <queue>
@@ -98,6 +99,34 @@ struct Mutex {
 typedef std::shared_ptr<Mutex> MutexPtr;
 typedef std::map<SceUID, MutexPtr> MutexPtrs;
 
+struct Condvar {
+    struct SignalTarget {
+        enum class Type {
+            Any, // signal any one waiting thread
+            Specific, // signal a specific waiting thread (target_thread)
+            All, // signal all waiting threads
+        } type;
+
+        SceUID thread_id; // for Type::One
+
+        SignalTarget(Type type)
+            : type(type)
+            , thread_id(0) {}
+        SignalTarget(Type type, SceUID thread_id)
+            : type(type)
+            , thread_id(thread_id) {}
+    };
+
+    SceUID uid;
+    uint32_t attr;
+    MutexPtr associated_mutex;
+    std::mutex mutex;
+    WaitingThreadQueue waiting_threads;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+};
+typedef std::shared_ptr<Condvar> CondvarPtr;
+typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
+
 namespace emu {
     typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
 }
@@ -113,6 +142,8 @@ struct KernelState {
     Blocks blocks;
     ThreadToSlotToAddress tls;
     SemaphorePtrs semaphores;
+    CondvarPtrs condvars;
+    CondvarPtrs lwcondvars;
     MutexPtrs mutexes;
     MutexPtrs lwmutexes; // also Mutexes for now
     ThreadStatePtrs threads;

@@ -50,6 +50,10 @@ inline MutexPtrs &get_mutexes(KernelState &kernel, SyncWeight weight) {
     return weight == SyncWeight::Light ? kernel.lwmutexes : kernel.mutexes;
 }
 
+inline CondvarPtrs &get_condvars(KernelState &kernel, SyncWeight weight) {
+    return weight == SyncWeight::Light ? kernel.lwcondvars : kernel.condvars;
+}
+
 inline int find_mutex(MutexPtr &mutex_out, MutexPtrs *mutexes_out, KernelState &kernel, const char *export_name, SceUID mutexid, SyncWeight weight) {
     MutexPtrs &mutexes = get_mutexes(kernel, weight);
     mutex_out = lock_and_find(mutexid, mutexes, kernel.mutex);
@@ -63,6 +67,39 @@ inline int find_mutex(MutexPtr &mutex_out, MutexPtrs *mutexes_out, KernelState &
     if (mutexes_out)
         *mutexes_out = mutexes;
     return SCE_KERNEL_OK;
+}
+
+// TODO: Laughably inefficient helper functions before we properly implement our priority queue
+bool find_in_queue(WaitingThreadData &data, WaitingThreadQueue queue, const ThreadStatePtr thread) {
+    while (!queue.empty()) {
+        const WaitingThreadData temp_data = queue.top();
+        if (temp_data.thread == thread) {
+            data = std::move(temp_data);
+            return true;
+        }
+        queue.pop();
+    }
+    return false;
+}
+
+bool remove_in_queue(WaitingThreadQueue &queue, const ThreadStatePtr thread) {
+    WaitingThreadQueue queue_copy = queue;
+    WaitingThreadQueue queue_out;
+    bool found = false;
+
+    WaitingThreadData data;
+    while (!queue_copy.empty()) {
+        const WaitingThreadData temp_data = queue_copy.top();
+        if (temp_data.thread == thread) {
+            found = true;
+        } else {
+            queue_out.emplace(temp_data);
+        }
+        queue_copy.pop();
+    }
+    queue = queue_out;
+
+    return found;
 }
 
 // *********
@@ -331,6 +368,140 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID semaid
         semaphore->waiting_threads.pop();
         semaphore->val -= waiting_signal_count;
         waiting_thread->something_to_do.notify_one();
+    }
+
+    return SCE_KERNEL_OK;
+}
+
+// **********************
+// * Condition Variable *
+// **********************
+
+SceUID condvar_create(SceUID *uid_out, KernelState &kernel, const char *export_name, const char *name, SceUInt attr, SceUID assoc_mutexid, SyncWeight weight) {
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+    MutexPtr assoc_mutex;
+    if (auto error = find_mutex(assoc_mutex, nullptr, kernel, export_name, assoc_mutexid, weight))
+        return error;
+
+    const SceUID uid = kernel.get_next_uid();
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: Creating {}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
+            export_name, weight == SyncWeight::Light ? "lwcond" : "cond", uid, name, attr, assoc_mutexid);
+    }
+
+    const CondvarPtr condvar = std::make_shared<Condvar>();
+    condvar->attr = attr;
+    condvar->associated_mutex = std::move(assoc_mutex);
+    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, condvar->name);
+
+    const std::lock_guard<std::mutex> lock(kernel.mutex);
+    auto &condvars = get_condvars(kernel, weight);
+    condvars.emplace(uid, condvar);
+
+    if (uid_out)
+        *uid_out = uid;
+    return SCE_KERNEL_OK;
+}
+
+int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, SceUInt *timeout, SyncWeight weight) {
+    assert(timeout == nullptr);
+    assert(condid >= 0);
+
+    auto &condvars = get_condvars(kernel, weight);
+    // TODO Don't lock twice.
+    const CondvarPtr condvar = lock_and_find(condid, condvars, kernel.mutex);
+    if (!condvar) {
+        return unknown_cond_id(export_name, weight);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: Waiting for {}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
+            export_name, weight == SyncWeight::Light ? "lwcond" : "cond", condvar->uid, condvar->name, condvar->attr, condvar->associated_mutex->uid);
+    }
+
+    const std::lock_guard<std::mutex> lock(condvar->mutex);
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+
+    bool is_fifo = (condvar->attr & SCE_KERNEL_ATTR_TH_FIFO);
+
+    if (auto error = mutex_unlock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex))
+        return error;
+
+    const std::lock_guard<std::mutex> lock2(thread->mutex);
+    assert(thread->to_do == ThreadToDo::run);
+    thread->to_do = ThreadToDo::wait;
+
+    WaitingThreadData data;
+    data.thread = thread;
+    data.priority = is_fifo ? 0 : thread->priority;
+
+    condvar->waiting_threads.emplace(data);
+    stop(*thread->cpu);
+
+    return SCE_KERNEL_OK;
+}
+
+int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, Condvar::SignalTarget signal_target, SyncWeight weight) {
+    auto &condvars = get_condvars(kernel, weight);
+    // TODO Don't lock twice.
+    const CondvarPtr condvar = lock_and_find(condid, condvars, kernel.mutex);
+    if (!condvar) {
+        return unknown_cond_id(export_name, weight);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: Signaling {}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
+            export_name, weight == SyncWeight::Light ? "lwcond" : "cond", condvar->uid, condvar->name, condvar->attr, condvar->associated_mutex->uid);
+    }
+
+    const std::lock_guard<std::mutex> lock(condvar->mutex);
+
+    const auto target_type = signal_target.type;
+
+    WaitingThreadData waiting_thread_data;
+    if (target_type == Condvar::SignalTarget::Type::Specific) {
+        ThreadStatePtr target_thread = lock_and_find(signal_target.thread_id, kernel.threads, kernel.mutex);
+
+        // Search for specified waiting thread
+        // TODO: this is shit, should implement our own priority queue that accomodates iteration
+        WaitingThreadQueue waiting_threads_copy = condvar->waiting_threads;
+
+        if (!find_in_queue(waiting_thread_data, waiting_threads_copy, target_thread))
+            LOG_ERROR("{}: Target thread {} not found", export_name, target_thread->name);
+    }
+
+    while (condvar->waiting_threads.size() > 0) {
+        ThreadStatePtr waiting_thread;
+        if (target_type != Condvar::SignalTarget::Type::Specific) {
+            // Pick first waiting thread (based on priority)
+            waiting_thread_data = condvar->waiting_threads.top();
+        }
+        waiting_thread = waiting_thread_data.thread;
+
+        {
+            const std::lock_guard<std::mutex> lock2(waiting_thread->mutex);
+
+            assert(waiting_thread->to_do == ThreadToDo::wait);
+            waiting_thread->to_do = ThreadToDo::run;
+
+            if (target_type == Condvar::SignalTarget::Type::Specific)
+                if (!remove_in_queue(condvar->waiting_threads, waiting_thread))
+                    LOG_ERROR("{}: Target thread {} not found", export_name, waiting_thread->name);
+                else
+                    condvar->waiting_threads.pop();
+
+            waiting_thread->something_to_do.notify_one();
+        }
+        if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex))
+            return error;
+
+        if (target_type != Condvar::SignalTarget::Type::All) {
+            break;
+        }
     }
 
     return SCE_KERNEL_OK;

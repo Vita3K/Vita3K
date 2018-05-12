@@ -270,16 +270,19 @@ EXPORT(int, sceKernelSetTimerTimeWide) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSignalCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalCond, SceUID condid) {
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::Any), SyncWeight::Heavy);
 }
 
-EXPORT(int, sceKernelSignalCondAll) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalCondAll, SceUID condid) {
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::All), SyncWeight::Heavy);
 }
 
-EXPORT(int, sceKernelSignalCondTo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalCondTo, SceUID condid, SceUID thread_target) {
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::Specific, thread_target), SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {

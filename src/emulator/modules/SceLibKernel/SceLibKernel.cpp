@@ -1177,16 +1177,22 @@ EXPORT(int, sceKernelSetTimerTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSignalLwCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalLwCond, Ptr<emu::SceKernelLwCondWork> workarea) {
+    SceUID condid = workarea.get(host.mem)->uid;
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::Any), SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelSignalLwCondAll) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalLwCondAll, Ptr<emu::SceKernelLwCondWork> workarea) {
+    SceUID condid = workarea.get(host.mem)->uid;
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::All), SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelSignalLwCondTo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalLwCondTo, Ptr<emu::SceKernelLwCondWork> workarea, SceUID thread_target) {
+    SceUID condid = workarea.get(host.mem)->uid;
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::Specific, thread_target), SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelStackChkFail) {
