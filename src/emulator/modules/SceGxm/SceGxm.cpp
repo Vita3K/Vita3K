@@ -216,12 +216,10 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     ctx->gl = GLContextPtr(SDL_GL_CreateContext(host.window.get()), SDL_GL_DeleteContext);
     assert(ctx->gl != nullptr);
 
-    Binding::initialize(false);
-    setCallbackMaskExcept(CallbackMask::Before | CallbackMask::After, { "glGetError" });
-#if MICROPROFILE_ENABLED != 0
-    setBeforeCallback(before_callback);
-#endif // MICROPROFILE_ENABLED
-    setAfterCallback(after_callback);
+    const GetProcAddress get_proc_address = [](const char *name) {
+        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
+    };
+    Binding::initialize(get_proc_address, false);
 
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));

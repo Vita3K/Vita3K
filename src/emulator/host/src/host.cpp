@@ -20,27 +20,30 @@
 #include <host/import_fn.h>
 #include <host/state.h>
 #include <host/version.h>
-#include <rtc/rtc.h>
 
 #include <audio/functions.h>
+#include <cpu/functions.h>
 #include <io/functions.h>
+#include <glutil/gl.h>
 #include <kernel/functions.h>
 #include <kernel/thread_state.h>
 #include <nids/functions.h>
+#include <rtc/rtc.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
-
-#include <cpu/functions.h>
 
 #include <SDL_events.h>
 #include <SDL_filesystem.h>
 #include <SDL_video.h>
 
 #include <glbinding/Binding.h>
+#include <glbinding-aux/types_to_string.h>
+#include <microprofile.h>
 
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 // clang-format off
 #include <imgui.h>
@@ -65,6 +68,23 @@ static ImportFn resolve_import(uint32_t nid) {
     }
 
     return ImportFn();
+}
+
+void before_callback(const glbinding::FunctionCall &fn) {
+#if MICROPROFILE_ENABLED
+    const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
+    MICROPROFILE_ENTER_TOKEN(token);
+#endif // MICROPROFILE_ENABLED
+}
+
+void after_callback(const glbinding::FunctionCall &fn) {
+    MICROPROFILE_LEAVE();
+    for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
+        std::stringstream gl_error;
+        gl_error << error;
+        LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
+        assert(false);
+    }
 }
 
 bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_width, std::uint32_t window_height, std::uint32_t border_height) {
@@ -97,7 +117,16 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
         return false;
     }
     
-    Binding::initialize(false);
+    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
+        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
+    };
+    Binding::initialize(get_proc_address, false);
+    Binding::setCallbackMaskExcept(CallbackMask::Before | CallbackMask::After, { "glGetError" });
+#if MICROPROFILE_ENABLED != 0
+    Binding::setBeforeCallback(before_callback);
+#endif // MICROPROFILE_ENABLED
+    Binding::setAfterCallback(after_callback);
+    
     state.kernel.base_tick = { rtc_base_ticks() };
     state.display.set_window_dims(window_width, window_height);
 

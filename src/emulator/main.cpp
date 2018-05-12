@@ -169,7 +169,6 @@ int main(int argc, char *argv[]) {
             glClearColor(1.0, 0.0, 0.5, 1.0);
             glClearDepth(1.0f);
             glViewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT);
-            glEnable(GL_TEXTURE_2D);
         }
 
         ImGui_ImplSdlGL3_NewFrame(host.window.get());

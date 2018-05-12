@@ -455,23 +455,6 @@ static bool operator<(const emu::SceGxmBlendInfo &a, const emu::SceGxmBlendInfo 
     return memcmp(&a, &b, sizeof(a)) < 0;
 }
 
-void before_callback(const glbinding::FunctionCall &fn) {
-#if MICROPROFILE_ENABLED
-    const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
-    MICROPROFILE_ENTER_TOKEN(token);
-#endif // MICROPROFILE_ENABLED
-}
-
-void after_callback(const glbinding::FunctionCall &fn) {
-    MICROPROFILE_LEAVE();
-    for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
-        std::stringstream gl_error;
-        gl_error << error;
-        LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
-        assert(false);
-    }
-}
-
 std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path) {
     const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
     const GLSLCache::const_iterator cached = shader_patcher.fragment_glsl_cache.find(hash_bytes);
