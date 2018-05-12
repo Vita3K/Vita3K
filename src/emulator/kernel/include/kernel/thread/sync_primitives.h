@@ -19,17 +19,23 @@
 
 #include <psp2/types.h>
 
+#include <kernel/state.h>
+
 enum class SyncWeight {
     Light, // lightweight
     Heavy // 'heavy'weight
 };
 
-struct KernelState;
-SceUID create_mutex(SceUID *uid_out, KernelState &kernel, const char *export_name, SceUID thread_id, const char *name, SceUInt attr, int init_count, SyncWeight weight);
-int lock_mutex(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, unsigned int *timeout, SyncWeight weight);
-int unlock_mutex(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int unlock_count, SyncWeight weight);
-int delete_mutex(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight);
+// Mutex
+SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_name, SceUID thread_id, const char *name, SceUInt attr, int init_count, SyncWeight weight);
+int mutex_lock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, unsigned int *timeout, SyncWeight weight);
+int mutex_unlock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int unlock_count, SyncWeight weight);
+int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight);
 
-SceUID create_semaphore(KernelState &kernel, const char *export_name, const char *name, SceUInt attr, int initVal, int maxVal);
+// Semaphore
+SceUID semaphore_create(KernelState &kernel, const char *export_name, const char *name, SceUInt attr, int initVal, int maxVal);
+int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, int signal, SceUInt *timeout);
+int semaphore_signal(KernelState &kernel, const char *export_name, SceUID semaid, int signal);
+
 int wait_semaphore(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, int signal, SceUInt *timeout);
 int signal_sema(KernelState &kernel, const char *export_name, SceUID semaid, int signal);

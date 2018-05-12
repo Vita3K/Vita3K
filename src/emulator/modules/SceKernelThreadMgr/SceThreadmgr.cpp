@@ -142,7 +142,7 @@ EXPORT(int, sceKernelDeleteMsgPipe) {
 }
 
 EXPORT(int, sceKernelDeleteMutex, SceInt32 mutexid) {
-    return delete_mutex(host.kernel, export_name, thread_id, mutexid, SyncWeight::Heavy);
+    return mutex_delete(host.kernel, export_name, thread_id, mutexid, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelDeleteRWLock) {
@@ -283,7 +283,7 @@ EXPORT(int, sceKernelSignalCondTo) {
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
-    return signal_sema(host.kernel, export_name, semaid, signal);
+    return semaphore_signal(host.kernel, export_name, semaid, signal);
 }
 
 EXPORT(int, sceKernelStartTimer) {
@@ -307,7 +307,7 @@ EXPORT(int, sceKernelTryLockWriteRWLock) {
 }
 
 EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
-    return unlock_mutex(host.kernel, export_name, thread_id, mutexid, unlock_count, SyncWeight::Heavy);
+    return mutex_unlock(host.kernel, export_name, thread_id, mutexid, unlock_count, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelUnlockReadRWLock) {

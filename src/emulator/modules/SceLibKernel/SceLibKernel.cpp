@@ -65,7 +65,7 @@ EXPORT(int, _sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, co
     assert(opt_param == nullptr);
 
     auto uid_out = &workarea.get(host.mem)->uid;
-    return create_mutex(uid_out, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Light);
+    return mutex_create(uid_out, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Light);
 }
 
 EXPORT(int, sceClibAbort) {
@@ -765,26 +765,34 @@ EXPORT(int, sceKernelCloseModule) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCreateCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCreateCond, const char *name, SceUInt attr, SceUID mutexid, void *opt_param) {
+    SceUID uid;
+
+    if (auto error = condvar_create(&uid, host.kernel, export_name, name, attr, mutexid, SyncWeight::Heavy)) {
+        return error;
+    }
+    return uid;
 }
 
 EXPORT(int, sceKernelCreateEventFlag) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCreateLwCond, SceKernelLwCondWork *workarea, const char *name, unsigned int attr, SceKernelLwMutexWork *mutex, const SceKernelLwCondOptParam *opt_param) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCreateLwCond, Ptr<emu::SceKernelLwCondWork> workarea, const char *name, SceUInt attr, Ptr<emu::SceKernelLwMutexWork> workarea_mutex, const SceKernelLwCondOptParam *opt_param) {
+    const auto uid_out = &workarea.get(host.mem)->uid;
+    const auto assoc_mutex_uid = workarea_mutex.get(host.mem)->uid;
+
+    return condvar_create(uid_out, host.kernel, export_name, name, attr, assoc_mutex_uid, SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, int init_count, const SceKernelLwMutexOptParam *opt_param) {
+EXPORT(int, sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, const char *name, SceUInt attr, int init_count, const SceKernelLwMutexOptParam *opt_param) {
     assert(workarea);
     assert(name);
     assert(init_count >= 0);
     assert(opt_param == nullptr);
 
-    auto uid_out = &workarea.get(host.mem)->uid;
-    return create_mutex(uid_out, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Light);
+    const auto uid_out = &workarea.get(host.mem)->uid;
+    return mutex_create(uid_out, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelCreateMsgPipe) {
@@ -798,7 +806,7 @@ EXPORT(int, sceKernelCreateMsgPipeWithLR) {
 EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
     SceUID uid;
 
-    if (auto error = create_mutex(&uid, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Heavy)) {
+    if (auto error = mutex_create(&uid, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Heavy)) {
         return error;
     }
     return uid;
@@ -809,7 +817,7 @@ EXPORT(int, sceKernelCreateRWLock) {
 }
 
 EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, SceKernelSemaOptParam *option) {
-    return create_semaphore(host.kernel, export_name, name, attr, initVal, maxVal);
+    return semaphore_create(host.kernel, export_name, name, attr, initVal, maxVal);
 }
 
 EXPORT(int, sceKernelCreateSema_16XX) {
@@ -844,7 +852,7 @@ EXPORT(int, sceKernelDeleteLwCond) {
 
 EXPORT(int, sceKernelDeleteLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea) {
     const auto lwmutexid = workarea.get(host.mem)->uid;
-    return delete_mutex(host.kernel, export_name, thread_id, lwmutexid, SyncWeight::Light);
+    return mutex_delete(host.kernel, export_name, thread_id, lwmutexid, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelExitProcess, int res) {
@@ -1062,7 +1070,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
 
 EXPORT(int, sceKernelLockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
     const auto lwmutexid = workarea.get(host.mem)->uid;
-    return lock_mutex(host.kernel, export_name, thread_id, lwmutexid, lock_count, ptimeout, SyncWeight::Light);
+    return mutex_lock(host.kernel, export_name, thread_id, lwmutexid, lock_count, ptimeout, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelLockLwMutexCB) {
@@ -1070,7 +1078,7 @@ EXPORT(int, sceKernelLockLwMutexCB) {
 }
 
 EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
-    return lock_mutex(host.kernel, export_name, thread_id, mutexid, lock_count, timeout, SyncWeight::Heavy);
+    return mutex_lock(host.kernel, export_name, thread_id, mutexid, lock_count, timeout, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelLockMutexCB) {
@@ -1232,12 +1240,12 @@ EXPORT(int, sceKernelUnloadModule) {
 
 EXPORT(int, sceKernelUnlockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int unlock_count) {
     const auto lwmutexid = workarea.get(host.mem)->uid;
-    return unlock_mutex(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
+    return mutex_unlock(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelUnlockLwMutex2, Ptr<emu::SceKernelLwMutexWork> workarea, int unlock_count) {
     const auto lwmutexid = workarea.get(host.mem)->uid;
-    return unlock_mutex(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
+    return mutex_unlock(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelWaitCond) {
@@ -1289,7 +1297,7 @@ EXPORT(int, sceKernelWaitMultipleEventsCB) {
 }
 
 EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
-    return wait_semaphore(host.kernel, export_name, thread_id, semaid, signal, timeout);
+    return semaphore_wait(host.kernel, export_name, thread_id, semaid, signal, timeout);
 }
 
 EXPORT(int, sceKernelWaitSemaCB) {

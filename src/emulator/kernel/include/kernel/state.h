@@ -46,13 +46,23 @@ typedef std::map<uint32_t, Address> ExportNids;
 
 struct WaitingThreadData {
     ThreadStatePtr thread;
-    std::int32_t lock_count;
-    std::int32_t priority;
+    int32_t priority;
 
-    WaitingThreadData(ThreadStatePtr thread, std::int32_t lock_count, std::int32_t priority)
-        : thread(thread)
-        , lock_count(lock_count)
-        , priority(priority) {}
+    // additional fields for each primitive
+    union {
+        struct { // mutex
+            int32_t lock_count;
+        };
+        struct { // semaphore
+            int32_t signal;
+        };
+        struct { // event flags
+            int32_t wait;
+            int32_t flags;
+        };
+        struct { // condvar
+        };
+    };
 
     bool operator>(const WaitingThreadData &rhs) const {
         return priority > rhs.priority;
