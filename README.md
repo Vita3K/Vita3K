@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/Vita3K/Vita3K.svg?branch=master)](https://travis-ci.org/Vita3K/Vita3K)
 [![Build status](https://ci.appveyor.com/api/projects/status/tlvkwrsj13vq3gor/branch/master?svg=true)](https://ci.appveyor.com/project/Vita3K/vita3k/branch/master)
 ## Introduction
-Vita3K is an experimental PlayStation Vita emulator for Windows and macOS.
+Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS.
 
 * [Website](https://Vita3K.github.io/) (information for users)
 * [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
