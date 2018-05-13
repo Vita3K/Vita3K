@@ -142,7 +142,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     title_base_path += host.io.title_id;
     bool created = fs::create_directory(title_base_path);
     if (!created) {
-        uint8_t status = 0;
+        GenericDialogState status = UNK_STATE;
         while (handle_events(host) && (status == 0)) {
             ImGui_ImplSdlGL2_NewFrame(host.window.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -153,10 +153,10 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
             ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
             SDL_GL_SwapWindow(host.window.get());
         }
-        if (status == 1) {
+        if (status == CANCEL_STATE) {
             LOG_INFO("{} already installed, launching application...", host.io.title_id);
             return true;
-        } else if (status == 0) {
+        } else if (status == UNK_STATE) {
             exit(0);
         }
     }

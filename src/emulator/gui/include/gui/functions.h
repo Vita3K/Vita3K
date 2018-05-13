@@ -19,6 +19,12 @@
 
 #include <cstdint>
 
+enum GenericDialogState {
+    UNK_STATE,
+    CONFIRM_STATE,
+    CANCEL_STATE
+};
+
 struct HostState;
 
 void DrawMainMenuBar(HostState &host);
@@ -29,4 +35,4 @@ void DrawLwMutexesDialog(HostState &host);
 void DrawUI(HostState &host);
 void DrawCommonDialog(HostState &host);
 void DrawGameSelector(HostState &host, bool *is_vpk);
-void DrawReinstallDialog(HostState &host, uint8_t *status);
+void DrawReinstallDialog(HostState &host, GenericDialogState *status);
