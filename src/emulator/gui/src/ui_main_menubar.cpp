@@ -34,6 +34,12 @@ void DrawMainMenuBar(HostState &host) {
             if (ImGui::MenuItem("Lightweight Mutexes", nullptr, host.gui.lwmutexes_dialog)) {
                 host.gui.lwmutexes_dialog = !host.gui.lwmutexes_dialog;
             }
+            if (ImGui::MenuItem("Condition Variables", nullptr, host.gui.condvars_dialog)) {
+                host.gui.condvars_dialog = !host.gui.condvars_dialog;
+            }
+            if (ImGui::MenuItem("Lightweight Condition Variables", nullptr, host.gui.lwcondvars_dialog)) {
+                host.gui.lwcondvars_dialog = !host.gui.lwcondvars_dialog;
+            }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
