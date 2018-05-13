@@ -47,6 +47,22 @@ void DrawGameSelector(HostState &host, bool *is_vpk) {
     ImGui::End();
 }
 
+void DrawReinstallDialog(HostState &host, uint8_t *status) {
+    ImGui::SetNextWindowPosCenter();
+    ImGui::SetNextWindowSize(ImVec2(0, 0));
+    ImGui::Begin("Reinstall this application?");
+    ImGui::Text("This application has been detected as already installed.");
+    ImGui::Text("Do you want to reinstall it overwriting current data?");
+    if (ImGui::Button("Yes")) {
+        *status = 2;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("No")) {
+        *status = 1;
+    }
+    ImGui::End();
+}
+
 void DrawUI(HostState &host) {
     DrawMainMenuBar(host);
 

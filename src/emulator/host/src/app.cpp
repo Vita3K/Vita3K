@@ -19,6 +19,7 @@
 #include <kernel/state.h>
 
 #include <host/app.h>
+#include <host/functions.h>
 #include <host/sfo.h>
 #include <host/state.h>
 #include <io/state.h>
@@ -26,12 +27,21 @@
 #include <util/log.h>
 #include <util/string_convert.h>
 
+#include <SDL.h>
+#include <glutil/gl.h>
+
 #include <cassert>
 #include <cstring>
 #include <fstream>
 #include <iostream>
 #include <istream>
 #include <iterator>
+
+// clang-format off
+#include <imgui.h>
+#include <gui/imgui_impl_sdl_gl2.h>
+// clang-format on
+#include <gui/functions.h>
 
 static void delete_zip(mz_zip_archive *zip) {
     mz_zip_reader_end(zip);
@@ -118,7 +128,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     if (!read_file_from_zip(params, vpk_fp, sfo_path.c_str(), zip)) {
         return false;
     }
-    
+
     SfoFile sfo_handle;
     load_sfo(sfo_handle, params);
     find_data(host.io.title_id, sfo_handle, "TITLE_ID");
@@ -132,8 +142,23 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     title_base_path += host.io.title_id;
     bool created = fs::create_directory(title_base_path);
     if (!created) {
-        LOG_INFO("{} already installed, launching application...", host.io.title_id);
-        return true;
+        uint8_t status = 0;
+        while (handle_events(host) && (status == 0)) {
+            ImGui_ImplSdlGL2_NewFrame(host.window.get());
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            DrawUI(host);
+            DrawReinstallDialog(host, &status);
+            glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
+            ImGui::Render();
+            ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
+            SDL_GL_SwapWindow(host.window.get());
+        }
+        if (status == 1) {
+            LOG_INFO("{} already installed, launching application...", host.io.title_id);
+            return true;
+        } else if (status == 0) {
+            exit(0);
+        }
     }
 
     for (int i = 0; i < num_files; i++) {
@@ -152,7 +177,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
                 std::string directory = output_path.substr(0, slash);
                 fs::create_directories(directory);
             }
-            
+
             LOG_INFO("Extracting {}", output_path);
             mz_zip_reader_extract_to_file(zip.get(), i, output_path.c_str(), 0);
         }
@@ -189,7 +214,7 @@ bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring 
     LOG_INFO("Title: {}", host.game_title);
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Category: {}", category);
-    
+
     host.io.savedata0_path = "ux0:/user/00/savedata/" + host.io.title_id + "/";
 
     Buffer eboot;
