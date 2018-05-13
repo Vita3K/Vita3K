@@ -158,7 +158,6 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
         if (start_path != std::string::npos) {
             fixed_path = fixed_path.substr(start_path);
             fixed_path.insert(0, io.savedata0_path);
-
             path = fixed_path;
             device = VitaIoDevice::UX0;
             std::tie(device, device_name) = translate_device(path);
@@ -166,19 +165,19 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
     }
 
     // Redirect app0:/ to ux0:/app/<title_id>
-    char file[256];
-    sprintf(file, "%s", path.c_str());
+    char file_cpath[256];
+    sprintf(file_cpath, "%s", path.c_str());
     if (device == VitaIoDevice::APP0) {
         int i = 5;
-        if (file[5] == '/')
+        if (file_cpath[5] == '/')
             i++;
         std::string ux0_path = "ux0:/app/" + io.title_id + "/";
-        ux0_path += &file[i];
+        ux0_path += &file_cpath[i];
         path = ux0_path;
         device = VitaIoDevice::UX0;
         std::tie(device, device_name) = translate_device(path);
     }
-
+    
     switch (device) {
     case VitaIoDevice::TTY0:
     case VitaIoDevice::TTY1: {
@@ -199,6 +198,7 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string file_path = translate_path(device_name, path, pref_path);
+
         const char *const open_mode = translate_open_mode(flags);
 #ifdef WIN32
         const FilePtr file(_wfopen(utf_to_wide(file_path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
@@ -536,8 +536,8 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
 int open_dir(IOState &io, const char *path, const char *pref_path) {
     VitaIoDevice device;
     std::string device_name;
-    std::tie(device, device_name) = translate_device(path);
-    std::string spath;
+    std::string spath = path;
+    std::tie(device, device_name) = translate_device(spath);
     
     // Redirect app0:/ to ux0:/app/<title_id>
     if (device == VitaIoDevice::APP0) {
