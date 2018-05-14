@@ -29,14 +29,15 @@
 #include <errno.h>
 #endif
 
+// NOTE: This should be SCE_NET_##errname but it causes vitaQuake to softlock in online games
 #ifdef WIN32
 #define ERROR_CASE(errname) \
     case (WSA##errname):    \
-        return SCE_NET_##errname;
+        return SCE_NET_ERROR_##errname;
 #else
 #define ERROR_CASE(errname) \
     case (errname):         \
-        return SCE_NET_##errname;
+        return SCE_NET_ERROR_##errname;
 #endif
 
 static int translate_errorcode() {
