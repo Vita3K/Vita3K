@@ -17,39 +17,39 @@
 
 // SceGxmTextureSwizzle1Mode
 static const GLenum swizzle_r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ONE };
-static const GLenum swizzle_000r[4] = { GL_ZERO, GL_ZERO, GL_ZERO, GL_RED };
-static const GLenum swizzle_111r[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+static const GLenum swizzle_000r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ZERO };
+static const GLenum swizzle_111r[4] = { GL_RED, GL_ONE, GL_ONE, GL_ONE };
 static const GLenum swizzle_rrrr[4] = { GL_RED, GL_RED, GL_RED, GL_RED };
-static const GLenum swizzle_0rrr[4] = { GL_ZERO, GL_RED, GL_RED, GL_RED };
-static const GLenum swizzle_1rrr[4] = { GL_ONE, GL_RED, GL_RED, GL_RED };
-static const GLenum swizzle_r000[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ZERO };
-static const GLenum swizzle_r111[4] = { GL_RED, GL_ONE, GL_ONE, GL_ONE };
+static const GLenum swizzle_0rrr[4] = { GL_RED, GL_RED, GL_RED, GL_ZERO };
+static const GLenum swizzle_1rrr[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+static const GLenum swizzle_r000[4] = { GL_ZERO, GL_ZERO, GL_ZERO, GL_RED };
+static const GLenum swizzle_r111[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
 
 // SceGxmTextureSwizzle2Mode
-static const GLenum swizzle_gr[4] = { GL_GREEN, GL_RED, GL_ZERO, GL_ONE };
-static const GLenum swizzle_00gr[4] = { GL_ZERO, GL_ZERO, GL_GREEN, GL_RED };
-static const GLenum swizzle_grrr[4] = { GL_GREEN, GL_RED, GL_RED, GL_RED };
-static const GLenum swizzle_rggg[4] = { GL_RED, GL_GREEN, GL_GREEN, GL_GREEN };
-static const GLenum swizzle_grgr[4] = { GL_GREEN, GL_RED, GL_GREEN, GL_RED };
-static const GLenum swizzle_00rg[4] = { GL_ZERO, GL_ZERO, GL_RED, GL_GREEN };
+static const GLenum swizzle_gr[4] = { GL_RED, GL_GREEN, GL_ZERO, GL_ONE };
+static const GLenum swizzle_00gr[4] = { GL_RED, GL_GREEN, GL_ZERO, GL_ZERO };
+static const GLenum swizzle_grrr[4] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
+static const GLenum swizzle_rggg[4] = { GL_GREEN, GL_GREEN, GL_GREEN, GL_RED };
+static const GLenum swizzle_grgr[4] = { GL_RED, GL_GREEN, GL_RED, GL_GREEN };
+static const GLenum swizzle_00rg[4] = { GL_GREEN, GL_RED, GL_ZERO, GL_ZERO };
 
 // SceGxmTextureSwizzle2ModeAlt
 static const GLenum swizzle_sd[4] = { GL_RED, GL_GREEN, GL_ZERO, GL_ONE };
 static const GLenum swizzle_ds[4] = { GL_GREEN, GL_RED, GL_ZERO, GL_ONE };
 
 // SceGxmTextureSwizzle3Mode
-static const GLenum swizzle_rgb[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ONE };
-static const GLenum swizzle_bgr[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
+static const GLenum swizzle_rgb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
+static const GLenum swizzle_bgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ONE };
 
 // SceGxmTextureSwizzle4Mode
-static const GLenum swizzle_abgr[4] = { GL_ALPHA, GL_BLUE, GL_GREEN, GL_RED };
-static const GLenum swizzle_argb[4] = { GL_ALPHA, GL_RED, GL_GREEN, GL_BLUE };
-static const GLenum swizzle_rgba[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_bgra[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ALPHA };
-static const GLenum swizzle_1bgr[4] = { GL_ONE, GL_BLUE, GL_GREEN, GL_RED };
-static const GLenum swizzle_1rgb[4] = { GL_ONE, GL_RED, GL_GREEN, GL_BLUE };
-static const GLenum swizzle_rgb1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ONE };
-static const GLenum swizzle_bgr1[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
+static const GLenum swizzle_abgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLenum swizzle_argb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ALPHA };
+static const GLenum swizzle_rgba[4] = { GL_ALPHA, GL_BLUE, GL_GREEN, GL_RED };
+static const GLenum swizzle_bgra[4] = { GL_ALPHA, GL_RED, GL_GREEN, GL_BLUE };
+static const GLenum swizzle_1bgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ONE };
+static const GLenum swizzle_1rgb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
+static const GLenum swizzle_rgb1[4] = { GL_ONE, GL_BLUE, GL_GREEN, GL_RED };
+static const GLenum swizzle_bgr1[4] = { GL_ONE, GL_RED, GL_GREEN, GL_BLUE };
 
 // SceGxmTextureSwizzleYUV420Mode
 // TODO I don't know what these should be.
