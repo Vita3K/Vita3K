@@ -34,7 +34,7 @@ int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id,
 
 // Semaphore
 SceUID semaphore_create(KernelState &kernel, const char *export_name, const char *name, SceUInt attr, int initVal, int maxVal);
-int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, int signal, SceUInt *timeout);
+int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, SceInt32 signal, SceUInt *timeout);
 int semaphore_signal(KernelState &kernel, const char *export_name, SceUID semaid, int signal);
 
 // Condition Variable

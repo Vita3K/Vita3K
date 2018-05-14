@@ -1258,8 +1258,8 @@ EXPORT(int, sceKernelUnlockLwMutex2, Ptr<emu::SceKernelLwMutexWork> workarea, in
     return mutex_unlock(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelWaitCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelWaitCond, SceUID cond_id, SceUInt32 *timeout) {
+    return condvar_wait(host.kernel, export_name, thread_id, cond_id, timeout, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelWaitCondCB) {
@@ -1290,8 +1290,9 @@ EXPORT(int, sceKernelWaitExceptionCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelWaitLwCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelWaitLwCond, Ptr<emu::SceKernelLwCondWork> workarea, SceUInt32 *timeout) {
+    const auto cond_id = workarea.get(host.mem)->uid;
+    return condvar_wait(host.kernel, export_name, thread_id, cond_id, timeout, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelWaitLwCondCB) {
