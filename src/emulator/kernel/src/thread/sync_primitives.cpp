@@ -69,39 +69,6 @@ inline int find_mutex(MutexPtr &mutex_out, MutexPtrs *mutexes_out, KernelState &
     return SCE_KERNEL_OK;
 }
 
-// TODO: Laughably inefficient helper functions before we properly implement our priority queue
-bool find_in_queue(WaitingThreadData &data, WaitingThreadQueue queue, const ThreadStatePtr thread) {
-    while (!queue.empty()) {
-        const WaitingThreadData temp_data = queue.top();
-        if (temp_data.thread == thread) {
-            data = std::move(temp_data);
-            return true;
-        }
-        queue.pop();
-    }
-    return false;
-}
-
-bool remove_in_queue(WaitingThreadQueue &queue, const ThreadStatePtr thread) {
-    WaitingThreadQueue queue_copy = queue;
-    WaitingThreadQueue queue_out;
-    bool found = false;
-
-    WaitingThreadData data;
-    while (!queue_copy.empty()) {
-        const WaitingThreadData temp_data = queue_copy.top();
-        if (temp_data.thread == thread) {
-            found = true;
-        } else {
-            queue_out.emplace(temp_data);
-        }
-        queue_copy.pop();
-    }
-    queue = queue_out;
-
-    return found;
-}
-
 // *********
 // * Mutex *
 // *********
@@ -467,11 +434,12 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
         ThreadStatePtr target_thread = lock_and_find(signal_target.thread_id, kernel.threads, kernel.mutex);
 
         // Search for specified waiting thread
-        // TODO: this is shit, should implement our own priority queue that accomodates iteration
-        WaitingThreadQueue waiting_threads_copy = condvar->waiting_threads;
-
-        if (!find_in_queue(waiting_thread_data, waiting_threads_copy, target_thread))
+        auto waiting_thread_iter = condvar->waiting_threads.find(target_thread);
+        if (waiting_thread_iter != condvar->waiting_threads.end()) {
             LOG_ERROR("{}: Target thread {} not found", export_name, target_thread->name);
+        } else {
+            waiting_thread_data = *waiting_thread_iter;
+        }
     }
 
     while (condvar->waiting_threads.size() > 0) {
@@ -489,7 +457,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
             waiting_thread->to_do = ThreadToDo::run;
 
             if (target_type == Condvar::SignalTarget::Type::Specific)
-                if (!remove_in_queue(condvar->waiting_threads, waiting_thread))
+                if (!condvar->waiting_threads.remove(waiting_thread_data))
                     LOG_ERROR("{}: Target thread {} not found", export_name, waiting_thread->name);
                 else
                     condvar->waiting_threads.pop();

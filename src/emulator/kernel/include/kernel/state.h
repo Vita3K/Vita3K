@@ -72,12 +72,17 @@ struct WaitingThreadData {
     bool operator==(const WaitingThreadData &rhs) const {
         return thread == rhs.thread;
     }
+
+    bool operator==(const ThreadStatePtr &rhs) const {
+        return thread == rhs;
+    }
 };
 
-template <typename T>
-class random_priority_queue : public std::priority_queue<T, std::vector<T>, std::greater<T>> {
+class WaitingThreadQueue : public std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>, std::greater<WaitingThreadData>> {
 public:
-    bool remove(const T &value) {
+    auto begin() const { return this->c.begin(); }
+    auto end() const { return this->c.end(); }
+    bool remove(const WaitingThreadData &value) {
         auto it = std::find(this->c.begin(), this->c.end(), value);
         if (it != this->c.end()) {
             this->c.erase(it);
@@ -87,9 +92,13 @@ public:
             return false;
         }
     }
+    auto find(const WaitingThreadData &value) {
+        return std::find(this->c.begin(), this->c.end(), value);
+    }
+    auto find(const ThreadStatePtr &value) {
+        return std::find(this->c.begin(), this->c.end(), value);
+    }
 };
-
-using WaitingThreadQueue = random_priority_queue<WaitingThreadData>;
 
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
