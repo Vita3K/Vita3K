@@ -1104,20 +1104,122 @@ namespace texture {
     }
 
     GLenum translate_type(SceGxmTextureFormat format) {
-        const auto base_format = texture::get_base_format(format);
+        const SceGxmTextureBaseFormat base_format = get_base_format(format);
         switch (base_format) {
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
-            return GL_UNSIGNED_SHORT_4_4_4_4;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
             return GL_UNSIGNED_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+            return GL_UNSIGNED_SHORT_4_4_4_4_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2");
+            return GL_UNSIGNED_SHORT_4_4_4_4_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+            return GL_UNSIGNED_SHORT_1_5_5_5_REV;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
-            return GL_UNSIGNED_SHORT_5_6_5;
-        default: {
-            LOG_WARN("Unsupported translate type: {:#08X}", format);
+            return GL_UNSIGNED_SHORT_5_6_5_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6");
+            return GL_UNSIGNED_SHORT_5_6_5_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
             return GL_UNSIGNED_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
+            return GL_UNSIGNED_SHORT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
+            return GL_SHORT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
+            return GL_HALF_FLOAT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+            return GL_UNSIGNED_INT_8_8_8_8_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
+            return GL_UNSIGNED_INT_2_10_10_10_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
+            return GL_UNSIGNED_SHORT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
+            return GL_SHORT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
+            return GL_HALF_FLOAT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+            return GL_FLOAT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_F32M");
+            return GL_FLOAT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8");
+            return GL_UNSIGNED_INT_8_8_8_8_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_X8U24");
+            return GL_UNSIGNED_INT_24_8;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
+            return GL_UNSIGNED_INT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+            return GL_INT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9");
+            return GL_UNSIGNED_INT_5_9_9_9_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10");
+            return GL_UNSIGNED_INT_2_10_10_10_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
+            return GL_HALF_FLOAT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
+            return GL_UNSIGNED_SHORT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
+            return GL_SHORT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
+            return GL_FLOAT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
+            return GL_UNSIGNED_INT;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_UBC1");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_UBC2");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_UBC3");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_YUV422");
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+            return GL_UNSIGNED_INT_8_8_8_8_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+            return GL_UNSIGNED_INT_8_8_8_8_REV;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+            return GL_UNSIGNED_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+            return GL_BYTE;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
+            LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10");
+            return GL_INT_2_10_10_10_REV;
         }
-        }
+        
+        LOG_WARN("Unhandled base format {:#x}", base_format);
+        return GL_UNSIGNED_BYTE;
     }
     
     const GLenum *translate_swizzle(SceGxmTextureFormat fmt) {
