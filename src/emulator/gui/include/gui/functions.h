@@ -34,6 +34,7 @@ void DrawMutexesDialog(HostState &host);
 void DrawLwMutexesDialog(HostState &host);
 void DrawLwCondvarsDialog(HostState &host);
 void DrawCondvarsDialog(HostState &host);
+void DrawEventFlagsDialog(HostState &host);
 void DrawUI(HostState &host);
 void DrawCommonDialog(HostState &host);
 void DrawGameSelector(HostState &host, bool *is_vpk);
