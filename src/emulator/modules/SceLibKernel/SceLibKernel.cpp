@@ -1337,8 +1337,23 @@ EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelWaitThreadEndCB) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
+    const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    {
+        const std::lock_guard<std::mutex> lock(cur_thread->mutex);
+        assert(cur_thread->to_do == ThreadToDo::run);
+        cur_thread->to_do = ThreadToDo::wait;
+        stop(*cur_thread->cpu);
+    }
+
+    {
+        const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
+        thread->waiting_threads.push_back(cur_thread);
+    }
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceSblACMgrIsGameProgram) {
