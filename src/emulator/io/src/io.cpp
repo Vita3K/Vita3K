@@ -24,6 +24,7 @@
 #include <psp2/io/stat.h>
 
 #include <io/state.h>
+#include <io/types.h>
 #include <util/fs.h>
 #include <util/log.h>
 
@@ -594,7 +595,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path) {
     return fd;
 }
 
-int read_dir(IOState &io, SceUID fd, SceIoDirent *dent) {
+int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent) {
     assert(dent != nullptr);
 
     memset(dent->d_name, '\0', sizeof(dent->d_name));
