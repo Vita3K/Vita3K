@@ -1105,6 +1105,7 @@ namespace texture {
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
             return translate_swizzle(static_cast<SceGxmTextureSwizzleYUV420Mode>(swizzle));
                 
+            // YUV422.
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
             return translate_swizzle(static_cast<SceGxmTextureSwizzleYUV422Mode>(swizzle));
         }
