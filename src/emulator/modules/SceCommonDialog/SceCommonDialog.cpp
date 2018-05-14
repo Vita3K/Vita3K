@@ -441,8 +441,9 @@ EXPORT(int, sceNpTrophySetupDialogAbort) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTrophySetupDialogGetResult) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophySetupDialogGetResult, emu::SceNpTrophySetupDialogResult *result) {
+    result->result = SCE_COMMON_DIALOG_RESULT_OK;
+    return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetStatus) {
