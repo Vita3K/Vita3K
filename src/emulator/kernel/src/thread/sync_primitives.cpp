@@ -431,24 +431,18 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
 
     WaitingThreadData waiting_thread_data;
     if (target_type == Condvar::SignalTarget::Type::Specific) {
-        ThreadStatePtr target_thread = lock_and_find(signal_target.thread_id, kernel.threads, kernel.mutex);
+        ThreadStatePtr waiting_thread = lock_and_find(signal_target.thread_id, kernel.threads, kernel.mutex);
 
         // Search for specified waiting thread
-        auto waiting_thread_iter = condvar->waiting_threads.find(target_thread);
+        auto waiting_thread_iter = condvar->waiting_threads.find(waiting_thread);
         if (waiting_thread_iter != condvar->waiting_threads.end()) {
-            LOG_ERROR("{}: Target thread {} not found", export_name, target_thread->name);
+            LOG_ERROR("{}: Target thread {} not found", export_name, waiting_thread->name);
         } else {
             waiting_thread_data = *waiting_thread_iter;
         }
-    }
 
-    while (condvar->waiting_threads.size() > 0) {
-        ThreadStatePtr waiting_thread;
-        if (target_type != Condvar::SignalTarget::Type::Specific) {
-            // Pick first waiting thread (based on priority)
-            waiting_thread_data = condvar->waiting_threads.top();
-        }
-        waiting_thread = waiting_thread_data.thread;
+        if (!condvar->waiting_threads.remove(waiting_thread_data))
+            LOG_ERROR("{}: Target thread {} not found", export_name, waiting_thread->name);
 
         {
             const std::lock_guard<std::mutex> lock2(waiting_thread->mutex);
@@ -456,19 +450,36 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
             assert(waiting_thread->to_do == ThreadToDo::wait);
             waiting_thread->to_do = ThreadToDo::run;
 
-            if (target_type == Condvar::SignalTarget::Type::Specific)
-                if (!condvar->waiting_threads.remove(waiting_thread_data))
-                    LOG_ERROR("{}: Target thread {} not found", export_name, waiting_thread->name);
-                else
-                    condvar->waiting_threads.pop();
+            condvar->waiting_threads.pop();
 
             waiting_thread->something_to_do.notify_one();
         }
+
         if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex))
             return error;
 
-        if (target_type != Condvar::SignalTarget::Type::All) {
-            break;
+    } else {
+        while (condvar->waiting_threads.size() > 0) {
+            ThreadStatePtr waiting_thread;
+
+            waiting_thread_data = condvar->waiting_threads.top();
+
+            waiting_thread = waiting_thread_data.thread;
+
+            {
+                const std::lock_guard<std::mutex> lock2(waiting_thread->mutex);
+
+                assert(waiting_thread->to_do == ThreadToDo::wait);
+                waiting_thread->to_do = ThreadToDo::run;
+
+                condvar->waiting_threads.pop();
+
+                waiting_thread->something_to_do.notify_one();
+            }
+
+            if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex))
+                return error;
+
         }
     }
 
