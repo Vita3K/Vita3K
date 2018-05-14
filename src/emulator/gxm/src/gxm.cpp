@@ -127,9 +127,8 @@ static const char *vector_prefix(SceGxmParameterType type) {
     return "?";
 }
 
-static void output_uniform_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
-    assert(parameter.component_count == 4);
-    glsl << " sampler2D " << parameter_name_raw(parameter);
+static void output_sampler_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
+    glsl << "sampler2D " << parameter_name_raw(parameter);
 }
 
 static void output_scalar_decl(std::ostream &glsl, const SceGxmProgramParameter &parameter) {
@@ -202,7 +201,8 @@ static void output_glsl_decl(std::ostream &glsl, std::string &cur_struct_decl, c
 
     // TODO: Should be using param type here
     if (is_sampler) {
-        output_uniform_decl(glsl, parameter);
+        // samplers are special because they can't be inside structs
+        output_sampler_decl(glsl, parameter);
     } else if (parameter.component_count > 1) {
         if (parameter.array_size > 1 && parameter.array_size <= 4) {
             output_matrix_decl(glsl, parameter);
@@ -246,7 +246,7 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_SAMPLER: {
-            output_glsl_decl(glsl, cur_struct_decl, parameter, "uniform ", true);
+            output_glsl_decl(glsl, cur_struct_decl, parameter, "uniform", true);
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE: {
@@ -525,7 +525,7 @@ AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
             const auto struct_idx = name.find('.');
             const bool is_struct_field = struct_idx != std::string::npos;
             if (is_struct_field)
-                name.replace(struct_idx, 1, "");  //Workaround for input.field on glsl version 120
+                name.replace(struct_idx, 1, ""); //Workaround for input.field on glsl version 120
             locations.emplace(parameter.resource_index, name);
         }
     }

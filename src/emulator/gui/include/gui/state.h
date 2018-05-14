@@ -34,6 +34,8 @@ struct GuiState {
     bool renderer_focused = true;
     bool threads_dialog = false;
     bool semaphores_dialog = false;
+    bool condvars_dialog = false;
+    bool lwcondvars_dialog = false;
     bool mutexes_dialog = false;
     bool lwmutexes_dialog = false;
 

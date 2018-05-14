@@ -109,7 +109,7 @@ EXPORT(int, sceNetCtlInetGetState, uint32_t *state) {
 
 EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, uint32_t *cid) {
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    *cid = host.kernel.next_uid++;
+    *cid = host.kernel.get_next_uid();
     emu::SceNetCtlCallback sceNetCtlCallback;
     sceNetCtlCallback.pc = callback.address();
     sceNetCtlCallback.data = data.address();

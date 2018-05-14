@@ -19,8 +19,8 @@
 
 #include <psp2/types.h>
 
-#include <kernel/thread/thread_functions.h>
 #include <kernel/thread/sync_primitives.h>
+#include <kernel/thread/thread_functions.h>
 #include <mem/ptr.h>
 
 #include <cstdint>

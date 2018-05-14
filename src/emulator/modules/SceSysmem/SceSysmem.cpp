@@ -39,7 +39,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     }
 
     KernelState *const state = &host.kernel;
-    const SceUID uid = state->next_uid++;
+    const SceUID uid = state->get_next_uid();
     state->blocks.insert(Blocks::value_type(uid, address));
 
     return uid;

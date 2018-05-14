@@ -62,5 +62,12 @@ namespace emu {
         std::uint8_t padding[28];
     };
 
+    // We only use workarea for uid
+    struct SceKernelLwCondWork {
+        SceUID uid;
+
+        std::uint8_t padding[28];
+    };
+
     static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
 }

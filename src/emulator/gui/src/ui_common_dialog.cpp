@@ -83,7 +83,7 @@ void DrawTrophySetupDialog(HostState &host) {
         std::string closeup_text = "This dialog will close automatically in ";
         closeup_text += std::to_string(timer);
         closeup_text += " seconds.";
-        ImGui::Text(closeup_text.c_str());
+        ImGui::Text("%s", closeup_text.c_str());
         ImGui::End();
     } else {
         host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;

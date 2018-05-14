@@ -118,7 +118,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     if (!read_file_from_zip(params, vpk_fp, sfo_path.c_str(), zip)) {
         return false;
     }
-    
+
     SfoFile sfo_handle;
     load_sfo(sfo_handle, params);
     find_data(host.io.title_id, sfo_handle, "TITLE_ID");
@@ -152,7 +152,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
                 std::string directory = output_path.substr(0, slash);
                 fs::create_directories(directory);
             }
-            
+
             LOG_INFO("Extracting {}", output_path);
             mz_zip_reader_extract_to_file(zip.get(), i, output_path.c_str(), 0);
         }
@@ -189,7 +189,7 @@ bool load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring 
     LOG_INFO("Title: {}", host.game_title);
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Category: {}", category);
-    
+
     host.io.savedata0_path = "ux0:/user/00/savedata/" + host.io.title_id + "/";
 
     Buffer eboot;

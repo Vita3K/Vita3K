@@ -62,4 +62,10 @@ void DrawUI(HostState &host) {
     if (host.gui.lwmutexes_dialog) {
         DrawLwMutexesDialog(host);
     }
+    if (host.gui.condvars_dialog) {
+        DrawCondvarsDialog(host);
+    }
+    if (host.gui.lwcondvars_dialog) {
+        DrawLwCondvarsDialog(host);
+    }
 }
