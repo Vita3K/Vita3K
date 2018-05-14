@@ -105,6 +105,7 @@ EXPORT(int, sceImeDialogAbort) {
 }
 
 EXPORT(int, sceImeDialogGetResult, SceImeDialogResult *result) {
+    result->result = host.gui.common_dialog.result;
     result->button = host.gui.common_dialog.ime.status;
     return 0;
 }
@@ -155,6 +156,7 @@ EXPORT(int, sceMsgDialogClose) {
 }
 
 EXPORT(int, sceMsgDialogGetResult, SceMsgDialogResult *result) {
+    result->result = host.gui.common_dialog.result;
     result->mode = host.gui.common_dialog.msg.mode;
     result->buttonId = host.gui.common_dialog.msg.status;
     return 0;
@@ -442,7 +444,7 @@ EXPORT(int, sceNpTrophySetupDialogAbort) {
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetResult, emu::SceNpTrophySetupDialogResult *result) {
-    result->result = SCE_COMMON_DIALOG_RESULT_OK;
+    result->result = host.gui.common_dialog.result;
     return 0;
 }
 
