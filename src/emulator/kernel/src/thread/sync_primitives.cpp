@@ -101,8 +101,8 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_nam
     mutexes.emplace(uid, mutex);
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Creating {}: uid:{} thread_id:{} name:\"{}\" attr:{} init_count:{}",
-            export_name, weight == SyncWeight::Light ? "lwmutex" : "mutex", uid, thread_id, mutex_name, attr, init_count);
+        LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} init_count:{}",
+            export_name, uid, thread_id, mutex_name, attr, init_count);
     }
 
     if (uid_out) {
@@ -114,7 +114,7 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_nam
 
 inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int lock_count, MutexPtr mutex) {
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Locking mutex: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{}",
+        LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{}",
             export_name, mutex->uid, thread_id, mutex->name, mutex->attr, mutex->lock_count);
     }
 
@@ -209,7 +209,7 @@ int mutex_unlock(KernelState &kernel, const char *export_name, SceUID thread_id,
         return error;
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Unlocking mutex: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{}",
+        LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{}",
             export_name, mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count, unlock_count);
     }
 
@@ -223,7 +223,7 @@ int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id,
         return error;
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Deleting mutex: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{} waiting_threads:{}",
+        LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{} waiting_threads:{}",
             export_name, mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count, mutex->waiting_threads.size());
     }
 
@@ -255,7 +255,7 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
     std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, semaphore->name);
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Creating semaphore: uid:{} name:\"{}\" attr:{} init_val:{} max_val:{}",
+        LOG_DEBUG("{}: uid:{} name:\"{}\" attr:{} init_val:{} max_val:{}",
             export_name, uid, name, attr, init_val, max_val);
     }
 
@@ -277,7 +277,7 @@ int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_i
     }
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Waiting for semaphore: uid:{} thread_id:{} name:\"{}\" attr:{} val:{} timeout: {}",
+        LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} val:{} timeout: {}",
             export_name, semaphore->uid, thread_id, semaphore->name, semaphore->attr, semaphore->val, timeout ? *timeout : 0);
     }
 
@@ -314,7 +314,7 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID semaid
     }
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Signaling semaphore: uid:{} name:\"{}\" attr:{} val:{} signal: {}",
+        LOG_DEBUG("{}: uid:{} name:\"{}\" attr:{} val:{} signal: {}",
             export_name, semaphore->uid, semaphore->name, semaphore->attr, signal);
     }
 
@@ -355,8 +355,8 @@ SceUID condvar_create(SceUID *uid_out, KernelState &kernel, const char *export_n
     const SceUID uid = kernel.get_next_uid();
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Creating {}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
-            export_name, weight == SyncWeight::Light ? "lwcond" : "cond", uid, name, attr, assoc_mutexid);
+        LOG_DEBUG("{}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
+            export_name, uid, name, attr, assoc_mutexid);
     }
 
     const CondvarPtr condvar = std::make_shared<Condvar>();
@@ -385,8 +385,8 @@ int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id,
     }
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Waiting for {}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
-            export_name, weight == SyncWeight::Light ? "lwcond" : "cond", condvar->uid, condvar->name, condvar->attr, condvar->associated_mutex->uid);
+        LOG_DEBUG("{}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
+            export_name, condvar->uid, condvar->name, condvar->attr, condvar->associated_mutex->uid);
     }
 
     const std::lock_guard<std::mutex> lock(condvar->mutex);
@@ -421,8 +421,8 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
     }
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: Signaling {}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
-            export_name, weight == SyncWeight::Light ? "lwcond" : "cond", condvar->uid, condvar->name, condvar->attr, condvar->associated_mutex->uid);
+        LOG_DEBUG("{}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
+            export_name, condvar->uid, condvar->name, condvar->attr, condvar->associated_mutex->uid);
     }
 
     const std::lock_guard<std::mutex> lock(condvar->mutex);
@@ -492,6 +492,12 @@ SceUID create_eventflag(KernelState &kernel, const char *export_name, SceUID thr
     }
 
     const SceUID uid = kernel.get_next_uid();
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} flags:{:#b}",
+            export_name, uid, thread_id, event_name, attr, flags);
+    }
+
     const EventFlagPtr event = std::make_shared<EventFlag>();
     event->uid = uid;
     event->flags = flags;
@@ -512,6 +518,11 @@ int wait_eventflag(KernelState &kernel, const char *export_name, SceUID thread_i
     const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} existing_flags:{:#b} wait_flags:{:#b}",
+            export_name, event->uid, thread_id, event->name, event->attr, event->flags, flags);
     }
 
     const std::lock_guard<std::mutex> lock(event->mutex);
@@ -561,6 +572,11 @@ int set_eventflag(KernelState &kernel, const char *export_name, SceUID event_id,
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
     }
 
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid:{} name:\"{}\" attr:{} existing_flags:{:#b} set_flags:{:#b}",
+            export_name, event->uid, event->name, event->attr, event->flags, flags);
+    }
+
     const std::lock_guard<std::mutex> lock(event->mutex);
     event->flags |= flags;
 
@@ -604,6 +620,11 @@ int delete_eventflag(KernelState &kernel, const char *export_name, SceUID thread
     const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    }
+    
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} existing_flags:{:#b}",
+            export_name, event->uid, thread_id, event->name, event->attr, event->flags);
     }
 
     const std::lock_guard<std::mutex> lock(event->mutex);
