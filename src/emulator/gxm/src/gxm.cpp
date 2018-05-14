@@ -830,7 +830,7 @@ namespace texture {
         case SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER:
             return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
         default: {
-            LOG_WARN("Unsupported texture wrap mode translated: {:#08X}", src);
+            LOG_WARN("Unsupported texture wrap mode translated: 0x{:08X}", src);
             return GL_CLAMP_TO_EDGE;
         }
         }
@@ -845,7 +845,7 @@ namespace texture {
         case SCE_GXM_TEXTURE_FILTER_LINEAR:
             return GL_LINEAR;
         default: {
-            LOG_WARN("Unsupported texture min/mag filter translated: {:#08X}", src);
+            LOG_WARN("Unsupported texture min/mag filter translated: 0x{:08X}", src);
             return GL_LINEAR;
         }
         }
@@ -862,7 +862,7 @@ namespace texture {
         case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
             return GL_UNSIGNED_SHORT_5_6_5;
         default: {
-            LOG_WARN("Unsupported translate type: {:#08X}", format);
+            LOG_WARN("Unsupported translate type: 0x{:08X}", format);
             return GL_UNSIGNED_BYTE;
         }
         }
