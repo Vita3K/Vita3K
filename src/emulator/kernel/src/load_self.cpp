@@ -59,7 +59,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
         if (LOG_IMPORTS) {
             const char *const name = import_name(nid);
-            LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
+            LOG_DEBUG("\tNID 0x{:08X} ({}) at {:#x}", nid, name, entry.address());
         }
 
         uint32_t *const stub = entry.get(mem);
@@ -72,7 +72,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         const ExportNids::iterator export_address = kernel.export_nids.find(nid);
         if (export_address == kernel.export_nids.end()) {
             const char *const name = import_name(nid);
-            LOG_ERROR("\tNID NOT FOUND {:#08x} ({}) at {:#x}: {:#08x}", nid, name, entry.address(), stub[0]);
+            LOG_ERROR("\tNID NOT FOUND 0x{:08X} ({}) at {:#x}: 0x{:08X}", nid, name, entry.address(), stub[0]);
             continue;
         }
         uint32_t *const export_ptr = Ptr<uint32_t>(export_address->second).get(mem);
@@ -123,7 +123,7 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
 
         if (LOG_IMPORTS) {
             const char *const name = import_name(nid);
-            LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
+            LOG_DEBUG("\tNID 0x{:08X} ({}) at {:#x}", nid, name, entry.address());
         }
 
         const ExportNids::iterator export_address = kernel.export_nids.find(nid);
@@ -191,7 +191,7 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
         if (LOG_EXPORTS) {
             const char *const name = import_name(nid);
 
-            LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
+            LOG_DEBUG("\tNID 0x{:08X} ({}) at {:#x}", nid, name, entry.address());
         }
     }
 
@@ -205,24 +205,24 @@ static bool load_var_exports(Ptr<const void> &entry_point, const uint32_t *nids,
 
         if (nid == NID_PROCESS_PARAM) {
             kernel.process_param = entry;
-            LOG_DEBUG("\tNID {:#08x} (SCE_PROC_PARAMS) at {:#x}", nid, entry.address());
+            LOG_DEBUG("\tNID 0x{:08X} (SCE_PROC_PARAMS) at {:#x}", nid, entry.address());
             continue;
         }
 
         if (nid == NID_MODULE_INFO) {
-            LOG_DEBUG("\tNID {:#08x} (NID_MODULE_INFO) at {:#x}", nid, entry.address());
+            LOG_DEBUG("\tNID 0x{:08X} (NID_MODULE_INFO) at {:#x}", nid, entry.address());
             continue;
         }
 
         if (nid == 0x936c8a78) {
-            LOG_DEBUG("\tNID {:#08x} (SYSLYB) at {:#x}", nid, entry.address());
+            LOG_DEBUG("\tNID 0x{:08X} (SYSLYB) at {:#x}", nid, entry.address());
             continue;
         }
 
         if (LOG_EXPORTS) {
             const char *const name = import_name(nid);
 
-            LOG_DEBUG("\tNID {:#08x} ({}) at {:#x}", nid, name, entry.address());
+            LOG_DEBUG("\tNID 0x{:08X} ({}) at {:#x}", nid, name, entry.address());
         }
 
         kernel.export_nids.emplace(nid, entry.address());
