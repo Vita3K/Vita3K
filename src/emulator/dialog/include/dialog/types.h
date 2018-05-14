@@ -73,6 +73,11 @@ namespace emu {
         SceInt32 fontSize3;
         SceChar8 reserved[32];
     };
+	
+    struct SceNpTrophySetupDialogResult {
+        SceInt32 result;
+        SceUInt8 reserved[128];
+    };
 
     struct SceMsgDialogUserMessageParam {
         SceInt32 buttonType;
