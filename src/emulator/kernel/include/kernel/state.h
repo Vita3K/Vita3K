@@ -126,6 +126,7 @@ struct Mutex {
 };
 
 struct EventFlag {
+    SceUID uid;
     int flags;
     uint32_t attr;
     std::mutex mutex;

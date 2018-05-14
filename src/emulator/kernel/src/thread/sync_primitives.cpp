@@ -491,13 +491,14 @@ SceUID create_eventflag(KernelState &kernel, const char *export_name, SceUID thr
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
 
+    const SceUID uid = kernel.get_next_uid();
     const EventFlagPtr event = std::make_shared<EventFlag>();
+    event->uid = uid;
     event->flags = flags;
     std::copy(event_name, event_name + KERNELOBJECT_MAX_NAME_LENGTH, event->name);
     event->attr = attr;
 
     const std::lock_guard<std::mutex> lock(kernel.mutex);
-    const SceUID uid = kernel.get_next_uid();
     kernel.eventflags.emplace(uid, event);
 
     return uid;
