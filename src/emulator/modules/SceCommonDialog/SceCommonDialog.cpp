@@ -101,7 +101,12 @@ EXPORT(int, sceCrossControllerDialogTerm) {
 }
 
 EXPORT(int, sceImeDialogAbort) {
-    return UNIMPLEMENTED();
+    if (host.gui.common_dialog.type != IME_DIALOG) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+    }
+    host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    host.gui.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    return 0;
 }
 
 EXPORT(int, sceImeDialogGetResult, SceImeDialogResult *result) {
@@ -148,11 +153,21 @@ EXPORT(int, sceImeDialogTerm) {
 }
 
 EXPORT(int, sceMsgDialogAbort) {
-    return UNIMPLEMENTED();
+    if (host.gui.common_dialog.type != MESSAGE_DIALOG) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+    }
+    host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    host.gui.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    return 0;
 }
 
 EXPORT(int, sceMsgDialogClose) {
-    return UNIMPLEMENTED();
+    if (host.gui.common_dialog.type != MESSAGE_DIALOG) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+    }
+    host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    host.gui.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+    return 0;
 }
 
 EXPORT(int, sceMsgDialogGetResult, SceMsgDialogResult *result) {
@@ -440,7 +455,12 @@ EXPORT(int, sceNpSnsFacebookDialogTerm) {
 }
 
 EXPORT(int, sceNpTrophySetupDialogAbort) {
-    return UNIMPLEMENTED();
+    if (host.gui.common_dialog.type != TROPHY_SETUP_DIALOG) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+    }
+    host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    host.gui.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetResult, emu::SceNpTrophySetupDialogResult *result) {
