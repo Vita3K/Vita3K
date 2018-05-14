@@ -40,6 +40,9 @@ void DrawMainMenuBar(HostState &host) {
             if (ImGui::MenuItem("Lightweight Condition Variables", nullptr, host.gui.lwcondvars_dialog)) {
                 host.gui.lwcondvars_dialog = !host.gui.lwcondvars_dialog;
             }
+            if (ImGui::MenuItem("Event Flags", nullptr, host.gui.eventflags_dialog)) {
+                host.gui.eventflags_dialog = !host.gui.eventflags_dialog;
+            }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();

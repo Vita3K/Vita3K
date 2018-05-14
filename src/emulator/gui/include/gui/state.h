@@ -38,6 +38,7 @@ struct GuiState {
     bool lwcondvars_dialog = false;
     bool mutexes_dialog = false;
     bool lwmutexes_dialog = false;
+    bool eventflags_dialog = false;
 
     DialogState common_dialog;
     GamesSelector game_selector;

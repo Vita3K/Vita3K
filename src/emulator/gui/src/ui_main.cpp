@@ -84,4 +84,7 @@ void DrawUI(HostState &host) {
     if (host.gui.lwcondvars_dialog) {
         DrawLwCondvarsDialog(host);
     }
+    if (host.gui.eventflags_dialog) {
+        DrawEventFlagsDialog(host);
+    }
 }
