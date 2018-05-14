@@ -144,6 +144,8 @@ translate_device(const std::string &path_) {
 #include <io/VitaIoDevice.def>
 #undef DEVICE
 #undef JOIN_DEVICE
+
+    LOG_CRITICAL("Unknown device {} used. Report this to developers!", path_);
     return { VitaIoDevice::_UKNONWN, "" };
 }
 
@@ -219,7 +221,7 @@ SceUID open_file(IOState &io, const std::string &path_, int flags, const char *p
     }
     case VitaIoDevice::SAVEDATA1:
     case VitaIoDevice::_UKNONWN: {
-        LOG_CRITICAL("Unknown device {} used. Report this to developers!", path);
+        LOG_ERROR("Unimplemented device {} used", path_);
         // fall-through default behavior
     }
     default: {
@@ -360,7 +362,7 @@ int remove_file(IOState &io, const char *file, const char *pref_path) {
         return 0;
     }
     default: {
-        LOG_CRITICAL("Unknown file {} used. Report this to developers!", file);
+        LOG_ERROR("Unimplemented device {} used", file);
         return -1;
     }
     }
@@ -395,7 +397,7 @@ int create_dir(IOState &io, const char *dir, int mode, const char *pref_path) {
         return 0;
     }
     default: {
-        LOG_CRITICAL("Unknown dir {} used. Report this to developers!", dir);
+        LOG_ERROR("Unimplemented device {} used", dir);
         return -1;
     }
     }
@@ -429,7 +431,7 @@ int remove_dir(IOState &io, const char *dir, const char *pref_path) {
         return 0;
     }
     default: {
-        LOG_CRITICAL("Unknown dir {} used. Report this to developers!", dir);
+        LOG_ERROR("Unimplemented device {} used", dir);
         return -1;
     }
     }
@@ -525,7 +527,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
         break;
     }
     default: {
-        LOG_CRITICAL("Unknown file {} used. Report this to developers!", file);
+        LOG_ERROR("Unimplemented device {} used", file);
         return -1;
     }
     }
@@ -575,7 +577,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path) {
         break;
     }
     default: {
-        LOG_CRITICAL("Unknown dir {} used. Report this to developers!", path);
+        LOG_ERROR("Unimplemented device {} used", path);
         return -1;
     }
     }
