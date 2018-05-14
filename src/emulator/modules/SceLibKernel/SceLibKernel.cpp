@@ -20,6 +20,7 @@
 #include <cpu/functions.h>
 #include <host/functions.h>
 #include <io/functions.h>
+#include <io/types.h>
 #include <kernel/functions.h>
 #include <kernel/thread/sync_primitives.h>
 #include <kernel/thread/thread_functions.h>
@@ -309,7 +310,10 @@ EXPORT(int, sceIoDevctlAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
+EXPORT(int, sceIoDread, SceUID fd, emu::SceIoDirent *dir) {
+    if (dir == nullptr) {
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    }
     return read_dir(host.io, fd, dir);
 }
 

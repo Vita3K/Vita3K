@@ -19,6 +19,8 @@
 
 #include <psp2/types.h>
 
+#include <io/types.h>
+
 #include <miniz.h>
 #include <string>
 
@@ -38,5 +40,5 @@ int remove_dir(IOState &io, const char *dir, const char *pref_path);
 int stat_file(IOState &io, const char *file, SceIoStat *stat, const char *pref_path, uint64_t base_tick);
 
 int open_dir(IOState &io, const char *path, const char *pref_path);
-int read_dir(IOState &io, SceUID fd, SceIoDirent *dent);
+int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent);
 int close_dir(IOState &io, SceUID fd);

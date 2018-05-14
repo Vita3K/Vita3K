@@ -7,9 +7,10 @@ add_library(
 	include/io/functions.h
 	include/io/state.h
 	include/io/file.h
+	include/io/types.h
 	include/io/VitaIoDevice.def
 )
 
 target_include_directories(io PUBLIC include)
-target_link_libraries(io PUBLIC rtc miniz vita-headers dirent)
+target_link_libraries(io PUBLIC rtc miniz vita-headers dirent mem)
 target_link_libraries(io PRIVATE util)
