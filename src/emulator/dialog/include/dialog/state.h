@@ -22,7 +22,9 @@
 
 enum DialogType {
     NO_DIALOG,
-    IME_DIALOG
+    IME_DIALOG,
+    MESSAGE_DIALOG,
+    TROPHY_SETUP_DIALOG
 };
 
 struct ImeState {
@@ -35,8 +37,24 @@ struct ImeState {
     uint32_t status;
 };
 
+struct MsgState {
+    int32_t mode;
+    std::string message;
+    uint8_t btn_num;
+    std::string btn[3];
+    uint32_t btn_val[3];
+    uint32_t status;
+};
+
+struct TrophyState {
+    uint32_t tick;
+};
+
 struct DialogState {
     DialogType type = NO_DIALOG;
     SceCommonDialogStatus status = SCE_COMMON_DIALOG_STATUS_NONE;
+    SceCommonDialogResult result = SCE_COMMON_DIALOG_RESULT_OK;
     ImeState ime;
+    MsgState msg;
+    TrophyState trophy;
 };

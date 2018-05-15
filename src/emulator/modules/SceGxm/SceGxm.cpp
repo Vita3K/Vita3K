@@ -25,7 +25,7 @@
 
 #include <cpu/functions.h>
 #include <host/functions.h>
-#include <kernel/thread_functions.h>
+#include <kernel/thread/thread_functions.h>
 #include <psp2/kernel/error.h>
 
 #include <algorithm>
@@ -50,7 +50,6 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(renderTarget != nullptr);
     assert(validRegion == nullptr);
     assert(vertexSyncObject == nullptr);
-    assert(fragmentSyncObject != nullptr);
     assert(colorSurface != nullptr);
     assert(depthStencil != nullptr);
 
@@ -571,8 +570,9 @@ EXPORT(int, sceGxmGetPrecomputedVertexStateSize) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmGetRenderTargetMemSizes) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmGetRenderTargetMemSizes, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
+    *hostMemSize = 2 * 1024 * 1024;
+    return STUBBED("2MB host mem");
 }
 
 struct GxmThreadParams {
@@ -835,8 +835,9 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const 
     return Ptr<SceGxmProgramParameter>();
 }
 
-EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize, const SceGxmProgram *program) {
+    STUBBED("Full program size");
+    return program->size;
 }
 
 EXPORT(int, sceGxmProgramGetFragmentProgramInputs) {
@@ -1307,7 +1308,6 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(uniformBuffer != nullptr);
     assert(parameter != nullptr);
     assert(parameter->container_index == 14);
-    assert(componentOffset == 0);
     assert(componentCount > 0);
     assert(sourceData != nullptr);
 
@@ -1355,13 +1355,13 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
     context->viewport.x = xOffset - xScale;
-    context->viewport.y = host.display.window_height + yScale;
-    context->viewport.w = xScale * 2;
-    context->viewport.h = -(yScale * 2);
+    context->viewport.y = yOffset + yScale;
+    context->viewport.w = xOffset + xScale;
+    context->viewport.h = yOffset - yScale;
     context->viewport.nearVal = zOffset - zScale;
     context->viewport.farVal = zOffset + zScale;
     if (context->viewport.enabled) {
-        glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
+        glViewport(context->viewport.x, context->viewport.y, abs(context->viewport.w), abs(context->viewport.h));
         glDepthRange(context->viewport.nearVal, context->viewport.farVal);
     }
 }
@@ -1804,6 +1804,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
 
     switch (texFormat) {
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
     case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
@@ -1821,10 +1822,10 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
             case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:
                 break;
             default:
-                LOG_WARN("Initialized texture with untested paletted texture format: {:#08x}", texFormat);
+                LOG_WARN("Initialized texture with untested paletted texture format: 0x{:08X}", texFormat);
             }
         } else
-            LOG_ERROR("Initialized texture with unsupported texture format: {:#08x}", texFormat);
+            LOG_ERROR("Initialized texture with unsupported texture format: 0x{:08X}", texFormat);
     }
 
     texture->mip_count = mipCount - 1;

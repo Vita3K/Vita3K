@@ -18,7 +18,7 @@
 #include <kernel/functions.h>
 
 #include <kernel/state.h>
-#include <kernel/thread_state.h>
+#include <kernel/thread/thread_state.h>
 
 #include <cpu/functions.h>
 #include <mem/mem.h>

@@ -1,4 +1,4 @@
-﻿// Vita3K emulator project
+// Vita3K emulator project
 // Copyright (C) 2018 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -17,13 +17,14 @@
 
 #pragma once
 
-#include <kernel/thread_state.h>
+#include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mem/ptr.h>
 
 #include <psp2/rtc.h>
 #include <psp2/types.h>
 
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <queue>
@@ -46,22 +47,64 @@ typedef std::map<uint32_t, Address> ExportNids;
 
 struct WaitingThreadData {
     ThreadStatePtr thread;
-    std::int32_t lock_count;
-    std::int32_t priority;
+    int32_t priority;
 
-    WaitingThreadData(ThreadStatePtr thread, std::int32_t lock_count, std::int32_t priority)
-        : thread(thread)
-        , lock_count(lock_count)
-        , priority(priority) {}
+    // additional fields for each primitive
+    union {
+        struct { // mutex
+            int32_t lock_count;
+        };
+        struct { // semaphore
+            int32_t signal;
+        };
+        struct { // event flags
+            int32_t wait;
+            int32_t flags;
+        };
+        struct { // condvar
+        };
+    };
 
     bool operator>(const WaitingThreadData &rhs) const {
         return priority > rhs.priority;
     }
+
+    bool operator==(const WaitingThreadData &rhs) const {
+        return thread == rhs.thread;
+    }
+
+    bool operator==(const ThreadStatePtr &rhs) const {
+        return thread == rhs;
+    }
 };
 
-using WaitingThreadQueue = std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>, std::greater<WaitingThreadData>>;
+class WaitingThreadQueue : public std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>, std::greater<WaitingThreadData>> {
+public:
+    auto begin() const { return this->c.begin(); }
+    auto end() const { return this->c.end(); }
+    bool remove(const WaitingThreadData &value) {
+        auto it = std::find(this->c.begin(), this->c.end(), value);
+        if (it != this->c.end()) {
+            this->c.erase(it);
+            std::make_heap(this->c.begin(), this->c.end(), this->comp);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    auto find(const WaitingThreadData &value) {
+        return std::find(this->c.begin(), this->c.end(), value);
+    }
+    auto find(const ThreadStatePtr &value) {
+        return std::find(this->c.begin(), this->c.end(), value);
+    }
+};
+
+// NOTE: uid is copied to sync primitives here for debugging,
+//       not really needed since they are put in std::map's
 
 struct Semaphore {
+    SceUID uid;
     int val;
     int max;
     uint32_t attr;
@@ -69,8 +112,11 @@ struct Semaphore {
     WaitingThreadQueue waiting_threads;
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
+typedef std::shared_ptr<Semaphore> SemaphorePtr;
+typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 
 struct Mutex {
+    SceUID uid;
     int lock_count;
     uint32_t attr;
     std::mutex mutex;
@@ -79,10 +125,49 @@ struct Mutex {
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
 
+struct EventFlag {
+    SceUID uid;
+    int flags;
+    uint32_t attr;
+    std::mutex mutex;
+    WaitingThreadQueue waiting_threads;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+};
+
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
 typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 typedef std::shared_ptr<Mutex> MutexPtr;
 typedef std::map<SceUID, MutexPtr> MutexPtrs;
+typedef std::shared_ptr<EventFlag> EventFlagPtr;
+typedef std::map<SceUID, EventFlagPtr> EventFlagPtrs;
+
+struct Condvar {
+    struct SignalTarget {
+        enum class Type {
+            Any, // signal any one waiting thread
+            Specific, // signal a specific waiting thread (target_thread)
+            All, // signal all waiting threads
+        } type;
+
+        SceUID thread_id; // for Type::One
+
+        SignalTarget(Type type)
+            : type(type)
+            , thread_id(0) {}
+        SignalTarget(Type type, SceUID thread_id)
+            : type(type)
+            , thread_id(thread_id) {}
+    };
+
+    SceUID uid;
+    uint32_t attr;
+    MutexPtr associated_mutex;
+    std::mutex mutex;
+    WaitingThreadQueue waiting_threads;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+};
+typedef std::shared_ptr<Condvar> CondvarPtr;
+typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
 
 namespace emu {
     typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
@@ -97,11 +182,13 @@ typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
 struct KernelState {
     std::mutex mutex;
     Blocks blocks;
-    SceUID next_uid = 0;
     ThreadToSlotToAddress tls;
     SemaphorePtrs semaphores;
+    CondvarPtrs condvars;
+    CondvarPtrs lwcondvars;
     MutexPtrs mutexes;
     MutexPtrs lwmutexes; // also Mutexes for now
+    EventFlagPtrs eventflags;
     ThreadStatePtrs threads;
     ThreadPtrs running_threads;
     KernelWaitingThreadStates waiting_threads;
@@ -109,4 +196,11 @@ struct KernelState {
     ExportNids export_nids;
     SceRtcTick base_tick;
     Ptr<uint32_t> process_param;
+
+    SceUID get_next_uid() {
+        return next_uid++;
+    }
+
+private:
+    std::atomic<SceUID> next_uid{ 0 };
 };

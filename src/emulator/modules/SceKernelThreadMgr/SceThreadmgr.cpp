@@ -19,6 +19,7 @@
 
 #include <host/functions.h>
 #include <kernel/functions.h>
+#include <kernel/thread/sync_primitives.h>
 
 #include <SDL_timer.h>
 #include <psp2/kernel/error.h>
@@ -132,8 +133,8 @@ EXPORT(int, sceKernelDeleteCond) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelDeleteEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDeleteEventFlag, SceUID event_id) {
+    return delete_eventflag(host.kernel, export_name, thread_id, event_id);
 }
 
 EXPORT(int, sceKernelDeleteMsgPipe) {
@@ -141,7 +142,7 @@ EXPORT(int, sceKernelDeleteMsgPipe) {
 }
 
 EXPORT(int, sceKernelDeleteMutex, SceInt32 mutexid) {
-    return delete_mutex(host, export_name, thread_id, host.kernel.mutexes, mutexid);
+    return mutex_delete(host.kernel, export_name, thread_id, mutexid, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelDeleteRWLock) {
@@ -261,28 +262,31 @@ EXPORT(int, sceKernelSetEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSetEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSetEventFlag, SceUID eventid, unsigned int flags) {
+    return set_eventflag(host.kernel, export_name, eventid, flags);
 }
 
 EXPORT(int, sceKernelSetTimerTimeWide) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSignalCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalCond, SceUID condid) {
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::Any), SyncWeight::Heavy);
 }
 
-EXPORT(int, sceKernelSignalCondAll) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalCondAll, SceUID condid) {
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::All), SyncWeight::Heavy);
 }
 
-EXPORT(int, sceKernelSignalCondTo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalCondTo, SceUID condid, SceUID thread_target) {
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::Specific, thread_target), SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
-    return signal_sema(host, export_name, semaid, signal);
+    return semaphore_signal(host.kernel, export_name, semaid, signal);
 }
 
 EXPORT(int, sceKernelStartTimer) {
@@ -306,7 +310,7 @@ EXPORT(int, sceKernelTryLockWriteRWLock) {
 }
 
 EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
-    return unlock_mutex(host, export_name, thread_id, host.kernel.mutexes, mutexid, unlock_count);
+    return mutex_unlock(host.kernel, export_name, thread_id, mutexid, unlock_count, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelUnlockReadRWLock) {

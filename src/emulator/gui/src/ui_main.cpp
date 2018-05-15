@@ -19,6 +19,50 @@
 #include <host/state.h>
 #include <imgui.h>
 
+static constexpr auto DEFAULT_RES_WIDTH = 960;
+static constexpr auto DEFAULT_RES_HEIGHT = 544;
+static constexpr auto WINDOW_BORDER_WIDTH = 16;
+static constexpr auto WINDOW_BORDER_HEIGHT = 34;
+static constexpr auto MENUBAR_HEIGHT = 19;
+
+void DrawGameSelector(HostState &host, bool *is_vpk) {
+    ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(DEFAULT_RES_WIDTH + WINDOW_BORDER_WIDTH, DEFAULT_RES_HEIGHT + WINDOW_BORDER_HEIGHT - MENUBAR_HEIGHT), ImGuiSetCond_Always);
+    ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
+    switch (host.gui.game_selector.state) {
+    case SELECT_APP:
+        ImGui::TextColored(ImVec4(255, 255, 0, 255), "Select the game/application to start");
+        ImGui::Separator();
+        int i = 0;
+        for (auto titleid : host.gui.game_selector.title_ids) {
+            std::string button_text = host.gui.game_selector.titles.at(i++);
+            button_text += " (" + titleid + ")";
+            if (ImGui::Button(button_text.c_str())) {
+                host.gui.game_selector.title_id = titleid;
+                *is_vpk = false;
+            }
+        }
+        break;
+    }
+    ImGui::End();
+}
+
+void DrawReinstallDialog(HostState &host, GenericDialogState *status) {
+    ImGui::SetNextWindowPosCenter();
+    ImGui::SetNextWindowSize(ImVec2(0, 0));
+    ImGui::Begin("Reinstall this application?");
+    ImGui::Text("This application is already installed.");
+    ImGui::Text("Do you want to reinstall it and overwrite existing data?");
+    if (ImGui::Button("Yes")) {
+        *status = CONFIRM_STATE;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("No")) {
+        *status = CANCEL_STATE;
+    }
+    ImGui::End();
+}
+
 void DrawUI(HostState &host) {
     DrawMainMenuBar(host);
 
@@ -33,5 +77,14 @@ void DrawUI(HostState &host) {
     }
     if (host.gui.lwmutexes_dialog) {
         DrawLwMutexesDialog(host);
+    }
+    if (host.gui.condvars_dialog) {
+        DrawCondvarsDialog(host);
+    }
+    if (host.gui.lwcondvars_dialog) {
+        DrawLwCondvarsDialog(host);
+    }
+    if (host.gui.eventflags_dialog) {
+        DrawEventFlagsDialog(host);
     }
 }

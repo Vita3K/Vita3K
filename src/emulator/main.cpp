@@ -15,13 +15,12 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "vpk.h"
-
+#include <host/app.h>
 #include <host/functions.h>
 #include <host/state.h>
 #include <host/version.h>
-#include <kernel/thread_functions.h>
-#include <kernel/thread_state.h>
+#include <kernel/thread/thread_functions.h>
+#include <kernel/thread/thread_state.h>
 #include <util/find.h>
 #include <util/log.h>
 #include <util/resource.h>
@@ -105,14 +104,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (path.empty()) {
-        std::string message = "Usage: ";
-        message += argv[0];
-        message += " <path to VPK file>";
-        error(message);
-        return IncorrectArgs;
-    }
-
     HostState host;
     if (!init(host, DEFAULT_RES_WIDTH, WINDOW_BORDER_WIDTH, DEFAULT_RES_HEIGHT, WINDOW_BORDER_HEIGHT)) {
         error("Host initialisation failed.", host.window.get());
@@ -124,8 +115,29 @@ int main(int argc, char *argv[]) {
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
+    bool is_vpk = true;
+
+    while (path.empty() && handle_events(host) && is_vpk) {
+        ImGui_ImplSdlGL2_NewFrame(host.window.get());
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        DrawUI(host);
+        DrawGameSelector(host, &is_vpk);
+        glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
+        ImGui::Render();
+        ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
+        SDL_GL_SwapWindow(host.window.get());
+    }
+
+    if (!is_vpk) {
+        path = utf_to_wide(host.gui.game_selector.title_id);
+    }
+
+    if (path.empty()) {
+        return Success;
+    }
+
     Ptr<const void> entry_point;
-    if (!load_vpk(entry_point, host, path)) {
+    if (!load_app(entry_point, host, path, is_vpk)) {
         std::string message = "Failed to load \"";
         message += wide_to_utf(path);
         message += "\"";
@@ -138,7 +150,7 @@ int main(int argc, char *argv[]) {
         ::call_import(host, nid, main_thread_id);
     };
 
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_MAIN, call_import, false);
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_MAIN, call_import, false);
     if (main_thread_id < 0) {
         error("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
@@ -172,9 +184,6 @@ int main(int argc, char *argv[]) {
         }
 
         ImGui_ImplSdlGL3_NewFrame(host.window.get());
-
-        // Clear back buffer
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         {
@@ -216,7 +225,7 @@ int main(int argc, char *argv[]) {
             const uint32_t fps = (host.frame_count * 1000) / ms;
             const uint32_t ms_per_frame = ms / host.frame_count;
             std::ostringstream title;
-            title << window_title << " | " << host.game_title << " (" << host.title_id << ") | " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
+            title << window_title << " | " << host.game_title << " (" << host.io.title_id << ") | " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
             SDL_SetWindowTitle(host.window.get(), title.str().c_str());
             host.t1 = t2;
             host.frame_count = 0;

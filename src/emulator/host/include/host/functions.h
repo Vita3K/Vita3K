@@ -17,9 +17,11 @@
 
 #pragma once
 
-#include <kernel/thread_functions.h>
-#include <mem/ptr.h>
 #include <psp2/types.h>
+
+#include <kernel/thread/sync_primitives.h>
+#include <kernel/thread/thread_functions.h>
+#include <mem/ptr.h>
 
 #include <cstdint>
 
@@ -28,8 +30,3 @@ struct HostState;
 bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_width, std::uint32_t window_height, std::uint32_t border_height);
 bool handle_events(HostState &host);
 void call_import(HostState &host, uint32_t nid, SceUID thread_id);
-
-// Needed because Sony decided to split Mutex functions to both LibKernel and ThreadMgr
-int unlock_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int unlock_count);
-int delete_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid);
-int signal_sema(HostState &host, const char *export_name, SceUID semaid, int signal);

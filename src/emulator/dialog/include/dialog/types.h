@@ -19,6 +19,7 @@
 
 #include <mem/ptr.h>
 #include <psp2/ime_dialog.h>
+#include <psp2/message_dialog.h>
 
 namespace emu {
 
@@ -51,5 +52,56 @@ namespace emu {
 
         SceUChar8 enterLabel;
         SceChar8 reserved[35];
+    };
+
+    struct SceNpTrophySetupDialogParam {
+        SceUInt32 sdkVersion;
+
+        emu::SceCommonDialogParam commonParam;
+        SceUInt32 context;
+        SceUInt32 options;
+
+        SceChar8 reserved[128];
+    };
+
+    struct SceMsgDialogButtonsParam {
+        const Ptr<char> msg1;
+        SceInt32 fontSize1;
+        const Ptr<char> msg2;
+        SceInt32 fontSize2;
+        const Ptr<char> msg3;
+        SceInt32 fontSize3;
+        SceChar8 reserved[32];
+    };
+	
+    struct SceNpTrophySetupDialogResult {
+        SceInt32 result;
+        SceUInt8 reserved[128];
+    };
+
+    struct SceMsgDialogUserMessageParam {
+        SceInt32 buttonType;
+        const Ptr<SceChar8> msg;
+        Ptr<emu::SceMsgDialogButtonsParam> buttonParam;
+        SceChar8 reserved[28];
+    };
+
+    struct SceMsgDialogProgressBarParam {
+        SceInt32 barType;
+        SceMsgDialogSystemMessageParam sysMsgParam;
+        const Ptr<SceChar8> msg;
+        SceInt32 reserved[8];
+    };
+
+    struct SceMsgDialogParam {
+        SceUInt32 sdkVersion;
+        SceCommonDialogParam commonParam;
+        SceInt32 mode;
+        Ptr<emu::SceMsgDialogUserMessageParam> userMsgParam;
+        Ptr<SceMsgDialogSystemMessageParam> sysMsgParam;
+        Ptr<SceMsgDialogErrorCodeParam> errorCodeParam;
+        Ptr<emu::SceMsgDialogProgressBarParam> progBarParam;
+        SceInt32 flag;
+        SceChar8 reserved[32];
     };
 }

@@ -21,7 +21,7 @@
 #undef s_addr
 #define s_addr s_addr
 #endif
-#include <kernel/thread_functions.h>
+#include <kernel/thread/thread_functions.h>
 #include <psp2/net/netctl.h>
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {
@@ -63,8 +63,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
         Ptr<void> argp = Ptr<void>(callback.second.data);
         run_on_current(*thread, Ptr<void>(callback.second.pc), host.net.state, argp);
     }
-    UNIMPLEMENTED();
-    return 0;
+    return STUBBED("Stub");
 }
 
 EXPORT(int, sceNetCtlGetIfStat) {
@@ -105,13 +104,12 @@ EXPORT(int, sceNetCtlInetGetResult) {
 
 EXPORT(int, sceNetCtlInetGetState, uint32_t *state) {
     *state = SCE_NETCTL_STATE_DISCONNECTED;
-    UNIMPLEMENTED();
-    return 0;
+    return STUBBED("state = SCE_NETCTL_STATE_DISCONNECTED");
 }
 
 EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, uint32_t *cid) {
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    *cid = host.kernel.next_uid++;
+    *cid = host.kernel.get_next_uid();
     emu::SceNetCtlCallback sceNetCtlCallback;
     sceNetCtlCallback.pc = callback.address();
     sceNetCtlCallback.data = data.address();
@@ -124,8 +122,7 @@ EXPORT(int, sceNetCtlInetUnregisterCallback) {
 }
 
 EXPORT(int, sceNetCtlInit) {
-    UNIMPLEMENTED();
-    return 0;
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCtlTerm) {

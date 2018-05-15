@@ -39,7 +39,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     }
 
     KernelState *const state = &host.kernel;
-    const SceUID uid = state->next_uid++;
+    const SceUID uid = state->get_next_uid();
     state->blocks.insert(Blocks::value_type(uid, address));
 
     return uid;
@@ -91,7 +91,7 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     info->size_cdram = free_memory;
     info->size_user = free_memory;
     info->size_phycont = free_memory;
-    return UNIMPLEMENTED();
+    return STUBBED("Single pool");
 }
 
 EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {

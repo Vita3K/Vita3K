@@ -17,6 +17,7 @@
 
 #include <host/functions.h>
 
+#include <host/app.h>
 #include <host/import_fn.h>
 #include <host/state.h>
 #include <host/version.h>
@@ -26,7 +27,7 @@
 #include <io/functions.h>
 #include <glutil/gl.h>
 #include <kernel/functions.h>
-#include <kernel/thread_state.h>
+#include <kernel/thread/thread_state.h>
 #include <nids/functions.h>
 #include <rtc/rtc.h>
 #include <util/lock_and_find.h>
@@ -49,6 +50,16 @@
 #include <imgui.h>
 #include <gui/imgui_impl_sdl_gl3.h>
 // clang-format on
+
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <dirent.h>
+#include <util/string_convert.h>
+#else
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 using namespace glbinding;
 
@@ -103,7 +114,7 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width + border_width, window_height + border_height, SDL_WINDOW_OPENGL), SDL_DestroyWindow);
-    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, pref_path.get())) {
+    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str())) {
         return false;
     }
 
@@ -129,6 +140,43 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
     
     state.kernel.base_tick = { rtc_base_ticks() };
     state.display.set_window_dims(window_width, window_height);
+
+    std::string dir_path = state.pref_path + "ux0/app";
+#ifdef WIN32
+    _WDIR *d = _wopendir((utf_to_wide(dir_path)).c_str());
+    _wdirent *dp;
+#else
+    DIR *d = opendir(dir_path.c_str());
+    dirent *dp;
+#endif
+    do {
+        std::string d_name_utf8;
+#ifdef WIN32
+        if ((dp = _wreaddir(d)) != NULL) {
+            d_name_utf8 = wide_to_utf(dp->d_name);
+#else
+        if ((dp = readdir(d)) != NULL) {
+            d_name_utf8 = dp->d_name;
+#endif
+            if ((strcmp(d_name_utf8.c_str(), ".")) && (strcmp(d_name_utf8.c_str(), ".."))) {
+                Buffer params;
+                state.io.title_id = d_name_utf8;
+                if (read_file_from_disk(params, "sce_sys/param.sfo", state)) {
+                    SfoFile sfo_handle;
+                    load_sfo(sfo_handle, params);
+                    find_data(state.game_title, sfo_handle, "TITLE");
+                    state.gui.game_selector.title_ids.push_back(std::string(state.io.title_id));
+                    state.gui.game_selector.titles.push_back(std::string(state.game_title));
+                }
+            }
+        }
+    } while (dp);
+
+#ifdef WIN32
+    _wclosedir(d);
+#else
+    closedir(d);
+#endif
 
     return true;
 }
@@ -172,7 +220,7 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
 
         if (LOG_IMPORT_CALLS) {
             const char *const name = import_name(nid);
-            LOG_TRACE("THREAD_ID {} NID {:#08x} ({}) called", thread_id, nid, name);
+            LOG_TRACE("THREAD_ID {} NID 0x{:08X} ({}) called", thread_id, nid, name);
         }
         const ImportFn fn = resolve_import(nid);
         if (fn) {
@@ -183,7 +231,7 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
 
         if (LOG_IMPORT_CALLS) {
             const char *const name = import_name(nid);
-            LOG_TRACE("THREAD_ID {} EXPORTED NID {:#08x} at {:#08x} ({})) called", thread_id, nid, export_pc, name);
+            LOG_TRACE("THREAD_ID {} EXPORTED NID 0x{:08X} at 0x{:08X} ({})) called", thread_id, nid, export_pc, name);
         }
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);

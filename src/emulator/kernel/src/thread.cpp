@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <kernel/thread_functions.h>
-#include <kernel/thread_state.h>
+#include <kernel/thread/thread_functions.h>
+#include <kernel/thread/thread_state.h>
 #include <psp2/kernel/error.h>
 #include <psp2/types.h>
 

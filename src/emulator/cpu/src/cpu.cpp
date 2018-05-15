@@ -66,12 +66,12 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const size_t buffer_size = GB(4) - address;
     const bool thumb = is_thumb_mode(uc);
     const std::string disassembly = disassemble(state.disasm, code, buffer_size, address, thumb);
-    LOG_TRACE("{:#08x} {}", address, disassembly);
+    LOG_TRACE("0x{:08X} {}", address, disassembly);
 }
 
 static void log_memory_access(const char *type, Address address, int size, int64_t value, const MemState &mem) {
     const char *const name = mem_name(address, mem);
-    LOG_TRACE("{} {} bytes, address {:#08x} ( {} ), value {:#x}", type, size, address, name, value);
+    LOG_TRACE("{} {} bytes, address 0x{:08X} ( {} ), value {:#x}", type, size, address, name, value);
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -204,7 +204,7 @@ int run(CPUState &state, bool callback) {
     if (err != UC_ERR_OK) {
         std::uint32_t error_pc = read_pc(state);
         uint32_t lr = read_lr(state);
-        LOG_CRITICAL("Unicorn error {:#02x} at: start PC: {:#08x} error PC {:#08x} LR: {:#08x}", err, pc, error_pc, lr);
+        LOG_CRITICAL("Unicorn error 0x{:02X} at: start PC: 0x{:08X} error PC 0x{:08X} LR: 0x{:08X}", err, pc, error_pc, lr);
         return -1;
     }
     pc = read_pc(state);

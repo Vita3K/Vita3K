@@ -20,8 +20,10 @@
 #include <cpu/functions.h>
 #include <host/functions.h>
 #include <io/functions.h>
+#include <io/types.h>
 #include <kernel/functions.h>
-#include <kernel/thread_functions.h>
+#include <kernel/thread/sync_primitives.h>
+#include <kernel/thread/thread_functions.h>
 #include <rtc/rtc.h>
 #include <util/log.h>
 
@@ -37,241 +39,6 @@
 
 #include <algorithm>
 #include <cstdlib>
-
-static const bool LOG_SYNC_PRIMITIVES = false;
-
-// *********
-// * Mutex *
-// *********
-
-SceUID create_mutex(SceUID *uid_out, HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, const char *name, SceUInt attr, int init_count, bool is_lw) {
-    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
-    }
-    if (init_count < 0) {
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_COUNT);
-    }
-    if (init_count > 1 && (attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE)) {
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_COUNT);
-    }
-
-    const MutexPtr mutex = std::make_shared<Mutex>();
-    mutex->lock_count = init_count;
-    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, mutex->name);
-    mutex->attr = attr;
-    mutex->owner = nullptr;
-    if (init_count > 0) {
-        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        mutex->owner = thread;
-    }
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    const SceUID uid = host.kernel.next_uid++;
-    host_mutexes.emplace(uid, mutex);
-
-    if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("Creating {}: uid:{} thread_id:{} name:\"{}\" attr:{} init_count:{}",
-            is_lw ? "lwmutex" : "mutex", uid, thread_id, name, attr, init_count);
-    }
-
-    if (uid_out) {
-        *uid_out = uid;
-    }
-
-    return SCE_KERNEL_OK;
-}
-
-int lock_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int lock_count, unsigned int *timeout, bool is_lw) {
-    assert(!timeout);
-
-    // TODO Don't lock twice.
-    const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
-    if (!mutex) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
-    }
-
-    if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("Locking mutex: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{}",
-            mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count);
-    }
-
-    const std::lock_guard<std::mutex> lock(mutex->mutex);
-
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-
-    bool is_recursive = (mutex->attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE);
-    bool is_fifo = (mutex->attr & SCE_KERNEL_ATTR_TH_FIFO);
-
-    if (mutex->lock_count > 0) {
-        // Already owned
-
-        if (mutex->owner == thread) {
-            // Owned by ourselves
-
-            if (is_recursive) {
-                mutex->lock_count += lock_count;
-                return SCE_KERNEL_OK;
-            } else {
-                return SCE_KERNEL_ERROR_LW_MUTEX_RECURSIVE;
-            }
-        } else {
-            // Owned by someone else
-            // Sleep thread!
-
-            const std::lock_guard<std::mutex> lock2(thread->mutex);
-            assert(thread->to_do == ThreadToDo::run);
-            thread->to_do = ThreadToDo::wait;
-            mutex->waiting_threads.emplace(thread, lock_count, is_fifo ? 0 : thread->priority);
-            stop(*thread->cpu);
-        }
-    } else {
-        // Not owned
-        // Take ownership!
-
-        mutex->lock_count += lock_count;
-        mutex->owner = thread;
-    }
-
-    return SCE_KERNEL_OK;
-}
-
-int unlock_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid, int unlock_count) {
-    const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
-    if (!mutex) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
-    }
-
-    if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("Unlocking mutex: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{}",
-            mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count, unlock_count);
-    }
-
-    const std::lock_guard<std::mutex> lock(mutex->mutex);
-
-    const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    if (cur_thread == mutex->owner) {
-        if (unlock_count > mutex->lock_count) {
-            return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
-        }
-        mutex->lock_count -= unlock_count;
-        if (mutex->lock_count == 0) {
-            mutex->owner = nullptr;
-            if (mutex->waiting_threads.size() > 0) {
-                const auto waiting_thread_data = mutex->waiting_threads.top();
-                const auto waiting_thread = waiting_thread_data.thread;
-                const auto waiting_lock_count = waiting_thread_data.lock_count;
-
-                assert(waiting_thread->to_do == ThreadToDo::wait);
-                waiting_thread->to_do = ThreadToDo::run;
-                mutex->waiting_threads.pop();
-                mutex->lock_count += waiting_lock_count;
-                mutex->owner = waiting_thread;
-                waiting_thread->something_to_do.notify_one();
-            }
-        }
-    }
-
-    return SCE_KERNEL_OK;
-}
-
-int delete_mutex(HostState &host, const char *export_name, SceUID thread_id, MutexPtrs &host_mutexes, SceUID mutexid) {
-    const MutexPtr mutex = lock_and_find(mutexid, host_mutexes, host.kernel.mutex);
-    if (!mutex) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
-    }
-    if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("Deleting mutex: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{} waiting_threads:{}",
-            mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count, mutex->waiting_threads.size());
-    }
-
-    if (mutex->waiting_threads.empty()) {
-        const std::lock_guard<std::mutex> lock(mutex->mutex);
-        host_mutexes.erase(mutexid);
-    } else {
-        // TODO:
-    }
-
-    return SCE_KERNEL_OK;
-}
-
-// **************
-// * Sempaphore *
-// **************
-
-static SceUID create_semaphore(HostState &host, const char *export_name, const char *name, SceUInt attr, int initVal, int maxVal) {
-    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
-    }
-
-    const SemaphorePtr semaphore = std::make_shared<Semaphore>();
-    semaphore->val = initVal;
-    semaphore->max = maxVal;
-    semaphore->attr = attr;
-    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, semaphore->name);
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    const SceUID uid = host.kernel.next_uid++;
-    host.kernel.semaphores.emplace(uid, semaphore);
-
-    return uid;
-}
-
-int wait_semaphore(HostState &host, const char *export_name, SceUID thread_id, SceUID semaid, int signal, SceUInt *timeout) {
-    assert(semaid >= 0);
-    assert(signal == 1);
-    assert(timeout == nullptr);
-
-    // TODO Don't lock twice.
-    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
-    if (!semaphore) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
-    }
-
-    const std::lock_guard<std::mutex> lock(semaphore->mutex);
-
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-
-    bool is_fifo = (semaphore->attr & SCE_KERNEL_ATTR_TH_FIFO);
-
-    if (semaphore->val <= 0) {
-        const std::lock_guard<std::mutex> lock2(thread->mutex);
-        assert(thread->to_do == ThreadToDo::run);
-        thread->to_do = ThreadToDo::wait;
-        semaphore->waiting_threads.emplace(thread, signal, is_fifo ? 0 : thread->priority);
-        stop(*thread->cpu);
-    } else {
-        semaphore->val -= signal;
-    }
-
-    return SCE_KERNEL_OK;
-}
-
-int signal_sema(HostState &host, const char *export_name, SceUID semaid, int signal) {
-    // TODO Don't lock twice.
-    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
-    if (!semaphore) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
-    }
-
-    const std::lock_guard<std::mutex> lock(semaphore->mutex);
-
-    if (semaphore->val + signal > semaphore->max) {
-        return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
-    }
-    semaphore->val += signal;
-
-    while (semaphore->val > 0 && semaphore->waiting_threads.size() > 0) {
-        const auto waiting_thread_data = semaphore->waiting_threads.top();
-        const auto waiting_thread = waiting_thread_data.thread;
-        const auto waiting_signal_count = waiting_thread_data.lock_count;
-
-        assert(waiting_thread->to_do == ThreadToDo::wait);
-        waiting_thread->to_do = ThreadToDo::run;
-        semaphore->waiting_threads.pop();
-        semaphore->val -= waiting_signal_count;
-        waiting_thread->something_to_do.notify_one();
-    }
-
-    return 0;
-}
 
 EXPORT(int, SceKernelStackChkGuard) {
     return UNIMPLEMENTED();
@@ -299,7 +66,7 @@ EXPORT(int, _sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, co
     assert(opt_param == nullptr);
 
     auto uid_out = &workarea.get(host.mem)->uid;
-    return create_mutex(uid_out, host, export_name, thread_id, host.kernel.lwmutexes, name, attr, init_count, true);
+    return mutex_create(uid_out, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Light);
 }
 
 EXPORT(int, sceClibAbort) {
@@ -543,12 +310,15 @@ EXPORT(int, sceIoDevctlAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoDread, SceUID fd, SceIoDirent *dir) {
+EXPORT(int, sceIoDread, SceUID fd, emu::SceIoDirent *dir) {
+    if (dir == nullptr) {
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    }
     return read_dir(host.io, fd, dir);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(file, stat, host.pref_path.c_str(), host.io.vpk.get(), host.kernel.base_tick.tick);
+    return stat_file(host.io, file, stat, host.pref_path.c_str(), host.kernel.base_tick.tick);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
@@ -572,7 +342,7 @@ EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
-    return create_dir(dir, mode, host.pref_path.c_str());
+    return create_dir(host.io, dir, mode, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoMkdirAsync) {
@@ -617,7 +387,7 @@ EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
-    return remove_file(path, host.pref_path.c_str());
+    return remove_file(host.io, path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoRemoveAsync) {
@@ -636,7 +406,7 @@ EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
-    return remove_dir(path, host.pref_path.c_str());
+    return remove_dir(host.io, path, host.pref_path.c_str());
 }
 
 EXPORT(int, sceIoRmdirAsync) {
@@ -999,26 +769,34 @@ EXPORT(int, sceKernelCloseModule) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCreateCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCreateCond, const char *name, SceUInt attr, SceUID mutexid, void *opt_param) {
+    SceUID uid;
+
+    if (auto error = condvar_create(&uid, host.kernel, export_name, name, attr, mutexid, SyncWeight::Heavy)) {
+        return error;
+    }
+    return uid;
 }
 
-EXPORT(int, sceKernelCreateEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCreateEventFlag, const char *name, unsigned int attr, unsigned int flags, SceKernelEventFlagOptParam *opt) {
+    return create_eventflag(host.kernel, export_name, thread_id, name, attr, flags);
 }
 
-EXPORT(int, sceKernelCreateLwCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCreateLwCond, Ptr<emu::SceKernelLwCondWork> workarea, const char *name, SceUInt attr, Ptr<emu::SceKernelLwMutexWork> workarea_mutex, const SceKernelLwCondOptParam *opt_param) {
+    const auto uid_out = &workarea.get(host.mem)->uid;
+    const auto assoc_mutex_uid = workarea_mutex.get(host.mem)->uid;
+
+    return condvar_create(uid_out, host.kernel, export_name, name, attr, assoc_mutex_uid, SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, int init_count, const SceKernelLwMutexOptParam *opt_param) {
+EXPORT(int, sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, const char *name, SceUInt attr, int init_count, const SceKernelLwMutexOptParam *opt_param) {
     assert(workarea);
     assert(name);
     assert(init_count >= 0);
     assert(opt_param == nullptr);
 
-    auto uid_out = &workarea.get(host.mem)->uid;
-    return create_mutex(uid_out, host, export_name, thread_id, host.kernel.lwmutexes, name, attr, init_count, true);
+    const auto uid_out = &workarea.get(host.mem)->uid;
+    return mutex_create(uid_out, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelCreateMsgPipe) {
@@ -1032,7 +810,7 @@ EXPORT(int, sceKernelCreateMsgPipeWithLR) {
 EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
     SceUID uid;
 
-    if (auto error = create_mutex(&uid, host, export_name, thread_id, host.kernel.mutexes, name, attr, init_count, false)) {
+    if (auto error = mutex_create(&uid, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Heavy)) {
         return error;
     }
     return uid;
@@ -1043,7 +821,7 @@ EXPORT(int, sceKernelCreateRWLock) {
 }
 
 EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, SceKernelSemaOptParam *option) {
-    return create_semaphore(host, export_name, name, attr, initVal, maxVal);
+    return semaphore_create(host.kernel, export_name, name, attr, initVal, maxVal);
 }
 
 EXPORT(int, sceKernelCreateSema_16XX) {
@@ -1078,7 +856,7 @@ EXPORT(int, sceKernelDeleteLwCond) {
 
 EXPORT(int, sceKernelDeleteLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea) {
     const auto lwmutexid = workarea.get(host.mem)->uid;
-    return delete_mutex(host, export_name, thread_id, host.kernel.lwmutexes, lwmutexid);
+    return mutex_delete(host.kernel, export_name, thread_id, lwmutexid, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelExitProcess, int res) {
@@ -1281,7 +1059,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     uint32_t result = run_on_current(*thread, entry_point, args, argp);
     char *module_name = module->second.get()->module_name;
 
-    LOG_INFO("{} returned {:#08x}", module_name, result);
+    LOG_INFO("{} returned 0x{:08X}", module_name, result);
 
     if (status)
         *status = result;
@@ -1296,7 +1074,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
 
 EXPORT(int, sceKernelLockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
     const auto lwmutexid = workarea.get(host.mem)->uid;
-    return lock_mutex(host, export_name, thread_id, host.kernel.lwmutexes, lwmutexid, lock_count, ptimeout, true);
+    return mutex_lock(host.kernel, export_name, thread_id, lwmutexid, lock_count, ptimeout, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelLockLwMutexCB) {
@@ -1304,7 +1082,7 @@ EXPORT(int, sceKernelLockLwMutexCB) {
 }
 
 EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
-    return lock_mutex(host, export_name, thread_id, host.kernel.mutexes, mutexid, lock_count, timeout, false);
+    return mutex_lock(host.kernel, export_name, thread_id, mutexid, lock_count, timeout, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelLockMutexCB) {
@@ -1403,16 +1181,22 @@ EXPORT(int, sceKernelSetTimerTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSignalLwCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalLwCond, Ptr<emu::SceKernelLwCondWork> workarea) {
+    SceUID condid = workarea.get(host.mem)->uid;
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::Any), SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelSignalLwCondAll) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalLwCondAll, Ptr<emu::SceKernelLwCondWork> workarea) {
+    SceUID condid = workarea.get(host.mem)->uid;
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::All), SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelSignalLwCondTo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSignalLwCondTo, Ptr<emu::SceKernelLwCondWork> workarea, SceUID thread_target) {
+    SceUID condid = workarea.get(host.mem)->uid;
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::Specific, thread_target), SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelStackChkFail) {
@@ -1466,16 +1250,16 @@ EXPORT(int, sceKernelUnloadModule) {
 
 EXPORT(int, sceKernelUnlockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int unlock_count) {
     const auto lwmutexid = workarea.get(host.mem)->uid;
-    return unlock_mutex(host, export_name, thread_id, host.kernel.lwmutexes, lwmutexid, unlock_count);
+    return mutex_unlock(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelUnlockLwMutex2, Ptr<emu::SceKernelLwMutexWork> workarea, int unlock_count) {
     const auto lwmutexid = workarea.get(host.mem)->uid;
-    return unlock_mutex(host, export_name, thread_id, host.kernel.lwmutexes, lwmutexid, unlock_count);
+    return mutex_unlock(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelWaitCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelWaitCond, SceUID cond_id, SceUInt32 *timeout) {
+    return condvar_wait(host.kernel, export_name, thread_id, cond_id, timeout, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelWaitCondCB) {
@@ -1490,8 +1274,8 @@ EXPORT(int, sceKernelWaitEventCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelWaitEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelWaitEventFlag, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout) {
+    return wait_eventflag(host.kernel, export_name, thread_id, event_id, flags, wait, timeout);
 }
 
 EXPORT(int, sceKernelWaitEventFlagCB) {
@@ -1506,8 +1290,9 @@ EXPORT(int, sceKernelWaitExceptionCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelWaitLwCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelWaitLwCond, Ptr<emu::SceKernelLwCondWork> workarea, SceUInt32 *timeout) {
+    const auto cond_id = workarea.get(host.mem)->uid;
+    return condvar_wait(host.kernel, export_name, thread_id, cond_id, timeout, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelWaitLwCondCB) {
@@ -1523,7 +1308,7 @@ EXPORT(int, sceKernelWaitMultipleEventsCB) {
 }
 
 EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
-    return wait_semaphore(host, export_name, thread_id, semaid, signal, timeout);
+    return semaphore_wait(host.kernel, export_name, thread_id, semaid, signal, timeout);
 }
 
 EXPORT(int, sceKernelWaitSemaCB) {
@@ -1557,8 +1342,23 @@ EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelWaitThreadEndCB) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
+    const ThreadStatePtr cur_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    {
+        const std::lock_guard<std::mutex> lock(cur_thread->mutex);
+        assert(cur_thread->to_do == ThreadToDo::run);
+        cur_thread->to_do = ThreadToDo::wait;
+        stop(*cur_thread->cpu);
+    }
+
+    {
+        const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
+        thread->waiting_threads.push_back(cur_thread);
+    }
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceSblACMgrIsGameProgram) {
