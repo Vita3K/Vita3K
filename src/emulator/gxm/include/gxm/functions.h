@@ -30,19 +30,21 @@ void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t strid
 GLenum translate_blend_func(SceGxmBlendFunc src);
 GLenum translate_blend_factor(SceGxmBlendFactor src);
 namespace texture {
-    SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
-    bool is_paletted_format(SceGxmTextureFormat src);
-    GLenum translate_internal_format(SceGxmTextureFormat src);
-    GLenum translate_format(SceGxmTextureFormat src);
     GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
-    GLenum translate_type(SceGxmTextureFormat format);
-    const GLenum *translate_swizzle(SceGxmTextureFormat fmt);
     GLenum translate_minmag_filter(SceGxmTextureFilter src);
-    SceGxmTextureFormat get_format(const SceGxmTexture *texture);
     unsigned int get_width(const SceGxmTexture *texture);
     unsigned int get_height(const SceGxmTexture *texture);
     void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
     void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
+    
+    // Texture formats.
+    SceGxmTextureFormat get_format(const SceGxmTexture *texture);
+    GLenum translate_type(SceGxmTextureFormat format);
+    const GLenum *translate_swizzle(SceGxmTextureFormat fmt);
+    SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
+    bool is_paletted_format(SceGxmTextureFormat src);
+    GLenum translate_internal_format(SceGxmTextureFormat src);
+    GLenum translate_format(SceGxmTextureFormat src);
 }
 GLenum translate_primitive(SceGxmPrimitiveType primType);
 GLenum translate_stencil_func(SceGxmStencilFunc stencil_func);
