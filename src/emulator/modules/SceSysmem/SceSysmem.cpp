@@ -88,9 +88,9 @@ EXPORT(int, sceKernelFreeMemBlockForVM) {
 
 EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     Address free_memory = mem_available(host.mem);
-    info->size_cdram = free_memory;
-    info->size_user = free_memory;
-    info->size_phycont = free_memory;
+    info->size_cdram = free_memory / 3;
+    info->size_user = free_memory / 3;
+    info->size_phycont = free_memory / 3;
     return STUBBED("Single pool");
 }
 
