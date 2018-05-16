@@ -1,5 +1,5 @@
 // Vertex shader.
-#version 120
+#version 410
 
 in vec2 aPosition;
 

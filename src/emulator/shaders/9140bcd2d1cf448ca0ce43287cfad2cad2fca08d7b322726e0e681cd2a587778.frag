@@ -1,8 +1,10 @@
 // Fragment shader.
-#version 120
+#version 410
 
 uniform vec4 uClearColor;
 
+out vec4 fragColor;
+
 void main() {
-    gl_FragColor = uClearColor;
+    fragColor = uClearColor;
 }
