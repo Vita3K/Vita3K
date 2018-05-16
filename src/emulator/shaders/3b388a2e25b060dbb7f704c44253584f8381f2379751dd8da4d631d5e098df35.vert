@@ -2,9 +2,9 @@
 
 #version 410
 
-attribute vec4 inputaPosition;
-attribute vec4 inputaColour;
-attribute vec2 inputaTexCoord;
+in vec4 inputaPosition;
+in vec4 inputaColour;
+in vec2 inputaTexCoord;
 
 uniform mat4 gm_Matrices[5];
 
