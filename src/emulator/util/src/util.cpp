@@ -192,7 +192,7 @@ namespace fs {
         return true;
     }
     int remove(std::string path) {
-        return remove(path.c_str());
+        return ::remove(path.c_str());
     }
 }
 #endif
