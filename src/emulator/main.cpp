@@ -118,13 +118,13 @@ int main(int argc, char *argv[]) {
     bool is_vpk = true;
 
     while (path.empty() && handle_events(host) && is_vpk) {
-        ImGui_ImplSdlGL2_NewFrame(host.window.get());
+        ImGui_ImplSdlGL3_NewFrame(host.window.get());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         DrawUI(host);
         DrawGameSelector(host, &is_vpk);
         glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
         ImGui::Render();
-        ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(host.window.get());
     }
 

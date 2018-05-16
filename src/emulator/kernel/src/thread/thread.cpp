@@ -61,7 +61,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     };
 
     const ThreadStatePtr thread = std::make_shared<ThreadState>();
-    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, thread->name);
+    thread->name = name;
     // TODO: needs testing
     if (init_priority & (SCE_KERNEL_DEFAULT_PRIORITY & 0xF0000000)) {
         thread->priority = init_priority - SCE_KERNEL_DEFAULT_PRIORITY + SCE_KERNEL_DEFAULT_PRIORITY_USER_INTERNAL;
