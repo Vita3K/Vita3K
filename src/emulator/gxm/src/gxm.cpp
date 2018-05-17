@@ -777,7 +777,7 @@ namespace texture {
     void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
         LOG_WARN("4-bit palettes are not yet tested.");
         
-        const size_t stride = ((width + 7) & ~7) / 2;
+        const size_t stride = ((width + 7) & ~7) / 2; // NOTE: This is correct only with linear textures.
         for (size_t y = 0; y < height; ++y) {
             uint32_t *const dst_row = &dst[y * width];
             const uint8_t *const src_row = &src[y * stride];
@@ -792,7 +792,7 @@ namespace texture {
     }
 
     void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
-        const size_t stride = (width + 7) & ~7;
+        const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
         for (size_t y = 0; y < height; ++y) {
             uint32_t *const dst_row = &dst[y * width];
             const uint8_t *const src_row = &src[y * stride];

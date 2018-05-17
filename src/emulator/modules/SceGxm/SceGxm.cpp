@@ -1168,7 +1168,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
         stride = width;
     } else {
         pixels = texture_data;
-        stride = (width + 7) & ~7;
+        stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
     }
 
     const GLenum internal_format = texture::translate_internal_format(fmt);
