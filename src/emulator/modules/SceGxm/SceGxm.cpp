@@ -215,7 +215,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     ctx->gl = GLContextPtr(SDL_GL_CreateContext(host.window.get()), SDL_GL_DeleteContext);
     assert(ctx->gl != nullptr);
 
-    const GetProcAddress get_proc_address = [](const char *name) {
+    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
         return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
     };
     Binding::initialize(get_proc_address, false);
