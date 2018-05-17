@@ -42,6 +42,7 @@ static const GLenum swizzle_bgr1[4] = { GL_ONE, GL_RED, GL_GREEN, GL_BLUE };
 
 // SceGxmTextureSwizzleYUV420Mode
 // TODO I don't know what these should be.
+// NOTE: We'll probably need an intermediate shader pass to translate them to RGB.
 static const GLenum swizzle_yuv_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 static const GLenum swizzle_yvu_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 static const GLenum swizzle_yuv_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
@@ -49,6 +50,7 @@ static const GLenum swizzle_yvu_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA 
 
 // SceGxmTextureSwizzleYUV422Mode
 // TODO I don't know what these should be.
+// NOTE: We'll probably need an intermediate shader pass to translate them to RGB.
 static const GLenum swizzle_yuyv_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 static const GLenum swizzle_yvyu_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 static const GLenum swizzle_uyvy_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
