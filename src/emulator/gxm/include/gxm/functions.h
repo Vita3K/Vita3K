@@ -36,7 +36,7 @@ namespace texture {
     unsigned int get_height(const SceGxmTexture *texture);
     void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
     void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
-    
+
     // Texture formats.
     SceGxmTextureFormat get_format(const SceGxmTexture *texture);
     GLenum translate_type(SceGxmTextureFormat format);

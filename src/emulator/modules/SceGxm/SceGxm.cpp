@@ -228,10 +228,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
 
-    if (!ctx->texture.init(glGenTextures, glDeleteTextures) ||
-        !ctx->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) ||
-        !ctx->element_buffer.init(glGenBuffers, glDeleteBuffers) ||
-        !ctx->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
+    if (!ctx->texture.init(glGenTextures, glDeleteTextures) || !ctx->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !ctx->element_buffer.init(glGenBuffers, glDeleteBuffers) || !ctx->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
         free(host.mem, *context);
         context->reset();
 
@@ -240,7 +237,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
 
     glBindVertexArray(ctx->vertex_array[0]);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->element_buffer[0]);
-    
+
     return 0;
 }
 
@@ -413,7 +410,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     // Upload index data.
     const GLsizeiptr index_size = (indexType == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * indexCount, indexData, GL_STREAM_DRAW);
-    
+
     // Compute size of vertex data.
     size_t max_index = 0;
     if (indexType == SCE_GXM_INDEX_FORMAT_U16) {
@@ -432,7 +429,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
         max_data_length[attribute.streamIndex] = std::max(max_data_length[attribute.streamIndex], data_length);
     }
-    
+
     // Upload vertex data.
     for (size_t stream_index = 0; stream_index < SCE_GXM_MAX_VERTEX_STREAMS; ++stream_index) {
         const size_t data_length = max_data_length[stream_index];
@@ -441,7 +438,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         glBufferData(GL_ARRAY_BUFFER, data_length, data, GL_STREAM_DRAW);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    
+
     // Set vertex attribute parameters.
     // TODO Only set attrib pointer when changed.
     // TODO Move vertex array object to program cache?
@@ -451,17 +448,17 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         const GLenum type = attribute_format_to_gl_type(attribute_format);
         const GLboolean normalised = attribute_format_normalised(attribute_format) ? GL_TRUE : GL_FALSE;
         const int attrib_location = attribute.regIndex / sizeof(uint32_t);
-        
+
         glBindBuffer(GL_ARRAY_BUFFER, context->stream_vertex_buffers[attribute.streamIndex]);
         glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
         glEnableVertexAttribArray(attrib_location);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    
+
     const GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, indexCount, type, nullptr);
-    
+
     // Disable vertex attribute arrays.
     for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
         const int attrib_location = attribute.regIndex / sizeof(uint32_t);
@@ -1341,7 +1338,7 @@ EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIn
     assert(streamData);
 
     context->stream_data[streamIndex] = streamData;
-    
+
     return 0;
 }
 

@@ -24,8 +24,8 @@
 
 #include <audio/functions.h>
 #include <cpu/functions.h>
-#include <io/functions.h>
 #include <glutil/gl.h>
+#include <io/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread/thread_state.h>
 #include <nids/functions.h>
@@ -37,8 +37,8 @@
 #include <SDL_filesystem.h>
 #include <SDL_video.h>
 
-#include <glbinding/Binding.h>
 #include <glbinding-aux/types_to_string.h>
+#include <glbinding/Binding.h>
 #include <microprofile.h>
 
 #include <cassert>
@@ -121,13 +121,13 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    
+
     state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
     if (!state.glcontext) {
         LOG_ERROR("Could not create OpenGL context.");
         return false;
     }
-    
+
     const glbinding::GetProcAddress get_proc_address = [](const char *name) {
         return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
     };
@@ -137,7 +137,7 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
     Binding::setBeforeCallback(before_callback);
 #endif // MICROPROFILE_ENABLED
     Binding::setAfterCallback(after_callback);
-    
+
     state.kernel.base_tick = { rtc_base_ticks() };
     state.display.set_window_dims(window_width, window_height);
 

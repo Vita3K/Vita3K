@@ -479,7 +479,6 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
 
             if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex))
                 return error;
-
         }
     }
 
@@ -621,7 +620,7 @@ int delete_eventflag(KernelState &kernel, const char *export_name, SceUID thread
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
     }
-    
+
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} existing_flags:{:#b}",
             export_name, event->uid, thread_id, event->name, event->attr, event->flags);

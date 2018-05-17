@@ -604,7 +604,7 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
 
 size_t attribute_format_size(SceGxmAttributeFormat format) {
     GXM_PROFILE(__FUNCTION__);
-    
+
     switch (format) {
     case SCE_GXM_ATTRIBUTE_FORMAT_U8:
     case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
@@ -735,7 +735,7 @@ namespace texture {
         }
         return 1 << (texture->height & 0xF);
     }
-    
+
     GLenum translate_wrap_mode(SceGxmTextureAddrMode src) {
         GXM_PROFILE(__FUNCTION__);
 
@@ -773,10 +773,10 @@ namespace texture {
             return GL_LINEAR;
         }
     }
-    
+
     void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
         LOG_WARN("4-bit palettes are not yet tested.");
-        
+
         const size_t stride = ((width + 7) & ~7) / 2; // NOTE: This is correct only with linear textures.
         for (size_t y = 0; y < height; ++y) {
             uint32_t *const dst_row = &dst[y * width];
