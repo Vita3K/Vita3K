@@ -5,7 +5,7 @@ add_library(
 	include/gxm/state.h
 	include/gxm/types.h
 	src/gxm.cpp
-    src/texture_formats.cpp
+	src/texture_formats.cpp
 )
 
 target_include_directories(gxm PUBLIC include)
