@@ -93,12 +93,12 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     }
 
     glEnable(GL_SCISSOR_TEST);
-    glScissor(0, 0, host.display.window_width, host.display.window_height);
+    glScissor(0, 0, host.display.image_size.width, host.display.image_size.height);
 
     context->viewport.x = 0;
     context->viewport.y = 0;
-    context->viewport.w = host.display.window_width;
-    context->viewport.h = host.display.window_height;
+    context->viewport.w = host.display.image_size.width;
+    context->viewport.h = host.display.image_size.height;
     context->viewport.nearVal = 0.0f;
     context->viewport.farVal = 1.0f;
     glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
@@ -223,7 +223,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    glViewport(0, 0, host.display.window_width, host.display.window_height);
+    glViewport(0, 0, host.display.image_size.width, host.display.image_size.height);
 
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
@@ -1282,13 +1282,13 @@ EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode m
     yMax += yMax % 32;
     switch (mode) {
     case SCE_GXM_REGION_CLIP_NONE:
-        glScissor(0, 0, host.display.window_width, host.display.window_height);
+        glScissor(0, 0, host.display.image_size.width, host.display.image_size.height);
         break;
     case SCE_GXM_REGION_CLIP_ALL:
         glScissor(0, 0, 0, 0);
         break;
     case SCE_GXM_REGION_CLIP_OUTSIDE:
-        glScissor(xMin, host.display.window_height - yMax, xMin + xMax, yMin + yMax);
+        glScissor(xMin, host.display.image_size.height - yMax, xMin + xMax, yMin + yMax);
         break;
     case SCE_GXM_REGION_CLIP_INSIDE:
         // TODO: Implement this
@@ -1369,7 +1369,7 @@ EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode
         glViewport(context->viewport.x, context->viewport.y, context->viewport.w, context->viewport.h);
         glDepthRange(context->viewport.nearVal, context->viewport.farVal);
     } else {
-        glViewport(0, 0, host.display.window_width, host.display.window_height);
+        glViewport(0, 0, host.display.image_size.width, host.display.image_size.height);
         glDepthRange(0.0f, 1.0f);
     }
 }

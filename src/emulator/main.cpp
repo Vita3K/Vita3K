@@ -69,11 +69,6 @@ static void term_sdl(const void *succeeded) {
     SDL_Quit();
 }
 
-static constexpr auto DEFAULT_RES_WIDTH = 960;
-static constexpr auto DEFAULT_RES_HEIGHT = 544;
-static constexpr auto WINDOW_BORDER_WIDTH = 16;
-static constexpr auto WINDOW_BORDER_HEIGHT = 34;
-
 int main(int argc, char *argv[]) {
     init_logging();
 
@@ -105,8 +100,8 @@ int main(int argc, char *argv[]) {
     }
 
     HostState host;
-    if (!init(host, DEFAULT_RES_WIDTH, WINDOW_BORDER_WIDTH, DEFAULT_RES_HEIGHT, WINDOW_BORDER_HEIGHT)) {
-        error("Host initialisation failed.", host.window.get());
+    if (!init(host)) {
+        error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }
 
