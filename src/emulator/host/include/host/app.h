@@ -37,8 +37,8 @@ template <class T>
 class Ptr;
 
 typedef std::vector<uint8_t> Buffer;
-typedef std::unique_ptr<const void, void(*)(const void *)> SDLPtr;
-typedef std::unique_ptr<SDL_Surface, void(*)(SDL_Surface *)> SurfacePtr;
+typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
+typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
 
 enum ExitCode {
     Success = 0,

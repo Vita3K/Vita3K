@@ -51,7 +51,7 @@ void init_logging();
     if (flag)                           \
     g_logger->critical("|C| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 
-template<typename T>
+template <typename T>
 std::string log_hex(T val) {
     using unsigned_type = typename std::make_unsigned<T>::type;
     return fmt::format("0x{:0x}", static_cast<unsigned_type>(val));

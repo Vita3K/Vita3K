@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    // Filter out an argument that macOS Finder appends 
+    // Filter out an argument that macOS Finder appends
     const char *const *const path_arg = std::find_if_not(&argv[1], &argv[argc], [](const char *arg) {
         return strncmp(arg, "-psn_", 5) == 0;
     });

@@ -23,10 +23,10 @@
 #include <host/sfo.h>
 #include <host/state.h>
 #include <host/version.h>
-#include <kernel/thread/thread_functions.h>
 #include <io/state.h>
-#include <util/fs.h>
+#include <kernel/thread/thread_functions.h>
 #include <util/find.h>
+#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_convert.h>
 
@@ -36,10 +36,10 @@
 #include <cassert>
 #include <cstring>
 #include <fstream>
-#include <sstream>
 #include <iostream>
 #include <istream>
 #include <iterator>
+#include <sstream>
 
 // clang-format off
 #include <imgui.h>
@@ -261,7 +261,6 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
     return Success;
 }
 
-
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     const CallImport call_import = [&host](uint32_t nid, SceUID main_thread_id) {
         ::call_import(host, nid, main_thread_id);
@@ -293,16 +292,14 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     return Success;
 }
 
-void no_fb_fallback(HostState &host, GLuint *fb_texture_id)
-{
+void no_fb_fallback(HostState &host, GLuint *fb_texture_id) {
     glGenTextures(1, fb_texture_id);
     glClearColor(1.0, 0.0, 0.5, 1.0);
     glClearDepth(1.0f);
     glViewport(0, 0, host.display.image_size.width, host.display.image_size.height);
 }
 
-void set_window_title(HostState& host)
-{
+void set_window_title(HostState &host) {
     const uint32_t sdl_ticks_now = SDL_GetTicks();
     const uint32_t ms = sdl_ticks_now - host.sdl_ticks;
     if (ms >= 1000 && host.frame_count > 0) {
