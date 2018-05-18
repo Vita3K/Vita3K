@@ -82,20 +82,27 @@ const char *translate_open_mode(int flags) {
     }
 }
 
-std::string translate_path(const std::string &part_name, const std::string &path, const std::string &pref_path) {
-    std::string res = pref_path;
-    res += part_name;
-    int i = part_name.length();
-    res += "/";
+std::string normalize_path(const std::string &device, const std::string& path) {
+    std::string normalized_path(device + "/");
+    uint32_t dev_length = device.length();
 
     if (path.empty())
-        return res;
-    if (path[i + 1] == '/')
-        i++;
-    res += &path[i + 1];
+        return normalized_path;
 
-    return res;
+    if (path[dev_length + 1] == '/') {
+        // Skip "/" since we already added one
+        normalized_path.erase(dev_length, 1);
+    }
+
+    normalized_path += path.substr(dev_length + 1);
+    return normalized_path;
 }
+
+std::string translate_path(const std::string &device, const std::string &path, const std::string &pref_path) {
+    std::string res = normalize_path(device, path);
+    return pref_path + res;
+}
+
 
 bool init(IOState &io, const char *pref_path) {
     std::string ux0 = pref_path;
@@ -121,7 +128,7 @@ bool init(IOState &io, const char *pref_path) {
     return true;
 }
 
-static std::pair<VitaIoDevice, std::string>
+std::pair<VitaIoDevice, std::string>
 translate_device(const std::string &path_) {
     std::string path(path_);
 

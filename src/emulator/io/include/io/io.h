@@ -27,3 +27,6 @@ enum class VitaIoDevice {
 };
 
 #undef DEVICE
+
+std::string normalize_path(const std::string &device, const std::string& path);
+std::pair<VitaIoDevice, std::string> translate_device(const std::string &path_);
