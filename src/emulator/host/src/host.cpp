@@ -98,7 +98,7 @@ void after_callback(const glbinding::FunctionCall &fn) {
     }
 }
 
-bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_width, std::uint32_t window_height, std::uint32_t border_height) {
+bool init(HostState &state) {
     const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
     const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
 
@@ -113,7 +113,8 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
 
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width + border_width, window_height + border_height, SDL_WINDOW_OPENGL), SDL_DestroyWindow);
+    state.display.set_dims(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, WINDOW_BORDER_WIDTH, WINDOW_BORDER_HEIGHT);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.display.window_size.width, state.display.window_size.height, SDL_WINDOW_OPENGL), SDL_DestroyWindow);
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str())) {
         return false;
     }
@@ -139,7 +140,6 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
     Binding::setAfterCallback(after_callback);
 
     state.kernel.base_tick = { rtc_base_ticks() };
-    state.display.set_window_dims(window_width, window_height);
 
     std::string dir_path = state.pref_path + "ux0/app";
 #ifdef WIN32

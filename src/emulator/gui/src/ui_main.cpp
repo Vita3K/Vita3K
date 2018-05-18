@@ -19,15 +19,9 @@
 #include <host/state.h>
 #include <imgui.h>
 
-static constexpr auto DEFAULT_RES_WIDTH = 960;
-static constexpr auto DEFAULT_RES_HEIGHT = 544;
-static constexpr auto WINDOW_BORDER_WIDTH = 16;
-static constexpr auto WINDOW_BORDER_HEIGHT = 34;
-static constexpr auto MENUBAR_HEIGHT = 19;
-
 void DrawGameSelector(HostState &host, bool *is_vpk) {
     ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(DEFAULT_RES_WIDTH + WINDOW_BORDER_WIDTH, DEFAULT_RES_HEIGHT + WINDOW_BORDER_HEIGHT - MENUBAR_HEIGHT), ImGuiSetCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(host.display.window_size.width, host.display.window_size.height - MENUBAR_HEIGHT), ImGuiSetCond_Always);
     ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
