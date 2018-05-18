@@ -42,7 +42,9 @@ struct DisplayState {
         uint32_t height = 0;
 
         Size() = default;
-        Size(uint32_t w, uint32_t h) : width(w), height(h) {}
+        Size(uint32_t w, uint32_t h)
+            : width(w)
+            , height(h) {}
 
         Size &operator+(const Size &rhs) const {
             Size _size(this->width + rhs.width, this->height + rhs.height);

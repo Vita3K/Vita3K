@@ -82,7 +82,7 @@ const char *translate_open_mode(int flags) {
     }
 }
 
-std::string normalize_path(const std::string &device, const std::string& path) {
+std::string normalize_path(const std::string &device, const std::string &path) {
     std::string normalized_path(device + "/");
     uint32_t dev_length = device.length();
 
@@ -102,7 +102,6 @@ std::string translate_path(const std::string &device, const std::string &path, c
     std::string res = normalize_path(device, path);
     return pref_path + res;
 }
-
 
 bool init(IOState &io, const char *pref_path) {
     std::string ux0 = pref_path;

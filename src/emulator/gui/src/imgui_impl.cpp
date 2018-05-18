@@ -33,7 +33,7 @@ void imgui::draw_begin(WindowPtr window) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void imgui::draw_main(HostState& host, GLuint texture_id) {
+void imgui::draw_main(HostState &host, GLuint texture_id) {
     const auto window_size = host.display.window_size;
     const auto image_size = host.display.image_size;
 
