@@ -1,16 +1,18 @@
 #pragma once
 
-#include <condition_variable>
+#include "texture_cache_state.h"
+
 #include <crypto/hash.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 #include <mem/ptr.h>
-#include <rpcs3/BitField.h>
 
 #include <SDL_video.h>
 #include <psp2/gxm.h>
+#include <rpcs3/BitField.h>
 
 #include <array>
+#include <condition_variable>
 #include <map>
 #include <mutex>
 #include <tuple>
@@ -78,7 +80,7 @@ struct SceGxmContext {
     Ptr<const SceGxmVertexProgram> vertex_program;
     UniformBuffers fragment_uniform_buffers;
     UniformBuffers vertex_uniform_buffers;
-    GLObjectArray<1> texture;
+    TextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
     std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
