@@ -1851,10 +1851,10 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
             case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:
                 break;
             default:
-                LOG_WARN("Initialized texture with untested paletted texture format: 0x{:08X}", texFormat);
+                LOG_WARN("Initialized texture with untested paletted texture format: {}", log_hex(texFormat));
             }
         } else
-            LOG_ERROR("Initialized texture with unsupported texture format: 0x{:08X}", texFormat);
+            LOG_ERROR("Initialized texture with unsupported texture format: {}", log_hex(texFormat));
     }
 
     texture->mip_count = mipCount - 1;

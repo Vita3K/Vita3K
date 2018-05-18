@@ -88,8 +88,8 @@ static void log_parameter(const SceGxmProgramParameter &parameter) {
         type = "Other type";
         break;
     }
-    LOG_DEBUG("{}: name:{:s} type:{:d} component_count:{:x} container_index:{:x}",
-        type, parameter_name_raw(parameter), parameter.type, parameter.component_count, parameter.container_index);
+    LOG_DEBUG("{}: name:{:s} type:{:d} component_count:{} container_index:{}",
+        type, parameter_name_raw(parameter), parameter.type, log_hex(uint8_t(parameter.component_count)), log_hex(uint8_t(parameter.container_index)));
 }
 
 static const char *scalar_type(SceGxmParameterType type) {
@@ -106,7 +106,7 @@ static const char *scalar_type(SceGxmParameterType type) {
     case SCE_GXM_PARAMETER_TYPE_S32:
         return "int";
     default: {
-        LOG_ERROR("Unsupported parameter type {:#x} used in shader.", type);
+        LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(type));
     }
 
         return "?";
@@ -122,7 +122,7 @@ static const char *vector_prefix(SceGxmParameterType type) {
     case SCE_GXM_PARAMETER_TYPE_S32:
         return "i";
     default:
-        LOG_ERROR("Unsupported parameter type {:#x} used in shader.", type);
+        LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(type));
     }
     return "?";
 }
@@ -618,7 +618,7 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
         return GL_FLOAT;
 
     default: {
-        LOG_ERROR("Unsupported attribute format {:#x}", format);
+        LOG_ERROR("Unsupported attribute format {}", log_hex(format));
     }
         return GL_UNSIGNED_BYTE;
     }
@@ -642,7 +642,7 @@ size_t attribute_format_size(SceGxmAttributeFormat format) {
     case SCE_GXM_ATTRIBUTE_FORMAT_F32:
         return 4;
     default:
-        LOG_ERROR("Unsupported attribute format {:#x}", format);
+        LOG_ERROR("Unsupported attribute format {}", log_hex(format));
         return 4;
     }
 }
@@ -777,7 +777,7 @@ namespace texture {
         case SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER:
             return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
         default:
-            LOG_WARN("Unsupported texture wrap mode translated: 0x{:08X}", src);
+            LOG_WARN("Unsupported texture wrap mode translated: {}", log_hex(src));
             return GL_CLAMP_TO_EDGE;
         }
     }
@@ -791,7 +791,7 @@ namespace texture {
         case SCE_GXM_TEXTURE_FILTER_LINEAR:
             return GL_LINEAR;
         default:
-            LOG_WARN("Unsupported texture min/mag filter translated: 0x{:08X}", src);
+            LOG_WARN("Unsupported texture min/mag filter translated: {}", log_hex(src));
             return GL_LINEAR;
         }
     }

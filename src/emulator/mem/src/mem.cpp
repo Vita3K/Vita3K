@@ -93,7 +93,7 @@ bool init(MemState &state) {
     DWORD old_protect = 0;
     const BOOL res = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
     if (!res)
-        LOG_WARN("VirtualProtect failed: 0x{:08X}", res);
+        LOG_WARN("VirtualProtect failed: {}", log_hex(res));
 #else
     mprotect(state.memory.get(), state.page_size, PROT_NONE);
 #endif

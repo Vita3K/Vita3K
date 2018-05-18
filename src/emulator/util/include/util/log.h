@@ -19,6 +19,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <type_traits>
+
 extern std::shared_ptr<spdlog::logger> g_logger;
 
 void init_logging();
@@ -48,3 +50,9 @@ void init_logging();
 #define LOG_CRITICAL_IF(flag, fmt, ...) \
     if (flag)                           \
     g_logger->critical(flag, "|C| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+
+template<typename T>
+std::string log_hex(T val) {
+    using unsigned_type = typename std::make_unsigned<T>::type;
+    return fmt::format("0x{:0x}", static_cast<unsigned_type>(val));
+}
