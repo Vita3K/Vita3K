@@ -7,6 +7,7 @@ include/gui/state.h
 src/imgui_impl_sdl_gl3.cpp
 src/ui_common_dialog.cpp
 src/ui_condvars_dialog.cpp
+src/ui_eventflags_dialog.cpp
 src/ui_main.cpp
 src/ui_main_menubar.cpp
 src/ui_mutexes_dialog.cpp
