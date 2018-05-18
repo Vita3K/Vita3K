@@ -282,11 +282,11 @@ EXPORT(int, sceMsgDialogInit, const Ptr<emu::SceMsgDialogParam> param) {
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_INVALID:
         default:
-            LOG_ERROR("Attempt to init message dialog with unknown system message mode: 0x{:08X}", p->sysMsgParam.get(host.mem)->sysMsgType);
+            LOG_ERROR("Attempt to init message dialog with unknown system message mode: {}", log_hex(p->sysMsgParam.get(host.mem)->sysMsgType));
         }
         break;
     case SCE_MSG_DIALOG_MODE_ERROR_CODE:
-        host.gui.common_dialog.msg.message = fmt::format("An error occurred. Errorcode: 0x{:08X}", p->errorCodeParam.get(host.mem)->errorCode);
+        host.gui.common_dialog.msg.message = fmt::format("An error occurred. Errorcode: {}", log_hex(p->errorCodeParam.get(host.mem)->errorCode));
         host.gui.common_dialog.msg.btn_num = 0;
         break;
     case SCE_MSG_DIALOG_MODE_PROGRESS_BAR:
@@ -298,7 +298,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<emu::SceMsgDialogParam> param) {
         break;
     case SCE_MSG_DIALOG_MODE_INVALID:
     default:
-        LOG_ERROR("Attempt to init message dialog with unknown mode: 0x{:08X}", p->mode);
+        LOG_ERROR("Attempt to init message dialog with unknown mode: {}", log_hex(p->mode));
         break;
     }
 

@@ -220,7 +220,7 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
 
         if (LOG_IMPORT_CALLS) {
             const char *const name = import_name(nid);
-            LOG_TRACE("THREAD_ID {} NID 0x{:08X} ({}) called", thread_id, nid, name);
+            LOG_TRACE("THREAD_ID {} NID {} ({}) called", thread_id, log_hex(nid), name);
         }
         const ImportFn fn = resolve_import(nid);
         if (fn) {
@@ -231,7 +231,7 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
 
         if (LOG_IMPORT_CALLS) {
             const char *const name = import_name(nid);
-            LOG_TRACE("THREAD_ID {} EXPORTED NID 0x{:08X} at 0x{:08X} ({})) called", thread_id, nid, export_pc, name);
+            LOG_TRACE("THREAD_ID {} EXPORTED NID {} at {} ({})) called", thread_id, log_hex(nid), log_hex(export_pc), name);
         }
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);

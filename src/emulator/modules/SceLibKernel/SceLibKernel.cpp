@@ -1059,7 +1059,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     uint32_t result = run_on_current(*thread, entry_point, args, argp);
     char *module_name = module->second.get()->module_name;
 
-    LOG_INFO("{} returned 0x{:08X}", module_name, result);
+    LOG_INFO("{} returned {}", module_name, log_hex(result));
 
     if (status)
         *status = result;
