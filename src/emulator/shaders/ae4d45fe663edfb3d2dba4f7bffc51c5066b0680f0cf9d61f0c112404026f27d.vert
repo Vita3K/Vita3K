@@ -1,10 +1,10 @@
 // Vertex shader.
-#version 120
+#version 410
 
-attribute vec4 input_in_Position;
-attribute vec2 input_in_TextureCoord;
+in vec4 input_in_Position;
+in vec2 input_in_TextureCoord;
 
-varying vec2 vTexcoord;
+out vec2 vTexcoord;
 uniform mat4 _gm_Matrices[5];
 
 void main() {

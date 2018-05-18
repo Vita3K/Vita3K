@@ -1,13 +1,14 @@
 // https://github.com/Rinnegatamante/vitaQuake/blob/master/shaders/replace_fog_f.cg
-#version 120
+#version 410
 
 uniform sampler2D tex;
-varying vec2 vTexcoord;
-varying float vFog;
+in vec2 vTexcoord;
+in float vFog;
+out vec4 fragColor;
 
 void main()
 {
-    vec4 c = texture2D(tex, vTexcoord);
+    vec4 c = texture(tex, vTexcoord);
     c.rgb = c.rgb * vFog;
-    gl_FragColor = c;
+    fragColor = c;
 }

@@ -215,12 +215,10 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     ctx->gl = GLContextPtr(SDL_GL_CreateContext(host.window.get()), SDL_GL_DeleteContext);
     assert(ctx->gl != nullptr);
 
-    Binding::initialize(false);
-    setCallbackMaskExcept(CallbackMask::Before | CallbackMask::After, { "glGetError" });
-#if MICROPROFILE_ENABLED != 0
-    setBeforeCallback(before_callback);
-#endif // MICROPROFILE_ENABLED
-    setAfterCallback(after_callback);
+    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
+        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
+    };
+    Binding::initialize(get_proc_address, false);
 
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -230,12 +228,15 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
 
-    if (!ctx->texture.init(glGenTextures, glDeleteTextures)) {
+    if (!ctx->texture.init(glGenTextures, glDeleteTextures) || !ctx->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !ctx->element_buffer.init(glGenBuffers, glDeleteBuffers) || !ctx->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
         free(host.mem, *context);
         context->reset();
 
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
+
+    glBindVertexArray(ctx->vertex_array[0]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->element_buffer[0]);
 
     return 0;
 }
@@ -406,9 +407,63 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     // TODO Use some kind of caching to avoid setting every draw call?
     set_uniforms(program->get(), *context, host.mem);
 
+    // Upload index data.
+    const GLsizeiptr index_size = (indexType == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * indexCount, indexData, GL_STREAM_DRAW);
+
+    // Compute size of vertex data.
+    size_t max_index = 0;
+    if (indexType == SCE_GXM_INDEX_FORMAT_U16) {
+        const uint16_t *const indices = static_cast<const uint16_t *>(indexData);
+        max_index = *std::max_element(&indices[0], &indices[indexCount]);
+    } else {
+        const uint32_t *const indices = static_cast<const uint32_t *>(indexData);
+        max_index = *std::max_element(&indices[0], &indices[indexCount]);
+    }
+    const SceGxmVertexProgram *const vertex_program = context->vertex_program.get(host.mem);
+    size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
+    for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
+        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
+        const size_t attribute_size = attribute_format_size(attribute_format) * attribute.componentCount;
+        const SceGxmVertexStream &stream = vertex_program->streams[attribute.streamIndex];
+        const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
+        max_data_length[attribute.streamIndex] = std::max(max_data_length[attribute.streamIndex], data_length);
+    }
+
+    // Upload vertex data.
+    for (size_t stream_index = 0; stream_index < SCE_GXM_MAX_VERTEX_STREAMS; ++stream_index) {
+        const size_t data_length = max_data_length[stream_index];
+        const void *const data = context->stream_data[stream_index].get(host.mem);
+        glBindBuffer(GL_ARRAY_BUFFER, context->stream_vertex_buffers[stream_index]);
+        glBufferData(GL_ARRAY_BUFFER, data_length, data, GL_STREAM_DRAW);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Set vertex attribute parameters.
+    // TODO Only set attrib pointer when changed.
+    // TODO Move vertex array object to program cache?
+    for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
+        const SceGxmVertexStream &stream = vertex_program->streams[attribute.streamIndex];
+        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
+        const GLenum type = attribute_format_to_gl_type(attribute_format);
+        const GLboolean normalised = attribute_format_normalised(attribute_format) ? GL_TRUE : GL_FALSE;
+        const int attrib_location = attribute.regIndex / sizeof(uint32_t);
+
+        glBindBuffer(GL_ARRAY_BUFFER, context->stream_vertex_buffers[attribute.streamIndex]);
+        glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
+        glEnableVertexAttribArray(attrib_location);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
     const GLenum mode = translate_primitive(primType);
     const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
-    glDrawElements(mode, indexCount, type, indexData);
+    glDrawElements(mode, indexCount, type, nullptr);
+
+    // Disable vertex attribute arrays.
+    for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
+        const int attrib_location = attribute.regIndex / sizeof(uint32_t);
+        glDisableVertexAttribArray(attrib_location);
+    }
 
     return 0;
 }
@@ -1088,77 +1143,44 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     SceGxmTextureFormat fmt = texture::get_format(texture);
     unsigned int width = texture::get_width(texture);
     unsigned int height = texture::get_height(texture);
-    Ptr<const void> data = Ptr<const void>(texture->data_addr << 2);
-    Ptr<void> palette = Ptr<void>(texture->palette_addr << 6);
+    const Ptr<const uint8_t> data(texture->data_addr << 2);
     SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(texture->uaddr_mode);
     SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(texture->vaddr_mode);
 
+    const uint8_t *const texture_data = data.get(host.mem);
+    std::vector<uint32_t> palette_texture_pixels; // TODO Move to context to avoid frequent allocation?
+    const void *pixels = nullptr;
+    size_t stride = 0;
     if (texture::is_paletted_format(fmt)) {
         const auto base_format = texture::get_base_format(fmt);
-        const auto is_byte_indexed = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8); // only altenative is SCE_GXM_TEXTURE_BASE_FORMAT_P4
-        const auto palette_indexes = is_byte_indexed ? 256 : 16;
-
-        glPixelTransferi(GL_MAP_COLOR, GL_TRUE);
-
-        // second dimension should be palette_indexes sized instead of 256, but prefer to keep it constant/stack-allocated
-        // TODO: Cache palette map instead of calculating here every time
-        GLfloat map[4][256];
-
-        const uint8_t(*const src)[4] = static_cast<uint8_t(*)[4]>(palette.get(host.mem));
-        for (size_t i = 0; i < palette_indexes; ++i) {
-            map[0][i] = src[i][0] / 255.0f;
-            map[1][i] = src[i][1] / 255.0f;
-            map[2][i] = src[i][2] / 255.0f;
-            map[3][i] = src[i][3] / 255.0f;
-        }
-
-        // map channel indexes for each channel
-        // A == A_max means alpha channel is unused (max)
-        std::uint8_t R = 0, G = 0, B = 0, A = 0;
-        constexpr auto A_max = std::numeric_limits<decltype(A)>::max();
-
-        // clang-format off
-        switch (texture::get_swizzle(fmt)) {
-        case SCE_GXM_TEXTURE_SWIZZLE4_ABGR: R = 0; G = 1; B = 2; A = 3; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_ARGB: R = 2; G = 1; B = 0; A = 3; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA: R = 3; G = 2; B = 1; A = 0; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA: R = 1; G = 2; B = 3; A = 0; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1BGR: R = 0; G = 1; B = 2; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_1RGB: R = 2; G = 1; B = 0; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1: R = 3; G = 2; B = 1; A = A_max; break;
-        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1: R = 1; G = 2; B = 3; A = A_max; break;
-        default:
-        {
-            LOG_ERROR("Invalid swizzle for paletted texture foramt.");
-        }
-        }
-        // clang-format on
-
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_R, palette_indexes, map[R]);
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_G, palette_indexes, map[G]);
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_B, palette_indexes, map[B]);
-        if (A == A_max) {
-            static std::array<GLfloat, 255> max_alpha;
-            std::fill(max_alpha.begin(), max_alpha.end(), 255.0);
-            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, palette_indexes, (GLfloat *)max_alpha.data());
+        const Ptr<const uint32_t> palette_ptr(texture->palette_addr << 6);
+        const uint32_t *const palette_bytes = palette_ptr.get(host.mem);
+        palette_texture_pixels.resize(width * height);
+        if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
+            texture::palette_texture_to_rgba_8(palette_texture_pixels.data(), texture_data, width, height, palette_bytes);
         } else {
-            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, palette_indexes, map[A]);
+            texture::palette_texture_to_rgba_4(palette_texture_pixels.data(), texture_data, width, height, palette_bytes);
         }
+        pixels = palette_texture_pixels.data();
+        stride = width;
+    } else {
+        pixels = texture_data;
+        stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
     }
 
-    const void *const pixels = data.get(host.mem);
     const GLenum internal_format = texture::translate_internal_format(fmt);
     const GLenum format = texture::translate_format(fmt);
     const GLenum type = texture::translate_type(fmt);
+    const GLenum *const swizzle = texture::translate_swizzle(fmt);
 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, (width + 7) & ~7);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture::translate_wrap_mode(uaddr));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture::translate_wrap_mode(vaddr));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->min_filter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->mag_filter));
+    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glPixelTransferi(GL_MAP_COLOR, GL_FALSE);
 
     return 0;
 }
@@ -1311,27 +1333,11 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVer
     context->vertex_program = vertexProgram;
 }
 
-EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, const uint8_t *streamData) {
+EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, Ptr<const void> streamData) {
     assert(context != nullptr);
-    assert(streamData != nullptr);
-    assert(context->vertex_program);
+    assert(streamData);
 
-    const SceGxmVertexProgram &vertex_program = *context->vertex_program.get(host.mem);
-    for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-        if (attribute.streamIndex != streamIndex) {
-            continue;
-        }
-
-        const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
-
-        const GLenum type = attribute_format_to_gl_type(static_cast<SceGxmAttributeFormat>(attribute.format));
-        const GLboolean normalised = attribute_format_normalised(static_cast<SceGxmAttributeFormat>(attribute.format)) ? GL_TRUE : GL_FALSE;
-        const GLvoid *const pointer = streamData + attribute.offset;
-        int attrib_location = attribute.regIndex / sizeof(uint32_t);
-        glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, pointer);
-
-        glEnableVertexAttribArray(attrib_location); // TODO Disable.
-    }
+    context->stream_data[streamIndex] = streamData;
 
     return 0;
 }

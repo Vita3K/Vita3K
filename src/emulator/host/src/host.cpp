@@ -21,31 +21,34 @@
 #include <host/import_fn.h>
 #include <host/state.h>
 #include <host/version.h>
-#include <rtc/rtc.h>
 
 #include <audio/functions.h>
+#include <cpu/functions.h>
+#include <glutil/gl.h>
 #include <io/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread/thread_state.h>
 #include <nids/functions.h>
+#include <rtc/rtc.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
-
-#include <cpu/functions.h>
 
 #include <SDL_events.h>
 #include <SDL_filesystem.h>
 #include <SDL_video.h>
 
+#include <glbinding-aux/types_to_string.h>
 #include <glbinding/Binding.h>
+#include <microprofile.h>
 
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 // clang-format off
 #include <imgui.h>
-#include <gui/imgui_impl_sdl_gl2.h>
+#include <gui/imgui_impl_sdl_gl3.h>
 // clang-format on
 
 #ifdef WIN32
@@ -78,6 +81,23 @@ static ImportFn resolve_import(uint32_t nid) {
     return ImportFn();
 }
 
+void before_callback(const glbinding::FunctionCall &fn) {
+#if MICROPROFILE_ENABLED
+    const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
+    MICROPROFILE_ENTER_TOKEN(token);
+#endif // MICROPROFILE_ENABLED
+}
+
+void after_callback(const glbinding::FunctionCall &fn) {
+    MICROPROFILE_LEAVE();
+    for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
+        std::stringstream gl_error;
+        gl_error << error;
+        LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
+        assert(false);
+    }
+}
+
 bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_width, std::uint32_t window_height, std::uint32_t border_height) {
     const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
     const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
@@ -98,8 +118,26 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
         return false;
     }
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
     state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
-    Binding::initialize(false);
+    if (!state.glcontext) {
+        LOG_ERROR("Could not create OpenGL context.");
+        return false;
+    }
+
+    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
+        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
+    };
+    Binding::initialize(get_proc_address, false);
+    Binding::setCallbackMaskExcept(CallbackMask::Before | CallbackMask::After, { "glGetError" });
+#if MICROPROFILE_ENABLED != 0
+    Binding::setBeforeCallback(before_callback);
+#endif // MICROPROFILE_ENABLED
+    Binding::setAfterCallback(after_callback);
+
     state.kernel.base_tick = { rtc_base_ticks() };
     state.display.set_window_dims(window_width, window_height);
 
@@ -146,7 +184,7 @@ bool init(HostState &state, std::uint32_t window_width, std::uint32_t border_wid
 bool handle_events(HostState &host) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        ImGui_ImplSdlGL2_ProcessEvent(&event);
+        ImGui_ImplSdlGL3_ProcessEvent(&event);
         if (event.type == SDL_QUIT) {
             stop_all_threads(host.kernel);
             host.gxm.display_queue.abort();

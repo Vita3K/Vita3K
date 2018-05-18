@@ -1,10 +1,10 @@
 add_library(
 gui
 STATIC
-include/gui/imgui_impl_sdl_gl2.h
+include/gui/imgui_impl_sdl_gl3.h
 include/gui/functions.h
 include/gui/state.h
-src/imgui_impl_sdl_gl2.cpp
+src/imgui_impl_sdl_gl3.cpp
 src/ui_common_dialog.cpp
 src/ui_condvars_dialog.cpp
 src/ui_main.cpp

@@ -17,9 +17,11 @@
 
 #pragma once
 
-#include <condition_variable>
 #include <mem/mem.h> // Address.
+
+#include <condition_variable>
 #include <mutex>
+#include <string>
 
 struct CPUState;
 template <typename T>
@@ -44,5 +46,5 @@ struct ThreadState {
     std::mutex mutex;
     std::condition_variable something_to_do;
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
-    char name[32];
+    std::string name;
 };

@@ -1,14 +1,14 @@
 // https://github.com/Rinnegatamante/vitaQuake/blob/master/shaders/texture2d_rgba_fog_v.cg
-#version 120
+#version 410
 
 uniform mat4 wvp;
-attribute vec3 position;
-attribute vec2 texcoord;
-attribute vex4 color;
+in vec3 position;
+in vec2 texcoord;
+in vex4 color;
 
-varying vec4 vColor;
-varying float vFog;
-varying vec2 vTexcoord;
+out vec4 vColor;
+out float vFog;
+out vec2 vTexcoord;
 
 void main()
 {

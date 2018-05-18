@@ -1,12 +1,14 @@
 // Fragment shader.
-#version 120
+#version 410
 
 uniform mat4 _u_colourArray;
 uniform sampler2D _gm_BaseTexture;
 
-varying vec2 vTexcoord;
+in vec2 vTexcoord;
+
+out vec4 fragColor;
 
 void main() {
-    vec4 c = _u_colourArray * texture2D(_gm_BaseTexture, vTexcoord);
-    gl_FragColor = c;
+    vec4 c = _u_colourArray * texture(_gm_BaseTexture, vTexcoord);
+    fragColor = c;
 }

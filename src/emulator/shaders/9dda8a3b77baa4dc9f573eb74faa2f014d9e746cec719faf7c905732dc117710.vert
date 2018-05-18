@@ -1,7 +1,7 @@
 // https://github.com/xerpi/libvita2d/blob/master/libvita2d/shader/clear_v.cg
-#version 120
+#version 410
 
-attribute vec2 aPosition;
+in vec2 aPosition;
 
 void main()
 {

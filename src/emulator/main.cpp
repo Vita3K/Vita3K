@@ -36,7 +36,7 @@
 
 // clang-format off
 #include <imgui.h>
-#include <gui/imgui_impl_sdl_gl2.h>
+#include <gui/imgui_impl_sdl_gl3.h>
 // clang-format on
 #include <gui/functions.h>
 
@@ -111,20 +111,20 @@ int main(int argc, char *argv[]) {
     }
 
     ImGui::CreateContext();
-    ImGui_ImplSdlGL2_Init(host.window.get());
+    ImGui_ImplSdlGL3_Init(host.window.get());
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
     bool is_vpk = true;
 
     while (path.empty() && handle_events(host) && is_vpk) {
-        ImGui_ImplSdlGL2_NewFrame(host.window.get());
+        ImGui_ImplSdlGL3_NewFrame(host.window.get());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         DrawUI(host);
         DrawGameSelector(host, &is_vpk);
         glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
         ImGui::Render();
-        ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(host.window.get());
     }
 
@@ -181,17 +181,10 @@ int main(int argc, char *argv[]) {
             glClearColor(1.0, 0.0, 0.5, 1.0);
             glClearDepth(1.0f);
             glViewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT);
-            glMatrixMode(GL_PROJECTION);
-            glLoadIdentity();
-            glOrtho(0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0, 1, -1);
-            glMatrixMode(GL_MODELVIEW);
-            glEnable(GL_TEXTURE_2D);
-            glLoadIdentity();
         }
 
-        ImGui_ImplSdlGL2_NewFrame(host.window.get());
+        ImGui_ImplSdlGL3_NewFrame(host.window.get());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glLoadIdentity();
 
         {
             if (host.display.width > 0) {
@@ -219,7 +212,7 @@ int main(int argc, char *argv[]) {
 
         glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
         ImGui::Render();
-        ImGui_ImplSdlGL2_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(host.window.get());
 
         {

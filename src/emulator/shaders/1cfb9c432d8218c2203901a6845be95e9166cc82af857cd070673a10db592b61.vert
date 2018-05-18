@@ -1,9 +1,9 @@
 // Vertex shader.
-#version 120
+#version 410
 
-attribute vec4 aPosition;
+in vec4 aPosition;
 uniform vec4 color;
-varying vec4 vColor;
+out vec4 vColor;
 
 void main() 
 {

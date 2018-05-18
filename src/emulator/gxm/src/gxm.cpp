@@ -219,8 +219,6 @@ static void output_glsl_decl(std::ostream &glsl, std::string &cur_struct_decl, c
 }
 
 static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &program) {
-    static auto gl_version = std::atof(reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
-
     if (program.parameter_count > 0) {
         glsl << "\n";
     }
@@ -235,10 +233,7 @@ static void output_glsl_parameters(std::ostream &glsl, const SceGxmProgram &prog
 
         switch (parameter.category) {
         case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE: {
-            const auto qualifier = (gl_version < 1.3)
-                ? ""
-                : "in";
-            output_glsl_decl(glsl, cur_struct_decl, parameter, qualifier);
+            output_glsl_decl(glsl, cur_struct_decl, parameter, "in");
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM: {
@@ -276,7 +271,7 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
 
     std::ostringstream glsl;
     glsl << "// Fragment shader.\n";
-    glsl << "#version 120\n";
+    glsl << "#version 410\n";
     output_glsl_parameters(glsl, program);
     glsl << "\n";
     glsl << "void main() {\n";
@@ -291,7 +286,7 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
 
     std::ostringstream glsl;
     glsl << "// Vertex shader.\n";
-    glsl << "#version 120\n";
+    glsl << "#version 410\n";
     output_glsl_parameters(glsl, program);
     glsl << "\n";
     glsl << "void main() {\n";
@@ -457,23 +452,6 @@ static bool operator<(const emu::SceGxmBlendInfo &a, const emu::SceGxmBlendInfo 
     return memcmp(&a, &b, sizeof(a)) < 0;
 }
 
-void before_callback(const glbinding::FunctionCall &fn) {
-#if MICROPROFILE_ENABLED
-    const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
-    MICROPROFILE_ENTER_TOKEN(token);
-#endif // MICROPROFILE_ENABLED
-}
-
-void after_callback(const glbinding::FunctionCall &fn) {
-    MICROPROFILE_LEAVE();
-    for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
-        std::stringstream gl_error;
-        gl_error << error;
-        LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
-        assert(false);
-    }
-}
-
 std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path) {
     const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
     const GLSLCache::const_iterator cached = shader_patcher.fragment_glsl_cache.find(hash_bytes);
@@ -624,6 +602,29 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
     }
 }
 
+size_t attribute_format_size(SceGxmAttributeFormat format) {
+    GXM_PROFILE(__FUNCTION__);
+
+    switch (format) {
+    case SCE_GXM_ATTRIBUTE_FORMAT_U8:
+    case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
+    case SCE_GXM_ATTRIBUTE_FORMAT_S8:
+    case SCE_GXM_ATTRIBUTE_FORMAT_S8N:
+        return 1;
+    case SCE_GXM_ATTRIBUTE_FORMAT_U16:
+    case SCE_GXM_ATTRIBUTE_FORMAT_U16N:
+    case SCE_GXM_ATTRIBUTE_FORMAT_S16:
+    case SCE_GXM_ATTRIBUTE_FORMAT_S16N:
+    case SCE_GXM_ATTRIBUTE_FORMAT_F16:
+        return 2;
+    case SCE_GXM_ATTRIBUTE_FORMAT_F32:
+        return 4;
+    default:
+        LOG_ERROR("Unsupported attribute format {:#x}", format);
+        return 4;
+    }
+}
+
 bool attribute_format_normalised(SceGxmAttributeFormat format) {
     GXM_PROFILE(__FUNCTION__);
 
@@ -721,12 +722,6 @@ GLenum translate_blend_factor(SceGxmBlendFactor src) {
 }
 
 namespace texture {
-
-    SceGxmTextureFormat get_format(const SceGxmTexture *texture) {
-        return static_cast<SceGxmTextureFormat>(
-            texture->base_format << 24 | texture->format0 << 31 | texture->swizzle_format << 12);
-    }
-
     unsigned int get_width(const SceGxmTexture *texture) {
         if (texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED && texture->type << 29 != SCE_GXM_TEXTURE_TILED) {
             return texture->width + 1;
@@ -741,76 +736,6 @@ namespace texture {
         return 1 << (texture->height & 0xF);
     }
 
-    SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src) {
-        return static_cast<SceGxmTextureBaseFormat>(src & 0xFF000000);
-    }
-
-    std::uint32_t get_swizzle(SceGxmTextureFormat src) {
-        return static_cast<SceGxmTextureBaseFormat>(src & 0x0000F000);
-    }
-
-    bool is_paletted_format(SceGxmTextureFormat src) {
-        const auto base_format = get_base_format(src);
-
-        return base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P4;
-    }
-
-    GLenum translate_internal_format(SceGxmTextureFormat src) {
-        GXM_PROFILE(__FUNCTION__);
-
-        if (is_paletted_format(src)) {
-            return GL_RGBA;
-        }
-
-        switch (src) {
-        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
-        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
-            return GL_RGB565;
-        case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-        case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-            return GL_RGBA8;
-        case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
-            return GL_RGBA4;
-        case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
-            return GL_RGB5_A1;
-        case SCE_GXM_TEXTURE_FORMAT_U8_R111: // TODO: this is inaccurate
-        case SCE_GXM_TEXTURE_FORMAT_U8_111R: // TODO: this is inaccurate
-        case SCE_GXM_TEXTURE_FORMAT_U8_1RRR: // TODO: this is inaccurate
-            return GL_INTENSITY8;
-        default: {
-            return GL_RGBA8;
-        }
-        }
-    }
-
-    GLenum translate_format(SceGxmTextureFormat src) {
-        GXM_PROFILE(__FUNCTION__);
-
-        if (is_paletted_format(src)) {
-            return GL_COLOR_INDEX;
-        }
-
-        switch (src) {
-        case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-        case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
-        case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
-            return GL_RGBA;
-        case SCE_GXM_TEXTURE_FORMAT_U8_R111: // TODO: this is inaccurate
-            return GL_RED;
-        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
-        case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
-        case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-            return GL_RGB;
-        case SCE_GXM_TEXTURE_FORMAT_U8_111R: // TODO: this is inaccurate
-            return GL_ALPHA;
-        case SCE_GXM_TEXTURE_FORMAT_U8_1RRR: // TODO: this is inaccurate
-            return GL_INTENSITY;
-        default: {
-            return GL_RGBA;
-        }
-        }
-    }
-
     GLenum translate_wrap_mode(SceGxmTextureAddrMode src) {
         GXM_PROFILE(__FUNCTION__);
 
@@ -820,7 +745,7 @@ namespace texture {
         case SCE_GXM_TEXTURE_ADDR_CLAMP:
             return GL_CLAMP_TO_EDGE;
         case SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP:
-            return GL_MIRROR_CLAMP_TO_EDGE;
+            return GL_CLAMP_TO_EDGE; // FIXME: GL_MIRROR_CLAMP_TO_EDGE is not supported in OpenGL 4.1 core.
         case SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER:
             return GL_REPEAT; // FIXME: Is this correct?
         case SCE_GXM_TEXTURE_ADDR_CLAMP_FULL_BORDER:
@@ -829,10 +754,9 @@ namespace texture {
             return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
         case SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER:
             return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
-        default: {
+        default:
             LOG_WARN("Unsupported texture wrap mode translated: 0x{:08X}", src);
             return GL_CLAMP_TO_EDGE;
-        }
         }
     }
 
@@ -844,30 +768,39 @@ namespace texture {
             return GL_NEAREST;
         case SCE_GXM_TEXTURE_FILTER_LINEAR:
             return GL_LINEAR;
-        default: {
+        default:
             LOG_WARN("Unsupported texture min/mag filter translated: 0x{:08X}", src);
             return GL_LINEAR;
         }
+    }
+
+    void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
+        LOG_WARN("4-bit palettes are not yet tested.");
+
+        const size_t stride = ((width + 7) & ~7) / 2; // NOTE: This is correct only with linear textures.
+        for (size_t y = 0; y < height; ++y) {
+            uint32_t *const dst_row = &dst[y * width];
+            const uint8_t *const src_row = &src[y * stride];
+            for (size_t x = 0; x < width; ++x) {
+                const uint8_t lohi = src_row[x / 2];
+                const uint8_t lo = lohi & 0xf;
+                const uint8_t hi = lohi >> 4;
+                dst_row[x + 0] = palette[lo];
+                dst_row[x + 1] = palette[hi];
+            }
         }
     }
 
-    GLenum translate_type(SceGxmTextureFormat format) {
-        const auto base_format = texture::get_base_format(format);
-        switch (base_format) {
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
-            return GL_UNSIGNED_SHORT_4_4_4_4;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
-            return GL_UNSIGNED_BYTE;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
-            return GL_UNSIGNED_SHORT_5_6_5;
-        default: {
-            LOG_WARN("Unsupported translate type: 0x{:08X}", format);
-            return GL_UNSIGNED_BYTE;
-        }
+    void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
+        const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
+        for (size_t y = 0; y < height; ++y) {
+            uint32_t *const dst_row = &dst[y * width];
+            const uint8_t *const src_row = &src[y * stride];
+            for (size_t x = 0; x < width; ++x) {
+                dst_row[x] = palette[src_row[x]];
+            }
         }
     }
-
 } // namespace texture
 
 GLenum translate_primitive(SceGxmPrimitiveType primType) {

@@ -79,6 +79,10 @@ struct SceGxmContext {
     UniformBuffers fragment_uniform_buffers;
     UniformBuffers vertex_uniform_buffers;
     GLObjectArray<1> texture;
+    GLObjectArray<1> vertex_array;
+    GLObjectArray<1> element_buffer;
+    std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
+    GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
     bool two_sided = false;
     SceGxmViewport viewport;
@@ -105,8 +109,8 @@ struct SceGxmFragmentProgram {
     GLboolean color_mask_blue = GL_TRUE;
     GLboolean color_mask_alpha = GL_TRUE;
     bool blend_enabled = false;
-    GLenum color_func = GL_ADD;
-    GLenum alpha_func = GL_ADD;
+    GLenum color_func = GL_FUNC_ADD;
+    GLenum alpha_func = GL_FUNC_ADD;
     GLenum color_src = GL_ONE;
     GLenum color_dst = GL_ZERO;
     GLenum alpha_src = GL_ONE;
