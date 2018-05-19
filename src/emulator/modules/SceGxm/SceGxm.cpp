@@ -522,6 +522,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     }
 
     host.gxm.isInScene = false;
+    ++context->texture_cache.timestamp;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
