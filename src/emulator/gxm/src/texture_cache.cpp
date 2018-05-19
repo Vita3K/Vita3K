@@ -41,6 +41,14 @@ static void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter));
     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+    
+    const GLenum internal_format = texture::translate_internal_format(fmt);
+    const unsigned int width = texture::get_width(&gxm_texture);
+    const unsigned int height = texture::get_height(&gxm_texture);
+    const GLenum format = texture::translate_format(fmt);
+    const GLenum type = texture::translate_type(fmt);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, nullptr);
 }
 
 static void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem) {
@@ -70,12 +78,11 @@ static void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemStat
         stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
     }
     
-    const GLenum internal_format = texture::translate_internal_format(fmt);
     const GLenum format = texture::translate_format(fmt);
     const GLenum type = texture::translate_type(fmt);
     
     glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, pixels);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, pixels);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }
 
@@ -109,7 +116,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         // Texture is cached.
         index = cached_gxm_texture - cache.gxm_textures.begin();
         // TODO Has data changed?
-        if (false) {
+        if (true) {
             upload = true;
         }
     }
