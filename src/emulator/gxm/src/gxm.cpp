@@ -367,6 +367,11 @@ void uniform_4<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
     glUniform4fv(location, count, value);
 }
 
+template <>
+void uniform_4<GLint>(GLint location, GLsizei count, const GLint *value) {
+    glUniform4iv(location, count, value);
+}
+
 template <class T>
 void uniform_1(GLint location, GLsizei count, const T *value);
 
@@ -375,12 +380,22 @@ void uniform_1<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
     glUniform1fv(location, count, value);
 }
 
+template <>
+void uniform_1<GLint>(GLint location, GLsizei count, const GLint *value) {
+    glUniform1iv(location, count, value);
+}
+
 template <class T>
 void uniform_matrix_4(GLint location, GLsizei count, GLboolean, const T *value);
 
 template <>
 void uniform_matrix_4<GLfloat>(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
     glUniformMatrix4fv(location, count, transpose, value);
+}
+
+template <>
+void uniform_matrix_4<GLint>(GLint location, GLsizei count, GLboolean transpose, const GLint *value) {
+    glUniform4iv(location, count, (GLint *)value);
 }
 
 template <class T>
@@ -431,11 +446,18 @@ static void set_uniforms(GLuint gl_program, const UniformBuffers &uniform_buffer
             continue;
         }
 
+        const GLint *src_s32;
+        const GLfloat *src_f32;
+
         const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
-        const GLfloat *const src = reinterpret_cast<const GLfloat *>(base + parameter.resource_index * 4); // TODO What offset?
         switch (type) {
+        case SCE_GXM_PARAMETER_TYPE_S32:
+            src_s32 = reinterpret_cast<const GLint *>(base + parameter.resource_index * 4); // TODO What offset?
+            set_uniform<GLint>(location, parameter.component_count, parameter.array_size, src_s32);
+            break;
         case SCE_GXM_PARAMETER_TYPE_F32:
-            set_uniform<GLfloat>(location, parameter.component_count, parameter.array_size, src);
+            src_f32 = reinterpret_cast<const GLfloat *>(base + parameter.resource_index * 4); // TODO What offset?
+            set_uniform<GLfloat>(location, parameter.component_count, parameter.array_size, src_f32);
             break;
         default:
             LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
