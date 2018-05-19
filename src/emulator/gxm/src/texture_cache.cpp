@@ -7,6 +7,94 @@
 
 #include <algorithm> // find
 #include <cstring> // memcmp
+#include <numeric> // accumulate
+
+static size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
+    switch (base_format) {
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+            return 8;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
+            return 16;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
+            return 32;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
+            return 64;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+            return 2;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+            return 4;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+            return 2;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+            return 4;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
+            return 4;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
+            return 8;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+            return 16; // NOTE: I'm not sure this is right.
+        case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+            return 4;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+            return 8;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+            return 24;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
+            return 32;
+    }
+    
+    return 0;
+}
+
+static TextureCacheHash hash_data(const void *data, size_t size) {
+    const uint8_t *const begin = static_cast<const uint8_t *>(data);
+    const uint8_t *const end = begin + size;
+    return std::accumulate(begin, end, TextureCacheHash(0));
+}
+
+static TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
+    const SceGxmTextureFormat format = texture::get_format(&texture);
+    const SceGxmTextureBaseFormat base_format = texture::get_base_format(format);
+    const size_t width = texture::get_width(&texture);
+    const size_t height = texture::get_height(&texture);
+    const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
+    const size_t bpp = bits_per_pixel(base_format);
+    const size_t size = (bpp * stride * height) / 8;
+    const Ptr<const void> data(texture.data_addr << 2);
+    
+    return hash_data(data.get(mem), size);
+}
 
 static const bool operator==(const SceGxmTexture &a, const SceGxmTexture &b) {
     return memcmp(&a, &b, sizeof(a)) == 0;
@@ -94,6 +182,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     size_t index = 0;
     bool configure = false;
     bool upload = false;
+    const TextureCacheHash hash = hash_texture_data(gxm_texture, mem);
     
     // Try to find GXM texture in cache.
     const TextureCacheGxmTextures::const_iterator gxm_begin = cache.gxm_textures.cbegin();
@@ -115,10 +204,8 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     } else {
         // Texture is cached.
         index = cached_gxm_texture - cache.gxm_textures.begin();
-        // TODO Has data changed?
-        if (true) {
-            upload = true;
-        }
+        configure = false;
+        upload = hash != cache.hashes[index];
     }
     
     const GLuint gl_texture = cache.textures[index];
@@ -129,6 +216,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     }
     if (upload) {
         upload_bound_texture(gxm_texture, mem);
+        cache.hashes[index] = hash;
     }
     
     cache.timestamps[index] = cache.timestamp;
