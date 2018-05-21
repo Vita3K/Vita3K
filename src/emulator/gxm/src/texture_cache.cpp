@@ -1,5 +1,7 @@
 #include <gxm/texture_cache_functions.h>
 
+#include "profile.h"
+
 #include <gxm/functions.h>
 #include <gxm/texture_cache_state.h>
 
@@ -84,6 +86,8 @@ static TextureCacheHash hash_data(const void *data, size_t size) {
 }
 
 static TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
+    GXM_PROFILE(__func__);
+    
     const SceGxmTextureFormat format = texture::get_format(&texture);
     const SceGxmTextureBaseFormat base_format = texture::get_base_format(format);
     const size_t width = texture::get_width(&texture);
@@ -101,6 +105,8 @@ static const bool operator==(const SceGxmTexture &a, const SceGxmTexture &b) {
 }
 
 static size_t find_lru(const TextureCacheTimestamps &timestamps, TextureCacheTimestamp current_time) {
+    GXM_PROFILE(__func__);
+    
     uint64_t oldest_age = current_time - timestamps.front();
     size_t oldest_index = 0;
     
@@ -116,6 +122,8 @@ static size_t find_lru(const TextureCacheTimestamps &timestamps, TextureCacheTim
 }
 
 static void configure_bound_texture(const SceGxmTexture &gxm_texture) {
+    GXM_PROFILE(__func__);
+    
     const SceGxmTextureFormat fmt = texture::get_format(&gxm_texture);
     const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
@@ -140,6 +148,8 @@ static void configure_bound_texture(const SceGxmTexture &gxm_texture) {
 }
 
 static void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem) {
+    GXM_PROFILE(__func__);
+    
     const SceGxmTextureFormat fmt = texture::get_format(&gxm_texture);
     const unsigned int width = texture::get_width(&gxm_texture);
     const unsigned int height = texture::get_height(&gxm_texture);
@@ -179,6 +189,8 @@ bool init(TextureCacheState &cache) {
 }
 
 void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
+    GXM_PROFILE(__func__);
+    
     size_t index = 0;
     bool configure = false;
     bool upload = false;
