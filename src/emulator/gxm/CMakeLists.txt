@@ -7,6 +7,7 @@ add_library(
 	include/gxm/texture_cache_state.h
 	include/gxm/types.h
 	src/gxm.cpp
+	src/profile.h
 	src/texture_cache.cpp
 	src/texture_formats.cpp
 )
