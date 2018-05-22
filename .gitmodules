@@ -37,3 +37,6 @@
 [submodule "src/external/googletest"]
 	path = src/external/googletest
 	url = https://github.com/google/googletest.git
+[submodule "src/emulator/shaders-db"]
+	path = src/emulator/shaders-db
+	url = https://github.com/Vita3K/shaders-db.git
