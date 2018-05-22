@@ -4,7 +4,7 @@
 uniform mat4 wvp;
 in vec3 position;
 in vec2 texcoord;
-in vex4 color;
+in vec4 color;
 
 out vec4 vColor;
 out vec2 vTexcoord;
