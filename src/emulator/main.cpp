@@ -34,11 +34,8 @@
 #include <iostream>
 #include <sstream>
 
-// clang-format off
-#include <imgui.h>
-#include <gui/imgui_impl_sdl_gl3.h>
-// clang-format on
 #include <gui/functions.h>
+#include <gui/imgui_impl.h>
 
 typedef std::unique_ptr<const void, void (*)(const void *)> SDLPtr;
 typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
@@ -105,22 +102,17 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    ImGui::CreateContext();
-    ImGui_ImplSdlGL3_Init(host.window.get());
-    ImGui::StyleColorsDark();
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    imgui::init(host.window);
 
     bool is_vpk = true;
 
     while (path.empty() && handle_events(host) && is_vpk) {
-        ImGui_ImplSdlGL3_NewFrame(host.window.get());
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        imgui::draw_begin(host.window);
+
         DrawUI(host);
         DrawGameSelector(host, &is_vpk);
-        glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
-        ImGui::Render();
-        ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-        SDL_GL_SwapWindow(host.window.get());
+
+        imgui::draw_end(host.window);
     }
 
     if (!is_vpk) {
@@ -178,41 +170,16 @@ int main(int argc, char *argv[]) {
             glViewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT);
         }
 
-        ImGui_ImplSdlGL3_NewFrame(host.window.get());
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        imgui::draw_begin(host.window);
 
-        {
-            if (host.display.width > 0) {
-                glBindTexture(GL_TEXTURE_2D, TextureID);
-                void *const pixels = host.display.base.cast<void>().get(host.mem);
-
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, host.display.pitch);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, host.display.width, host.display.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-                ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
-                ImGui::SetNextWindowSize(ImVec2(DEFAULT_RES_WIDTH + WINDOW_BORDER_WIDTH, DEFAULT_RES_HEIGHT + WINDOW_BORDER_HEIGHT), ImGuiSetCond_Always);
-                ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
-                host.gui.renderer_focused = ImGui::IsWindowFocused();
-                ImGui::Image(reinterpret_cast<void *>(TextureID), ImVec2(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT));
-                ImGui::End();
-            }
-        }
+        imgui::draw_main(host, fb_texture_id);
 
         DrawUI(host);
         DrawCommonDialog(host);
 
-        glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
-        ImGui::Render();
-        ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-        SDL_GL_SwapWindow(host.window.get());
+        imgui::draw_end(host.window);
 
-        {
-            host.display.condvar.notify_all();
-        }
+        host.display.condvar.notify_all();
 
         const uint32_t t2 = SDL_GetTicks();
         const uint32_t ms = t2 - host.t1;
