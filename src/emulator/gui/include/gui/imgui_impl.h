@@ -17,27 +17,20 @@
 
 #pragma once
 
-#include <cstdint>
+#include <host/state.h>
 
-static constexpr auto MENUBAR_HEIGHT = 19;
+// clang-format off
+#include <imgui.h>
+#include <gui/imgui_impl_sdl_gl3.h>
+// clang-format on
 
-enum GenericDialogState {
-    UNK_STATE,
-    CONFIRM_STATE,
-    CANCEL_STATE
-};
+#include <glutil/gl.h>
 
-struct HostState;
+namespace imgui {
 
-void DrawMainMenuBar(HostState &host);
-void DrawThreadsDialog(HostState &host);
-void DrawSemaphoresDialog(HostState &host);
-void DrawMutexesDialog(HostState &host);
-void DrawLwMutexesDialog(HostState &host);
-void DrawLwCondvarsDialog(HostState &host);
-void DrawCondvarsDialog(HostState &host);
-void DrawEventFlagsDialog(HostState &host);
-void DrawUI(HostState &host);
-void DrawCommonDialog(HostState &host);
-void DrawGameSelector(HostState &host, bool *is_vpk);
-void DrawReinstallDialog(HostState &host, GenericDialogState *status);
+    void init(WindowPtr window);
+    void draw_begin(WindowPtr window);
+    void draw_main(HostState &host, GLuint TextureID);
+    void draw_end(WindowPtr window);
+
+} // namespace imgui
