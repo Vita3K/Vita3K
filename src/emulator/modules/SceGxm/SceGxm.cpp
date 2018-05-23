@@ -1483,7 +1483,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = programId->program;
-    fp->glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
+    fp->glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.game_title, host.base_path.c_str());
 
     // Translate blending.
     if (blendInfo != nullptr) {
@@ -1519,7 +1519,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = alloc(mem, size_mask_gxp, __FUNCTION__);
     memcpy((char *)fp->program.get(mem), mask_gxp, size_mask_gxp);
-    fp->glsl = get_fragment_glsl(*shaderPatcher, *fp->program.get(mem), host.base_path.c_str());
+    fp->glsl = get_fragment_glsl(*shaderPatcher, *fp->program.get(mem), host.game_title, host.base_path.c_str());
 
     return STUBBED("Using a null shader");
 }
@@ -1542,7 +1542,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
     vp->program = programId->program;
-    vp->glsl = get_vertex_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
+    vp->glsl = get_vertex_glsl(*shaderPatcher, *programId->program.get(mem), host.game_title, host.base_path.c_str());
     vp->attribute_locations = attribute_locations(*programId->program.get(mem));
     vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);

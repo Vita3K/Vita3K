@@ -2,6 +2,7 @@
 
 #include <crypto/hash.h>
 #include <gxm/types.h>
+#include <util/fs.h>
 #include <util/log.h>
 
 #include <glbinding/AbstractFunction.h>
@@ -17,7 +18,7 @@
 
 static std::string load_shader(const char *hash, const char *extension, const char *base_path) {
     std::ostringstream path;
-    path << base_path << "shaders/" << hash << "." << extension;
+    path << base_path << "/" << hash << "." << extension;
 
     std::ifstream is(path.str());
     if (is.fail()) {
@@ -296,10 +297,14 @@ static std::string generate_vertex_glsl(const SceGxmProgram &program) {
     return glsl.str();
 }
 
-static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source) {
+static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source, const char *base_path, std::string game_title) {
     // Dump missing shader GLSL.
     std::ostringstream glsl_path;
-    glsl_path << hash << "." << extension;
+    std::string shaderlog_path = std::string(base_path) + "shaderlog" + "/";
+    fs::create_directory(shaderlog_path);
+    std::string shaders_dump_path = shaderlog_path + game_title + "/";
+    fs::create_directory(shaders_dump_path.c_str());
+    glsl_path << shaders_dump_path << hash << "." << extension;
     std::ofstream glsl_file(glsl_path.str());
     if (!glsl_file.fail()) {
         glsl_file << source;
@@ -308,7 +313,7 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
 
     // Dump missing shader binary.
     std::ostringstream gxp_path;
-    gxp_path << hash << ".gxp";
+    gxp_path << shaders_dump_path << hash << ".gxp";
     std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
     if (!gxp.fail()) {
         gxp.write(reinterpret_cast<const char *>(&program), program.size);
@@ -474,7 +479,7 @@ static bool operator<(const emu::SceGxmBlendInfo &a, const emu::SceGxmBlendInfo 
     return memcmp(&a, &b, sizeof(a)) < 0;
 }
 
-std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path) {
+std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, std::string game_title, const char *base_path) {
     const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
     const GLSLCache::const_iterator cached = shader_patcher.fragment_glsl_cache.find(hash_bytes);
     if (cached != shader_patcher.fragment_glsl_cache.end()) {
@@ -486,7 +491,7 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
     if (source.empty()) {
         LOG_ERROR("Missing fragment shader {}", hash_text.data());
         source = generate_fragment_glsl(fragment_program);
-        dump_missing_shader(hash_text.data(), "frag", fragment_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "frag", fragment_program, source.c_str(), base_path, game_title);
     }
 
     shader_patcher.fragment_glsl_cache.emplace(hash_bytes, source);
@@ -494,7 +499,7 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
     return source;
 }
 
-std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path) {
+std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, std::string game_title, const char *base_path) {
     const Sha256Hash hash_bytes = sha256(&vertex_program, vertex_program.size);
     const GLSLCache::const_iterator cached = shader_patcher.vertex_glsl_cache.find(hash_bytes);
     if (cached != shader_patcher.vertex_glsl_cache.end()) {
@@ -506,7 +511,7 @@ std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmPro
     if (source.empty()) {
         LOG_ERROR("Missing vertex shader {}", hash_text.data());
         source = generate_vertex_glsl(vertex_program);
-        dump_missing_shader(hash_text.data(), "vert", vertex_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "vert", vertex_program, source.c_str(), base_path, game_title);
     }
 
     shader_patcher.vertex_glsl_cache.emplace(hash_bytes, source);
