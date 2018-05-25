@@ -6,6 +6,7 @@
 #include <gxm/texture_cache_state.h>
 
 #include <mem/ptr.h>
+#include <util/log.h>
 
 #include <algorithm> // find
 #include <cstring> // memcmp
@@ -209,15 +210,16 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         } else {
             // Cache is full. Find least recently used texture.
             index = find_lru(cache.timestamps, cache.timestamp);
+            LOG_DEBUG("Evicting texture {} (t = {}) from cache. Current t = {}.", index, cache.timestamps[index], cache.timestamp);
         }
         configure = true;
         upload = true;
         cache.gxm_textures[index] = gxm_texture;
     } else {
         // Texture is cached.
-        index = cached_gxm_texture - cache.gxm_textures.begin();
+        index = cached_gxm_texture - gxm_begin;
         configure = false;
-        upload = hash != cache.hashes[index];
+        upload = (hash != cache.hashes[index]);
     }
     
     const GLuint gl_texture = cache.textures[index];
