@@ -114,7 +114,7 @@ bool init(HostState &state) {
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
     state.display.set_dims(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, WINDOW_BORDER_WIDTH, WINDOW_BORDER_HEIGHT);
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.display.window_size.width, state.display.window_size.height, SDL_WINDOW_OPENGL), SDL_DestroyWindow);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.display.window_size.width, state.display.window_size.height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str())) {
         return false;
     }
