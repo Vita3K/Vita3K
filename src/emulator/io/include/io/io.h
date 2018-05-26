@@ -17,6 +17,7 @@
 
 #pragma once
 
+#define JOIN_DEVICE(p) VitaIoDevice::p
 #define DEVICE(path, name) name,
 
 enum class VitaIoDevice {
