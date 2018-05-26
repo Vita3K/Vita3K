@@ -127,6 +127,11 @@ bool init(IOState &io, const char *pref_path) {
     return true;
 }
 
+void init_device_paths(IOState &io) {
+	io.device_paths.savedata0 = "ux0:/user/00/savedata/" + io.title_id + "/";
+	io.device_paths.app0 = "ux0:/app/" + io.title_id + "/";
+}
+
 std::pair<VitaIoDevice, std::string>
 translate_device(const std::string &path_) {
     std::string path(path_);

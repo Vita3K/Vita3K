@@ -52,8 +52,12 @@ typedef std::map<SceUID, FilePtr> StdFiles;
 typedef std::map<SceUID, DirPtr> DirEntries;
 
 struct IOState {
-    std::string app0_prefix;
-    std::string savedata0_path;
+    struct DevicePaths {
+        std::string app0;
+        std::string savedata0;
+        std::string addcont0;
+    } device_paths;
+
     std::string title_id;
     SceUID next_fd = 0;
     TtyFiles tty_files;
