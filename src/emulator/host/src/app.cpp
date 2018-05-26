@@ -23,6 +23,7 @@
 #include <host/sfo.h>
 #include <host/state.h>
 #include <host/version.h>
+#include <io/functions.h>
 #include <io/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/find.h>
@@ -227,7 +228,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Category: {}", category);
 
-    host.io.savedata0_path = "ux0:/user/00/savedata/" + host.io.title_id + "/";
+    init_device_paths(host.io);
 
     Buffer eboot;
     if (!read_file_from_disk(eboot, "eboot.bin", host)) {
