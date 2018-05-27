@@ -31,16 +31,16 @@ struct SceIoDirent;
 void init_device_paths(IOState &io);
 
 bool init(IOState &io, const char *pref_path);
-SceUID open_file(IOState &io, const std::string &path_, int flags, const char *pref_path);
-int read_file(void *data, IOState &io, SceUID fd, SceSize size);
-int write_file(SceUID fd, const void *data, SceSize size, const IOState &io);
-int seek_file(SceUID fd, int offset, int whence, IOState &io);
-void close_file(IOState &io, SceUID fd);
-int create_dir(IOState &io, const char *dir, int mode, const char *pref_path);
-int remove_file(IOState &io, const char *file, const char *pref_path);
-int remove_dir(IOState &io, const char *dir, const char *pref_path);
-int stat_file(IOState &io, const char *file, SceIoStat *stat, const char *pref_path, uint64_t base_tick);
+SceUID open_file(IOState &io, const std::string &path_, int flags, const char *pref_path, const char *export_name);
+int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
+int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);
+int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export_name);
+void close_file(IOState &io, SceUID fd, const char *export_name);
+int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, const char *export_name);
+int remove_file(IOState &io, const char *file, const char *pref_path, const char *export_name);
+int remove_dir(IOState &io, const char *dir, const char *pref_path, const char *export_name);
+int stat_file(IOState &io, const char *file, SceIoStat *stat, const char *pref_path, uint64_t base_tick, const char *export_name);
 
-int open_dir(IOState &io, const char *path, const char *pref_path);
-int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent);
-int close_dir(IOState &io, SceUID fd);
+int open_dir(IOState &io, const char *path, const char *pref_path, const char *export_name);
+int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *export_name);
+int close_dir(IOState &io, SceUID fd, const char *export_name);

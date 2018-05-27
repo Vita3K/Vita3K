@@ -17,6 +17,8 @@
 
 #pragma once
 
+#define SCE_ERROR_ERRNO_EBADF 0x80010051 // Invalid descriptor
+
 #define JOIN_DEVICE(p) VitaIoDevice::p
 #define DEVICE(path, name) name,
 

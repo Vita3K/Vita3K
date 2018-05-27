@@ -303,7 +303,7 @@ EXPORT(int, sceIoDevctl) {
 }
 
 EXPORT(int, sceIoDopen, const char *dir) {
-    return open_dir(host.io, dir, host.pref_path.c_str());
+    return open_dir(host.io, dir, host.pref_path.c_str(), export_name);
 }
 
 EXPORT(int, sceIoDevctlAsync) {
@@ -314,11 +314,11 @@ EXPORT(int, sceIoDread, SceUID fd, emu::SceIoDirent *dir) {
     if (dir == nullptr) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     }
-    return read_dir(host.io, fd, dir);
+    return read_dir(host.io, fd, dir, export_name);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(host.io, file, stat, host.pref_path.c_str(), host.kernel.base_tick.tick);
+    return stat_file(host.io, file, stat, host.pref_path.c_str(), host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
@@ -338,11 +338,11 @@ EXPORT(int, sceIoIoctlAsync) {
 }
 
 EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
-    return seek_file(fd, offset, whence, host.io);
+    return seek_file(fd, offset, whence, host.io, export_name);
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
-    return create_dir(host.io, dir, mode, host.pref_path.c_str());
+    return create_dir(host.io, dir, mode, host.pref_path.c_str(), export_name);
 }
 
 EXPORT(int, sceIoMkdirAsync) {
@@ -358,7 +358,7 @@ EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
         return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
     LOG_INFO("Opening file: {}", file);
-    return open_file(host.io, file, flags, host.pref_path.c_str());
+    return open_file(host.io, file, flags, host.pref_path.c_str(), export_name);
 }
 
 EXPORT(int, sceIoOpenAsync) {
@@ -366,8 +366,8 @@ EXPORT(int, sceIoOpenAsync) {
 }
 
 EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
-    seek_file(fd, offset, SEEK_SET, host.io);
-    return read_file(data, host.io, fd, size);
+    seek_file(fd, offset, SEEK_SET, host.io, export_name);
+    return read_file(data, host.io, fd, size, export_name);
 }
 
 EXPORT(int, sceIoPreadAsync) {
@@ -375,8 +375,8 @@ EXPORT(int, sceIoPreadAsync) {
 }
 
 EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
-    seek_file(fd, offset, SEEK_SET, host.io);
-    return write_file(fd, data, size, host.io);
+    seek_file(fd, offset, SEEK_SET, host.io, export_name);
+    return write_file(fd, data, size, host.io, export_name);
 }
 
 EXPORT(int, sceIoPwriteAsync) {
@@ -387,7 +387,7 @@ EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
-    return remove_file(host.io, path, host.pref_path.c_str());
+    return remove_file(host.io, path, host.pref_path.c_str(), export_name);
 }
 
 EXPORT(int, sceIoRemoveAsync) {
@@ -406,7 +406,7 @@ EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
     }
-    return remove_dir(host.io, path, host.pref_path.c_str());
+    return remove_dir(host.io, path, host.pref_path.c_str(), export_name);
 }
 
 EXPORT(int, sceIoRmdirAsync) {
@@ -1009,13 +1009,13 @@ EXPORT(int, sceKernelGetTimerTime) {
 }
 
 EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
-    SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str());
-    int size = seek_file(file, 0, SEEK_END, host.io);
+    SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str(), export_name);
+    int size = seek_file(file, 0, SEEK_END, host.io, export_name);
     void *data = malloc(size);
     Ptr<const void> entry_point;
 
     SceUID modId = load_self(entry_point, host.kernel, host.mem, data, path);
-    close_file(host.io, file);
+    close_file(host.io, file, export_name);
     free(data);
     if (modId < 0) {
         return RET_ERROR(modId);
@@ -1024,22 +1024,22 @@ EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *optio
 }
 
 EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, int flags, SceKernelLMOption *option, int *status) {
-    SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str());
+    SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str(), export_name);
     if (file < 0)
         return RET_ERROR(file);
-    int size = seek_file(file, 0, SCE_SEEK_END, host.io);
+    int size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
     if (size < 0)
         return RET_ERROR(size);
     void *data = malloc(size);
-    if (seek_file(file, 0, SCE_SEEK_SET, host.io) < 0)
+    if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0)
         return RET_ERROR(size);
-    if (read_file(data, host.io, file, size) < 0) {
+    if (read_file(data, host.io, file, size, export_name) < 0) {
         return RET_ERROR(size);
     };
 
     Ptr<const void> entry_point;
     SceUID modId = load_self(entry_point, host.kernel, host.mem, data, path);
-    close_file(host.io, file);
+    close_file(host.io, file, export_name);
     free(data);
     if (modId < 0) {
         return RET_ERROR(modId);

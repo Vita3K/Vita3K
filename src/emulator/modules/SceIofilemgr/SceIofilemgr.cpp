@@ -24,7 +24,7 @@ EXPORT(int, sceIoCancel) {
 }
 
 EXPORT(int, sceIoClose, SceUID fd) {
-    close_file(host.io, fd);
+    close_file(host.io, fd, export_name);
     return 0;
 }
 
@@ -37,7 +37,7 @@ EXPORT(int, sceIoComplete) {
 }
 
 EXPORT(int, sceIoDclose, SceUID fd) {
-    return close_dir(host.io, fd);
+    return close_dir(host.io, fd, export_name);
 }
 
 EXPORT(int, sceIoFlockForSystem) {
@@ -57,11 +57,11 @@ EXPORT(int, sceIoGetThreadDefaultPriority) {
 }
 
 EXPORT(int, sceIoLseek32, SceUID fd, int offset, int whence) {
-    return seek_file(fd, offset, whence, host.io);
+    return seek_file(fd, offset, whence, host.io, export_name);
 }
 
 EXPORT(int, sceIoRead, SceUID fd, void *data, SceSize size) {
-    return read_file(data, host.io, fd, size);
+    return read_file(data, host.io, fd, size, export_name);
 }
 
 EXPORT(int, sceIoReadAsync) {
@@ -97,7 +97,7 @@ EXPORT(int, sceIoSyncByFdAsync) {
 }
 
 EXPORT(int, sceIoWrite, SceUID fd, const void *data, SceSize size) {
-    return write_file(fd, data, size, host.io);
+    return write_file(fd, data, size, host.io, export_name);
 }
 
 EXPORT(int, sceIoWriteAsync) {
