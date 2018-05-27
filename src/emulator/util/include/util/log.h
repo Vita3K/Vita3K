@@ -54,5 +54,5 @@ void init_logging();
 template <typename T>
 std::string log_hex(T val) {
     using unsigned_type = typename std::make_unsigned<T>::type;
-    return fmt::format("0x{:0x}", static_cast<unsigned_type>(val));
+    return fmt::format("0x{:0X}", static_cast<unsigned_type>(val));
 }

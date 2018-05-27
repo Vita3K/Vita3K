@@ -71,7 +71,7 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
 
 static void log_memory_access(const char *type, Address address, int size, int64_t value, const MemState &mem) {
     const char *const name = mem_name(address, mem);
-    LOG_TRACE("{} {} bytes, address {} ( {} ), value {:#x}", type, size, address, name, value);
+    LOG_TRACE("{} {} bytes, address {} ( {} ), value {}", type, size, address, name, log_hex(value));
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {

@@ -27,6 +27,7 @@
 #include <io/types.h>
 #include <util/fs.h>
 #include <util/log.h>
+#include <util/preprocessor.h>
 
 #include <psp2/io/fcntl.h>
 
@@ -35,7 +36,6 @@
 #include <Windows.h>
 #include <dirent.h>
 #include <util/string_convert.h>
-#include <util/preprocessor.h>
 #else
 #include <sys/stat.h>
 #include <unistd.h>
