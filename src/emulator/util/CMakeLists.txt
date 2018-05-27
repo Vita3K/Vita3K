@@ -4,6 +4,7 @@ add_library(
 	include/util/find.h
 	include/util/fs.h
 	include/util/lock_and_find.h
+	include/util/preprocessor.h
 	include/util/resource.h
 	include/util/string_convert.h
 	include/util/log.h
