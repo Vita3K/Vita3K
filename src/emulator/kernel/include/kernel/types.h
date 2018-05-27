@@ -24,6 +24,8 @@
 
 #define KERNELOBJECT_MAX_NAME_LENGTH 31
 
+#define SCE_ERROR_ERRNO_EINVAL 0x80010016
+
 namespace emu {
     struct SceKernelSegmentInfo {
         SceUInt size; //!< sizeof(SceKernelSegmentInfo)

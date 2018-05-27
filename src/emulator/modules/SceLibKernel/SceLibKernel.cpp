@@ -24,6 +24,7 @@
 #include <kernel/functions.h>
 #include <kernel/thread/sync_primitives.h>
 #include <kernel/thread/thread_functions.h>
+#include <kernel/types.h>
 #include <rtc/rtc.h>
 #include <util/log.h>
 
@@ -355,7 +356,7 @@ EXPORT(int, sceIoLseekAsync) {
 
 EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
     if (file == nullptr) {
-        return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     LOG_INFO("Opening file: {}", file);
     return open_file(host.io, file, flags, host.pref_path.c_str(), export_name);
@@ -366,7 +367,9 @@ EXPORT(int, sceIoOpenAsync) {
 }
 
 EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
-    seek_file(fd, offset, SEEK_SET, host.io, export_name);
+    if (seek_file(fd, offset, SEEK_SET, host.io, export_name) < 0) {
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    }
     return read_file(data, host.io, fd, size, export_name);
 }
 
@@ -375,7 +378,9 @@ EXPORT(int, sceIoPreadAsync) {
 }
 
 EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
-    seek_file(fd, offset, SEEK_SET, host.io, export_name);
+    if (seek_file(fd, offset, SEEK_SET, host.io, export_name) < 0) {
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    }
     return write_file(fd, data, size, host.io, export_name);
 }
 
@@ -385,7 +390,7 @@ EXPORT(int, sceIoPwriteAsync) {
 
 EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
-        return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     return remove_file(host.io, path, host.pref_path.c_str(), export_name);
 }
@@ -404,7 +409,7 @@ EXPORT(int, sceIoRenameAsync) {
 
 EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
-        return RET_ERROR(0x80010016); // SCE_ERROR_ERRNO_EINVAL, missing in vita-headers
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     return remove_dir(host.io, path, host.pref_path.c_str(), export_name);
 }
@@ -1011,6 +1016,8 @@ EXPORT(int, sceKernelGetTimerTime) {
 EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
     SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str(), export_name);
     int size = seek_file(file, 0, SEEK_END, host.io, export_name);
+    if (size < 0)
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     void *data = malloc(size);
     Ptr<const void> entry_point;
 
