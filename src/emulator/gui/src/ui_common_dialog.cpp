@@ -64,7 +64,7 @@ void DrawMessageDialog(HostState &host) {
     ImGui::SetNextWindowPosCenter();
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("Message Dialog");
-    ImGui::Text(host.gui.common_dialog.msg.message.c_str());
+    ImGui::Text("%s", host.gui.common_dialog.msg.message.c_str());
     for (int i = 0; i < host.gui.common_dialog.msg.btn_num; i++) {
         if (ImGui::Button(host.gui.common_dialog.msg.btn[i].c_str())) {
             host.gui.common_dialog.msg.status = host.gui.common_dialog.msg.btn_val[i];
