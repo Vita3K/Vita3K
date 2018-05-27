@@ -64,7 +64,7 @@ int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_
     }
 
     if (inserted) {
-        LOG_ERROR("{} returned {} ({:#x})", name, error_str, error_val);
+        LOG_ERROR("{} returned {} ({})", name, error_str, log_hex(error_val));
     }
 
     return error_val;

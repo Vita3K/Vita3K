@@ -448,7 +448,7 @@ namespace texture {
             return GL_INT_2_10_10_10_REV;
         }
 
-        LOG_WARN("Unhandled base format {:#x}", base_format);
+        LOG_WARN("Unhandled base format {}", log_hex(base_format));
         return GL_UNSIGNED_BYTE;
     }
 

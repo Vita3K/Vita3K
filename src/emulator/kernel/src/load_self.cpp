@@ -72,7 +72,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         const ExportNids::iterator export_address = kernel.export_nids.find(nid);
         if (export_address == kernel.export_nids.end()) {
             const char *const name = import_name(nid);
-            LOG_ERROR("\tNID NOT FOUND {} ({}) at {:#x}: {}", log_hex(nid), name, entry.address(), log_hex(stub[0]));
+            LOG_ERROR("\tNID NOT FOUND {} ({}) at {}: {}", log_hex(nid), name, log_hex(entry.address()), log_hex(stub[0]));
             continue;
         }
         uint32_t *const export_ptr = Ptr<uint32_t>(export_address->second).get(mem);
@@ -215,14 +215,14 @@ static bool load_var_exports(Ptr<const void> &entry_point, const uint32_t *nids,
         }
 
         if (nid == 0x936c8a78) {
-            LOG_DEBUG("\tNID {} (SYSLYB) at {:#x}", log_hex(nid), log_hex(entry.address()));
+            LOG_DEBUG("\tNID {} (SYSLYB) at {}", log_hex(nid), log_hex(entry.address()));
             continue;
         }
 
         if (LOG_EXPORTS) {
             const char *const name = import_name(nid);
 
-            LOG_DEBUG("\tNID {} ({}) at {:#x}", log_hex(nid), name, log_hex(entry.address()));
+            LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
         }
 
         kernel.export_nids.emplace(nid, entry.address());
