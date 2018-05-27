@@ -1,5 +1,7 @@
 #pragma once
 
+#define UNWRAP(x) x
+
 #define CONCATENATE_DETAIL(x, y) x##y
 #define CONCATENATE(x, y) CONCATENATE_DETAIL(x, y)
 
