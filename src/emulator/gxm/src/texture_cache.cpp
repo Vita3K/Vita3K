@@ -80,10 +80,21 @@ static size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
     return 0;
 }
 
+static const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem) {
+    const Ptr<const uint32_t> palette_ptr(texture.palette_addr << 6);
+    return palette_ptr.get(mem);
+}
+
 static TextureCacheHash hash_data(const void *data, size_t size) {
     const uint8_t *const begin = static_cast<const uint8_t *>(data);
     const uint8_t *const end = begin + size;
     return std::accumulate(begin, end, TextureCacheHash(0));
+}
+
+static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t count, const MemState &mem) {
+    const uint32_t *const palette_bytes = get_texture_palette(texture, mem);
+    const TextureCacheHash palette_hash = hash_data(palette_bytes, count * sizeof(uint32_t));
+    return palette_hash;
 }
 
 static TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
@@ -97,8 +108,16 @@ static TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const Me
     const size_t bpp = bits_per_pixel(base_format);
     const size_t size = (bpp * stride * height) / 8;
     const Ptr<const void> data(texture.data_addr << 2);
+    const TextureCacheHash data_hash = hash_data(data.get(mem), size);
     
-    return hash_data(data.get(mem), size);
+    switch (base_format) {
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+        return data_hash ^ hash_palette_data(texture, 16, mem);
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+        return data_hash ^ hash_palette_data(texture, 256, mem);
+    default:
+        return data_hash;
+    }
 }
 
 static const bool operator==(const SceGxmTexture &a, const SceGxmTexture &b) {
@@ -162,8 +181,7 @@ static void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemStat
     size_t stride = 0;
     if (texture::is_paletted_format(fmt)) {
         const auto base_format = texture::get_base_format(fmt);
-        const Ptr<const uint32_t> palette_ptr(gxm_texture.palette_addr << 6);
-        const uint32_t *const palette_bytes = palette_ptr.get(mem);
+        const uint32_t *const palette_bytes = get_texture_palette(gxm_texture, mem);
         palette_texture_pixels.resize(width * height);
         if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
             texture::palette_texture_to_rgba_8(palette_texture_pixels.data(), texture_data, width, height, palette_bytes);
@@ -195,6 +213,8 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     size_t index = 0;
     bool configure = false;
     bool upload = false;
+    // TODO Palettes are probably quicker to hash than texture data, so if we find games use palette animation this could be optimised:
+    // Skip data hash if palette hashes differ.
     const TextureCacheHash hash = hash_texture_data(gxm_texture, mem);
     
     // Try to find GXM texture in cache.
