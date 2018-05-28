@@ -22,27 +22,13 @@
 void DrawMainMenuBar(HostState &host) {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("Debug")) {
-            if (ImGui::MenuItem("Threads", nullptr, host.gui.threads_dialog)) {
-                host.gui.threads_dialog = !host.gui.threads_dialog;
-            }
-            if (ImGui::MenuItem("Semaphores", nullptr, host.gui.semaphores_dialog)) {
-                host.gui.semaphores_dialog = !host.gui.semaphores_dialog;
-            }
-            if (ImGui::MenuItem("Mutexes", nullptr, host.gui.mutexes_dialog)) {
-                host.gui.mutexes_dialog = !host.gui.mutexes_dialog;
-            }
-            if (ImGui::MenuItem("Lightweight Mutexes", nullptr, host.gui.lwmutexes_dialog)) {
-                host.gui.lwmutexes_dialog = !host.gui.lwmutexes_dialog;
-            }
-            if (ImGui::MenuItem("Condition Variables", nullptr, host.gui.condvars_dialog)) {
-                host.gui.condvars_dialog = !host.gui.condvars_dialog;
-            }
-            if (ImGui::MenuItem("Lightweight Condition Variables", nullptr, host.gui.lwcondvars_dialog)) {
-                host.gui.lwcondvars_dialog = !host.gui.lwcondvars_dialog;
-            }
-            if (ImGui::MenuItem("Event Flags", nullptr, host.gui.eventflags_dialog)) {
-                host.gui.eventflags_dialog = !host.gui.eventflags_dialog;
-            }
+            ImGui::MenuItem("Threads", nullptr, &host.gui.threads_dialog);
+            ImGui::MenuItem("Semaphores", nullptr, &host.gui.semaphores_dialog);
+            ImGui::MenuItem("Mutexes", nullptr, &host.gui.mutexes_dialog);
+            ImGui::MenuItem("Lightweight Mutexes", nullptr, &host.gui.lwmutexes_dialog);
+            ImGui::MenuItem("Condition Variables", nullptr, &host.gui.condvars_dialog);
+            ImGui::MenuItem("Lightweight Condition Variables", nullptr, &host.gui.lwcondvars_dialog);
+            ImGui::MenuItem("Event Flags", nullptr, &host.gui.eventflags_dialog);
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
