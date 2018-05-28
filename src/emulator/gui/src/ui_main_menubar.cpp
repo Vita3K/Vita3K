@@ -31,6 +31,11 @@ void DrawMainMenuBar(HostState &host) {
             ImGui::MenuItem("Event Flags", nullptr, &host.gui.eventflags_dialog);
             ImGui::EndMenu();
         }
+        
+        if (ImGui::BeginMenu("Optimisation")) {
+            ImGui::MenuItem("Texture Cache", nullptr, &host.gui.texture_cache);
+            ImGui::EndMenu();
+        }
         ImGui::EndMainMenuBar();
     }
 }

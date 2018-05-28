@@ -207,8 +207,15 @@ bool init(TextureCacheState &cache) {
     return cache.textures.init(&glGenTextures, &glDeleteTextures);
 }
 
-void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
+void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem, bool enabled) {
     GXM_PROFILE(__func__);
+    
+    if (!enabled) {
+        glBindTexture(GL_TEXTURE_2D, cache.textures[0]);
+        configure_bound_texture(gxm_texture);
+        upload_bound_texture(gxm_texture, mem);
+        return;
+    }
     
     size_t index = 0;
     bool configure = false;

@@ -1154,7 +1154,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     assert(texture != nullptr);
 
     glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
-    cache_and_bind_texture(context->texture_cache, *texture, host.mem);
+    cache_and_bind_texture(context->texture_cache, *texture, host.mem, host.gui.texture_cache);
 
     return 0;
 }

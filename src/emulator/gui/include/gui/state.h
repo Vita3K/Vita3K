@@ -31,6 +31,7 @@ struct GamesSelector {
 };
 
 struct GuiState {
+    // Debug menu
     bool renderer_focused = true;
     bool threads_dialog = false;
     bool semaphores_dialog = false;
@@ -39,6 +40,9 @@ struct GuiState {
     bool mutexes_dialog = false;
     bool lwmutexes_dialog = false;
     bool eventflags_dialog = false;
+    
+    // Optimisation menu
+    bool texture_cache = false;
 
     DialogState common_dialog;
     GamesSelector game_selector;
