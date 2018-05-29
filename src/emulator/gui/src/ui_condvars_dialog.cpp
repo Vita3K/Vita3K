@@ -31,7 +31,7 @@ void DrawCondvarsDialog(HostState &host) {
 
     for (auto condvar : host.kernel.condvars) {
         std::shared_ptr<Condvar> sema_state = condvar.second;
-        ImGui::Text("0x%08X       %-32s   %02d             %02u",
+        ImGui::Text("0x%08X       %-32s   %02d             %02zu",
             condvar.first,
             sema_state->name,
             sema_state->attr,
@@ -48,7 +48,7 @@ void DrawLwCondvarsDialog(HostState &host) {
 
     for (auto condvar : host.kernel.lwcondvars) {
         std::shared_ptr<Condvar> sema_state = condvar.second;
-        ImGui::Text("0x%08X       %-32s   %02d             %02u",
+        ImGui::Text("0x%08X       %-32s   %02d             %02zu",
             condvar.first,
             sema_state->name,
             sema_state->attr,
