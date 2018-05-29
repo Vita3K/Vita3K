@@ -20,12 +20,18 @@
 #include <audio/state.h>
 #include <util/log.h>
 
+#include <microprofile.h>
+
 #include <cassert>
 #include <cstring>
+
+#define AUDIO_PROFILE(name) MICROPROFILE_SCOPEI("Audio", name, MP_THISTLE)
 
 static const int stream_put_granularity = 512;
 
 static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
+    AUDIO_PROFILE(__func__);
+    
     int available_to_get = SDL_AudioStreamAvailable(port.callback.stream.get());
     assert(available_to_get >= 0);
 
@@ -60,6 +66,8 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
 }
 
 static void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
+    AUDIO_PROFILE(__func__);
+    
     assert(userdata != nullptr);
     assert(stream != nullptr);
     AudioState &state = *static_cast<AudioState *>(userdata);
