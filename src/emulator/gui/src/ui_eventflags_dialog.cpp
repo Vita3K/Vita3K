@@ -30,7 +30,7 @@ void DrawEventFlagsDialog(HostState &host) {
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     for (auto event : host.kernel.eventflags) {
         std::shared_ptr<EventFlag> event_state = event.second;
-        ImGui::Text("0x%08X       %-32s  %02d        %01d         %02u                 ",
+        ImGui::Text("0x%08X       %-32s  %02d        %01d         %02zu                 ",
             event.first,
             event_state->name,
             event_state->flags,

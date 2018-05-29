@@ -31,7 +31,7 @@ void DrawSemaphoresDialog(HostState &host) {
 
     for (auto semaphore : host.kernel.semaphores) {
         std::shared_ptr<Semaphore> sema_state = semaphore.second;
-        ImGui::Text("0x%08X       %-32s   %02d/%02d              %02u",
+        ImGui::Text("0x%08X       %-32s   %02d/%02d              %02zu",
             semaphore.first,
             sema_state->name,
             sema_state->val,
