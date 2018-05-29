@@ -46,7 +46,7 @@ struct DisplayState {
             : width(w)
             , height(h) {}
 
-        Size &operator+(const Size &rhs) const {
+        Size operator+(const Size &rhs) const {
             Size _size(this->width + rhs.width, this->height + rhs.height);
             return _size;
         }
