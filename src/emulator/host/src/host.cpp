@@ -129,6 +129,12 @@ bool init(HostState &state) {
         return false;
     }
 
+    // Try adaptive vsync first, falling back to regular vsync.
+    if (SDL_GL_SetSwapInterval(-1) < 0) {
+        SDL_GL_SetSwapInterval(1);
+    }
+    LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
+    
     const glbinding::GetProcAddress get_proc_address = [](const char *name) {
         return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
     };
