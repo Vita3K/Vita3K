@@ -2,8 +2,6 @@
 
 #include <util/log.h>
 
-#define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
-
 // SceGxmTextureSwizzle1Mode
 static const GLenum swizzle_r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ONE };
 static const GLenum swizzle_000r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ZERO };

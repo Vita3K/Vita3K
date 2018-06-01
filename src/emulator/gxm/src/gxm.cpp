@@ -1,5 +1,7 @@
 #include <gxm/functions.h>
 
+#include "profile.h"
+
 #include <crypto/hash.h>
 #include <gxm/types.h>
 #include <util/log.h>
@@ -12,8 +14,6 @@
 #include <cstring> // memcmp
 #include <fstream>
 #include <sstream>
-
-#define GXM_PROFILE(name) MICROPROFILE_SCOPEI("GXM", name, MP_BLUE)
 
 static std::string load_shader(const char *hash, const char *extension, const char *base_path) {
     std::ostringstream path;
