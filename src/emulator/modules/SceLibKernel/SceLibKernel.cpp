@@ -842,8 +842,8 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
     if (cpu_affinity_mask > 0x70000) {
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
-    const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
-        ::call_import(host, nid, thread_id);
+    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID thread_id) {
+        ::call_import(host, cpu, nid, thread_id);
     };
 
     const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, stack_size, call_import, false);
@@ -1056,8 +1056,8 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     const SceKernelModuleInfoPtrs::const_iterator module = host.kernel.loaded_modules.find(modId);
     assert(module != host.kernel.loaded_modules.end());
 
-    const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
-        ::call_import(host, nid, thread_id);
+    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID thread_id) {
+        ::call_import(host, cpu, nid, thread_id);
     };
 
     const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->second.get()->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, call_import, false);

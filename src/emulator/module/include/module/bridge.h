@@ -23,14 +23,8 @@
 
 #include <host/import_fn.h>
 #include <host/state.h>
-#include <kernel/thread/thread_state.h>
-#include <util/lock_and_find.h>
 
 #include <microprofile.h>
-
-#include <cassert>
-
-struct CPUState;
 
 // Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>
@@ -49,13 +43,10 @@ template <typename Ret, typename... Args>
 ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name) {
     constexpr ArgsLayout<Args...> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
 
-    return [export_fn, export_name, args_layout](HostState &host, SceUID thread_id) {
+    return [export_fn, export_name, args_layout](HostState &host, CPUState &cpu, SceUID thread_id) {
         MICROPROFILE_SCOPEI("HLE", export_name, MP_YELLOW);
 
-        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        assert(thread);
-
         using Indices = std::index_sequence_for<Args...>;
-        call(export_fn, export_name, args_layout, Indices(), thread_id, *thread->cpu, host);
+        call(export_fn, export_name, args_layout, Indices(), thread_id, cpu, host);
     };
 }

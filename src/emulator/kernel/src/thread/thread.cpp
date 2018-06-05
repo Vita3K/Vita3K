@@ -73,10 +73,10 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const Address stack_top = thread->stack->get() + stack_size;
     memset(Ptr<void>(thread->stack->get()).get(mem), 0xcc, stack_size);
 
-    const CallSVC call_svc = [call_import, thid, &mem](uint32_t imm, Address pc) {
+    const CallSVC call_svc = [call_import, thid, &mem](CPUState &cpu, uint32_t imm, Address pc) {
         assert(imm == 0);
         const uint32_t nid = *Ptr<uint32_t>(pc + 4).get(mem);
-        call_import(nid, thid);
+        call_import(cpu, nid, thid);
     };
 
     thread->cpu = init_cpu(entry_point.address(), stack_top, log_code, call_svc, mem);

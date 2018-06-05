@@ -27,7 +27,7 @@
 struct CPUState;
 struct ThreadState;
 
-typedef std::function<void(uint32_t, SceUID)> CallImport;
+typedef std::function<void(CPUState &, uint32_t, SceUID)> CallImport;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 
 SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stackSize, CallImport call_import, bool log_code);

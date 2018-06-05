@@ -263,8 +263,8 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
 }
 
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
-    const CallImport call_import = [&host](uint32_t nid, SceUID main_thread_id) {
-        ::call_import(host, nid, main_thread_id);
+    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
+        ::call_import(host, cpu, nid, main_thread_id);
     };
 
     const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_MAIN, call_import, false);

@@ -629,8 +629,8 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
 
     const ThreadStatePtr main_thread = find(thread_id, host.kernel.threads);
 
-    const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
-        ::call_import(host, nid, thread_id);
+    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID thread_id) {
+        ::call_import(host, cpu, nid, thread_id);
     };
 
     const auto stack_size = SCE_KERNEL_STACK_SIZE_USER_DEFAULT; // TODO: Verify this is the correct stack size

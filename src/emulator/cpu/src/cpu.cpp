@@ -104,14 +104,14 @@ static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
         err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
         assert(err == UC_ERR_OK);
         const uint8_t imm = svc_instruction & 0xff;
-        state.call_svc(imm, pc);
+        state.call_svc(state, imm, pc);
     } else {
         const Address svc_address = pc - 4;
         uint32_t svc_instruction = 0;
         err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
         assert(err == UC_ERR_OK);
         const uint32_t imm = svc_instruction & 0xffffff;
-        state.call_svc(imm, pc);
+        state.call_svc(state, imm, pc);
     }
 }
 
