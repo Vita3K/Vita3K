@@ -18,6 +18,7 @@
 #pragma once
 
 #include "args_layout.h"
+
 #include <tuple>
 
 struct LayoutArgsState {
@@ -98,7 +99,7 @@ constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
     state = std::get<1>(result);
 
     // Recursively add the remaining arguments.
-    if constexpr (sizeof...(Tail) > 0) {
+    if (sizeof...(Tail) > 0) {
         add_args_to_layout<Tail...>(*(&head + 1), state);
     }
 }
@@ -106,7 +107,7 @@ constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
 template <typename... Args>
 constexpr ArgsLayout<Args...> lay_out() {
     ArgsLayout<Args...> layout = {};
-    if constexpr (sizeof...(Args) > 0) {
+    if (sizeof...(Args) > 0) {
         LayoutArgsState state = {};
         add_args_to_layout<Args...>(*layout.data(), state);
     }
