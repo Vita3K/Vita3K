@@ -19,13 +19,13 @@
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
-#include <util/log.h>
-
-#include <glbinding/Binding.h>
 
 #include <cpu/functions.h>
 #include <host/functions.h>
 #include <kernel/thread/thread_functions.h>
+#include <util/log.h>
+
+#include <glbinding/Binding.h>
 #include <psp2/kernel/error.h>
 
 #include <algorithm>
