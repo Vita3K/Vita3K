@@ -18,6 +18,7 @@
 #include "SceGxm.h"
 
 #include <gxm/functions.h>
+#include <gxm/texture_cache_functions.h>
 #include <gxm/types.h>
 
 #include <cpu/functions.h>
@@ -246,7 +247,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
 
-    if (!ctx->texture.init(glGenTextures, glDeleteTextures) || !ctx->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !ctx->element_buffer.init(glGenBuffers, glDeleteBuffers) || !ctx->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
+    if (!init(ctx->texture_cache) || !ctx->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !ctx->element_buffer.init(glGenBuffers, glDeleteBuffers) || !ctx->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
         free(host.mem, *context);
         context->reset();
 
@@ -522,6 +523,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     }
 
     host.gxm.isInScene = false;
+    ++context->texture_cache.timestamp;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -1153,52 +1155,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     assert(texture != nullptr);
 
     glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
-    glBindTexture(GL_TEXTURE_2D, context->texture[0]);
-
-    // Disable mip-maps
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-    SceGxmTextureFormat fmt = texture::get_format(texture);
-    unsigned int width = texture::get_width(texture);
-    unsigned int height = texture::get_height(texture);
-    const Ptr<const uint8_t> data(texture->data_addr << 2);
-    SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(texture->uaddr_mode);
-    SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(texture->vaddr_mode);
-
-    const uint8_t *const texture_data = data.get(host.mem);
-    std::vector<uint32_t> palette_texture_pixels; // TODO Move to context to avoid frequent allocation?
-    const void *pixels = nullptr;
-    size_t stride = 0;
-    if (texture::is_paletted_format(fmt)) {
-        const auto base_format = texture::get_base_format(fmt);
-        const Ptr<const uint32_t> palette_ptr(texture->palette_addr << 6);
-        const uint32_t *const palette_bytes = palette_ptr.get(host.mem);
-        palette_texture_pixels.resize(width * height);
-        if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
-            texture::palette_texture_to_rgba_8(palette_texture_pixels.data(), texture_data, width, height, palette_bytes);
-        } else {
-            texture::palette_texture_to_rgba_4(palette_texture_pixels.data(), texture_data, width, height, palette_bytes);
-        }
-        pixels = palette_texture_pixels.data();
-        stride = width;
-    } else {
-        pixels = texture_data;
-        stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
-    }
-
-    const GLenum internal_format = texture::translate_internal_format(fmt);
-    const GLenum format = texture::translate_format(fmt);
-    const GLenum type = texture::translate_type(fmt);
-    const GLenum *const swizzle = texture::translate_swizzle(fmt);
-
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, pixels);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture::translate_wrap_mode(uaddr));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture::translate_wrap_mode(vaddr));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->min_filter));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)texture->mag_filter));
-    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    cache_and_bind_texture(context->texture_cache, *texture, host.mem, host.gui.texture_cache);
 
     return 0;
 }
