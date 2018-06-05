@@ -26,6 +26,7 @@
 #include <kernel/thread/thread_functions.h>
 #include <kernel/types.h>
 #include <rtc/rtc.h>
+#include <util/lock_and_find.h>
 #include <util/log.h>
 
 #include <kernel/load_self.h>
