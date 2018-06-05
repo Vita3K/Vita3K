@@ -42,7 +42,7 @@ struct GuiState {
     bool eventflags_dialog = false;
     
     // Optimisation menu
-    bool texture_cache = false;
+    bool texture_cache = true;
 
     DialogState common_dialog;
     GamesSelector game_selector;
