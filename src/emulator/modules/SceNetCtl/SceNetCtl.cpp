@@ -22,6 +22,8 @@
 #define s_addr s_addr
 #endif
 #include <kernel/thread/thread_functions.h>
+#include <util/lock_and_find.h>
+
 #include <psp2/net/netctl.h>
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {

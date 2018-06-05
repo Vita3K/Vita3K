@@ -25,7 +25,7 @@
 struct CPUState;
 struct MemState;
 
-typedef std::function<void(uint32_t, Address)> CallSVC;
+typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 
 CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem);

@@ -20,13 +20,14 @@
 #include <gxm/functions.h>
 #include <gxm/texture_cache_functions.h>
 #include <gxm/types.h>
-#include <util/log.h>
-
-#include <glbinding/Binding.h>
 
 #include <cpu/functions.h>
 #include <host/functions.h>
 #include <kernel/thread/thread_functions.h>
+#include <util/lock_and_find.h>
+#include <util/log.h>
+
+#include <glbinding/Binding.h>
 #include <psp2/kernel/error.h>
 
 #include <algorithm>
@@ -630,8 +631,8 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
 
     const ThreadStatePtr main_thread = find(thread_id, host.kernel.threads);
 
-    const CallImport call_import = [&host](uint32_t nid, SceUID thread_id) {
-        ::call_import(host, nid, thread_id);
+    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID thread_id) {
+        ::call_import(host, cpu, nid, thread_id);
     };
 
     const auto stack_size = SCE_KERNEL_STACK_SIZE_USER_DEFAULT; // TODO: Verify this is the correct stack size

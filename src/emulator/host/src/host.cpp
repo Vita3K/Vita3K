@@ -218,7 +218,7 @@ Address resolve_export(KernelState &kernel, uint32_t nid) {
     return export_address->second;
 }
 
-void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
+void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id) {
     Address export_pc = resolve_export(host.kernel, nid);
 
     if (!export_pc) {
@@ -230,7 +230,7 @@ void call_import(HostState &host, uint32_t nid, SceUID thread_id) {
         }
         const ImportFn fn = resolve_import(nid);
         if (fn) {
-            fn(host, thread_id);
+            fn(host, cpu, thread_id);
         }
     } else {
         // LLE - directly run ARM code imported from some loaded module
