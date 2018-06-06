@@ -44,7 +44,7 @@
 
 // SDL,GL3W
 #include <SDL.h>
-#include <SDL_syswm.h>
+#include <SDL2/SDL_syswm.h>
 #include <glutil/gl.h>
 
 // SDL data

@@ -20,8 +20,8 @@
 #include <psp2/ctrl.h>
 #include <psp2/kernel/error.h>
 
-#include <SDL_gamecontroller.h>
-#include <SDL_keyboard.h>
+#include <SDL2/SDL_gamecontroller.h>
+#include <SDL2/SDL_keyboard.h>
 
 #include <algorithm>
 #include <array>

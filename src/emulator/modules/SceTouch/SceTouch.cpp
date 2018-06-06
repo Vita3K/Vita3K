@@ -19,8 +19,8 @@
 
 #include <psp2/touch.h>
 
-#include <SDL_mouse.h>
-#include <SDL_video.h>
+#include <SDL2/SDL_mouse.h>
+#include <SDL2/SDL_video.h>
 
 // TODO Move elsewhere.
 static uint64_t timestamp;
