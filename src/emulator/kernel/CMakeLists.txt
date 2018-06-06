@@ -18,4 +18,4 @@ add_library(
 
 target_include_directories(kernel PUBLIC include)
 target_link_libraries(kernel PUBLIC module modules cpu vita-headers util)
-target_link_libraries(kernel PRIVATE sdl2 elfio miniz nids vita-toolchain)
+target_link_libraries(kernel PRIVATE CONAN_PKG::sdl2 elfio miniz nids vita-toolchain)
