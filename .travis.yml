@@ -58,6 +58,7 @@ matrix:
 script:
 - mkdir build
 - cd build/
+- conan install --build missing ../src/external
 - ${CMAKE} -DCMAKE_BUILD_TYPE=Release ..
 - make -j4
 - make CTEST_OUTPUT_ON_FAILURE=1 test
