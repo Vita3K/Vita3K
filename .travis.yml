@@ -6,6 +6,7 @@ matrix:
       osx_image: xcode9.3
       before_script:
       - export CMAKE=cmake
+      - brew install conan
       before_deploy:
       - git config --global user.email "builds@travis-ci.com"
       - git config --global user.name "Travis CI"
