@@ -7,7 +7,6 @@ matrix:
       before_script:
       - export CMAKE=cmake
       - brew install conan
-      - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
       before_deploy:
       - git config --global user.email "builds@travis-ci.com"
       - git config --global user.name "Travis CI"
@@ -43,6 +42,7 @@ matrix:
       - export CMAKE=$(pwd)/bin/cmake
       - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
       - ld -v
+      - pip install conan
       before_deploy:
       - git config --global user.email "builds@travis-ci.com"
       - git config --global user.name "Travis CI"
@@ -56,7 +56,10 @@ matrix:
         on:
           repo: Vita3K/Vita3K
           tags: false
-      
+
+before_script:
+- conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
+
 script:
 - mkdir build
 - cd build/
