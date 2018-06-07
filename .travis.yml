@@ -4,9 +4,11 @@ matrix:
   include:
     - os: osx
       osx_image: xcode9.3
+      env: CONAN_COMPILER=apple-clang
       before_script:
       - export CMAKE=cmake
       - brew install conan
+      - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
       before_deploy:
       - git config --global user.email "builds@travis-ci.com"
       - git config --global user.name "Travis CI"
@@ -22,6 +24,7 @@ matrix:
           tags: false
     - os: linux
       dist: trusty
+      env: CONAN_COMPILER=gcc
       addons:
         apt:
           sources:
@@ -43,6 +46,7 @@ matrix:
       - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
       - ld -v
       - pip install conan
+      - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
       before_deploy:
       - git config --global user.email "builds@travis-ci.com"
       - git config --global user.name "Travis CI"
@@ -57,13 +61,10 @@ matrix:
           repo: Vita3K/Vita3K
           tags: false
 
-before_script:
-- conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
-
 script:
 - mkdir build
 - cd build/
-- conan install --build missing ../src/external
+- conan install --build missing --settings compiler=${CONAN_COMPILER} ../src/external
 - ${CMAKE} -DCMAKE_BUILD_TYPE=Release ..
 - make -j4
 - make CTEST_OUTPUT_ON_FAILURE=1 test
