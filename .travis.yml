@@ -44,7 +44,7 @@ matrix:
       - export CMAKE=$(pwd)/bin/cmake
       - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
       - ld -v
-      - pip install conan
+      - pip install --user conan
       - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
       before_deploy:
       - git config --global user.email "builds@travis-ci.com"
