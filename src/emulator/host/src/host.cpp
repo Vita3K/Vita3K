@@ -33,9 +33,9 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <SDL_events.h>
-#include <SDL_filesystem.h>
-#include <SDL_video.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_filesystem.h>
+#include <SDL2/SDL_video.h>
 
 #include <glbinding-aux/types_to_string.h>
 #include <glbinding/Binding.h>

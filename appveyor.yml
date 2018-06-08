@@ -11,6 +11,8 @@ install:
     $env:AVVER = "{0}-{1}" -f $commit_tag, $env:APPVEYOR_BUILD_NUMBER
     $env:BUILD = "Vita3K-{0}-{1}-{2}_win64.7z" -f $commit_tag, $commit_date, $commit_sha
  - git submodule update --init --recursive
+ - pip install conan
+ - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
  - gen.bat
 
 # Set target platform

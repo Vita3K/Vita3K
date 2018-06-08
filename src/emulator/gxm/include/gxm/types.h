@@ -7,7 +7,7 @@
 #include <glutil/object_array.h>
 #include <mem/ptr.h>
 
-#include <SDL_video.h>
+#include <SDL2/SDL_video.h>
 #include <psp2/gxm.h>
 #include <rpcs3/BitField.h>
 

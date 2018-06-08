@@ -27,7 +27,7 @@
 #include <util/lock_and_find.h>
 #include <util/resource.h>
 
-#include <SDL_thread.h>
+#include <SDL2/SDL_thread.h>
 
 #include <cassert>
 #include <cstring>

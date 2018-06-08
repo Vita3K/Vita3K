@@ -4,4 +4,4 @@ add_library(
 )
 
 target_include_directories(ctrl INTERFACE include)
-target_link_libraries(ctrl INTERFACE sdl2)
+target_link_libraries(ctrl INTERFACE CONAN_PKG::sdl2)

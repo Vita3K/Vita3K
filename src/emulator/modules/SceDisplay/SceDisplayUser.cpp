@@ -19,8 +19,8 @@
 
 #include <host/version.h>
 
-#include <SDL_timer.h>
-#include <SDL_video.h>
+#include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_video.h>
 #include <psp2/display.h>
 
 #include <sstream>

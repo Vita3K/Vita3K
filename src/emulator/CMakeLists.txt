@@ -85,8 +85,7 @@ if(APPLE)
 	add_custom_command(
 		TARGET emulator
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/../Resources/shaders"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/src/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:emulator>/../Frameworks/SDL2.framework")
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/../Resources/shaders")
 	set_target_properties(emulator PROPERTIES LINK_FLAGS "-rpath @executable_path/../Frameworks/")
 	target_sources(emulator PRIVATE Vita3K.icns)
 	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
@@ -101,7 +100,6 @@ elseif(WIN32)
 		TARGET emulator
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/shaders"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/sdl/windows/lib/x64/SDL2.dll" "$<TARGET_FILE_DIR:emulator>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/unicorn/windows/unicorn.dll" "$<TARGET_FILE_DIR:emulator>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/unicorn/windows/libgcc_s_seh-1.dll" "$<TARGET_FILE_DIR:emulator>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/unicorn/windows/libwinpthread-1.dll" "$<TARGET_FILE_DIR:emulator>")

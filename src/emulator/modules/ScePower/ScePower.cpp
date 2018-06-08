@@ -17,7 +17,7 @@
 
 #include "ScePower.h"
 
-#include <SDL_power.h>
+#include <SDL2/SDL_power.h>
 #include <psp2/power.h>
 
 #include <climits>

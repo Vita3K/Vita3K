@@ -21,7 +21,7 @@
 #include <kernel/functions.h>
 #include <kernel/thread/sync_primitives.h>
 
-#include <SDL_timer.h>
+#include <SDL2/SDL_timer.h>
 #include <psp2/kernel/error.h>
 
 EXPORT(int, sceKernelCancelCallback) {

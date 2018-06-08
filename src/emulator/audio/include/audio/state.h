@@ -26,7 +26,7 @@
 
 #include <psp2/types.h>
 
-#include <SDL_audio.h>
+#include <SDL2/SDL_audio.h>
 
 typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
 typedef std::function<void(SceUID)> ResumeAudioThread;
