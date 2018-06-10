@@ -1,3 +1,5 @@
+include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
+
 function(check_submodules_present)
     file(READ "${CMAKE_SOURCE_DIR}/.gitmodules" gitmodules)
     string(REGEX MATCHALL "path *= *[^ \t\r\n]*" gitmodules ${gitmodules})
@@ -93,15 +95,46 @@ endif()
 
 # unicorn
 add_library(unicorn INTERFACE)
+target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/include")
 if(APPLE)
-	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/macos/include")
-	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/macos/lib/libunicorn.a")
-elseif(WIN32)
-	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/windows/include")
-	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/windows/unicorn.lib")
+	externalproject_add(
+		unicorn_build
+		SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
+		BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
+		CONFIGURE_COMMAND ""
+		BUILD_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/make.sh"
+		INSTALL_COMMAND "")
+	add_dependencies(unicorn unicorn_build)
+	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/libunicorn.a")
+elseif(MSVC)
+	if(CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION)
+		set(WINDOWS_SDK_VERSION ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION})
+	else()
+		set(WINDOWS_SDK_VERSION ${CMAKE_SYSTEM_VERSION})
+	endif()
+	externalproject_add(
+		unicorn_build
+		SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
+		CONFIGURE_COMMAND ""
+		BUILD_COMMAND "${CMAKE_VS_MSBUILD_COMMAND}" "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/msvc/unicorn.sln" /t:unicorn /p:PlatformToolset=${CMAKE_VS_PLATFORM_TOOLSET}
+		              /p:WindowsTargetPlatformVersion=${WINDOWS_SDK_VERSION} /p:Platform=${CMAKE_VS_PLATFORM_NAME}
+		              $<$<CONFIG:Debug>:/p:Configuration=Debug> $<$<NOT:$<CONFIG:Debug>>:/p:Configuration=Release>
+		INSTALL_COMMAND "")
+	add_dependencies(unicorn unicorn_build)
+	target_link_libraries(
+		unicorn INTERFACE
+		debug "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/msvc/${CMAKE_VS_PLATFORM_NAME}/Debug/unicorn.lib"
+		optimized "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/msvc/${CMAKE_VS_PLATFORM_NAME}/Release/unicorn.lib")
 elseif(UNIX)
-	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/unix/include")
-	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/unix/lib/libunicorn.a")
+	externalproject_add(
+		unicorn_build
+		SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
+		BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
+		CONFIGURE_COMMAND ""
+		BUILD_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/make.sh"
+		INSTALL_COMMAND "")
+	add_dependencies(unicorn unicorn_build)
+	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/libunicorn.a")
 else()
 	find_package(PkgConfig)
 	pkg_check_modules(UNICORN REQUIRED unicorn)
