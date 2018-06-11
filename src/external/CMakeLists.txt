@@ -102,7 +102,7 @@ if(UNIX)
 		SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
 		BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
 		CONFIGURE_COMMAND ""
-		BUILD_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/make.sh"
+		BUILD_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/unicorn-build.sh"
 		INSTALL_COMMAND "")
 	add_dependencies(unicorn unicorn_build)
 	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/libunicorn.a")
