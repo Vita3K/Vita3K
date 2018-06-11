@@ -96,7 +96,7 @@ endif()
 # unicorn
 add_library(unicorn INTERFACE)
 target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/include")
-if(APPLE)
+if(UNIX)
 	externalproject_add(
 		unicorn_build
 		SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
@@ -125,16 +125,6 @@ elseif(MSVC)
 		unicorn INTERFACE
 		debug "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/msvc/${CMAKE_VS_PLATFORM_NAME}/Debug/unicorn.lib"
 		optimized "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/msvc/${CMAKE_VS_PLATFORM_NAME}/Release/unicorn.lib")
-elseif(UNIX)
-	externalproject_add(
-		unicorn_build
-		SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
-		BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn"
-		CONFIGURE_COMMAND ""
-		BUILD_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/make.sh"
-		INSTALL_COMMAND "")
-	add_dependencies(unicorn unicorn_build)
-	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/libunicorn.a")
 else()
 	find_package(PkgConfig)
 	pkg_check_modules(UNICORN REQUIRED unicorn)
