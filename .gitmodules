@@ -40,3 +40,6 @@
 [submodule "src/emulator/shaders-db"]
 	path = src/emulator/shaders-db
 	url = https://github.com/Vita3K/shaders-db.git
+[submodule "src/external/unicorn"]
+	path = src/external/unicorn
+	url = https://github.com/unicorn-engine/unicorn.git
