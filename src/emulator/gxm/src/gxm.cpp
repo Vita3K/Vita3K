@@ -274,8 +274,10 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     glsl << "#version 410\n";
     output_glsl_parameters(glsl, program);
     glsl << "\n";
+    glsl << "out vec4 fragColor;\n";
+    glsl << "\n";
     glsl << "void main() {\n";
-    glsl << "    gl_FragColor = vec4(0, 1, 0, 1);\n";
+    glsl << "    fragColor = vec4(0, 1, 0, 1);\n";
     glsl << "}\n";
 
     return glsl.str();
