@@ -102,7 +102,7 @@ elseif(WIN32)
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/shaders"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/sdl/windows/lib/x64/SDL2.dll" "$<TARGET_FILE_DIR:emulator>"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<$<CONFIG:Debug>:"${PROJECT_SOURCE_DIR}/src/external/unicorn/msvc/${CMAKE_VS_PLATFORM_NAME}/Debug/unicorn.dll">
-		                                              $<$<NOT:$<CONFIG:Debug>>:"${PROJECT_SOURCE_DIR}/src/external/unicorn/msvc/${CMAKE_VS_PLATFORM_NAME}/Release/unicorn.dll">
-		                                              "$<TARGET_FILE_DIR:emulator>")
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/unicorn/windows/unicorn.dll" "$<TARGET_FILE_DIR:emulator>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/unicorn/windows/libgcc_s_seh-1.dll" "$<TARGET_FILE_DIR:emulator>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/unicorn/windows/libwinpthread-1.dll" "$<TARGET_FILE_DIR:emulator>")
 endif()
