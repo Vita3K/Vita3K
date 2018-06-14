@@ -483,7 +483,7 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
         return cached->second;
     }
 
-    const std::array<char, 65> hash_text = hex(hash_bytes);
+    const Sha256HashText hash_text = hex(hash_bytes);
     std::string source = load_shader(hash_text.data(), "frag", base_path);
     if (source.empty()) {
         LOG_ERROR("Missing fragment shader {}", hash_text.data());
@@ -503,7 +503,7 @@ std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmPro
         return cached->second;
     }
 
-    const std::array<char, 65> hash_text = hex(hash_bytes);
+    const Sha256HashText hash_text = hex(hash_bytes);
     std::string source = load_shader(hash_text.data(), "vert", base_path);
     if (source.empty()) {
         LOG_ERROR("Missing vertex shader {}", hash_text.data());
