@@ -580,7 +580,14 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
         log.resize(log_length);
         glGetProgramInfoLog(program->get(), log_length, nullptr, log.data());
 
-        LOG_ERROR("{}", log.data());
+        const SceGxmProgram &vs_gxp = *vertex_program.program.get(mem);
+        const SceGxmProgram &fs_gxp = *fragment_program.program.get(mem);
+        const Sha256Hash vs_hash_bytes = sha256(&vs_gxp, vs_gxp.size);
+        const Sha256Hash fs_hash_bytes = sha256(&fs_gxp, fs_gxp.size);
+        const Sha256HashText vs_hash_text = hex(vs_hash_bytes);
+        const Sha256HashText fs_hash_text = hex(fs_hash_bytes);
+
+        LOG_ERROR("{}\nVS: {}\nFS: {}\n", log.data(), vs_hash_text.data(), fs_hash_text.data());
     }
 
     GLboolean is_linked = GL_FALSE;
