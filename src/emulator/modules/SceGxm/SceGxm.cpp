@@ -1476,7 +1476,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = alloc(mem, size_mask_gxp, __FUNCTION__);
-    memcpy((char *)fp->program.get(mem), mask_gxp, size_mask_gxp);
+    memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
     fp->glsl = get_fragment_glsl(*shaderPatcher, *fp->program.get(mem), host.base_path.c_str());
 
     return STUBBED("Using a null shader");
