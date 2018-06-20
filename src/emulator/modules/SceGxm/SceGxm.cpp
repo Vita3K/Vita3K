@@ -39,8 +39,8 @@ using namespace emu;
 using namespace glbinding;
 
 // clang-format off
-static unsigned int size_mask_gxp = 176;
-static unsigned char mask_gxp[] = {
+static const size_t size_mask_gxp = 176;
+static const uint8_t mask_gxp[] = {
     0x47, 0x58, 0x50, 0x00, 0x01, 0x05, 0x60, 0x03, 0xb0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x70, 0x00, 0x00, 0x00, 
@@ -323,7 +323,6 @@ EXPORT(int, sceGxmDepthStencilSurfaceGetStrideInSamples) {
 
 EXPORT(int, sceGxmDepthStencilSurfaceInit, emu::SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, unsigned int strideInSamples, Ptr<void> depthData, Ptr<void> stencilData) {
     assert(surface != nullptr);
-    assert(depthStencilFormat == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24);
     assert(surfaceType == SCE_GXM_DEPTH_STENCIL_SURFACE_TILED);
     assert(strideInSamples > 0);
     assert(depthData);
@@ -1476,7 +1475,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = alloc(mem, size_mask_gxp, __FUNCTION__);
-    memcpy((char *)fp->program.get(mem), mask_gxp, size_mask_gxp);
+    memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
     fp->glsl = get_fragment_glsl(*shaderPatcher, *fp->program.get(mem), host.base_path.c_str());
 
     return STUBBED("Using a null shader");

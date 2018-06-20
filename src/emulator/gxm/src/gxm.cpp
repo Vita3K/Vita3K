@@ -552,7 +552,7 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
         LOG_CRITICAL("Error in compiled fragment shader:\n{}", fragment_program.glsl);
         return SharedGLObject();
     }
-    const SharedGLObject vertex_shader = compile_glsl(GL_VERTEX_SHADER, vertex_program.glsl.c_str());
+    const SharedGLObject vertex_shader = compile_glsl(GL_VERTEX_SHADER, vertex_program.glsl);
     if (!vertex_shader) {
         LOG_CRITICAL("Error in compiled vertex shader:\n{}", vertex_program.glsl);
         return SharedGLObject();
