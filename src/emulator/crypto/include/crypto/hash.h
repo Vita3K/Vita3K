@@ -22,6 +22,7 @@
 using Sha256Hash = std::array<uint8_t, 32>;
 
 Sha256Hash sha256(const void *data, size_t size);
+typedef std::array<char, 65> Sha256HashText;
 
 template <size_t N>
 constexpr std::array<char, (N * 2) + 1> hex(const std::array<uint8_t, N> &hash) {

@@ -274,8 +274,10 @@ static std::string generate_fragment_glsl(const SceGxmProgram &program) {
     glsl << "#version 410\n";
     output_glsl_parameters(glsl, program);
     glsl << "\n";
+    glsl << "out vec4 fragColor;\n";
+    glsl << "\n";
     glsl << "void main() {\n";
-    glsl << "    gl_FragColor = vec4(0, 1, 0, 1);\n";
+    glsl << "    fragColor = vec4(0, 1, 0, 1);\n";
     glsl << "}\n";
 
     return glsl.str();
@@ -481,7 +483,7 @@ std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmP
         return cached->second;
     }
 
-    const std::array<char, 65> hash_text = hex(hash_bytes);
+    const Sha256HashText hash_text = hex(hash_bytes);
     std::string source = load_shader(hash_text.data(), "frag", base_path);
     if (source.empty()) {
         LOG_ERROR("Missing fragment shader {}", hash_text.data());
@@ -501,7 +503,7 @@ std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmPro
         return cached->second;
     }
 
-    const std::array<char, 65> hash_text = hex(hash_bytes);
+    const Sha256HashText hash_text = hex(hash_bytes);
     std::string source = load_shader(hash_text.data(), "vert", base_path);
     if (source.empty()) {
         LOG_ERROR("Missing vertex shader {}", hash_text.data());
@@ -578,7 +580,14 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
         log.resize(log_length);
         glGetProgramInfoLog(program->get(), log_length, nullptr, log.data());
 
-        LOG_ERROR("{}", log.data());
+        const SceGxmProgram &vs_gxp = *vertex_program.program.get(mem);
+        const SceGxmProgram &fs_gxp = *fragment_program.program.get(mem);
+        const Sha256Hash vs_hash_bytes = sha256(&vs_gxp, vs_gxp.size);
+        const Sha256Hash fs_hash_bytes = sha256(&fs_gxp, fs_gxp.size);
+        const Sha256HashText vs_hash_text = hex(vs_hash_bytes);
+        const Sha256HashText fs_hash_text = hex(fs_hash_bytes);
+
+        LOG_ERROR("{}\nVS: {}\nFS: {}\n", log.data(), vs_hash_text.data(), fs_hash_text.data());
     }
 
     GLboolean is_linked = GL_FALSE;
