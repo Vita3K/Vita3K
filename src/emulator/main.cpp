@@ -17,6 +17,7 @@
 
 #include <host/app.h>
 #include <host/functions.h>
+#include <host/screen_render.h>
 #include <host/state.h>
 #include <host/version.h>
 #include <kernel/thread/thread_functions.h>
@@ -102,21 +103,26 @@ int main(int argc, char *argv[]) {
     if (auto err = run_app(host, entry_point) != Success)
         return err;
 
-    GLuint fb_texture_id = 0;
-    host.sdl_ticks = SDL_GetTicks();
+    gl_screen_renderer gl_renderer;
+
+    if (!gl_renderer.init(host.base_path))
+        return RendererInitFailed;
+
     while (handle_events(host)) {
-        if (!fb_texture_id) {
-            no_fb_fallback(host, &fb_texture_id);
+        if (host.display.imgui_render) {
+            imgui::draw_begin(host.window);
+
+            imgui::draw_main(host, gl_renderer.get_screen_texture());
+
+            DrawUI(host);
+            DrawCommonDialog(host);
+
+            imgui::draw_end(host.window);
+        } else {
+            gl_renderer.render(host.display, host.mem);
+
+            SDL_GL_SwapWindow(host.window.get());
         }
-
-        imgui::draw_begin(host.window);
-
-        imgui::draw_main(host, fb_texture_id);
-
-        DrawUI(host);
-        DrawCommonDialog(host);
-
-        imgui::draw_end(host.window);
 
         host.display.condvar.notify_all();
 

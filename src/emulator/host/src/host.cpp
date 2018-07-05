@@ -134,7 +134,7 @@ bool init(HostState &state) {
         SDL_GL_SetSwapInterval(1);
     }
     LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
-    
+
     const glbinding::GetProcAddress get_proc_address = [](const char *name) {
         return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
     };
@@ -197,6 +197,25 @@ bool handle_events(HostState &host) {
             host.display.abort.exchange(true);
             host.display.condvar.notify_all();
             return false;
+        }
+
+        if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_g) {
+            auto &display = host.display;
+
+            // toggle gui state
+            bool old_imgui_render = display.imgui_render.load();
+            while (!display.imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
+            }
+
+            if (old_imgui_render) {
+                display.set_dims(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0, 0);
+                SDL_SetWindowResizable(host.window.get(), SDL_FALSE);
+            } else {
+                display.set_dims(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, WINDOW_BORDER_WIDTH, WINDOW_BORDER_HEIGHT);
+                SDL_SetWindowResizable(host.window.get(), SDL_TRUE);
+            }
+
+            SDL_SetWindowSize(host.window.get(), display.window_size.width, display.window_size.height);
         }
     }
 
