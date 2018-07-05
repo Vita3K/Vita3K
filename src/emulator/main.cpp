@@ -24,13 +24,12 @@
 #include <util/string_convert.h>
 
 #include <SDL.h>
-#include <glutil/gl.h>
-
-#include <algorithm> // find_if_not
-#include <cassert>
 
 #include <gui/functions.h>
 #include <gui/imgui_impl.h>
+
+#include <algorithm> // find_if_not
+#include <cassert>
 
 int main(int argc, char *argv[]) {
     init_logging();

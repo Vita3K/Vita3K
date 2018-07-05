@@ -296,13 +296,6 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     return Success;
 }
 
-void no_fb_fallback(HostState &host, GLuint *fb_texture_id) {
-    glGenTextures(1, fb_texture_id);
-    glClearColor(1.0, 0.0, 0.5, 1.0);
-    glClearDepth(1.0f);
-    glViewport(0, 0, host.display.image_size.width, host.display.image_size.height);
-}
-
 void set_window_title(HostState &host) {
     const uint32_t sdl_ticks_now = SDL_GetTicks();
     const uint32_t ms = sdl_ticks_now - host.sdl_ticks;

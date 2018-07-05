@@ -63,4 +63,3 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
 bool read_file_from_disk(Buffer &buf, const char *file, HostState &host);
 void set_window_title(HostState &host);
-void no_fb_fallback(HostState &host, gl::GLuint *fb_texture_id);
