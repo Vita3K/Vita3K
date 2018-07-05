@@ -19,19 +19,26 @@
 
 #include <glutil/gl.h>
 
+#include <functional>
+#include <memory>
+
 class GLObject {
 public:
-    typedef void Deleter(GLuint);
+    using Deleter = std::function<void(GLuint)>;
 
     GLObject() = default;
     ~GLObject();
-    bool init(GLuint name, Deleter *deleter);
+
+    bool init(GLuint name, Deleter deleter);
     GLuint get() const;
+    operator GLuint() const;
 
 private:
-    GLObject(const GLObject &);
-    const GLObject &operator=(const GLObject &);
+    const GLObject &operator=(const GLObject &) = delete;
 
     GLuint name = 0;
-    Deleter *deleter = nullptr;
+    Deleter deleter = nullptr;
 };
+
+using SharedGLObject = std::shared_ptr<GLObject>;
+using UniqueGLObject = std::unique_ptr<GLObject>;

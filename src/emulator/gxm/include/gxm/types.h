@@ -53,7 +53,6 @@ namespace emu {
 }
 
 typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
-typedef std::shared_ptr<GLObject> SharedGLObject;
 typedef std::tuple<std::string, std::string> ProgramGLSLs;
 typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 typedef std::array<Ptr<void>, 16> UniformBuffers;
