@@ -40,7 +40,7 @@ struct GuiState {
     bool mutexes_dialog = false;
     bool lwmutexes_dialog = false;
     bool eventflags_dialog = false;
-    
+
     // Optimisation menu
     bool texture_cache = true;
 
