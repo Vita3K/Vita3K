@@ -16,10 +16,12 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
+#include <host/app.h>
 #include <host/state.h>
+
 #include <imgui.h>
 
-void DrawGameSelector(HostState &host, bool *is_vpk) {
+void DrawGameSelector(HostState &host, AppRunType *run_type) {
     ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
     ImGui::SetNextWindowSize(ImVec2(host.display.window_size.width, host.display.window_size.height - MENUBAR_HEIGHT), ImGuiSetCond_Always);
     ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
@@ -33,7 +35,7 @@ void DrawGameSelector(HostState &host, bool *is_vpk) {
             button_text += " (" + titleid + ")";
             if (ImGui::Button(button_text.c_str())) {
                 host.gui.game_selector.title_id = titleid;
-                *is_vpk = false;
+                *run_type = AppRunType::Extracted;
             }
         }
         break;

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <host/app.h>
+
 #include <cstdint>
 
 static constexpr auto MENUBAR_HEIGHT = 19;
@@ -39,5 +41,5 @@ void DrawCondvarsDialog(HostState &host);
 void DrawEventFlagsDialog(HostState &host);
 void DrawUI(HostState &host);
 void DrawCommonDialog(HostState &host);
-void DrawGameSelector(HostState &host, bool *is_vpk);
+void DrawGameSelector(HostState &host, AppRunType *run_type);
 void DrawReinstallDialog(HostState &host, GenericDialogState *status);

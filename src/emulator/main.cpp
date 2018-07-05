@@ -77,18 +77,18 @@ int main(int argc, char *argv[]) {
 
     imgui::init(host.window);
 
-    bool is_vpk = true;
+    auto run_type = AppRunType::Vpk;
 
-    while (path.empty() && handle_events(host) && is_vpk) {
+    while (path.empty() && handle_events(host) && run_type == AppRunType::Vpk) {
         imgui::draw_begin(host.window);
 
         DrawUI(host);
-        DrawGameSelector(host, &is_vpk);
+        DrawGameSelector(host, &run_type);
 
         imgui::draw_end(host.window);
     }
 
-    if (!is_vpk) {
+    if (run_type == AppRunType::Extracted) {
         path = utf_to_wide(host.gui.game_selector.title_id);
     }
 
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    if (auto err = load_app(entry_point, host, path, is_vpk) != Success)
+    if (auto err = load_app(entry_point, host, path, run_type) != Success)
         return err;
 
     if (auto err = run_app(host, entry_point) != Success)

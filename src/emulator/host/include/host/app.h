@@ -50,8 +50,16 @@ enum ExitCode {
     RunThreadFailed
 };
 
+/// Describes the state of the application to be run
+enum class AppRunType {
+    /// Extracted, files are as they are on console
+    Extracted,
+    /// Zipped in HENKaku-style .vpk file
+    Vpk,
+};
+
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, bool is_vpk);
+ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type);
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
 bool read_file_from_disk(Buffer &buf, const char *file, HostState &host);
 void set_window_title(HostState &host);

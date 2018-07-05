@@ -203,12 +203,15 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     return true;
 }
 
-bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, bool is_vpk) {
-    if (is_vpk) {
+bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
+    if (path.empty())
+        return InvalidApplicationPath;
+
+    if (run_type == AppRunType::Vpk) {
         if (!install_vpk(entry_point, host, path)) {
             return false;
         }
-    } else {
+    } else if (run_type == AppRunType::Extracted) {
         host.io.title_id = wide_to_utf(path);
     }
 
@@ -249,8 +252,8 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     return true;
 }
 
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, bool is_vpk) {
-    if (!load_app_impl(entry_point, host, path, is_vpk)) {
+ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
+    if (!load_app_impl(entry_point, host, path, run_type)) {
         std::string message = "Failed to load \"";
         message += wide_to_utf(path);
         message += "\"";
