@@ -29,8 +29,7 @@
 #include <gui/functions.h>
 #include <gui/imgui_impl.h>
 
-#include <algorithm> // find_if_not
-#include <cassert>
+#include <cstdlib>
 
 int main(int argc, char *argv[]) {
     init_logging();
@@ -39,11 +38,8 @@ int main(int argc, char *argv[]) {
 
     ProgramArgsWide argv_wide = process_args(argc, argv);
 
-    const SDLPtr sdl(reinterpret_cast<const void *>(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) >= 0), [](const void *succeeded) {
-        assert(succeeded != nullptr);
-        SDL_Quit();
-    });
-    if (!sdl) {
+    std::atexit(SDL_Quit);
+    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) < 0) {
         error_dialog("SDL initialisation failed.");
         return SDLInitFailed;
     }
@@ -92,10 +88,6 @@ int main(int argc, char *argv[]) {
         path = utf_to_wide(host.gui.game_selector.title_id);
     }
 
-    if (path.empty()) {
-        return Success;
-    }
-
     Ptr<const void> entry_point;
     if (auto err = load_app(entry_point, host, path, run_type) != Success)
         return err;
@@ -128,5 +120,6 @@ int main(int argc, char *argv[]) {
 
         set_window_title(host);
     }
+
     return Success;
 }
