@@ -61,6 +61,7 @@ struct DisplayState {
     std::mutex mutex;
     std::condition_variable condvar;
     std::atomic<bool> abort{ false };
+    std::atomic<bool> imgui_render{ true };
 
     void set_dims(std::uint32_t image_width, std::uint32_t image_height, std::uint32_t border_width, std::uint32_t border_height) {
         image_size = { image_width, image_height };

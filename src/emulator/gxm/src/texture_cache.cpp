@@ -14,69 +14,69 @@
 
 static size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
-            return 8;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
-            return 16;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
-            return 32;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
-            return 64;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
-            return 2;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
-            return 4;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
-            return 2;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-            return 4;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-            return 4;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-            return 8;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
-            return 16; // NOTE: I'm not sure this is right.
-        case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
-            return 4;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
-            return 8;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
-            return 24;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
-            return 32;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+        return 8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
+        return 16;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
+        return 32;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
+        return 64;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+        return 2;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+        return 4;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+        return 2;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+        return 4;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
+        return 4;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
+        return 8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+        return 16; // NOTE: I'm not sure this is right.
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+        return 4;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+        return 8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+        return 24;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
+        return 32;
     }
-    
+
     return 0;
 }
 
@@ -99,7 +99,7 @@ static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t c
 
 static TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
     GXM_PROFILE(__func__);
-    
+
     const SceGxmTextureFormat format = texture::get_format(&texture);
     const SceGxmTextureBaseFormat base_format = texture::get_base_format(format);
     const size_t width = texture::get_width(&texture);
@@ -109,7 +109,7 @@ static TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const Me
     const size_t size = (bpp * stride * height) / 8;
     const Ptr<const void> data(texture.data_addr << 2);
     const TextureCacheHash data_hash = hash_data(data.get(mem), size);
-    
+
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
         return data_hash ^ hash_palette_data(texture, 16, mem);
@@ -126,10 +126,10 @@ static const bool operator==(const SceGxmTexture &a, const SceGxmTexture &b) {
 
 static size_t find_lru(const TextureCacheTimestamps &timestamps, TextureCacheTimestamp current_time) {
     GXM_PROFILE(__func__);
-    
+
     uint64_t oldest_age = current_time - timestamps.front();
     size_t oldest_index = 0;
-    
+
     for (size_t index = 1; index < timestamps.size(); ++index) {
         const uint64_t age = current_time - timestamps[index];
         if (age > oldest_age) {
@@ -137,46 +137,46 @@ static size_t find_lru(const TextureCacheTimestamps &timestamps, TextureCacheTim
             oldest_index = index;
         }
     }
-    
+
     return oldest_index;
 }
 
 static void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     GXM_PROFILE(__func__);
-    
+
     const SceGxmTextureFormat fmt = texture::get_format(&gxm_texture);
     const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
     const GLenum *const swizzle = texture::translate_swizzle(fmt);
-    
+
     // TODO Support mip-mapping.
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture::translate_wrap_mode(uaddr));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture::translate_wrap_mode(vaddr));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture::translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter));
     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
-    
+
     const GLenum internal_format = texture::translate_internal_format(fmt);
     const unsigned int width = texture::get_width(&gxm_texture);
     const unsigned int height = texture::get_height(&gxm_texture);
     const GLenum format = texture::translate_format(fmt);
     const GLenum type = texture::translate_type(fmt);
-    
+
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, nullptr);
 }
 
 static void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem) {
     GXM_PROFILE(__func__);
-    
+
     const SceGxmTextureFormat fmt = texture::get_format(&gxm_texture);
     const unsigned int width = texture::get_width(&gxm_texture);
     const unsigned int height = texture::get_height(&gxm_texture);
     const Ptr<const uint8_t> data(gxm_texture.data_addr << 2);
     const uint8_t *const texture_data = data.get(mem);
     std::vector<uint32_t> palette_texture_pixels; // TODO Move to context to avoid frequent allocation?
-    
+
     const void *pixels = nullptr;
     size_t stride = 0;
     if (texture::is_paletted_format(fmt)) {
@@ -194,10 +194,10 @@ static void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemStat
         pixels = texture_data;
         stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
     }
-    
+
     const GLenum format = texture::translate_format(fmt);
     const GLenum type = texture::translate_type(fmt);
-    
+
     glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, pixels);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -209,21 +209,21 @@ bool init(TextureCacheState &cache) {
 
 void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem, bool enabled) {
     GXM_PROFILE(__func__);
-    
+
     if (!enabled) {
         glBindTexture(GL_TEXTURE_2D, cache.textures[0]);
         configure_bound_texture(gxm_texture);
         upload_bound_texture(gxm_texture, mem);
         return;
     }
-    
+
     size_t index = 0;
     bool configure = false;
     bool upload = false;
     // TODO Palettes are probably quicker to hash than texture data, so if we find games use palette animation this could be optimised:
     // Skip data hash if palette hashes differ.
     const TextureCacheHash hash = hash_texture_data(gxm_texture, mem);
-    
+
     // Try to find GXM texture in cache.
     const TextureCacheGxmTextures::const_iterator gxm_begin = cache.gxm_textures.cbegin();
     const TextureCacheGxmTextures::const_iterator gxm_end = gxm_begin + cache.used;
@@ -248,10 +248,10 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         configure = false;
         upload = (hash != cache.hashes[index]);
     }
-    
+
     const GLuint gl_texture = cache.textures[index];
     glBindTexture(GL_TEXTURE_2D, gl_texture);
-    
+
     if (configure) {
         configure_bound_texture(gxm_texture);
     }
@@ -259,6 +259,6 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         upload_bound_texture(gxm_texture, mem);
         cache.hashes[index] = hash;
     }
-    
+
     cache.timestamps[index] = cache.timestamp;
 }

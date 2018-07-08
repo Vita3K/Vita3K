@@ -17,28 +17,35 @@
 
 #pragma once
 
-#include <glutil/gl.h>
+#include <glutil/shader.h>
 
-#include <functional>
-#include <memory>
+struct DisplayState;
+struct MemState;
 
-class GLObject {
+class gl_screen_renderer {
 public:
-    using Deleter = std::function<void(GLuint)>;
+    gl_screen_renderer() {}
+    ~gl_screen_renderer();
 
-    GLObject() = default;
-    ~GLObject();
-
-    bool init(GLuint name, Deleter deleter);
-    GLuint get() const;
-    operator GLuint() const;
+    bool init(const std::string &base_path);
+    void render(DisplayState &display, MemState &mem);
+    GLuint get_screen_texture() const;
+    void destroy();
 
 private:
-    const GLObject &operator=(const GLObject &) = delete;
+    struct screen_vertex {
+        GLfloat pos[3];
+        GLfloat uv[2];
+    };
 
-    GLuint name = 0;
-    Deleter deleter = nullptr;
+    static constexpr size_t screen_vertex_size = sizeof(screen_vertex);
+    static constexpr uint32_t screen_vertex_count = 4;
+
+    using screen_vertices_t = screen_vertex[screen_vertex_count];
+
+private:
+    GLuint m_vao{ 0 };
+    GLuint m_vbo{ 0 };
+    SharedGLObject m_render_shader;
+    GLuint m_screen_texture{ 0 };
 };
-
-using SharedGLObject = std::shared_ptr<GLObject>;
-using UniqueGLObject = std::unique_ptr<GLObject>;

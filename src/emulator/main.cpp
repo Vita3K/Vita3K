@@ -17,6 +17,7 @@
 
 #include <host/app.h>
 #include <host/functions.h>
+#include <host/screen_render.h>
 #include <host/state.h>
 #include <host/version.h>
 #include <kernel/thread/thread_functions.h>
@@ -24,13 +25,11 @@
 #include <util/string_convert.h>
 
 #include <SDL.h>
-#include <glutil/gl.h>
-
-#include <algorithm> // find_if_not
-#include <cassert>
 
 #include <gui/functions.h>
 #include <gui/imgui_impl.h>
+
+#include <cstdlib>
 
 int main(int argc, char *argv[]) {
     init_logging();
@@ -39,11 +38,8 @@ int main(int argc, char *argv[]) {
 
     ProgramArgsWide argv_wide = process_args(argc, argv);
 
-    const SDLPtr sdl(reinterpret_cast<const void *>(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) >= 0), [](const void *succeeded) {
-        assert(succeeded != nullptr);
-        SDL_Quit();
-    });
-    if (!sdl) {
+    std::atexit(SDL_Quit);
+    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) < 0) {
         error_dialog("SDL initialisation failed.");
         return SDLInitFailed;
     }
@@ -77,51 +73,53 @@ int main(int argc, char *argv[]) {
 
     imgui::init(host.window);
 
-    bool is_vpk = true;
+    auto run_type = AppRunType::Vpk;
 
-    while (path.empty() && handle_events(host) && is_vpk) {
+    while (path.empty() && handle_events(host) && run_type == AppRunType::Vpk) {
         imgui::draw_begin(host.window);
 
         DrawUI(host);
-        DrawGameSelector(host, &is_vpk);
+        DrawGameSelector(host, &run_type);
 
         imgui::draw_end(host.window);
     }
 
-    if (!is_vpk) {
+    if (run_type == AppRunType::Extracted) {
         path = utf_to_wide(host.gui.game_selector.title_id);
     }
 
-    if (path.empty()) {
-        return Success;
-    }
-
     Ptr<const void> entry_point;
-    if (auto err = load_app(entry_point, host, path, is_vpk) != Success)
+    if (auto err = load_app(entry_point, host, path, run_type) != Success)
         return err;
 
     if (auto err = run_app(host, entry_point) != Success)
         return err;
 
-    GLuint fb_texture_id = 0;
-    host.sdl_ticks = SDL_GetTicks();
+    gl_screen_renderer gl_renderer;
+
+    if (!gl_renderer.init(host.base_path))
+        return RendererInitFailed;
+
     while (handle_events(host)) {
-        if (!fb_texture_id) {
-            no_fb_fallback(host, &fb_texture_id);
+        if (host.display.imgui_render) {
+            imgui::draw_begin(host.window);
+
+            imgui::draw_main(host, gl_renderer.get_screen_texture());
+
+            DrawUI(host);
+            DrawCommonDialog(host);
+
+            imgui::draw_end(host.window);
+        } else {
+            gl_renderer.render(host.display, host.mem);
+
+            SDL_GL_SwapWindow(host.window.get());
         }
-
-        imgui::draw_begin(host.window);
-
-        imgui::draw_main(host, fb_texture_id);
-
-        DrawUI(host);
-        DrawCommonDialog(host);
-
-        imgui::draw_end(host.window);
 
         host.display.condvar.notify_all();
 
         set_window_title(host);
     }
+
     return Success;
 }

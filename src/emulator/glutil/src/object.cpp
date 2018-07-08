@@ -26,18 +26,22 @@ GLObject::~GLObject() {
     name = 0;
 }
 
-bool GLObject::init(GLuint name, Deleter *deleter) {
+bool GLObject::init(GLuint name, Deleter deleter) {
     assert(name != 0);
-    assert(deleter != nullptr);
     assert(this->name == 0);
-    assert(this->deleter == nullptr);
     this->name = name;
-    this->deleter = deleter;
+    if (deleter)
+        this->deleter = deleter;
 
     return name != 0;
 }
 
 GLuint GLObject::get() const {
+    assert(name != 0);
+    return name;
+}
+
+GLObject::operator GLuint() const {
     assert(name != 0);
     return name;
 }

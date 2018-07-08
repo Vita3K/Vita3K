@@ -17,28 +17,8 @@
 
 #pragma once
 
-#include <glutil/gl.h>
+#include <glutil/object.h>
 
-#include <functional>
-#include <memory>
-
-class GLObject {
-public:
-    using Deleter = std::function<void(GLuint)>;
-
-    GLObject() = default;
-    ~GLObject();
-
-    bool init(GLuint name, Deleter deleter);
-    GLuint get() const;
-    operator GLuint() const;
-
-private:
-    const GLObject &operator=(const GLObject &) = delete;
-
-    GLuint name = 0;
-    Deleter deleter = nullptr;
-};
-
-using SharedGLObject = std::shared_ptr<GLObject>;
-using UniqueGLObject = std::unique_ptr<GLObject>;
+namespace gl {
+    UniqueGLObject load_shaders(const std::string &vertex_file_path, const std::string &fragment_file_path);
+}
