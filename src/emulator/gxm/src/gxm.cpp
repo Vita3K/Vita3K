@@ -476,6 +476,20 @@ static bool operator<(const emu::SceGxmBlendInfo &a, const emu::SceGxmBlendInfo 
     return memcmp(&a, &b, sizeof(a)) < 0;
 }
 
+void set_viewport(const GxmViewport &viewport, GLsizei display_w, GLsizei display_h) {
+    if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
+        const GLfloat w = viewport.scale.x * 2;
+        const GLfloat h = viewport.scale.y * -2;
+        const GLfloat x = viewport.offset.x - viewport.scale.x;
+        const GLfloat y = display_h - (viewport.offset.y - viewport.scale.y);
+        glViewportIndexedf(0, x, y, w, h);
+        glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
+    } else {
+        glViewport(0, 0, display_w, display_h);
+        glDepthRange(0, 1);
+    }
+}
+
 std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path) {
     const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
     const GLSLCache::const_iterator cached = shader_patcher.fragment_glsl_cache.find(hash_bytes);

@@ -97,6 +97,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     glBindFramebuffer(GL_FRAMEBUFFER, renderTarget->framebuffer[0]);
 
     // Re-load GL machine settings for multiple contexts support
+    // TODO This shouldn't be necessary, as each GXM context gets its own OpenGL context.
     switch (context->state.cull_mode) {
     case SCE_GXM_CULL_CCW:
         glEnable(GL_CULL_FACE);
@@ -113,15 +114,6 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
 
     glEnable(GL_SCISSOR_TEST);
     glScissor(0, 0, host.display.image_size.width, host.display.image_size.height);
-
-    context->state.viewport.x = 0;
-    context->state.viewport.y = 0;
-    context->state.viewport.w = host.display.image_size.width;
-    context->state.viewport.h = host.display.image_size.height;
-    context->state.viewport.nearVal = 0.0f;
-    context->state.viewport.farVal = 1.0f;
-    glViewport(context->state.viewport.x, context->state.viewport.y, context->state.viewport.w, context->state.viewport.h);
-    glDepthRange(context->state.viewport.nearVal, context->state.viewport.farVal);
 
     // TODO This is just for debugging.
     glClear(GL_COLOR_BUFFER_BIT);
@@ -242,7 +234,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    glViewport(0, 0, host.display.image_size.width, host.display.image_size.height);
+    set_viewport(ctx->state.viewport, host.display.image_size.width, host.display.image_size.height);
 
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
@@ -1053,6 +1045,13 @@ EXPORT(int, sceGxmSetBackPolygonMode) {
 }
 
 EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
+    context->state.back_stencil.func = func;
+    context->state.back_stencil.stencil_fail = stencilFail;
+    context->state.back_stencil.depth_fail = depthFail;
+    context->state.back_stencil.depth_pass = depthPass;
+    context->state.back_stencil.compare_mask = compareMask;
+    context->state.back_stencil.write_mask = writeMask;
+
     if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
         glEnable(GL_STENCIL_TEST);
 
@@ -1071,6 +1070,8 @@ EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc
 }
 
 EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
+    context->state.back_stencil.ref = sref;
+
     if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
         glEnable(GL_STENCIL_TEST);
 
@@ -1153,6 +1154,8 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     assert(context != nullptr);
     assert(texture != nullptr);
 
+    context->state.fragment_textures[textureIndex] = *texture;
+
     glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
     cache_and_bind_texture(context->renderer.texture_cache, *texture, host.mem, host.gui.texture_cache);
 
@@ -1168,6 +1171,8 @@ EXPORT(int, sceGxmSetFrontDepthBias) {
 }
 
 EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
+    context->state.front_depth_func = depthFunc;
+
     glEnable(GL_DEPTH_TEST);
     if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
         // TODO: Find a way to implement this since glDepthFuncSeparate doesn't exist
@@ -1177,6 +1182,8 @@ EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc de
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
+    context->state.front_depth_write_enable = enable;
+
     if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
         // TODO: Find a way to implement this since glDepthMaskSeparate doesn't exist
         LOG_WARN("sceGxmSetFrontDepthWriteEnable called with a two sided context, graphical glitches may happen.");
@@ -1201,6 +1208,13 @@ EXPORT(int, sceGxmSetFrontPolygonMode) {
 }
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
+    context->state.front_stencil.func = func;
+    context->state.front_stencil.stencil_fail = stencilFail;
+    context->state.front_stencil.depth_fail = depthFail;
+    context->state.front_stencil.depth_pass = depthPass;
+    context->state.front_stencil.compare_mask = compareMask;
+    context->state.front_stencil.write_mask = writeMask;
+
     glEnable(GL_STENCIL_TEST);
 
     GLenum face = (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) ? GL_FRONT : GL_FRONT_AND_BACK;
@@ -1218,6 +1232,8 @@ EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFun
 }
 
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref) {
+    context->state.front_stencil.ref = sref;
+
     glEnable(GL_STENCIL_TEST);
 
     GLenum face = (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) ? GL_FRONT : GL_FRONT_AND_BACK;
@@ -1250,6 +1266,12 @@ EXPORT(int, sceGxmSetPrecomputedVertexState) {
 }
 
 EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int yMin, unsigned int xMax, unsigned int yMax) {
+    context->state.region_clip_mode = mode;
+    context->state.region_clip_min.x = xMin;
+    context->state.region_clip_min.y = yMin;
+    context->state.region_clip_max.x = xMax;
+    context->state.region_clip_max.y = yMax;
+
     xMin += xMin % 32;
     yMin += yMin % 32;
     xMax += xMax % 32;
@@ -1325,27 +1347,19 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
-    context->state.viewport.x = xOffset - xScale;
-    context->state.viewport.y = yOffset + yScale;
-    context->state.viewport.w = xOffset + xScale;
-    context->state.viewport.h = yOffset - yScale;
-    context->state.viewport.nearVal = zOffset - zScale;
-    context->state.viewport.farVal = zOffset + zScale;
-    if (context->state.viewport.enabled) {
-        glViewport(context->state.viewport.x, context->state.viewport.y, abs(context->state.viewport.w), abs(context->state.viewport.h));
-        glDepthRange(context->state.viewport.nearVal, context->state.viewport.farVal);
-    }
+    context->state.viewport.enable = SCE_GXM_VIEWPORT_ENABLED;
+    context->state.viewport.offset.x = xOffset;
+    context->state.viewport.offset.y = yOffset;
+    context->state.viewport.offset.z = zOffset;
+    context->state.viewport.scale.x = xScale;
+    context->state.viewport.scale.y = yScale;
+    context->state.viewport.scale.z = zScale;
+    set_viewport(context->state.viewport, host.display.image_size.width, host.display.image_size.height);
 }
 
 EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
-    context->state.viewport.enabled = enable == SCE_GXM_VIEWPORT_ENABLED ? true : false;
-    if (context->state.viewport.enabled) {
-        glViewport(context->state.viewport.x, context->state.viewport.y, context->state.viewport.w, context->state.viewport.h);
-        glDepthRange(context->state.viewport.nearVal, context->state.viewport.farVal);
-    } else {
-        glViewport(0, 0, host.display.image_size.width, host.display.image_size.height);
-        glDepthRange(0.0f, 1.0f);
-    }
+    context->state.viewport.enable = enable;
+    set_viewport(context->state.viewport, host.display.image_size.width, host.display.image_size.height);
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
