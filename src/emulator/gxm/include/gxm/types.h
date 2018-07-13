@@ -67,26 +67,33 @@ struct GxmViewport {
     double farVal;
 };
 
-struct SceGxmContext {
-    // This is an opaque type.
+struct GxmContextState {
     emu::SceGxmContextParams params;
-    GLContextPtr gl;
     size_t fragment_ring_buffer_used = 0;
     size_t vertex_ring_buffer_used = 0;
     emu::SceGxmColorSurface color_surface;
-    ProgramCache program_cache;
     Ptr<const SceGxmFragmentProgram> fragment_program;
     Ptr<const SceGxmVertexProgram> vertex_program;
     UniformBuffers fragment_uniform_buffers;
     UniformBuffers vertex_uniform_buffers;
+    std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
+    SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
+    SceGxmTwoSidedMode two_sided = SCE_GXM_TWO_SIDED_DISABLED;
+    GxmViewport viewport;
+};
+
+struct RendererContextState {
+    GLContextPtr gl;
+    ProgramCache program_cache;
     TextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
-    std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
-    SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
-    bool two_sided = false;
-    GxmViewport viewport;
+};
+
+struct SceGxmContext {
+    GxmContextState state;
+    RendererContextState renderer;
 };
 
 namespace emu {

@@ -538,14 +538,14 @@ AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
 SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
     GXM_PROFILE(__FUNCTION__);
 
-    assert(context.fragment_program);
-    assert(context.vertex_program);
+    assert(context.state.fragment_program);
+    assert(context.state.vertex_program);
 
-    const SceGxmFragmentProgram &fragment_program = *context.fragment_program.get(mem);
-    const SceGxmVertexProgram &vertex_program = *context.vertex_program.get(mem);
+    const SceGxmFragmentProgram &fragment_program = *context.state.fragment_program.get(mem);
+    const SceGxmVertexProgram &vertex_program = *context.state.vertex_program.get(mem);
     const ProgramGLSLs glsls(fragment_program.glsl, vertex_program.glsl);
-    const ProgramCache::const_iterator cached = context.program_cache.find(glsls);
-    if (cached != context.program_cache.end()) {
+    const ProgramCache::const_iterator cached = context.renderer.program_cache.find(glsls);
+    if (cached != context.renderer.program_cache.end()) {
         return cached->second;
     }
 
@@ -600,7 +600,7 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
     glDetachShader(program->get(), fragment_shader->get());
     glDetachShader(program->get(), vertex_shader->get());
 
-    context.program_cache.emplace(glsls, program);
+    context.renderer.program_cache.emplace(glsls, program);
 
     return program;
 }
@@ -673,16 +673,16 @@ bool attribute_format_normalised(SceGxmAttributeFormat format) {
 void set_uniforms(GLuint program, const SceGxmContext &context, const MemState &mem) {
     GXM_PROFILE(__FUNCTION__);
 
-    assert(context.fragment_program);
-    assert(context.vertex_program);
+    assert(context.state.fragment_program);
+    assert(context.state.vertex_program);
 
-    const SceGxmFragmentProgram &fragment_program = *context.fragment_program.get(mem);
-    const SceGxmVertexProgram &vertex_program = *context.vertex_program.get(mem);
+    const SceGxmFragmentProgram &fragment_program = *context.state.fragment_program.get(mem);
+    const SceGxmVertexProgram &vertex_program = *context.state.vertex_program.get(mem);
     assert(fragment_program.program);
     assert(vertex_program.program);
 
-    set_uniforms(program, context.fragment_uniform_buffers, *fragment_program.program.get(mem), mem);
-    set_uniforms(program, context.vertex_uniform_buffers, *vertex_program.program.get(mem), mem);
+    set_uniforms(program, context.state.fragment_uniform_buffers, *fragment_program.program.get(mem), mem);
+    set_uniforms(program, context.state.vertex_uniform_buffers, *vertex_program.program.get(mem), mem);
 }
 
 void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
