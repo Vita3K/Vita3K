@@ -1,21 +1,27 @@
 #pragma once
 
-#include "texture_cache_state.h"
-
-#include <crypto/hash.h>
-#include <glutil/object.h>
-#include <glutil/object_array.h>
+//#include "texture_cache_state.h"
+//
+//#include <crypto/hash.h>
+//#include <glutil/object.h>
+//#include <glutil/object_array.h>
 #include <mem/ptr.h>
-
-#include <SDL_video.h>
+//
+//#include <SDL_video.h>
 #include <psp2/gxm.h>
 #include <rpcs3/BitField.h>
-
+//
 #include <array>
 #include <condition_variable>
-#include <map>
+//#include <map>
+#include <memory>
 #include <mutex>
-#include <tuple>
+//#include <tuple>
+
+namespace renderer {
+    struct FragmentProgram;
+    struct VertexProgram;
+}
 
 namespace emu {
     struct SceGxmBlendInfo {
@@ -36,6 +42,14 @@ namespace emu {
         uint32_t outputRegisterSize;
         SceGxmTexture backgroundTex;
     };
+    
+    struct SceGxmDepthStencilSurface {
+        uint32_t zlsControl;
+        Ptr<void> depthData;
+        Ptr<void> stencilData;
+        float backgroundDepth;
+        uint32_t backgroundControl;
+    };
 
     struct SceGxmContextParams {
         Ptr<void> hostMem;
@@ -52,9 +66,9 @@ namespace emu {
     };
 }
 
-typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
-typedef std::tuple<std::string, std::string> ProgramGLSLs;
-typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
+//typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
+//typedef std::tuple<std::string, std::string> ProgramGLSLs;
+//typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 typedef std::array<Ptr<void>, 16> UniformBuffers;
 
 struct GxmViewport {
@@ -79,6 +93,7 @@ struct GxmContextState {
 
     // Surfaces.
     emu::SceGxmColorSurface color_surface;
+    emu::SceGxmDepthStencilSurface depth_stencil_surface;
 
     // Clipping.
     SceGxmRegionClipMode region_clip_mode = SCE_GXM_REGION_CLIP_NONE;
@@ -115,47 +130,10 @@ struct GxmContextState {
     std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> fragment_textures;
 };
 
-struct RendererContextState {
-    GLContextPtr gl;
-    ProgramCache program_cache;
-    TextureCacheState texture_cache;
-    GLObjectArray<1> vertex_array;
-    GLObjectArray<1> element_buffer;
-    GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
-};
-
-struct SceGxmContext {
-    GxmContextState state;
-    RendererContextState renderer;
-};
-
-namespace emu {
-    struct SceGxmDepthStencilSurface {
-        uint32_t zlsControl;
-        Ptr<void> depthData;
-        Ptr<void> stencilData;
-        float backgroundDepth;
-        uint32_t backgroundControl;
-    };
-}
-
 struct SceGxmFragmentProgram {
     size_t reference_count = 1;
-
     Ptr<const SceGxmProgram> program;
-    std::string glsl;
-
-    GLboolean color_mask_red = GL_TRUE;
-    GLboolean color_mask_green = GL_TRUE;
-    GLboolean color_mask_blue = GL_TRUE;
-    GLboolean color_mask_alpha = GL_TRUE;
-    bool blend_enabled = false;
-    GLenum color_func = GL_FUNC_ADD;
-    GLenum alpha_func = GL_FUNC_ADD;
-    GLenum color_src = GL_ONE;
-    GLenum color_dst = GL_ZERO;
-    GLenum alpha_src = GL_ONE;
-    GLenum alpha_dst = GL_ZERO;
+    std::unique_ptr<renderer::FragmentProgram> renderer;
 };
 
 namespace emu {
@@ -243,25 +221,25 @@ struct SceGxmRegisteredProgram {
     Ptr<const SceGxmProgram> program;
 };
 
-struct SceGxmRenderTarget {
-    GLObjectArray<2> renderbuffers;
-    GLObjectArray<1> framebuffer;
-};
-
-struct FragmentProgramCacheKey {
-    SceGxmRegisteredProgram fragment_program;
-    emu::SceGxmBlendInfo blend_info;
-};
-
-typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
-typedef std::map<Sha256Hash, std::string> GLSLCache;
-
-struct SceGxmShaderPatcher {
-    // TODO This is an opaque struct.
-    FragmentProgramCache fragment_program_cache;
-    GLSLCache fragment_glsl_cache;
-    GLSLCache vertex_glsl_cache;
-};
+//struct SceGxmRenderTarget {
+//    GLObjectArray<2> renderbuffers;
+//    GLObjectArray<1> framebuffer;
+//};
+//
+//struct FragmentProgramCacheKey {
+//    SceGxmRegisteredProgram fragment_program;
+//    emu::SceGxmBlendInfo blend_info;
+//};
+//
+//typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
+//typedef std::map<Sha256Hash, std::string> GLSLCache;
+//
+//struct SceGxmShaderPatcher {
+//    // TODO This is an opaque struct.
+//    FragmentProgramCache fragment_program_cache;
+//    GLSLCache fragment_glsl_cache;
+//    GLSLCache vertex_glsl_cache;
+//};
 
 namespace emu {
     typedef Ptr<SceGxmRegisteredProgram> SceGxmShaderPatcherId;
@@ -312,16 +290,10 @@ namespace emu {
     static_assert(sizeof(SceGxmVertexAttribute) == 8, "Structure has been incorrectly packed.");
 }
 
-typedef std::map<GLuint, std::string> AttributeLocations;
-
 struct SceGxmVertexProgram {
-    // TODO I think this is an opaque type.
     size_t reference_count = 1;
-
     Ptr<const SceGxmProgram> program;
-    std::string glsl;
-
-    AttributeLocations attribute_locations;
     std::vector<SceGxmVertexStream> streams;
     std::vector<emu::SceGxmVertexAttribute> attributes;
+    std::unique_ptr<renderer::VertexProgram> renderer;
 };

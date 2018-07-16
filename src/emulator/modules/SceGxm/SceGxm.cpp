@@ -18,25 +18,36 @@
 #include "SceGxm.h"
 
 #include <gxm/functions.h>
-#include <gxm/texture_cache_functions.h>
 #include <gxm/types.h>
-
-#include <cpu/functions.h>
 #include <host/functions.h>
 #include <kernel/thread/thread_functions.h>
+#include <renderer/functions.h>
+#include <renderer/types.h>
 #include <util/lock_and_find.h>
-#include <util/log.h>
 
-#include <glbinding/Binding.h>
 #include <psp2/kernel/error.h>
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <sstream>
+//#include <cpu/functions.h>
+//#include <util/log.h>
+//
+//#include <glbinding/Binding.h>
+//
+//#include <algorithm>
+//#include <fstream>
+//#include <iostream>
+//#include <sstream>
+//
+//using namespace emu;
+//using namespace glbinding;
 
-using namespace emu;
-using namespace glbinding;
+struct SceGxmContext {
+    GxmContextState state;
+    renderer::Context renderer;
+};
+
+struct SceGxmRenderTarget {
+    renderer::RenderTarget renderer;
+};
 
 // clang-format off
 static const size_t size_mask_gxp = 176;
@@ -91,32 +102,11 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     context->state.fragment_ring_buffer_used = 0;
     context->state.vertex_ring_buffer_used = 0;
     context->state.color_surface = *colorSurface;
+    context->state.depth_stencil_surface = *depthStencil;
 
     host.gxm.isInScene = true;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, renderTarget->framebuffer[0]);
-
-    // Re-load GL machine settings for multiple contexts support
-    // TODO This shouldn't be necessary, as each GXM context gets its own OpenGL context.
-    switch (context->state.cull_mode) {
-    case SCE_GXM_CULL_CCW:
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-        break;
-    case SCE_GXM_CULL_CW:
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        break;
-    case SCE_GXM_CULL_NONE:
-        glDisable(GL_CULL_FACE);
-        break;
-    }
-
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(0, 0, host.display.image_size.width, host.display.image_size.height);
-
-    // TODO This is just for debugging.
-    glClear(GL_COLOR_BUFFER_BIT);
+    renderer::begin_scene(renderTarget->renderer);
 
     return 0;
 }
@@ -222,32 +212,11 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     SceGxmContext *const ctx = context->get(host.mem);
     ctx->state.params = *params;
 
-    assert(SDL_GL_GetCurrentContext() == nullptr);
-    ctx->renderer.gl = GLContextPtr(SDL_GL_CreateContext(host.window.get()), SDL_GL_DeleteContext);
-    assert(ctx->renderer.gl != nullptr);
-
-    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
-        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
-    };
-    Binding::initialize(get_proc_address, false);
-
-    LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
-    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-    set_viewport(ctx->state.viewport, host.display.image_size.width, host.display.image_size.height);
-
-    // TODO This is just for debugging.
-    glClearColor(0.0625f, 0.125f, 0.25f, 0);
-
-    if (!init(ctx->renderer.texture_cache) || !ctx->renderer.vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !ctx->renderer.element_buffer.init(glGenBuffers, glDeleteBuffers) || !ctx->renderer.stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
+    if (!renderer::create(ctx->renderer)) {
         free(host.mem, *context);
         context->reset();
-
-        return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
-
-    glBindVertexArray(ctx->renderer.vertex_array[0]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->renderer.element_buffer[0]);
 
     return 0;
 }
@@ -266,21 +235,10 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     }
 
     SceGxmRenderTarget *const rt = renderTarget->get(host.mem);
-    if (!rt->renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) || !rt->framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
+    if (!renderer::create(rt->renderer, *params)) {
         free(host.mem, *renderTarget);
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
-
-    glBindRenderbuffer(GL_RENDERBUFFER, rt->renderbuffers[0]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, params->width, params->height);
-    glBindRenderbuffer(GL_RENDERBUFFER, rt->renderbuffers[1]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, params->width, params->height);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, rt->framebuffer[0]);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rt->renderbuffers[0]);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rt->renderbuffers[1]);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return 0;
 }
@@ -406,73 +364,9 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     if (!host.gxm.isInScene) {
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
-
-    // TODO Use some kind of caching to avoid setting every draw call?
-    const SharedGLObject program = get_program(*context, host.mem);
-    if (!program) {
+    
+    if (!renderer::draw(context->renderer, context->state, primType, indexType, indexData, indexCount, host.mem)) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
-    }
-    glUseProgram(program->get());
-
-    // TODO Use some kind of caching to avoid setting every draw call?
-    set_uniforms(program->get(), *context, host.mem);
-
-    // Upload index data.
-    const GLsizeiptr index_size = (indexType == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * indexCount, indexData, GL_STREAM_DRAW);
-
-    // Compute size of vertex data.
-    size_t max_index = 0;
-    if (indexType == SCE_GXM_INDEX_FORMAT_U16) {
-        const uint16_t *const indices = static_cast<const uint16_t *>(indexData);
-        max_index = *std::max_element(&indices[0], &indices[indexCount]);
-    } else {
-        const uint32_t *const indices = static_cast<const uint32_t *>(indexData);
-        max_index = *std::max_element(&indices[0], &indices[indexCount]);
-    }
-    const SceGxmVertexProgram *const vertex_program = context->state.vertex_program.get(host.mem);
-    size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
-    for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
-        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-        const size_t attribute_size = attribute_format_size(attribute_format) * attribute.componentCount;
-        const SceGxmVertexStream &stream = vertex_program->streams[attribute.streamIndex];
-        const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
-        max_data_length[attribute.streamIndex] = std::max(max_data_length[attribute.streamIndex], data_length);
-    }
-
-    // Upload vertex data.
-    for (size_t stream_index = 0; stream_index < SCE_GXM_MAX_VERTEX_STREAMS; ++stream_index) {
-        const size_t data_length = max_data_length[stream_index];
-        const void *const data = context->state.stream_data[stream_index].get(host.mem);
-        glBindBuffer(GL_ARRAY_BUFFER, context->renderer.stream_vertex_buffers[stream_index]);
-        glBufferData(GL_ARRAY_BUFFER, data_length, data, GL_STREAM_DRAW);
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // Set vertex attribute parameters.
-    // TODO Only set attrib pointer when changed.
-    // TODO Move vertex array object to program cache?
-    for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
-        const SceGxmVertexStream &stream = vertex_program->streams[attribute.streamIndex];
-        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-        const GLenum type = attribute_format_to_gl_type(attribute_format);
-        const GLboolean normalised = attribute_format_normalised(attribute_format) ? GL_TRUE : GL_FALSE;
-        const int attrib_location = attribute.regIndex / sizeof(uint32_t);
-
-        glBindBuffer(GL_ARRAY_BUFFER, context->renderer.stream_vertex_buffers[attribute.streamIndex]);
-        glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
-        glEnableVertexAttribArray(attrib_location);
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    const GLenum mode = translate_primitive(primType);
-    const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
-    glDrawElements(mode, indexCount, type, nullptr);
-
-    // Disable vertex attribute arrays.
-    for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
-        const int attrib_location = attribute.regIndex / sizeof(uint32_t);
-        glDisableVertexAttribArray(attrib_location);
     }
 
     return 0;
@@ -500,23 +394,18 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
-    const GLsizei width = context->state.color_surface.pbeEmitWords[0];
-    const GLsizei height = context->state.color_surface.pbeEmitWords[1];
-    const GLsizei stride_in_pixels = context->state.color_surface.pbeEmitWords[2];
+    const size_t width = context->state.color_surface.pbeEmitWords[0];
+    const size_t height = context->state.color_surface.pbeEmitWords[1];
+    const size_t stride_in_pixels = context->state.color_surface.pbeEmitWords[2];
     const Address data = context->state.color_surface.pbeEmitWords[3];
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
-    glPixelStorei(GL_PACK_ROW_LENGTH, stride_in_pixels); // TODO Reset to 0?
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    flip_vertically(pixels, width, height, stride_in_pixels);
+    
+    renderer::end_scene(context->renderer, width, height, stride_in_pixels, pixels);
     if (fragmentNotification) {
         volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
         *fragment_address = fragmentNotification->value;
     }
-
     host.gxm.isInScene = false;
-    ++context->renderer.texture_cache.timestamp;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return 0;
 }
@@ -1051,22 +940,6 @@ EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc
     context->state.back_stencil.depth_pass = depthPass;
     context->state.back_stencil.compare_mask = compareMask;
     context->state.back_stencil.write_mask = writeMask;
-
-    if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
-        glEnable(GL_STENCIL_TEST);
-
-        GLenum gl_func = translate_stencil_func(func);
-        GLenum sfail = translate_stencil_op(stencilFail);
-        GLenum dpfail = translate_stencil_op(depthFail);
-        GLenum dppass = translate_stencil_op(depthPass);
-
-        GLint sref;
-        glGetIntegerv(GL_STENCIL_BACK_REF, &sref);
-
-        glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
-        glStencilFuncSeparate(GL_BACK, gl_func, sref, compareMask);
-        glStencilMaskSeparate(GL_BACK, writeMask);
-    }
 }
 
 EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {

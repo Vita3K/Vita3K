@@ -1,4 +1,4 @@
-#include <gxm/texture_cache_functions.h>
+#include <renderer/texture_cache_functions.h>
 
 //#include "profile.h"
 //
