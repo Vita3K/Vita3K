@@ -57,36 +57,76 @@ typedef std::tuple<std::string, std::string> ProgramGLSLs;
 typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 typedef std::array<Ptr<void>, 16> UniformBuffers;
 
-struct SceGxmViewport {
-    bool enabled = false;
-    GLint x;
-    GLint y;
-    GLint w;
-    GLint h;
-    double nearVal;
-    double farVal;
+struct GxmViewport {
+    SceGxmViewportMode enable = SCE_GXM_VIEWPORT_DISABLED;
+    SceFVector3 offset;
+    SceFVector3 scale;
 };
 
-struct SceGxmContext {
-    // This is an opaque type.
+struct GxmStencilState {
+    SceGxmStencilFunc func = SCE_GXM_STENCIL_FUNC_NEVER; // TODO What's the default value?
+    SceGxmStencilOp stencil_fail = SCE_GXM_STENCIL_OP_KEEP; // TODO What's the default value?
+    SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP; // TODO What's the default value?
+    SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP; // TODO What's the default value?
+    uint8_t compare_mask = 0xff; // TODO What's the default value?
+    uint8_t write_mask = 0xff; // TODO What's the default value?
+    uint32_t ref = 0; // TODO What's the default value?
+};
+
+struct GxmContextState {
+    // Constant after initialisation.
     emu::SceGxmContextParams params;
-    GLContextPtr gl;
-    size_t fragment_ring_buffer_used = 0;
-    size_t vertex_ring_buffer_used = 0;
+
+    // Surfaces.
     emu::SceGxmColorSurface color_surface;
-    ProgramCache program_cache;
+
+    // Clipping.
+    SceGxmRegionClipMode region_clip_mode = SCE_GXM_REGION_CLIP_NONE;
+    SceIVector2 region_clip_min;
+    SceIVector2 region_clip_max;
+    GxmViewport viewport;
+
+    // Triangle setup?
+    SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
+    SceGxmTwoSidedMode two_sided = SCE_GXM_TWO_SIDED_DISABLED;
+
+    // Programs.
     Ptr<const SceGxmFragmentProgram> fragment_program;
     Ptr<const SceGxmVertexProgram> vertex_program;
+
+    // Uniforms.
     UniformBuffers fragment_uniform_buffers;
     UniformBuffers vertex_uniform_buffers;
+    size_t fragment_ring_buffer_used = 0;
+    size_t vertex_ring_buffer_used = 0;
+
+    // Vertex streams.
+    std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
+
+    // Depth.
+    SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
+    SceGxmDepthWriteMode front_depth_write_enable = SCE_GXM_DEPTH_WRITE_ENABLED;
+
+    // Stencil.
+    GxmStencilState front_stencil;
+    GxmStencilState back_stencil;
+
+    // Textures.
+    std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> fragment_textures;
+};
+
+struct RendererContextState {
+    GLContextPtr gl;
+    ProgramCache program_cache;
     TextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
-    std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
-    SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
-    bool two_sided = false;
-    SceGxmViewport viewport;
+};
+
+struct SceGxmContext {
+    GxmContextState state;
+    RendererContextState renderer;
 };
 
 namespace emu {

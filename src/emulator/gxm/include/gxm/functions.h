@@ -15,9 +15,11 @@ namespace emu {
 }
 
 struct FragmentProgramCacheKey;
+struct GxmViewport;
 typedef std::shared_ptr<GLObject> SharedGLObject;
 typedef std::map<GLuint, std::string> AttributeLocations;
 
+void set_viewport(const GxmViewport &viewport, GLsizei display_w, GLsizei display_h);
 std::string get_fragment_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &fragment_program, const char *base_path);
 std::string get_vertex_glsl(SceGxmShaderPatcher &shader_patcher, const SceGxmProgram &vertex_program, const char *base_path);
 AttributeLocations attribute_locations(const SceGxmProgram &vertex_program);
