@@ -3,9 +3,9 @@ add_library(
 	STATIC
 	include/renderer/functions.h
 	include/renderer/state.h
-	include/renderer/texture_cache_functions.h
 	include/renderer/texture_cache_state.h
 	include/renderer/types.h
+	src/functions.h
 	src/renderer.cpp
 	src/profile.h
 	src/texture_cache.cpp

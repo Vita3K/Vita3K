@@ -475,71 +475,7 @@ std::string parameter_name(const SceGxmProgramParameter &parameter) {
 //        return 1 << (texture->height & 0xF);
 //    }
 //
-//    GLenum translate_wrap_mode(SceGxmTextureAddrMode src) {
-//        GXM_PROFILE(__FUNCTION__);
-//
-//        switch (src) {
-//        case SCE_GXM_TEXTURE_ADDR_REPEAT:
-//            return GL_REPEAT;
-//        case SCE_GXM_TEXTURE_ADDR_CLAMP:
-//            return GL_CLAMP_TO_EDGE;
-//        case SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP:
-//            return GL_CLAMP_TO_EDGE; // FIXME: GL_MIRROR_CLAMP_TO_EDGE is not supported in OpenGL 4.1 core.
-//        case SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER:
-//            return GL_REPEAT; // FIXME: Is this correct?
-//        case SCE_GXM_TEXTURE_ADDR_CLAMP_FULL_BORDER:
-//            return GL_CLAMP_TO_BORDER;
-//        case SCE_GXM_TEXTURE_ADDR_CLAMP_IGNORE_BORDER:
-//            return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
-//        case SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER:
-//            return GL_CLAMP_TO_BORDER; // FIXME: Is this correct?
-//        default:
-//            LOG_WARN("Unsupported texture wrap mode translated: {}", log_hex(src));
-//            return GL_CLAMP_TO_EDGE;
-//        }
-//    }
-//
-//    GLenum translate_minmag_filter(SceGxmTextureFilter src) {
-//        GXM_PROFILE(__FUNCTION__);
-//
-//        switch (src) {
-//        case SCE_GXM_TEXTURE_FILTER_POINT:
-//            return GL_NEAREST;
-//        case SCE_GXM_TEXTURE_FILTER_LINEAR:
-//            return GL_LINEAR;
-//        default:
-//            LOG_WARN("Unsupported texture min/mag filter translated: {}", log_hex(src));
-//            return GL_LINEAR;
-//        }
-//    }
-//
-//    void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
-//        LOG_WARN("4-bit palettes are not yet tested.");
-//
-//        const size_t stride = ((width + 7) & ~7) / 2; // NOTE: This is correct only with linear textures.
-//        for (size_t y = 0; y < height; ++y) {
-//            uint32_t *const dst_row = &dst[y * width];
-//            const uint8_t *const src_row = &src[y * stride];
-//            for (size_t x = 0; x < width; ++x) {
-//                const uint8_t lohi = src_row[x / 2];
-//                const uint8_t lo = lohi & 0xf;
-//                const uint8_t hi = lohi >> 4;
-//                dst_row[x + 0] = palette[lo];
-//                dst_row[x + 1] = palette[hi];
-//            }
-//        }
-//    }
-//
-//    void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
-//        const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
-//        for (size_t y = 0; y < height; ++y) {
-//            uint32_t *const dst_row = &dst[y * width];
-//            const uint8_t *const src_row = &src[y * stride];
-//            for (size_t x = 0; x < width; ++x) {
-//                dst_row[x] = palette[src_row[x]];
-//            }
-//        }
-//    }
+
 //} // namespace texture
 //
 

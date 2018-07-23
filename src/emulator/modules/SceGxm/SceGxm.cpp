@@ -24,6 +24,7 @@
 #include <renderer/functions.h>
 #include <renderer/types.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
 
 #include <psp2/kernel/error.h>
 
@@ -365,9 +366,11 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
     
-    if (!renderer::draw(context->renderer, context->state, primType, indexType, indexData, indexCount, host.mem)) {
+    if (!renderer::sync_state(context->renderer, context->state, host.mem, host.gui.texture_cache)) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
+    
+    renderer::draw(context->renderer, context->state, primType, indexType, indexData, indexCount, host.mem);
 
     return 0;
 }
@@ -1019,9 +1022,6 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
 
     context->state.fragment_textures[textureIndex] = *texture;
 
-    glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
-    cache_and_bind_texture(context->renderer.texture_cache, *texture, host.mem, host.gui.texture_cache);
-
     return 0;
 }
 
@@ -1035,23 +1035,10 @@ EXPORT(int, sceGxmSetFrontDepthBias) {
 
 EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
     context->state.front_depth_func = depthFunc;
-
-    glEnable(GL_DEPTH_TEST);
-    if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
-        // TODO: Find a way to implement this since glDepthFuncSeparate doesn't exist
-        LOG_WARN("sceGxmSetFrontDepthFunc called with a two sided context, graphical glitches may happen.");
-    }
-    glDepthFunc(translate_depth_func(depthFunc));
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
     context->state.front_depth_write_enable = enable;
-
-    if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
-        // TODO: Find a way to implement this since glDepthMaskSeparate doesn't exist
-        LOG_WARN("sceGxmSetFrontDepthWriteEnable called with a two sided context, graphical glitches may happen.");
-    }
-    glDepthMask(enable == SCE_GXM_DEPTH_WRITE_ENABLED ? GL_TRUE : GL_FALSE);
 }
 
 EXPORT(int, sceGxmSetFrontFragmentProgramEnable) {
@@ -1077,35 +1064,10 @@ EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFun
     context->state.front_stencil.depth_pass = depthPass;
     context->state.front_stencil.compare_mask = compareMask;
     context->state.front_stencil.write_mask = writeMask;
-
-    glEnable(GL_STENCIL_TEST);
-
-    GLenum face = (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) ? GL_FRONT : GL_FRONT_AND_BACK;
-    GLenum gl_func = translate_stencil_func(func);
-    GLenum sfail = translate_stencil_op(stencilFail);
-    GLenum dpfail = translate_stencil_op(depthFail);
-    GLenum dppass = translate_stencil_op(depthPass);
-
-    GLint sref;
-    glGetIntegerv(GL_STENCIL_REF, &sref);
-
-    glStencilOpSeparate(face, sfail, dpfail, dppass);
-    glStencilFuncSeparate(face, gl_func, sref, compareMask);
-    glStencilMaskSeparate(face, writeMask);
 }
 
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref) {
     context->state.front_stencil.ref = sref;
-
-    glEnable(GL_STENCIL_TEST);
-
-    GLenum face = (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) ? GL_FRONT : GL_FRONT_AND_BACK;
-
-    GLint stencil_config[2];
-    glGetIntegerv(GL_STENCIL_FUNC, &stencil_config[0]);
-    glGetIntegerv(GL_STENCIL_VALUE_MASK, &stencil_config[1]);
-
-    glStencilFuncSeparate(face, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
 }
 
 EXPORT(int, sceGxmSetFrontVisibilityTestEnable) {

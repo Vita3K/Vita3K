@@ -1,8 +1,8 @@
 #include <renderer/functions.h>
 
+#include "functions.h"
 #include "profile.h"
 
-#include <renderer/texture_cache_functions.h>
 #include <renderer/types.h>
 
 #include <glutil/gl.h>
@@ -343,30 +343,6 @@ namespace renderer {
         glStencilMaskSeparate(face, state.write_mask);
     }
     
-    static void apply_state(const GxmContextState &state, const MemState &mem) {
-        R_PROFILE(__func__);
-        
-        // Stencil.
-        if (state.depth_stencil_surface.stencilData) {
-            glEnable(GL_STENCIL_TEST);
-            apply_stencil_state(GL_FRONT, state.front_stencil);
-            apply_stencil_state(GL_BACK, state.back_stencil);
-        } else {
-            glDisable(GL_STENCIL_TEST);
-        }
-        
-        // Blending.
-        const FragmentProgram &fragment_program = *state.fragment_program.get(mem)->renderer.get();
-        glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
-        if (fragment_program.blend_enabled) {
-            glEnable(GL_BLEND);
-            glBlendEquationSeparate(fragment_program.color_func, fragment_program.alpha_func);
-            glBlendFuncSeparate(fragment_program.color_src, fragment_program.color_dst, fragment_program.alpha_src, fragment_program.alpha_dst);
-        } else {
-            glDisable(GL_BLEND);
-        }
-    }
-    
     static size_t attribute_format_size(SceGxmAttributeFormat format) {
         R_PROFILE(__func__);
     
@@ -528,7 +504,7 @@ namespace renderer {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
     
-    bool draw(Context &context, const GxmContextState &state, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, const MemState &mem) {
+    bool sync_state(Context &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache) {
         R_PROFILE(__func__);
         
         // TODO Use some kind of caching to avoid setting every draw call?
@@ -538,10 +514,66 @@ namespace renderer {
         }
         glUseProgram(program->get());
         
-        // TODO Use some kind of caching to avoid setting every draw call?
+        // Depth test.
+        if (state.depth_stencil_surface.depthData) {
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(translate_depth_func(state.front_depth_func));
+            glDepthMask(state.front_depth_write_enable == SCE_GXM_DEPTH_WRITE_ENABLED ? GL_TRUE : GL_FALSE);
+        } else {
+            glDisable(GL_DEPTH_TEST);
+        }
+        
+        // Stencil.
+        if (state.depth_stencil_surface.stencilData) {
+            glEnable(GL_STENCIL_TEST);
+            apply_stencil_state(GL_FRONT, state.front_stencil);
+            apply_stencil_state(GL_BACK, state.back_stencil);
+        } else {
+            glDisable(GL_STENCIL_TEST);
+        }
+        
+        // Blending.
+        const FragmentProgram &fragment_program = *state.fragment_program.get(mem)->renderer.get();
+        glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
+        if (fragment_program.blend_enabled) {
+            glEnable(GL_BLEND);
+            glBlendEquationSeparate(fragment_program.color_func, fragment_program.alpha_func);
+            glBlendFuncSeparate(fragment_program.color_src, fragment_program.color_dst, fragment_program.alpha_src, fragment_program.alpha_dst);
+        } else {
+            glDisable(GL_BLEND);
+        }
+        
+        // Textures.
+        for (size_t i = 0; i < SCE_GXM_MAX_TEXTURE_UNITS; ++i) {
+            const SceGxmTexture &texture = state.fragment_textures[i];
+            glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + i));
+            cache_and_bind_texture(context.texture_cache, texture, mem, enable_texture_cache);
+        }
+        glActiveTexture(GL_TEXTURE0);
+        
+        // Uniforms.
         set_uniforms(program->get(), context, state, mem);
         
-        apply_state(state, mem);
+        // Vertex attributes.
+        const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
+        for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
+            const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
+            const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
+            const GLenum type = attribute_format_to_gl_type(attribute_format);
+            const GLboolean normalised = attribute_format_normalised(attribute_format);
+            const int attrib_location = attribute.regIndex / sizeof(uint32_t);
+            
+            glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[attribute.streamIndex]);
+            glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
+            glEnableVertexAttribArray(attrib_location);
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        
+        return true;
+    }
+    
+    void draw(Context &context, const GxmContextState &state, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, const MemState &mem) {
+        R_PROFILE(__func__);
         
         // Upload index data.
         const GLsizeiptr index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
@@ -575,32 +607,8 @@ namespace renderer {
         }
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         
-        // Set vertex attribute parameters.
-        // TODO Only set attrib pointer when changed.
-        // TODO Move vertex array object to program cache?
-        for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-            const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
-            const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-            const GLenum type = attribute_format_to_gl_type(attribute_format);
-            const GLboolean normalised = attribute_format_normalised(attribute_format);
-            const int attrib_location = attribute.regIndex / sizeof(uint32_t);
-            
-            glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[attribute.streamIndex]);
-            glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
-            glEnableVertexAttribArray(attrib_location);
-        }
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        
         const GLenum mode = translate_primitive(type);
         const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
         glDrawElements(mode, count, gl_type, nullptr);
-        
-        // Disable vertex attribute arrays.
-        for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-            const int attrib_location = attribute.regIndex / sizeof(uint32_t);
-            glDisableVertexAttribArray(attrib_location);
-        }
-        
-        return true;
     }
 }
