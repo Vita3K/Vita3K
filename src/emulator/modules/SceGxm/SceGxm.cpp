@@ -963,19 +963,6 @@ EXPORT(int, sceGxmSetBackVisibilityTestOp) {
 
 EXPORT(int, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
     context->state.cull_mode = mode;
-    switch (mode) {
-    case SCE_GXM_CULL_CCW:
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-        break;
-    case SCE_GXM_CULL_CW:
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        break;
-    case SCE_GXM_CULL_NONE:
-        glDisable(GL_CULL_FACE);
-        break;
-    }
     return 0;
 }
 

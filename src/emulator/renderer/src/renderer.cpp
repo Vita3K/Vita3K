@@ -514,6 +514,21 @@ namespace renderer {
         }
         glUseProgram(program->get());
         
+        // Culling.
+        switch (state.cull_mode) {
+            case SCE_GXM_CULL_CCW:
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_FRONT);
+                break;
+            case SCE_GXM_CULL_CW:
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_BACK);
+                break;
+            case SCE_GXM_CULL_NONE:
+                glDisable(GL_CULL_FACE);
+                break;
+        }
+        
         // Depth test.
         if (state.depth_stencil_surface.depthData) {
             glEnable(GL_DEPTH_TEST);
