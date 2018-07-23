@@ -79,7 +79,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         call_import(cpu, nid, thid);
     };
 
-    thread->cpu = init_cpu(CPUBackend::Unicorn, entry_point.address(), stack_top, log_code, call_svc, mem);
+    thread->cpu = init_cpu(CPUBackend::Dynarmic, entry_point.address(), stack_top, log_code, call_svc, mem);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }

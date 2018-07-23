@@ -124,21 +124,12 @@ public:
     }
 };
 
-std::unique_ptr<Dynarmic::A32::Jit> make_jit(std::unique_ptr<ArmDynarmicCallback> &callback, MemState *mem) {
+std::unique_ptr<Dynarmic::A32::Jit> make_jit(std::array<uint8_t *, 0x100000> &pages,
+    std::unique_ptr<ArmDynarmicCallback> &callback, MemState *mem) {
     Dynarmic::A32::UserConfig config;
     config.callbacks = callback.get();
 
-    if (mem) {
-        std::array<uint8_t *, Dynarmic::A32::UserConfig::NUM_PAGE_TABLE_ENTRIES> pages;
-
-        pages[0] = mem->memory.get();
-
-        for (size_t i = 0; i < mem->allocated_pages.size(); i++) {
-            pages[i] = pages[i - 1] + mem->page_size;
-        }
-
-        config.page_table = &pages;
-    }
+    config.page_table = &pages;
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
@@ -146,7 +137,18 @@ std::unique_ptr<Dynarmic::A32::Jit> make_jit(std::unique_ptr<ArmDynarmicCallback
 DynarmicCPU::DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code)
     : fallback(state, pc, sp, log_code)
     , cb(std::make_unique<ArmDynarmicCallback>(*state)) {
-    jit = make_jit(cb, state->mem);
+    pages[0] = state->mem->memory.get();
+
+    for (size_t i = 1; i < state->mem->allocated_pages.size(); i++) {
+        pages[i] = pages[i - 1] + state->mem->page_size;
+    }
+
+    jit = make_jit(pages, cb, state->mem);
+
+    set_cpsr(16 | ((pc & 1) << 5));
+    set_pc(pc);
+    set_lr(pc);
+    set_sp(sp);
 }
 
 DynarmicCPU::~DynarmicCPU() {
@@ -229,12 +231,11 @@ DynarmicCPU::ThreadContext DynarmicCPU::save_context() {
 }
 
 void DynarmicCPU::load_context(UnicornCPU::ThreadContext ctx) {
-    jit->SetCpsr(ctx.cpsr);
-
     for (uint8_t i = 0; i < 16; i++) {
         jit->Regs()[i] = ctx.cpu_registers[i];
     }
 
     set_pc(ctx.pc);
     set_sp(ctx.sp);
+    set_cpsr(ctx.cpsr);
 }

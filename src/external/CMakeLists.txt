@@ -55,8 +55,8 @@ add_library(xbyak INTERFACE)
 
 set (BOOST_INCLUDEDIR "${CMAKE_CURRENT_SOURCE_DIR}/ext-boost/" CACHE PATH "Boost include directory")
 
-set(DYNARMIC_TESTS OFF)
-set(DYNARMIC_NO_BUNDLED_FMT OFF)
+set(DYNARMIC_TESTS OFF CACHE BOOL "No tests" FORCE)
+set(DYNARMIC_NO_BUNDLED_FMT OFF CACHE BOOL "No bundle" FORCE)
 #add_library(dynarmic INTERFACE)
 #target_include_directories(dynarmic PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dynarmic/include")
 # target_compile_definitions
@@ -64,7 +64,10 @@ add_subdirectory(dynarmic)
 
 # spdlog
 add_library(spdlog INTERFACE)
-target_include_directories(spdlog INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include")
+target_include_directories(spdlog INTERFACE 
+    "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Dynarmic/externals/fmt")
+
 target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1 SPDLOG_FMT_EXTERNAL=1)
 
 # Defined before "dynarmic" above

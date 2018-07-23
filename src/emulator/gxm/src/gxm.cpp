@@ -333,9 +333,12 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     glCompileShader(shader->get());
 
     GLint log_length = 0;
+    GLint sts = 0;
+
+    glGetShaderiv(shader->get(), GL_COMPILE_STATUS, &sts);
     glGetShaderiv(shader->get(), GL_INFO_LOG_LENGTH, &log_length);
 
-    if (log_length > 0) {
+    if (!sts) {
         std::vector<GLchar> log;
         log.resize(log_length);
         glGetShaderInfoLog(shader->get(), log_length, nullptr, log.data());
@@ -587,9 +590,12 @@ SharedGLObject get_program(SceGxmContext &context, const MemState &mem) {
     glLinkProgram(program->get());
 
     GLint log_length = 0;
+    GLint sts = 0;
+
+    glGetProgramiv(program->get(), GL_LINK_STATUS, &sts);
     glGetProgramiv(program->get(), GL_INFO_LOG_LENGTH, &log_length);
 
-    if (log_length > 0) {
+    if (!sts) {
         std::vector<GLchar> log;
         log.resize(log_length);
         glGetProgramInfoLog(program->get(), log_length, nullptr, log.data());

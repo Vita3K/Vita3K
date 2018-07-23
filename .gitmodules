@@ -46,3 +46,6 @@
 [submodule "src/external/ext-boost"]
 	path = src/external/ext-boost
 	url = https://github.com/MerryMage/ext-boost
+[submodule "src/external/fmt"]
+	path = src/external/fmt
+	url = https://github.com/fmtlib/fmt

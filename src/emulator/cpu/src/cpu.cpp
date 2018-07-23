@@ -39,6 +39,8 @@ CPUStatePtr init_cpu(CPUBackend backend, Address pc, Address sp, bool log_code, 
     }
 
     state->cpu = new_cpu(backend, pc, sp, log_code, state.get());
+
+    return state;
 }
 
 int run(CPUState &state, bool callback) {

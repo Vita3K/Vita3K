@@ -1,5 +1,5 @@
-#include <cpu/unicorn_cpu.h>
 #include <cpu/functions.h>
+#include <cpu/unicorn_cpu.h>
 #include <mem/ptr.h>
 
 #include <util/log.h>
@@ -19,7 +19,7 @@ bool thumb_mode(uc_engine *uc) {
 }
 
 static const bool LOG_CODE = true;
-static const bool LOG_MEM_ACCESS = false;
+static const bool LOG_MEM_ACCESS = true;
 
 static void delete_cpu_state(CPUState *state) {
     delete state;
@@ -40,12 +40,12 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const size_t buffer_size = GB(4) - address;
     const bool thumb = is_thumb_mode(uc);
     const std::string disassembly = disassemble(state.disasm, code, buffer_size, address, thumb);
-    LOG_TRACE("{} {}", log_hex(address), disassembly);
+    LOG_TRACE("{} {} 0x{:x}", log_hex(address), disassembly, thumb ? *reinterpret_cast<const uint16_t *>(code) : *reinterpret_cast<const uint32_t *>(code));
 }
 
 static void log_memory_access(const char *type, Address address, int size, int64_t value, const MemState &mem) {
     const char *const name = mem_name(address, mem);
-    LOG_TRACE("{} {} bytes, address {} ( {} ), value {}", type, size, address, name, log_hex(value));
+    LOG_TRACE("{} {} bytes, address 0x{:x} ( {} ), value {}", type, size, address, name, log_hex(value));
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -79,8 +79,7 @@ static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
         assert(err == UC_ERR_OK);
         const uint8_t imm = svc_instruction & 0xff;
         state.call_svc(state, imm, pc);
-    }
-    else {
+    } else {
         const Address svc_address = pc - 4;
         uint32_t svc_instruction = 0;
         err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
@@ -110,6 +109,8 @@ UnicornCPU::UnicornCPU(CPUState *state, Address pc, Address sp, bool log_code) {
     uc_engine *temp_uc = nullptr;
     uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &temp_uc);
     assert(err == UC_ERR_OK);
+
+    uc = UnicornPtr(temp_uc, uc_free);
 
     temp_uc = nullptr;
 
@@ -159,7 +160,9 @@ bool UnicornCPU::execute_instructions(int num) {
 
     uc_err err;
 
-    if (num > 0 || num == 01) {
+    if (num > 0 || num == -1) {
+        ThreadContext ctx = save_context();
+
         err = uc_emu_start(uc.get(), pc, 0, 0, 1);
         pc = get_pc();
 
@@ -170,7 +173,7 @@ bool UnicornCPU::execute_instructions(int num) {
         }
     }
 
-    if (num >= 1 || num == -1) {
+    if (num > 1 || num == -1) {
         err = uc_emu_start(uc.get(), pc, 1ULL << 63, 0, num == -1 ? 0 : num - 1);
 
         if (err != UC_ERR_OK) {
@@ -264,7 +267,7 @@ void UnicornCPU::set_cpsr(uint32_t val) {
 }
 
 /*! Set program counter */
-void UnicornCPU::set_pc(uint32_t val)  {
+void UnicornCPU::set_pc(uint32_t val) {
     auto err = uc_reg_write(uc.get(), UC_ARM_REG_PC, &val);
 
     if (err != UC_ERR_OK) {
@@ -332,10 +335,11 @@ UnicornCPU::ThreadContext UnicornCPU::save_context() {
     return ctx;
 }
 
+
 void UnicornCPU::load_context(UnicornCPU::ThreadContext ctx) {
     set_pc(ctx.pc);
-    set_sp(ctx.sp);
     set_cpsr(ctx.cpsr);
+    set_sp(ctx.sp);
 
     for (auto i = 0; i < ctx.cpu_registers.size(); i++) {
         set_reg(i, ctx.cpu_registers[i]);

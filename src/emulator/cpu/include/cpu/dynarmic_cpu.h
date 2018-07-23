@@ -5,6 +5,7 @@
 
 #include <Dynarmic/A32/a32.h>
 
+#include <array>
 #include <functional>
 #include <memory>
 
@@ -21,6 +22,8 @@ class DynarmicCPU : public CPUInterface {
 
     std::unique_ptr<Dynarmic::A32::Jit> jit;
     std::unique_ptr<ArmDynarmicCallback> cb;
+
+    std::array<uint8_t *, 0x100000> pages;
 
 public:
     DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code);
