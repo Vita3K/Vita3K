@@ -1011,16 +1011,6 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     assert(fragmentProgram);
 
     context->state.fragment_program = fragmentProgram;
-
-    const SceGxmFragmentProgram &fragment_program = *fragmentProgram.get(host.mem);
-    glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
-    if (fragment_program.blend_enabled) {
-        glEnable(GL_BLEND);
-        glBlendEquationSeparate(fragment_program.color_func, fragment_program.alpha_func);
-        glBlendFuncSeparate(fragment_program.color_src, fragment_program.color_dst, fragment_program.alpha_src, fragment_program.alpha_dst);
-    } else {
-        glDisable(GL_BLEND);
-    }
 }
 
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const SceGxmTexture *texture) {

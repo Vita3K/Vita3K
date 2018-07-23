@@ -343,7 +343,7 @@ namespace renderer {
         glStencilMaskSeparate(face, state.write_mask);
     }
     
-    static void apply_state(const GxmContextState &state) {
+    static void apply_state(const GxmContextState &state, const MemState &mem) {
         R_PROFILE(__func__);
         
         // Stencil.
@@ -353,6 +353,17 @@ namespace renderer {
             apply_stencil_state(GL_BACK, state.back_stencil);
         } else {
             glDisable(GL_STENCIL_TEST);
+        }
+        
+        // Blending.
+        const FragmentProgram &fragment_program = *state.fragment_program.get(mem)->renderer.get();
+        glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
+        if (fragment_program.blend_enabled) {
+            glEnable(GL_BLEND);
+            glBlendEquationSeparate(fragment_program.color_func, fragment_program.alpha_func);
+            glBlendFuncSeparate(fragment_program.color_src, fragment_program.color_dst, fragment_program.alpha_src, fragment_program.alpha_dst);
+        } else {
+            glDisable(GL_BLEND);
         }
     }
     
@@ -530,7 +541,7 @@ namespace renderer {
         // TODO Use some kind of caching to avoid setting every draw call?
         set_uniforms(program->get(), context, state, mem);
         
-        apply_state(state);
+        apply_state(state, mem);
         
         // Upload index data.
         const GLsizeiptr index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
