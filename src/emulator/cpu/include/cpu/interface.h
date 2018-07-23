@@ -1,12 +1,10 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <memory>
 
-enum class CPUBackend {
-    Dynarmic,
-    Unicorn
-};
+typedef uint32_t Address;
 
 /*! \brief Base class for all CPU backend implementation */
 class CPUInterface {
@@ -40,7 +38,7 @@ public:
 
     virtual uint32_t get_lr() = 0;
 
-    virtual float    get_float_reg(uint8_t idx) = 0;
+    virtual float get_float_reg(uint8_t idx) = 0;
 
     /*! Set a Rx register */
     virtual void set_reg(uint8_t idx, uint32_t val) = 0;
@@ -62,7 +60,3 @@ public:
 
     virtual void load_context(ThreadContext context) = 0;
 };
-
-using CPUInterfacePtr = std::shared_ptr<CPUInterface>;
-
-CPUInterfacePtr new_cpu(CPUBackend backend);

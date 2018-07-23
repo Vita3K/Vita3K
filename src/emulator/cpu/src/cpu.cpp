@@ -16,14 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <cpu/functions.h>
+#include <cpu/factory.h>
 #include <cpu/interface.h>
-
-#include <disasm/functions.h>
-#include <disasm/state.h>
-#include <mem/ptr.h>
-#include <util/log.h>
-
-#include <unicorn/unicorn.h>
 
 #include <cassert>
 #include <cstring>
@@ -44,7 +38,7 @@ CPUStatePtr init_cpu(CPUBackend backend, Address pc, Address sp, bool log_code, 
         return CPUStatePtr();
     }
 
-    state->cpu = new_cpu(backend);
+    state->cpu = new_cpu(backend, pc, sp, log_code, state.get());
 }
 
 int run(CPUState &state, bool callback) {

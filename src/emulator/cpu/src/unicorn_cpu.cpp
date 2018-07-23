@@ -1,6 +1,7 @@
 #include <cpu/unicorn_cpu.h>
 #include <cpu/functions.h>
 #include <mem/ptr.h>
+
 #include <util/log.h>
 
 #include <cassert>

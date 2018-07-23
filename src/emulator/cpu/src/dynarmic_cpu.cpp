@@ -1,20 +1,17 @@
 #include <cpu/dynarmic_cpu.h>
-#include <cpu/interface.h>
+#include <cpu/functions.h>
+#include <mem/ptr.h>
 
 #include <util/log.h>
 
-#include <mem/ptr.h>
-
-class ArmDynarmicCallback: public Dynarmic::A32::UserCallbacks {
-    friend class DynarmicCPU;
-    
+class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
     CPUState *parent;
 
     uint64_t interpreted = 0;
 
     bool log_read = false;
     bool log_write = false;
-    
+
 public:
     explicit ArmDynarmicCallback(CPUState &parent)
         : parent(&parent) {}
@@ -92,7 +89,7 @@ public:
     }
 
     void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) {
-        DynarmicCPU &dyncpu = *std::dynamic_pointer_cast<DynarmicCPU>(parent->cpu);
+        DynarmicCPU &dyncpu = *dynamic_cast<DynarmicCPU *>(parent->cpu.get());
 
         CPUInterface::ThreadContext context = dyncpu.save_context();
         dyncpu.fallback.load_context(context);
@@ -132,12 +129,12 @@ std::unique_ptr<Dynarmic::A32::Jit> make_jit(std::unique_ptr<ArmDynarmicCallback
     config.callbacks = callback.get();
 
     if (mem) {
-        std::array<uint8_t*, Dynarmic::A32::UserConfig::NUM_PAGE_TABLE_ENTRIES> pages;
+        std::array<uint8_t *, Dynarmic::A32::UserConfig::NUM_PAGE_TABLE_ENTRIES> pages;
 
         pages[0] = mem->memory.get();
 
         for (size_t i = 0; i < mem->allocated_pages.size(); i++) {
-            pages[i] = pages[i-1] + mem->page_size;
+            pages[i] = pages[i - 1] + mem->page_size;
         }
 
         config.page_table = &pages;
@@ -147,9 +144,12 @@ std::unique_ptr<Dynarmic::A32::Jit> make_jit(std::unique_ptr<ArmDynarmicCallback
 }
 
 DynarmicCPU::DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code)
-    : fallback(state, pc, sp, log_code) 
-    , cb(std::make_unique<ArmDynarmicCallback>(*this)) {
+    : fallback(state, pc, sp, log_code)
+    , cb(std::make_unique<ArmDynarmicCallback>(*state)) {
     jit = make_jit(cb, state->mem);
+}
+
+DynarmicCPU::~DynarmicCPU() {
 }
 
 /*! Run the CPU */
@@ -206,7 +206,7 @@ uint32_t DynarmicCPU::get_cpsr() {
 }
 
 uint32_t DynarmicCPU::get_lr() {
-    return jit->Regs[14];
+    return jit->Regs()[14];
 }
 
 float DynarmicCPU::get_float_reg(uint8_t idx) {

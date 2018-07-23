@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Dynarmic/A32/a32.h>
-
-#include <cpu/functions.h>
+#include <cpu/interface.h>
 #include <cpu/unicorn_cpu.h>
+
+#include <Dynarmic/A32/a32.h>
 
 #include <functional>
 #include <memory>
@@ -24,6 +24,7 @@ class DynarmicCPU : public CPUInterface {
 
 public:
     DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code);
+    ~DynarmicCPU();
 
     /*! Run the CPU */
     void run() override;

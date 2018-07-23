@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <cpu/interface.h>
+#include <cpu/factory.h>
 #include <disasm/functions.h>
 #include <disasm/state.h>
 #include <mem/mem.h> // Address.
