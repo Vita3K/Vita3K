@@ -40,3 +40,9 @@
 [submodule "src/emulator/shaders-db"]
 	path = src/emulator/shaders-db
 	url = https://github.com/Vita3K/shaders-db.git
+[submodule "src/external/Dynarmic"]
+	path = src/external/Dynarmic
+	url = https://github.com/MerryMage/Dynarmic
+[submodule "src/external/ext-boost"]
+	path = src/external/ext-boost
+	url = https://github.com/MerryMage/ext-boost
