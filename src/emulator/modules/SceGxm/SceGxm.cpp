@@ -419,7 +419,7 @@ EXPORT(int, sceGxmExecuteCommandList) {
 
 EXPORT(void, sceGxmFinish, SceGxmContext *context) {
     assert(context != nullptr);
-    glFinish();
+    renderer::finish(context->renderer);
 }
 
 EXPORT(int, sceGxmFragmentProgramGetPassType) {

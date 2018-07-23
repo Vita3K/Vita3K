@@ -611,4 +611,8 @@ namespace renderer {
         const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
         glDrawElements(mode, count, gl_type, nullptr);
     }
+    
+    void finish(Context &context) {
+        glFinish();
+    }
 }
