@@ -947,16 +947,6 @@ EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc
 
 EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
     context->state.back_stencil.ref = sref;
-
-    if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
-        glEnable(GL_STENCIL_TEST);
-
-        GLint stencil_config[2];
-        glGetIntegerv(GL_STENCIL_BACK_FUNC, &stencil_config[0]);
-        glGetIntegerv(GL_STENCIL_BACK_VALUE_MASK, &stencil_config[1]);
-
-        glStencilFuncSeparate(GL_BACK, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
-    }
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestEnable) {
