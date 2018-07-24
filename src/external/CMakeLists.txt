@@ -60,7 +60,7 @@ set(DYNARMIC_NO_BUNDLED_FMT OFF CACHE BOOL "No bundle" FORCE)
 #add_library(dynarmic INTERFACE)
 #target_include_directories(dynarmic PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dynarmic/include")
 # target_compile_definitions
-add_subdirectory(dynarmic)
+add_subdirectory(Dynarmic)
 
 # spdlog
 add_library(spdlog INTERFACE)
