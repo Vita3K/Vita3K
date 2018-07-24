@@ -13,4 +13,5 @@ namespace texture {
 }
 
 const SceGxmProgramParameter *program_parameters(const SceGxmProgram &program);
+std::string parameter_name_raw(const SceGxmProgramParameter &parameter);
 std::string parameter_name(const SceGxmProgramParameter &parameter);

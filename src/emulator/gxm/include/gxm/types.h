@@ -221,26 +221,6 @@ struct SceGxmRegisteredProgram {
     Ptr<const SceGxmProgram> program;
 };
 
-//struct SceGxmRenderTarget {
-//    GLObjectArray<2> renderbuffers;
-//    GLObjectArray<1> framebuffer;
-//};
-//
-//struct FragmentProgramCacheKey {
-//    SceGxmRegisteredProgram fragment_program;
-//    emu::SceGxmBlendInfo blend_info;
-//};
-//
-//typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
-//typedef std::map<Sha256Hash, std::string> GLSLCache;
-//
-//struct SceGxmShaderPatcher {
-//    // TODO This is an opaque struct.
-//    FragmentProgramCache fragment_program_cache;
-//    GLSLCache fragment_glsl_cache;
-//    GLSLCache vertex_glsl_cache;
-//};
-
 namespace emu {
     typedef Ptr<SceGxmRegisteredProgram> SceGxmShaderPatcherId;
 

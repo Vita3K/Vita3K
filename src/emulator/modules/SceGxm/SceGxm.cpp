@@ -28,19 +28,6 @@
 
 #include <psp2/kernel/error.h>
 
-//#include <cpu/functions.h>
-//#include <util/log.h>
-//
-//#include <glbinding/Binding.h>
-//
-//#include <algorithm>
-//#include <fstream>
-//#include <iostream>
-//#include <sstream>
-//
-//using namespace emu;
-//using namespace glbinding;
-
 struct SceGxmContext {
     GxmContextState state;
     renderer::Context renderer;
@@ -48,6 +35,17 @@ struct SceGxmContext {
 
 struct SceGxmRenderTarget {
     renderer::RenderTarget renderer;
+};
+
+struct FragmentProgramCacheKey {
+    SceGxmRegisteredProgram fragment_program;
+    emu::SceGxmBlendInfo blend_info;
+};
+
+typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
+
+struct SceGxmShaderPatcher {
+    FragmentProgramCache fragment_program_cache;
 };
 
 // clang-format off
@@ -66,6 +64,24 @@ static const uint8_t mask_gxp[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 };
 // clang-format on
+
+static bool operator<(const SceGxmRegisteredProgram &a, const SceGxmRegisteredProgram &b) {
+    return a.program < b.program;
+}
+
+static bool operator<(const emu::SceGxmBlendInfo &a, const emu::SceGxmBlendInfo &b) {
+    return memcmp(&a, &b, sizeof(a)) < 0;
+}
+
+static bool operator<(const FragmentProgramCacheKey &a, const FragmentProgramCacheKey &b) {
+    if (a.fragment_program < b.fragment_program) {
+        return true;
+    }
+    if (b.fragment_program < a.fragment_program) {
+        return false;
+    }
+    return b.blend_info < a.blend_info;
+}
 
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return UNIMPLEMENTED();
@@ -213,7 +229,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     SceGxmContext *const ctx = context->get(host.mem);
     ctx->state.params = *params;
 
-    if (!renderer::create(ctx->renderer)) {
+    if (!renderer::create(ctx->renderer, host.window.get())) {
         free(host.mem, *context);
         context->reset();
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
@@ -1073,26 +1089,6 @@ EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode m
     context->state.region_clip_min.y = yMin;
     context->state.region_clip_max.x = xMax;
     context->state.region_clip_max.y = yMax;
-
-    xMin += xMin % 32;
-    yMin += yMin % 32;
-    xMax += xMax % 32;
-    yMax += yMax % 32;
-    switch (mode) {
-    case SCE_GXM_REGION_CLIP_NONE:
-        glScissor(0, 0, host.display.image_size.width, host.display.image_size.height);
-        break;
-    case SCE_GXM_REGION_CLIP_ALL:
-        glScissor(0, 0, 0, 0);
-        break;
-    case SCE_GXM_REGION_CLIP_OUTSIDE:
-        glScissor(xMin, host.display.image_size.height - yMax, xMin + xMax, yMin + yMax);
-        break;
-    case SCE_GXM_REGION_CLIP_INSIDE:
-        // TODO: Implement this
-        LOG_WARN("Unimplemented region clip mode used: SCE_GXM_REGION_CLIP_INSIDE");
-        break;
-    }
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
@@ -1156,12 +1152,10 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
     context->state.viewport.scale.x = xScale;
     context->state.viewport.scale.y = yScale;
     context->state.viewport.scale.z = zScale;
-    set_viewport(context->state.viewport, host.display.image_size.width, host.display.image_size.height);
 }
 
 EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
     context->state.viewport.enable = enable;
-    set_viewport(context->state.viewport, host.display.image_size.width, host.display.image_size.height);
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
@@ -1256,21 +1250,10 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = programId->program;
-    fp->glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
-
-    // Translate blending.
-    if (blendInfo != nullptr) {
-        fp->color_mask_red = ((blendInfo->colorMask & SCE_GXM_COLOR_MASK_R) != 0) ? GL_TRUE : GL_FALSE;
-        fp->color_mask_green = ((blendInfo->colorMask & SCE_GXM_COLOR_MASK_G) != 0) ? GL_TRUE : GL_FALSE;
-        fp->color_mask_blue = ((blendInfo->colorMask & SCE_GXM_COLOR_MASK_B) != 0) ? GL_TRUE : GL_FALSE;
-        fp->color_mask_alpha = ((blendInfo->colorMask & SCE_GXM_COLOR_MASK_A) != 0) ? GL_TRUE : GL_FALSE;
-        fp->blend_enabled = true;
-        fp->color_func = translate_blend_func(blendInfo->colorFunc);
-        fp->alpha_func = translate_blend_func(blendInfo->alphaFunc);
-        fp->color_src = translate_blend_factor(blendInfo->colorSrc);
-        fp->color_dst = translate_blend_factor(blendInfo->colorDst);
-        fp->alpha_src = translate_blend_factor(blendInfo->alphaSrc);
-        fp->alpha_dst = translate_blend_factor(blendInfo->alphaDst);
+    fp->renderer = std::make_unique<renderer::FragmentProgram>();
+    
+    if (!renderer::create(*fp->renderer.get(), host.renderer, *programId->program.get(mem), blendInfo, host.base_path.c_str())) {
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
     shaderPatcher->fragment_program_cache.emplace(key, *fragmentProgram);
@@ -1292,7 +1275,11 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = alloc(mem, size_mask_gxp, __FUNCTION__);
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
-    fp->glsl = get_fragment_glsl(*shaderPatcher, *fp->program.get(mem), host.base_path.c_str());
+    fp->renderer = std::make_unique<renderer::FragmentProgram>();
+    
+    if (!renderer::create(*fp->renderer, host.renderer, *fp->program.get(mem), nullptr, host.base_path.c_str())) {
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
+    }
 
     return STUBBED("Using a null shader");
 }
@@ -1315,11 +1302,14 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
     vp->program = programId->program;
-    vp->glsl = get_vertex_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
-    vp->attribute_locations = attribute_locations(*programId->program.get(mem));
     vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
-
+    vp->renderer = std::make_unique<renderer::VertexProgram>();
+    
+    if (!renderer::create(*vp->renderer.get(), host.renderer, *programId->program.get(mem), host.base_path.c_str())) {
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
+    }
+    
     return 0;
 }
 
