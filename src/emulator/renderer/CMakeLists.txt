@@ -5,6 +5,7 @@ add_library(
 	include/renderer/state.h
 	include/renderer/texture_cache_state.h
 	include/renderer/types.h
+	src/draw.cpp
 	src/functions.h
 	src/renderer.cpp
 	src/profile.h
