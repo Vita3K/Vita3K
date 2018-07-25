@@ -5,12 +5,16 @@ add_library(
 	include/renderer/state.h
 	include/renderer/texture_cache_state.h
 	include/renderer/types.h
+	src/attribute_formats.cpp
+	src/compile_program.cpp
 	src/draw.cpp
 	src/functions.h
 	src/renderer.cpp
 	src/profile.h
+	src/sync_state.cpp
 	src/texture_cache.cpp
 	src/texture_formats.cpp
+	src/uniforms.cpp
 )
 
 target_include_directories(renderer PUBLIC include)

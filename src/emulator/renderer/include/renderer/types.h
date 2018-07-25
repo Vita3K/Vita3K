@@ -17,7 +17,6 @@ namespace renderer {
     typedef std::map<GLuint, std::string> AttributeLocations;
     typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
     typedef std::tuple<std::string, std::string> ProgramGLSLs;
-    typedef std::shared_ptr<GLObject> SharedGLObject;
     typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 
     struct Context {

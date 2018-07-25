@@ -9,29 +9,6 @@
 #include <util/log.h>
 
 namespace renderer {
-    static size_t attribute_format_size(SceGxmAttributeFormat format) {
-        R_PROFILE(__func__);
-
-        switch (format) {
-        case SCE_GXM_ATTRIBUTE_FORMAT_U8:
-        case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
-        case SCE_GXM_ATTRIBUTE_FORMAT_S8:
-        case SCE_GXM_ATTRIBUTE_FORMAT_S8N:
-            return 1;
-        case SCE_GXM_ATTRIBUTE_FORMAT_U16:
-        case SCE_GXM_ATTRIBUTE_FORMAT_U16N:
-        case SCE_GXM_ATTRIBUTE_FORMAT_S16:
-        case SCE_GXM_ATTRIBUTE_FORMAT_S16N:
-        case SCE_GXM_ATTRIBUTE_FORMAT_F16:
-            return 2;
-        case SCE_GXM_ATTRIBUTE_FORMAT_F32:
-            return 4;
-        default:
-            LOG_ERROR("Unsupported attribute format {}", log_hex(format));
-            return 4;
-        }
-    }
-
     static GLenum translate_primitive(SceGxmPrimitiveType primType) {
         R_PROFILE(__func__);
 
