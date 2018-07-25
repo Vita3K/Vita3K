@@ -10,11 +10,11 @@ namespace renderer {
     constexpr size_t TextureCacheSize = 1024;
     typedef uint64_t TextureCacheTimestamp;
     typedef uint32_t TextureCacheHash;
-    
+
     typedef std::array<SceGxmTexture, TextureCacheSize> TextureCacheGxmTextures;
     typedef std::array<TextureCacheTimestamp, TextureCacheSize> TextureCacheTimestamps;
     typedef std::array<TextureCacheHash, TextureCacheSize> TextureCacheHashes;
-    
+
     struct TextureCacheState {
         size_t used = 0;
         TextureCacheTimestamp timestamp = 1;

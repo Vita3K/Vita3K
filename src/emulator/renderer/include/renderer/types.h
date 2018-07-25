@@ -8,8 +8,8 @@
 #include <psp2/gxm.h>
 
 #include <map>
-#include <tuple>
 #include <memory>
+#include <tuple>
 
 typedef void *SDL_GLContext;
 
@@ -19,7 +19,7 @@ namespace renderer {
     typedef std::tuple<std::string, std::string> ProgramGLSLs;
     typedef std::shared_ptr<GLObject> SharedGLObject;
     typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
-    
+
     struct Context {
         GLContextPtr gl;
         ProgramCache program_cache;
@@ -28,7 +28,7 @@ namespace renderer {
         GLObjectArray<1> element_buffer;
         GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     };
-    
+
     struct FragmentProgram {
         std::string glsl;
         GLboolean color_mask_red = GL_TRUE;
@@ -43,12 +43,12 @@ namespace renderer {
         GLenum alpha_src = GL_ONE;
         GLenum alpha_dst = GL_ZERO;
     };
-    
+
     struct RenderTarget {
         GLObjectArray<2> renderbuffers;
         GLObjectArray<1> framebuffer;
     };
-    
+
     struct VertexProgram {
         std::string glsl;
         AttributeLocations attribute_locations;

@@ -381,11 +381,11 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     if (!host.gxm.isInScene) {
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
-    
+
     if (!renderer::sync_state(context->renderer, context->state, host.mem, host.gui.texture_cache)) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
-    
+
     renderer::draw(context->renderer, context->state, primType, indexType, indexData, indexCount, host.mem);
 
     return 0;
@@ -418,7 +418,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     const size_t stride_in_pixels = context->state.color_surface.pbeEmitWords[2];
     const Address data = context->state.color_surface.pbeEmitWords[3];
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
-    
+
     renderer::end_scene(context->renderer, width, height, stride_in_pixels, pixels);
     if (fragmentNotification) {
         volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
@@ -1251,7 +1251,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = programId->program;
     fp->renderer = std::make_unique<renderer::FragmentProgram>();
-    
+
     if (!renderer::create(*fp->renderer.get(), host.renderer, *programId->program.get(mem), blendInfo, host.base_path.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
@@ -1276,7 +1276,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     fp->program = alloc(mem, size_mask_gxp, __FUNCTION__);
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
     fp->renderer = std::make_unique<renderer::FragmentProgram>();
-    
+
     if (!renderer::create(*fp->renderer, host.renderer, *fp->program.get(mem), nullptr, host.base_path.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
@@ -1305,11 +1305,11 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
     vp->renderer = std::make_unique<renderer::VertexProgram>();
-    
+
     if (!renderer::create(*vp->renderer.get(), host.renderer, *programId->program.get(mem), host.base_path.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
-    
+
     return 0;
 }
 
@@ -1462,7 +1462,7 @@ EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return texture::get_format(texture);
+    return gxm::get_format(texture);
 }
 
 EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
@@ -1472,7 +1472,7 @@ EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return texture::get_height(texture);
+    return gxm::get_height(texture);
 }
 
 EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
@@ -1531,7 +1531,7 @@ EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    assert(texture::is_paletted_format(texture::get_format(texture)));
+    assert(gxm::is_paletted_format(gxm::get_format(texture)));
     return Ptr<void>(texture->palette_addr << 6);
 }
 
@@ -1572,7 +1572,7 @@ EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return texture::get_width(texture);
+    return gxm::get_width(texture);
 }
 
 EXPORT(int, sceGxmTextureInitCube) {
@@ -1608,7 +1608,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
         break;
 
     default:
-        if (texture::is_paletted_format(texFormat)) {
+        if (gxm::is_paletted_format(texFormat)) {
             switch (texFormat) {
             case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
             case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:

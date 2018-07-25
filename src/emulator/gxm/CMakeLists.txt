@@ -3,13 +3,9 @@ add_library(
 	STATIC
 	include/gxm/functions.h
 	include/gxm/state.h
-	include/gxm/texture_cache_functions.h
-	include/gxm/texture_cache_state.h
 	include/gxm/types.h
-	src/gxm.cpp
-	src/profile.h
-	src/texture_cache.cpp
-	src/texture_formats.cpp
+	src/parameters.cpp
+	src/textures.cpp
 )
 
 target_include_directories(gxm PUBLIC include)

@@ -16,7 +16,7 @@ namespace renderer {
     struct RenderTarget;
     struct State;
     struct VertexProgram;
-    
+
     bool create(Context &context, SDL_Window *window);
     bool create(RenderTarget &rt, const SceGxmRenderTargetParams &params);
     bool create(FragmentProgram &fp, State &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, const char *base_path);

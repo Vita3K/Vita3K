@@ -1,22 +1,14 @@
 #pragma once
 
-//#include "texture_cache_state.h"
-//
-//#include <crypto/hash.h>
-//#include <glutil/object.h>
-//#include <glutil/object_array.h>
 #include <mem/ptr.h>
-//
-//#include <SDL_video.h>
+
 #include <psp2/gxm.h>
 #include <rpcs3/BitField.h>
-//
+
 #include <array>
 #include <condition_variable>
-//#include <map>
 #include <memory>
 #include <mutex>
-//#include <tuple>
 
 namespace renderer {
     struct FragmentProgram;
@@ -42,7 +34,7 @@ namespace emu {
         uint32_t outputRegisterSize;
         SceGxmTexture backgroundTex;
     };
-    
+
     struct SceGxmDepthStencilSurface {
         uint32_t zlsControl;
         Ptr<void> depthData;
@@ -66,9 +58,6 @@ namespace emu {
     };
 }
 
-//typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
-//typedef std::tuple<std::string, std::string> ProgramGLSLs;
-//typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 typedef std::array<Ptr<void>, 16> UniformBuffers;
 
 struct GxmViewport {
