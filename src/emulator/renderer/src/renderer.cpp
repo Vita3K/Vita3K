@@ -937,10 +937,8 @@ namespace renderer {
         glUseProgram(program->get());
         
         // Viewport.
-        GLint display_w = 0;
-        GLint display_h = 0;
-        glGetIntegerv(GL_RENDERBUFFER_WIDTH, &display_w);
-        glGetIntegerv(GL_RENDERBUFFER_HEIGHT, &display_h);
+        const GLsizei display_w = state.color_surface.pbeEmitWords[0];
+        const GLsizei display_h = state.color_surface.pbeEmitWords[1];
         const GxmViewport &viewport = state.viewport;
         if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
             const GLfloat w = viewport.scale.x * 2;
