@@ -9,6 +9,7 @@ add_library(
 	src/compile_program.cpp
 	src/draw.cpp
 	src/functions.h
+	src/load_shaders.cpp
 	src/renderer.cpp
 	src/profile.h
 	src/sync_state.cpp
