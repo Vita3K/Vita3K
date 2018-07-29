@@ -20,7 +20,7 @@
 #include <glutil/gl.h>
 
 #include <array>
-#include <assert.h>
+#include <cassert>
 
 template <size_t Size>
 class GLObjectArray {

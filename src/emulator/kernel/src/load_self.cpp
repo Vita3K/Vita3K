@@ -42,7 +42,7 @@
 
 #include <miniz.h>
 
-#include <assert.h>
+#include <cassert>
 #include <cstring>
 #include <iomanip>
 #include <iostream>

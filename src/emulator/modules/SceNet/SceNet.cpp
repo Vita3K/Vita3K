@@ -26,7 +26,7 @@
 #include <net/functions.h>
 
 #ifndef WIN32
-#include <errno.h>
+#include <cerrno>
 #endif
 
 // NOTE: This should be SCE_NET_##errname but it causes vitaQuake to softlock in online games
