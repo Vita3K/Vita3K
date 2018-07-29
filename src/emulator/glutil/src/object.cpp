@@ -17,7 +17,7 @@
 
 #include <glutil/object.h>
 
-#include <assert.h>
+#include <cassert>
 
 GLObject::~GLObject() {
     if (deleter != nullptr) {

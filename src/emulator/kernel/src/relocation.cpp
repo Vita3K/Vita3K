@@ -18,7 +18,7 @@
 #include <kernel/relocation.h>
 #include <util/log.h>
 
-#include <assert.h>
+#include <cassert>
 #include <cstring>
 #include <iostream>
 

@@ -20,7 +20,7 @@
 #include <mem/ptr.h>
 
 #include <map>
-#include <stddef.h>
+#include <cstddef>
 
 struct MemState;
 
