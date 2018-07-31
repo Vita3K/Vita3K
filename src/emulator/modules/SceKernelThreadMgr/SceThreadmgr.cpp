@@ -178,7 +178,7 @@ EXPORT(int, sceKernelGetMsgPipeCreatorId) {
 }
 
 EXPORT(int, sceKernelGetProcessId) {
-    UNIMPLEMENTED();
+    STUBBED("pid: 0");
     return 0;
 }
 
