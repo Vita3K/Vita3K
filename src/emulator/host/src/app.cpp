@@ -48,6 +48,9 @@
 // clang-format on
 #include <gui/functions.h>
 
+static const char *EBOOT_PATH = "eboot.bin";
+static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
+
 using namespace gl;
 
 void error_dialog(const std::string &message, SDL_Window *window) {
@@ -146,14 +149,16 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     load_sfo(sfo_handle, params);
     find_data(host.io.title_id, sfo_handle, "TITLE_ID");
 
-    std::string output_base_path;
-    output_base_path = host.pref_path + "ux0/app/";
+    std::string output_base_path = host.pref_path + "ux0/app/";
     std::string title_base_path = output_base_path;
+
     if (sfo_path.length() < 20) {
         output_base_path += host.io.title_id;
     }
+
     title_base_path += host.io.title_id;
-    bool created = fs::create_directory(title_base_path);
+
+    const bool created = fs::create_directory(title_base_path);
     if (!created) {
         GenericDialogState status = UNK_STATE;
         while (handle_events(host) && (status == 0)) {
@@ -174,7 +179,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         }
     }
 
-    for (int i = 0; i < num_files; i++) {
+    for (auto i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
@@ -233,21 +238,43 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
 
     init_device_paths(host.io);
 
-    Buffer eboot;
-    if (!read_file_from_disk(eboot, "eboot.bin", host)) {
-        return false;
-    }
+    // Load pre-loaded libraries
+    const char *const lib_load_list[] = {
+        "sce_module/libc.suprx",
+        "sce_module/libfios2.suprx",
+        "sce_module/libult.suprx",
+    };
 
-    Buffer libc;
-    if (read_file_from_disk(libc, "sce_module/libc.suprx", host)) {
-        if (load_self(entry_point, host.kernel, host.mem, libc.data(), "app0:sce_module/libc.suprx") == 0) {
-            LOG_INFO("LIBC loaded");
+    for (auto module_path : lib_load_list) {
+        Buffer module_buffer;
+        Ptr<const void> lib_entry_point;
+
+        if (read_file_from_disk(module_buffer, module_path, host)) {
+            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path);
+            if (module_id >= 0) {
+                const auto module = host.kernel.loaded_modules[module_id];
+                const auto module_name = module->module_name;
+                LOG_INFO("Pre-load module {} (at \"{}\") loaded", module_name, module_path);
+            } else
+                return false;
+        } else {
+            LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
         }
     }
 
-    if (load_self(entry_point, host.kernel, host.mem, eboot.data(), "app0:eboot.bin") < 0) {
+    // Load main executable (eboot.bin)
+    Buffer eboot_buffer;
+    if (read_file_from_disk(eboot_buffer, EBOOT_PATH, host)) {
+        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS);
+        if (module_id >= 0) {
+            const auto module = host.kernel.loaded_modules[module_id];
+            const auto module_name = module->module_name;
+
+            LOG_INFO("Main executable {} ({}) loaded", module_name, EBOOT_PATH);
+        } else
+            return false;
+    } else
         return false;
-    }
 
     return true;
 }
@@ -277,15 +304,28 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     }
 
     const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
-    Ptr<void> argp = Ptr<void>();
-    if (!strncmp(host.kernel.loaded_modules.begin()->second->module_name, "SceLibc", 7)) {
-        const SceUID libc_thread_id = create_thread(host.kernel.loaded_modules.begin()->second->module_start, host.kernel, host.mem, "libc", SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, call_import, false);
-        const ThreadStatePtr libc_thread = find(libc_thread_id, host.kernel.threads);
-        run_on_current(*libc_thread, host.kernel.loaded_modules.begin()->second->module_start, 0, argp);
-        libc_thread->to_do = ThreadToDo::exit;
-        libc_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
-        host.kernel.running_threads.erase(libc_thread_id);
-        host.kernel.threads.erase(libc_thread_id);
+
+    // Run `module_start` export (entry point) of loaded libraries
+    for (auto &mod : host.kernel.loaded_modules) {
+        const auto module = mod.second;
+        const auto module_start = module->module_start;
+        const auto module_name = module->module_name;
+
+        if (std::string(module->path) == EBOOT_PATH_ABS)
+            continue;
+
+        LOG_DEBUG("Running module_start of library: {}", module_name);
+
+        Ptr<void> argp = Ptr<void>();
+        const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, call_import, false);
+        const ThreadStatePtr module_thread = find(module_thread_id, host.kernel.threads);
+        const auto ret = run_on_current(*module_thread, module_start, 0, argp);
+        module_thread->to_do = ThreadToDo::exit;
+        module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+        host.kernel.running_threads.erase(module_thread_id);
+        host.kernel.threads.erase(module_thread_id);
+
+        LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
     }
 
     if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
