@@ -1012,60 +1012,101 @@ EXPORT(int, sceKernelGetTimerTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
-    SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str(), export_name);
-    int size = seek_file(file, 0, SEEK_END, host.io, export_name);
-    if (size < 0)
-        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
-    void *data = malloc(size);
-    Ptr<const void> entry_point;
+/**
+ * \brief Loads a dynamic module into memory if it wasn't already loaded. If it was, find it and return it. First 3 arguments are outputs.
+ * \param mod_id UID of the loaded module object
+ * \param entry_point Entry point (module_start) of the loaded module
+ * \param module Module info
+ * \param host 
+ * \param export_name 
+ * \param path File name of module file
+ * \param error_val Error value on failure
+ * \return True on success, false on failure
+ */
+bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, HostState &host, const char *export_name, char *path, int &error_val) {
+    const auto &loaded_modules = host.kernel.loaded_modules;
 
-    SceUID modId = load_self(entry_point, host.kernel, host.mem, data, path);
-    close_file(host.io, file, export_name);
-    free(data);
-    if (modId < 0) {
-        return RET_ERROR(modId);
-    };
-    return modId;
+    SceKernelModuleInfoPtrs::const_iterator module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [path](const auto &p) {
+        return std::string(p.second->path) == path;
+    });
+
+    if (module_iter == loaded_modules.end()) {
+        // module is not loaded, load it here
+
+        SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str(), export_name);
+        if (file < 0) {
+            error_val = RET_ERROR(file);
+            return false;
+        }
+        int size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
+        if (size < 0) {
+            error_val = RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+            return false;
+        }
+        char *data = new char[size];
+        if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0) {
+            error_val = RET_ERROR(size);
+            return false;
+        }
+        if (read_file(data, host.io, file, size, export_name) < 0) {
+            error_val = RET_ERROR(size);
+            return false;
+        }
+
+        mod_id = load_self(entry_point, host.kernel, host.mem, data, path);
+
+        close_file(host.io, file, export_name);
+        delete[] data;
+        if (mod_id < 0) {
+            error_val = RET_ERROR(mod_id);
+            return false;
+        }
+
+        module_iter = loaded_modules.find(mod_id);
+        module = module_iter->second;
+    } else {
+        // module is already loaded
+        module = module_iter->second;
+
+        mod_id = module_iter->first;
+        entry_point = module->module_start;
+    }
+    return true;
+}
+
+EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
+    SceUID mod_id;
+    Ptr<const void> entry_point;
+    SceKernelModuleInfoPtr module;
+
+    int error_val;
+    if (!load_module(mod_id, entry_point, module, host, export_name, path, error_val))
+        return error_val;
+
+    return mod_id;
 }
 
 EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, int flags, SceKernelLMOption *option, int *status) {
-    SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str(), export_name);
-    if (file < 0)
-        return RET_ERROR(file);
-    int size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
-    if (size < 0)
-        return RET_ERROR(size);
-    void *data = malloc(size);
-    if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0)
-        return RET_ERROR(size);
-    if (read_file(data, host.io, file, size, export_name) < 0) {
-        return RET_ERROR(size);
-    };
-
+    SceUID mod_id;
     Ptr<const void> entry_point;
-    SceUID modId = load_self(entry_point, host.kernel, host.mem, data, path);
-    close_file(host.io, file, export_name);
-    free(data);
-    if (modId < 0) {
-        return RET_ERROR(modId);
-    };
+    SceKernelModuleInfoPtr module;
 
-    const SceKernelModuleInfoPtrs::const_iterator module = host.kernel.loaded_modules.find(modId);
-    assert(module != host.kernel.loaded_modules.end());
+    int error_val;
+    if (!load_module(mod_id, entry_point, module, host, export_name, path, error_val))
+        return error_val;
 
     const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID thread_id) {
         ::call_import(host, cpu, nid, thread_id);
     };
 
-    const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->second.get()->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, call_import, false);
+    const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, call_import, false);
 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 
     uint32_t result = run_on_current(*thread, entry_point, args, argp);
-    char *module_name = module->second.get()->module_name;
+    char *module_name = module->module_name;
 
-    LOG_INFO("{} returned {}", module_name, log_hex(result));
+    LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(result));
 
     if (status)
         *status = result;
@@ -1075,7 +1116,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     host.kernel.running_threads.erase(thid);
     host.kernel.threads.erase(thid);
 
-    return modId;
+    return mod_id;
 }
 
 EXPORT(int, sceKernelLockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
