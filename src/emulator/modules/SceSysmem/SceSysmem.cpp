@@ -21,7 +21,7 @@
 #include <psp2/kernel/sysmem.h>
 
 namespace emu {
-    struct SceKernelAllocMemBlockOpt;
+struct SceKernelAllocMemBlockOpt;
 }
 
 using namespace emu;

@@ -22,10 +22,10 @@
 
 namespace emu {
 
-    struct SceIoDirent {
-        SceIoStat d_stat;
-        char d_name[256];
-        Ptr<void> d_private;
-        int dummy;
-    };
-}
+struct SceIoDirent {
+    SceIoStat d_stat;
+    char d_name[256];
+    Ptr<void> d_private;
+    int dummy;
+};
+} // namespace emu

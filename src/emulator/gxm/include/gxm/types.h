@@ -11,52 +11,52 @@
 #include <mutex>
 
 namespace renderer {
-    struct FragmentProgram;
-    struct VertexProgram;
-}
+struct FragmentProgram;
+struct VertexProgram;
+} // namespace renderer
 
 namespace emu {
-    struct SceGxmBlendInfo {
-        SceGxmColorMask colorMask : 8;
-        SceGxmBlendFunc colorFunc : 4;
-        SceGxmBlendFunc alphaFunc : 4;
-        SceGxmBlendFactor colorSrc : 4;
-        SceGxmBlendFactor colorDst : 4;
-        SceGxmBlendFactor alphaSrc : 4;
-        SceGxmBlendFactor alphaDst : 4;
-    };
+struct SceGxmBlendInfo {
+    SceGxmColorMask colorMask : 8;
+    SceGxmBlendFunc colorFunc : 4;
+    SceGxmBlendFunc alphaFunc : 4;
+    SceGxmBlendFactor colorSrc : 4;
+    SceGxmBlendFactor colorDst : 4;
+    SceGxmBlendFactor alphaSrc : 4;
+    SceGxmBlendFactor alphaDst : 4;
+};
 
-    static_assert(sizeof(SceGxmBlendInfo) == 4, "Incorrect size.");
+static_assert(sizeof(SceGxmBlendInfo) == 4, "Incorrect size.");
 
-    struct SceGxmColorSurface {
-        uint32_t pbeSidebandWord;
-        uint32_t pbeEmitWords[6];
-        uint32_t outputRegisterSize;
-        SceGxmTexture backgroundTex;
-    };
+struct SceGxmColorSurface {
+    uint32_t pbeSidebandWord;
+    uint32_t pbeEmitWords[6];
+    uint32_t outputRegisterSize;
+    SceGxmTexture backgroundTex;
+};
 
-    struct SceGxmDepthStencilSurface {
-        uint32_t zlsControl;
-        Ptr<void> depthData;
-        Ptr<void> stencilData;
-        float backgroundDepth;
-        uint32_t backgroundControl;
-    };
+struct SceGxmDepthStencilSurface {
+    uint32_t zlsControl;
+    Ptr<void> depthData;
+    Ptr<void> stencilData;
+    float backgroundDepth;
+    uint32_t backgroundControl;
+};
 
-    struct SceGxmContextParams {
-        Ptr<void> hostMem;
-        uint32_t hostMemSize;
-        Ptr<void> vdmRingBufferMem;
-        uint32_t vdmRingBufferMemSize;
-        Ptr<void> vertexRingBufferMem;
-        uint32_t vertexRingBufferMemSize;
-        Ptr<void> fragmentRingBufferMem;
-        uint32_t fragmentRingBufferMemSize;
-        Ptr<void> fragmentUsseRingBufferMem;
-        uint32_t fragmentUsseRingBufferMemSize;
-        uint32_t fragmentUsseRingBufferOffset;
-    };
-}
+struct SceGxmContextParams {
+    Ptr<void> hostMem;
+    uint32_t hostMemSize;
+    Ptr<void> vdmRingBufferMem;
+    uint32_t vdmRingBufferMemSize;
+    Ptr<void> vertexRingBufferMem;
+    uint32_t vertexRingBufferMemSize;
+    Ptr<void> fragmentRingBufferMem;
+    uint32_t fragmentRingBufferMemSize;
+    Ptr<void> fragmentUsseRingBufferMem;
+    uint32_t fragmentUsseRingBufferMemSize;
+    uint32_t fragmentUsseRingBufferOffset;
+};
+} // namespace emu
 
 typedef std::array<Ptr<void>, 16> UniformBuffers;
 
@@ -126,11 +126,11 @@ struct SceGxmFragmentProgram {
 };
 
 namespace emu {
-    struct SceGxmNotification {
-        Ptr<volatile uint32_t> address;
-        uint32_t value;
-    };
-}
+struct SceGxmNotification {
+    Ptr<volatile uint32_t> address;
+    uint32_t value;
+};
+} // namespace emu
 
 struct SceGxmProgram {
     std::uint32_t magic; // should be "GXP\0"
@@ -211,35 +211,35 @@ struct SceGxmRegisteredProgram {
 };
 
 namespace emu {
-    typedef Ptr<SceGxmRegisteredProgram> SceGxmShaderPatcherId;
+typedef Ptr<SceGxmRegisteredProgram> SceGxmShaderPatcherId;
 
-    typedef Ptr<void> SceGxmShaderPatcherHostAllocCallback(Ptr<void> userData, uint32_t size);
-    typedef void SceGxmShaderPatcherHostFreeCallback(Ptr<void> userData, Ptr<void> mem);
-    typedef Ptr<void> SceGxmShaderPatcherBufferAllocCallback(Ptr<void> userData, uint32_t size);
-    typedef void SceGxmShaderPatcherBufferFreeCallback(Ptr<void> userData, Ptr<void> mem);
-    typedef Ptr<void> SceGxmShaderPatcherUsseAllocCallback(Ptr<void> userData, uint32_t size, Ptr<uint32_t> usseOffset);
-    typedef void SceGxmShaderPatcherUsseFreeCallback(Ptr<void> userData, Ptr<void> mem);
+typedef Ptr<void> SceGxmShaderPatcherHostAllocCallback(Ptr<void> userData, uint32_t size);
+typedef void SceGxmShaderPatcherHostFreeCallback(Ptr<void> userData, Ptr<void> mem);
+typedef Ptr<void> SceGxmShaderPatcherBufferAllocCallback(Ptr<void> userData, uint32_t size);
+typedef void SceGxmShaderPatcherBufferFreeCallback(Ptr<void> userData, Ptr<void> mem);
+typedef Ptr<void> SceGxmShaderPatcherUsseAllocCallback(Ptr<void> userData, uint32_t size, Ptr<uint32_t> usseOffset);
+typedef void SceGxmShaderPatcherUsseFreeCallback(Ptr<void> userData, Ptr<void> mem);
 
-    struct SceGxmShaderPatcherParams {
-        Ptr<void> userData;
-        Ptr<SceGxmShaderPatcherHostAllocCallback> hostAllocCallback;
-        Ptr<SceGxmShaderPatcherHostFreeCallback> hostFreeCallback;
-        Ptr<SceGxmShaderPatcherBufferAllocCallback> bufferAllocCallback;
-        Ptr<SceGxmShaderPatcherBufferFreeCallback> bufferFreeCallback;
-        Ptr<void> bufferMem;
-        uint32_t bufferMemSize;
-        Ptr<SceGxmShaderPatcherUsseAllocCallback> vertexUsseAllocCallback;
-        Ptr<SceGxmShaderPatcherUsseFreeCallback> vertexUsseFreeCallback;
-        Ptr<void> vertexUsseMem;
-        uint32_t vertexUsseMemSize;
-        uint32_t vertexUsseOffset;
-        Ptr<SceGxmShaderPatcherUsseAllocCallback> fragmentUsseAllocCallback;
-        Ptr<SceGxmShaderPatcherUsseFreeCallback> fragmentUsseFreeCallback;
-        Ptr<void> fragmentUsseMem;
-        uint32_t fragmentUsseMemSize;
-        uint32_t fragmentUsseOffset;
-    };
-}
+struct SceGxmShaderPatcherParams {
+    Ptr<void> userData;
+    Ptr<SceGxmShaderPatcherHostAllocCallback> hostAllocCallback;
+    Ptr<SceGxmShaderPatcherHostFreeCallback> hostFreeCallback;
+    Ptr<SceGxmShaderPatcherBufferAllocCallback> bufferAllocCallback;
+    Ptr<SceGxmShaderPatcherBufferFreeCallback> bufferFreeCallback;
+    Ptr<void> bufferMem;
+    uint32_t bufferMemSize;
+    Ptr<SceGxmShaderPatcherUsseAllocCallback> vertexUsseAllocCallback;
+    Ptr<SceGxmShaderPatcherUsseFreeCallback> vertexUsseFreeCallback;
+    Ptr<void> vertexUsseMem;
+    uint32_t vertexUsseMemSize;
+    uint32_t vertexUsseOffset;
+    Ptr<SceGxmShaderPatcherUsseAllocCallback> fragmentUsseAllocCallback;
+    Ptr<SceGxmShaderPatcherUsseFreeCallback> fragmentUsseFreeCallback;
+    Ptr<void> fragmentUsseMem;
+    uint32_t fragmentUsseMemSize;
+    uint32_t fragmentUsseOffset;
+};
+} // namespace emu
 
 struct SceGxmSyncObject {
     std::mutex mutex;
@@ -248,16 +248,16 @@ struct SceGxmSyncObject {
 };
 
 namespace emu {
-    struct SceGxmVertexAttribute {
-        uint16_t streamIndex;
-        uint16_t offset;
-        uint8_t format; // SceGxmAttributeFormat.
-        uint8_t componentCount;
-        uint16_t regIndex; // Returned from sceGxmProgramParameterGetResourceIndex().
-    };
+struct SceGxmVertexAttribute {
+    uint16_t streamIndex;
+    uint16_t offset;
+    uint8_t format; // SceGxmAttributeFormat.
+    uint8_t componentCount;
+    uint16_t regIndex; // Returned from sceGxmProgramParameterGetResourceIndex().
+};
 
-    static_assert(sizeof(SceGxmVertexAttribute) == 8, "Structure has been incorrectly packed.");
-}
+static_assert(sizeof(SceGxmVertexAttribute) == 8, "Structure has been incorrectly packed.");
+} // namespace emu
 
 struct SceGxmVertexProgram {
     size_t reference_count = 1;

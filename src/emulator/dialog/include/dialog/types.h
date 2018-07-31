@@ -23,85 +23,85 @@
 
 namespace emu {
 
-    struct SceCommonDialogParam {
-        Ptr<SceCommonDialogInfobarParam> infobarParam;
-        Ptr<SceCommonDialogColor> bgColor;
-        Ptr<SceCommonDialogColor> dimmerColor;
-        SceUInt8 reserved[60];
-        SceUInt32 magic;
-    };
+struct SceCommonDialogParam {
+    Ptr<SceCommonDialogInfobarParam> infobarParam;
+    Ptr<SceCommonDialogColor> bgColor;
+    Ptr<SceCommonDialogColor> dimmerColor;
+    SceUInt8 reserved[60];
+    SceUInt32 magic;
+};
 
-    struct SceImeDialogParam {
-        SceUInt32 sdkVersion;
+struct SceImeDialogParam {
+    SceUInt32 sdkVersion;
 
-        SceUInt32 inputMethod;
-        SceUInt64 supportedLanguages;
-        SceBool languagesForced;
-        SceUInt32 type;
-        SceUInt32 option;
-        SceUInt32 filter;
+    SceUInt32 inputMethod;
+    SceUInt64 supportedLanguages;
+    SceBool languagesForced;
+    SceUInt32 type;
+    SceUInt32 option;
+    SceUInt32 filter;
 
-        SceUInt32 dialogMode;
-        SceUInt32 textBoxMode;
-        const Ptr<SceWChar16> title;
-        SceUInt32 maxTextLength;
-        Ptr<SceWChar16> initialText;
-        Ptr<SceWChar16> inputTextBuffer;
+    SceUInt32 dialogMode;
+    SceUInt32 textBoxMode;
+    const Ptr<SceWChar16> title;
+    SceUInt32 maxTextLength;
+    Ptr<SceWChar16> initialText;
+    Ptr<SceWChar16> inputTextBuffer;
 
-        emu::SceCommonDialogParam commonParam;
+    emu::SceCommonDialogParam commonParam;
 
-        SceUChar8 enterLabel;
-        SceChar8 reserved[35];
-    };
+    SceUChar8 enterLabel;
+    SceChar8 reserved[35];
+};
 
-    struct SceNpTrophySetupDialogParam {
-        SceUInt32 sdkVersion;
+struct SceNpTrophySetupDialogParam {
+    SceUInt32 sdkVersion;
 
-        emu::SceCommonDialogParam commonParam;
-        SceUInt32 context;
-        SceUInt32 options;
+    emu::SceCommonDialogParam commonParam;
+    SceUInt32 context;
+    SceUInt32 options;
 
-        SceChar8 reserved[128];
-    };
+    SceChar8 reserved[128];
+};
 
-    struct SceMsgDialogButtonsParam {
-        const Ptr<char> msg1;
-        SceInt32 fontSize1;
-        const Ptr<char> msg2;
-        SceInt32 fontSize2;
-        const Ptr<char> msg3;
-        SceInt32 fontSize3;
-        SceChar8 reserved[32];
-    };
+struct SceMsgDialogButtonsParam {
+    const Ptr<char> msg1;
+    SceInt32 fontSize1;
+    const Ptr<char> msg2;
+    SceInt32 fontSize2;
+    const Ptr<char> msg3;
+    SceInt32 fontSize3;
+    SceChar8 reserved[32];
+};
 
-    struct SceNpTrophySetupDialogResult {
-        SceInt32 result;
-        SceUInt8 reserved[128];
-    };
+struct SceNpTrophySetupDialogResult {
+    SceInt32 result;
+    SceUInt8 reserved[128];
+};
 
-    struct SceMsgDialogUserMessageParam {
-        SceInt32 buttonType;
-        const Ptr<SceChar8> msg;
-        Ptr<emu::SceMsgDialogButtonsParam> buttonParam;
-        SceChar8 reserved[28];
-    };
+struct SceMsgDialogUserMessageParam {
+    SceInt32 buttonType;
+    const Ptr<SceChar8> msg;
+    Ptr<emu::SceMsgDialogButtonsParam> buttonParam;
+    SceChar8 reserved[28];
+};
 
-    struct SceMsgDialogProgressBarParam {
-        SceInt32 barType;
-        SceMsgDialogSystemMessageParam sysMsgParam;
-        const Ptr<SceChar8> msg;
-        SceInt32 reserved[8];
-    };
+struct SceMsgDialogProgressBarParam {
+    SceInt32 barType;
+    SceMsgDialogSystemMessageParam sysMsgParam;
+    const Ptr<SceChar8> msg;
+    SceInt32 reserved[8];
+};
 
-    struct SceMsgDialogParam {
-        SceUInt32 sdkVersion;
-        SceCommonDialogParam commonParam;
-        SceInt32 mode;
-        Ptr<emu::SceMsgDialogUserMessageParam> userMsgParam;
-        Ptr<SceMsgDialogSystemMessageParam> sysMsgParam;
-        Ptr<SceMsgDialogErrorCodeParam> errorCodeParam;
-        Ptr<emu::SceMsgDialogProgressBarParam> progBarParam;
-        SceInt32 flag;
-        SceChar8 reserved[32];
-    };
-}
+struct SceMsgDialogParam {
+    SceUInt32 sdkVersion;
+    SceCommonDialogParam commonParam;
+    SceInt32 mode;
+    Ptr<emu::SceMsgDialogUserMessageParam> userMsgParam;
+    Ptr<SceMsgDialogSystemMessageParam> sysMsgParam;
+    Ptr<SceMsgDialogErrorCodeParam> errorCodeParam;
+    Ptr<emu::SceMsgDialogProgressBarParam> progBarParam;
+    SceInt32 flag;
+    SceChar8 reserved[32];
+};
+} // namespace emu

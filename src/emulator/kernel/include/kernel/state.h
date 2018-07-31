@@ -170,7 +170,7 @@ typedef std::shared_ptr<Condvar> CondvarPtr;
 typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
 
 namespace emu {
-    typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
+typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
 }
 
 struct WaitingThreadState {
