@@ -52,7 +52,7 @@ static void alloc_inner(MemState &state, Address address, size_t page_count, All
 
 #ifdef WIN32
     const void *const ret = VirtualAlloc(memory, aligned_size, MEM_COMMIT, PAGE_READWRITE);
-    assert(ret == memory);
+    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", log_hex(GetLastError()));
 #else
     mprotect(memory, aligned_size, PROT_READ | PROT_WRITE);
 #endif
@@ -72,6 +72,10 @@ bool init(MemState &state) {
     const size_t length = GB(4);
 #ifdef WIN32
     state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, length, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+    if (!state.memory) {
+        LOG_CRITICAL("VirtualAlloc failed: {}", log_hex(GetLastError()));
+        return false;
+    }
 #else
     // http://man7.org/linux/man-pages/man2/mmap.2.html
     void *const addr = nullptr;
@@ -80,20 +84,19 @@ bool init(MemState &state) {
     const int fd = 0;
     const off_t offset = 0;
     state.memory = Memory(static_cast<uint8_t *>(mmap(addr, length, prot, flags, fd, offset)), delete_memory);
-#endif
-    if (!state.memory) {
-        LOG_CRITICAL("VirtualAlloc failed");
+    if (state.memory.get() == MAP_FAILED) {
+        LOG_CRITICAL("mmap failed");
         return false;
     }
+#endif
 
     state.allocated_pages.resize(length / state.page_size);
     const Address null_address = alloc(state, 1, "NULL");
     assert(null_address == 0);
 #ifdef WIN32
     DWORD old_protect = 0;
-    const BOOL res = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
-    if (!res)
-        LOG_WARN("VirtualProtect failed: {}", log_hex(res));
+    const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
+    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", log_hex(GetLastError()));
 #else
     mprotect(state.memory.get(), state.page_size, PROT_NONE);
 #endif
