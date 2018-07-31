@@ -28,9 +28,9 @@
 
 namespace imgui {
 
-    void init(WindowPtr window);
-    void draw_begin(WindowPtr window);
-    void draw_main(HostState &host, GLuint TextureID);
-    void draw_end(WindowPtr window);
+void init(WindowPtr window);
+void draw_begin(WindowPtr window);
+void draw_main(HostState &host, GLuint TextureID);
+void draw_end(WindowPtr window);
 
 } // namespace imgui

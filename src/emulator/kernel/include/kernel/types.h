@@ -27,49 +27,49 @@
 #define SCE_ERROR_ERRNO_EINVAL 0x80010016
 
 namespace emu {
-    struct SceKernelSegmentInfo {
-        SceUInt size; //!< sizeof(SceKernelSegmentInfo)
-        SceUInt perms; //!< probably rwx in low bits
-        Ptr<const void> vaddr; //!< address in memory
-        SceUInt memsz; //!< size in memory
-        SceUInt flags; //!< meaning unknown
-        SceUInt res; //!< unused?
-    };
+struct SceKernelSegmentInfo {
+    SceUInt size; //!< sizeof(SceKernelSegmentInfo)
+    SceUInt perms; //!< probably rwx in low bits
+    Ptr<const void> vaddr; //!< address in memory
+    SceUInt memsz; //!< size in memory
+    SceUInt flags; //!< meaning unknown
+    SceUInt res; //!< unused?
+};
 
-    struct SceKernelModuleInfo {
-        SceUInt size; //!< 0x1B8 for Vita 1.x
-        SceUInt handle; //!< kernel module handle?
-        SceUInt flags; //!< some bits. could be priority or whatnot
-        char module_name[28];
-        SceUInt unk28;
-        Ptr<const void> module_start;
-        SceUInt unk30;
-        Ptr<const void> module_stop;
-        Ptr<const void> exidxTop;
-        Ptr<const void> exidxBtm;
-        SceUInt unk40;
-        SceUInt unk44;
-        Ptr<const void> tlsInit;
-        SceSize tlsInitSize;
-        SceSize tlsAreaSize;
-        char path[256];
-        SceKernelSegmentInfo segments[4];
-        SceUInt type; //!< 6 = user-mode PRX?
-    };
+struct SceKernelModuleInfo {
+    SceUInt size; //!< 0x1B8 for Vita 1.x
+    SceUInt handle; //!< kernel module handle?
+    SceUInt flags; //!< some bits. could be priority or whatnot
+    char module_name[28];
+    SceUInt unk28;
+    Ptr<const void> module_start;
+    SceUInt unk30;
+    Ptr<const void> module_stop;
+    Ptr<const void> exidxTop;
+    Ptr<const void> exidxBtm;
+    SceUInt unk40;
+    SceUInt unk44;
+    Ptr<const void> tlsInit;
+    SceSize tlsInitSize;
+    SceSize tlsAreaSize;
+    char path[256];
+    SceKernelSegmentInfo segments[4];
+    SceUInt type; //!< 6 = user-mode PRX?
+};
 
-    // We only use workarea for uid
-    struct SceKernelLwMutexWork {
-        SceUID uid;
+// We only use workarea for uid
+struct SceKernelLwMutexWork {
+    SceUID uid;
 
-        std::uint8_t padding[28];
-    };
+    std::uint8_t padding[28];
+};
 
-    // We only use workarea for uid
-    struct SceKernelLwCondWork {
-        SceUID uid;
+// We only use workarea for uid
+struct SceKernelLwCondWork {
+    SceUID uid;
 
-        std::uint8_t padding[28];
-    };
+    std::uint8_t padding[28];
+};
 
-    static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
-}
+static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
+} // namespace emu

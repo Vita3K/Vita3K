@@ -26,15 +26,15 @@
 #include <sstream>
 
 namespace emu {
-    struct SceDisplayFrameBuf {
-        uint32_t size = 0;
-        Ptr<const void> base;
-        uint32_t pitch = 0;
-        uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-        uint32_t width = 0;
-        uint32_t height = 0;
-    };
-}
+struct SceDisplayFrameBuf {
+    uint32_t size = 0;
+    Ptr<const void> base;
+    uint32_t pitch = 0;
+    uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
+    uint32_t width = 0;
+    uint32_t height = 0;
+};
+} // namespace emu
 
 using namespace emu;
 

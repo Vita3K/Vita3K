@@ -182,17 +182,17 @@ void rmkdir(const char *dir) {
 }
 
 namespace fs {
-    bool create_directory(std::string path) {
-        if (mkdir(path.c_str(), 0777) == 0)
-            return true;
-        return false;
-    }
-    bool create_directories(std::string path) {
-        rmkdir(path.c_str());
+bool create_directory(std::string path) {
+    if (mkdir(path.c_str(), 0777) == 0)
         return true;
-    }
-    int remove(std::string path) {
-        return ::remove(path.c_str());
-    }
+    return false;
 }
+bool create_directories(std::string path) {
+    rmkdir(path.c_str());
+    return true;
+}
+int remove(std::string path) {
+    return ::remove(path.c_str());
+}
+} // namespace fs
 #endif

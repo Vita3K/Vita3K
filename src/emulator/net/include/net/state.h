@@ -40,11 +40,11 @@ typedef int abs_socket;
 #include <mem/mem.h> // Address.
 
 namespace emu {
-    struct SceNetCtlCallback {
-        Address pc;
-        Address data;
-    };
-}
+struct SceNetCtlCallback {
+    Address pc;
+    Address data;
+};
+} // namespace emu
 
 typedef std::map<int, abs_socket> sockets;
 typedef std::map<int, emu::SceNetCtlCallback> callbacks;
