@@ -23,6 +23,8 @@
 #include <host/app_util.h>
 #include <io/functions.h>
 
+#include <cstring>
+
 EXPORT(int, sceAppUtilAddCookieWebBrowser) {
     return UNIMPLEMENTED();
 }
@@ -284,15 +286,15 @@ EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
 }
 
 EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize) {
-    char devname[80];
+    constexpr auto devname_len = SCE_SYSTEM_PARAM_USERNAME_MAXSIZE;
+    char devname[devname_len];
     switch (paramId) {
     case SCE_SYSTEM_PARAM_ID_USERNAME:
-        gethostname(devname, 80);
-#ifdef WIN32
-        strcpy_s((char *)buf, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE, devname);
-#else
-        strcpy((char *)buf, devname);
-#endif
+        if (gethostname(devname, devname_len)) {
+            // fallback to "Vita3k"
+            std::strncpy(devname, "Vita3k", sizeof(devname));
+        }
+        std::strncpy(reinterpret_cast<char *>(buf), devname, sizeof(devname));
         break;
     default:
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
