@@ -65,7 +65,6 @@ EXPORT(int, __stack_chk_guard) {
 EXPORT(int, _sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, int init_count, const SceKernelLwMutexOptParam *opt_param) {
     assert(name != nullptr);
     assert(init_count >= 0);
-    assert(opt_param == nullptr);
 
     auto uid_out = &workarea.get(host.mem)->uid;
     return mutex_create(uid_out, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Light);
@@ -799,7 +798,6 @@ EXPORT(int, sceKernelCreateLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, con
     assert(workarea);
     assert(name);
     assert(init_count >= 0);
-    assert(opt_param == nullptr);
 
     const auto uid_out = &workarea.get(host.mem)->uid;
     return mutex_create(uid_out, host.kernel, export_name, thread_id, name, attr, init_count, SyncWeight::Light);
