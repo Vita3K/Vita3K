@@ -22,4 +22,4 @@ struct MemState;
 template <class T>
 class Ptr;
 
-SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const char *path);
+SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &path);
