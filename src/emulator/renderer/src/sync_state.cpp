@@ -122,9 +122,9 @@ namespace renderer {
         // Clipping.
         // TODO: There was some math here to round the scissor rect, but it looked potentially incorrect.
         const GLsizei scissor_x = state.region_clip_min.x;
-        const GLsizei scissor_y = display_h - state.region_clip_min.y;
-        const GLsizei scissor_w = state.region_clip_max.x - state.region_clip_min.x;
-        const GLsizei scissor_h = state.region_clip_max.y - state.region_clip_min.y;
+        const GLsizei scissor_y = display_h - state.region_clip_max.y - 1;
+        const GLsizei scissor_w = state.region_clip_max.x - state.region_clip_min.x + 1;
+        const GLsizei scissor_h = state.region_clip_max.y - state.region_clip_min.y + 1;
         switch (state.region_clip_mode) {
         case SCE_GXM_REGION_CLIP_NONE:
             glDisable(GL_SCISSOR_TEST);
