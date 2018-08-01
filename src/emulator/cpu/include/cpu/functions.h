@@ -17,18 +17,34 @@
 
 #pragma once
 
+#include <cpu/factory.h>
+#include <disasm/functions.h>
+#include <disasm/state.h>
 #include <mem/mem.h> // Address.
 
 #include <cstdint>
 #include <functional>
 
-struct CPUState;
 struct MemState;
+struct CPUState;
 
 typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 
-CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem);
+union DoubleReg {
+    double d;
+    float f[2];
+};
+
+struct CPUState {
+    MemState *mem = nullptr;
+    CallSVC call_svc;
+    DisasmState disasm;
+    CPUInterfacePtr cpu;
+    Address entry_point;
+};
+
+CPUStatePtr init_cpu(CPUBackend backend, Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem);
 int run(CPUState &state, bool callback);
 void stop(CPUState &state);
 uint32_t read_reg(CPUState &state, size_t index);

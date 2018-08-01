@@ -70,7 +70,8 @@ UniqueGLObject gl::load_shaders(const std::string &vertex_file_path, const std::
     // Check vertex shader
     glGetShaderiv(vs, GL_COMPILE_STATUS, &result);
     glGetShaderiv(vs, GL_INFO_LOG_LENGTH, &info_log_length);
-    if (info_log_length > 0) {
+
+    if (!result) {
         std::vector<char> vertex_shader_error_message(info_log_length + 1);
         glGetShaderInfoLog(vs, info_log_length, NULL, &vertex_shader_error_message[0]);
         LOG_ERROR("Error compiling vertex shader: {}\n", &vertex_shader_error_message[0]);
@@ -85,7 +86,7 @@ UniqueGLObject gl::load_shaders(const std::string &vertex_file_path, const std::
     // Check fragment shader
     glGetShaderiv(fs, GL_COMPILE_STATUS, &result);
     glGetShaderiv(fs, GL_INFO_LOG_LENGTH, &info_log_length);
-    if (info_log_length > 0) {
+    if (!result) {
         std::vector<char> fragment_shader_error_message(info_log_length + 1);
         glGetShaderInfoLog(fs, info_log_length, NULL, &fragment_shader_error_message[0]);
         LOG_ERROR("Error compiling fragment shader: {}\n", &fragment_shader_error_message[0]);
@@ -101,7 +102,7 @@ UniqueGLObject gl::load_shaders(const std::string &vertex_file_path, const std::
     // Check the program
     glGetProgramiv(program, GL_LINK_STATUS, &result);
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_log_length);
-    if (info_log_length > 0) {
+    if (!result) {
         std::vector<char> program_error_message(info_log_length + 1);
         glGetProgramInfoLog(program, info_log_length, NULL, &program_error_message[0]);
         LOG_ERROR("Error linking shader program: {}\n", &program_error_message[0]);
