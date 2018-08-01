@@ -5,6 +5,7 @@
 
 #include <renderer/types.h>
 
+#include <gxm/functions.h>
 #include <gxm/types.h>
 #include <util/log.h>
 
@@ -178,7 +179,8 @@ namespace renderer {
         }
 
         // Blending.
-        const FragmentProgram &fragment_program = *state.fragment_program.get(mem)->renderer.get();
+        const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
+        const FragmentProgram &fragment_program = *gxm_fragment_program.renderer.get();
         glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
         if (fragment_program.blend_enabled) {
             glEnable(GL_BLEND);
@@ -189,12 +191,26 @@ namespace renderer {
         }
 
         // Textures.
-        for (size_t i = 0; i < SCE_GXM_MAX_TEXTURE_UNITS; ++i) {
-            const SceGxmTexture &texture = state.fragment_textures[i];
-            if (texture.data_addr != 0) {
-                glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + i));
-                cache_and_bind_texture(context.texture_cache, texture, mem, enable_texture_cache);
+        const SceGxmProgram &fragment_gxp = *gxm_fragment_program.program.get(mem);
+        const SceGxmProgramParameter *const fragment_params = gxm::program_parameters(fragment_gxp);
+        for (size_t i = 0; i < fragment_gxp.parameter_count; ++i) {
+            const SceGxmProgramParameter &param = fragment_params[i];
+            if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+                continue;
             }
+            const size_t texture_unit = param.resource_index; // TODO Is this right?
+            if (texture_unit >= SCE_GXM_MAX_TEXTURE_UNITS) {
+                LOG_WARN("Texture unit index ({}) out of range. SCE_GXM_MAX_TEXTURE_UNITS is {}.", texture_unit, SCE_GXM_MAX_TEXTURE_UNITS);
+                continue;
+            }
+            const SceGxmTexture &texture = state.fragment_textures[texture_unit];
+            if (texture.data_addr == 0) {
+                LOG_WARN("Texture has null data.");
+                continue;
+            }
+
+            glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + texture_unit));
+            cache_and_bind_texture(context.texture_cache, texture, mem, enable_texture_cache);
         }
         glActiveTexture(GL_TEXTURE0);
 
