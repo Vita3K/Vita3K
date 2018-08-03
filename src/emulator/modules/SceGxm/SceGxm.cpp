@@ -18,25 +18,35 @@
 #include "SceGxm.h"
 
 #include <gxm/functions.h>
-#include <gxm/texture_cache_functions.h>
 #include <gxm/types.h>
-
-#include <cpu/functions.h>
 #include <host/functions.h>
 #include <kernel/thread/thread_functions.h>
+#include <renderer/functions.h>
+#include <renderer/types.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <glbinding/Binding.h>
 #include <psp2/kernel/error.h>
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <sstream>
+struct SceGxmContext {
+    GxmContextState state;
+    renderer::Context renderer;
+};
 
-using namespace emu;
-using namespace glbinding;
+struct SceGxmRenderTarget {
+    renderer::RenderTarget renderer;
+};
+
+struct FragmentProgramCacheKey {
+    SceGxmRegisteredProgram fragment_program;
+    emu::SceGxmBlendInfo blend_info;
+};
+
+typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
+
+struct SceGxmShaderPatcher {
+    FragmentProgramCache fragment_program_cache;
+};
 
 // clang-format off
 static const size_t size_mask_gxp = 176;
@@ -54,6 +64,24 @@ static const uint8_t mask_gxp[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 };
 // clang-format on
+
+static bool operator<(const SceGxmRegisteredProgram &a, const SceGxmRegisteredProgram &b) {
+    return a.program < b.program;
+}
+
+static bool operator<(const emu::SceGxmBlendInfo &a, const emu::SceGxmBlendInfo &b) {
+    return memcmp(&a, &b, sizeof(a)) < 0;
+}
+
+static bool operator<(const FragmentProgramCacheKey &a, const FragmentProgramCacheKey &b) {
+    if (a.fragment_program < b.fragment_program) {
+        return true;
+    }
+    if (b.fragment_program < a.fragment_program) {
+        return false;
+    }
+    return b.blend_info < a.blend_info;
+}
 
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return UNIMPLEMENTED();
@@ -91,32 +119,11 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     context->state.fragment_ring_buffer_used = 0;
     context->state.vertex_ring_buffer_used = 0;
     context->state.color_surface = *colorSurface;
+    context->state.depth_stencil_surface = *depthStencil;
 
     host.gxm.isInScene = true;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, renderTarget->framebuffer[0]);
-
-    // Re-load GL machine settings for multiple contexts support
-    // TODO This shouldn't be necessary, as each GXM context gets its own OpenGL context.
-    switch (context->state.cull_mode) {
-    case SCE_GXM_CULL_CCW:
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-        break;
-    case SCE_GXM_CULL_CW:
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        break;
-    case SCE_GXM_CULL_NONE:
-        glDisable(GL_CULL_FACE);
-        break;
-    }
-
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(0, 0, host.display.image_size.width, host.display.image_size.height);
-
-    // TODO This is just for debugging.
-    glClear(GL_COLOR_BUFFER_BIT);
+    renderer::begin_scene(renderTarget->renderer);
 
     return 0;
 }
@@ -222,32 +229,11 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     SceGxmContext *const ctx = context->get(host.mem);
     ctx->state.params = *params;
 
-    assert(SDL_GL_GetCurrentContext() == nullptr);
-    ctx->renderer.gl = GLContextPtr(SDL_GL_CreateContext(host.window.get()), SDL_GL_DeleteContext);
-    assert(ctx->renderer.gl != nullptr);
-
-    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
-        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
-    };
-    Binding::initialize(get_proc_address, false);
-
-    LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
-    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-    set_viewport(ctx->state.viewport, host.display.image_size.width, host.display.image_size.height);
-
-    // TODO This is just for debugging.
-    glClearColor(0.0625f, 0.125f, 0.25f, 0);
-
-    if (!init(ctx->renderer.texture_cache) || !ctx->renderer.vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !ctx->renderer.element_buffer.init(glGenBuffers, glDeleteBuffers) || !ctx->renderer.stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
+    if (!renderer::create(ctx->renderer, host.window.get())) {
         free(host.mem, *context);
         context->reset();
-
-        return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
-
-    glBindVertexArray(ctx->renderer.vertex_array[0]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->renderer.element_buffer[0]);
 
     return 0;
 }
@@ -266,21 +252,10 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     }
 
     SceGxmRenderTarget *const rt = renderTarget->get(host.mem);
-    if (!rt->renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) || !rt->framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
+    if (!renderer::create(rt->renderer, *params)) {
         free(host.mem, *renderTarget);
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
-
-    glBindRenderbuffer(GL_RENDERBUFFER, rt->renderbuffers[0]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, params->width, params->height);
-    glBindRenderbuffer(GL_RENDERBUFFER, rt->renderbuffers[1]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, params->width, params->height);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, rt->framebuffer[0]);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rt->renderbuffers[0]);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rt->renderbuffers[1]);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return 0;
 }
@@ -407,73 +382,11 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
-    // TODO Use some kind of caching to avoid setting every draw call?
-    const SharedGLObject program = get_program(*context, host.mem);
-    if (!program) {
+    if (!renderer::sync_state(context->renderer, context->state, host.mem, host.gui.texture_cache)) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
-    glUseProgram(program->get());
 
-    // TODO Use some kind of caching to avoid setting every draw call?
-    set_uniforms(program->get(), *context, host.mem);
-
-    // Upload index data.
-    const GLsizeiptr index_size = (indexType == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * indexCount, indexData, GL_STREAM_DRAW);
-
-    // Compute size of vertex data.
-    size_t max_index = 0;
-    if (indexType == SCE_GXM_INDEX_FORMAT_U16) {
-        const uint16_t *const indices = static_cast<const uint16_t *>(indexData);
-        max_index = *std::max_element(&indices[0], &indices[indexCount]);
-    } else {
-        const uint32_t *const indices = static_cast<const uint32_t *>(indexData);
-        max_index = *std::max_element(&indices[0], &indices[indexCount]);
-    }
-    const SceGxmVertexProgram *const vertex_program = context->state.vertex_program.get(host.mem);
-    size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
-    for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
-        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-        const size_t attribute_size = attribute_format_size(attribute_format) * attribute.componentCount;
-        const SceGxmVertexStream &stream = vertex_program->streams[attribute.streamIndex];
-        const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
-        max_data_length[attribute.streamIndex] = std::max(max_data_length[attribute.streamIndex], data_length);
-    }
-
-    // Upload vertex data.
-    for (size_t stream_index = 0; stream_index < SCE_GXM_MAX_VERTEX_STREAMS; ++stream_index) {
-        const size_t data_length = max_data_length[stream_index];
-        const void *const data = context->state.stream_data[stream_index].get(host.mem);
-        glBindBuffer(GL_ARRAY_BUFFER, context->renderer.stream_vertex_buffers[stream_index]);
-        glBufferData(GL_ARRAY_BUFFER, data_length, data, GL_STREAM_DRAW);
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // Set vertex attribute parameters.
-    // TODO Only set attrib pointer when changed.
-    // TODO Move vertex array object to program cache?
-    for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
-        const SceGxmVertexStream &stream = vertex_program->streams[attribute.streamIndex];
-        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-        const GLenum type = attribute_format_to_gl_type(attribute_format);
-        const GLboolean normalised = attribute_format_normalised(attribute_format) ? GL_TRUE : GL_FALSE;
-        const int attrib_location = attribute.regIndex / sizeof(uint32_t);
-
-        glBindBuffer(GL_ARRAY_BUFFER, context->renderer.stream_vertex_buffers[attribute.streamIndex]);
-        glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
-        glEnableVertexAttribArray(attrib_location);
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    const GLenum mode = translate_primitive(primType);
-    const GLenum type = indexType == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
-    glDrawElements(mode, indexCount, type, nullptr);
-
-    // Disable vertex attribute arrays.
-    for (const emu::SceGxmVertexAttribute &attribute : vertex_program->attributes) {
-        const int attrib_location = attribute.regIndex / sizeof(uint32_t);
-        glDisableVertexAttribArray(attrib_location);
-    }
+    renderer::draw(context->renderer, context->state, primType, indexType, indexData, indexCount, host.mem);
 
     return 0;
 }
@@ -500,23 +413,18 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
-    const GLsizei width = context->state.color_surface.pbeEmitWords[0];
-    const GLsizei height = context->state.color_surface.pbeEmitWords[1];
-    const GLsizei stride_in_pixels = context->state.color_surface.pbeEmitWords[2];
+    const size_t width = context->state.color_surface.pbeEmitWords[0];
+    const size_t height = context->state.color_surface.pbeEmitWords[1];
+    const size_t stride_in_pixels = context->state.color_surface.pbeEmitWords[2];
     const Address data = context->state.color_surface.pbeEmitWords[3];
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
-    glPixelStorei(GL_PACK_ROW_LENGTH, stride_in_pixels); // TODO Reset to 0?
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    flip_vertically(pixels, width, height, stride_in_pixels);
+
+    renderer::end_scene(context->renderer, width, height, stride_in_pixels, pixels);
     if (fragmentNotification) {
         volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
         *fragment_address = fragmentNotification->value;
     }
-
     host.gxm.isInScene = false;
-    ++context->renderer.texture_cache.timestamp;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return 0;
 }
@@ -527,7 +435,7 @@ EXPORT(int, sceGxmExecuteCommandList) {
 
 EXPORT(void, sceGxmFinish, SceGxmContext *context) {
     assert(context != nullptr);
-    glFinish();
+    renderer::finish(context->renderer);
 }
 
 EXPORT(int, sceGxmFragmentProgramGetPassType) {
@@ -1051,36 +959,10 @@ EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc
     context->state.back_stencil.depth_pass = depthPass;
     context->state.back_stencil.compare_mask = compareMask;
     context->state.back_stencil.write_mask = writeMask;
-
-    if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
-        glEnable(GL_STENCIL_TEST);
-
-        GLenum gl_func = translate_stencil_func(func);
-        GLenum sfail = translate_stencil_op(stencilFail);
-        GLenum dpfail = translate_stencil_op(depthFail);
-        GLenum dppass = translate_stencil_op(depthPass);
-
-        GLint sref;
-        glGetIntegerv(GL_STENCIL_BACK_REF, &sref);
-
-        glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
-        glStencilFuncSeparate(GL_BACK, gl_func, sref, compareMask);
-        glStencilMaskSeparate(GL_BACK, writeMask);
-    }
 }
 
 EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
     context->state.back_stencil.ref = sref;
-
-    if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
-        glEnable(GL_STENCIL_TEST);
-
-        GLint stencil_config[2];
-        glGetIntegerv(GL_STENCIL_BACK_FUNC, &stencil_config[0]);
-        glGetIntegerv(GL_STENCIL_BACK_VALUE_MASK, &stencil_config[1]);
-
-        glStencilFuncSeparate(GL_BACK, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
-    }
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestEnable) {
@@ -1097,19 +979,6 @@ EXPORT(int, sceGxmSetBackVisibilityTestOp) {
 
 EXPORT(int, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
     context->state.cull_mode = mode;
-    switch (mode) {
-    case SCE_GXM_CULL_CCW:
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-        break;
-    case SCE_GXM_CULL_CW:
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        break;
-    case SCE_GXM_CULL_NONE:
-        glDisable(GL_CULL_FACE);
-        break;
-    }
     return 0;
 }
 
@@ -1138,16 +1007,6 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     assert(fragmentProgram);
 
     context->state.fragment_program = fragmentProgram;
-
-    const SceGxmFragmentProgram &fragment_program = *fragmentProgram.get(host.mem);
-    glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
-    if (fragment_program.blend_enabled) {
-        glEnable(GL_BLEND);
-        glBlendEquationSeparate(fragment_program.color_func, fragment_program.alpha_func);
-        glBlendFuncSeparate(fragment_program.color_src, fragment_program.color_dst, fragment_program.alpha_src, fragment_program.alpha_dst);
-    } else {
-        glDisable(GL_BLEND);
-    }
 }
 
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const SceGxmTexture *texture) {
@@ -1155,9 +1014,6 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     assert(texture != nullptr);
 
     context->state.fragment_textures[textureIndex] = *texture;
-
-    glActiveTexture((GLenum)(GL_TEXTURE0 + textureIndex));
-    cache_and_bind_texture(context->renderer.texture_cache, *texture, host.mem, host.gui.texture_cache);
 
     return 0;
 }
@@ -1172,23 +1028,10 @@ EXPORT(int, sceGxmSetFrontDepthBias) {
 
 EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
     context->state.front_depth_func = depthFunc;
-
-    glEnable(GL_DEPTH_TEST);
-    if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
-        // TODO: Find a way to implement this since glDepthFuncSeparate doesn't exist
-        LOG_WARN("sceGxmSetFrontDepthFunc called with a two sided context, graphical glitches may happen.");
-    }
-    glDepthFunc(translate_depth_func(depthFunc));
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
     context->state.front_depth_write_enable = enable;
-
-    if (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
-        // TODO: Find a way to implement this since glDepthMaskSeparate doesn't exist
-        LOG_WARN("sceGxmSetFrontDepthWriteEnable called with a two sided context, graphical glitches may happen.");
-    }
-    glDepthMask(enable == SCE_GXM_DEPTH_WRITE_ENABLED ? GL_TRUE : GL_FALSE);
 }
 
 EXPORT(int, sceGxmSetFrontFragmentProgramEnable) {
@@ -1214,35 +1057,10 @@ EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFun
     context->state.front_stencil.depth_pass = depthPass;
     context->state.front_stencil.compare_mask = compareMask;
     context->state.front_stencil.write_mask = writeMask;
-
-    glEnable(GL_STENCIL_TEST);
-
-    GLenum face = (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) ? GL_FRONT : GL_FRONT_AND_BACK;
-    GLenum gl_func = translate_stencil_func(func);
-    GLenum sfail = translate_stencil_op(stencilFail);
-    GLenum dpfail = translate_stencil_op(depthFail);
-    GLenum dppass = translate_stencil_op(depthPass);
-
-    GLint sref;
-    glGetIntegerv(GL_STENCIL_REF, &sref);
-
-    glStencilOpSeparate(face, sfail, dpfail, dppass);
-    glStencilFuncSeparate(face, gl_func, sref, compareMask);
-    glStencilMaskSeparate(face, writeMask);
 }
 
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref) {
     context->state.front_stencil.ref = sref;
-
-    glEnable(GL_STENCIL_TEST);
-
-    GLenum face = (context->state.two_sided == SCE_GXM_TWO_SIDED_ENABLED) ? GL_FRONT : GL_FRONT_AND_BACK;
-
-    GLint stencil_config[2];
-    glGetIntegerv(GL_STENCIL_FUNC, &stencil_config[0]);
-    glGetIntegerv(GL_STENCIL_VALUE_MASK, &stencil_config[1]);
-
-    glStencilFuncSeparate(face, static_cast<GLenum>(stencil_config[0]), sref, stencil_config[1]);
 }
 
 EXPORT(int, sceGxmSetFrontVisibilityTestEnable) {
@@ -1267,30 +1085,10 @@ EXPORT(int, sceGxmSetPrecomputedVertexState) {
 
 EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int yMin, unsigned int xMax, unsigned int yMax) {
     context->state.region_clip_mode = mode;
-    context->state.region_clip_min.x = xMin;
-    context->state.region_clip_min.y = yMin;
-    context->state.region_clip_max.x = xMax;
-    context->state.region_clip_max.y = yMax;
-
-    xMin += xMin % 32;
-    yMin += yMin % 32;
-    xMax += xMax % 32;
-    yMax += yMax % 32;
-    switch (mode) {
-    case SCE_GXM_REGION_CLIP_NONE:
-        glScissor(0, 0, host.display.image_size.width, host.display.image_size.height);
-        break;
-    case SCE_GXM_REGION_CLIP_ALL:
-        glScissor(0, 0, 0, 0);
-        break;
-    case SCE_GXM_REGION_CLIP_OUTSIDE:
-        glScissor(xMin, host.display.image_size.height - yMax, xMin + xMax, yMin + yMax);
-        break;
-    case SCE_GXM_REGION_CLIP_INSIDE:
-        // TODO: Implement this
-        LOG_WARN("Unimplemented region clip mode used: SCE_GXM_REGION_CLIP_INSIDE");
-        break;
-    }
+    context->state.region_clip_min.x = align(xMin, SCE_GXM_TILE_SIZEX);
+    context->state.region_clip_min.y = align(yMin, SCE_GXM_TILE_SIZEY);
+    context->state.region_clip_max.x = align(xMax, SCE_GXM_TILE_SIZEX);
+    context->state.region_clip_max.y = align(yMax, SCE_GXM_TILE_SIZEY);
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
@@ -1354,12 +1152,10 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
     context->state.viewport.scale.x = xScale;
     context->state.viewport.scale.y = yScale;
     context->state.viewport.scale.z = zScale;
-    set_viewport(context->state.viewport, host.display.image_size.width, host.display.image_size.height);
 }
 
 EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
     context->state.viewport.enable = enable;
-    set_viewport(context->state.viewport, host.display.image_size.width, host.display.image_size.height);
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
@@ -1454,21 +1250,10 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = programId->program;
-    fp->glsl = get_fragment_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
+    fp->renderer = std::make_unique<renderer::FragmentProgram>();
 
-    // Translate blending.
-    if (blendInfo != nullptr) {
-        fp->color_mask_red = ((blendInfo->colorMask & SCE_GXM_COLOR_MASK_R) != 0) ? GL_TRUE : GL_FALSE;
-        fp->color_mask_green = ((blendInfo->colorMask & SCE_GXM_COLOR_MASK_G) != 0) ? GL_TRUE : GL_FALSE;
-        fp->color_mask_blue = ((blendInfo->colorMask & SCE_GXM_COLOR_MASK_B) != 0) ? GL_TRUE : GL_FALSE;
-        fp->color_mask_alpha = ((blendInfo->colorMask & SCE_GXM_COLOR_MASK_A) != 0) ? GL_TRUE : GL_FALSE;
-        fp->blend_enabled = true;
-        fp->color_func = translate_blend_func(blendInfo->colorFunc);
-        fp->alpha_func = translate_blend_func(blendInfo->alphaFunc);
-        fp->color_src = translate_blend_factor(blendInfo->colorSrc);
-        fp->color_dst = translate_blend_factor(blendInfo->colorDst);
-        fp->alpha_src = translate_blend_factor(blendInfo->alphaSrc);
-        fp->alpha_dst = translate_blend_factor(blendInfo->alphaDst);
+    if (!renderer::create(*fp->renderer.get(), host.renderer, *programId->program.get(mem), blendInfo, host.base_path.c_str())) {
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
     shaderPatcher->fragment_program_cache.emplace(key, *fragmentProgram);
@@ -1490,7 +1275,11 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = alloc(mem, size_mask_gxp, __FUNCTION__);
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
-    fp->glsl = get_fragment_glsl(*shaderPatcher, *fp->program.get(mem), host.base_path.c_str());
+    fp->renderer = std::make_unique<renderer::FragmentProgram>();
+
+    if (!renderer::create(*fp->renderer, host.renderer, *fp->program.get(mem), nullptr, host.base_path.c_str())) {
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
+    }
 
     return STUBBED("Using a null shader");
 }
@@ -1513,10 +1302,13 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
     vp->program = programId->program;
-    vp->glsl = get_vertex_glsl(*shaderPatcher, *programId->program.get(mem), host.base_path.c_str());
-    vp->attribute_locations = attribute_locations(*programId->program.get(mem));
     vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
+    vp->renderer = std::make_unique<renderer::VertexProgram>();
+
+    if (!renderer::create(*vp->renderer.get(), host.renderer, *programId->program.get(mem), host.base_path.c_str())) {
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
+    }
 
     return 0;
 }
@@ -1670,7 +1462,7 @@ EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return texture::get_format(texture);
+    return gxm::get_format(texture);
 }
 
 EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
@@ -1680,7 +1472,7 @@ EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return texture::get_height(texture);
+    return gxm::get_height(texture);
 }
 
 EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
@@ -1739,7 +1531,7 @@ EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    assert(texture::is_paletted_format(texture::get_format(texture)));
+    assert(gxm::is_paletted_format(gxm::get_format(texture)));
     return Ptr<void>(texture->palette_addr << 6);
 }
 
@@ -1780,7 +1572,7 @@ EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return texture::get_width(texture);
+    return gxm::get_width(texture);
 }
 
 EXPORT(int, sceGxmTextureInitCube) {
@@ -1816,7 +1608,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
         break;
 
     default:
-        if (texture::is_paletted_format(texFormat)) {
+        if (gxm::is_paletted_format(texFormat)) {
             switch (texFormat) {
             case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
             case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:

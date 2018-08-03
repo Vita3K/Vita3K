@@ -25,6 +25,8 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
+#include <renderer/state.h>
+
 #include <psp2/display.h>
 
 #include <atomic>
@@ -83,6 +85,7 @@ struct HostState {
     KernelState kernel;
     AudioState audio;
     GxmState gxm;
+    renderer::State renderer;
     IOState io;
     NetState net;
     DisplayState display;

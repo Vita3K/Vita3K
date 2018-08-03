@@ -19,6 +19,8 @@
 
 #include "args_layout.h"
 
+#include <util/align.h>
+
 #include <tuple>
 
 struct LayoutArgsState {
@@ -26,10 +28,6 @@ struct LayoutArgsState {
     size_t stack_used;
     size_t float_used;
 };
-
-constexpr size_t align(size_t current, size_t alignment) {
-    return (current + (alignment - 1)) & ~(alignment - 1);
-}
 
 template <typename Arg>
 constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_stack(const LayoutArgsState &state) {
