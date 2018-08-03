@@ -1085,10 +1085,10 @@ EXPORT(int, sceGxmSetPrecomputedVertexState) {
 
 EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int yMin, unsigned int xMax, unsigned int yMax) {
     context->state.region_clip_mode = mode;
-    context->state.region_clip_min.x = xMin;
-    context->state.region_clip_min.y = yMin;
-    context->state.region_clip_max.x = xMax;
-    context->state.region_clip_max.y = yMax;
+    context->state.region_clip_min.x = align(xMin, SCE_GXM_TILE_SIZEX);
+    context->state.region_clip_min.y = align(yMin, SCE_GXM_TILE_SIZEY);
+    context->state.region_clip_max.x = align(xMax, SCE_GXM_TILE_SIZEX);
+    context->state.region_clip_max.y = align(yMax, SCE_GXM_TILE_SIZEY);
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
