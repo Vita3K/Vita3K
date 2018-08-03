@@ -21,5 +21,5 @@ add_executable(
 )
 
 target_include_directories(module-tests PRIVATE include)
-target_link_libraries(module-tests PRIVATE googletest)
+target_link_libraries(module-tests PRIVATE googletest util)
 add_test(NAME module COMMAND module-tests)
