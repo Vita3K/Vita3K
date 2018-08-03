@@ -19,8 +19,8 @@
 
 #include <mem/ptr.h>
 
+#include <cstddef>
 #include <map>
-#include <stddef.h>
 
 struct MemState;
 

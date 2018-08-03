@@ -21,7 +21,7 @@
 
 #include <capstone.h>
 
-#include <assert.h>
+#include <cassert>
 #include <sstream>
 
 static void delete_insn(cs_insn *insn) {

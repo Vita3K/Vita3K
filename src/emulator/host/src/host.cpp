@@ -250,6 +250,8 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         const ImportFn fn = resolve_import(nid);
         if (fn) {
             fn(host, cpu, thread_id);
+        } else {
+            LOG_ERROR("Import function for NID {} not found (thread ID: {})", log_hex(nid), thread_id);
         }
     } else {
         // LLE - directly run ARM code imported from some loaded module

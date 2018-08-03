@@ -23,6 +23,8 @@
 #include <host/app_util.h>
 #include <io/functions.h>
 
+#include <cstring>
+
 EXPORT(int, sceAppUtilAddCookieWebBrowser) {
     return UNIMPLEMENTED();
 }
@@ -154,7 +156,7 @@ EXPORT(int, sceAppUtilSaveDataDataRemove, emu::SceAppUtilSaveDataFileSlot *slot,
         remove_file(host.io, file_path.c_str(), host.pref_path.c_str(), export_name);
     }
 
-    if (files[0].mode == SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT) {
+    if (slot && files[0].mode == SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT) {
         std::string slot_path = "savedata0:/SlotParam_";
         slot_path += std::to_string(slot->id);
         slot_path += ".bin";
@@ -188,12 +190,15 @@ EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, e
         }
     }
 
-    std::string slot_path = "savedata0:/SlotParam_";
-    slot_path += std::to_string(slot->id);
-    slot_path += ".bin";
-    fd = open_file(host.io, slot_path, SCE_O_WRONLY | SCE_O_CREAT, host.pref_path.c_str(), export_name);
-    write_file(fd, &slot->slotParam, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
-    close_file(host.io, fd, export_name);
+    if (slot) {
+        std::string slot_path = "savedata0:/SlotParam_";
+        slot_path += std::to_string(slot->id);
+        slot_path += ".bin";
+        fd = open_file(host.io, slot_path, SCE_O_WRONLY | SCE_O_CREAT, host.pref_path.c_str(), export_name);
+        write_file(fd, &slot->slotParam, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
+        close_file(host.io, fd, export_name);
+    }
+
     return 0;
 }
 
@@ -281,15 +286,15 @@ EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
 }
 
 EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize) {
-    char devname[80];
+    constexpr auto devname_len = SCE_SYSTEM_PARAM_USERNAME_MAXSIZE;
+    char devname[devname_len];
     switch (paramId) {
     case SCE_SYSTEM_PARAM_ID_USERNAME:
-        gethostname(devname, 80);
-#ifdef WIN32
-        strcpy_s((char *)buf, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE, devname);
-#else
-        strcpy((char *)buf, devname);
-#endif
+        if (gethostname(devname, devname_len)) {
+            // fallback to "Vita3k"
+            std::strncpy(devname, "Vita3k", sizeof(devname));
+        }
+        std::strncpy(reinterpret_cast<char *>(buf), devname, sizeof(devname));
         break;
     default:
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);

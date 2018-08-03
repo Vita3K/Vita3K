@@ -42,7 +42,7 @@
 
 #include <miniz.h>
 
-#include <assert.h>
+#include <cassert>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -150,12 +150,13 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     const sce_module_imports_raw *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
 
     for (const sce_module_imports_raw *imports = imports_begin; imports < imports_end; imports = reinterpret_cast<const sce_module_imports_raw *>(reinterpret_cast<const uint8_t *>(imports) + imports->size)) {
-        if (LOG_IMPORTS) {
-            const char *const lib_name = Ptr<const char>(imports->module_name).get(mem);
-            LOG_INFO("Loading imports from {}", lib_name);
-        }
-
         assert(imports->num_syms_unk == 0);
+
+        std::string lib_name;
+        if (LOG_IMPORTS) {
+            lib_name = Ptr<const char>(imports->module_name).get(mem);
+            LOG_INFO("Loading func imports from {}", lib_name);
+        }
 
         const uint32_t *const nids = Ptr<const uint32_t>(imports->func_nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(imports->func_entry_table).get(mem);
@@ -165,7 +166,13 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
 
         const uint32_t *const var_nids = Ptr<const uint32_t>(imports->var_nid_table).get(mem);
         const Ptr<uint32_t> *const var_entries = Ptr<Ptr<uint32_t>>(imports->var_entry_table).get(mem);
-        if (!load_var_imports(var_nids, var_entries, imports->num_syms_vars, kernel, mem)) {
+        const auto var_count = imports->num_syms_vars;
+
+        if (LOG_IMPORTS && var_count > 0) {
+            LOG_INFO("Loading var imports from {}", lib_name);
+        }
+
+        if (!load_var_imports(var_nids, var_entries, var_count, kernel, mem)) {
             return false;
         }
     }
@@ -191,7 +198,7 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
         if (LOG_EXPORTS) {
             const char *const name = import_name(nid);
 
-            LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, entry.address());
+            LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
         }
     }
 
@@ -239,8 +246,8 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
     for (const sce_module_exports_raw *exports = exports_begin; exports < exports_end; exports = reinterpret_cast<const sce_module_exports_raw *>(reinterpret_cast<const uint8_t *>(exports) + exports->size)) {
         const char *const lib_name = Ptr<const char>(exports->module_name).get(mem);
 
-        if (LOG_EXPORTS && lib_name) {
-            LOG_INFO("Loading exports from {}", lib_name);
+        if (LOG_EXPORTS) {
+            LOG_INFO("Loading func exports from {}", lib_name);
         }
 
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
@@ -249,7 +256,13 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
             return false;
         }
 
-        if (!load_var_exports(entry_point, &nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], exports->num_syms_vars, kernel, mem)) {
+        const auto var_count = exports->num_syms_vars;
+
+        if (LOG_EXPORTS && var_count > 0) {
+            LOG_INFO("Loading var exports from {}", lib_name);
+        }
+
+        if (!load_var_exports(entry_point, &nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem)) {
             return false;
         }
     }
@@ -257,13 +270,26 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
     return true;
 }
 
-SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const char *path) {
+/**
+ * \return Negative on failure
+ */
+SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &path) {
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
     // assumes little endian host
-    if (!memcmp(&self_header.magic, "\0ECS", 4)) {
-        LOG_CRITICAL("(S)ELF is corrupt or encrypted. Decryption not yet supported.");
+    if (self_header.magic != 0x00454353) {
+        LOG_CRITICAL("SELF {} is corrupt or encrypted. Decryption is not yet supported.", path);
+        return -1;
+    }
+
+    if (self_header.version != 3) {
+        LOG_CRITICAL("SELF {} version {} is not supported.", path, self_header.version);
+        return -1;
+    }
+
+    if (self_header.header_type != 1) {
+        LOG_CRITICAL("SELF {} header type {} is not supported.", path, self_header.header_type);
         return -1;
     }
 
@@ -283,9 +309,9 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         if (src.p_type == PT_LOAD) {
             Address segment_address = 0;
             if (elf.e_type == ET_SCE_EXEC) {
-                segment_address = alloc_at(mem, src.p_vaddr, src.p_memsz, path);
+                segment_address = alloc_at(mem, src.p_vaddr, src.p_memsz, path.c_str());
             } else {
-                segment_address = alloc(mem, src.p_memsz, path);
+                segment_address = alloc(mem, src.p_memsz, path.c_str());
             }
             const Ptr<void> address(segment_address);
             if (!address) {
@@ -350,7 +376,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     sceKernelModuleInfo->tlsAreaSize = module_info->field_40;
     //SceSize tlsInitSize;
     //SceSize tlsAreaSize;
-    strncpy(sceKernelModuleInfo->path, path, 255);
+    strncpy(sceKernelModuleInfo->path, path.c_str(), 255);
 
     for (Elf_Half segment_index = 0; segment_index < elf.e_phnum; ++segment_index) {
         sceKernelModuleInfo->segments[segment_index].size = sizeof(sceKernelModuleInfo->segments[segment_index]);
@@ -360,7 +386,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     sceKernelModuleInfo->type = module_info->type;
 
-    LOG_INFO("*** Loading symbols for (S)ELF: {}", path);
+    LOG_INFO("Loading symbols for SELF: {}", path);
 
     if (!load_exports(entry_point, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
