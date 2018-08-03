@@ -1,6 +1,7 @@
 add_library(
 	util
 	STATIC
+	include/util/align.h
 	include/util/find.h
 	include/util/fs.h
 	include/util/lock_and_find.h
