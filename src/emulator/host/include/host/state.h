@@ -25,6 +25,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
+#include <nids/types.h>
 #include <renderer/state.h>
 
 #include <psp2/display.h>
@@ -91,4 +92,5 @@ struct HostState {
     DisplayState display;
     GuiState gui;
     SfoFile sfo_handle;
+    NIDSet missing_nids;
 };

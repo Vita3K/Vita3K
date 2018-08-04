@@ -3,6 +3,7 @@ add_library(
 	STATIC
 	include/nids/functions.h
 	include/nids/nids.h
+	include/nids/types.h
 	src/nids.cpp
 )
 
