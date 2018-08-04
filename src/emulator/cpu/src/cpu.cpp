@@ -66,12 +66,12 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const size_t buffer_size = GB(4) - address;
     const bool thumb = is_thumb_mode(uc);
     const std::string disassembly = disassemble(state.disasm, code, buffer_size, address, thumb);
-    LOG_TRACE("{} {}", log_hex(address), disassembly);
+    LOG_TRACE("{}: {} {}", log_hex((uint64_t)uc), log_hex(address), disassembly);
 }
 
-static void log_memory_access(const char *type, Address address, int size, int64_t value, const MemState &mem) {
+static void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, const MemState &mem) {
     const char *const name = mem_name(address, mem);
-    LOG_TRACE("{} {} bytes, address {} ( {} ), value {}", type, size, address, name, log_hex(value));
+    LOG_TRACE("{}: {} {} bytes, address {} ( {} ), value {}", log_hex((uint64_t)uc), type, size, log_hex(address), name, log_hex(value));
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -80,13 +80,13 @@ static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int siz
     const CPUState &state = *static_cast<const CPUState *>(user_data);
     const MemState &mem = *state.mem;
     memcpy(&value, Ptr<const void>(static_cast<Address>(address)).get(mem), size);
-    log_memory_access("Read", static_cast<Address>(address), size, value, mem);
+    log_memory_access(uc, "Read", static_cast<Address>(address), size, value, mem);
 }
 
 static void write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     const CPUState &state = *static_cast<const CPUState *>(user_data);
     const MemState &mem = *state.mem;
-    log_memory_access("Write", static_cast<Address>(address), size, value, mem);
+    log_memory_access(uc, "Write", static_cast<Address>(address), size, value, mem);
 }
 
 static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
