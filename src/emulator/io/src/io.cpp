@@ -264,7 +264,7 @@ SceUID open_file(IOState &io, const std::string &path, int flags, const char *pr
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
 #endif
         if (!file) {
-            return IO_ERROR_UNK();
+            return SCE_ERROR_ERRNO_ENOENT;
         }
 
         const SceUID fd = io.next_fd++;
@@ -583,7 +583,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path, const char *e
     });
 #endif
     if (!dir) {
-        return -1;
+        return SCE_ERROR_ERRNO_ENOENT;
     }
 
     const SceUID fd = io.next_fd++;
