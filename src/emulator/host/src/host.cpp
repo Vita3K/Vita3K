@@ -63,7 +63,8 @@
 
 using namespace glbinding;
 
-static const bool LOG_IMPORT_CALLS = false;
+static constexpr bool LOG_IMPORT_CALLS = false;
+static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
 #define NID(name, nid) extern const ImportFn import_##name;
 #include <nids/nids.h>
@@ -250,8 +251,11 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         const ImportFn fn = resolve_import(nid);
         if (fn) {
             fn(host, cpu, thread_id);
-        } else {
+        } else if (host.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
             LOG_ERROR("Import function for NID {} not found (thread ID: {})", log_hex(nid), thread_id);
+
+            if (!LOG_UNK_NIDS_ALWAYS)
+                host.missing_nids.insert(nid);
         }
     } else {
         // LLE - directly run ARM code imported from some loaded module
