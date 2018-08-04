@@ -44,8 +44,11 @@ struct CPUState {
     Address entry_point;
 };
 
+// Log code for specified threads (arg to create_thread)
 static const bool LOG_CODE = true;
-static const bool LOG_MEM_ACCESS = false;
+// Log code run on all threads
+static bool LOG_CODE_ALL = false;
+static bool LOG_MEM_ACCESS = false;
 
 static void delete_cpu_state(CPUState *state) {
     delete state;
@@ -149,17 +152,12 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     temp_uc = nullptr;
 
     uc_hook hh = 0;
-    if (log_code && LOG_CODE) {
-        const uc_err err = uc_hook_add(state->uc.get(), &hh, UC_HOOK_CODE, reinterpret_cast<void *>(&code_hook), state.get(), 1, 0);
-        assert(err == UC_ERR_OK);
+    if ((log_code && LOG_CODE) || LOG_CODE_ALL) {
+        log_code_add(*state);
     }
 
     if (LOG_MEM_ACCESS) {
-        uc_err err = uc_hook_add(state->uc.get(), &hh, UC_HOOK_MEM_READ, reinterpret_cast<void *>(&read_hook), state.get(), 1, 0);
-        assert(err == UC_ERR_OK);
-
-        err = uc_hook_add(state->uc.get(), &hh, UC_HOOK_MEM_WRITE, reinterpret_cast<void *>(&write_hook), state.get(), 1, 0);
-        assert(err == UC_ERR_OK);
+        log_mem_add(*state);
     }
 
     err = uc_hook_add(state->uc.get(), &hh, UC_HOOK_INTR, reinterpret_cast<void *>(&intr_hook), state.get(), 1, 0);
@@ -288,5 +286,21 @@ void write_pc(CPUState &state, uint32_t value) {
 
 void write_lr(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &value);
+    assert(err == UC_ERR_OK);
+}
+
+void log_code_add(CPUState &state) {
+    uc_hook hh = 0;
+    const uc_err err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_CODE, reinterpret_cast<void *>(&code_hook), &state, 1, 0);
+
+    assert(err == UC_ERR_OK);
+}
+
+void log_mem_add(CPUState &state) {
+    uc_hook hh = 0;
+    uc_err err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_MEM_READ, reinterpret_cast<void *>(&read_hook), &state, 1, 0);
+    assert(err == UC_ERR_OK);
+
+    err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_MEM_WRITE, reinterpret_cast<void *>(&write_hook), &state, 1, 0);
     assert(err == UC_ERR_OK);
 }
