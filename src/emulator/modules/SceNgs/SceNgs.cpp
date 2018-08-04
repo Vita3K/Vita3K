@@ -19,6 +19,26 @@
 
 #include "SceNgs.h"
 
+namespace emu {
+struct SceNgsPatchInfo1 {
+    std::int32_t out_channels;
+    std::int32_t in_channels;
+    float unk[3];
+};
+static_assert(sizeof(SceNgsPatchInfo1) == 20);
+
+struct SceNgsPatchInfo2 {
+    std::int32_t unk[5];
+};
+static_assert(sizeof(SceNgsPatchInfo2) == 20);
+
+struct SceNgsBufferInfo {
+    Ptr<void> data;
+    std::uint32_t size;
+};
+static_assert(sizeof(SceNgsBufferInfo) == 8);
+} // namespace emu
+
 EXPORT(int, sceNgsAT9GetSectionDetails) {
     return UNIMPLEMENTED();
 }
@@ -35,8 +55,13 @@ EXPORT(int, sceNgsPatchCreateRouting) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsPatchGetInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsPatchGetInfo, std::uint32_t patch, Ptr<emu::SceNgsPatchInfo1> patch_info1_, Ptr<emu::SceNgsPatchInfo2> patch_info2_) {
+    auto *patch_info1 = patch_info1_.get(host.mem);
+
+    patch_info1->in_channels = 2;
+    patch_info1->out_channels = 2;
+
+    return STUBBED("2 in/out channels");
 }
 
 EXPORT(int, sceNgsPatchRemoveRouting) {
@@ -209,8 +234,13 @@ EXPORT(int, sceNgsVoiceKill) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceLockParams) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsVoiceLockParams, std::uint32_t voice, std::uint32_t unk1, std::uint32_t unk2, Ptr<emu::SceNgsBufferInfo> buf) {
+    auto *buffer_info = buf.get(host.mem);
+
+    buffer_info->data = alloc(host.mem, 10, "SceNgs buffer stub");
+    buffer_info->size = 10;
+
+    return STUBBED("Ngs buffer stubbed");
 }
 
 EXPORT(int, sceNgsVoicePatchSetVolume) {
