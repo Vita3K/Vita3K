@@ -75,13 +75,20 @@ int main(int argc, char *argv[]) {
 
     auto run_type = AppRunType::Vpk;
 
-    while (path.empty() && handle_events(host) && run_type == AppRunType::Vpk) {
-        imgui::draw_begin(host.window);
+    if (path.empty()) {
+        // Application not provided via argument, show game selector
+        while (run_type == AppRunType::Vpk) {
+            if (handle_events(host)) {
+                imgui::draw_begin(host.window);
 
-        DrawUI(host);
-        DrawGameSelector(host, &run_type);
+                DrawUI(host);
+                DrawGameSelector(host, &run_type);
 
-        imgui::draw_end(host.window);
+                imgui::draw_end(host.window);
+            } else {
+                return QuitRequested;
+            }
+        }
     }
 
     if (run_type == AppRunType::Extracted) {
