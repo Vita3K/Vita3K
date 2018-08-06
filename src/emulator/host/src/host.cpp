@@ -114,8 +114,8 @@ bool init(HostState &state) {
 
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
-    state.display.set_dims(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, WINDOW_BORDER_WIDTH, WINDOW_BORDER_HEIGHT);
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.display.window_size.width, state.display.window_size.height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+    state.display.set_dims(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.display.image_size.width, state.display.image_size.height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str())) {
         return false;
     }
@@ -207,16 +207,6 @@ bool handle_events(HostState &host) {
             bool old_imgui_render = display.imgui_render.load();
             while (!display.imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
             }
-
-            if (old_imgui_render) {
-                display.set_dims(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0, 0);
-                SDL_SetWindowResizable(host.window.get(), SDL_FALSE);
-            } else {
-                display.set_dims(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, WINDOW_BORDER_WIDTH, WINDOW_BORDER_HEIGHT);
-                SDL_SetWindowResizable(host.window.get(), SDL_TRUE);
-            }
-
-            SDL_SetWindowSize(host.window.get(), display.window_size.width, display.window_size.height);
         }
     }
 

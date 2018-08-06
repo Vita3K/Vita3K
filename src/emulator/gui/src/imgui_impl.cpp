@@ -17,8 +17,6 @@
 
 #include <gui/imgui_impl.h>
 
-#include <gui/functions.h>
-
 #include <SDL.h>
 
 void imgui::init(WindowPtr window) {
@@ -30,33 +28,6 @@ void imgui::init(WindowPtr window) {
 
 void imgui::draw_begin(WindowPtr window) {
     ImGui_ImplSdlGL3_NewFrame(window.get());
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-void imgui::draw_main(HostState &host, GLuint texture_id) {
-    const auto window_size = host.display.window_size;
-    const auto image_size = host.display.image_size;
-
-    // workaround for imgui-related crash
-    if (host.display.image_size.width == 0)
-        return;
-
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    void *const pixels = host.display.base.cast<void>().get(host.mem);
-
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, host.display.pitch);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_size.width, image_size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(window_size.width, window_size.height), ImGuiSetCond_Always);
-    ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
-    host.gui.renderer_focused = ImGui::IsWindowFocused();
-    ImGui::Image(reinterpret_cast<void *>(texture_id), ImVec2(image_size.width, image_size.height));
-    ImGui::End();
 }
 
 void imgui::draw_end(WindowPtr window) {

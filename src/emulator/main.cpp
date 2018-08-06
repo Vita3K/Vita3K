@@ -76,6 +76,7 @@ int main(int argc, char *argv[]) {
     auto run_type = AppRunType::Vpk;
 
     while (path.empty() && handle_events(host) && run_type == AppRunType::Vpk) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         imgui::draw_begin(host.window);
 
         DrawUI(host);
@@ -101,20 +102,13 @@ int main(int argc, char *argv[]) {
         return RendererInitFailed;
 
     while (handle_events(host)) {
+        gl_renderer.render(host.display, host.mem);
+        imgui::draw_begin(host.window);
+        DrawCommonDialog(host);
         if (host.display.imgui_render) {
-            imgui::draw_begin(host.window);
-
-            imgui::draw_main(host, gl_renderer.get_screen_texture());
-
             DrawUI(host);
-            DrawCommonDialog(host);
-
-            imgui::draw_end(host.window);
-        } else {
-            gl_renderer.render(host.display, host.mem);
-
-            SDL_GL_SwapWindow(host.window.get());
         }
+        imgui::draw_end(host.window);
 
         host.display.condvar.notify_all();
 

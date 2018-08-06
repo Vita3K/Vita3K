@@ -58,18 +58,14 @@ struct DisplayState {
     Ptr<const void> base;
     uint32_t pitch = 0;
     uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-    Size image_size; // Resolution of (guest) outputted video size
-    Size border_size; // Window border size
-    Size window_size; // Total window size (image_size + border_size)
+    Size image_size;
     std::mutex mutex;
     std::condition_variable condvar;
     std::atomic<bool> abort{ false };
     std::atomic<bool> imgui_render{ true };
 
-    void set_dims(std::uint32_t image_width, std::uint32_t image_height, std::uint32_t border_width, std::uint32_t border_height) {
+    void set_dims(std::uint32_t image_width, std::uint32_t image_height) {
         image_size = { image_width, image_height };
-        border_size = { border_width, border_height };
-        window_size = image_size + border_size;
     }
 };
 

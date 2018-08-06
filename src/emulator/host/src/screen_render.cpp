@@ -90,7 +90,7 @@ void gl_screen_renderer::render(DisplayState &display, MemState &mem) {
         const auto pixels = display.base.cast<void>().get(mem);
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, display.pitch);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.window_size.width, display.window_size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.image_size.width, display.image_size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
