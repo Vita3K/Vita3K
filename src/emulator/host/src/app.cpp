@@ -90,6 +90,10 @@ bool read_file_from_disk(Buffer &buf, const char *file, HostState &host) {
     return true;
 }
 
+static const char *miniz_get_error(const ZipPtr &zip) {
+    return mz_zip_get_error_string(mz_zip_get_last_error(zip.get()));
+}
+
 static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, const ZipPtr zip) {
     const int file_index = mz_zip_reader_locate_file(zip.get(), file, nullptr, 0);
     if (file_index < 0) {
@@ -98,7 +102,7 @@ static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, con
     }
 
     if (!mz_zip_reader_extract_file_to_callback(zip.get(), file, &write_to_buffer, &buf, 0)) {
-        LOG_CRITICAL("Failed to extract {}.", file);
+        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip) , file);
         return false;
     }
 
@@ -121,7 +125,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     }
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
-        LOG_CRITICAL("Cannot init miniz reader");
+        LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
         return false;
     }
 
