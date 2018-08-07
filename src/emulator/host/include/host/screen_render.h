@@ -29,7 +29,6 @@ public:
 
     bool init(const std::string &base_path);
     void render(DisplayState &display, MemState &mem);
-    GLuint get_screen_texture() const;
     void destroy();
 
 private:

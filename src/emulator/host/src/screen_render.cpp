@@ -98,10 +98,6 @@ void gl_screen_renderer::render(DisplayState &display, MemState &mem) {
     }
 }
 
-GLuint gl_screen_renderer::get_screen_texture() const {
-    return m_screen_texture;
-}
-
 void gl_screen_renderer::destroy() {
     const GLuint vbos[] = { m_vbo };
     glDeleteBuffers(1, vbos);
