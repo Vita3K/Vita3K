@@ -23,10 +23,15 @@ enum SelectorState {
     SELECT_APP
 };
 
-struct GamesSelector {
-    std::vector<std::string> titles;
-    std::vector<std::string> title_ids;
+struct Game {
+    std::string title;
     std::string title_id;
+};
+
+struct GamesSelector {
+    std::vector<Game> games;
+    std::string selected_title_id;
+    bool is_game_list_sorted{ false };
     SelectorState state = SELECT_APP;
 };
 
