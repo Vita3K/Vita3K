@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_type == AppRunType::Extracted) {
-        path = utf_to_wide(host.gui.game_selector.title_id);
+        path = utf_to_wide(host.gui.game_selector.selected_title_id);
     }
 
     Ptr<const void> entry_point;
