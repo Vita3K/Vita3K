@@ -34,13 +34,10 @@ bool gl_screen_renderer::init(const std::string &base_path) {
     glBindVertexArray(m_vao);
 
     static const screen_vertices_t vertex_buffer_data = {
-        // clang-format off
-        //position          uv
-        { -1.f, -1.f, 0.0f, 0.f, 1.f },
-        {  1.f, -1.f, 0.0f, 1.f, 1.f },
-        {  1.f,  1.f, 0.0f, 1.f, 0.f },
-        { -1.f,  1.f, 0.0f, 0.f, 0.f }
-        // clang-format on
+        { { -1.f, -1.f, 0.0f }, { 0.f, 1.f } },
+        { { 1.f, -1.f, 0.0f }, { 1.f, 1.f } },
+        { { 1.f, 1.f, 0.0f }, { 1.f, 0.f } },
+        { { -1.f, 1.f, 0.0f }, { 0.f, 0.f } }
     };
 
     glGenBuffers(1, &m_vbo);
