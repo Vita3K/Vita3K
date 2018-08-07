@@ -77,6 +77,8 @@ struct HostState {
     uint32_t sdl_ticks = 0;
     WindowPtr window;
     GLContextPtr glcontext;
+    SceFVector2 viewport_pos;
+    SceFVector2 viewport_size;
     MemState mem;
     CtrlState ctrl;
     KernelState kernel;

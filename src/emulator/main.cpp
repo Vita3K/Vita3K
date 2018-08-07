@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
         return RendererInitFailed;
 
     while (handle_events(host)) {
-        gl_renderer.render(host.display, host.mem);
+        gl_renderer.render(host);
         imgui::draw_begin(host.window);
         DrawCommonDialog(host);
         if (host.display.imgui_render) {

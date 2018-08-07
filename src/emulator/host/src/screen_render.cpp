@@ -19,6 +19,8 @@
 #include <host/state.h>
 #include <util/log.h>
 
+#include <SDL_video.h>
+
 bool gl_screen_renderer::init(const std::string &base_path) {
     glGenTextures(1, &m_screen_texture);
 
@@ -75,11 +77,15 @@ bool gl_screen_renderer::init(const std::string &base_path) {
     return true;
 }
 
-void gl_screen_renderer::render(DisplayState &display, MemState &mem) {
+void gl_screen_renderer::render(const HostState &host) {
+    const DisplayState &display = host.display;
+    const MemState &mem = host.mem;
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (display.image_size.width > 0) {
-        glViewport(0, 0, display.image_size.width, display.image_size.height);
+    glViewport(host.viewport_pos.x, host.viewport_pos.y, host.viewport_size.x, host.viewport_size.y);
+
+    if ((display.image_size.width > 0) && (display.image_size.height > 0)) {
         glUseProgram(*m_render_shader);
         glBindVertexArray(m_vao);
 

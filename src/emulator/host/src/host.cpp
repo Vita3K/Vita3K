@@ -82,20 +82,58 @@ static ImportFn resolve_import(uint32_t nid) {
     return ImportFn();
 }
 
-void before_callback(const glbinding::FunctionCall &fn) {
+static void before_callback(const glbinding::FunctionCall &fn) {
 #if MICROPROFILE_ENABLED
     const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
     MICROPROFILE_ENTER_TOKEN(token);
 #endif // MICROPROFILE_ENABLED
 }
 
-void after_callback(const glbinding::FunctionCall &fn) {
+static void after_callback(const glbinding::FunctionCall &fn) {
     MICROPROFILE_LEAVE();
     for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
         std::stringstream gl_error;
         gl_error << error;
         LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
         assert(false);
+    }
+}
+
+static void update_viewport(HostState &state) {
+    int w = 0;
+    int h = 0;
+    SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
+    if (h > 0) {
+        const float window_aspect = static_cast<float>(w) / h;
+        const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+        if (window_aspect > vita_aspect) {
+            // Window is wide. Pin top and bottom.
+            state.viewport_size.x = h * vita_aspect;
+            state.viewport_size.y = h;
+            state.viewport_pos.x = (w - state.viewport_size.x) / 2;
+            state.viewport_pos.y = 0;
+        } else {
+            // Window is tall. Pin left and right.
+            state.viewport_size.x = w;
+            state.viewport_size.y = w / vita_aspect;
+            state.viewport_pos.x = 0;
+            state.viewport_pos.y = (h - state.viewport_size.y) / 2;
+        }
+    } else {
+        state.viewport_pos.x = 0;
+        state.viewport_pos.y = 0;
+        state.viewport_size.x = 0;
+        state.viewport_size.y = 0;
+    }
+}
+
+static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
+    switch (static_cast<SDL_WindowEventID>(event.event)) {
+    case SDL_WINDOWEVENT_SIZE_CHANGED:
+        update_viewport(state);
+        break;
+    default:
+        break;
     }
 }
 
@@ -115,7 +153,7 @@ bool init(HostState &state) {
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
     state.display.set_dims(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT);
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.display.image_size.width, state.display.image_size.height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str())) {
         return false;
     }
@@ -129,6 +167,8 @@ bool init(HostState &state) {
         LOG_ERROR("Could not create OpenGL context.");
         return false;
     }
+
+    update_viewport(state);
 
     // Try adaptive vsync first, falling back to regular vsync.
     if (SDL_GL_SetSwapInterval(-1) < 0) {
@@ -192,21 +232,27 @@ bool handle_events(HostState &host) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSdlGL3_ProcessEvent(&event);
-        if (event.type == SDL_QUIT) {
+        switch (event.type) {
+        case SDL_QUIT:
             stop_all_threads(host.kernel);
             host.gxm.display_queue.abort();
             host.display.abort.exchange(true);
             host.display.condvar.notify_all();
             return false;
-        }
 
-        if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_g) {
-            auto &display = host.display;
+        case SDL_KEYDOWN:
+            if (event.key.keysym.sym == SDLK_g) {
+                auto &display = host.display;
 
-            // toggle gui state
-            bool old_imgui_render = display.imgui_render.load();
-            while (!display.imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
+                // toggle gui state
+                bool old_imgui_render = display.imgui_render.load();
+                while (!display.imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
+                }
             }
+
+        case SDL_WINDOWEVENT:
+            handle_window_event(host, event.window);
+            break;
         }
     }
 
