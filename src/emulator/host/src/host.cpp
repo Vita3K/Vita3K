@@ -82,12 +82,12 @@ static ImportFn resolve_import(uint32_t nid) {
     return ImportFn();
 }
 
-static void before_callback(const glbinding::FunctionCall &fn) {
 #if MICROPROFILE_ENABLED
+static void before_callback(const glbinding::FunctionCall &fn) {
     const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
     MICROPROFILE_ENTER_TOKEN(token);
-#endif // MICROPROFILE_ENABLED
 }
+#endif // MICROPROFILE_ENABLED
 
 static void after_callback(const glbinding::FunctionCall &fn) {
     MICROPROFILE_LEAVE();
