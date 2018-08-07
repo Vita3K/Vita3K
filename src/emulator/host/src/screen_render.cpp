@@ -99,16 +99,13 @@ void gl_screen_renderer::render(DisplayState &display, MemState &mem) {
 }
 
 void gl_screen_renderer::destroy() {
-    const GLuint vbos[] = { m_vbo };
-    glDeleteBuffers(1, vbos);
+    glDeleteBuffers(1, &m_vbo);
     m_vbo = 0;
 
-    const GLuint vaos[] = { m_vao };
-    glDeleteVertexArrays(1, vaos);
+    glDeleteVertexArrays(1, &m_vao);
     m_vao = 0;
 
-    const GLuint textures[] = { m_screen_texture };
-    glDeleteTextures(1, textures);
+    glDeleteTextures(1, &m_screen_texture);
     m_screen_texture = 0;
 }
 
