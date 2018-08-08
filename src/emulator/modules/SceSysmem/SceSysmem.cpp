@@ -31,7 +31,6 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     assert(name != nullptr);
     assert(type != 0);
     assert(size != 0);
-    assert(optp == nullptr);
 
     const Ptr<void> address(alloc(mem, size, name));
     if (!address) {
