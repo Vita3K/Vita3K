@@ -40,33 +40,14 @@ typedef std::shared_ptr<SDL_Window> WindowPtr;
 typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 
 struct DisplayState {
-    struct Size {
-        uint32_t width = 0;
-        uint32_t height = 0;
-
-        Size() = default;
-        Size(uint32_t w, uint32_t h)
-            : width(w)
-            , height(h) {}
-
-        Size operator+(const Size &rhs) const {
-            Size _size(this->width + rhs.width, this->height + rhs.height);
-            return _size;
-        }
-    };
-
     Ptr<const void> base;
     uint32_t pitch = 0;
     uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-    Size image_size;
+    SceIVector2 image_size = { 0, 0 };
     std::mutex mutex;
     std::condition_variable condvar;
     std::atomic<bool> abort{ false };
     std::atomic<bool> imgui_render{ true };
-
-    void set_dims(std::uint32_t image_width, std::uint32_t image_height) {
-        image_size = { image_width, image_height };
-    }
 };
 
 struct HostState {

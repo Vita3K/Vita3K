@@ -85,7 +85,7 @@ void gl_screen_renderer::render(const HostState &host) {
 
     glViewport(host.viewport_pos.x, host.viewport_pos.y, host.viewport_size.x, host.viewport_size.y);
 
-    if ((display.image_size.width > 0) && (display.image_size.height > 0)) {
+    if ((display.image_size.x > 0) && (display.image_size.y > 0)) {
         glUseProgram(*m_render_shader);
         glBindVertexArray(m_vao);
 
@@ -93,7 +93,7 @@ void gl_screen_renderer::render(const HostState &host) {
         const auto pixels = display.base.cast<void>().get(mem);
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, display.pitch);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.image_size.width, display.image_size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.image_size.x, display.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
