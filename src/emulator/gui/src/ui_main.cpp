@@ -21,20 +21,48 @@
 
 #include <imgui.h>
 
+using namespace std::string_literals;
+
 void DrawGameSelector(HostState &host, AppRunType *run_type) {
+    const ImVec4 text_color = ImVec4(255, 255, 0, 255);
+
+    auto render_game_select_item = [&](const std::string &button_text, const std::string &title_id) {
+        if (ImGui::Button(button_text.c_str())) {
+            host.gui.game_selector.selected_title_id = title_id;
+            *run_type = AppRunType::Extracted;
+        }
+    };
+
     ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiSetCond_Always);
     ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
+
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
-        ImGui::TextColored(ImVec4(255, 255, 0, 255), "Select the game/application to start");
+        ImGui::TextColored(text_color, "Select the game/application to start. Click on column titles to sort.");
         ImGui::Separator();
-        int i = 0;
-        for (auto titleid : host.gui.game_selector.title_ids) {
-            std::string button_text = host.gui.game_selector.titles.at(i++);
-            button_text += " (" + titleid + ")";
-            if (ImGui::Button(button_text.c_str())) {
-                host.gui.game_selector.title_id = titleid;
+        ImGui::Columns(2);
+        ImGui::SetColumnWidth(0, 80);
+        if (ImGui::Button("TitleID"))
+            std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                return lhs.title_id < rhs.title_id;
+            });
+        ImGui::NextColumn();
+        if (ImGui::Button("Title") || !host.gui.game_selector.is_game_list_sorted)
+            std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                return lhs.title < rhs.title;
+            });
+        ImGui::NextColumn();
+        ImGui::Separator();
+        for (auto game : host.gui.game_selector.games) {
+            bool selected_1 = false;
+            bool selected_2 = false;
+            ImGui::Selectable(game.title_id.c_str(), &selected_1, ImGuiSelectableFlags_SpanAllColumns);
+            ImGui::NextColumn();
+            ImGui::Selectable(game.title.c_str(), &selected_2, ImGuiSelectableFlags_SpanAllColumns);
+            ImGui::NextColumn();
+            if (selected_1 || selected_2) {
+                host.gui.game_selector.selected_title_id = game.title_id;
                 *run_type = AppRunType::Extracted;
             }
         }

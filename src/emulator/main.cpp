@@ -75,18 +75,25 @@ int main(int argc, char *argv[]) {
 
     auto run_type = AppRunType::Vpk;
 
-    while (path.empty() && handle_events(host) && run_type == AppRunType::Vpk) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        imgui::draw_begin(host.window);
+    if (path.empty()) {
+        // Application not provided via argument, show game selector
+        while (run_type == AppRunType::Vpk) {
+            if (handle_events(host)) {
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                imgui::draw_begin(host.window);
 
-        DrawUI(host);
-        DrawGameSelector(host, &run_type);
+                DrawUI(host);
+                DrawGameSelector(host, &run_type);
 
-        imgui::draw_end(host.window);
+                imgui::draw_end(host.window);
+            } else {
+                return QuitRequested;
+            }
+        }
     }
 
     if (run_type == AppRunType::Extracted) {
-        path = utf_to_wide(host.gui.game_selector.title_id);
+        path = utf_to_wide(host.gui.game_selector.selected_title_id);
     }
 
     Ptr<const void> entry_point;

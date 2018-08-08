@@ -46,7 +46,8 @@ enum ExitCode {
     ModuleLoadFailed,
     InitThreadFailed,
     RunThreadFailed,
-    InvalidApplicationPath
+    InvalidApplicationPath,
+    QuitRequested
 };
 
 /// Describes the state of the application to be run
