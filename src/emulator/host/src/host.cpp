@@ -212,7 +212,7 @@ bool init(HostState &state) {
                     SfoFile sfo_handle;
                     load_sfo(sfo_handle, params);
                     find_data(state.game_title, sfo_handle, "TITLE");
-                    state.gui.game_selector.games.push_back({state.game_title, state.io.title_id});
+                    state.gui.game_selector.games.push_back({ state.game_title, state.io.title_id });
                 }
             }
         }

@@ -97,7 +97,7 @@ static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, con
     }
 
     if (!mz_zip_reader_extract_file_to_callback(zip.get(), file, &write_to_buffer, &buf, 0)) {
-        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip) , file);
+        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), file);
         return false;
     }
 
