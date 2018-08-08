@@ -103,6 +103,10 @@ static void update_viewport(HostState &state) {
     int w = 0;
     int h = 0;
     SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
+
+    state.drawable_size.x = w;
+    state.drawable_size.y = h;
+
     if (h > 0) {
         const float window_aspect = static_cast<float>(w) / h;
         const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;

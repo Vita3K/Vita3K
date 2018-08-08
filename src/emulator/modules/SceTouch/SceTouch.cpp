@@ -29,23 +29,35 @@ static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData) {
     memset(pData, 0, sizeof(*pData));
     pData->timeStamp = timestamp++; // TODO Use the real time and units.
 
-    int window_x = 0;
-    int window_y = 0;
-    const uint32_t buttons = SDL_GetMouseState(&window_x, &window_y);
-
-    int window_w = 0;
-    int window_h = 0;
-    SDL_Window *const window = SDL_GetMouseFocus();
-    SDL_GetWindowSize(window, &window_w, &window_h);
-
-    const float normalised_x = window_x / static_cast<float>(window_w);
-    const float normalised_y = window_y / static_cast<float>(window_h);
-
+    SceIVector2 touch_pos_window = { 0, 0 };
+    const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
     const uint32_t mask = (port == 1) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
-    if ((buttons & mask) && (host.gui.renderer_focused)) {
-        pData->report[pData->reportNum].x = static_cast<uint16_t>(normalised_x * 1920);
-        pData->report[pData->reportNum].y = static_cast<uint16_t>(normalised_y * 1088);
-        ++pData->reportNum;
+    if ((buttons & mask) && host.gui.renderer_focused) {
+        SceIVector2 window_size = { 0, 0 };
+        SDL_Window *const window = SDL_GetMouseFocus();
+        SDL_GetWindowSize(window, &window_size.x, &window_size.y);
+
+        SceFVector2 scale = { 1, 1 };
+        if ((window_size.x > 0) && (window_size.y > 0)) {
+            scale.x = static_cast<float>(host.drawable_size.x) / window_size.x;
+            scale.y = static_cast<float>(host.drawable_size.x) / window_size.x;
+        }
+
+        const SceFVector2 touch_pos_drawable = {
+            touch_pos_window.x * scale.x,
+            touch_pos_window.y * scale.y
+        };
+
+        const SceFVector2 touch_pos_viewport = {
+            (touch_pos_drawable.x - host.viewport_pos.x) / host.viewport_size.x,
+            (touch_pos_drawable.y - host.viewport_pos.y) / host.viewport_size.y
+        };
+
+        if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {
+            pData->report[pData->reportNum].x = static_cast<uint16_t>(touch_pos_viewport.x * 1920);
+            pData->report[pData->reportNum].y = static_cast<uint16_t>(touch_pos_viewport.y * 1088);
+            ++pData->reportNum;
+        }
     }
 
     return 0;

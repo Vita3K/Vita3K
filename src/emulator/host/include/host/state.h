@@ -58,6 +58,7 @@ struct HostState {
     uint32_t sdl_ticks = 0;
     WindowPtr window;
     GLContextPtr glcontext;
+    SceIVector2 drawable_size = { 0, 0 };
     SceFVector2 viewport_pos = { 0, 0 };
     SceFVector2 viewport_size = { 0, 0 };
     MemState mem;
