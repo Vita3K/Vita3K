@@ -17,19 +17,13 @@
 
 #pragma once
 
-#include <host/state.h>
-
-// clang-format off
-#include <imgui.h>
-#include <gui/imgui_impl_sdl_gl3.h>
-// clang-format on
-
-#include <glutil/gl.h>
+struct HostState;
+struct SDL_Window;
 
 namespace imgui {
 
-void init(WindowPtr window);
-void draw_begin(WindowPtr window);
-void draw_end(WindowPtr window);
+void init(SDL_Window *window);
+void draw_begin(HostState &host);
+void draw_end(SDL_Window *window);
 
 } // namespace imgui

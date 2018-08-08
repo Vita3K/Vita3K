@@ -17,22 +17,29 @@
 
 #include <gui/imgui_impl.h>
 
-#include <SDL.h>
+#include <gui/imgui_impl_sdl_gl3.h>
 
-void imgui::init(WindowPtr window) {
+#include <glutil/gl.h>
+#include <host/state.h>
+
+#include <SDL_video.h>
+#include <imgui.h>
+
+void imgui::init(SDL_Window *window) {
     ImGui::CreateContext();
-    ImGui_ImplSdlGL3_Init(window.get());
+    ImGui_ImplSdlGL3_Init(window);
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 }
 
-void imgui::draw_begin(WindowPtr window) {
-    ImGui_ImplSdlGL3_NewFrame(window.get());
+void imgui::draw_begin(HostState &host) {
+    ImGui_ImplSdlGL3_NewFrame(host.window.get());
+    host.gui.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
 }
 
-void imgui::draw_end(WindowPtr window) {
+void imgui::draw_end(SDL_Window *window) {
     glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
     ImGui::Render();
     ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-    SDL_GL_SwapWindow(window.get());
+    SDL_GL_SwapWindow(window);
 }

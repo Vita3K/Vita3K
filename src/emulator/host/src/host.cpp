@@ -46,10 +46,7 @@
 #include <iostream>
 #include <sstream>
 
-// clang-format off
-#include <imgui.h>
 #include <gui/imgui_impl_sdl_gl3.h>
-// clang-format on
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
