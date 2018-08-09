@@ -83,6 +83,7 @@ static void set_uniforms(GLuint gl_program, const UniformBuffers &uniform_buffer
         auto name = gxm::parameter_name(parameter);
         const GLint location = glGetUniformLocation(gl_program, name.c_str());
         if (location < 0) {
+            // NOTE: This can happen because the uniform isn't used in the shader, thus optimized away by the shader compiler.
             LOG_WARN("Uniform parameter {} not found in current OpenGL program.", name);
             continue;
         }
