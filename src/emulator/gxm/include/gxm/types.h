@@ -271,3 +271,12 @@ struct SceGxmVertexProgram {
     std::vector<emu::SceGxmVertexAttribute> attributes;
     std::unique_ptr<renderer::VertexProgram> renderer;
 };
+
+namespace gxp {
+// Used to map GXM program parameters to GLSL data types
+enum class GenericParameterType {
+    Scalar,
+    Vector,
+    Matrix
+};
+} // namespace gxp
