@@ -882,7 +882,10 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     assert(context != nullptr);
     assert(uniformBuffer != nullptr);
 
-    const size_t size = 64; // TODO I guess this must be in the fragment program.
+    const auto fragment_program = context->state.vertex_program.get(host.mem);
+    const auto program = fragment_program->program.get(host.mem);
+
+    const size_t size = program->default_uniform_buffer_count * 4;
     const size_t next_used = context->state.fragment_ring_buffer_used + size;
     assert(next_used <= context->state.params.fragmentRingBufferMemSize);
     if (next_used > context->state.params.fragmentRingBufferMemSize) {
@@ -905,7 +908,10 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     assert(context != nullptr);
     assert(uniformBuffer != nullptr);
 
-    const size_t size = 64; // TODO I guess this must be in the vertex program.
+    const auto vertex_program = context->state.vertex_program.get(host.mem);
+    const auto program = vertex_program->program.get(host.mem);
+
+    const size_t size = program->default_uniform_buffer_count * 4;
     const size_t next_used = context->state.vertex_ring_buffer_used + size;
     assert(next_used <= context->state.params.vertexRingBufferMemSize);
     if (next_used > context->state.params.vertexRingBufferMemSize) {
