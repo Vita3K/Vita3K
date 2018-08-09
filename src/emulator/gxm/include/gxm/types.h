@@ -130,6 +130,11 @@ struct SceGxmNotification {
     Ptr<volatile uint32_t> address;
     uint32_t value;
 };
+
+enum SceGxmProgramType : std::uint8_t {
+    Vertex = 0,
+    Fragment = 5
+};
 } // namespace emu
 
 struct SceGxmProgram {
@@ -146,7 +151,7 @@ struct SceGxmProgram {
     std::uint8_t unk12;
     std::uint8_t unk13;
 
-    std::uint8_t unk14; //related to profile_type
+    emu::SceGxmProgramType type; // shader profile
     std::uint8_t unk15;
     std::uint8_t unk16;
     std::uint8_t unk17;
@@ -180,12 +185,12 @@ struct SceGxmProgram {
     std::uint32_t unk_5C; //usually zero?
 
     std::uint32_t unk_60;
-    std::uint32_t unk_64;
+    std::uint32_t default_uniform_buffer_count;
     std::uint32_t unk_68;
     std::uint32_t unk_6C;
 
-    std::uint32_t unk_70;
-    std::uint32_t maybe_literal_offset; //not sure
+    std::uint32_t literals_count;
+    std::uint32_t maybe_literals_offset; //not sure
     std::uint32_t unk_78;
     std::uint32_t maybe_parameters_offset2; //not sure
 };
@@ -198,7 +203,7 @@ struct SceGxmProgramParameter {
         bf_t<uint16_t, 8, 4> component_count; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
         bf_t<uint16_t, 12, 4> container_index; // applicable for constants, not applicable for samplers (buffer, default, texture)
     };
-    uint16_t semantic;
+    uint16_t semantic; // applicable only for for vertex attributes, for everything else it's 0
     uint32_t array_size;
     int32_t resource_index;
 };
