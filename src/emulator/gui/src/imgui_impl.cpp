@@ -17,51 +17,29 @@
 
 #include <gui/imgui_impl.h>
 
-#include <gui/functions.h>
+#include <gui/imgui_impl_sdl_gl3.h>
 
-#include <SDL.h>
+#include <glutil/gl.h>
+#include <host/state.h>
 
-void imgui::init(WindowPtr window) {
+#include <SDL_video.h>
+#include <imgui.h>
+
+void imgui::init(SDL_Window *window) {
     ImGui::CreateContext();
-    ImGui_ImplSdlGL3_Init(window.get());
+    ImGui_ImplSdlGL3_Init(window);
     ImGui::StyleColorsDark();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 }
 
-void imgui::draw_begin(WindowPtr window) {
-    ImGui_ImplSdlGL3_NewFrame(window.get());
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void imgui::draw_begin(HostState &host) {
+    ImGui_ImplSdlGL3_NewFrame(host.window.get());
+    host.gui.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
 }
 
-void imgui::draw_main(HostState &host, GLuint texture_id) {
-    const auto window_size = host.display.window_size;
-    const auto image_size = host.display.image_size;
-
-    // workaround for imgui-related crash
-    if (host.display.image_size.width == 0)
-        return;
-
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    void *const pixels = host.display.base.cast<void>().get(host.mem);
-
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, host.display.pitch);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_size.width, image_size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(window_size.width, window_size.height), ImGuiSetCond_Always);
-    ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
-    host.gui.renderer_focused = ImGui::IsWindowFocused();
-    ImGui::Image(reinterpret_cast<void *>(texture_id), ImVec2(image_size.width, image_size.height));
-    ImGui::End();
-}
-
-void imgui::draw_end(WindowPtr window) {
+void imgui::draw_end(SDL_Window *window) {
     glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
     ImGui::Render();
     ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-    SDL_GL_SwapWindow(window.get());
+    SDL_GL_SwapWindow(window);
 }

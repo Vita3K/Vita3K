@@ -15,9 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <kernel/load_self.h>
-#include <kernel/state.h>
-
+#include <gui/functions.h>
+#include <gui/imgui_impl_sdl_gl3.h>
 #include <host/app.h>
 #include <host/functions.h>
 #include <host/sfo.h>
@@ -25,6 +24,8 @@
 #include <host/version.h>
 #include <io/functions.h>
 #include <io/state.h>
+#include <kernel/load_self.h>
+#include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/find.h>
 #include <util/fs.h>
@@ -41,12 +42,6 @@
 #include <istream>
 #include <iterator>
 #include <sstream>
-
-// clang-format off
-#include <imgui.h>
-#include <gui/imgui_impl_sdl_gl3.h>
-// clang-format on
-#include <gui/functions.h>
 
 static const char *EBOOT_PATH = "eboot.bin";
 static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
@@ -102,7 +97,7 @@ static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, con
     }
 
     if (!mz_zip_reader_extract_file_to_callback(zip.get(), file, &write_to_buffer, &buf, 0)) {
-        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip) , file);
+        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), file);
         return false;
     }
 

@@ -21,8 +21,6 @@
 
 #include <cstdint>
 
-static constexpr auto MENUBAR_HEIGHT = 19;
-
 enum GenericDialogState {
     UNK_STATE,
     CONFIRM_STATE,

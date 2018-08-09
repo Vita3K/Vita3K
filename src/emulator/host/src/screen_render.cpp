@@ -19,6 +19,8 @@
 #include <host/state.h>
 #include <util/log.h>
 
+#include <SDL_video.h>
+
 bool gl_screen_renderer::init(const std::string &base_path) {
     glGenTextures(1, &m_screen_texture);
 
@@ -34,13 +36,10 @@ bool gl_screen_renderer::init(const std::string &base_path) {
     glBindVertexArray(m_vao);
 
     static const screen_vertices_t vertex_buffer_data = {
-        // clang-format off
-        //position          uv
-        { -1.f, -1.f, 0.0f, 0.f, 1.f },
-        {  1.f, -1.f, 0.0f, 1.f, 1.f },
-        {  1.f,  1.f, 0.0f, 1.f, 0.f },
-        { -1.f,  1.f, 0.0f, 0.f, 0.f }
-        // clang-format on
+        { { -1.f, -1.f, 0.0f }, { 0.f, 1.f } },
+        { { 1.f, -1.f, 0.0f }, { 1.f, 1.f } },
+        { { 1.f, 1.f, 0.0f }, { 1.f, 0.f } },
+        { { -1.f, 1.f, 0.0f }, { 0.f, 0.f } }
     };
 
     glGenBuffers(1, &m_vbo);
@@ -78,11 +77,15 @@ bool gl_screen_renderer::init(const std::string &base_path) {
     return true;
 }
 
-void gl_screen_renderer::render(DisplayState &display, MemState &mem) {
+void gl_screen_renderer::render(const HostState &host) {
+    const DisplayState &display = host.display;
+    const MemState &mem = host.mem;
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (display.image_size.width > 0) {
-        glViewport(0, 0, display.image_size.width, display.image_size.height);
+    glViewport(host.viewport_pos.x, host.viewport_pos.y, host.viewport_size.x, host.viewport_size.y);
+
+    if ((display.image_size.x > 0) && (display.image_size.y > 0)) {
         glUseProgram(*m_render_shader);
         glBindVertexArray(m_vao);
 
@@ -90,32 +93,24 @@ void gl_screen_renderer::render(DisplayState &display, MemState &mem) {
         const auto pixels = display.base.cast<void>().get(mem);
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, display.pitch);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.window_size.width, display.window_size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.image_size.x, display.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, m_screen_texture);
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 }
 
-GLuint gl_screen_renderer::get_screen_texture() const {
-    return m_screen_texture;
-}
-
 void gl_screen_renderer::destroy() {
-    const GLuint vbos[] = { m_vbo };
-    glDeleteBuffers(1, vbos);
+    glDeleteBuffers(1, &m_vbo);
     m_vbo = 0;
 
-    const GLuint vaos[] = { m_vao };
-    glDeleteVertexArrays(1, vaos);
+    glDeleteVertexArrays(1, &m_vao);
     m_vao = 0;
 
-    const GLuint textures[] = { m_screen_texture };
-    glDeleteTextures(1, textures);
+    glDeleteTextures(1, &m_screen_texture);
     m_screen_texture = 0;
 }
 

@@ -75,8 +75,8 @@ EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDis
     host.display.base = pParam->base;
     host.display.pitch = pParam->pitch;
     host.display.pixelformat = pParam->pixelformat;
-    host.display.image_size.width = pParam->width;
-    host.display.image_size.height = pParam->height;
+    host.display.image_size.x = pParam->width;
+    host.display.image_size.y = pParam->height;
     ++host.frame_count;
 
     MicroProfileFlip(nullptr);

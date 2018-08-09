@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    imgui::init(host.window);
+    imgui::init(host.window.get());
 
     auto run_type = AppRunType::Vpk;
 
@@ -79,12 +79,13 @@ int main(int argc, char *argv[]) {
         // Application not provided via argument, show game selector
         while (run_type == AppRunType::Vpk) {
             if (handle_events(host)) {
-                imgui::draw_begin(host.window);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                imgui::draw_begin(host);
 
                 DrawUI(host);
                 DrawGameSelector(host, &run_type);
 
-                imgui::draw_end(host.window);
+                imgui::draw_end(host.window.get());
             } else {
                 return QuitRequested;
             }
@@ -108,20 +109,13 @@ int main(int argc, char *argv[]) {
         return RendererInitFailed;
 
     while (handle_events(host)) {
+        gl_renderer.render(host);
+        imgui::draw_begin(host);
+        DrawCommonDialog(host);
         if (host.display.imgui_render) {
-            imgui::draw_begin(host.window);
-
-            imgui::draw_main(host, gl_renderer.get_screen_texture());
-
             DrawUI(host);
-            DrawCommonDialog(host);
-
-            imgui::draw_end(host.window);
-        } else {
-            gl_renderer.render(host.display, host.mem);
-
-            SDL_GL_SwapWindow(host.window.get());
         }
+        imgui::draw_end(host.window.get());
 
         host.display.condvar.notify_all();
 

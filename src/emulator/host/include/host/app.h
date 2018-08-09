@@ -25,8 +25,6 @@
 
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
-static constexpr auto WINDOW_BORDER_WIDTH = 16;
-static constexpr auto WINDOW_BORDER_HEIGHT = 34;
 
 typedef std::vector<uint8_t> Buffer;
 

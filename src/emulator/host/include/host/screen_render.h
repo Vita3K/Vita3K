@@ -19,8 +19,7 @@
 
 #include <glutil/shader.h>
 
-struct DisplayState;
-struct MemState;
+struct HostState;
 
 class gl_screen_renderer {
 public:
@@ -28,8 +27,7 @@ public:
     ~gl_screen_renderer();
 
     bool init(const std::string &base_path);
-    void render(DisplayState &display, MemState &mem);
-    GLuint get_screen_texture() const;
+    void render(const HostState &state);
     void destroy();
 
 private:
