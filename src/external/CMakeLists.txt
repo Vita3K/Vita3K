@@ -112,3 +112,15 @@ target_link_libraries(yaml INTERFACE yaml-cpp)
 
 add_library(rpcs3 INTERFACE)
 target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")
+
+option(ENABLE_GLSLANG_BINARIES "Builds glslangValidator and spirv-remap" OFF)
+option(ENABLE_AMD_EXTENSIONS "Enables support of AMD-specific extensions" OFF)
+option(ENABLE_NV_EXTENSIONS "Enables support of Nvidia-specific extensions" OFF)
+option(ENABLE_HLSL "Enables HLSL input support" OFF)
+add_subdirectory(glslang)
+target_include_directories(glslang INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/glslang/SPIRV")
+
+add_subdirectory(SPIRV-Cross)
+set_target_properties(spirv-cross-hlsl PROPERTIES EXCLUDE_FROM_ALL TRUE)
+set_target_properties(spirv-cross-msl PROPERTIES EXCLUDE_FROM_ALL TRUE)
+set_target_properties(spirv-cross-reflect PROPERTIES EXCLUDE_FROM_ALL TRUE)
