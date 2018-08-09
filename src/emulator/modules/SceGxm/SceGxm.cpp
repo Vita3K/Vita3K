@@ -752,16 +752,26 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const 
 }
 
 EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize, const SceGxmProgram *program) {
-    STUBBED("Full program size");
-    return program->size;
+    return program->default_uniform_buffer_count * 4;
 }
 
-EXPORT(int, sceGxmProgramGetFragmentProgramInputs) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramGetFragmentProgramInputs, const SceGxmProgram *program) {
+    if (program->type != emu::SceGxmProgramType::Fragment)
+        return 0;
+    else
+        return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmProgramGetOutputRegisterFormat) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, SceGxmParameterType *type, std::uint32_t *component_count) {
+    if (!program || !type || !component_count)
+        return SCE_GXM_ERROR_INVALID_POINTER;
+
+    if (program->type != emu::SceGxmProgramType::Fragment)
+        return SCE_GXM_ERROR_INVALID_VALUE;
+
+    // TODO
+
+    return STUBBED("only error checking");
 }
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram *program, unsigned int index) {
@@ -778,16 +788,19 @@ EXPORT(int, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
     return program->parameter_count;
 }
 
-EXPORT(int, sceGxmProgramGetSize) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramGetSize, const SceGxmProgram *program) {
+    return program->size;
 }
 
-EXPORT(int, sceGxmProgramGetType) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramGetType, const SceGxmProgram *program) {
+    return program->type & 1;
 }
 
-EXPORT(int, sceGxmProgramGetVertexProgramOutputs) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramGetVertexProgramOutputs, const SceGxmProgram *program) {
+    if (program->type != emu::SceGxmProgramType::Vertex)
+        return 0;
+    else
+        return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmProgramIsDepthReplaceUsed) {
@@ -1916,8 +1929,8 @@ EXPORT(int, sceGxmVertexFence) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmVertexProgramGetProgram) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<const SceGxmProgram>, sceGxmVertexProgramGetProgram, Ptr<const SceGxmFragmentProgram> fragment_program) {
+    return fragment_program.get(host.mem)->program;
 }
 
 EXPORT(int, sceGxmWaitEvent) {
