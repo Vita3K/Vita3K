@@ -26,13 +26,6 @@ using namespace std::string_literals;
 void DrawGameSelector(HostState &host, AppRunType *run_type) {
     const ImVec4 text_color = ImVec4(255, 255, 0, 255);
 
-    auto render_game_select_item = [&](const std::string &button_text, const std::string &title_id) {
-        if (ImGui::Button(button_text.c_str())) {
-            host.gui.game_selector.selected_title_id = title_id;
-            *run_type = AppRunType::Extracted;
-        }
-    };
-
     ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiSetCond_Always);
     ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
