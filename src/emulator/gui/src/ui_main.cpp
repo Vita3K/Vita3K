@@ -25,9 +25,10 @@ using namespace std::string_literals;
 
 void DrawGameSelector(HostState &host, AppRunType *run_type) {
     const ImVec4 text_color = ImVec4(255, 255, 0, 255);
+    const ImVec2 display_size = ImGui::GetIO().DisplaySize;
 
-    ImGui::SetNextWindowPos(ImVec2(0, 19), ImGuiSetCond_Always);
-    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiSetCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiSetCond_Always);
     ImGui::Begin("", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     switch (host.gui.game_selector.state) {
