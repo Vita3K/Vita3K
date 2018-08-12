@@ -45,6 +45,7 @@ add_subdirectory(modules)
 add_subdirectory(nids)
 add_subdirectory(renderer)
 add_subdirectory(rtc)
+add_subdirectory(shadergen)
 add_subdirectory(util)
 add_subdirectory(threads)
 add_subdirectory(gui)
@@ -100,6 +101,7 @@ elseif(LINUX)
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:emulator>/shaders-builtin")
 elseif(WIN32)
 	target_sources(emulator PRIVATE resource.h Vita3K.ico Vita3K.rc)
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT emulator)
 	add_custom_command(
 		TARGET emulator
 		POST_BUILD

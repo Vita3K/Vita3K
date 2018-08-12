@@ -40,3 +40,9 @@
 [submodule "src/emulator/shaders-db"]
 	path = src/emulator/shaders-db
 	url = https://github.com/Vita3K/shaders-db.git
+[submodule "src/external/glslang"]
+	path = src/external/glslang
+	url = https://github.com/KhronosGroup/glslang.git
+[submodule "src/external/SPIRV-Cross"]
+	path = src/external/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git

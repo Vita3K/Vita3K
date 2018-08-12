@@ -4,7 +4,7 @@ add_library(
 	include/gxm/functions.h
 	include/gxm/state.h
 	include/gxm/types.h
-	src/parameters.cpp
+	src/gxp.cpp
 	src/textures.cpp
 )
 

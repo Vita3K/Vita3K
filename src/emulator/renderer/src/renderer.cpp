@@ -76,11 +76,11 @@ static AttributeLocations attribute_locations(const SceGxmProgram &vertex_progra
     R_PROFILE(__func__);
     AttributeLocations locations;
 
-    const SceGxmProgramParameter *const parameters = gxm::program_parameters(vertex_program);
+    const SceGxmProgramParameter *const parameters = gxp::program_parameters(vertex_program);
     for (uint32_t i = 0; i < vertex_program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            std::string name = gxm::parameter_name_raw(parameter);
+            std::string name = gxp::parameter_name_raw(parameter);
             const auto struct_idx = name.find('.');
             const bool is_struct_field = struct_idx != std::string::npos;
             if (is_struct_field)

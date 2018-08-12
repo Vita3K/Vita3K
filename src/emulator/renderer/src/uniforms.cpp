@@ -73,16 +73,17 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
 static void set_uniforms(GLuint gl_program, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem) {
     R_PROFILE(__func__);
 
-    const SceGxmProgramParameter *const parameters = gxm::program_parameters(gxm_program);
+    const SceGxmProgramParameter *const parameters = gxp::program_parameters(gxm_program);
     for (size_t i = 0; i < gxm_program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
         if (parameter.category != SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
             continue;
         }
 
-        auto name = gxm::parameter_name(parameter);
+        auto name = gxp::parameter_name(parameter);
         const GLint location = glGetUniformLocation(gl_program, name.c_str());
         if (location < 0) {
+            // NOTE: This can happen because the uniform isn't used in the shader, thus optimized away by the shader compiler.
             LOG_WARN("Uniform parameter {} not found in current OpenGL program.", name);
             continue;
         }

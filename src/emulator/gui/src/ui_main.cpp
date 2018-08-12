@@ -37,15 +37,19 @@ void DrawGameSelector(HostState &host, AppRunType *run_type) {
         ImGui::Separator();
         ImGui::Columns(2);
         ImGui::SetColumnWidth(0, 80);
-        if (ImGui::Button("TitleID"))
+        if (ImGui::Button("TitleID")) {
             std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
                 return lhs.title_id < rhs.title_id;
             });
+            host.gui.game_selector.is_game_list_sorted = true;
+        }
         ImGui::NextColumn();
-        if (ImGui::Button("Title") || !host.gui.game_selector.is_game_list_sorted)
+        if (ImGui::Button("Title") || !host.gui.game_selector.is_game_list_sorted) {
             std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
                 return lhs.title < rhs.title;
             });
+            host.gui.game_selector.is_game_list_sorted = true;
+        }
         ImGui::NextColumn();
         ImGui::Separator();
         for (auto game : host.gui.game_selector.games) {
