@@ -37,8 +37,8 @@ struct param_struct_t {
     bool empty() const { return name.empty(); }
 };
 
-void create_array_if_needed(spv::Builder &spv_builder, spv::Id &param_id, const SceGxmProgramParameter &parameter) {
-    const auto array_size = parameter.array_size;
+void create_array_if_needed(spv::Builder &spv_builder, spv::Id &param_id, const SceGxmProgramParameter &parameter, const uint32_t explicit_array_size = 0) {
+    const auto array_size = explicit_array_size == 0 ? parameter.array_size : explicit_array_size;
     if (array_size > 1) {
         const auto array_size_id = spv_builder.makeUintConstant(array_size);
         param_id = spv_builder.makeArrayType(param_id, array_size_id, 0);
@@ -94,8 +94,24 @@ spv::Id get_type_vector(spv::Builder &spv_builder, const SceGxmProgramParameter 
 
 spv::Id get_type_matrix(spv::Builder &spv_builder, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(spv_builder, parameter);
-    // TODO: Verify column/row order
-    param_id = spv_builder.makeMatrixType(param_id, parameter.component_count, parameter.array_size);
+
+    // There's no information on whether the parameter was a matrix originally (such type info is lost)
+    // so attempt to make a NxN matrix, or a NxN matrix array of size M if possible (else fall back to vector array)
+    // where N = parameter.component_count
+    //       M = matrix_array_size
+    const auto total_type_size = parameter.component_count * parameter.array_size;
+    const auto matrix_size = parameter.component_count * parameter.component_count;
+    const auto matrix_array_size = total_type_size / matrix_size;
+    const auto matrix_array_size_leftover = total_type_size % matrix_size;
+
+    if (matrix_array_size_leftover == 0) {
+        param_id = spv_builder.makeMatrixType(param_id, parameter.component_count, parameter.component_count);
+        create_array_if_needed(spv_builder, param_id, parameter, matrix_array_size);
+    } else {
+        // fallback to vector array
+        param_id = get_type_vector(spv_builder, parameter);
+    }
+
     return param_id;
 }
 

@@ -67,7 +67,7 @@ SceGxmParameterType parameter_type(const SceGxmProgramParameter &parameter) {
 
 GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parameter) {
     if (parameter.component_count > 1) {
-        if (parameter.array_size > 1 && parameter.array_size <= 4) {
+        if (parameter.array_size > 1) {
             return GenericParameterType::Matrix;
         } else {
             return GenericParameterType::Vector;
