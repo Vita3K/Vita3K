@@ -58,6 +58,19 @@
 #include <unistd.h>
 #endif
 
+#ifdef _WIN32
+// Use discrete GPU by default
+
+extern "C" {
+// NVIDIA Optimus (Driver: 302+)
+//     See: http://developer.download.nvidia.com/devzone/devcenter/gamegraphics/files/OptimusRenderingPolicies.pdf
+__declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+// AMD (Driver: 13.35+)
+//     See: https://gpuopen.com/amdpowerxpressrequesthighperformance/
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
 using namespace glbinding;
 
 static constexpr bool LOG_IMPORT_CALLS = false;
