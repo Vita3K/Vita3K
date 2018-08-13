@@ -160,7 +160,7 @@ void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program) 
         switch (parameter.category) {
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
             param_storage_class = spv::StorageClassUniformConstant;
-            // fallthrough
+        // fallthrough
         case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE: {
             const std::string struct_name = gxp::parameter_struct_name(parameter);
             const bool is_struct_field = !struct_name.empty();
@@ -234,7 +234,7 @@ SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType p
     switch (program_type) {
     default:
         LOG_ERROR("Unknown GXM program type");
-        // fallthrough
+    // fallthrough
     case emu::Vertex:
         entry_point_name = "main_vs";
         execution_model = spv::ExecutionModelVertex;
