@@ -8,6 +8,7 @@
 #include <spirv_glsl.hpp>
 #include <util/log.h>
 
+#include <algorithm>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -33,6 +34,7 @@ struct param_struct_t {
     spv::StorageClass storage_class = spv::StorageClassMax;
     std::vector<spv::Id> field_ids;
     std::vector<std::string> field_names; // count must be equal to `field_ids`
+    bool is_interaface_block{ false };
 
     bool empty() const { return name.empty(); }
     void clear() { *this = {}; }
@@ -148,10 +150,14 @@ spv::Id create_param_sampler(spv::Builder &spv_builder, const SceGxmProgramParam
     return spv_builder.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-spv::Id create_struct(spv::Builder &spv_builder, param_struct_t &param_struct) {
+spv::Id create_struct(spv::Builder &spv_builder, param_struct_t &param_struct, emu::SceGxmProgramType program_type) {
     assert(param_struct.field_ids.size() == param_struct.field_names.size());
 
     const spv::Id struct_type_id = spv_builder.makeStructType(param_struct.field_ids, param_struct.name.c_str());
+
+    // NOTE: This will always be true until we support uniform structs (see comment below)
+    if (param_struct.is_interaface_block)
+        spv_builder.addDecoration(struct_type_id, spv::DecorationBlock);
 
     for (auto field_index = 0; field_index < param_struct.field_ids.size(); ++field_index) {
         const auto field_name = param_struct.field_names[field_index];
@@ -186,21 +192,52 @@ void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program, 
             const bool struct_decl_ended = !is_struct_field && !param_struct.empty() || (is_struct_field && !param_struct.empty() && param_struct.name != struct_name);
 
             if (struct_decl_ended)
-                create_struct(spv_builder, param_struct);
+                create_struct(spv_builder, param_struct, program_type);
 
             spv::Id param = get_param_type(spv_builder, parameter);
 
-            if (is_struct_field) {
+            const bool is_uniform = param_storage_class == spv::StorageClassUniformConstant;
+            const bool is_vertex_output = param_storage_class == spv::StorageClassOutput && program_type == emu::SceGxmProgramType::Vertex;
+            const bool is_fragment_input = param_storage_class == spv::StorageClassInput && program_type == emu::SceGxmProgramType::Fragment;
+            const bool can_be_interface_block = is_vertex_output || is_fragment_input;
+
+            // TODO: I haven't seen uniforms in 'structs' anywhere and can't test atm, so for now let's
+            //       not try to implement emitting structs or interface blocks (probably the former)
+            //       for them. Look below for current workaround (won't work for all cases).
+            //       Cg most likely supports them so we should support it too at some point.
+            if (is_struct_field && is_uniform)
+                LOG_WARN("Uniform structs not fully supported!");
+            const bool can_be_struct = can_be_interface_block; // || is_uniform
+
+            if (is_struct_field && can_be_struct) {
                 const auto param_field_name = gxp::parameter_name(parameter);
 
                 param_struct.name = struct_name;
                 param_struct.field_ids.push_back(param);
                 param_struct.field_names.push_back(param_field_name);
                 param_struct.storage_class = param_storage_class;
+                param_struct.is_interaface_block = can_be_interface_block;
             } else {
-                const auto param_name_raw = gxp::parameter_name_raw(parameter);
+                std::string var_name;
 
-                spv_builder.createVariable(param_storage_class, param, param_name_raw.c_str());
+                if (is_uniform) {
+                    // TODO: Hacky, ignores struct name/array index, uniforms names could collide if:
+                    //           1) a global uniform is named the same as a struct field uniform
+                    //           2) uniform struct arrays are used
+                    //       It should work for other cases though, since set_uniforms also uses gxp::parameter_name
+                    //       To fix this properly we need to emit structs properly first (see comment above
+                    //       param_struct_t) and change set_uniforms to use gxp::parameter_name_raw.
+                    //       Or we could just flatten everything.
+                    var_name = gxp::parameter_name(parameter);
+                } else {
+                    var_name = gxp::parameter_name_raw(parameter);
+
+                    if (is_struct_field)
+                        // flatten struct
+                        std::replace(var_name.begin(), var_name.end(), '.', '_');
+                }
+
+                spv_builder.createVariable(param_storage_class, param, var_name.c_str());
             }
             break;
         }
@@ -227,7 +264,7 @@ void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program, 
 
     // Declarations ended with a struct, so it didn't get handled and we need to do it here
     if (!param_struct.empty())
-        create_struct(spv_builder, param_struct);
+        create_struct(spv_builder, param_struct, program_type);
 }
 
 SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
@@ -244,7 +281,7 @@ SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType p
     // capabilities
     spv_builder.addCapability(spv::Capability::CapabilityShader);
 
-    spirv::create_parameters(spv_builder, program);
+    spirv::create_parameters(spv_builder, program, program_type);
 
     std::string entry_point_name;
     spv::ExecutionModel execution_model;
