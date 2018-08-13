@@ -35,6 +35,7 @@ struct param_struct_t {
     std::vector<std::string> field_names; // count must be equal to `field_ids`
 
     bool empty() const { return name.empty(); }
+    void clear() { *this = {}; }
 };
 
 void create_array_if_needed(spv::Builder &spv_builder, spv::Id &param_id, const SceGxmProgramParameter &parameter, const uint32_t explicit_array_size = 0) {
@@ -138,31 +139,33 @@ spv::Id get_param_type(spv::Builder &spv_builder, const SceGxmProgramParameter &
     return param_id;
 }
 
-void create_param_sampler(spv::Builder &spv_builder, const SceGxmProgramParameter &parameter) {
+spv::Id create_param_sampler(spv::Builder &spv_builder, const SceGxmProgramParameter &parameter) {
     spv::Id sampled_type = spv_builder.makeFloatType(32);
     spv::Id image_type = spv_builder.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
     spv::Id sampled_image_type = spv_builder.makeSampledImageType(image_type);
     std::string name = gxp::parameter_name_raw(parameter);
 
-    spv_builder.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
+    return spv_builder.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-void create_struct(spv::Builder &spv_builder, param_struct_t &param_struct) {
+spv::Id create_struct(spv::Builder &spv_builder, param_struct_t &param_struct) {
     assert(param_struct.field_ids.size() == param_struct.field_names.size());
 
-    spv::Id struct_id = spv_builder.makeStructType(param_struct.field_ids, param_struct.name.c_str());
+    const spv::Id struct_type_id = spv_builder.makeStructType(param_struct.field_ids, param_struct.name.c_str());
 
     for (auto field_index = 0; field_index < param_struct.field_ids.size(); ++field_index) {
         const auto field_name = param_struct.field_names[field_index];
 
-        spv_builder.addMemberName(struct_id, field_index, field_name.c_str());
+        spv_builder.addMemberName(struct_type_id, field_index, field_name.c_str());
     }
 
-    spv_builder.createVariable(param_struct.storage_class, struct_id, param_struct.name.c_str());
-    param_struct = {};
+    const spv::Id struct_var_id = spv_builder.createVariable(param_struct.storage_class, struct_type_id, param_struct.name.c_str());
+
+    param_struct.clear();
+    return struct_var_id;
 }
 
-void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program) {
+void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
     const SceGxmProgramParameter *const parameters = gxp::program_parameters(program);
     param_struct_t param_struct = {};
 
@@ -180,7 +183,6 @@ void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program) 
         case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE: {
             const std::string struct_name = gxp::parameter_struct_name(parameter);
             const bool is_struct_field = !struct_name.empty();
-            // did a struct declaration just end?
             const bool struct_decl_ended = !is_struct_field && !param_struct.empty() || (is_struct_field && !param_struct.empty() && param_struct.name != struct_name);
 
             if (struct_decl_ended)
