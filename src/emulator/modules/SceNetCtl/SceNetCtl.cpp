@@ -17,10 +17,6 @@
 
 #include "SceNetCtl.h"
 
-#ifdef WIN32
-#undef s_addr
-#define s_addr s_addr
-#endif
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
 
