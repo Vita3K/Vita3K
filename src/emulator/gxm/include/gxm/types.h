@@ -122,7 +122,7 @@ struct GxmContextState {
 struct SceGxmFragmentProgram {
     size_t reference_count = 1;
     Ptr<const SceGxmProgram> program;
-    std::unique_ptr<renderer::FragmentProgram> renderer;
+    std::unique_ptr<renderer::FragmentProgram> renderer_data;
 };
 
 namespace emu {
@@ -130,10 +130,11 @@ struct SceGxmNotification {
     Ptr<volatile uint32_t> address;
     uint32_t value;
 };
-
+// identical to ::SceGxmProgramType for now
+// see SceGxmProgram.type field for details
 enum SceGxmProgramType : std::uint8_t {
     Vertex = 0,
-    Fragment = 5
+    Fragment = 1
 };
 } // namespace emu
 
@@ -189,7 +190,9 @@ struct SceGxmProgram {
     std::uint8_t unk12;
     std::uint8_t unk13;
 
-    emu::SceGxmProgramType type; // shader profile
+private:
+    std::uint8_t type{ 0 }; // shader profile, seems to contain more info in bits after the first(bitfield?)
+public:
     std::uint8_t unk15;
     std::uint8_t unk16;
     std::uint8_t unk17;
@@ -231,6 +234,16 @@ struct SceGxmProgram {
     std::uint32_t maybe_literals_offset; //not sure
     std::uint32_t unk_78;
     std::uint32_t maybe_parameters_offset2; //not sure
+
+    SceGxmProgramType get_type() const {
+        return static_cast<SceGxmProgramType>(type & 1);
+    }
+    bool is_vertex() const {
+        return get_type() == emu::SceGxmProgramType::Vertex;
+    }
+    bool is_fragment() const {
+        return get_type() == emu::SceGxmProgramType::Fragment;
+    }
 };
 
 struct SceGxmProgramParameter {
@@ -307,7 +320,7 @@ struct SceGxmVertexProgram {
     Ptr<const SceGxmProgram> program;
     std::vector<SceGxmVertexStream> streams;
     std::vector<emu::SceGxmVertexAttribute> attributes;
-    std::unique_ptr<renderer::VertexProgram> renderer;
+    std::unique_ptr<renderer::VertexProgram> renderer_data;
 };
 
 namespace gxp {

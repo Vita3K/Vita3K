@@ -180,7 +180,7 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
 
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
-    const FragmentProgram &fragment_program = *gxm_fragment_program.renderer.get();
+    const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
     glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
     if (fragment_program.blend_enabled) {
         glEnable(GL_BLEND);
