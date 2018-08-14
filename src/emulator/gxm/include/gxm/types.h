@@ -137,6 +137,44 @@ enum SceGxmProgramType : std::uint8_t {
 };
 } // namespace emu
 
+enum SceGxmVertexProgramOutputs : int {
+    _SCE_GXM_VERTEX_PROGRAM_OUTPUT_INVALID = 0,
+
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION = 1 << 0,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG = 1 << 1,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0 = 1 << 2,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1 = 1 << 3,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0 = 1 << 4,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1 = 1 << 5,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2 = 1 << 6,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3 = 1 << 7,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4 = 1 << 8,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5 = 1 << 9,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6 = 1 << 10,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7 = 1 << 11,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8 = 1 << 12,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9 = 1 << 13,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE = 1 << 14,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0 = 1 << 15,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1 = 1 << 16,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2 = 1 << 17,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3 = 1 << 18,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4 = 1 << 19,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5 = 1 << 20,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6 = 1 << 21,
+    SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7 = 1 << 22,
+
+    _SCE_GXM_VERTEX_PROGRAM_OUTPUT_LAST = 1 << 23
+};
+
+struct SceGxmProgramVertexOutput {
+    std::uint8_t unk[16];
+
+    std::uint32_t vertex_outputs1; // includes everything except texcoord outputs
+    std::uint32_t vertex_outputs2; // includes texcoord outputs
+};
+static_assert(sizeof(SceGxmProgramVertexOutput) == 24);
+
 struct SceGxmProgram {
     std::uint32_t magic; // should be "GXP\0"
 
@@ -162,7 +200,7 @@ struct SceGxmProgram {
     std::uint32_t unk20;
     std::uint32_t parameter_count;
     std::uint32_t parameters_offset; // Number of bytes from the start of this field to the first parameter.
-    std::uint32_t unk2C;
+    std::uint32_t vertex_outputs_offset; // offset to vertex outputs, relative to this field
 
     std::uint16_t primary_reg_count; // (PAs)
     std::uint16_t secondary_reg_count; // (SAs)

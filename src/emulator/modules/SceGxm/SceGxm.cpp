@@ -796,11 +796,10 @@ EXPORT(int, sceGxmProgramGetType, const SceGxmProgram *program) {
     return program->type & 1;
 }
 
-EXPORT(int, sceGxmProgramGetVertexProgramOutputs, const SceGxmProgram *program) {
-    if (program->type != emu::SceGxmProgramType::Vertex)
-        return 0;
-    else
-        return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramGetVertexProgramOutputs, Ptr<const SceGxmProgram> program_) {
+    const auto program = program_.get(host.mem);
+
+    return gxp::get_vertex_outputs(*program);
 }
 
 EXPORT(int, sceGxmProgramIsDepthReplaceUsed) {

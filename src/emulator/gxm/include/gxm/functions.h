@@ -35,4 +35,8 @@ std::string parameter_struct_name(const SceGxmProgramParameter &parameter);
 const SceGxmProgramParameter *program_parameters(const SceGxmProgram &program);
 SceGxmParameterType parameter_type(const SceGxmProgramParameter &parameter);
 GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parameter);
+/**
+ * \return SceGxmVertexProgramOutput (bitfield)
+ */
+SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program);
 } // namespace gxp
