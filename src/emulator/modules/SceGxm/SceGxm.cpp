@@ -756,7 +756,7 @@ EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize, const SceGxmProgram *progr
 }
 
 EXPORT(int, sceGxmProgramGetFragmentProgramInputs, const SceGxmProgram *program) {
-    if (program->type != emu::SceGxmProgramType::Fragment)
+    if (!program->is_fragment())
         return 0;
     else
         return UNIMPLEMENTED();
@@ -766,7 +766,7 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, 
     if (!program || !type || !component_count)
         return SCE_GXM_ERROR_INVALID_POINTER;
 
-    if (program->type != emu::SceGxmProgramType::Fragment)
+    if (!program->is_fragment())
         return SCE_GXM_ERROR_INVALID_VALUE;
 
     // TODO
@@ -793,13 +793,13 @@ EXPORT(int, sceGxmProgramGetSize, const SceGxmProgram *program) {
 }
 
 EXPORT(int, sceGxmProgramGetType, const SceGxmProgram *program) {
-    return program->type & 1;
+    return program->get_type();
 }
 
 EXPORT(int, sceGxmProgramGetVertexProgramOutputs, Ptr<const SceGxmProgram> program_) {
     const auto program = program_.get(host.mem);
 
-    return gxp::get_vertex_outputs(*program);
+    return static_cast<int>(gxp::get_vertex_outputs(*program));
 }
 
 EXPORT(int, sceGxmProgramIsDepthReplaceUsed) {
@@ -1268,9 +1268,9 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = programId->program;
-    fp->renderer = std::make_unique<renderer::FragmentProgram>();
+    fp->renderer_data = std::make_unique<renderer::FragmentProgram>();
 
-    if (!renderer::create(*fp->renderer.get(), host.renderer, *programId->program.get(mem), blendInfo, host.base_path.c_str())) {
+    if (!renderer::create(*fp->renderer_data.get(), host.renderer, *programId->program.get(mem), blendInfo, host.base_path.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1293,9 +1293,9 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = alloc(mem, size_mask_gxp, __FUNCTION__);
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
-    fp->renderer = std::make_unique<renderer::FragmentProgram>();
+    fp->renderer_data = std::make_unique<renderer::FragmentProgram>();
 
-    if (!renderer::create(*fp->renderer, host.renderer, *fp->program.get(mem), nullptr, host.base_path.c_str())) {
+    if (!renderer::create(*fp->renderer_data, host.renderer, *fp->program.get(mem), nullptr, host.base_path.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1322,9 +1322,9 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     vp->program = programId->program;
     vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
-    vp->renderer = std::make_unique<renderer::VertexProgram>();
+    vp->renderer_data = std::make_unique<renderer::VertexProgram>();
 
-    if (!renderer::create(*vp->renderer.get(), host.renderer, *programId->program.get(mem), host.base_path.c_str())) {
+    if (!renderer::create(*vp->renderer_data.get(), host.renderer, *programId->program.get(mem), host.base_path.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 

@@ -59,8 +59,8 @@ SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state
     assert(state.fragment_program);
     assert(state.vertex_program);
 
-    const FragmentProgram &fragment_program = *state.fragment_program.get(mem)->renderer.get();
-    const VertexProgram &vertex_program = *state.vertex_program.get(mem)->renderer.get();
+    const FragmentProgram &fragment_program = *state.fragment_program.get(mem)->renderer_data.get();
+    const VertexProgram &vertex_program = *state.vertex_program.get(mem)->renderer_data.get();
     const ProgramGLSLs glsls(fragment_program.glsl, vertex_program.glsl);
     const ProgramCache::const_iterator cached = cache.find(glsls);
     if (cached != cache.end()) {
