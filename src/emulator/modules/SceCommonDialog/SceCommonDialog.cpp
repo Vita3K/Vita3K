@@ -22,7 +22,7 @@
 #include <util/log.h>
 #include <util/string_convert.h>
 
-#include <SDL.h>
+#include <SDL_timer.h>
 
 #include <psp2/common_dialog.h>
 #include <psp2/netcheck_dialog.h>
