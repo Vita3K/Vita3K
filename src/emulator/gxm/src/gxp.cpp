@@ -103,4 +103,70 @@ std::string parameter_struct_name(const SceGxmProgramParameter &parameter) {
         return "";
 }
 
+SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program) {
+    if (!program.is_vertex())
+        return _SCE_GXM_VERTEX_PROGRAM_OUTPUT_INVALID;
+
+    auto vertex_outputs_ptr = reinterpret_cast<const SceGxmProgramVertexOutput *>(reinterpret_cast<const std::uint8_t *>(&program.vertex_outputs_offset) + program.vertex_outputs_offset);
+    const std::uint32_t vo1 = vertex_outputs_ptr->vertex_outputs1;
+    const std::uint32_t vo2 = vertex_outputs_ptr->vertex_outputs2;
+
+    const bool has_fog = vo1 & 0x200;
+    const bool has_color = vo1 & 0x800;
+
+    int res = SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0 | SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION;
+    int res_nocolor = SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION;
+
+    if (has_fog) {
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG;
+        res_nocolor |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG;
+    }
+
+    if (!has_color)
+        res = res_nocolor;
+
+    if (vo1 & 0x400)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1;
+    if (vo2 & 7)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0;
+    if (vo2 & 0x38)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1;
+    if (vo2 & 0x1C0)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2;
+    if (vo2 & 0xE00)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3;
+    if (vo2 & 0x7000)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4;
+    if (vo2 & 0x38000)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5;
+    if (vo2 & 0x1C0000)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6;
+    if (vo2 & 0xE00000)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7;
+    if (vo2 & 0x7000000)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8;
+    if (vo2 & 0x38000000)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9;
+    if (vo1 & 0x100)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE;
+    if (vo1 & 1)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0;
+    if (vo1 & 2)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1;
+    if (vo1 & 4)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2;
+    if (vo1 & 8)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3;
+    if (vo1 & 0x10)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4;
+    if (vo1 & 0x20)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5;
+    if (vo1 & 0x40)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6;
+    if (vo1 & 0x80)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7;
+
+    return static_cast<SceGxmVertexProgramOutputs>(res);
+}
+
 } // namespace gxp
