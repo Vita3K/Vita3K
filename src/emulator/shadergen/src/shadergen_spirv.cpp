@@ -9,6 +9,7 @@
 #include <util/log.h>
 
 #include <algorithm>
+#include <map>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -91,7 +92,6 @@ spv::Id get_type_scalar(spv::Builder &spv_builder, const SceGxmProgramParameter 
 spv::Id get_type_vector(spv::Builder &spv_builder, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(spv_builder, parameter);
     param_id = spv_builder.makeVectorType(param_id, parameter.component_count);
-    create_array_if_needed(spv_builder, param_id, parameter);
     return param_id;
 }
 
@@ -169,6 +169,70 @@ spv::Id create_struct(spv::Builder &spv_builder, param_struct_t &param_struct, e
 
     param_struct.clear();
     return struct_var_id;
+}
+
+void create_vertex_outputs(spv::Builder &spv_builder, const SceGxmProgram &program) {
+    struct VertexProgramOutputProperties {
+        const char *name;
+        std::uint32_t component_count;
+
+        VertexProgramOutputProperties()
+            : name(nullptr)
+            , component_count(0) {}
+
+        VertexProgramOutputProperties(const char *name, std::uint32_t component_count)
+            : name(name)
+            , component_count(component_count) {}
+    };
+
+    using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
+
+    auto set_property = [](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count) {
+        return std::make_pair(vo, VertexProgramOutputProperties(name, component_count));
+    };
+
+    // TODO: Verify component counts, they're guessed atm
+    static const VertexProgramOutputPropertiesMap vertex_properties_map = {
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "spv_oPosition", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG, "spv_oFog", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0, "spv_oColor0", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "spv_oColor1", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "spv_oTexcoord0", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "spv_oTexcoord1", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "spv_oTexcoord2", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "spv_oTexcoord3", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "spv_oTexcoord4", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "spv_oTexcoord5", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "spv_oTexcoord6", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "spv_oTexcoord7", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "spv_oTexcoord8", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "spv_oTexcoord9", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "spv_oPsize", 2),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "spv_oClip0", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "spv_oClip1", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "spv_oClip2", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "spv_oClip3", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "spv_oClip4", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "spv_oClip5", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "spv_oClip6", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "spv_oClip7", 4),
+    };
+
+    const SceGxmVertexProgramOutputs vertex_outputs = gxp::get_vertex_outputs(program);
+
+    for (int vo = SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION; vo < _SCE_GXM_VERTEX_PROGRAM_OUTPUT_LAST; vo <<= 1) {
+        if (vertex_outputs & vo) {
+            const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
+            VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
+
+            const spv::Id vec3_type = spv_builder.makeVectorType(spv_builder.makeFloatType(32), properties.component_count);
+            spv_builder.createVariable(spv::StorageClassOutput, vec3_type, properties.name);
+        }
+    }
+}
+
+void create_fragment_inputs(spv::Builder &spv_builder, const SceGxmProgram &program) {
+    // TODO:
 }
 
 void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
@@ -265,6 +329,14 @@ void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program, 
     // Declarations ended with a struct, so it didn't get handled and we need to do it here
     if (!param_struct.empty())
         create_struct(spv_builder, param_struct, program_type);
+
+    // Emit vertex -> fragment declarations
+    // TODO: Could be made an inteface block
+
+    if (program_type == emu::SceGxmProgramType::Vertex)
+        create_vertex_outputs(spv_builder, program);
+    else if (program_type == emu::SceGxmProgramType::Fragment)
+        create_fragment_inputs(spv_builder, program);
 }
 
 SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
