@@ -4,7 +4,10 @@
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
+#include <renderer/types.h>
 #include <util/log.h>
+
+#include <algorithm>
 
 namespace renderer {
 template <class T>
@@ -70,21 +73,26 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
     }
 }
 
-static void set_uniforms(GLuint gl_program, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem) {
+static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem) {
     R_PROFILE(__func__);
 
     const SceGxmProgramParameter *const parameters = gxp::program_parameters(gxm_program);
     for (size_t i = 0; i < gxm_program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
-        if (parameter.category != SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
+        if (parameter.category != SCE_GXM_PARAMETER_CATEGORY_UNIFORM)
             continue;
-        }
 
-        auto name = gxp::parameter_name(parameter);
+        const auto name = gxp::parameter_name(parameter);
+        auto &excluded_uniforms = shader_program.excluded_uniforms;
+
+        if (std::find(excluded_uniforms.begin(), excluded_uniforms.end(), name) != excluded_uniforms.end())
+            continue;
+
         const GLint location = glGetUniformLocation(gl_program, name.c_str());
         if (location < 0) {
             // NOTE: This can happen because the uniform isn't used in the shader, thus optimized away by the shader compiler.
-            LOG_WARN("Uniform parameter {} not found in current OpenGL program.", name);
+            LOG_WARN("Uniform parameter {} not found in current OpenGL program, it will not be set again.", name);
+            excluded_uniforms.push_back(name);
             continue;
         }
 
@@ -121,12 +129,12 @@ void set_uniforms(GLuint program, const GxmContextState &state, const MemState &
     assert(state.fragment_program);
     assert(state.vertex_program);
 
-    const SceGxmFragmentProgram &fragment_program = *state.fragment_program.get(mem);
-    const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
-    assert(fragment_program.program);
-    assert(vertex_program.program);
+    const SceGxmFragmentProgram &fragment_shader = *state.fragment_program.get(mem);
+    const SceGxmVertexProgram &vertex_shader = *state.vertex_program.get(mem);
+    const SceGxmProgram &fragment_program = *fragment_shader.program.get(mem);
+    const SceGxmProgram &vertex_program = *vertex_shader.program.get(mem);
 
-    set_uniforms(program, state.fragment_uniform_buffers, *fragment_program.program.get(mem), mem);
-    set_uniforms(program, state.vertex_uniform_buffers, *vertex_program.program.get(mem), mem);
+    set_uniforms(program, *fragment_shader.renderer_data, state.fragment_uniform_buffers, fragment_program, mem);
+    set_uniforms(program, *vertex_shader.renderer_data, state.vertex_uniform_buffers, vertex_program, mem);
 }
 } // namespace renderer
