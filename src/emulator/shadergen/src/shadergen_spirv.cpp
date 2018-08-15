@@ -21,16 +21,22 @@ using SpirvCode = std::vector<uint32_t>;
 namespace shadergen {
 namespace spirv {
 
-// Prototypes
+// **************
+// * Prototypes *
+// **************
 
 spv::Id get_type_default(spv::Builder &spv_builder);
+
+// ******************
+// * Helper structs *
+// ******************
 
 // Keeps track of current struct declaration
 // TODO: Handle struct arrays and multiple struct instances.
 //       The current (and the former) approach is quite naive, in that it assumes:
 //           1) there is only one struct instance per declared struct
 //           2) there are no struct array instances
-struct param_struct_t {
+struct StructDeclContext {
     std::string name;
     spv::StorageClass storage_class = spv::StorageClassMax;
     std::vector<spv::Id> field_ids;
@@ -40,6 +46,22 @@ struct param_struct_t {
     bool empty() const { return name.empty(); }
     void clear() { *this = {}; }
 };
+
+struct SpirvVar {
+    spv::Id type_id;
+    spv::Id var_id;
+};
+
+struct SpirvShaderParameters {
+    using FragmentOutputs = std::array<SpirvVar, 2>;
+
+    // TODO: add everything create_parameter makes here
+    FragmentOutputs fragment_outputs;
+};
+
+// ******************************
+// * Functions (implementation) *
+// ******************************
 
 void create_array_if_needed(spv::Builder &spv_builder, spv::Id &param_id, const SceGxmProgramParameter &parameter, const uint32_t explicit_array_size = 0) {
     const auto array_size = explicit_array_size == 0 ? parameter.array_size : explicit_array_size;
@@ -52,14 +74,10 @@ void create_array_if_needed(spv::Builder &spv_builder, spv::Id &param_id, const 
 spv::Id get_type_basic(spv::Builder &spv_builder, const SceGxmProgramParameter &parameter) {
     SceGxmParameterType type = gxp::parameter_type(parameter);
 
-    // With half floats enabled, generated GLSL requires the "GL_AMD_gpu_shader_half_float" extension that macOS doesn't support
+    // With half floats enabled, generated GLSL requires the "GL_AMD_gpu_shader_half_float" extension, that most drivers don't support
     // TODO: Detect support at runtime
-    constexpr bool no_half_float =
-#ifdef __APPLE__
-        true;
-#else
-        false;
-#endif
+    // TODO: Resolve SPIR-Cross generation issue (see: https://github.com/KhronosGroup/SPIRV-Cross/issues/660)
+    constexpr bool no_half_float = true;
 
     switch (type) {
     // clang-format off
@@ -150,7 +168,7 @@ spv::Id create_param_sampler(spv::Builder &spv_builder, const SceGxmProgramParam
     return spv_builder.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-spv::Id create_struct(spv::Builder &spv_builder, param_struct_t &param_struct, emu::SceGxmProgramType program_type) {
+spv::Id create_struct(spv::Builder &spv_builder, StructDeclContext &param_struct, emu::SceGxmProgramType program_type) {
     assert(param_struct.field_ids.size() == param_struct.field_names.size());
 
     const spv::Id struct_type_id = spv_builder.makeStructType(param_struct.field_ids, param_struct.name.c_str());
@@ -225,8 +243,8 @@ void create_vertex_outputs(spv::Builder &spv_builder, const SceGxmProgram &progr
             const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
             VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
 
-            const spv::Id vec3_type = spv_builder.makeVectorType(spv_builder.makeFloatType(32), properties.component_count);
-            spv_builder.createVariable(spv::StorageClassOutput, vec3_type, properties.name);
+            const spv::Id out_type = spv_builder.makeVectorType(spv_builder.makeFloatType(32), properties.component_count);
+            spv_builder.createVariable(spv::StorageClassOutput, out_type, properties.name);
         }
     }
 }
@@ -235,12 +253,28 @@ void create_fragment_inputs(spv::Builder &spv_builder, const SceGxmProgram &prog
     // TODO:
 }
 
-void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
-    const SceGxmProgramParameter *const parameters = gxp::program_parameters(program);
-    param_struct_t param_struct = {};
+SpirvShaderParameters::FragmentOutputs create_fragment_output(spv::Builder &spv_builder, const SceGxmProgram &program) {
+    SpirvShaderParameters::FragmentOutputs outputs;
+
+    // HACKY: We assume output size and format
+
+    const spv::Id frag_color_type = spv_builder.makeVectorType(spv_builder.makeFloatType(32), 4);
+    const spv::Id frag_color_var = spv_builder.createVariable(spv::StorageClassOutput, frag_color_type, "spv_fragColor");
+
+    spv_builder.addDecoration(frag_color_var, spv::DecorationLocation, 0);
+
+    outputs[0].type_id = frag_color_type;
+    outputs[0].var_id = frag_color_var;
+    return outputs;
+}
+
+SpirvShaderParameters create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
+    SpirvShaderParameters out_parameters = {};
+    const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
+    StructDeclContext param_struct = {};
 
     for (size_t i = 0; i < program.parameter_count; ++i) {
-        const SceGxmProgramParameter &parameter = parameters[i];
+        const SceGxmProgramParameter &parameter = gxp_parameters[i];
 
         gxp::log_parameter(parameter);
 
@@ -335,8 +369,12 @@ void create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program, 
 
     if (program_type == emu::SceGxmProgramType::Vertex)
         create_vertex_outputs(spv_builder, program);
-    else if (program_type == emu::SceGxmProgramType::Fragment)
+    else if (program_type == emu::SceGxmProgramType::Fragment) {
         create_fragment_inputs(spv_builder, program);
+        out_parameters.fragment_outputs = create_fragment_output(spv_builder, program);
+    }
+
+    return out_parameters;
 }
 
 SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
@@ -353,7 +391,7 @@ SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType p
     // capabilities
     spv_builder.addCapability(spv::Capability::CapabilityShader);
 
-    spirv::create_parameters(spv_builder, program, program_type);
+    SpirvShaderParameters parameters = spirv::create_parameters(spv_builder, program, program_type);
 
     std::string entry_point_name;
     spv::ExecutionModel execution_model;
@@ -424,6 +462,10 @@ std::string generate_glsl(const SceGxmProgram &program, emu::SceGxmProgramType p
 
     return source;
 }
+
+// ***************************
+// * Functions (exposed API) *
+// ***************************
 
 std::string generate_vertex_glsl(const SceGxmProgram &program) {
     return generate_glsl(program, emu::SceGxmProgramType::Vertex);
