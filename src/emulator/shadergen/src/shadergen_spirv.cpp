@@ -377,6 +377,26 @@ SpirvShaderParameters create_parameters(spv::Builder &spv_builder, const SceGxmP
     return out_parameters;
 }
 
+void generate_shader_body(spv::Builder &spv_builder, SpirvShaderParameters parameters, emu::SceGxmProgramType program_type) {
+    if (program_type == emu::SceGxmProgramType::Fragment) {
+        const auto frag_color_output = parameters.fragment_outputs[0];
+        const auto frag_color_type = frag_color_output.type_id;
+        const auto frag_color_var = frag_color_output.var_id;
+
+        // STUB: Write arbitrary color (blue) for now
+        const spv::Id float_0_const = spv_builder.makeFloatConstant(0.f);
+        const spv::Id float_1_const = spv_builder.makeFloatConstant(1.f);
+
+        const spv::Id vec4_blue_const = spv_builder.makeCompositeConstant(frag_color_type,
+            { float_0_const, float_0_const, float_1_const, float_1_const });
+
+        spv_builder.createStore(vec4_blue_const, frag_color_var);
+    }
+    else if (program_type == emu::SceGxmProgramType::Vertex) {
+        // TODO: vertex shader body
+    }
+}
+
 SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
     SpirvCode spirv;
 
@@ -412,7 +432,9 @@ SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType p
 
     // entry point
     spv::Function *spv_func_main = spv_builder.makeEntryPoint(entry_point_name.c_str());
-    // TODO: vertex/fragment shader body
+
+    generate_shader_body(spv_builder, parameters, program_type);
+
     spv_builder.leaveFunction();
 
     // VS Execution Modes
