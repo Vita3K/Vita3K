@@ -19,23 +19,20 @@
 
 #include <cpu/functions.h>
 
-template <>
-void write_return_value<uint16_t>(CPUState &cpu, uint16_t ret) {
+void write_return_value(CPUState &cpu, int32_t ret) {
     write_reg(cpu, 0, ret);
 }
 
-template <>
-void write_return_value<int32_t>(CPUState &cpu, int32_t ret) {
+void write_return_value(CPUState &cpu, int64_t ret) {
+    write_reg(cpu, 0, ret & UINT32_MAX);
+    write_reg(cpu, 1, ret >> 32);
+}
+
+void write_return_value(CPUState &cpu, uint32_t ret) {
     write_reg(cpu, 0, ret);
 }
 
-template <>
-void write_return_value<uint32_t>(CPUState &cpu, uint32_t ret) {
-    write_reg(cpu, 0, ret);
-}
-
-template <>
-void write_return_value<uint64_t>(CPUState &cpu, uint64_t ret) {
+void write_return_value(CPUState &cpu, uint64_t ret) {
     write_reg(cpu, 0, ret & UINT32_MAX);
     write_reg(cpu, 1, ret >> 32);
 }

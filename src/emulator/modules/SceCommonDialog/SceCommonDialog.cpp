@@ -15,14 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "SceCommonDialog.h"
+
 #include <dialog/types.h>
 #include <host/functions.h>
 #include <util/log.h>
 #include <util/string_convert.h>
 
-#include <SDL.h>
+#include <SDL_timer.h>
 
-#include "SceCommonDialog.h"
+#include <psp2/common_dialog.h>
+#include <psp2/netcheck_dialog.h>
 
 EXPORT(int, sceCameraImportDialogAbort) {
     return UNIMPLEMENTED();
@@ -338,8 +341,9 @@ EXPORT(int, sceNetCheckDialogGetResult) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetCheckDialogGetStatus) {
-    return UNIMPLEMENTED();
+EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
+    STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
+    return SCE_COMMON_DIALOG_STATUS_FINISHED;
 }
 
 EXPORT(int, sceNetCheckDialogInit) {

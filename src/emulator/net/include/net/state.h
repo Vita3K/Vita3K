@@ -25,6 +25,7 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Ws2tcpip.h>
 #include <winsock2.h>
+#undef s_addr
 typedef SOCKET abs_socket;
 typedef int socklen_t;
 #else
