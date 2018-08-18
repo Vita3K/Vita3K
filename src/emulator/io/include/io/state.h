@@ -47,9 +47,21 @@ enum TtyType {
     TTY_OUT
 };
 
+struct IoComponent {
+    std::string path;
+};
+
+struct File : public IoComponent {
+    FilePtr file_handle;
+};
+
+struct Directory : public IoComponent {
+    DirPtr dir_handle;
+};
+
 typedef std::map<SceUID, TtyType> TtyFiles;
-typedef std::map<SceUID, FilePtr> StdFiles;
-typedef std::map<SceUID, DirPtr> DirEntries;
+typedef std::map<SceUID, File> StdFiles;
+typedef std::map<SceUID, Directory> DirEntries;
 
 struct IOState {
     struct DevicePaths {
