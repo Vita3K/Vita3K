@@ -267,8 +267,12 @@ SceUID open_file(IOState &io, const std::string &path, int flags, const char *pr
             return SCE_ERROR_ERRNO_ENOENT;
         }
 
+        File file_node;
+        file_node.path = path;
+        file_node.file_handle = file;
+
         const SceUID fd = io.next_fd++;
-        io.std_files.emplace(fd, file);
+        io.std_files.emplace(fd, file_node);
 
         return fd;
     }
@@ -294,7 +298,7 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *expo
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
-        return fread(data, 1, size, file->second.get());
+        return fread(data, 1, size, file->second.file_handle.get());
     }
 
     const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
@@ -322,7 +326,7 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
-        return fwrite(data, 1, size, file->second.get());
+        return fwrite(data, 1, size, file->second.file_handle.get());
     }
 
     const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
@@ -385,7 +389,7 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export
     long pos = 0;
 
     if (std_file != io.std_files.end()) {
-        ret = fseek(std_file->second.get(), offset, base);
+        ret = fseek(std_file->second.file_handle.get(), offset, base);
     }
 
     if (ret != 0) {
@@ -393,7 +397,7 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export
     }
 
     if (std_file != io.std_files.end()) {
-        pos = ftell(std_file->second.get());
+        pos = ftell(std_file->second.file_handle.get());
     }
     return pos;
 }
@@ -552,6 +556,19 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
     return 0;
 }
 
+int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const char *pref_path, uint64_t base_tick, const char *export_name) {
+    assert(statp != NULL);
+    memset(statp, '\0', sizeof(SceIoStat));
+
+    if (io.std_files.find(fd) != io.std_files.end()) {
+        return stat_file(io, io.std_files[fd].path.data(), statp, pref_path, base_tick, export_name);
+    } else if (io.dir_entries.find(fd) != io.dir_entries.end()) {
+        return stat_file(io, io.dir_entries[fd].path.data(), statp, pref_path, base_tick, export_name);
+    }
+
+    return -1;
+}
+
 int open_dir(IOState &io, const char *path, const char *pref_path, const char *export_name) {
     std::string translated_path = path;
     VitaIoDevice device = get_device(translated_path);
@@ -586,8 +603,12 @@ int open_dir(IOState &io, const char *path, const char *pref_path, const char *e
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
+    Directory dir_node;
+    dir_node.dir_handle = dir;
+    dir_node.path = path;
+
     const SceUID fd = io.next_fd++;
-    io.dir_entries.emplace(fd, dir);
+    io.dir_entries.emplace(fd, dir_node);
 
     return fd;
 }
@@ -602,9 +623,9 @@ int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *export_
     const DirEntries::const_iterator dir = io.dir_entries.find(fd);
     if (dir != io.dir_entries.end()) {
 #ifdef WIN32
-        _wdirent *d = _wreaddir(dir->second.get());
+        _wdirent *d = _wreaddir(dir->second.dir_handle.get());
 #else
-        dirent *d = readdir(dir->second.get());
+        dirent *d = readdir(dir->second.dir_handle.get());
 #endif
 
         if (!d) {

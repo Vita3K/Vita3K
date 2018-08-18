@@ -326,8 +326,8 @@ EXPORT(int, sceIoGetstatAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoGetstatByFd) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceIoGetstatByFd, const int fd, SceIoStat *stat) {
+    return stat_file_by_fd(host.io, fd, stat, host.pref_path.c_str(), host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoIoctl) {
