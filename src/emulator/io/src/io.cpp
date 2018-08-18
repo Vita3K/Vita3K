@@ -35,6 +35,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <dirent.h>
+#include <io.h>
 #include <util/string_convert.h>
 #else
 #include <sys/stat.h>
@@ -43,6 +44,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <tuple>
@@ -550,6 +552,44 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
     __RtcTicksToPspTime(statp->st_ctime, creation_time_ticks);
 
     return 0;
+}
+
+std::string get_real_path(FILE *handle) {
+#ifdef WIN32
+    int descriptor = _fileno(handle);
+    HANDLE win32_handle = (HANDLE)(_get_osfhandle(descriptor));
+
+    std::string ret_name;
+    ret_name.resize(MAX_PATH);
+
+    DWORD pathSize = GetFinalPathNameByHandle(win32_handle, &ret_name[0], MAX_PATH, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+
+    if (pathSize >= 3 && ret_name.substr(0, 4) == R"(\\?\)") {
+        ret_name.erase(ret_name.begin(), ret_name.begin() + 4);
+    }
+
+    // The buffer size is large enough, so return the path immidiately.
+    return ret_name;
+#else
+    int descriptor = fileno(handle);
+
+    std::string proc_link = std::string("/proc/self/fd/") + std::to_string(descriptor);
+
+    std::string full_path;
+    full_path.resize(0xFFFF);
+
+    int r = readlink(proc_link.data(), &fullpath[0], 0xFFFF);
+
+    return full_path;
+#endif
+}
+
+int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const char *pref_path, uint64_t base_tick, const char *export_name) {
+    if (io.std_files.find(fd) == io.std_files.end()) {
+        return -1;
+    }
+
+    return stat_file(io, get_real_path(&(*io.std_files[fd])).data(), statp, pref_path, base_tick, export_name);
 }
 
 int open_dir(IOState &io, const char *path, const char *pref_path, const char *export_name) {
