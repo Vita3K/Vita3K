@@ -625,7 +625,7 @@ int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *export_
 #ifdef WIN32
         _wdirent *d = _wreaddir(dir->second.dir_handle.get());
 #else
-        dirent *d = readdir(dir->second.get());
+        dirent *d = readdir(dir->second.dir_handle.get());
 #endif
 
         if (!d) {
