@@ -322,13 +322,6 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
         return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
     }
 
-    LOG_TRACE("{}: Writing file: fd: {}, size: {}", export_name, log_hex(fd), size);
-
-    const StdFiles::const_iterator file = io.std_files.find(fd);
-    if (file != io.std_files.end()) {
-        return fwrite(data, 1, size, file->second.file_handle.get());
-    }
-
     const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
     if (tty_file != io.tty_files.end()) {
         if (tty_file->second & TTY_OUT) {
@@ -343,6 +336,13 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
         }
 
         return IO_ERROR_UNK();
+    }
+
+    LOG_TRACE("{}: Writing file: fd: {}, size: {}", export_name, log_hex(fd), size);
+
+    const StdFiles::const_iterator file = io.std_files.find(fd);
+    if (file != io.std_files.end()) {
+        return fwrite(data, 1, size, file->second.file_handle.get());
     }
 
     return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
