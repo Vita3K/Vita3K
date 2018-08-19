@@ -1121,7 +1121,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(sourceData != nullptr);
 
     size_t size = componentCount * sizeof(float);
-    size_t offset = componentOffset * sizeof(float);
+    size_t offset = (parameter->resource_index + componentOffset) * sizeof(float);
     memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, sourceData, size);
     return 0;
 }
