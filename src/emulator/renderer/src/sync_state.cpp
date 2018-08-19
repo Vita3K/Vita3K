@@ -9,6 +9,8 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
+#include <cmath>
+
 namespace renderer {
 static GLenum translate_depth_func(SceGxmDepthFunc depth_func) {
     R_PROFILE(__func__);
@@ -109,8 +111,8 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
     const GxmViewport &viewport = state.viewport;
     if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
-        const GLfloat w = viewport.scale.x * 2;
-        const GLfloat h = viewport.scale.y * -2;
+        const GLfloat w = std::abs(viewport.scale.x * 2);
+        const GLfloat h = std::abs(viewport.scale.y * 2);
         const GLfloat x = viewport.offset.x - viewport.scale.x;
         const GLfloat y = display_h - (viewport.offset.y - viewport.scale.y);
         glViewportIndexedf(0, x, y, w, h);
