@@ -335,9 +335,9 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
             std::string s(reinterpret_cast<char const *>(data), size);
 
             // trim newline
-            if (s.back() == '\n') {
-                s.back() = '\0';
-            }
+            if (s.back() == '\n')
+                s.pop_back();
+
             LOG_INFO("*** TTY: {}", s);
             return size;
         }
