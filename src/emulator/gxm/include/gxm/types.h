@@ -10,6 +10,8 @@
 #include <memory>
 #include <mutex>
 
+#define SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX 0xE
+
 namespace renderer {
 struct FragmentProgram;
 struct VertexProgram;
