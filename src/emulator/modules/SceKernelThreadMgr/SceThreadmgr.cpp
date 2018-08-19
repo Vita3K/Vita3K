@@ -104,7 +104,7 @@ EXPORT(int, sceKernelCreateThreadForUser) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelDelayThread, SceUInt delay) {
+int delay_thread(SceUInt delay) {
 #ifdef _WIN32
     Sleep(delay / 1000);
 #else
@@ -113,16 +113,24 @@ EXPORT(int, sceKernelDelayThread, SceUInt delay) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelDelayThread200) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDelayThread, SceUInt delay) {
+    STUBBED("bad accuracy");
+    return delay_thread(delay);
 }
 
-EXPORT(int, sceKernelDelayThreadCB) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDelayThread200, SceUInt delay) {
+    STUBBED("bad accuracy, untested");
+    return delay_thread(delay);
 }
 
-EXPORT(int, sceKernelDelayThreadCB200) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDelayThreadCB, SceUInt delay) {
+    STUBBED("no CB, bad accuracy");
+    return delay_thread(delay);
+}
+
+EXPORT(int, sceKernelDelayThreadCB200, SceUInt delay) {
+    STUBBED("no CB, bad accuracy, untested");
+    return delay_thread(delay);
 }
 
 EXPORT(int, sceKernelDeleteCallback) {
