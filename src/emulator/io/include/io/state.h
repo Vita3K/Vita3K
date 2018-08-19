@@ -42,9 +42,10 @@ typedef std::shared_ptr<_WDIR> DirPtr;
 typedef std::shared_ptr<DIR> DirPtr;
 #endif
 
-enum TtyType {
-    TTY_IN,
-    TTY_OUT
+enum TtyType : std::uint8_t {
+    TTY_IN = 0b01,
+    TTY_OUT = 0b10,
+    TTY_INOUT = TTY_IN | TTY_OUT
 };
 
 struct IoComponent {

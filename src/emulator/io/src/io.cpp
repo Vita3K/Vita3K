@@ -46,6 +46,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <type_traits>
 
 // ****************************
 // * Utility functions *
@@ -234,15 +235,14 @@ SceUID open_file(IOState &io, const std::string &path, int flags, const char *pr
     case VitaIoDevice::TTY1: {
         assert(flags >= 0);
 
-        TtyType type;
-        if (flags == SCE_O_RDONLY) {
-            type = TTY_IN;
-        } else if (flags == SCE_O_WRONLY) {
-            type = TTY_OUT;
-        }
+        std::underlying_type<TtyType>::type tty_type = 0;
+        if (flags & SCE_O_RDONLY)
+            tty_type |= TTY_IN;
+        if (flags & SCE_O_WRONLY)
+            tty_type |= TTY_OUT;
 
         const SceUID fd = io.next_fd++;
-        io.tty_files.emplace(fd, type);
+        io.tty_files.emplace(fd, static_cast<TtyType>(tty_type));
 
         return fd;
     }
@@ -331,7 +331,7 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
 
     const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
     if (tty_file != io.tty_files.end()) {
-        if (tty_file->second == TTY_OUT) {
+        if (tty_file->second & TTY_OUT) {
             std::string s(reinterpret_cast<char const *>(data), size);
 
             // trim newline
