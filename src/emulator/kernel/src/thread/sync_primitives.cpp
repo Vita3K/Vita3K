@@ -634,7 +634,7 @@ int delete_eventflag(KernelState &kernel, const char *export_name, SceUID thread
     }
 
     if (event->waiting_threads.empty()) {
-        const std::lock_guard<std::mutex> lock(event->mutex);
+        const std::lock_guard<std::mutex> lock2(event->mutex);
         kernel.eventflags.erase(event_id);
     } else {
         // TODO:
