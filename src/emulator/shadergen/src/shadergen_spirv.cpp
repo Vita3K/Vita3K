@@ -76,6 +76,20 @@ struct VertexProgramOutputProperties {
 };
 using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
 
+struct FragmentProgramInputProperties {
+    const char *name;
+    std::uint32_t component_count;
+
+    FragmentProgramInputProperties()
+        : name(nullptr)
+        , component_count(0) {}
+
+    FragmentProgramInputProperties(const char *name, std::uint32_t component_count)
+        : name(name)
+        , component_count(component_count) {}
+};
+using FragmentProgramInputPropertiesMap = std::map<SceGxmFragmentProgramInputs, FragmentProgramInputProperties>;
+
 // ******************************
 // * Functions (implementation) *
 // ******************************
@@ -272,7 +286,40 @@ void create_vertex_outputs(spv::Builder &spv_builder, SpirvShaderParameters &par
 }
 
 void create_fragment_inputs(spv::Builder &spv_builder, SpirvShaderParameters &parameters, const SceGxmProgram &program) {
-    // TODO:
+    auto set_property = [](SceGxmFragmentProgramInputs vo, const char *name, std::uint32_t component_count) {
+        return std::make_pair(vo, FragmentProgramInputProperties(name, component_count));
+    };
+
+    // TODO: Verify component counts
+    static const FragmentProgramInputPropertiesMap vertex_properties_map = {
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_POSITION, "in_Position", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_FOG, "in_Fog", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_COLOR0, "in_Color0", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_COLOR1, "in_Color1", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD0, "in_TexCoord0", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD1, "in_TexCoord1", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD2, "in_TexCoord2", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD3, "in_TexCoord3", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD4, "in_TexCoord4", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD5, "in_TexCoord5", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD6, "in_TexCoord6", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD7, "in_TexCoord7", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD8, "in_TexCoord8", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD9, "in_TexCoord9", 4),
+        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_SPRITECOORD, "in_SpriteCoord", 4),
+    };
+
+    const SceGxmFragmentProgramInputs fragment_inputs = gxp::get_fragment_inputs(program);
+
+    for (int vo = SCE_GXM_FRAGMENT_PROGRAM_INPUT_POSITION; vo < _SCE_GXM_FRAGMENT_PROGRAM_INPUT_LAST; vo <<= 1) {
+        if (fragment_inputs & vo) {
+            const auto vo_typed = static_cast<SceGxmFragmentProgramInputs>(vo);
+            const FragmentProgramInputProperties properties = vertex_properties_map.at(vo_typed);
+
+            const spv::Id in_type = spv_builder.makeVectorType(spv_builder.makeFloatType(32), properties.component_count);
+            const spv::Id in_var = create_variable(spv_builder, parameters, spv::StorageClassInput, in_type, properties.name);
+        }
+    }
 }
 
 void create_fragment_output(spv::Builder &spv_builder, SpirvShaderParameters &parameters, const SceGxmProgram &program) {
