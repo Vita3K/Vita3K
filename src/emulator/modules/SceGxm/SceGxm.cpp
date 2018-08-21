@@ -100,7 +100,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(colorSurface != nullptr);
     assert(depthStencil != nullptr);
 
-    if (host.gxm.isInScene) {
+    if (host.gxm.is_in_scene) {
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
     }
     if (depthStencil == nullptr && colorSurface == nullptr) {
@@ -121,7 +121,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     context->state.color_surface = *colorSurface;
     context->state.depth_stencil_surface = *depthStencil;
 
-    host.gxm.isInScene = true;
+    host.gxm.is_in_scene = true;
 
     renderer::begin_scene(renderTarget->renderer);
 
@@ -378,7 +378,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     assert(context != nullptr);
     assert(indexData != nullptr);
 
-    if (!host.gxm.isInScene) {
+    if (!host.gxm.is_in_scene) {
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
@@ -409,7 +409,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     assert(vertexNotification == nullptr);
     //assert(fragmentNotification == nullptr);
 
-    if (!host.gxm.isInScene) {
+    if (!host.gxm.is_in_scene) {
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
@@ -424,7 +424,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
         volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
         *fragment_address = fragmentNotification->value;
     }
-    host.gxm.isInScene = false;
+    host.gxm.is_in_scene = false;
 
     return 0;
 }
