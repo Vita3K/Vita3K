@@ -200,7 +200,7 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
             continue;
         }
-        const size_t texture_unit = param.resource_index; // TODO Is this right?
+        const size_t texture_unit = param.resource_index;
         if (texture_unit >= SCE_GXM_MAX_TEXTURE_UNITS) {
             LOG_WARN("Texture unit index ({}) out of range. SCE_GXM_MAX_TEXTURE_UNITS is {}.", texture_unit, SCE_GXM_MAX_TEXTURE_UNITS);
             continue;
@@ -212,7 +212,12 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         }
 
         glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + texture_unit));
-        cache_and_bind_texture(context.texture_cache, texture, mem, enable_texture_cache);
+
+        if (enable_texture_cache) {
+            texture::cache_and_bind_texture(context.texture_cache, texture, mem);
+        } else {
+            texture::bind_texture(context.texture_cache, texture, mem);
+        }
     }
     glActiveTexture(GL_TEXTURE0);
 
