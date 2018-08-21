@@ -171,12 +171,36 @@ enum SceGxmVertexProgramOutputs : int {
 };
 
 struct SceGxmProgramVertexOutput {
-    std::uint8_t unk[16];
+    std::uint8_t unk[12];
 
+    std::uint16_t unk2;
+    std::uint16_t pad; // padding maybe
     std::uint32_t vertex_outputs1; // includes everything except texcoord outputs
     std::uint32_t vertex_outputs2; // includes texcoord outputs
 };
 static_assert(sizeof(SceGxmProgramVertexOutput) == 24);
+
+enum SceGxmFragmentProgramInputs : int {
+    _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE = 0,
+
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_POSITION = 1 << 0,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_FOG = 1 << 1,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_COLOR0 = 1 << 2,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_COLOR1 = 1 << 3,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD0 = 1 << 4,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD1 = 1 << 5,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD2 = 1 << 6,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD3 = 1 << 7,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD4 = 1 << 8,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD5 = 1 << 9,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD6 = 1 << 10,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD7 = 1 << 11,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD8 = 1 << 12,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD9 = 1 << 13,
+    SCE_GXM_FRAGMENT_PROGRAM_INPUT_SPRITECOORD = 1 << 14,
+
+    _SCE_GXM_FRAGMENT_PROGRAM_INPUT_LAST = 1 << 15
+};
 
 struct SceGxmProgram {
     std::uint32_t magic; // should be "GXP\0"

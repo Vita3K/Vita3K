@@ -169,4 +169,88 @@ SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program) {
     return static_cast<SceGxmVertexProgramOutputs>(res);
 }
 
+SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
+    if (!program.is_fragment())
+        return _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE;
+
+    auto vertex_outputs_offset = program.vertex_outputs_offset;
+    const SceGxmProgramVertexOutput *vertex_outputs_ptr = nullptr;
+    if (program.vertex_outputs_offset)
+        vertex_outputs_ptr = reinterpret_cast<const SceGxmProgramVertexOutput *>(reinterpret_cast<const std::uint8_t *>(&program.vertex_outputs_offset) + program.vertex_outputs_offset);
+
+    // following code is adapted from decompilation
+    uint32_t *vo1 = (uint32_t *)vertex_outputs_ptr->vertex_outputs1;
+    if (vo1)
+        vo1 = (uint32_t *)((char *)vo1 + (uint64_t)vertex_outputs_ptr + 16);
+    uint32_t *v4 = &vo1[4 * vertex_outputs_ptr->unk2];
+    if (vo1 == v4)
+        return _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE;
+    uint32_t *fi_struct_ptr = vo1 + 16;
+
+    unsigned result = 0;
+    uint32_t *v9;
+    // clang-format off
+    do {
+        uint32_t fi_word1 = *(fi_struct_ptr - 16);
+        if ((*(fi_struct_ptr - 16) & 0xF) != 0xF)
+            if (fi_word1 & 0x400)
+                result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE;
+            else
+                switch (*(fi_struct_ptr - 16) & 0xF) {
+                case 0: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0; break;
+                case 1: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1; break;
+                case 2: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2; break;
+                case 3: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3; break;
+                case 4: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4; break;
+                case 5: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5; break;
+                case 6: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6; break;
+                case 7: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7; break;
+                case 8: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8; break;
+                case 9: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9; break;
+                default: break;
+                }
+        uint32_t fi_word2 = *(fi_struct_ptr - 16) & 0xF000;
+
+        if (fi_word2 != 0xF000) {
+            if (fi_word1 & 0x40000000)
+                result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE;
+            else if (fi_word2 == 0x6000)
+                result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6;
+            else if (fi_word2 <= 0x6000)
+                if (fi_word2 == 0x2000)
+                    result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2;
+                else if (fi_word2 <= 0x2000)
+                    if (fi_word1 & 0xF000)
+                        if (fi_word2 == 4096)
+                            result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1;
+                    else
+                        result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0;
+                else
+                    switch (fi_word2) {
+                    case 0x4000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4; break;
+                    case 0x5000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5; break;
+                    case 0x3000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3; break;
+                    }
+            else if (fi_word2 == 0xA000)
+                result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0;
+            else if (fi_word2 > 0xA000)
+                switch (fi_word2) {
+                case 0xC000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG; break;
+                case 0xD000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION; break;
+                case 0xB000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1; break;
+                }
+            else
+                switch (fi_word2) {
+                case 0x8000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8; break;
+                case 0x9000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9; break;
+                case 0x7000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7; break;
+                }
+        }
+        v9 = fi_struct_ptr - 12;
+        fi_struct_ptr += 4;
+    } while (v4 != v9);
+    // clang-format on
+
+    return static_cast<SceGxmFragmentProgramInputs>(result);
+}
 } // namespace gxp

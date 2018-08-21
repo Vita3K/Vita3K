@@ -749,11 +749,10 @@ EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize, const SceGxmProgram *progr
     return program->default_uniform_buffer_count * 4;
 }
 
-EXPORT(int, sceGxmProgramGetFragmentProgramInputs, const SceGxmProgram *program) {
-    if (!program->is_fragment())
-        return 0;
-    else
-        return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramGetFragmentProgramInputs, Ptr<const SceGxmProgram> program_) {
+    const auto program = program_.get(host.mem);
+
+    return static_cast<int>(gxp::get_fragment_inputs(*program));
 }
 
 EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, SceGxmParameterType *type, std::uint32_t *component_count) {
