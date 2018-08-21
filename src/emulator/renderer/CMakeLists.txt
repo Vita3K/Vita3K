@@ -13,8 +13,10 @@ add_library(
 	src/renderer.cpp
 	src/profile.h
 	src/sync_state.cpp
+	src/texture.cpp
 	src/texture_cache.cpp
 	src/texture_formats.cpp
+	src/texture_palette.cpp
 	src/uniforms.cpp
 )
 

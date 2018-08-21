@@ -123,7 +123,7 @@ bool create(Context &context, SDL_Window *window) {
     // TODO This is just for debugging.
     glClearColor(0.0625f, 0.125f, 0.25f, 0);
 
-    if (!init(context.texture_cache) || !context.vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !context.element_buffer.init(glGenBuffers, glDeleteBuffers) || !context.stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
+    if (!texture::init(context.texture_cache) || !context.vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !context.element_buffer.init(glGenBuffers, glDeleteBuffers) || !context.stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
         return false;
     }
 

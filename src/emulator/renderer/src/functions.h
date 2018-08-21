@@ -27,19 +27,36 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
 // Compile program.
 SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state, const MemState &mem);
 
-// Texture cache.
-bool init(TextureCacheState &cache);
-void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem, bool enabled);
-
 // Shaders.
 std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment_program, const char *base_path);
 std::string load_vertex_shader(GLSLCache &cache, const SceGxmProgram &vertex_program, const char *base_path);
+
+namespace texture {
+
+// Textures.
+void bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem);
+void configure_bound_texture(const SceGxmTexture &gxm_texture);
+void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem);
 
 // Texture formats.
 const GLenum *translate_swizzle(SceGxmTextureFormat fmt);
 GLenum translate_internal_format(SceGxmTextureFormat src);
 GLenum translate_format(SceGxmTextureFormat src);
 GLenum translate_type(SceGxmTextureFormat format);
+GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
+GLenum translate_minmag_filter(SceGxmTextureFilter src);
+size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
+
+// Paletted textures.
+void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
+void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
+const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
+
+// Texture cache.
+bool init(TextureCacheState &cache);
+void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem);
+
+} // namespace texture
 
 // Uniforms.
 void set_uniforms(GLuint program, const GxmContextState &state, const MemState &mem);
