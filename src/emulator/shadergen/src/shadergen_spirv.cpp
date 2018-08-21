@@ -209,31 +209,31 @@ void create_vertex_outputs(spv::Builder &spv_builder, const SceGxmProgram &progr
         return std::make_pair(vo, VertexProgramOutputProperties(name, component_count));
     };
 
-    // TODO: Verify component counts, they're guessed atm
+    // TODO: Verify component counts
     static const VertexProgramOutputPropertiesMap vertex_properties_map = {
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "spv_oPosition", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG, "spv_oFog", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0, "spv_oColor0", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "spv_oColor1", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "spv_oTexcoord0", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "spv_oTexcoord1", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "spv_oTexcoord2", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "spv_oTexcoord3", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "spv_oTexcoord4", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "spv_oTexcoord5", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "spv_oTexcoord6", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "spv_oTexcoord7", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "spv_oTexcoord8", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "spv_oTexcoord9", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "spv_oPsize", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "spv_oClip0", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "spv_oClip1", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "spv_oClip2", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "spv_oClip3", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "spv_oClip4", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "spv_oClip5", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "spv_oClip6", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "spv_oClip7", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "out_Position", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG, "out_Fog", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0, "out_Color0", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "out_Color1", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "out_TexCoord0", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "out_TexCoord1", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "out_TexCoord2", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "out_TexCoord3", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "out_TexCoord4", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "out_TexCoord5", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "out_TexCoord6", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "out_TexCoord7", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "out_TexCoord8", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "out_TexCoord9", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "out_Psize", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "out_Clip0", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "out_Clip1", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "out_Clip2", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "out_Clip3", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "out_Clip4", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "out_Clip5", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "out_Clip6", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "out_Clip7", 4),
     };
 
     const SceGxmVertexProgramOutputs vertex_outputs = gxp::get_vertex_outputs(program);
@@ -259,7 +259,7 @@ SpirvShaderParameters::FragmentOutputs create_fragment_output(spv::Builder &spv_
     // HACKY: We assume output size and format
 
     const spv::Id frag_color_type = spv_builder.makeVectorType(spv_builder.makeFloatType(32), 4);
-    const spv::Id frag_color_var = spv_builder.createVariable(spv::StorageClassOutput, frag_color_type, "spv_fragColor");
+    const spv::Id frag_color_var = spv_builder.createVariable(spv::StorageClassOutput, frag_color_type, "spv_color");
 
     spv_builder.addDecoration(frag_color_var, spv::DecorationLocation, 0);
 
