@@ -84,7 +84,7 @@ static AttributeLocations attribute_locations(const SceGxmProgram &vertex_progra
             const auto struct_idx = name.find('.');
             const bool is_struct_field = struct_idx != std::string::npos;
             if (is_struct_field)
-                name.replace(struct_idx, 1, ""); //Workaround for input.field on glsl version 120
+                name.replace(struct_idx, 1, "_"); // GLSL vertex inputs can't be structs, replace them here and in shader translator
             locations.emplace(parameter.resource_index, name);
         }
     }
