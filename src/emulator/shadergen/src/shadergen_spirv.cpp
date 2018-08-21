@@ -437,8 +437,9 @@ SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType p
 
     spv_builder.leaveFunction();
 
-    // VS Execution Modes
-    spv_builder.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);
+    // execution modes
+    if (program_type == emu::SceGxmProgramType::Fragment)
+        spv_builder.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);
 
     // Add entry point to Builder
     spv_builder.addEntryPoint(execution_model, spv_func_main, entry_point_name.c_str());
