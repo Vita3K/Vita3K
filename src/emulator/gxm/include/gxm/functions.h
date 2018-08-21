@@ -39,4 +39,5 @@ GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parame
  * \return SceGxmVertexProgramOutput (bitfield)
  */
 SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program);
+SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program);
 } // namespace gxp
