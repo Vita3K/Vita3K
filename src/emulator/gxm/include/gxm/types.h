@@ -78,6 +78,12 @@ struct GxmStencilState {
     uint32_t ref = 0; // TODO What's the default value?
 };
 
+enum class SceGxmLastReserveStatus {
+    Available = 0, // No reservations have happened since last allocation
+    Reserved = 1, // A reservation succeeded and space needs to be allocated
+    AvailableAgain = 2 // TODO: Not sure what's the point of this third state (why libgxm doesn't set this back to Available)
+};
+
 struct GxmContextState {
     // Constant after initialisation.
     emu::SceGxmContextParams params;
@@ -105,6 +111,8 @@ struct GxmContextState {
     UniformBuffers vertex_uniform_buffers;
     size_t fragment_ring_buffer_used = 0;
     size_t vertex_ring_buffer_used = 0;
+    SceGxmLastReserveStatus fragment_last_reserve_status = SceGxmLastReserveStatus::Available;
+    SceGxmLastReserveStatus vertex_last_reserve_status = SceGxmLastReserveStatus::Available;
 
     // Vertex streams.
     std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
