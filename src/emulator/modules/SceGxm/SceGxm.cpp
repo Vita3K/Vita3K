@@ -97,8 +97,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     assert(renderTarget != nullptr);
     assert(validRegion == nullptr);
     assert(vertexSyncObject == nullptr);
-    assert(colorSurface != nullptr);
-    assert(depthStencil != nullptr);
+    assert(fragmentSyncObject == nullptr);
 
     if (host.gxm.is_in_scene) {
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
@@ -107,19 +106,14 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    if (fragmentSyncObject != nullptr) {
-        std::unique_lock<std::mutex> lock(fragmentSyncObject->mutex);
-        while (fragmentSyncObject->value == 0) {
-            fragmentSyncObject->cond_var.wait(lock);
-        }
-        fragmentSyncObject->value = 0;
-    }
-
     // TODO This may not be right.
     context->state.fragment_ring_buffer_used = 0;
     context->state.vertex_ring_buffer_used = 0;
-    context->state.color_surface = *colorSurface;
-    context->state.depth_stencil_surface = *depthStencil;
+
+    if (colorSurface)
+        context->state.color_surface = *colorSurface;
+    if (depthStencil)
+        context->state.depth_stencil_surface = *depthStencil;
 
     host.gxm.is_in_scene = true;
 
