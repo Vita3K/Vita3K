@@ -376,6 +376,35 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
+    if (context->state.vertex_last_reserve_status == SceGxmLastReserveStatus::Reserved) {
+        const auto vertex_program = context->state.vertex_program.get(host.mem);
+        const auto program = vertex_program->program.get(host.mem);
+
+        const size_t size = program->default_uniform_buffer_count * 4;
+        const size_t next_used = context->state.vertex_ring_buffer_used + size;
+        assert(next_used <= context->state.params.vertexRingBufferMemSize);
+        if (next_used > context->state.params.vertexRingBufferMemSize) {
+            return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED); // TODO: Does not actually return this on immediate context
+        }
+
+        context->state.vertex_ring_buffer_used = next_used;
+        context->state.vertex_last_reserve_status = SceGxmLastReserveStatus::Available;
+    }
+    if (context->state.fragment_last_reserve_status == SceGxmLastReserveStatus::Reserved) {
+        const auto fragment_program = context->state.fragment_program.get(host.mem);
+        const auto program = fragment_program->program.get(host.mem);
+
+        const size_t size = program->default_uniform_buffer_count * 4;
+        const size_t next_used = context->state.fragment_ring_buffer_used + size;
+        assert(next_used <= context->state.params.fragmentRingBufferMemSize);
+        if (next_used > context->state.params.fragmentRingBufferMemSize) {
+            return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED); // TODO: Does not actually return this on immediate context
+        }
+
+        context->state.fragment_ring_buffer_used = next_used;
+        context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Available;
+    }
+
     if (!renderer::sync_state(context->renderer, context->state, host.mem, host.gui.texture_cache)) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
@@ -884,22 +913,12 @@ EXPORT(int, sceGxmRenderTargetGetDriverMemBlock) {
 }
 
 EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
-    assert(context != nullptr);
-    assert(uniformBuffer != nullptr);
-
-    const auto fragment_program = context->state.fragment_program.get(host.mem);
-    const auto program = fragment_program->program.get(host.mem);
-
-    const size_t size = program->default_uniform_buffer_count * 4;
-    const size_t next_used = context->state.fragment_ring_buffer_used + size;
-    assert(next_used <= context->state.params.fragmentRingBufferMemSize);
-    if (next_used > context->state.params.fragmentRingBufferMemSize) {
-        return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
-    }
+    if (!context || !uniformBuffer)
+        return SCE_GXM_ERROR_INVALID_POINTER;
 
     *uniformBuffer = context->state.params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
-    context->state.fragment_ring_buffer_used = next_used;
 
+    context->state.fragment_last_reserve_status == SceGxmLastReserveStatus::Reserved;
     context->state.fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
     return 0;
@@ -910,22 +929,12 @@ EXPORT(int, sceGxmRenderTargetGetHostMem) {
 }
 
 EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
-    assert(context != nullptr);
-    assert(uniformBuffer != nullptr);
-
-    const auto vertex_program = context->state.vertex_program.get(host.mem);
-    const auto program = vertex_program->program.get(host.mem);
-
-    const size_t size = program->default_uniform_buffer_count * 4;
-    const size_t next_used = context->state.vertex_ring_buffer_used + size;
-    assert(next_used <= context->state.params.vertexRingBufferMemSize);
-    if (next_used > context->state.params.vertexRingBufferMemSize) {
-        return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
-    }
+    if (!context || !uniformBuffer)
+        return SCE_GXM_ERROR_INVALID_POINTER;
 
     *uniformBuffer = context->state.params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
-    context->state.vertex_ring_buffer_used = next_used;
 
+    context->state.vertex_last_reserve_status == SceGxmLastReserveStatus::Reserved;
     context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
     return 0;
