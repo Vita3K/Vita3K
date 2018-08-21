@@ -894,7 +894,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     assert(context != nullptr);
     assert(uniformBuffer != nullptr);
 
-    const auto fragment_program = context->state.vertex_program.get(host.mem);
+    const auto fragment_program = context->state.fragment_program.get(host.mem);
     const auto program = fragment_program->program.get(host.mem);
 
     const size_t size = program->default_uniform_buffer_count * 4;
@@ -1121,7 +1121,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(sourceData != nullptr);
 
     size_t size = componentCount * sizeof(float);
-    size_t offset = componentOffset * sizeof(float);
+    size_t offset = (parameter->resource_index + componentOffset) * sizeof(float);
     memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, sourceData, size);
     return 0;
 }
