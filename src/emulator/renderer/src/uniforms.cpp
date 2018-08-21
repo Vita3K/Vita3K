@@ -9,6 +9,8 @@
 
 #include <algorithm>
 
+static constexpr bool LOG_UNIFORMS = false;
+
 namespace renderer {
 template <class T>
 static void uniform_4(GLint location, GLsizei count, const T *value);
@@ -50,7 +52,25 @@ void uniform_matrix_4<GLint>(GLint location, GLsizei count, GLboolean transpose,
 }
 
 template <class T>
-static void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value) {
+static void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value, const std::string &name) {
+    if (LOG_UNIFORMS) {
+        // warning: shit code
+        std::string values = "{ ";
+        for (auto i = 0; i < array_size; ++i) {
+            int i2;
+            for (i2 = 0; i2 < component_count; ++i2) {
+                values += fmt::format("{}, ", value[i + (i2 * component_count)]);
+            }
+            if (i2 > 0)
+                values.erase(values.size() - 2, 2);
+            values += '\n';
+        }
+        values.erase(values.size() - 1, 1);
+        values += " }";
+        const auto items = array_size * component_count;
+        LOG_ERROR("name: {}   loc: {}, component_count: {}, array_size: {}, values: {}{}", name, location, component_count, array_size, items > 1 ? "\n" : "", values);
+    }
+
     switch (component_count) {
     case 1:
         switch (array_size) {
@@ -110,11 +130,11 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
         switch (type) {
         case SCE_GXM_PARAMETER_TYPE_S32:
             src_s32 = reinterpret_cast<const GLint *>(base + parameter.resource_index * 4); // TODO What offset?
-            set_uniform<GLint>(location, parameter.component_count, parameter.array_size, src_s32);
+            set_uniform<GLint>(location, parameter.component_count, parameter.array_size, src_s32, name);
             break;
         case SCE_GXM_PARAMETER_TYPE_F32:
             src_f32 = reinterpret_cast<const GLfloat *>(base + parameter.resource_index * 4); // TODO What offset?
-            set_uniform<GLfloat>(location, parameter.component_count, parameter.array_size, src_f32);
+            set_uniform<GLfloat>(location, parameter.component_count, parameter.array_size, src_f32, name);
             break;
         default:
             LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
