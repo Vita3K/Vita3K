@@ -25,7 +25,7 @@ namespace spirv {
 // * Prototypes *
 // **************
 
-spv::Id get_type_default(spv::Builder &spv_builder);
+spv::Id get_type_fallback(spv::Builder &spv_builder);
 
 // ******************
 // * Helper structs *
@@ -52,23 +52,41 @@ struct SpirvVar {
     spv::Id var_id;
 };
 
+using SpirvVars = std::vector<SpirvVar>;
+
 struct SpirvShaderParameters {
     using FragmentOutputs = std::array<SpirvVar, 2>;
 
-    // TODO: add everything create_parameter makes here
-    FragmentOutputs fragment_outputs;
+    SpirvVars uniforms;
+    SpirvVars interface_vars; // in/out link interface between vertex/fragment shaders
+    FragmentOutputs fragment_outputs; // fragment shader color outputs
 };
+
+struct VertexProgramOutputProperties {
+    const char *name;
+    std::uint32_t component_count;
+
+    VertexProgramOutputProperties()
+        : name(nullptr)
+        , component_count(0) {}
+
+    VertexProgramOutputProperties(const char *name, std::uint32_t component_count)
+        : name(name)
+        , component_count(component_count) {}
+};
+using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
 
 // ******************************
 // * Functions (implementation) *
 // ******************************
 
-void create_array_if_needed(spv::Builder &spv_builder, spv::Id &param_id, const SceGxmProgramParameter &parameter, const uint32_t explicit_array_size = 0) {
+spv::Id create_array_if_needed(spv::Builder &spv_builder, const spv::Id param_id, const SceGxmProgramParameter &parameter, const uint32_t explicit_array_size = 0) {
     const auto array_size = explicit_array_size == 0 ? parameter.array_size : explicit_array_size;
     if (array_size > 1) {
         const auto array_size_id = spv_builder.makeUintConstant(array_size);
-        param_id = spv_builder.makeArrayType(param_id, array_size_id, 0);
+        return spv_builder.makeArrayType(param_id, array_size_id, 0);
     }
+    return param_id;
 }
 
 spv::Id get_type_basic(spv::Builder &spv_builder, const SceGxmProgramParameter &parameter) {
@@ -92,18 +110,18 @@ spv::Id get_type_basic(spv::Builder &spv_builder, const SceGxmProgramParameter &
     // clang-format on
     default: {
         LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(type));
-        return get_type_default(spv_builder);
+        return get_type_fallback(spv_builder);
     }
     }
 }
 
-spv::Id get_type_default(spv::Builder &spv_builder) {
+spv::Id get_type_fallback(spv::Builder &spv_builder) {
     return spv_builder.makeFloatType(32);
 }
 
 spv::Id get_type_scalar(spv::Builder &spv_builder, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(spv_builder, parameter);
-    create_array_if_needed(spv_builder, param_id, parameter);
+    param_id = create_array_if_needed(spv_builder, param_id, parameter);
     return param_id;
 }
 
@@ -127,7 +145,7 @@ spv::Id get_type_matrix(spv::Builder &spv_builder, const SceGxmProgramParameter 
 
     if (matrix_array_size_leftover == 0) {
         param_id = spv_builder.makeMatrixType(param_id, parameter.component_count, parameter.component_count);
-        create_array_if_needed(spv_builder, param_id, parameter, matrix_array_size);
+        param_id = create_array_if_needed(spv_builder, param_id, parameter, matrix_array_size);
     } else {
         // fallback to vector array
         param_id = get_type_vector(spv_builder, parameter);
@@ -153,22 +171,32 @@ spv::Id get_param_type(spv::Builder &spv_builder, const SceGxmProgramParameter &
         param_id = get_type_matrix(spv_builder, parameter);
         break;
     default:
-        param_id = get_type_default(spv_builder);
+        param_id = get_type_fallback(spv_builder);
     }
 
     return param_id;
 }
 
-spv::Id create_param_sampler(spv::Builder &spv_builder, const SceGxmProgramParameter &parameter) {
-    spv::Id sampled_type = spv_builder.makeFloatType(32);
-    spv::Id image_type = spv_builder.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
-    spv::Id sampled_image_type = spv_builder.makeSampledImageType(image_type);
-    std::string name = gxp::parameter_name_raw(parameter);
+spv::Id create_variable(spv::Builder &spv_builder, SpirvShaderParameters &parameters, spv::StorageClass storage_class, spv::Id type, const char *name) {
+    spv::Id var_id = spv_builder.createVariable(storage_class, type, name);
 
-    return spv_builder.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
+    switch (storage_class) {
+    case spv::StorageClassUniform:
+    case spv::StorageClassUniformConstant:
+        parameters.uniforms.push_back({ type, var_id });
+        break;
+    case spv::StorageClassInput:
+    case spv::StorageClassOutput:
+        parameters.interface_vars.push_back({ type, var_id });
+        break;
+    default:
+        break;
+    }
+
+    return var_id;
 }
 
-spv::Id create_struct(spv::Builder &spv_builder, StructDeclContext &param_struct, emu::SceGxmProgramType program_type) {
+spv::Id create_struct(spv::Builder &spv_builder, SpirvShaderParameters &parameters, StructDeclContext &param_struct, emu::SceGxmProgramType program_type) {
     assert(param_struct.field_ids.size() == param_struct.field_names.size());
 
     const spv::Id struct_type_id = spv_builder.makeStructType(param_struct.field_ids, param_struct.name.c_str());
@@ -183,28 +211,22 @@ spv::Id create_struct(spv::Builder &spv_builder, StructDeclContext &param_struct
         spv_builder.addMemberName(struct_type_id, field_index, field_name.c_str());
     }
 
-    const spv::Id struct_var_id = spv_builder.createVariable(param_struct.storage_class, struct_type_id, param_struct.name.c_str());
+    const spv::Id struct_var_id = create_variable(spv_builder, parameters, param_struct.storage_class, struct_type_id, param_struct.name.c_str());
 
     param_struct.clear();
     return struct_var_id;
 }
 
-void create_vertex_outputs(spv::Builder &spv_builder, const SceGxmProgram &program) {
-    struct VertexProgramOutputProperties {
-        const char *name;
-        std::uint32_t component_count;
+spv::Id create_param_sampler(spv::Builder &spv_builder, SpirvShaderParameters &parameters, const SceGxmProgramParameter &parameter) {
+    spv::Id sampled_type = spv_builder.makeFloatType(32);
+    spv::Id image_type = spv_builder.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
+    spv::Id sampled_image_type = spv_builder.makeSampledImageType(image_type);
+    std::string name = gxp::parameter_name_raw(parameter);
 
-        VertexProgramOutputProperties()
-            : name(nullptr)
-            , component_count(0) {}
+    return create_variable(spv_builder, parameters, spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
+}
 
-        VertexProgramOutputProperties(const char *name, std::uint32_t component_count)
-            : name(name)
-            , component_count(component_count) {}
-    };
-
-    using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
-
+void create_vertex_outputs(spv::Builder &spv_builder, SpirvShaderParameters &parameters, const SceGxmProgram &program) {
     auto set_property = [](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count) {
         return std::make_pair(vo, VertexProgramOutputProperties(name, component_count));
     };
@@ -241,31 +263,28 @@ void create_vertex_outputs(spv::Builder &spv_builder, const SceGxmProgram &progr
     for (int vo = SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION; vo < _SCE_GXM_VERTEX_PROGRAM_OUTPUT_LAST; vo <<= 1) {
         if (vertex_outputs & vo) {
             const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
-            VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
+            const VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
 
             const spv::Id out_type = spv_builder.makeVectorType(spv_builder.makeFloatType(32), properties.component_count);
-            spv_builder.createVariable(spv::StorageClassOutput, out_type, properties.name);
+            const spv::Id out_var = create_variable(spv_builder, parameters, spv::StorageClassOutput, out_type, properties.name);
         }
     }
 }
 
-void create_fragment_inputs(spv::Builder &spv_builder, const SceGxmProgram &program) {
+void create_fragment_inputs(spv::Builder &spv_builder, SpirvShaderParameters &parameters, const SceGxmProgram &program) {
     // TODO:
 }
 
-SpirvShaderParameters::FragmentOutputs create_fragment_output(spv::Builder &spv_builder, const SceGxmProgram &program) {
-    SpirvShaderParameters::FragmentOutputs outputs;
-
+void create_fragment_output(spv::Builder &spv_builder, SpirvShaderParameters &parameters, const SceGxmProgram &program) {
     // HACKY: We assume output size and format
 
     const spv::Id frag_color_type = spv_builder.makeVectorType(spv_builder.makeFloatType(32), 4);
-    const spv::Id frag_color_var = spv_builder.createVariable(spv::StorageClassOutput, frag_color_type, "spv_color");
+    const spv::Id frag_color_var = create_variable(spv_builder, parameters, spv::StorageClassOutput, frag_color_type, "out_color");
 
     spv_builder.addDecoration(frag_color_var, spv::DecorationLocation, 0);
 
-    outputs[0].type_id = frag_color_type;
-    outputs[0].var_id = frag_color_var;
-    return outputs;
+    parameters.fragment_outputs[0].type_id = frag_color_type;
+    parameters.fragment_outputs[0].var_id = frag_color_var;
 }
 
 SpirvShaderParameters create_parameters(spv::Builder &spv_builder, const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
@@ -290,7 +309,7 @@ SpirvShaderParameters create_parameters(spv::Builder &spv_builder, const SceGxmP
             const bool struct_decl_ended = !is_struct_field && !param_struct.empty() || (is_struct_field && !param_struct.empty() && param_struct.name != struct_name);
 
             if (struct_decl_ended)
-                create_struct(spv_builder, param_struct, program_type);
+                create_struct(spv_builder, out_parameters, param_struct, program_type);
 
             spv::Id param = get_param_type(spv_builder, parameter);
 
@@ -335,12 +354,12 @@ SpirvShaderParameters create_parameters(spv::Builder &spv_builder, const SceGxmP
                         std::replace(var_name.begin(), var_name.end(), '.', '_');
                 }
 
-                spv_builder.createVariable(param_storage_class, param, var_name.c_str());
+                create_variable(spv_builder, out_parameters, param_storage_class, param, var_name.c_str());
             }
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_SAMPLER: {
-            create_param_sampler(spv_builder, parameter);
+            create_param_sampler(spv_builder, out_parameters, parameter);
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE: {
@@ -362,16 +381,13 @@ SpirvShaderParameters create_parameters(spv::Builder &spv_builder, const SceGxmP
 
     // Declarations ended with a struct, so it didn't get handled and we need to do it here
     if (!param_struct.empty())
-        create_struct(spv_builder, param_struct, program_type);
-
-    // Emit vertex -> fragment declarations
-    // TODO: Could be made an inteface block
+        create_struct(spv_builder, out_parameters, param_struct, program_type);
 
     if (program_type == emu::SceGxmProgramType::Vertex)
-        create_vertex_outputs(spv_builder, program);
+        create_vertex_outputs(spv_builder, out_parameters, program);
     else if (program_type == emu::SceGxmProgramType::Fragment) {
-        create_fragment_inputs(spv_builder, program);
-        out_parameters.fragment_outputs = create_fragment_output(spv_builder, program);
+        create_fragment_inputs(spv_builder, out_parameters, program);
+        create_fragment_output(spv_builder, out_parameters, program);
     }
 
     return out_parameters;
@@ -391,8 +407,7 @@ void generate_shader_body(spv::Builder &spv_builder, SpirvShaderParameters param
             { float_0_const, float_0_const, float_1_const, float_1_const });
 
         spv_builder.createStore(vec4_blue_const, frag_color_var);
-    }
-    else if (program_type == emu::SceGxmProgramType::Vertex) {
+    } else if (program_type == emu::SceGxmProgramType::Vertex) {
         // TODO: vertex shader body
     }
 }
