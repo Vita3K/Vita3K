@@ -457,7 +457,10 @@ SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType p
         spv_builder.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);
 
     // Add entry point to Builder
-    spv_builder.addEntryPoint(execution_model, spv_func_main, entry_point_name.c_str());
+    auto entry_point = spv_builder.addEntryPoint(execution_model, spv_func_main, entry_point_name.c_str());
+
+    for (auto id : parameters.interface_vars)
+        entry_point->addIdOperand(id.var_id);
 
     auto spirv_log = spv_logger.getAllMessages();
     if (!spirv_log.empty())
