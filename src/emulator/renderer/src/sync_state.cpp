@@ -12,6 +12,8 @@
 #include <cmath>
 
 namespace renderer {
+    static constexpr bool LOG_ACTIVE_SHADERS = false;
+
 static GLenum translate_depth_func(SceGxmDepthFunc depth_func) {
     R_PROFILE(__func__);
 
@@ -105,6 +107,19 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         return false;
     }
     glUseProgram(program->get());
+
+    if (LOG_ACTIVE_SHADERS) {
+        const SceGxmProgram &fragment_gxp_program = *state.fragment_program.get(mem)->program.get(mem);
+        const SceGxmProgram &vertex_gxp_program = *state.vertex_program.get(mem)->program.get(mem);
+
+        const Sha256Hash hash_bytes_f = sha256(&fragment_gxp_program, fragment_gxp_program.size);
+        const Sha256HashText hash_text_f = hex(hash_bytes_f);
+
+        const Sha256Hash hash_bytes_v = sha256(&vertex_gxp_program, vertex_gxp_program.size);
+        const Sha256HashText hash_text_v = hex(hash_bytes_v);
+
+        LOG_DEBUG("\nVertex  : {}\nFragment: {}", (const char *)&hash_text_v, (const char *)&hash_text_f);
+    }
 
     // Viewport.
     const GLsizei display_w = state.color_surface.pbeEmitWords[0];
