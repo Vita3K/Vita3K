@@ -46,3 +46,6 @@
 [submodule "src/external/SPIRV-Cross"]
 	path = src/external/SPIRV-Cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "src/external/boost"]
+	path = src/external/boost
+	url = https://github.com/Vita3K/ext-boost.git
