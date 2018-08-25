@@ -3,3 +3,4 @@
 /build-windows/
 /api.trace
 .vs/
+/src/external/boost-build

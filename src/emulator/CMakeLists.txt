@@ -20,7 +20,7 @@ else()
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    set(LINUX TRUE)
+	set(LINUX TRUE)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -50,6 +50,28 @@ add_subdirectory(util)
 add_subdirectory(threads)
 add_subdirectory(gui)
 
+macro(configure_boost)
+	message("configuring boost")
+
+	if(NOT CI)
+		set(Boost_USE_STATIC_LIBS ON)
+	endif()
+	set(Boost_USE_MULTITHREADED ON)
+	set(BOOST_COMPONENTS filesystem program_options system)
+
+	find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
+
+	if(Boost_FOUND)
+		message("Using Boost_VERSION: ${Boost_VERSION}")
+		message("Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+		message("Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
+	else()
+		message("Boost library is not found")
+	endif()
+endmacro(configure_boost)
+
+configure_boost()
+
 add_executable(
 emulator
 MACOSX_BUNDLE
@@ -57,13 +79,15 @@ main.cpp
 )
 
 if(LINUX)
-    target_link_libraries(emulator PRIVATE cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util stdc++fs)
+	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util stdc++fs)
 else()
-    target_link_libraries(emulator PRIVATE cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util)
+	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util)
 endif()
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+include_directories(${Boost_INCLUDE_DIRS})
 
 if(APPLE)
 	add_custom_command(
@@ -102,6 +126,7 @@ elseif(LINUX)
 elseif(WIN32)
 	target_sources(emulator PRIVATE resource.h Vita3K.ico Vita3K.rc)
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT emulator)
+	set_target_properties(emulator PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build-windows/bin")
 	add_custom_command(
 		TARGET emulator
 		POST_BUILD
