@@ -52,6 +52,8 @@ enum ExitCode {
 
 /// Describes the state of the application to be run
 enum class AppRunType {
+    /// Run type is unknown
+    Unknown,
     /// Extracted, files are as they are on console
     Extracted,
     /// Zipped in HENKaku-style .vpk file
