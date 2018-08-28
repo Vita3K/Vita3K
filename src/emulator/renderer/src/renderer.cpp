@@ -195,8 +195,12 @@ void begin_scene(const RenderTarget &rt) {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void end_scene(Context &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels) {
+void end_scene(Context &context, SceGxmSyncObject *sync_object, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels) {
     R_PROFILE(__func__);
+
+    if (sync_object != nullptr) {
+        sync_object->value = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, GL_NONE_BIT);
+    }
 
     glPixelStorei(GL_PACK_ROW_LENGTH, stride_in_pixels);
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
@@ -212,4 +216,10 @@ void end_scene(Context &context, size_t width, size_t height, size_t stride_in_p
 void finish(Context &context) {
     glFinish();
 }
+
+void wait_sync_object(SceGxmSyncObject *sync_object) {
+    if(sync_object->value)
+        glClientWaitSync(reinterpret_cast<GLsync>(sync_object->value), GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
+}
+
 } // namespace renderer
