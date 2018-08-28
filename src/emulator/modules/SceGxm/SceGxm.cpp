@@ -1048,8 +1048,11 @@ EXPORT(int, sceGxmSetFragmentUniformBuffer) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetFrontDepthBias) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmSetFrontDepthBias, SceGxmContext *context, int factor, int units) {
+    STUBBED("CHECKS");
+    context->state.front_depth_bias_factor = factor;
+    context->state.front_depth_bias_units = units;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {

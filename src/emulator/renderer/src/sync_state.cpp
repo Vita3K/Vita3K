@@ -217,6 +217,9 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
     glLineWidth(state.front_point_line_width);
     glPointSize(state.front_point_line_width);
 
+    // Depth Bias
+    glPolygonOffset(state.front_depth_bias_factor, state.front_depth_bias_units);
+
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
     const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();

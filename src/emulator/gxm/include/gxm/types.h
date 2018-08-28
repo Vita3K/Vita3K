@@ -136,6 +136,10 @@ struct GxmContextState {
     // Line Width
     unsigned int front_point_line_width = 1;
 
+    // Depth Bias
+    int front_depth_bias_factor = 0;
+    int front_depth_bias_units = 0;
+
     // Textures.
     std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> fragment_textures;
 
