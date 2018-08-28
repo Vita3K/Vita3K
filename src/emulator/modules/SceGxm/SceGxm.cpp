@@ -1248,9 +1248,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     MemState &mem = host.mem;
     assert(shaderPatcher != nullptr);
     assert(programId != nullptr);
-    assert(outputFormat == SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
     assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
-    assert(vertexProgram);
     assert(fragmentProgram != nullptr);
 
     static const emu::SceGxmBlendInfo default_blend_info = {
