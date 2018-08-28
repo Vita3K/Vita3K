@@ -50,6 +50,14 @@ static int SDLCALL thread_function(void *data) {
     const bool succeeded = run_thread(*thread, false);
     assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
+
+    for (auto &waiting_thread : thread->waiting_threads) {
+        waiting_thread->to_do = ThreadToDo::run;
+        waiting_thread->something_to_do.notify_all();
+    }
+
+    thread->waiting_threads.clear();
+
     return r0;
 }
 

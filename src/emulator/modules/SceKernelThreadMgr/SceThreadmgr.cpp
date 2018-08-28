@@ -20,6 +20,7 @@
 #include <host/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread/sync_primitives.h>
+#include <util/lock_and_find.h>
 
 #include <SDL_timer.h>
 #include <psp2/kernel/error.h>
@@ -165,16 +166,40 @@ EXPORT(int, sceKernelDeleteSimpleEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelDeleteThread) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDeleteThread, SceUID thid) {
+    const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+    host.kernel.running_threads.erase(thid);
+    host.kernel.waiting_threads.erase(thid);
+    host.kernel.threads.erase(thid);
+    return 0;
 }
 
 EXPORT(int, sceKernelDeleteTimer) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelExitDeleteThread) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelExitDeleteThread, int status) {
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(thread->mutex);
+
+    thread->to_do = ThreadToDo::exit;
+    stop(*thread->cpu);
+    thread->something_to_do.notify_all();
+
+    for (auto t : thread->waiting_threads) {
+        const std::lock_guard<std::mutex> lock(t->mutex);
+        assert(t->to_do == ThreadToDo::wait);
+        t->to_do = ThreadToDo::run;
+        t->something_to_do.notify_one();
+    }
+
+    thread->waiting_threads.clear();
+
+    host.kernel.running_threads.erase(thread_id);
+    host.kernel.waiting_threads.erase(thread_id);
+    host.kernel.threads.erase(thread_id);
+
+    return status;
 }
 
 EXPORT(int, sceKernelGetCallbackCount) {
