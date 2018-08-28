@@ -35,7 +35,7 @@ EXPORT(int, sceKernelExitThread, int status) {
     }
     thread->waiting_threads.clear();
 
-    return 0;
+    return status;
 }
 
 BRIDGE_IMPL(sceKernelExitThread)
