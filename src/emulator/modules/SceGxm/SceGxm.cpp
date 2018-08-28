@@ -320,12 +320,16 @@ EXPORT(int, sceGxmDepthStencilSurfaceSetBackgroundStencil) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmDepthStencilSurfaceSetForceLoadMode) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmDepthStencilSurfaceSetForceLoadMode, emu::SceGxmDepthStencilSurface *surface,
+    SceGxmDepthStencilForceLoadMode forceLoad) {
+    surface->zlsControl = (forceLoad & 2) | (surface->zlsControl & 0xFFFFFFFD);
+    return;
 }
 
-EXPORT(int, sceGxmDepthStencilSurfaceSetForceStoreMode) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmDepthStencilSurfaceSetForceStoreMode, emu::SceGxmDepthStencilSurface *surface,
+    SceGxmDepthStencilForceStoreMode forceStore) {
+    surface->zlsControl = (forceStore & 4) | (surface->zlsControl & 0xFFFFFFFB);
+    return;
 }
 
 EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
