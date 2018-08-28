@@ -918,7 +918,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
 
     *uniformBuffer = context->state.params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
 
-    context->state.fragment_last_reserve_status == SceGxmLastReserveStatus::Reserved;
+    context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Reserved;
     context->state.fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
     return 0;
@@ -934,7 +934,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
 
     *uniformBuffer = context->state.params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
 
-    context->state.vertex_last_reserve_status == SceGxmLastReserveStatus::Reserved;
+    context->state.vertex_last_reserve_status = SceGxmLastReserveStatus::Reserved;
     context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
     return 0;
