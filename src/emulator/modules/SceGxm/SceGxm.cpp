@@ -1678,8 +1678,58 @@ EXPORT(int, sceGxmTextureInitSwizzledArbitrary) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureInitTiled) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTextureInitTiled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+    if (width > 4096 || height > 4096 || mipCount > 13) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    } else if (!data) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    } else if (!texture) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    // Add supported formats here
+
+    switch (texFormat) {
+    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
+    case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
+    case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
+    case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+    case SCE_GXM_TEXTURE_FORMAT_U8_R111:
+    case SCE_GXM_TEXTURE_FORMAT_U8_111R:
+    case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
+        break;
+
+    default:
+        if (gxm::is_paletted_format(texFormat)) {
+            switch (texFormat) {
+            case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
+            case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:
+                break;
+            default:
+                LOG_WARN("Initialized texture with untested paletted texture format: {}", log_hex(texFormat));
+            }
+        } else
+            LOG_ERROR("Initialized texture with unsupported texture format: {}", log_hex(texFormat));
+    }
+
+    texture->mip_count = mipCount - 1;
+    texture->format0 = (texFormat & 0x80000000) >> 31;
+    texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+    texture->lod_bias = 31;
+    texture->height = height - 1;
+    texture->width = width - 1;
+    texture->base_format = (texFormat & 0x1F000000) >> 24;
+    texture->type = SCE_GXM_TEXTURE_TILED >> 29;
+    texture->data_addr = data.address() >> 2;
+    texture->swizzle_format = (texFormat & 0x7000) >> 12;
+    texture->normalize_mode = 1;
+    texture->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+    texture->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) {
