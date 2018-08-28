@@ -1741,8 +1741,11 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetFormat) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *texture, SceGxmTextureFormat texFormat) {
+    STUBBED("FAST");
+    texture->base_format = (texFormat & 0x1F000000) >> 24;
+    texture->swizzle_format = (texFormat & 0x7000) >> 12;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceGxmTextureSetGammaMode) {
