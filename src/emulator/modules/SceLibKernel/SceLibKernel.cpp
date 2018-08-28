@@ -973,8 +973,20 @@ EXPORT(int, sceKernelGetThreadCpuAffinityMask) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceKernelGetThreadCpuAffinityMask_) {
+    STUBBED("STUB");
+    return 0x01 << 16;
+}
+
 EXPORT(int, sceKernelGetThreadCurrentPriority) {
     return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelGetThreadCurrentPriority_) {
+    STUBBED("STUB");
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(thread->mutex);
+    return thread.get()->priority;
 }
 
 EXPORT(int, sceKernelGetThreadEventInfo) {
@@ -1647,7 +1659,9 @@ BRIDGE_IMPL(sceKernelGetSystemTime)
 BRIDGE_IMPL(sceKernelGetTLSAddr)
 BRIDGE_IMPL(sceKernelGetThreadContextForVM)
 BRIDGE_IMPL(sceKernelGetThreadCpuAffinityMask)
+BRIDGE_IMPL(sceKernelGetThreadCpuAffinityMask_)
 BRIDGE_IMPL(sceKernelGetThreadCurrentPriority)
+BRIDGE_IMPL(sceKernelGetThreadCurrentPriority_)
 BRIDGE_IMPL(sceKernelGetThreadEventInfo)
 BRIDGE_IMPL(sceKernelGetThreadExitStatus)
 BRIDGE_IMPL(sceKernelGetThreadId)
