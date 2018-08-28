@@ -94,8 +94,9 @@ EXPORT(int, sceClibMemcmpConstTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMemcpy) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibMemcpy, void *destination, const void *source, SceSize num) {
+    memcpy(destination, source, num);
+    return 0;
 }
 
 EXPORT(int, sceClibMemcpyChk) {
