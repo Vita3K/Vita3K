@@ -129,6 +129,10 @@ struct GxmContextState {
     GxmStencilState front_stencil;
     GxmStencilState back_stencil;
 
+    // Polygon Mode
+    SceGxmPolygonMode front_polygon_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
+    SceGxmPolygonMode back_polygon_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
+
     // Textures.
     std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> fragment_textures;
 

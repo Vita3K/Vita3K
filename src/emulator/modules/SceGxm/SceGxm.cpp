@@ -969,8 +969,9 @@ EXPORT(int, sceGxmSetBackPointLineWidth) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetBackPolygonMode) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmSetBackPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
+    context->state.back_polygon_mode = mode;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
@@ -1067,8 +1068,9 @@ EXPORT(int, sceGxmSetFrontPointLineWidth) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetFrontPolygonMode) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
+    context->state.front_polygon_mode = mode;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {

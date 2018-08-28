@@ -195,6 +195,23 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         glDisable(GL_STENCIL_TEST);
     }
 
+    // Polygon Mode.
+    switch (state.front_polygon_mode) {
+    case SCE_GXM_POLYGON_MODE_POINT_10UV:
+    case SCE_GXM_POLYGON_MODE_POINT:
+    case SCE_GXM_POLYGON_MODE_POINT_01UV:
+    case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
+        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+        break;
+    case SCE_GXM_POLYGON_MODE_LINE:
+    case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        break;
+    case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        break;
+    }
+
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
     const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
