@@ -212,6 +212,11 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         break;
     }
 
+    // Point Line Width
+
+    glLineWidth(state.front_point_line_width);
+    glPointSize(state.front_point_line_width);
+
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
     const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
