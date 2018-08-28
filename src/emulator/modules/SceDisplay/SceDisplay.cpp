@@ -59,7 +59,7 @@ EXPORT(int, sceDisplayGetRefreshRate, float *pFps) {
 }
 
 EXPORT(int, sceDisplayGetVcount) {
-    return UNIMPLEMENTED();
+    return host.frame_count;
 }
 
 EXPORT(int, sceDisplayGetVcountInternal) {
