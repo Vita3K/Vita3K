@@ -17,6 +17,9 @@
 
 #include "SceNpManager.h"
 
+#include <kernel/thread/thread_functions.h>
+#include <util/lock_and_find.h>
+
 EXPORT(int, sceNpAuthAbortOAuthRequest) {
     return UNIMPLEMENTED();
 }
@@ -34,7 +37,18 @@ EXPORT(int, sceNpAuthGetAuthorizationCode) {
 }
 
 EXPORT(int, sceNpCheckCallback) {
-    return UNIMPLEMENTED();
+    if (host.np.state == 0)
+        return 0;
+
+    host.np.state = 0;
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    for (auto &callback : host.np.cbs) {
+        Ptr<void> argp = Ptr<void>(callback.second.data);
+        run_on_current(*thread, Ptr<void>(callback.second.pc), host.np.state, argp);
+    }
+
+    return STUBBED("Stub");
 }
 
 EXPORT(int, sceNpGetServiceState) {
@@ -65,8 +79,14 @@ EXPORT(int, sceNpManagerGetNpId) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpRegisterServiceStateCallback) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> data) {
+    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    uint32_t cid = host.kernel.get_next_uid();
+    emu::SceNpServiceStateCallback sceNpServiceStateCallback;
+    sceNpServiceStateCallback.pc = callback.address();
+    sceNpServiceStateCallback.data = data.address();
+    host.np.cbs.emplace(cid, sceNpServiceStateCallback);
+    return 0;
 }
 
 EXPORT(int, sceNpTerm) {

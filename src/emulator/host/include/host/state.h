@@ -26,6 +26,7 @@
 #include <kernel/state.h>
 #include <net/state.h>
 #include <nids/types.h>
+#include <np/state.h>
 #include <renderer/state.h>
 
 #include <psp2/display.h>
@@ -69,6 +70,7 @@ struct HostState {
     renderer::State renderer;
     IOState io;
     NetState net;
+    NpState np;
     DisplayState display;
     GuiState gui;
     SfoFile sfo_handle;
