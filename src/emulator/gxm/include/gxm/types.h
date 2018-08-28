@@ -84,6 +84,10 @@ enum class SceGxmLastReserveStatus {
     AvailableAgain = 2 // TODO: Not sure what's the point of this third state (why libgxm doesn't set this back to Available)
 };
 
+struct SceGxmSyncObject {
+    void *value;
+};
+
 struct GxmContextState {
     // Constant after initialisation.
     emu::SceGxmContextParams params;
@@ -127,6 +131,9 @@ struct GxmContextState {
 
     // Textures.
     std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> fragment_textures;
+
+    // Fragment Sync Object
+    Ptr<SceGxmSyncObject> fragment_sync_object;
 };
 
 struct SceGxmFragmentProgram {
@@ -330,12 +337,6 @@ struct SceGxmShaderPatcherParams {
     uint32_t fragmentUsseOffset;
 };
 } // namespace emu
-
-struct SceGxmSyncObject {
-    std::mutex mutex;
-    std::condition_variable cond_var;
-    int value;
-};
 
 namespace emu {
 struct SceGxmVertexAttribute {

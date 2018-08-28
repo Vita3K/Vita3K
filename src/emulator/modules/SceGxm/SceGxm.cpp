@@ -91,19 +91,23 @@ EXPORT(int, sceGxmBeginCommandList) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, SceGxmSyncObject *fragmentSyncObject, const emu::SceGxmColorSurface *colorSurface, const emu::SceGxmDepthStencilSurface *depthStencil) {
+EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, Ptr<SceGxmSyncObject> fragmentSyncObject, const emu::SceGxmColorSurface *colorSurface, const emu::SceGxmDepthStencilSurface *depthStencil) {
     assert(context != nullptr);
     assert(flags == 0);
     assert(renderTarget != nullptr);
     assert(validRegion == nullptr);
     assert(vertexSyncObject == nullptr);
-    assert(fragmentSyncObject == nullptr);
 
     if (host.gxm.is_in_scene) {
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
     }
     if (depthStencil == nullptr && colorSurface == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    context->state.fragment_sync_object = fragmentSyncObject;
+    if (fragmentSyncObject.get(host.mem) != nullptr) {
+        renderer::wait_sync_object(fragmentSyncObject.get(host.mem));
     }
 
     // TODO This may not be right.
@@ -442,7 +446,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     const Address data = context->state.color_surface.pbeEmitWords[3];
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
 
-    renderer::end_scene(context->renderer, width, height, stride_in_pixels, pixels);
+    renderer::end_scene(context->renderer, context->state.fragment_sync_object.get(host.mem), width, height, stride_in_pixels, pixels);
     if (fragmentNotification) {
         volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
         *fragment_address = fragmentNotification->value;
@@ -536,10 +540,7 @@ static int SDLCALL thread_function(void *data) {
         }
         const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
         run_callback(*display_thread, display_callback->pc, display_callback->data);
-        const Ptr<SceGxmSyncObject> newBuffer(display_callback->new_buffer);
-        std::lock_guard<std::mutex> lock(newBuffer.get(*params.mem)->mutex);
-        newBuffer.get(*params.mem)->value = 1;
-        newBuffer.get(*params.mem)->cond_var.notify_all();
+
         free(*params.mem, display_callback->data);
     }
     return 0;
@@ -1458,8 +1459,6 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
 
-    SceGxmSyncObject *_syncObject = syncObject->get(host.mem);
-    _syncObject->value = 1;
     return 0;
 }
 
