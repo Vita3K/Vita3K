@@ -1068,8 +1068,9 @@ EXPORT(int, sceGxmSetFrontLineFillLastPixelEnable) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetFrontPointLineWidth) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmSetFrontPointLineWidth, SceGxmContext *context, unsigned int width) {
+    context->state.front_point_line_width = width;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
