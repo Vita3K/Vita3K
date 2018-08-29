@@ -27,6 +27,30 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+macro(configure_boost)
+	message("configuring boost")
+
+	if(NOT CI)
+		set(Boost_USE_STATIC_LIBS ON)
+	endif()
+	set(Boost_USE_MULTITHREADED ON)
+	set(BOOST_COMPONENTS filesystem program_options system)
+
+	find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
+
+	include_directories(${Boost_INCLUDE_DIRS})
+
+	if(Boost_FOUND)
+		message("Using Boost_VERSION: ${Boost_VERSION}")
+		message("Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+		message("Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
+	else()
+		message("Boost library is not found")
+	endif()
+endmacro(configure_boost)
+
+configure_boost()
+
 add_subdirectory(audio)
 add_subdirectory(cpu)
 add_subdirectory(crypto)
@@ -51,28 +75,6 @@ add_subdirectory(util)
 add_subdirectory(threads)
 add_subdirectory(gui)
 
-macro(configure_boost)
-	message("configuring boost")
-
-	if(NOT CI)
-		set(Boost_USE_STATIC_LIBS ON)
-	endif()
-	set(Boost_USE_MULTITHREADED ON)
-	set(BOOST_COMPONENTS filesystem program_options system)
-
-	find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
-
-	if(Boost_FOUND)
-		message("Using Boost_VERSION: ${Boost_VERSION}")
-		message("Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
-		message("Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
-	else()
-		message("Boost library is not found")
-	endif()
-endmacro(configure_boost)
-
-configure_boost()
-
 add_executable(
 emulator
 MACOSX_BUNDLE
@@ -87,8 +89,6 @@ endif()
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
 	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-
-include_directories(${Boost_INCLUDE_DIRS})
 
 if(APPLE)
 	add_custom_command(
