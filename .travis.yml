@@ -30,13 +30,12 @@ matrix:
         apt:
           update: true
           sources:
-          - sourceline: 'ppa:mhier/libboost-latest'
           - ubuntu-toolchain-r-test
           packages:
           - gcc-7
           - g++-7
           - binutils-2.26
-          - boost1.67        # Launchpad page: https://launchpad.net/~mhier/+archive/ubuntu/libboost-latest
+          - libboost-all-dev
       before_script:
       - mkdir tmp && cd tmp
       - curl -Ls https://www.archlinux.org/packages/extra/x86_64/sdl2/download | tar xJ

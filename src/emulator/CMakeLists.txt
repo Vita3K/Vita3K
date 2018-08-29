@@ -30,9 +30,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 macro(configure_boost)
 	message("configuring boost")
 
-	if(NOT CI)
-		set(Boost_USE_STATIC_LIBS ON)
-	endif()
+	set(Boost_USE_STATIC_LIBS ON)
 	set(Boost_USE_MULTITHREADED ON)
 	set(BOOST_COMPONENTS filesystem program_options system)
 
