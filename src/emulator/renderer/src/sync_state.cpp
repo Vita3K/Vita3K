@@ -12,7 +12,7 @@
 #include <cmath>
 
 namespace renderer {
-    static constexpr bool LOG_ACTIVE_SHADERS = false;
+static constexpr bool LOG_ACTIVE_SHADERS = false;
 
 static GLenum translate_depth_func(SceGxmDepthFunc depth_func) {
     R_PROFILE(__func__);

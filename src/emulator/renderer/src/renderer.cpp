@@ -218,7 +218,7 @@ void finish(Context &context) {
 }
 
 void wait_sync_object(SceGxmSyncObject *sync_object) {
-    if(sync_object->value)
+    if (sync_object->value)
         glClientWaitSync(reinterpret_cast<GLsync>(sync_object->value), GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
 }
 
