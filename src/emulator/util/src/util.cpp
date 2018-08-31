@@ -21,6 +21,8 @@
 #include <memory>
 #include <string>
 
+namespace logging {
+
 std::shared_ptr<spdlog::logger> g_logger;
 
 static const
@@ -32,7 +34,7 @@ static const
     = "/vita3k.log";
 #endif
 
-void init_logging() {
+void init() {
 #ifdef _MSC_VER
     static constexpr bool LOG_MSVC_OUTPUT = true;
 #endif
@@ -90,10 +92,14 @@ void init_logging() {
 
     spdlog::set_pattern("[%H:%M:%S.%e] %v");
 
-    spdlog::set_level(spdlog::level::trace);
-
     g_logger->flush_on(spdlog::level::debug);
 }
+
+void set_level(spdlog::level::level_enum log_level) {
+    spdlog::set_level(log_level);
+}
+
+} // namespace logging
 
 std::wstring utf_to_wide(const std::string &str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;

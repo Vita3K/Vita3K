@@ -300,7 +300,8 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         if (fn) {
             fn(host, cpu, thread_id);
         } else if (host.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
-            LOG_ERROR("Import function for NID {} not found (thread ID: {})", log_hex(nid), thread_id);
+            const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+            LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
 
             if (!LOG_UNK_NIDS_ALWAYS)
                 host.missing_nids.insert(nid);

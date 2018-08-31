@@ -126,20 +126,6 @@ set_target_properties(spirv-cross-hlsl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(spirv-cross-msl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(spirv-cross-reflect PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-macro(pre_configure_boost)
-	message("Setting up ext-boost environment variables")
-	set(BOOST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/boost")
-	set(BOOST_INCLUDEDIR "${BOOST_ROOT}/boost")
-	set(BOOST_LIBRARYDIR "${CMAKE_CURRENT_SOURCE_DIR}/boost_build/lib")
-
-	message("BOOST_LIBRARYDIR is: " "${BOOST_LIBRARYDIR}")
-endmacro(pre_configure_boost)
-
-if(NOT CI)
-	pre_configure_boost()
-endif()
-
 add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
-set(ONLY_MSPACES 1)
 target_include_directories(dlmalloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc")
 target_compile_definitions(dlmalloc PUBLIC ONLY_MSPACES=1)
