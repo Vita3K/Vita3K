@@ -49,3 +49,6 @@
 [submodule "src/external/boost"]
 	path = src/external/boost
 	url = https://github.com/Vita3K/ext-boost.git
+[submodule "src/external/dlmalloc"]
+	path = src/external/dlmalloc
+	url = https://github.com/Vita3K/dlmalloc

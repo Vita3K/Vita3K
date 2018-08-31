@@ -18,6 +18,7 @@
 #include "SceLibKernel.h"
 
 #include <cpu/functions.h>
+#include <dlmalloc.h>
 #include <host/functions.h>
 #include <io/functions.h>
 #include <io/types.h>
@@ -129,8 +130,9 @@ EXPORT(int, sceClibMspaceCalloc) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMspaceCreate) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMspaceCreate, Ptr<void> base, uint32_t capacity) {
+    mspace space = create_mspace_with_base(base.get(host.mem), capacity, 0);
+    return Ptr<void>(space, host.mem);
 }
 
 EXPORT(int, sceClibMspaceDestroy) {
@@ -145,8 +147,9 @@ EXPORT(int, sceClibMspaceIsHeapEmpty) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMspaceMalloc) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMspaceMalloc, Ptr<void> space, uint32_t size) {
+    void *address = mspace_malloc(space.get(host.mem), size);
+    return Ptr<void>(address, host.mem);
 }
 
 EXPORT(int, sceClibMspaceMallocStats) {
@@ -220,8 +223,12 @@ EXPORT(int, sceClibStrlcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrncasecmp) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibStrncasecmp, const char *string1, const char *string2, int count) {
+#ifdef WIN32
+    return strnicmp(string1, string2, count);
+#else
+    return strncasecmp(string1, string2, count);
+#endif
 }
 
 EXPORT(int, sceClibStrncat) {
@@ -248,8 +255,9 @@ EXPORT(int, sceClibStrnlen) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrrchr) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, sceClibStrrchr, const char *str, int character) {
+    const char *res = strrchr(str, character);
+    return Ptr<char>(res, host.mem);
 }
 
 EXPORT(int, sceClibStrstr) {
