@@ -11,9 +11,9 @@ enable_testing()
 
 macro(pre_configure_boost)
 	message("Setting up ext-boost environment variables")
-	set(BOOST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/boost")
+	set(BOOST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/src/external/boost")
 	set(BOOST_INCLUDEDIR "${BOOST_ROOT}/boost")
-	set(BOOST_LIBRARYDIR "${CMAKE_CURRENT_SOURCE_DIR}/boost-build/lib")
+	set(BOOST_LIBRARYDIR "${CMAKE_CURRENT_SOURCE_DIR}/src/external/boost-build/lib")
 
 	message("Using Boost_VERSION: ${BOOST_ROOT}")
 	message("Using Boost_INCLUDE_DIRS: ${BOOST_INCLUDEDIR}")
