@@ -174,6 +174,8 @@ EXPORT(int, sceKernelDeleteSimpleEvent) {
 
 EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+
+    const std::lock_guard<std::mutex> lock2(host.kernel.mutex);
     host.kernel.running_threads.erase(thid);
     host.kernel.waiting_threads.erase(thid);
     host.kernel.threads.erase(thid);
@@ -201,6 +203,7 @@ EXPORT(int, sceKernelExitDeleteThread, int status) {
 
     thread->waiting_threads.clear();
 
+    const std::lock_guard<std::mutex> lock2(host.kernel.mutex);
     host.kernel.running_threads.erase(thread_id);
     host.kernel.waiting_threads.erase(thread_id);
     host.kernel.threads.erase(thread_id);
