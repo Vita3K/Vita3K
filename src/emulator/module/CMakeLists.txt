@@ -13,7 +13,7 @@ add_library(
 )
 
 target_include_directories(module PUBLIC include)
-target_link_libraries(module PUBLIC kernel host microprofile rpcs3)
+target_link_libraries(module PUBLIC kernel host microprofile rpcs3 dlmalloc)
 
 add_executable(
 	module-tests

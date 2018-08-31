@@ -138,3 +138,8 @@ endmacro(pre_configure_boost)
 if(NOT CI)
 	pre_configure_boost()
 endif()
+
+add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
+set(ONLY_MSPACES 1)
+target_include_directories(dlmalloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc")
+target_compile_definitions(dlmalloc PUBLIC ONLY_MSPACES=1)
