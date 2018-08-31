@@ -18,6 +18,7 @@
 #include "SceLibKernel.h"
 
 #include <cpu/functions.h>
+#include <dlmalloc.h>
 #include <host/functions.h>
 #include <io/functions.h>
 #include <io/types.h>
@@ -129,8 +130,9 @@ EXPORT(int, sceClibMspaceCalloc) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMspaceCreate) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMspaceCreate, Ptr<void> base, uint32_t capacity) {
+    mspace space = create_mspace_with_base(base.get(host.mem), capacity, 0);
+    return Ptr<void>(space, host.mem);
 }
 
 EXPORT(int, sceClibMspaceDestroy) {
@@ -145,8 +147,9 @@ EXPORT(int, sceClibMspaceIsHeapEmpty) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMspaceMalloc) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMspaceMalloc, Ptr<void> space, uint32_t size) {
+    void *address = mspace_malloc(space.get(host.mem), size);
+    return Ptr<void>(address, host.mem);
 }
 
 EXPORT(int, sceClibMspaceMallocStats) {
