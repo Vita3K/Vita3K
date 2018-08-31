@@ -24,6 +24,11 @@ if(NOT CI)
 	pre_configure_boost()
 endif()
 
+if(WIN32)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+	add_definitions (/D "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS")
+endif()
+
 add_subdirectory(src/external)
 add_subdirectory(src/emulator)
 add_subdirectory(src/gen-modules)
