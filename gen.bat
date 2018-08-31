@@ -1,12 +1,23 @@
+@echo off
 
+REM CI uses pre-built Boost
 IF "%CI%"=="" (
+	REM Create build dir
 	mkdir src/external/boost-build
 	cd src/external/boost
+	
+	REM Build our Boost subset
 	b2 -j5 --stagedir=../boost-build stage
 	cd ../../..
 )
 
+REM Generate project files
 mkdir build-windows
 pushd build-windows
-cmake -G "Visual Studio 15 2017 Win64" ..
+
+IF "%CI%"=="" (
+	cmake -G "Visual Studio 15 2017 Win64" ..
+) ELSE (
+	cmake -G "Visual Studio 15 2017 Win64" -DCI:BOOL=ON ..
+)
 popd

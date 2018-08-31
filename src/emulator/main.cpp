@@ -15,7 +15,10 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <gui/functions.h>
+#include <gui/imgui_impl.h>
 #include <host/app.h>
+#include <host/config.h>
 #include <host/functions.h>
 #include <host/screen_render.h>
 #include <host/state.h>
@@ -26,17 +29,17 @@
 
 #include <SDL.h>
 
-#include <gui/functions.h>
-#include <gui/imgui_impl.h>
-
 #include <cstdlib>
+#include <iterator>
 
 int main(int argc, char *argv[]) {
-    init_logging();
+    logging::init();
+
+    config_t cfg{};
+    if (!config::init(cfg, argc, argv))
+        return IncorrectArgs;
 
     LOG_INFO("{}", window_title);
-
-    ProgramArgsWide argv_wide = process_args(argc, argv);
 
     std::atexit(SDL_Quit);
     if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) < 0) {
@@ -46,23 +49,31 @@ int main(int argc, char *argv[]) {
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    // Filter out an argument that macOS Finder appends
-    const char *const *const path_arg = std::find_if_not(&argv[1], &argv[argc], [](const char *arg) {
-        return strncmp(arg, "-psn_", 5) == 0;
-    });
+    AppRunType run_type;
+    if (cfg.run_title_id)
+        run_type = AppRunType::Extracted;
+    else if (cfg.vpk_path)
+        run_type = AppRunType::Vpk;
+    else
+        run_type = AppRunType::Unknown;
 
-    std::wstring path;
-    if (path_arg != &argv[argc]) {
-        path = utf_to_wide(*path_arg);
+    std::wstring vpk_path_wide;
+    if (run_type == AppRunType::Vpk) {
+        vpk_path_wide = utf_to_wide(*cfg.vpk_path);
     } else {
         SDL_Event ev;
         while (SDL_PollEvent(&ev)) {
             if (ev.type == SDL_DROPFILE) {
-                path = utf_to_wide(ev.drop.file);
+                vpk_path_wide = utf_to_wide(ev.drop.file);
                 SDL_free(ev.drop.file);
                 break;
             }
         }
+    }
+
+    // TODO: Clean this, ie. make load_app overloads called depending on run type
+    if (run_type == AppRunType::Extracted) {
+        vpk_path_wide = utf_to_wide(*cfg.run_title_id);
     }
 
     HostState host;
@@ -73,31 +84,28 @@ int main(int argc, char *argv[]) {
 
     imgui::init(host.window.get());
 
-    auto run_type = AppRunType::Vpk;
+    // Application not provided via argument, show game selector
+    while (run_type == AppRunType::Unknown) {
+        if (handle_events(host)) {
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            imgui::draw_begin(host);
 
-    if (path.empty()) {
-        // Application not provided via argument, show game selector
-        while (run_type == AppRunType::Vpk) {
-            if (handle_events(host)) {
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                imgui::draw_begin(host);
+            DrawUI(host);
+            DrawGameSelector(host, &run_type);
 
-                DrawUI(host);
-                DrawGameSelector(host, &run_type);
+            imgui::draw_end(host.window.get());
+        } else {
+            return QuitRequested;
+        }
 
-                imgui::draw_end(host.window.get());
-            } else {
-                return QuitRequested;
-            }
+        // TODO: Clean this, ie. make load_app overloads called depending on run type
+        if (run_type == AppRunType::Extracted) {
+            vpk_path_wide = utf_to_wide(host.gui.game_selector.selected_title_id);
         }
     }
 
-    if (run_type == AppRunType::Extracted) {
-        path = utf_to_wide(host.gui.game_selector.selected_title_id);
-    }
-
     Ptr<const void> entry_point;
-    if (auto err = load_app(entry_point, host, path, run_type) != Success)
+    if (auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
         return err;
 
     if (auto err = run_app(host, entry_point) != Success)
