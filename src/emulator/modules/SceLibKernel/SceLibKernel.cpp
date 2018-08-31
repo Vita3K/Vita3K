@@ -220,8 +220,12 @@ EXPORT(int, sceClibStrlcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrncasecmp) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibStrncasecmp, const char *string1, const char *string2, int count) {
+#ifdef WIN32
+    return strnicmp(string1, string2, count);
+#else
+    return strncasecmp(string1, string2, count);
+#endif
 }
 
 EXPORT(int, sceClibStrncat) {
@@ -248,8 +252,9 @@ EXPORT(int, sceClibStrnlen) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrrchr) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, sceClibStrrchr, const char *str, int character) {
+    const char *res = strrchr(str, character);
+    return Ptr<char>(res, host.mem);
 }
 
 EXPORT(int, sceClibStrstr) {
