@@ -34,7 +34,7 @@ namespace po = boost::program_options;
 
 namespace config {
 
-bool init(config_t &cfg, int argc, char **argv) {
+bool init(Config &cfg, int argc, char **argv) {
     try {
         // Declare all options
         // clang-format off

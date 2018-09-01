@@ -46,6 +46,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <utility>
 
 #include <gui/imgui_impl_sdl_gl3.h>
 
@@ -152,7 +153,7 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
     }
 }
 
-bool init(HostState &state) {
+bool init(HostState &state, Config cfg) {
     const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
     const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
 
@@ -165,6 +166,7 @@ bool init(HostState &state) {
         thread->something_to_do.notify_all();
     };
 
+    state.cfg = std::move(cfg);
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);

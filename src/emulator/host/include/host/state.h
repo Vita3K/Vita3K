@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "config.h"
 #include <audio/state.h>
 #include <ctrl/state.h>
 #include <gui/state.h>
@@ -55,6 +56,7 @@ struct HostState {
     std::string game_title;
     std::string base_path;
     std::string pref_path;
+    Config cfg;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
     WindowPtr window;

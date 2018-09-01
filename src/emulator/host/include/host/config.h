@@ -26,7 +26,7 @@
 using boost::optional;
 
 // Config options
-struct config_t {
+struct Config {
     optional<std::string> vpk_path;
     optional<std::string> run_title_id;
     optional<int> log_level;
@@ -40,6 +40,6 @@ namespace config {
   * \param cfg Config options are returend via this parameter.
   * \return True on success, false on error.
   */
-bool init(config_t &cfg, int argc, char **argv);
+bool init(Config &cfg, int argc, char **argv);
 
 } // namespace config

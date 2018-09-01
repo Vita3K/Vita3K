@@ -19,9 +19,10 @@
 
 #include <psp2/types.h>
 
+struct Config;
 struct CPUState;
 struct HostState;
 
-bool init(HostState &state);
+bool init(HostState &state, Config cfg);
 bool handle_events(HostState &host);
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);

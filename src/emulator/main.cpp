@@ -31,11 +31,12 @@
 
 #include <cstdlib>
 #include <iterator>
+#include <utility>
 
 int main(int argc, char *argv[]) {
     logging::init();
 
-    config_t cfg{};
+    Config cfg{};
     if (!config::init(cfg, argc, argv))
         return IncorrectArgs;
 
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]) {
     }
 
     HostState host;
-    if (!init(host)) {
+    if (!init(host, std::move(cfg))) {
         error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }
