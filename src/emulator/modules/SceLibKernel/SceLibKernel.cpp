@@ -863,8 +863,9 @@ EXPORT(int, sceKernelCreateTimer) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelDeleteLwCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDeleteLwCond, Ptr<emu::SceKernelLwCondWork> workarea) {
+    SceUID condid = workarea.get(host.mem)->uid;
+    return condvar_delete(host.kernel, export_name, thread_id, condid, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelDeleteLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea) {

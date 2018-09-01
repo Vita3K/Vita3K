@@ -41,6 +41,7 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID semaid
 SceUID condvar_create(SceUID *uid_out, KernelState &kernel, const char *export_name, const char *name, SceUInt attr, SceUID assoc_mutexid, SyncWeight weight);
 int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, SceUInt *timeout, SyncWeight weight);
 int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, Condvar::SignalTarget signal_target, SyncWeight weight);
+int condvar_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight);
 
 // Event Flag
 SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thread_id, const char *event_name, SceUInt attr, unsigned int flags);

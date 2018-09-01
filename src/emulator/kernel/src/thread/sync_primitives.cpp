@@ -69,6 +69,21 @@ inline int find_mutex(MutexPtr &mutex_out, MutexPtrs *mutexes_out, KernelState &
     return SCE_KERNEL_OK;
 }
 
+inline int find_condvar(CondvarPtr &condvar_out, CondvarPtrs *condvars_out, KernelState &kernel, const char *export_name, SceUID condid, SyncWeight weight) {
+    CondvarPtrs &condvars = get_condvars(kernel, weight);
+    condvar_out = lock_and_find(condid, condvars, kernel.mutex);
+    if (!condvar_out) {
+        if (weight == SyncWeight::Light) {
+            return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
+        }
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_COND_ID);
+    }
+
+    if (condvars_out)
+        *condvars_out = condvars;
+    return SCE_KERNEL_OK;
+}
+
 // *********
 // * Mutex *
 // *********
@@ -232,6 +247,7 @@ int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id,
         mutexes.erase(mutexid);
     } else {
         // TODO:
+        LOG_WARN("Can't delete sync object, it has waiting threads.");
     }
 
     return SCE_KERNEL_OK;
@@ -485,6 +501,28 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
     return SCE_KERNEL_OK;
 }
 
+int condvar_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, SyncWeight weight) {
+    CondvarPtr condvar;
+    CondvarPtrs condvars;
+    if (auto error = find_condvar(condvar, &condvars, kernel, export_name, condid, weight))
+        return error;
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
+            export_name, condvar->uid, condvar->name, condvar->attr, condvar->associated_mutex->uid);
+    }
+
+    if (condvar->waiting_threads.empty()) {
+        const std::lock_guard<std::mutex> lock(condvar->mutex);
+        condvars.erase(condid);
+    } else {
+        // TODO:
+        LOG_WARN("Can't delete sync object, it has waiting threads.");
+    }
+
+    return SCE_KERNEL_OK;
+}
+
 // **************
 // * Event Flag *
 // **************
@@ -642,6 +680,7 @@ int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread
         kernel.eventflags.erase(event_id);
     } else {
         // TODO:
+        LOG_WARN("Can't delete sync object, it has waiting threads.");
     }
 
     return SCE_KERNEL_OK;
