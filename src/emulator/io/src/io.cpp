@@ -43,7 +43,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -59,6 +61,10 @@ int io_error_impl(int retval, const char *export_name, const char *func_name) {
 
 #define IO_ERROR(retval) io_error_impl(retval, export_name, __func__)
 #define IO_ERROR_UNK() IO_ERROR(-1)
+
+using namespace vfs;
+
+namespace vfs {
 
 const char *
 translate_open_mode(int flags) {
@@ -91,7 +97,7 @@ void trim_leading_slash(std::string path) {
 }
 
 constexpr const char *
-get_device_string(VitaIoDevice dev, bool with_colon = false) {
+get_device_string(VitaIoDevice dev, bool with_colon) {
     switch (dev) {
 #define DEVICE(path, name)  \
     case JOIN_DEVICE(name): \
@@ -168,6 +174,30 @@ to_host_path(const std::string &path, const std::string &pref_path, VitaIoDevice
 // ****************************
 // * End of utility functions *
 // ****************************
+
+bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const std::string &vfs_file_path) {
+    const std::string host_file_path = pref_path + get_device_string(device) + "/" + vfs_file_path;
+
+    std::ifstream f(host_file_path, std::ifstream::binary);
+    if (f.fail()) {
+        return false;
+    }
+    f.unsetf(std::ios::skipws);
+    std::streampos size;
+    f.seekg(0, std::ios::end);
+    size = f.tellg();
+    f.seekg(0, std::ios::beg);
+    buf.reserve(size);
+    buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
+    return true;
+}
+
+bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string title_id, const std::string &vfs_file_path) {
+    std::string game_file_path = "app/" + title_id + "/" + vfs_file_path;
+    return read_file(VitaIoDevice::UX0, buf, pref_path, game_file_path);
+}
+
+} // namespace vfs
 
 bool init(IOState &io, const char *pref_path) {
     std::string ux0 = pref_path;

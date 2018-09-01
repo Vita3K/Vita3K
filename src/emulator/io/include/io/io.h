@@ -22,12 +22,18 @@
 
 #define JOIN_DEVICE(p) VitaIoDevice::p
 #define DEVICE(path, name) name,
-
 enum class VitaIoDevice {
 #include <io/VitaIoDevice.def>
 
     _UKNONWN = -1,
     _INVALID = -2,
 };
-
 #undef DEVICE
+
+namespace vfs {
+using FileBuffer = std::vector<uint8_t>;
+
+constexpr const char *get_device_string(VitaIoDevice dev, bool with_colon = false);
+bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const std::string &file_path);
+bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string title_id, const std::string &file_path);
+} // namespace vfs

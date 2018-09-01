@@ -23,6 +23,7 @@
 #include <host/state.h>
 #include <host/version.h>
 #include <io/functions.h>
+#include <io/io.h>
 #include <io/state.h>
 #include <kernel/load_self.h>
 #include <kernel/state.h>
@@ -37,7 +38,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <fstream>
 #include <iostream>
 #include <istream>
 #include <iterator>
@@ -60,7 +60,7 @@ static void delete_zip(mz_zip_archive *zip) {
 }
 
 static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBuf, size_t n) {
-    Buffer *const buffer = static_cast<Buffer *>(pOpaque);
+    vfs::FileBuffer *const buffer = static_cast<vfs::FileBuffer *>(pOpaque);
     assert(file_ofs == buffer->size());
     const uint8_t *const first = static_cast<const uint8_t *>(pBuf);
     const uint8_t *const last = &first[n];
@@ -69,27 +69,11 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
     return n;
 }
 
-bool read_file_from_disk(Buffer &buf, const char *file, HostState &host) {
-    std::string file_path = host.pref_path + "ux0/app/" + host.io.title_id + "/" + file;
-    std::ifstream f(file_path, std::ifstream::binary);
-    if (f.fail()) {
-        return false;
-    }
-    f.unsetf(std::ios::skipws);
-    std::streampos size;
-    f.seekg(0, std::ios::end);
-    size = f.tellg();
-    f.seekg(0, std::ios::beg);
-    buf.reserve(size);
-    buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
-    return true;
-}
-
 static const char *miniz_get_error(const ZipPtr &zip) {
     return mz_zip_get_error_string(mz_zip_get_last_error(zip.get()));
 }
 
-static bool read_file_from_zip(Buffer &buf, FILE *&vpk_fp, const char *file, const ZipPtr zip) {
+static bool read_file_from_zip(vfs::FileBuffer &buf, FILE *&vpk_fp, const char *file, const ZipPtr zip) {
     const int file_index = mz_zip_reader_locate_file(zip.get(), file, nullptr, 0);
     if (file_index < 0) {
         LOG_CRITICAL("Failed to locate {}.", file);
@@ -139,7 +123,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         }
     }
 
-    Buffer params;
+    vfs::FileBuffer params;
     if (!read_file_from_zip(params, vpk_fp, sfo_path.c_str(), zip)) {
         return false;
     }
@@ -219,8 +203,8 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
         host.io.title_id = string_utils::wide_to_utf(path);
     }
 
-    Buffer params;
-    if (!read_file_from_disk(params, "sce_sys/param.sfo", host)) {
+    vfs::FileBuffer params;
+    if (!vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
         return false;
     }
 
@@ -245,10 +229,10 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     };
 
     for (auto module_path : lib_load_list) {
-        Buffer module_buffer;
+        vfs::FileBuffer module_buffer;
         Ptr<const void> lib_entry_point;
 
-        if (read_file_from_disk(module_buffer, module_path, host)) {
+        if (vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path)) {
             SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path);
             if (module_id >= 0) {
                 const auto module = host.kernel.loaded_modules[module_id];
@@ -262,8 +246,8 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     }
 
     // Load main executable (eboot.bin)
-    Buffer eboot_buffer;
-    if (read_file_from_disk(eboot_buffer, EBOOT_PATH, host)) {
+    vfs::FileBuffer eboot_buffer;
+    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, EBOOT_PATH)) {
         SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];

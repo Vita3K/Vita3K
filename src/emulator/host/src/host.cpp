@@ -26,6 +26,7 @@
 #include <cpu/functions.h>
 #include <glutil/gl.h>
 #include <io/functions.h>
+#include <io/io.h>
 #include <kernel/functions.h>
 #include <kernel/thread/thread_state.h>
 #include <nids/functions.h>
@@ -219,9 +220,9 @@ bool init(HostState &state) {
             d_name_utf8 = dp->d_name;
 #endif
             if ((strcmp(d_name_utf8.c_str(), ".")) && (strcmp(d_name_utf8.c_str(), ".."))) {
-                Buffer params;
+                vfs::FileBuffer params;
                 state.io.title_id = d_name_utf8;
-                if (read_file_from_disk(params, "sce_sys/param.sfo", state)) {
+                if (vfs::read_app_file(params, state.pref_path, state.io.title_id, "sce_sys/param.sfo")) {
                     SfoFile sfo_handle;
                     load_sfo(sfo_handle, params);
                     find_data(state.game_title, sfo_handle, "TITLE");
