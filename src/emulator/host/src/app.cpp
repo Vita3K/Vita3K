@@ -30,7 +30,7 @@
 #include <util/find.h>
 #include <util/fs.h>
 #include <util/log.h>
-#include <util/string_convert.h>
+#include <util/string_utils.h>
 
 #include <SDL.h>
 #include <glutil/gl.h>
@@ -113,7 +113,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
 #ifdef WIN32
     if (_wfopen_s(&vpk_fp, path.c_str(), L"rb")) {
 #else
-    if (!(vpk_fp = fopen(wide_to_utf(path).c_str(), "rb"))) {
+    if (!(vpk_fp = fopen(string_utils::wide_to_utf(path).c_str(), "rb"))) {
 #endif
         LOG_CRITICAL("Failed to open the vpk.");
         return false;
@@ -216,7 +216,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
             return false;
         }
     } else if (run_type == AppRunType::Extracted) {
-        host.io.title_id = wide_to_utf(path);
+        host.io.title_id = string_utils::wide_to_utf(path);
     }
 
     Buffer params;
@@ -281,7 +281,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
 ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
     if (!load_app_impl(entry_point, host, path, run_type)) {
         std::string message = "Failed to load \"";
-        message += wide_to_utf(path);
+        message += string_utils::wide_to_utf(path);
         message += "\"";
         message += "\nSee console output for details.";
         error_dialog(message.c_str(), host.window.get());

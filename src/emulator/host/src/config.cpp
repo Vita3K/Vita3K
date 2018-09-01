@@ -20,6 +20,7 @@
 #include <host/app.h>
 #include <host/version.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>

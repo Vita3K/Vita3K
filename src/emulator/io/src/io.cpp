@@ -35,7 +35,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <dirent.h>
-#include <util/string_convert.h>
+#include <util/string_utils.h>
 #else
 #include <sys/stat.h>
 #include <unistd.h>
@@ -259,7 +259,7 @@ SceUID open_file(IOState &io, const std::string &path, int flags, const char *pr
         };
 
 #ifdef WIN32
-        const FilePtr file(_wfopen(utf_to_wide(file_path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
+        const FilePtr file(_wfopen(string_utils::utf_to_wide(file_path).c_str(), string_utils::utf_to_wide(open_mode).c_str()), delete_file);
 #else
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
 #endif
@@ -504,7 +504,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
 
 #ifdef WIN32
         WIN32_FIND_DATAW find_data;
-        HANDLE handle = FindFirstFileW(utf_to_wide(file_path).c_str(), &find_data);
+        HANDLE handle = FindFirstFileW(string_utils::utf_to_wide(file_path).c_str(), &find_data);
         if (handle == INVALID_HANDLE_VALUE) {
             return IO_ERROR_UNK();
         }
@@ -591,7 +591,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path, const char *e
     }
 
 #ifdef WIN32
-    const DirPtr dir(_wopendir((utf_to_wide(dir_path)).c_str()), _wclosedir);
+    const DirPtr dir(_wopendir((string_utils::utf_to_wide(dir_path)).c_str()), _wclosedir);
 #else
     const DirPtr dir(opendir(dir_path.c_str()), [](DIR *dir) {
         if (dir != nullptr) {
@@ -633,7 +633,7 @@ int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *export_
         }
 
 #ifdef WIN32
-        std::string d_name_utf8 = wide_to_utf(d->d_name);
+        std::string d_name_utf8 = string_utils::wide_to_utf(d->d_name);
         strncpy(dent->d_name, d_name_utf8.c_str(), sizeof(dent->d_name));
 #else
         strncpy(dent->d_name, d->d_name, sizeof(dent->d_name));

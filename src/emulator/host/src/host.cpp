@@ -52,7 +52,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <dirent.h>
-#include <util/string_convert.h>
+#include <util/string_utils.h>
 #else
 #include <sys/stat.h>
 #include <unistd.h>
@@ -203,7 +203,7 @@ bool init(HostState &state) {
 
     std::string dir_path = state.pref_path + "ux0/app";
 #ifdef WIN32
-    _WDIR *d = _wopendir((utf_to_wide(dir_path)).c_str());
+    _WDIR *d = _wopendir((string_utils::utf_to_wide(dir_path)).c_str());
     _wdirent *dp;
 #else
     DIR *d = opendir(dir_path.c_str());
@@ -213,7 +213,7 @@ bool init(HostState &state) {
         std::string d_name_utf8;
 #ifdef WIN32
         if ((dp = _wreaddir(d)) != NULL) {
-            d_name_utf8 = wide_to_utf(dp->d_name);
+            d_name_utf8 = string_utils::wide_to_utf(dp->d_name);
 #else
         if ((dp = readdir(d)) != NULL) {
             d_name_utf8 = dp->d_name;

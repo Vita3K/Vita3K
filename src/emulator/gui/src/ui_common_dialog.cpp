@@ -22,7 +22,7 @@
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
 #include <util/resource.h>
-#include <util/string_convert.h>
+#include <util/string_utils.h>
 
 #include <SDL.h>
 
@@ -46,7 +46,7 @@ void DrawImeDialog(HostState &host) {
         host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
         host.gui.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
         std::string result = host.gui.common_dialog.ime.text;
-        std::u16string result16 = utf8_to_utf16(result);
+        std::u16string result16 = string_utils::utf8_to_utf16(result);
         memcpy(host.gui.common_dialog.ime.result, result16.c_str(), result16.size() * sizeof(uint16_t));
     }
     if (host.gui.common_dialog.ime.cancelable) {
