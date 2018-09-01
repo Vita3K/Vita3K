@@ -195,8 +195,9 @@ EXPORT(int, sceClibStrcatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrchr) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, sceClibStrchr, const char *str, int c) {
+    const char *res = strchr(str, c);
+    return Ptr<char>(res, host.mem);
 }
 
 EXPORT(int, sceClibStrcmp) {
@@ -231,28 +232,30 @@ EXPORT(int, sceClibStrncasecmp, const char *string1, const char *string2, int co
 #endif
 }
 
-EXPORT(int, sceClibStrncat) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, sceClibStrncat, char *destination, const char *source, size_t num) {
+    const char *res = strncat(destination, source, num);
+    return Ptr<char>(res, host.mem);
 }
 
 EXPORT(int, sceClibStrncatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrncmp) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibStrncmp, const char *str1, const char *str2, size_t num) {
+    return strncmp(str1, str2, num);
 }
 
-EXPORT(int, sceClibStrncpy) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, sceClibStrncpy, char *destination, const char *source, size_t num) {
+    const char *res = strncpy(destination, source, num);
+    return Ptr<char>(res, host.mem);
 }
 
 EXPORT(int, sceClibStrncpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrnlen) {
-    return UNIMPLEMENTED();
+EXPORT(uint32_t, sceClibStrnlen, const char *str, size_t maxlen) {
+    return strnlen(str, maxlen);
 }
 
 EXPORT(Ptr<char>, sceClibStrrchr, const char *str, int character) {
@@ -260,20 +263,21 @@ EXPORT(Ptr<char>, sceClibStrrchr, const char *str, int character) {
     return Ptr<char>(res, host.mem);
 }
 
-EXPORT(int, sceClibStrstr) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, sceClibStrstr, const char *haystack, const char *needle) {
+    const char *res = strstr(haystack, needle);
+    return Ptr<char>(res, host.mem);
 }
 
-EXPORT(int, sceClibStrtoll) {
-    return UNIMPLEMENTED();
+EXPORT(int64_t, sceClibStrtoll, const char *str, char **endptr, int base) {
+    return strtoll(str, endptr, base);
 }
 
-EXPORT(int, sceClibTolower) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibTolower, int c) {
+    return tolower(c);
 }
 
-EXPORT(int, sceClibToupper) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibToupper, int c) {
+    return toupper(c);
 }
 
 EXPORT(int, sceClibVdprintf) {
