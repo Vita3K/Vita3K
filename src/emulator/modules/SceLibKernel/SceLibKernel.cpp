@@ -1296,8 +1296,9 @@ EXPORT(int, sceKernelStopUnloadModule) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelTryLockLwMutex) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelTryLockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int lock_count) {
+    const auto lwmutexid = workarea.get(host.mem)->uid;
+    return mutex_try_lock(host.kernel, export_name, thread_id, lwmutexid, lock_count, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelTryReceiveMsgPipe) {

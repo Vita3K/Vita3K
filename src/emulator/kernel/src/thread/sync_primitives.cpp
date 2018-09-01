@@ -127,7 +127,7 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_nam
     return SCE_KERNEL_OK;
 }
 
-inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int lock_count, MutexPtr mutex) {
+inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int lock_count, MutexPtr mutex, SyncWeight weight, bool only_try) {
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{}",
             export_name, mutex->uid, thread_id, mutex->name, mutex->attr, mutex->lock_count);
@@ -154,8 +154,15 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
             }
         } else {
             // Owned by someone else
-            // Sleep thread!
 
+            // Don't sleep if only_try is set
+            if (only_try)
+                if (weight == SyncWeight::Light)
+                    return SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN;
+                else
+                    return SCE_KERNEL_ERROR_MUTEX_FAILED_TO_OWN;
+
+            // Sleep thread!
             const std::lock_guard<std::mutex> lock2(thread->mutex);
             assert(thread->to_do == ThreadToDo::run);
             thread->to_do = ThreadToDo::wait;
@@ -186,7 +193,15 @@ int mutex_lock(KernelState &kernel, const char *export_name, SceUID thread_id, S
     if (auto error = find_mutex(mutex, nullptr, kernel, export_name, mutexid, weight))
         return error;
 
-    return mutex_lock_impl(kernel, export_name, thread_id, lock_count, mutex);
+    return mutex_lock_impl(kernel, export_name, thread_id, lock_count, mutex, weight, false);
+}
+
+int mutex_try_lock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, SyncWeight weight) {
+    MutexPtr mutex;
+    if (auto error = find_mutex(mutex, nullptr, kernel, export_name, mutexid, weight))
+        return error;
+
+    return mutex_lock_impl(kernel, export_name, thread_id, lock_count, mutex, weight, true);
 }
 
 inline int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int unlock_count, MutexPtr mutex) {
@@ -471,7 +486,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
             waiting_thread->something_to_do.notify_one();
         }
 
-        if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex))
+        if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex, weight, false))
             return error;
 
     } else {
@@ -493,7 +508,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
                 waiting_thread->something_to_do.notify_one();
             }
 
-            if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex))
+            if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex, weight, false))
                 return error;
         }
     }
