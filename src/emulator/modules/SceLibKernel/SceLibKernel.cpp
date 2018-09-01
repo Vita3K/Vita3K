@@ -793,7 +793,7 @@ EXPORT(int, sceKernelCreateCond, const char *name, SceUInt attr, SceUID mutexid,
 }
 
 EXPORT(int, sceKernelCreateEventFlag, const char *name, unsigned int attr, unsigned int flags, SceKernelEventFlagOptParam *opt) {
-    return create_eventflag(host.kernel, export_name, thread_id, name, attr, flags);
+    return eventflag_create(host.kernel, export_name, thread_id, name, attr, flags);
 }
 
 EXPORT(int, sceKernelCreateLwCond, Ptr<emu::SceKernelLwCondWork> workarea, const char *name, SceUInt attr, Ptr<emu::SceKernelLwMutexWork> workarea_mutex, const SceKernelLwCondOptParam *opt_param) {
@@ -1347,12 +1347,12 @@ EXPORT(int, sceKernelWaitEventCB) {
 }
 
 EXPORT(int, sceKernelWaitEventFlag, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout) {
-    return wait_eventflag(host.kernel, export_name, thread_id, event_id, flags, wait, timeout);
+    return eventflag_wait(host.kernel, export_name, thread_id, event_id, flags, wait, timeout);
 }
 
 EXPORT(int, sceKernelWaitEventFlagCB, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout) {
     STUBBED("no CB");
-    return wait_eventflag(host.kernel, export_name, thread_id, event_id, flags, wait, timeout);
+    return eventflag_wait(host.kernel, export_name, thread_id, event_id, flags, wait, timeout);
 }
 
 EXPORT(int, sceKernelWaitException) {

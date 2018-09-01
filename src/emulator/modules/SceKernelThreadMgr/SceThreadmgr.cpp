@@ -149,7 +149,7 @@ EXPORT(int, sceKernelDeleteCond) {
 }
 
 EXPORT(int, sceKernelDeleteEventFlag, SceUID event_id) {
-    return delete_eventflag(host.kernel, export_name, thread_id, event_id);
+    return eventflag_delete(host.kernel, export_name, thread_id, event_id);
 }
 
 EXPORT(int, sceKernelDeleteMsgPipe) {
@@ -305,7 +305,7 @@ EXPORT(int, sceKernelSetEvent) {
 }
 
 EXPORT(int, sceKernelSetEventFlag, SceUID eventid, unsigned int flags) {
-    return set_eventflag(host.kernel, export_name, eventid, flags);
+    return eventflag_set(host.kernel, export_name, eventid, flags);
 }
 
 EXPORT(int, sceKernelSetTimerTimeWide) {
