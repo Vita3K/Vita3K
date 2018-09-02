@@ -176,6 +176,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
             }
 
             // TODO: Run entry point of loaded modules. Was having issues with it.
+
         } else {
             LOG_ERROR("Module at \"{}\" not present", module_path);
             // ignore and assume it was loaded
@@ -212,6 +213,7 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
     const bool lle_modules_enabled = !host.cfg.lle_modules.empty();
 
     if (lle_modules_enabled && is_lle_module(module_id, host.cfg.lle_modules))
+
         if (load_module(host, module_id))
             return SCE_SYSMODULE_LOADED;
         else
