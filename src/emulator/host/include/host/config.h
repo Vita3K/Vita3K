@@ -17,11 +17,14 @@
 
 #pragma once
 
+#include <host/app.h>
+
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>
 
 #include <string>
+#include <vector>
 
 using boost::optional;
 
@@ -30,6 +33,7 @@ struct Config {
     optional<std::string> vpk_path;
     optional<std::string> run_title_id;
     optional<int> log_level;
+    std::vector<std::string> lle_modules;
 };
 
 namespace config {
@@ -40,6 +44,6 @@ namespace config {
   * \param cfg Config options are returend via this parameter.
   * \return True on success, false on error.
   */
-bool init(Config &cfg, int argc, char **argv);
+ExitCode init(Config &cfg, int argc, char **argv);
 
 } // namespace config

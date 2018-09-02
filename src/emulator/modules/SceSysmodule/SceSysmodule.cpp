@@ -124,12 +124,21 @@ static SysmodulePaths init_sysmodule_paths() {
 
 static const SysmodulePaths sysmodule_paths = init_sysmodule_paths();
 
-bool is_lle_module(SceSysmoduleModuleId module_id) {
+bool is_lle_module(SceSysmoduleModuleId module_id, const std::vector<std::string> &lle_modules) {
     const auto paths = sysmodule_paths[module_id];
+
     // Do we know the module and its dependencies' paths?
     const bool have_paths = !paths.empty();
 
-    return have_paths;
+    if (!have_paths)
+        return false;
+
+    if (have_paths)
+        for (auto path : paths)
+            if (std::find(lle_modules.begin(), lle_modules.end(), path) != lle_modules.end())
+                return true;
+
+    return false;
 }
 
 bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id) {
@@ -180,8 +189,10 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
 EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
         return SCE_SYSMODULE_ERROR_INVALID_VALUE;
-    
-    if (is_lle_module(module_id))
+
+    const bool lle_modules_enabled = !host.cfg.lle_modules.empty();
+
+    if (lle_modules_enabled && is_lle_module(module_id, host.cfg.lle_modules))
         if (is_module_loaded(host.kernel, module_id))
             return SCE_SYSMODULE_LOADED;
         else
@@ -197,8 +208,10 @@ EXPORT(int, sceSysmoduleIsLoadedInternal) {
 EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
         return SCE_SYSMODULE_ERROR_INVALID_VALUE;
-    
-    if (is_lle_module(module_id))
+
+    const bool lle_modules_enabled = !host.cfg.lle_modules.empty();
+
+    if (lle_modules_enabled && is_lle_module(module_id, host.cfg.lle_modules))
         if (load_module(host, module_id))
             return SCE_SYSMODULE_LOADED;
         else

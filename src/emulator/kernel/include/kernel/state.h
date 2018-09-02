@@ -22,6 +22,7 @@
 #include <mem/ptr.h>
 
 #include <psp2/rtc.h>
+#include <psp2/sysmodule.h>
 #include <psp2/types.h>
 
 #include <atomic>
@@ -179,6 +180,8 @@ struct WaitingThreadState {
 
 typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
 
+using LoadedSysmodules = std::vector<SceSysmoduleModuleId>;
+
 struct KernelState {
     std::mutex mutex;
     Blocks blocks;
@@ -193,6 +196,7 @@ struct KernelState {
     ThreadPtrs running_threads;
     KernelWaitingThreadStates waiting_threads;
     SceKernelModuleInfoPtrs loaded_modules;
+    LoadedSysmodules loaded_sysmodules;
     ExportNids export_nids;
     SceRtcTick base_tick;
     Ptr<uint32_t> process_param;
