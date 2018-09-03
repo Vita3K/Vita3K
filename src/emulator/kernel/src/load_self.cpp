@@ -35,6 +35,7 @@
 #define NID_MODULE_EXIT 0x913482A9
 #define NID_MODULE_START 0x935CD196
 #define NID_MODULE_INFO 0x6C2224BA
+#define NID_SYSLYB 0x936c8a78
 #define NID_PROCESS_PARAM 0x70FBA1E7
 #define NID_STACK_CHK_GUARD 0x93B8AA67
 
@@ -180,7 +181,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     return true;
 }
 
-static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem) {
+static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -205,7 +206,7 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
     return true;
 }
 
-static bool load_var_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem) {
+static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -221,7 +222,7 @@ static bool load_var_exports(Ptr<const void> &entry_point, const uint32_t *nids,
             continue;
         }
 
-        if (nid == 0x936c8a78) {
+        if (nid == NID_SYSLYB) {
             LOG_DEBUG("\tNID {} (SYSLYB) at {}", log_hex(nid), log_hex(entry.address()));
             continue;
         }
@@ -252,7 +253,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
 
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
-        if (!load_func_exports(entry_point, nids, entries, exports->num_syms_funcs, kernel, mem)) {
+        if (!load_func_exports(entry_point, nids, entries, exports->num_syms_funcs, kernel)) {
             return false;
         }
 
@@ -262,7 +263,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
             LOG_INFO("Loading var exports from {}", lib_name);
         }
 
-        if (!load_var_exports(entry_point, &nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem)) {
+        if (!load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel)) {
             return false;
         }
     }
@@ -358,11 +359,13 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
     strncpy(sceKernelModuleInfo->module_name, module_info->name, 28);
     //unk28
-    entry_point = module_info_segment_address + module_info->module_start;
-    sceKernelModuleInfo->module_start = module_info->module_start ? entry_point : Ptr<const void>(0);
+    if (module_info->module_start != 0xffffffff && module_info->module_start != 0)
+        entry_point = module_info_segment_address + module_info->module_start;
+    else
+        entry_point = Ptr<const void>(0);
     //unk30
-    const Ptr<const void> module_stop = module_info_segment_address + module_info->module_stop;
-    sceKernelModuleInfo->module_stop = module_info->module_stop ? module_stop : Ptr<const void>(0);
+    if (module_info->module_stop != 0xffffffff && module_info->module_stop != 0)
+        sceKernelModuleInfo->module_stop = module_info_segment_address + module_info->module_stop;
 
     const Ptr<const void> exidx_top = Ptr<const void>(module_info->exidx_top);
     sceKernelModuleInfo->exidxTop = exidx_top;
@@ -397,6 +400,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     }
 
     sceKernelModuleInfo->module_start = entry_point;
+    // TODO: module_stop
 
     const std::lock_guard<std::mutex> lock(kernel.mutex);
     const SceUID uid = kernel.get_next_uid();
