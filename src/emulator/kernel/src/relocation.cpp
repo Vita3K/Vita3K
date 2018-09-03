@@ -202,38 +202,58 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
     const void *const end = static_cast<const uint8_t *>(entries) + size;
     const Entry *entry = static_cast<const Entry *>(entries);
     while (entry < end) {
-        const Ptr<void> symbol_start = segments.find(entry->symbol_segment)->second;
-        const Address s = (entry->symbol_segment == 0xf) ? 0 : symbol_start.address();
+        const auto symbol_start_it = segments.find(entry->symbol_segment);
 
-        if (entry->is_short) {
-            const ShortEntry *const short_entry = static_cast<const ShortEntry *>(entry);
-            const Ptr<void> segment_start = segments.find(short_entry->data_segment)->second;
-            const Address offset = short_entry->offset_lo | (short_entry->offset_hi << 12);
-            const Address p = segment_start.address() + offset;
-            const Address a = short_entry->addend;
-            if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
-                return false;
-            }
+        if (symbol_start_it != segments.end()) {
+            const Ptr<void> symbol_start = symbol_start_it->second;
 
-            entry = short_entry + 1;
-        } else {
-            const LongEntry *const long_entry = static_cast<const LongEntry *>(entry);
+            const Address s = (entry->symbol_segment == 0xf) ? 0 : symbol_start.address();
 
-            const Ptr<void> segment_start = segments.find(long_entry->data_segment)->second;
-            const Address p = segment_start.address() + long_entry->offset;
-            const Address a = long_entry->addend;
-            if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
-                return false;
-            }
+            if (entry->is_short) {
+                const ShortEntry *const short_entry = static_cast<const ShortEntry *>(entry);
+                const auto data_segment_it = segments.find(short_entry->data_segment);
 
-            if (long_entry->code2 != 0) {
-                if (!relocate(Ptr<uint32_t>(p + (long_entry->dist2 * 2)).get(mem), static_cast<Code>(long_entry->code2), s, a, p)) {
-                    return false;
+                if (data_segment_it != segments.end()) {
+                    const Ptr<void> data_segment = data_segment_it->second;
+                    const Address offset = short_entry->offset_lo | (short_entry->offset_hi << 12);
+                    const Address p = data_segment.address() + offset;
+                    const Address a = short_entry->addend;
+                    if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
+                        return false;
+                    }
+                } else {
+                    LOG_WARN("Segment {} not found for short relocation with code {}, skipping", short_entry->data_segment, entry->code);
+                }
+            } else {
+                const LongEntry *const long_entry = static_cast<const LongEntry *>(entry);
+
+                const auto data_segment_it = segments.find(long_entry->data_segment);
+
+                if (data_segment_it != segments.end()) {
+                    const Ptr<void> data_segment = data_segment_it->second;
+                    const Address p = data_segment.address() + long_entry->offset;
+                    const Address a = long_entry->addend;
+                    if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
+                        return false;
+                    }
+
+                    if (long_entry->code2 != 0) {
+                        if (!relocate(Ptr<uint32_t>(p + (long_entry->dist2 * 2)).get(mem), static_cast<Code>(long_entry->code2), s, a, p)) {
+                            return false;
+                        }
+                    }
+                } else {
+                    LOG_WARN("Segment {} not found for long relocation with code {}, skipping", long_entry->data_segment, entry->code);
                 }
             }
-
-            entry = long_entry + 1;
+        } else {
+            LOG_WARN("Symbol segment {} not found for relocation with code {}, skipping", entry->symbol_segment, entry->code);
         }
+
+        if (entry->is_short)
+            entry = static_cast<const ShortEntry *>(entry) + 1;
+        else
+            entry = static_cast<const LongEntry *>(entry) + 1;
     }
 
     return true;
