@@ -50,8 +50,9 @@
 
 using namespace ELFIO;
 
-static const bool LOG_IMPORTS = false;
-static const bool LOG_EXPORTS = false;
+static constexpr bool LOG_MODULE_LOADING = false;
+static constexpr bool LOG_IMPORTS = false;
+static constexpr bool LOG_EXPORTS = false;
 
 static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem) {
     for (size_t i = 0; i < count; ++i) {
@@ -301,10 +302,14 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     const segment_info *const segment_infos = reinterpret_cast<const segment_info *>(self_bytes + self_header.section_info_offset);
 
+    LOG_DEBUG_IF(LOG_MODULE_LOADING, "Loading SELF at {}, header_type: {}, self_filesize: {}, self_offset: {}, module_info_offset: {}", path, log_hex(self_header.header_type), log_hex(self_header.self_filesize), log_hex(self_header.self_offset), log_hex(module_info_offset));
+
     SegmentAddresses segment_addrs;
     for (Elf_Half segment_index = 0; segment_index < elf.e_phnum; ++segment_index) {
         const Elf32_Phdr &src = segments[segment_index];
         const uint8_t *const segment_bytes = self_bytes + self_header.header_len + src.p_offset;
+
+        LOG_DEBUG_IF(LOG_MODULE_LOADING, "    [{}]: (p_type: {}), p_offset: {}, p_vaddr: {}, p_paddr: {}, p_filesz: {}, p_memsz: {}, p_flags: {}, p_align: {}", src.p_type == PT_LOAD ? "PT_LOAD" : src.p_type == PT_LOOS ? "PT_LOOS" : "UNKNOWN", log_hex(src.p_type), log_hex(src.p_offset), log_hex(src.p_vaddr), log_hex(src.p_paddr), log_hex(src.p_filesz), log_hex(src.p_memsz), log_hex(src.p_flags), log_hex(src.p_align));
 
         assert(segment_infos[segment_index].encryption == 2);
         if (src.p_type == PT_LOAD) {
