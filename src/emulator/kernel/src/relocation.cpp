@@ -22,6 +22,8 @@
 #include <cstring>
 #include <iostream>
 
+static constexpr bool LOG_RELOCATIONS = false;
+
 enum Code {
     None = 0,
     Abs32 = 2,
@@ -194,13 +196,19 @@ static bool relocate(void *data, Code code, uint32_t s, uint32_t a, uint32_t p) 
     }
 
     LOG_WARN("Unhandled relocation code {}.", code);
-
     return true;
 }
 
 bool relocate(const void *entries, size_t size, const SegmentAddresses &segments, const MemState &mem) {
     const void *const end = static_cast<const uint8_t *>(entries) + size;
     const Entry *entry = static_cast<const Entry *>(entries);
+
+    if (LOG_RELOCATIONS) {
+        LOG_DEBUG("Relocating patch of size: {}, # of segments: {}", log_hex(size), segments.size());
+        for (const auto seg : segments)
+            LOG_DEBUG("    Segment: {} -> {}", seg.first, log_hex(seg.second.address()));
+    }
+
     while (entry < end) {
         const auto symbol_start_it = segments.find(entry->symbol_segment);
 
@@ -218,10 +226,14 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
                     const Address offset = short_entry->offset_lo | (short_entry->offset_hi << 12);
                     const Address p = data_segment.address() + offset;
                     const Address a = short_entry->addend;
+
+                    LOG_DEBUG_IF(LOG_RELOCATIONS, "[SHRT]: code: {}, sym_seg: {}, sym_start: {}, s: {}, data_seg: {}, offset: {}, p: {}, a: {}", entry->code, entry->symbol_segment, log_hex(symbol_start.address()), log_hex(s), log_hex(data_segment.address()), log_hex(offset), log_hex(p), log_hex(a));
+
                     if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
                         return false;
                     }
                 } else {
+                    LOG_DEBUG_IF(LOG_RELOCATIONS, "[SHRT/ERROR]: code: {}, sym_seg: {}, sym_start: {}, s: {}", entry->code, entry->symbol_segment, log_hex(symbol_start.address()), log_hex(s));
                     LOG_WARN("Segment {} not found for short relocation with code {}, skipping", short_entry->data_segment, entry->code);
                 }
             } else {
@@ -233,20 +245,27 @@ bool relocate(const void *entries, size_t size, const SegmentAddresses &segments
                     const Ptr<void> data_segment = data_segment_it->second;
                     const Address p = data_segment.address() + long_entry->offset;
                     const Address a = long_entry->addend;
+
+                    LOG_DEBUG_IF(LOG_RELOCATIONS, "[LONG]: code: {}, sym_seg: {}, sym_start: {}, s: {}, data_seg: {}, p: {}, a: {}", entry->code, entry->symbol_segment, log_hex(symbol_start.address()), log_hex(s), log_hex(data_segment.address()), log_hex(p), log_hex(a));
+
                     if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
                         return false;
                     }
 
                     if (long_entry->code2 != 0) {
+                        LOG_DEBUG_IF(LOG_RELOCATIONS, "[LONG2]: code: {}, sym_seg: {}, sym_start: {}, s: {}, data_seg: {}, p: {}, a: {}", long_entry->code2, entry->symbol_segment, log_hex(symbol_start.address()), log_hex(s), log_hex(data_segment.address()), log_hex(p + (long_entry->dist2 * 2)), log_hex(a));
+
                         if (!relocate(Ptr<uint32_t>(p + (long_entry->dist2 * 2)).get(mem), static_cast<Code>(long_entry->code2), s, a, p)) {
                             return false;
                         }
                     }
                 } else {
+                    LOG_DEBUG_IF(LOG_RELOCATIONS, "[LONG]: code: {}, sym_seg: {}, sym_start: {}, s: {}", entry->code, entry->symbol_segment, log_hex(symbol_start.address()), log_hex(s));
                     LOG_WARN("Segment {} not found for long relocation with code {}, skipping", long_entry->data_segment, entry->code);
                 }
             }
         } else {
+            LOG_DEBUG_IF(LOG_RELOCATIONS, "[{}/ERROR]: code: {}, sym_seg: {}", entry->is_short ? "SHRT" : "LONG", entry->code, entry->symbol_segment);
             LOG_WARN("Symbol segment {} not found for relocation with code {}, skipping", entry->symbol_segment, entry->code);
         }
 
