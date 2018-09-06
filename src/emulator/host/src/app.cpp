@@ -32,6 +32,8 @@
 #include <util/log.h>
 #include <util/string_convert.h>
 
+#include <boost/filesystem.hpp>
+
 #include <SDL.h>
 #include <glutil/gl.h>
 
@@ -176,6 +178,10 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         } else if (status == UNK_STATE) {
             exit(0);
         }
+    } else if (zip.get()->m_archive_size > boost::filesystem::space(title_base_path).available) {
+        LOG_CRITICAL("Not enough remaining space available to install vpk.");
+        fs::remove_all(title_base_path);
+        return false;
     }
 
     for (auto i = 0; i < num_files; i++) {
