@@ -32,6 +32,12 @@ Vita3K binaries for Windows can be downloaded on [AppVeyor](https://ci.appveyor.
 ### Prerequisites
 [CMake](https://cmake.org/) is used to generate Visual Studio and Xcode project files. It is assumed that you have CMake installed and on your path. Other dependencies are provided as Git submodules or as prebuilt binaries.
 
+After cloning, open a command prompt in Vita3K's directory and run:
+
+`git submodule update --init --recursive`
+
+to get all submodules.
+
 ### Windows (Visual Studio)
 1. Run `gen.bat` to create a `build-windows` directory and generate a Visual Studio solution in there.
 2. Open the `Vita3K.sln` solution.
@@ -64,6 +70,6 @@ Thanks go out to people who offered advice or otherwise made this project possib
 If you would like to show your appreciation or even help fund development, the project has a [Patreon](https://www.patreon.com/Vita3K) page.
 
 ## Note
-The purpose of the emulator is not to enable illegal activity. 
+The purpose of the emulator is not to enable illegal activity.
 
 PlayStation and PS Vita are trademarks of Sony Interactive Entertainment Inc. The emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
