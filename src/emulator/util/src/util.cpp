@@ -166,39 +166,3 @@ ProgramArgsWide process_args(int argc, char *argv[]) {
 
     return args;
 }
-
-#ifdef __APPLE__
-void rmkdir(const char *dir) {
-    char tmp[256];
-    char *p = NULL;
-    size_t len;
-
-    snprintf(tmp, sizeof(tmp), "%s", dir);
-    len = strlen(tmp);
-    if (tmp[len - 1] == '/')
-        tmp[len - 1] = 0;
-    for (p = tmp + 1; *p; p++) {
-        if (*p == '/') {
-            *p = 0;
-            mkdir(tmp, 0777);
-            *p = '/';
-        }
-    }
-    mkdir(tmp, 0777);
-}
-
-namespace fs {
-bool create_directory(std::string path) {
-    if (mkdir(path.c_str(), 0777) == 0)
-        return true;
-    return false;
-}
-bool create_directories(std::string path) {
-    rmkdir(path.c_str());
-    return true;
-}
-int remove(std::string path) {
-    return ::remove(path.c_str());
-}
-} // namespace fs
-#endif

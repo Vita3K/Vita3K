@@ -28,10 +28,8 @@
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/find.h>
-#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_convert.h>
-
 #include <boost/filesystem.hpp>
 
 #include <SDL.h>
@@ -49,6 +47,7 @@ static const char *EBOOT_PATH = "eboot.bin";
 static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
 
 using namespace gl;
+namespace fs = boost::filesystem;
 
 void error_dialog(const std::string &message, SDL_Window *window) {
     if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window) < 0) {
@@ -178,7 +177,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         } else if (status == UNK_STATE) {
             exit(0);
         }
-    } else if (zip.get()->m_archive_size > boost::filesystem::space(title_base_path).available) {
+    } else if (zip.get()->m_archive_size > fs::space(title_base_path).available) {
         LOG_CRITICAL("Not enough remaining space available to install vpk.");
         fs::remove_all(title_base_path);
         return false;

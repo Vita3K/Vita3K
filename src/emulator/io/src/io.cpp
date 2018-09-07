@@ -25,7 +25,7 @@
 
 #include <io/state.h>
 #include <io/types.h>
-#include <util/fs.h>
+#include <boost/filesystem.hpp>
 #include <util/log.h>
 #include <util/preprocessor.h>
 
@@ -48,6 +48,7 @@
 #include <tuple>
 #include <type_traits>
 
+namespace fs = boost::filesystem;
 // ****************************
 // * Utility functions *
 // ****************************
