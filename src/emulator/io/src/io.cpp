@@ -35,7 +35,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <dirent.h>
-#include <util/string_convert.h>
+#include <util/string_utils.h>
 #else
 #include <sys/stat.h>
 #include <unistd.h>
@@ -43,7 +43,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -59,6 +61,10 @@ int io_error_impl(int retval, const char *export_name, const char *func_name) {
 
 #define IO_ERROR(retval) io_error_impl(retval, export_name, __func__)
 #define IO_ERROR_UNK() IO_ERROR(-1)
+
+using namespace vfs;
+
+namespace vfs {
 
 const char *
 translate_open_mode(int flags) {
@@ -91,7 +97,7 @@ void trim_leading_slash(std::string path) {
 }
 
 constexpr const char *
-get_device_string(VitaIoDevice dev, bool with_colon = false) {
+get_device_string(VitaIoDevice dev, bool with_colon) {
     switch (dev) {
 #define DEVICE(path, name)  \
     case JOIN_DEVICE(name): \
@@ -168,6 +174,30 @@ to_host_path(const std::string &path, const std::string &pref_path, VitaIoDevice
 // ****************************
 // * End of utility functions *
 // ****************************
+
+bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const std::string &vfs_file_path) {
+    const std::string host_file_path = pref_path + get_device_string(device) + "/" + vfs_file_path;
+
+    std::ifstream f(host_file_path, std::ifstream::binary);
+    if (f.fail()) {
+        return false;
+    }
+    f.unsetf(std::ios::skipws);
+    std::streampos size;
+    f.seekg(0, std::ios::end);
+    size = f.tellg();
+    f.seekg(0, std::ios::beg);
+    buf.reserve(size);
+    buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
+    return true;
+}
+
+bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string title_id, const std::string &vfs_file_path) {
+    std::string game_file_path = "app/" + title_id + "/" + vfs_file_path;
+    return read_file(VitaIoDevice::UX0, buf, pref_path, game_file_path);
+}
+
+} // namespace vfs
 
 bool init(IOState &io, const char *pref_path) {
     std::string ux0 = pref_path;
@@ -259,7 +289,7 @@ SceUID open_file(IOState &io, const std::string &path, int flags, const char *pr
         };
 
 #ifdef WIN32
-        const FilePtr file(_wfopen(utf_to_wide(file_path).c_str(), utf_to_wide(open_mode).c_str()), delete_file);
+        const FilePtr file(_wfopen(string_utils::utf_to_wide(file_path).c_str(), string_utils::utf_to_wide(open_mode).c_str()), delete_file);
 #else
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
 #endif
@@ -504,7 +534,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
 
 #ifdef WIN32
         WIN32_FIND_DATAW find_data;
-        HANDLE handle = FindFirstFileW(utf_to_wide(file_path).c_str(), &find_data);
+        HANDLE handle = FindFirstFileW(string_utils::utf_to_wide(file_path).c_str(), &find_data);
         if (handle == INVALID_HANDLE_VALUE) {
             return IO_ERROR_UNK();
         }
@@ -591,7 +621,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path, const char *e
     }
 
 #ifdef WIN32
-    const DirPtr dir(_wopendir((utf_to_wide(dir_path)).c_str()), _wclosedir);
+    const DirPtr dir(_wopendir((string_utils::utf_to_wide(dir_path)).c_str()), _wclosedir);
 #else
     const DirPtr dir(opendir(dir_path.c_str()), [](DIR *dir) {
         if (dir != nullptr) {
@@ -633,7 +663,7 @@ int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *export_
         }
 
 #ifdef WIN32
-        std::string d_name_utf8 = wide_to_utf(d->d_name);
+        std::string d_name_utf8 = string_utils::wide_to_utf(d->d_name);
         strncpy(dent->d_name, d_name_utf8.c_str(), sizeof(dent->d_name));
 #else
         strncpy(dent->d_name, d->d_name, sizeof(dent->d_name));

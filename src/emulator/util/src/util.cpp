@@ -1,5 +1,5 @@
 #include <util/log.h>
-#include <util/string_convert.h>
+#include <util/string_utils.h>
 
 #ifdef WIN32
 #include <direct.h>
@@ -19,6 +19,7 @@
 #include <iostream>
 #include <locale> // std::wstring_convert
 #include <memory>
+#include <sstream>
 #include <string>
 
 namespace logging {
@@ -101,6 +102,25 @@ void set_level(spdlog::level::level_enum log_level) {
 
 } // namespace logging
 
+namespace string_utils {
+
+std::vector<std::string> split_string(const std::string &str, char delimiter) {
+    std::stringstream str_stream(str);
+    std::string segment;
+    std::vector<std::string> seglist;
+
+    const size_t num_segments = std::count_if(str.begin(), str.end(), [&](char c) {
+        return c == delimiter;
+    }) + (str.empty() ? 1 : 0);
+
+    seglist.reserve(num_segments);
+
+    while (std::getline(str_stream, segment, delimiter)) {
+        seglist.push_back(segment);
+    }
+    return seglist;
+}
+
 std::wstring utf_to_wide(const std::string &str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
     return myconv.from_bytes(str);
@@ -139,6 +159,8 @@ std::u16string utf8_to_utf16(const std::string &str) {
 }
 #endif
 
+} // namespace string_utils
+
 ProgramArgsWide process_args(int argc, char *argv[]) {
     ProgramArgsWide args;
 
@@ -160,7 +182,7 @@ ProgramArgsWide process_args(int argc, char *argv[]) {
     LocalFree(wide_arg_list);
 #else
     for (auto i = 0; i < n_args; i++) {
-        args.emplace_back(utf_to_wide(argv[i]));
+        args.emplace_back(string_utils::utf_to_wide(argv[i]));
     }
 #endif
 

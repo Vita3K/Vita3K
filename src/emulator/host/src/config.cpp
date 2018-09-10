@@ -20,6 +20,7 @@
 #include <host/app.h>
 #include <host/version.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>
@@ -33,7 +34,7 @@ namespace po = boost::program_options;
 
 namespace config {
 
-bool init(config_t &cfg, int argc, char **argv) {
+bool init(Config &cfg, int argc, char **argv) {
     try {
         // Declare all options
         // clang-format off

@@ -51,6 +51,8 @@ static int SDLCALL thread_function(void *data) {
     assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
 
+    const std::lock_guard<std::mutex> lock(thread->mutex);
+
     for (auto &waiting_thread : thread->waiting_threads) {
         waiting_thread->to_do = ThreadToDo::run;
         waiting_thread->something_to_do.notify_all();

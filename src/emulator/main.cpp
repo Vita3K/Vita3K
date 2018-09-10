@@ -25,17 +25,18 @@
 #include <host/version.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/log.h>
-#include <util/string_convert.h>
+#include <util/string_utils.h>
 
 #include <SDL.h>
 
 #include <cstdlib>
 #include <iterator>
+#include <utility>
 
 int main(int argc, char *argv[]) {
     logging::init();
 
-    config_t cfg{};
+    Config cfg{};
     if (!config::init(cfg, argc, argv))
         return IncorrectArgs;
 
@@ -59,12 +60,12 @@ int main(int argc, char *argv[]) {
 
     std::wstring vpk_path_wide;
     if (run_type == AppRunType::Vpk) {
-        vpk_path_wide = utf_to_wide(*cfg.vpk_path);
+        vpk_path_wide = string_utils::utf_to_wide(*cfg.vpk_path);
     } else {
         SDL_Event ev;
         while (SDL_PollEvent(&ev)) {
             if (ev.type == SDL_DROPFILE) {
-                vpk_path_wide = utf_to_wide(ev.drop.file);
+                vpk_path_wide = string_utils::utf_to_wide(ev.drop.file);
                 SDL_free(ev.drop.file);
                 break;
             }
@@ -73,11 +74,11 @@ int main(int argc, char *argv[]) {
 
     // TODO: Clean this, ie. make load_app overloads called depending on run type
     if (run_type == AppRunType::Extracted) {
-        vpk_path_wide = utf_to_wide(*cfg.run_title_id);
+        vpk_path_wide = string_utils::utf_to_wide(*cfg.run_title_id);
     }
 
     HostState host;
-    if (!init(host)) {
+    if (!init(host, std::move(cfg))) {
         error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }
@@ -100,7 +101,7 @@ int main(int argc, char *argv[]) {
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
         if (run_type == AppRunType::Extracted) {
-            vpk_path_wide = utf_to_wide(host.gui.game_selector.selected_title_id);
+            vpk_path_wide = string_utils::utf_to_wide(host.gui.game_selector.selected_title_id);
         }
     }
 

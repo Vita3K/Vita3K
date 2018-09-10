@@ -69,6 +69,21 @@ inline int find_mutex(MutexPtr &mutex_out, MutexPtrs *mutexes_out, KernelState &
     return SCE_KERNEL_OK;
 }
 
+inline int find_condvar(CondvarPtr &condvar_out, CondvarPtrs *condvars_out, KernelState &kernel, const char *export_name, SceUID condid, SyncWeight weight) {
+    CondvarPtrs &condvars = get_condvars(kernel, weight);
+    condvar_out = lock_and_find(condid, condvars, kernel.mutex);
+    if (!condvar_out) {
+        if (weight == SyncWeight::Light) {
+            return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
+        }
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_COND_ID);
+    }
+
+    if (condvars_out)
+        *condvars_out = condvars;
+    return SCE_KERNEL_OK;
+}
+
 // *********
 // * Mutex *
 // *********
@@ -112,7 +127,7 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_nam
     return SCE_KERNEL_OK;
 }
 
-inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int lock_count, MutexPtr mutex) {
+inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int lock_count, MutexPtr mutex, SyncWeight weight, bool only_try) {
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid:{} thread_id:{} name:\"{}\" attr:{} lock_count:{}",
             export_name, mutex->uid, thread_id, mutex->name, mutex->attr, mutex->lock_count);
@@ -139,8 +154,15 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
             }
         } else {
             // Owned by someone else
-            // Sleep thread!
 
+            // Don't sleep if only_try is set
+            if (only_try)
+                if (weight == SyncWeight::Light)
+                    return SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN;
+                else
+                    return SCE_KERNEL_ERROR_MUTEX_FAILED_TO_OWN;
+
+            // Sleep thread!
             const std::lock_guard<std::mutex> lock2(thread->mutex);
             assert(thread->to_do == ThreadToDo::run);
             thread->to_do = ThreadToDo::wait;
@@ -171,7 +193,15 @@ int mutex_lock(KernelState &kernel, const char *export_name, SceUID thread_id, S
     if (auto error = find_mutex(mutex, nullptr, kernel, export_name, mutexid, weight))
         return error;
 
-    return mutex_lock_impl(kernel, export_name, thread_id, lock_count, mutex);
+    return mutex_lock_impl(kernel, export_name, thread_id, lock_count, mutex, weight, false);
+}
+
+int mutex_try_lock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, SyncWeight weight) {
+    MutexPtr mutex;
+    if (auto error = find_mutex(mutex, nullptr, kernel, export_name, mutexid, weight))
+        return error;
+
+    return mutex_lock_impl(kernel, export_name, thread_id, lock_count, mutex, weight, true);
 }
 
 inline int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int unlock_count, MutexPtr mutex) {
@@ -232,6 +262,7 @@ int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id,
         mutexes.erase(mutexid);
     } else {
         // TODO:
+        LOG_WARN("Can't delete sync object, it has waiting threads.");
     }
 
     return SCE_KERNEL_OK;
@@ -455,7 +486,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
             waiting_thread->something_to_do.notify_one();
         }
 
-        if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex))
+        if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex, weight, false))
             return error;
 
     } else {
@@ -477,7 +508,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
                 waiting_thread->something_to_do.notify_one();
             }
 
-            if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex))
+            if (auto error = mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex, weight, false))
                 return error;
         }
     }
@@ -485,7 +516,33 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
     return SCE_KERNEL_OK;
 }
 
-SceUID create_eventflag(KernelState &kernel, const char *export_name, SceUID thread_id, const char *event_name, SceUInt attr, unsigned int flags) {
+int condvar_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, SyncWeight weight) {
+    CondvarPtr condvar;
+    CondvarPtrs condvars;
+    if (auto error = find_condvar(condvar, &condvars, kernel, export_name, condid, weight))
+        return error;
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid:{} name:\"{}\" attr:{} assoc_mutexid:{}",
+            export_name, condvar->uid, condvar->name, condvar->attr, condvar->associated_mutex->uid);
+    }
+
+    if (condvar->waiting_threads.empty()) {
+        const std::lock_guard<std::mutex> lock(condvar->mutex);
+        condvars.erase(condid);
+    } else {
+        // TODO:
+        LOG_WARN("Can't delete sync object, it has waiting threads.");
+    }
+
+    return SCE_KERNEL_OK;
+}
+
+// **************
+// * Event Flag *
+// **************
+
+SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thread_id, const char *event_name, SceUInt attr, unsigned int flags) {
     if ((strlen(event_name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -509,7 +566,7 @@ SceUID create_eventflag(KernelState &kernel, const char *export_name, SceUID thr
     return uid;
 }
 
-int wait_eventflag(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, SceUInt *timeout) {
+int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, SceUInt *timeout) {
     assert(event_id >= 0);
     assert(timeout == nullptr);
 
@@ -564,7 +621,7 @@ int wait_eventflag(KernelState &kernel, const char *export_name, SceUID thread_i
     return SCE_KERNEL_OK;
 }
 
-int set_eventflag(KernelState &kernel, const char *export_name, SceUID event_id, unsigned int flags) {
+int eventflag_set(KernelState &kernel, const char *export_name, SceUID event_id, unsigned int flags) {
     // TODO Don't lock twice.
     const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
     if (!event) {
@@ -615,7 +672,7 @@ int set_eventflag(KernelState &kernel, const char *export_name, SceUID event_id,
     return 0;
 }
 
-int delete_eventflag(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id) {
+int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id) {
     const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
@@ -638,6 +695,7 @@ int delete_eventflag(KernelState &kernel, const char *export_name, SceUID thread
         kernel.eventflags.erase(event_id);
     } else {
         // TODO:
+        LOG_WARN("Can't delete sync object, it has waiting threads.");
     }
 
     return SCE_KERNEL_OK;

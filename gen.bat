@@ -3,11 +3,11 @@
 REM CI uses pre-built Boost
 IF "%CI%"=="" (
 	REM Create build dir
-	mkdir src/external/boost-build
-	cd src/external/boost
-	
+	mkdir src\external\boost-build
+	cd src\external\boost
+
 	REM Build our Boost subset
-	b2 -j5 --stagedir=../boost-build stage
+	b2 -j5 --build-dir=../boost-build --stagedir=../boost-build stage
 	cd ../../..
 )
 

@@ -26,6 +26,7 @@
 #include <cpu/functions.h>
 #include <glutil/gl.h>
 #include <io/functions.h>
+#include <io/io.h>
 #include <kernel/functions.h>
 #include <kernel/thread/thread_state.h>
 #include <nids/functions.h>
@@ -45,6 +46,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <utility>
 
 #include <gui/imgui_impl_sdl_gl3.h>
 
@@ -52,7 +54,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <dirent.h>
-#include <util/string_convert.h>
+#include <util/string_utils.h>
 #else
 #include <sys/stat.h>
 #include <unistd.h>
@@ -151,7 +153,7 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
     }
 }
 
-bool init(HostState &state) {
+bool init(HostState &state, Config cfg) {
     const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
     const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
 
@@ -164,6 +166,7 @@ bool init(HostState &state) {
         thread->something_to_do.notify_all();
     };
 
+    state.cfg = std::move(cfg);
     state.base_path = base_path.get();
     state.pref_path = pref_path.get();
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
@@ -203,7 +206,7 @@ bool init(HostState &state) {
 
     std::string dir_path = state.pref_path + "ux0/app";
 #ifdef WIN32
-    _WDIR *d = _wopendir((utf_to_wide(dir_path)).c_str());
+    _WDIR *d = _wopendir((string_utils::utf_to_wide(dir_path)).c_str());
     _wdirent *dp;
 #else
     DIR *d = opendir(dir_path.c_str());
@@ -213,15 +216,15 @@ bool init(HostState &state) {
         std::string d_name_utf8;
 #ifdef WIN32
         if ((dp = _wreaddir(d)) != NULL) {
-            d_name_utf8 = wide_to_utf(dp->d_name);
+            d_name_utf8 = string_utils::wide_to_utf(dp->d_name);
 #else
         if ((dp = readdir(d)) != NULL) {
             d_name_utf8 = dp->d_name;
 #endif
             if ((strcmp(d_name_utf8.c_str(), ".")) && (strcmp(d_name_utf8.c_str(), ".."))) {
-                Buffer params;
+                vfs::FileBuffer params;
                 state.io.title_id = d_name_utf8;
-                if (read_file_from_disk(params, "sce_sys/param.sfo", state)) {
+                if (vfs::read_app_file(params, state.pref_path, state.io.title_id, "sce_sys/param.sfo")) {
                     SfoFile sfo_handle;
                     load_sfo(sfo_handle, params);
                     find_data(state.game_title, sfo_handle, "TITLE");
