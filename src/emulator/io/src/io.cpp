@@ -276,6 +276,7 @@ SceUID open_file(IOState &io, const std::string &path, int flags, const char *pr
 
         return fd;
     }
+    case VitaIoDevice::SA0:
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string file_path = to_host_path(translated_path, pref_path, device);
@@ -450,6 +451,7 @@ int remove_file(IOState &io, const char *file, const char *pref_path, const char
     LOG_TRACE("{}: Removing file {} ({})", export_name, file, translated_path);
 
     switch (device) {
+    case VitaIoDevice::SA0:
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string file_path = to_host_path(translated_path, pref_path, device);
@@ -472,6 +474,7 @@ int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, co
     LOG_TRACE("{}: Removing dir {} ({})", export_name, dir, translated_path);
 
     switch (device) {
+    case VitaIoDevice::SA0:
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string dir_path = to_host_path(translated_path, pref_path, device);
@@ -495,6 +498,7 @@ int remove_dir(IOState &io, const char *dir, const char *pref_path, const char *
     LOG_TRACE("{}: Removing dir {} ({})", export_name, dir, translated_path);
 
     switch (device) {
+    case VitaIoDevice::SA0:
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string dir_path = to_host_path(translated_path, pref_path, device);
@@ -528,6 +532,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
     LOG_TRACE("{}: Statting file {} ({})", export_name, file, translated_path);
 
     switch (device) {
+    case VitaIoDevice::SA0:
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string file_path = to_host_path(translated_path, pref_path, device);
@@ -609,6 +614,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path, const char *e
 
     std::string dir_path;
     switch (device) {
+    case VitaIoDevice::SA0:
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         dir_path = to_host_path(translated_path, pref_path, device);
