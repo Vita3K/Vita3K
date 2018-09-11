@@ -24,4 +24,5 @@
 struct CPUState;
 struct HostState;
 
-typedef std::function<void(HostState &host, CPUState &cpu, SceUID thread_id)> ImportFn;
+using ImportFn = std::function<void(HostState &host, CPUState &cpu, SceUID thread_id)>;
+
