@@ -18,7 +18,7 @@
 #include <host/functions.h>
 
 #include <host/app.h>
-#include <host/import_fn.h>
+#include <host/imports.h>
 #include <host/state.h>
 #include <host/version.h>
 
