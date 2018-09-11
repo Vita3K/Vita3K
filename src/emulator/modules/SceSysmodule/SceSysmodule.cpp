@@ -175,7 +175,22 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
                 return false;
             }
 
-            // TODO: Run entry point of loaded modules. Was having issues with it.
+            if (lib_entry_point) {
+                LOG_DEBUG("Running module_start of module: {}", module_name);
+
+                Ptr<void> argp = Ptr<void>();
+                const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, call_import, false);
+                const ThreadStatePtr module_thread = find(module_thread_id, host.kernel.threads);
+                const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
+
+                module_thread->to_do = ThreadToDo::exit;
+                module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+
+                const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+                host.kernel.running_threads.erase(module_thread_id);
+                host.kernel.threads.erase(module_thread_id);
+                LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
+            }
 
         } else {
             LOG_ERROR("Module at \"{}\" not present", module_path);
@@ -213,7 +228,6 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
     const bool lle_modules_enabled = !host.cfg.lle_modules.empty();
 
     if (lle_modules_enabled && is_lle_module(module_id, host.cfg.lle_modules))
-
         if (load_module(host, module_id))
             return SCE_SYSMODULE_LOADED;
         else
