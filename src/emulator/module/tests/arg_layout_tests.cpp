@@ -40,7 +40,7 @@ static std::ostream &operator<<(std::ostream &out, const ArgLayout &layout) {
 }
 
 TEST(lay_out, gpr_overflows_to_stack) {
-    const auto actual = lay_out<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t>();
+    const auto actual = std::get<0>(lay_out<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t>());
     const std::array<ArgLayout, 6> expected = { {
         { ArgLocation::gpr, 0 },
         { ArgLocation::gpr, 1 },
@@ -54,7 +54,7 @@ TEST(lay_out, gpr_overflows_to_stack) {
 }
 
 TEST(lay_out, dword_uses_two_gpr) {
-    const auto actual = lay_out<int64_t, int32_t>();
+    const auto actual = std::get<0>(lay_out<int64_t, int32_t>());
     const std::array<ArgLayout, 2> expected = { {
         { ArgLocation::gpr, 0 },
         { ArgLocation::gpr, 2 },
@@ -64,7 +64,7 @@ TEST(lay_out, dword_uses_two_gpr) {
 }
 
 TEST(lay_out, dword_aligned_to_two_gpr) {
-    const auto actual = lay_out<int32_t, int64_t>();
+    const auto actual = std::get<0>(lay_out<int32_t, int64_t>());
     const std::array<ArgLayout, 2> expected = { {
         { ArgLocation::gpr, 0 },
         { ArgLocation::gpr, 2 },
@@ -76,7 +76,7 @@ TEST(lay_out, dword_aligned_to_two_gpr) {
 TEST(lay_out, dword_alignment_can_waste_gprs) {
     // Arg 3 could fit in r1, but alignment of arg 2 skipped it.
     // I've not observed this, but this is the current behaviour.
-    const auto actual = lay_out<int32_t, int64_t, int32_t>();
+    const auto actual = std::get<0>(lay_out<int32_t, int64_t, int32_t>());
     const std::array<ArgLayout, 3> expected = { {
         { ArgLocation::gpr, 0 },
         { ArgLocation::gpr, 2 },

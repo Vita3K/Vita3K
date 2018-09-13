@@ -20,6 +20,7 @@
 #include "lay_out_args.h"
 #include "read_arg.h"
 #include "write_return_value.h"
+#include "vargs.h"
 
 #include <host/import_fn.h>
 #include <host/state.h>
@@ -28,20 +29,20 @@
 
 // Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>
-void call(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+void call(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const std::tuple<ArgsLayout<Args...>, LayoutArgsState> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
     const Ret ret = (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
     write_return_value(cpu, ret);
 }
 
 // Function does not return a value.
 template <typename... Args, size_t... indices>
-void call(void (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+void call(void (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const std::tuple<ArgsLayout<Args...>, LayoutArgsState> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
     (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
 }
 
 template <typename Ret, typename... Args>
 ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name) {
-    constexpr ArgsLayout<Args...> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
+    constexpr std::tuple<ArgsLayout<Args...>, LayoutArgsState> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
 
     return [export_fn, export_name, args_layout](HostState &host, CPUState &cpu, SceUID thread_id) {
         MICROPROFILE_SCOPEI("HLE", export_name, MP_YELLOW);

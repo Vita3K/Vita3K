@@ -32,6 +32,9 @@ if(WIN32)
     target_include_directories(dirent INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/dirent/include")
 endif()
 
+add_library(printf INTERFACE)
+target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf")
+
 add_library(elfio INTERFACE)
 target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio")
 

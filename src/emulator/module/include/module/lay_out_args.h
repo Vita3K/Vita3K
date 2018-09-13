@@ -23,12 +23,6 @@
 
 #include <tuple>
 
-struct LayoutArgsState {
-    size_t gpr_used;
-    size_t stack_used;
-    size_t float_used;
-};
-
 template <typename Arg>
 constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_stack(const LayoutArgsState &state) {
     const size_t stack_alignment = alignof(Arg); // TODO Assumes host matches ARM.
@@ -98,17 +92,24 @@ constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
 
     // Recursively add the remaining arguments.
     if (sizeof...(Tail) > 0) {
-        add_args_to_layout<Tail...>(*(&head + 1), state);
+        *(&state + 1) = state;
+        add_args_to_layout<Tail...>(*(&head + 1), *(&state + 1));
     }
 }
 
 template <typename... Args>
-constexpr ArgsLayout<Args...> lay_out() {
+constexpr std::tuple<ArgsLayout<Args...>, LayoutArgsState> lay_out() {
     ArgsLayout<Args...> layout = {};
+    LayoutArgsStates<Args...> states = {};
+
     if (sizeof...(Args) > 0) {
-        LayoutArgsState state = {};
-        add_args_to_layout<Args...>(*layout.data(), state);
+        add_args_to_layout<Args...>(layout[0], states[0]);
     }
 
-    return layout;
+    if (sizeof...(Args) <= 1) {
+        LayoutArgsState state {0, 0, 0};
+        return { layout, state };
+    } else {
+        return { layout, states[sizeof...(Args) - 2] };
+    }
 }

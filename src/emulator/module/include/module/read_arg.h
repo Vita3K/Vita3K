@@ -22,6 +22,10 @@
 
 #include <cpu/functions.h>
 
+namespace module {
+    class vargs;
+}
+
 // Read 32-bit (or smaller) values from a single register.
 template <typename T>
 std::enable_if_t<sizeof(T) <= 4, T> read_from_gpr(CPUState &cpu, const ArgLayout &arg) {
@@ -64,10 +68,20 @@ T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
     return T();
 }
 
+template <typename T>
+T make_vargs(const LayoutArgsState &state);
+
 template <typename Arg, size_t index, typename... Args>
-Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, const MemState &mem) {
+Arg read(CPUState &cpu, const std::tuple<ArgsLayout<Args...>, LayoutArgsState> &args, const MemState &mem) {
     using ArmType = typename BridgeTypes<Arg>::ArmType;
 
-    const ArmType bridged = read<ArmType>(cpu, args[index], mem);
-    return BridgeTypes<Arg>::arm_to_host(bridged, mem);
+    // Note (bentokun): The else block was intentionally made to workaround evaluation
+    // fault where MSVC evaluates the rest of the function when the Arg type is vargs
+    if constexpr(std::is_same_v<Arg, module::vargs>) {
+        LayoutArgsState layoutState = std::get<1>(args);
+        return make_vargs<Arg>(layoutState);
+    } else {
+        const ArmType bridged = read<ArmType>(cpu, std::get<0>(args)[index], mem);
+        return BridgeTypes<Arg>::arm_to_host(bridged, mem);
+    }
 }
