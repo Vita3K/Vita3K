@@ -24,6 +24,7 @@
 #include <nids/functions.h>
 #include <util/log.h>
 
+#include <boost/filesystem.hpp>
 #include <elfio/elf_types.hpp>
 // clang-format off
 #define SCE_ELF_DEFS_TARGET
@@ -47,22 +48,14 @@
 #define NID_MODULE_INFO 0x6C2224BA
 #define NID_SYSLYB 0x936c8a78
 #define NID_PROCESS_PARAM 0x70FBA1E7
-#define NID_STACK_CHK_GUARD 0x93B8AA67
-
-#define __stack_chk_guard 0xDEADBEEF
-
-#include <miniz.h>
-
-#include <cassert>
-#include <cstring>
-#include <iomanip>
-#include <iostream>
 
 using namespace ELFIO;
+namespace fs = boost::filesystem;
 
 static constexpr bool LOG_MODULE_LOADING = false;
 static constexpr bool LOG_IMPORTS = false;
 static constexpr bool LOG_EXPORTS = false;
+static constexpr bool DUMP_SEGMENTS = false;
 
 static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem) {
     struct VarImportsHeader {
@@ -413,10 +406,15 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
                 if (!relocate(uncompressed.get(), seg_header.p_filesz, segment_reloc_info, mem)) {
                     return -1;
                 }
+
+                if (DUMP_SEGMENTS)
+                    dump_segment(uncompressed.get());
             } else {
                 if (!relocate(seg_bytes, seg_header.p_filesz, segment_reloc_info, mem)) {
                     return -1;
                 }
+                if (DUMP_SEGMENTS)
+                    dump_segment(seg_bytes);
             }
         }
     }
