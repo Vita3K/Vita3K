@@ -24,6 +24,16 @@
 
 struct MemState;
 
-typedef std::map<size_t, Ptr<void>> SegmentAddresses;
+struct SegmentInfoForReloc {
+    Address addr; // segment address in guest memory
+    Address p_vaddr; // segment virtual address in guest memory
+    uint64_t size; // segment memory size
+};
+using SegmentInfosForReloc = std::map<uint16_t, SegmentInfoForReloc>;
 
-bool relocate(const void *entries, size_t size, const SegmentAddresses &segments, const MemState &mem);
+/**
+ * \param alternate_reloc_format True when alternate format 1 should be used (it's used for var import relocations)
+ * \param explicit_symval Used only if alternate_reloc_format is true, specifies the value to be written to the relocation target
+ * \return True on success, false on error
+ */
+bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &segments, const MemState &mem, bool alternate_reloc_format = false, uint32_t explicit_symval = 0);
