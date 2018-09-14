@@ -37,8 +37,8 @@ int main(int argc, char *argv[]) {
     logging::init();
 
     Config cfg{};
-    if (!config::init(cfg, argc, argv))
-        return IncorrectArgs;
+    if (const bool ret = config::init(cfg, argc, argv))
+        return ret;
 
     LOG_INFO("{}", window_title);
 

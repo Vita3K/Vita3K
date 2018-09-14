@@ -34,7 +34,7 @@ namespace po = boost::program_options;
 
 namespace config {
 
-bool init(Config &cfg, int argc, char **argv) {
+ExitCode init(Config &cfg, int argc, char **argv) {
     try {
         // Declare all options
         // clang-format off
@@ -50,6 +50,7 @@ bool init(Config &cfg, int argc, char **argv) {
 
         po::options_description config_desc("Configuration");
         config_desc.add_options()
+            ("lle-modules,m", po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
             ("log-level,l", po::value(&cfg.log_level)->default_value(spdlog::level::trace), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6");
         // clang-format on
 
@@ -74,29 +75,35 @@ bool init(Config &cfg, int argc, char **argv) {
 
         // Command-line argument parsing
         po::store(po::command_line_parser(argc, argv).options(all).positional(positional).run(), var_map);
+
+        if (var_map.count("lle-modules")) {
+            const auto lle_modules = var_map["lle-modules"].as<std::string>();
+            cfg.lle_modules = string_utils::split_string(lle_modules, ',');
+        }
+
         // TODO: Config file creation/parsing
         po::notify(var_map);
 
         // Handle some basic args
         if (var_map.count("help")) {
             std::cout << visible << std::endl;
-            return true;
+            return QuitRequested;
         }
         if (var_map.count("version")) {
             std::cout << window_title << std::endl;
-            return true;
+            return QuitRequested;
         }
 
         logging::set_level(static_cast<spdlog::level::level_enum>(*cfg.log_level));
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";
-        return false;
+        return IncorrectArgs;
     } catch (...) {
         std::cerr << "Exception of unknown type!\n";
-        return false;
+        return IncorrectArgs;
     }
-    return true;
+    return Success;
 }
 
 } // namespace config
