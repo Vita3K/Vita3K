@@ -146,7 +146,7 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
     return true;
 }
 
-static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, const MemState &mem) {
+static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_imports_raw *const imports_begin = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_top);
     const sce_module_imports_raw *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
@@ -174,7 +174,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
             LOG_INFO("Loading var imports from {}", lib_name);
         }
 
-        if (!load_var_imports(var_nids, var_entries, var_count, kernel, mem)) {
+        if (!load_var_imports(var_nids, var_entries, var_count, segments, kernel, mem)) {
             return false;
         }
     }
@@ -304,7 +304,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     LOG_DEBUG_IF(LOG_MODULE_LOADING, "Loading SELF at {}, header_type: {}, self_filesize: {}, self_offset: {}, module_info_offset: {}", path, log_hex(self_header.header_type), log_hex(self_header.self_filesize), log_hex(self_header.self_offset), log_hex(module_info_offset));
 
-    SegmentAddresses segment_addrs;
+    SegmentInfosForReloc segment_reloc_info;
     for (Elf_Half segment_index = 0; segment_index < elf.e_phnum; ++segment_index) {
         const Elf32_Phdr &src = segments[segment_index];
         const uint8_t *const segment_bytes = self_bytes + self_header.header_len + src.p_offset;
@@ -335,7 +335,10 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
                 memcpy(address.get(mem), segment_bytes, src.p_filesz);
             }
 
-            segment_addrs[segment_index] = address;
+            if (DUMP_SEGMENTS)
+                dump_segment(seg_addr.get(mem));
+
+            segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, seg_header.p_memsz };
         } else if (src.p_type == PT_LOOS) {
             if (segment_infos[segment_index].compression == 2) {
                 unsigned long dest_bytes = src.p_filesz;
@@ -356,7 +359,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     }
 
     const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
-    const Ptr<const uint8_t> module_info_segment_address = segment_addrs[module_info_segment_index].cast<const uint8_t>();
+    const Ptr<const uint8_t> module_info_segment_address = Ptr<const uint8_t>(segment_reloc_info[module_info_segment_index].addr);
     const uint8_t *const module_info_segment_bytes = module_info_segment_address.get(mem);
     const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module_info_segment_bytes + module_info_offset);
 
@@ -388,7 +391,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     for (Elf_Half segment_index = 0; segment_index < elf.e_phnum; ++segment_index) {
         sceKernelModuleInfo->segments[segment_index].size = sizeof(sceKernelModuleInfo->segments[segment_index]);
-        sceKernelModuleInfo->segments[segment_index].vaddr = segment_addrs[segment_index];
+        sceKernelModuleInfo->segments[segment_index].vaddr = segment_reloc_info[segment_index].addr;
         sceKernelModuleInfo->segments[segment_index].memsz = segments[segment_index].p_memsz;
     }
 
@@ -400,7 +403,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         return -1;
     }
 
-    if (!load_imports(*module_info, module_info_segment_address, kernel, mem)) {
+    if (!load_imports(*module_info, module_info_segment_address, segment_reloc_info, kernel, mem)) {
         return -1;
     }
 
