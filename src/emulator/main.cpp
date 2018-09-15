@@ -126,7 +126,12 @@ int main(int argc, char *argv[]) {
         }
         imgui::draw_end(host.window.get());
 
-        host.display.condvar.notify_all();
+        if (!host.display.sync_rendering)
+            host.display.condvar.notify_all();
+        else {
+            std::unique_lock<std::mutex> lock(host.display.mutex);
+            host.display.condvar.wait(lock);
+        }
 
         set_window_title(host);
     }
