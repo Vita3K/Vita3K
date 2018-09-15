@@ -76,16 +76,19 @@ EXPORT(int, sceDisplayUnregisterVblankStartCallback) {
 
 EXPORT(int, sceDisplayWaitSetFrameBuf) {
     STUBBED("move after setframebuf");
-    {
+
+    if (!host.display.sync_rendering) {
         std::unique_lock<std::mutex> lock(host.display.mutex);
         host.display.condvar.wait(lock);
-        if (host.display.abort.load()) {
 #ifndef WIN32
-            lock.release();
+        lock.release();
 #endif
-            return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
-        }
-    }
+    } else
+        host.display.condvar.notify_all();
+
+    if (host.display.abort.load())
+        return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
+
     return SCE_DISPLAY_ERROR_OK;
 }
 
@@ -102,16 +105,19 @@ EXPORT(int, sceDisplayWaitSetFrameBufMultiCB) {
 }
 
 EXPORT(int, sceDisplayWaitVblankStart) {
-    {
+
+    if (!host.display.sync_rendering) {
         std::unique_lock<std::mutex> lock(host.display.mutex);
         host.display.condvar.wait(lock);
-        if (host.display.abort.load()) {
 #ifndef WIN32
-            lock.release();
+        lock.release();
 #endif
-            return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
-        }
-    }
+    } else
+        host.display.condvar.notify_all();
+
+    if (host.display.abort.load())
+        return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
+
     return SCE_DISPLAY_ERROR_OK;
 }
 
