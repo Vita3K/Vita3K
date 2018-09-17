@@ -1,6 +1,7 @@
 add_library(
 gui
 STATIC
+include/gui/gui_constants.h
 include/gui/imgui_impl_sdl_gl3.h
 include/gui/imgui_impl.h
 include/gui/functions.h

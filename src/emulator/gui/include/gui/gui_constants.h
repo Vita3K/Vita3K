@@ -17,14 +17,7 @@
 
 #pragma once
 
-struct HostState;
-struct SDL_Window;
+#include <imgui.h>
 
-namespace imgui {
-
-void init(HostState &host);
-void draw_begin(HostState &host);
-void draw_end(SDL_Window *window);
-void destroy(HostState &host);
-
-} // namespace imgui
+const ImVec4 GUI_TEXT_TITLE_COLOR(242. / 255, 150. / 255, 58. / 255, 255. / 255);
+const ImVec4 GUI_TEXT_COLOR(247. / 255, 198. / 255, 51. / 255, 255. / 255);
