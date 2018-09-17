@@ -18,14 +18,20 @@
 #include <kernel/relocation.h>
 #include <util/log.h>
 
+#include <self.h>
+
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <string>
+
+static constexpr bool LOG_RELOCATIONS = false;
 
 enum Code {
     None = 0,
     Abs32 = 2,
     Rel32 = 3,
+    Abs8 = 8,
     ThumbCall = 10,
     Call = 28,
     Jump24 = 29,
@@ -39,29 +45,93 @@ enum Code {
     ThumbMovtAbs = 48
 };
 
-struct Entry {
-    uint8_t is_short : 4;
-    uint8_t symbol_segment : 4;
-    uint8_t code;
+// Common type so we can static_cast between unknown/known formats
+struct Entry {};
+
+struct EntryFormatUnknown : Entry {
+    uint32_t format : 4;
 };
 
-struct ShortEntry : Entry {
-    uint16_t data_segment : 4;
-    uint16_t offset_lo : 12;
+struct EntryFormat0 : Entry {
+    uint32_t format : 4;
+    uint32_t symbol_segment : 4;
+    uint32_t code : 8;
+    uint32_t patch_segment : 4;
+    uint32_t code2 : 8;
+    uint32_t dist2 : 4;
+
+    uint32_t addend;
+
+    uint32_t offset;
+};
+
+struct EntryFormat1 : Entry {
+    uint32_t format : 4;
+    uint32_t symbol_segment : 4;
+    uint32_t code : 8;
+    uint32_t patch_segment : 4;
+    uint32_t offset_lo : 12;
+
     uint32_t offset_hi : 10;
     uint32_t addend : 22;
 };
 
-struct LongEntry : Entry {
-    uint16_t data_segment : 4;
-    uint16_t code2 : 8;
-    uint16_t dist2 : 4;
-    uint32_t addend;
+// Used by var import relocations
+struct EntryFormat1Alt : Entry {
+    uint32_t format : 4;
+    uint32_t symbol_segment : 4;
+    uint32_t code : 8;
+    uint32_t patch_segment : 4;
+    uint32_t pad : 4;
+
     uint32_t offset;
 };
 
-static_assert(sizeof(ShortEntry) == 8, "Short entry has incorrect size.");
-static_assert(sizeof(LongEntry) == 12, "Long entry has incorrect size.");
+struct EntryFormat2 : Entry {
+    uint32_t format : 4;
+    uint32_t symbol_segment : 4;
+    uint32_t code : 8;
+    uint32_t offset : 16;
+
+    uint32_t addend;
+};
+
+struct EntryFormat3 : Entry {
+    uint32_t format : 4;
+    uint32_t symbol_segment : 4;
+    uint32_t mode : 1; // ARM = 0, THUMB = 1
+    uint32_t offset : 18;
+    uint32_t dist2 : 5;
+
+    uint32_t addend : 22;
+};
+
+struct EntryFormat4 : Entry {
+    uint32_t format : 4;
+    uint32_t offset : 23;
+    uint32_t dist2 : 5;
+};
+
+struct EntryFormat5 : Entry {
+    uint32_t format : 4;
+    uint32_t dist1 : 9;
+    uint32_t dist2 : 5;
+    uint32_t dist3 : 9;
+    uint32_t dist4 : 5;
+};
+
+struct EntryFormat6 : Entry {
+    uint32_t format : 4;
+    uint32_t offset : 28;
+};
+
+struct EntryFormat7_8_9 : Entry {
+    uint32_t format : 4;
+    // format 7 has 4 offsets, 7 bits each
+    // format 8 has 7 offsets, 4 bits each
+    // format 9 has 14 offsets, 2 bits each
+    uint32_t offsets : 28;
+};
 
 static void write(void *data, uint32_t value) {
     memcpy(data, &value, sizeof(value));
@@ -147,7 +217,8 @@ static void write_thumb_mov_abs(void *data, uint16_t symbol) {
     pair->upper.imm4 = symbol >> 12;
 }
 
-static bool relocate(void *data, Code code, uint32_t s, uint32_t a, uint32_t p) {
+static bool relocate_entry(void *data, Code code, uint32_t symval, uint32_t addend, uint32_t addr) {
+    LOG_DEBUG_IF(LOG_RELOCATIONS, "code: {}, *data: {}, data: {}, addr: {}, symval: {}, addend: {}", code, log_hex(*(reinterpret_cast<uint32_t *>(data))), data, log_hex(addr), log_hex(symval), log_hex(addend));
     switch (code) {
     case None:
     case V4BX: // Untested.
@@ -155,105 +226,335 @@ static bool relocate(void *data, Code code, uint32_t s, uint32_t a, uint32_t p) 
 
     case Abs32:
     case Target1:
-        write(data, s + a);
+        write(data, symval + addend);
+        return true;
+
+    case Abs8:
+        write_masked(data, symval + addend, 0xff);
         return true;
 
     case Rel32:
     case Target2:
-        write(data, s + a - p);
+        write(data, symval + addend - addr);
         return true;
 
     case Prel31:
-        write_masked(data, s + a - p, INT32_MAX);
+        write_masked(data, symval + addend - addr, INT32_MAX);
         return true;
 
     case ThumbCall:
-        write_thumb_call(data, s + a - p);
+        write_thumb_call(data, symval + addend - addr);
         return true;
 
     case Call:
     case Jump24:
-        write_masked(data, (s + a - p) >> 2, 0xffffff);
+        write_masked(data, (symval + addend - addr) >> 2, 0xffffff);
         return true;
 
     case MovwAbsNc:
-        write_mov_abs(data, s + a);
+        write_mov_abs(data, symval + addend);
         return true;
 
     case MovtAbs:
-        write_mov_abs(data, (s + a) >> 16);
+        write_mov_abs(data, (symval + addend) >> 16);
         return true;
 
     case ThumbMovwAbsNc:
-        write_thumb_mov_abs(data, s + a);
+        write_thumb_mov_abs(data, symval + addend);
         return true;
 
     case ThumbMovtAbs:
-        write_thumb_mov_abs(data, (s + a) >> 16);
+        write_thumb_mov_abs(data, (symval + addend) >> 16);
         return true;
     }
 
     LOG_WARN("Unhandled relocation code {}.", code);
-
-    return true;
+    return true; // ignore unhadled relocations
 }
 
-bool relocate(const void *entries, size_t size, const SegmentAddresses &segments, const MemState &mem) {
+bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &segments, const MemState &mem, bool alternate_reloc_format, uint32_t explicit_symval) {
     const void *const end = static_cast<const uint8_t *>(entries) + size;
     const Entry *entry = static_cast<const Entry *>(entries);
+
+    const auto segment_count = segments.size();
+
+    if (LOG_RELOCATIONS) {
+        LOG_DEBUG("Relocating patch of size: {}, # of segments: {}", log_hex(size), segment_count);
+        for (const auto seg : segments)
+            LOG_DEBUG("    Segment: {} -> {} (size: {})", seg.first, log_hex(seg.second.addr), seg.second.size);
+    }
+
+    // initialized in format 1 and 2
+    Address g_addr = 0,
+            g_offset = 0,
+            g_patchseg = 0;
+
+    // initiliazed in format 0, 1, 2, and 3
+    Address g_saddr = 0,
+            g_addend = 0,
+            g_type = 0,
+            g_type2 = 0;
+
+    const EntryFormatUnknown *generic_entry = nullptr;
     while (entry < end) {
-        const auto symbol_start_it = segments.find(entry->symbol_segment);
+        generic_entry = static_cast<const EntryFormatUnknown *>(entry);
 
-        if (symbol_start_it != segments.end()) {
-            const Ptr<void> symbol_start = symbol_start_it->second;
+        if (alternate_reloc_format)
+            assert(generic_entry->format == 1);
 
-            const Address s = (entry->symbol_segment == 0xf) ? 0 : symbol_start.address();
+        switch (generic_entry->format) {
+        case 0: {
+            const EntryFormat0 *const format0_entry = static_cast<const EntryFormat0 *>(entry);
 
-            if (entry->is_short) {
-                const ShortEntry *const short_entry = static_cast<const ShortEntry *>(entry);
-                const auto data_segment_it = segments.find(short_entry->data_segment);
+            const auto symbol_seg = format0_entry->symbol_segment;
+            const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
+            const auto patch_seg = format0_entry->patch_segment;
+            const auto patch_seg_start = segments.find(patch_seg)->second.addr;
 
-                if (data_segment_it != segments.end()) {
-                    const Ptr<void> data_segment = data_segment_it->second;
-                    const Address offset = short_entry->offset_lo | (short_entry->offset_hi << 12);
-                    const Address p = data_segment.address() + offset;
-                    const Address a = short_entry->addend;
-                    if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
-                        return false;
-                    }
-                } else {
-                    LOG_WARN("Segment {} not found for short relocation with code {}, skipping", short_entry->data_segment, entry->code);
-                }
-            } else {
-                const LongEntry *const long_entry = static_cast<const LongEntry *>(entry);
+            const Address s = (format0_entry->symbol_segment == 0xf) ? 0 : symbol_seg_start;
+            const Address p = patch_seg_start + format0_entry->offset;
+            const Address a = format0_entry->addend;
 
-                const auto data_segment_it = segments.find(long_entry->data_segment);
+            LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, p: {}, a: {}. {}", format0_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), log_hex(patch_seg_start), log_hex(p), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(p).get(mem)));
 
-                if (data_segment_it != segments.end()) {
-                    const Ptr<void> data_segment = data_segment_it->second;
-                    const Address p = data_segment.address() + long_entry->offset;
-                    const Address a = long_entry->addend;
-                    if (!relocate(Ptr<uint32_t>(p).get(mem), static_cast<Code>(entry->code), s, a, p)) {
-                        return false;
-                    }
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format0_entry->code), s, a, p)) {
+                return false;
+            }
 
-                    if (long_entry->code2 != 0) {
-                        if (!relocate(Ptr<uint32_t>(p + (long_entry->dist2 * 2)).get(mem), static_cast<Code>(long_entry->code2), s, a, p)) {
-                            return false;
-                        }
-                    }
-                } else {
-                    LOG_WARN("Segment {} not found for long relocation with code {}, skipping", long_entry->data_segment, entry->code);
+            const Address addr2 = p + format0_entry->dist2 * 2;
+
+            if (format0_entry->code2 != 0) {
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0/2]: code: {}, sym_seg: {}, sym_start: {}, s: {}, patch_seg: {}, p: {}, a: {}. {}", format0_entry->code2, format0_entry->symbol_segment, symbol_seg_start, format0_entry->patch_segment, log_hex(patch_seg_start), log_hex(s), log_hex(addr2), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(addr2).get(mem)));
+
+                if (!relocate_entry(Ptr<uint32_t>(addr2).get(mem), static_cast<Code>(format0_entry->code2), s, a, addr2)) {
+                    return false;
                 }
             }
-        } else {
-            LOG_WARN("Symbol segment {} not found for relocation with code {}, skipping", entry->symbol_segment, entry->code);
+
+            g_addr = patch_seg_start;
+            g_offset = format0_entry->offset;
+            g_patchseg = format0_entry->patch_segment;
+            g_saddr = s;
+            g_addend = a;
+            g_type = format0_entry->code;
+            g_type2 = format0_entry->code2;
+
+            break;
+        }
+        case 1: {
+            if (!alternate_reloc_format) {
+                const EntryFormat1 *const format1_entry = static_cast<const EntryFormat1 *>(entry);
+
+                const auto symbol_seg = format1_entry->symbol_segment;
+                const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
+                const auto patch_seg = format1_entry->patch_segment;
+                const auto patch_seg_start = segments.find(patch_seg)->second.addr;
+                const Address s = (format1_entry->symbol_segment == 0xf) ? 0 : symbol_seg_start;
+
+                const Address offset = format1_entry->offset_lo | (format1_entry->offset_hi << 12);
+                const Address p = patch_seg_start + offset;
+                const Address a = format1_entry->addend;
+
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}", format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
+
+                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format1_entry->code), s, a, p)) {
+                    return false;
+                }
+
+                g_addr = patch_seg_start;
+                g_offset = offset;
+                g_patchseg = format1_entry->patch_segment;
+                g_saddr = s;
+                g_addend = a;
+                g_type = format1_entry->code;
+                g_type2 = 0;
+
+            } else {
+                const EntryFormat1Alt *const format1_entry = static_cast<const EntryFormat1Alt *>(entry);
+
+                const auto symbol_seg = format1_entry->symbol_segment;
+                const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
+                const auto patch_seg = format1_entry->patch_segment;
+                const auto patch_seg_start = segments.find(patch_seg)->second.addr;
+                const Address s = explicit_symval;
+
+                const Address offset = format1_entry->offset;
+                const Address p = patch_seg_start + offset;
+                const Address a = 0;
+
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}", format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
+
+                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format1_entry->code), s, a, p)) {
+                    return false;
+                }
+
+                g_addr = patch_seg_start;
+                g_offset = offset;
+                g_patchseg = format1_entry->patch_segment;
+                g_saddr = s;
+                g_addend = a;
+                g_type = format1_entry->code;
+                g_type2 = 0;
+            }
+
+            break;
+        }
+        case 2: {
+            // TODO:
+            const EntryFormat2 *const format2_entry = static_cast<const EntryFormat2 *>(entry);
+
+            const auto symbol_seg = format2_entry->symbol_segment;
+            const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
+
+            LOG_WARN("[FORMAT2/UNIMP]: code: {}, sym_seg: {}, sym_start: {}, offset: {}, p: {}, a: {}", format2_entry->code, symbol_seg, log_hex(symbol_seg_start), log_hex(format2_entry->offset), log_hex(format2_entry->addend));
+            break;
+        }
+        case 3: {
+            const EntryFormat3 *const format3_entry = static_cast<const EntryFormat3 *>(entry);
+            LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT3]: sym_seg: {}, mode: {} ({}), offset: {}, dist2: {}, addend: {}", log_hex(format3_entry->symbol_segment), format3_entry->mode, format3_entry->mode ? "THUMB" : "ARM", log_hex(format3_entry->offset), log_hex(format3_entry->dist2), log_hex(format3_entry->addend));
+
+            const auto symbol_seg = format3_entry->symbol_segment;
+            const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
+            const Address s = (format3_entry->symbol_segment == 0xf) ? 0 : symbol_seg_start;
+            const auto mode = format3_entry->mode;
+            const auto offset = format3_entry->offset;
+            const auto dist2 = format3_entry->dist2;
+
+            if (mode == 1)
+                g_type = ThumbMovwAbsNc;
+            else if (mode == 0)
+                g_type = MovwAbsNc;
+
+            if (mode == 1)
+                g_type2 = ThumbMovtAbs;
+            else if (mode == 0)
+                g_type2 = MovtAbs;
+
+            g_offset += offset;
+            g_saddr = s;
+            g_addend = format3_entry->addend;
+
+            const auto a = g_addend;
+            const auto p = g_addr + g_offset;
+
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+                return false;
+            }
+
+            if (!relocate_entry(Ptr<uint32_t>(p + dist2).get(mem), static_cast<Code>(g_type2), s, a, p + dist2)) {
+                return false;
+            }
+
+            break;
+        }
+        case 4: {
+            const EntryFormat4 *const format4_entry = static_cast<const EntryFormat4 *>(entry);
+            LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT4]: offset: {}, dist2: {}", log_hex(format4_entry->offset), log_hex(format4_entry->dist2));
+
+            const auto offset = format4_entry->offset;
+            const auto dist2 = format4_entry->dist2;
+
+            g_offset += offset;
+
+            const auto s = g_saddr;
+            const auto a = g_addend;
+            const auto p = g_addr + g_offset;
+
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+                return false;
+            }
+
+            if (!relocate_entry(Ptr<uint32_t>(p + dist2).get(mem), static_cast<Code>(g_type2), s, a, p + dist2)) {
+                return false;
+            }
+
+            break;
+        }
+        case 5: {
+            // TODO:
+            const EntryFormat5 *const format5_entry = static_cast<const EntryFormat5 *>(entry);
+            LOG_WARN("[FORMAT5/UNIMP]: dist1: {}, dist2: {}, dist3: {}, dist4: {}", log_hex(format5_entry->dist1), log_hex(format5_entry->dist2), log_hex(format5_entry->dist3), log_hex(format5_entry->dist4));
+            break;
+        }
+        case 6: {
+            // TODO:
+            const EntryFormat6 *const format6_entry = static_cast<const EntryFormat6 *>(entry);
+            LOG_WARN("[FORMAT5/UNIMP]: offset: {}", log_hex(format6_entry->offset));
+            break;
+        }
+        case 7:
+        case 8:
+        case 9: {
+            const EntryFormat7_8_9 *const format7_8_9_entry = static_cast<const EntryFormat7_8_9 *>(entry);
+            const auto format = format7_8_9_entry->format;
+            uint32_t offsets = format7_8_9_entry->offsets;
+
+            LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT{}]: offsets: {}", std::to_string(format), log_hex(offsets));
+
+            uint32_t bitsize = 0;
+            uint32_t mask = 0;
+            // clang-format off
+            switch (format) {
+            case 7: bitsize = 7; mask = 0x7F; break;
+            case 8: bitsize = 4; mask = 0x0F; break;
+            case 9: bitsize = 2; mask = 0x03; break;
+            }
+            // clang-format on
+
+            do {
+                auto offset = (offsets & mask) * sizeof(uint32_t);
+                g_offset += offset;
+
+                const auto patch_seg_start = segments.find(g_patchseg)->second.addr;
+
+                const uint32_t orgval = *Ptr<uint32_t>(patch_seg_start + g_offset).get(mem);
+
+                uint32_t segbase = 0;
+                for (const auto seg_ : segments) {
+                    const auto seg = seg_.second;
+                    if (orgval >= seg.p_vaddr && orgval < seg.p_vaddr + seg.size) {
+                        segbase = seg.p_vaddr;
+                        g_saddr = seg.addr;
+                    }
+                }
+
+                assert((uint32_t)orgval > (uint32_t)segbase);
+                const auto addend = orgval - segbase;
+
+                g_type2 = 0;
+                g_type = Abs32;
+
+                const auto s = g_saddr;
+                const auto a = addend;
+                const auto p = g_addr + g_offset;
+
+                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+                    return false;
+                }
+            } while (offsets >>= bitsize);
+
+            break;
+        }
+        default: {
+            LOG_WARN("Unknown relocation entry format {} ", generic_entry->format);
+            return false;
+        }
         }
 
-        if (entry->is_short)
-            entry = static_cast<const ShortEntry *>(entry) + 1;
-        else
-            entry = static_cast<const LongEntry *>(entry) + 1;
+        // clang-format off
+        switch (generic_entry->format) {
+        case 0: entry = static_cast<const EntryFormat0 *>(entry) + 1; break;
+        case 1: entry = static_cast<const EntryFormat1 *>(entry) + 1; break;
+        case 2: entry = static_cast<const EntryFormat2 *>(entry) + 1; break;
+        case 3: entry = static_cast<const EntryFormat3 *>(entry) + 1; break;
+        case 4: entry = static_cast<const EntryFormat4 *>(entry) + 1; break;
+        case 5: entry = static_cast<const EntryFormat5 *>(entry) + 1; break;
+        case 6: entry = static_cast<const EntryFormat6 *>(entry) + 1; break;
+        case 7:
+        case 8:
+        case 9: entry = static_cast<const EntryFormat7_8_9 *>(entry) + 1; break;
+        }
+        // clang-format on
     }
 
     return true;

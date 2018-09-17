@@ -18,7 +18,7 @@
 #include <host/functions.h>
 
 #include <host/app.h>
-#include <host/import_fn.h>
+#include <host/imports.h>
 #include <host/state.h>
 #include <host/version.h>
 
@@ -75,7 +75,7 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 using namespace glbinding;
 
-static constexpr bool LOG_IMPORT_CALLS = false;
+static bool LOG_IMPORT_CALLS = false;
 static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
 #define NID(name, nid) extern const ImportFn import_##name;
@@ -320,4 +320,8 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         const std::lock_guard<std::mutex> lock(thread->mutex);
         write_pc(*thread->cpu, export_pc);
     }
+}
+
+void log_import_calls(bool enabled) {
+    LOG_IMPORT_CALLS = enabled;
 }

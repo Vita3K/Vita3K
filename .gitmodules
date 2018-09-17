@@ -15,7 +15,7 @@
 	url = https://github.com/jbeder/yaml-cpp
 [submodule "src/external/vita-toolchain"]
 	path = src/external/vita-toolchain
-	url = https://github.com/vitasdk/vita-toolchain
+	url = https://github.com/Vita3K/vita-toolchain
 [submodule "src/external/microprofile"]
 	path = src/external/microprofile
 	url = https://github.com/jonasmr/microprofile.git

@@ -232,7 +232,7 @@ EXPORT(int, sceClibStrncasecmp, const char *string1, const char *string2, int co
 #endif
 }
 
-EXPORT(Ptr<char>, sceClibStrncat, char *destination, const char *source, size_t num) {
+EXPORT(Ptr<char>, sceClibStrncat, char *destination, const char *source, uint32_t num) {
     const char *res = strncat(destination, source, num);
     return Ptr<char>(res, host.mem);
 }
@@ -241,11 +241,11 @@ EXPORT(int, sceClibStrncatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrncmp, const char *str1, const char *str2, size_t num) {
+EXPORT(int, sceClibStrncmp, const char *str1, const char *str2, uint32_t num) {
     return strncmp(str1, str2, num);
 }
 
-EXPORT(Ptr<char>, sceClibStrncpy, char *destination, const char *source, size_t num) {
+EXPORT(Ptr<char>, sceClibStrncpy, char *destination, const char *source, uint32_t num) {
     const char *res = strncpy(destination, source, num);
     return Ptr<char>(res, host.mem);
 }
@@ -254,7 +254,7 @@ EXPORT(int, sceClibStrncpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(uint32_t, sceClibStrnlen, const char *str, size_t maxlen) {
+EXPORT(uint32_t, sceClibStrnlen, const char *str, uint32_t maxlen) {
     return strnlen(str, maxlen);
 }
 

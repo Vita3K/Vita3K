@@ -19,7 +19,7 @@
 
 #include "bridge.h"
 
-#include <host/import_fn.h>
+#include <host/imports.h>
 #include <host/state.h>
 
 #include <cassert>
