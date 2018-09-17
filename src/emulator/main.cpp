@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    imgui::init(host.window.get());
+    imgui::init(host);
 
     // Application not provided via argument, show game selector
     while (run_type == AppRunType::Unknown) {
@@ -130,6 +130,9 @@ int main(int argc, char *argv[]) {
 
         set_window_title(host);
     }
+
+    // De-initializations
+    imgui::destroy(host);
 
     return Success;
 }

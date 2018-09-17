@@ -19,6 +19,8 @@
 
 #include <dialog/state.h>
 
+struct ImFont;
+
 enum SelectorState {
     SELECT_APP
 };
@@ -51,4 +53,9 @@ struct GuiState {
 
     DialogState common_dialog;
     GamesSelector game_selector;
+
+    // imgui
+    ImFont *normal_font{};
+    ImFont *monospaced_font{};
+    char *font_data{};
 };
