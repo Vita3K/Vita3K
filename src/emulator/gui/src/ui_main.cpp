@@ -36,7 +36,7 @@ void DrawGameSelector(HostState &host, AppRunType *run_type) {
         ImGui::Columns(2);
         ImGui::SetColumnWidth(0, 80);
         ImGui::SetWindowFontScale(1.1);
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_TEXT_TITLE_COLOR);
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         if (ImGui::Button("TitleID")) {
             std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
                 return lhs.title_id < rhs.title_id;
@@ -53,7 +53,7 @@ void DrawGameSelector(HostState &host, AppRunType *run_type) {
         ImGui::NextColumn();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1);
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_TEXT_COLOR);
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         for (auto game : host.gui.game_selector.games) {
             bool selected_1 = false;
             bool selected_2 = false;

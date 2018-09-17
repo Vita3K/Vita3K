@@ -18,6 +18,7 @@
 #include <gui/functions.h>
 #include <imgui.h>
 
+#include <gui/gui_constants.h>
 #include <host/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
@@ -25,13 +26,13 @@
 
 void DrawMutexesDialog(HostState &host) {
     ImGui::Begin("Mutexes", &host.gui.mutexes_dialog);
-    ImGui::TextColored(ImVec4(255, 255, 0, 255), "%-16s %-32s   %-7s   %-8s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
 
     for (auto mutex : host.kernel.mutexes) {
         std::shared_ptr<Mutex> mutex_state = mutex.second;
-        ImGui::Text("0x%08X       %-32s   %02d        %01d            %02zu                 %s",
+        ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d        %01d            %02zu                 %s",
             mutex.first,
             mutex_state->name,
             mutex_state->lock_count,
@@ -44,12 +45,12 @@ void DrawMutexesDialog(HostState &host) {
 
 void DrawLwMutexesDialog(HostState &host) {
     ImGui::Begin("Lightweight Mutexes", &host.gui.lwmutexes_dialog);
-    ImGui::TextColored(ImVec4(255, 255, 0, 255), "%-16s %-32s   %-7s   %-8s  %-16s   %-16s", "ID", "LwMutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s  %-16s   %-16s", "ID", "LwMutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     for (auto mutex : host.kernel.lwmutexes) {
         std::shared_ptr<Mutex> mutex_state = mutex.second;
-        ImGui::Text("0x%08X       %-32s   %02d        %01d           %02zu                 %s",
+        ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d        %01d           %02zu                 %s",
             mutex.first,
             mutex_state->name,
             mutex_state->lock_count,
