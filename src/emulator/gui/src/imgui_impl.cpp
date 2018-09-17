@@ -94,12 +94,15 @@ void init_style() {
 }
 
 void init_font(GuiState &gui) {
+    const auto DATA_PATH = "data";
+    const auto FONT_PATH = "fonts";
+    const auto FONT_FILENAME = "Ruda-Black.ttf";
+
     // set up font paths
-    fs::path font_dir = fs::path(L"data").append(L"fonts");
-    const auto font_filename = L"Ruda-Black.ttf";
+    fs::path font_dir = fs::path(DATA_PATH) /= FONT_PATH;
+    fs::path font_path(fs::absolute(font_dir /= FONT_FILENAME));
 
-    fs::path font_path(fs::absolute(font_dir.append(font_filename)));
-
+    // check existence of font file
     if (!fs::exists(font_path)) {
         LOG_WARN("Could not find font file at \"{}\", falling back to default imgui font.", font_path.string());
         return;
