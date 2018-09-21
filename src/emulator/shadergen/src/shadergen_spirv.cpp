@@ -459,7 +459,7 @@ void generate_shader_body(spv::Builder &spv_builder, SpirvShaderParameters param
     }
 }
 
-SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
+SpirvCode generate_shader(const SceGxmProgram &gxp_header, emu::SceGxmProgramType program_type) {
     SpirvCode spirv;
 
     spv::SpvBuildLogger spv_logger;
@@ -473,7 +473,7 @@ SpirvCode generate_shader(const SceGxmProgram &program, emu::SceGxmProgramType p
     // capabilities
     spv_builder.addCapability(spv::Capability::CapabilityShader);
 
-    SpirvShaderParameters parameters = spirv::create_parameters(spv_builder, program, program_type);
+    SpirvShaderParameters parameters = spirv::create_parameters(spv_builder, gxp_header, program_type);
 
     std::string entry_point_name;
     spv::ExecutionModel execution_model;
@@ -540,7 +540,11 @@ std::string to_glsl(SpirvCode spirv_binary) {
     return source;
 }
 
-std::string generate_glsl(const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
+// ***************************
+// * Functions (exposed API) *
+// ***************************
+
+std::string generate_shader_glsl(const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
     std::vector<uint32_t> spirv_binary = spirv::generate_shader(program, program_type);
 
     const auto source = spirv::to_glsl(spirv_binary);
@@ -549,18 +553,6 @@ std::string generate_glsl(const SceGxmProgram &program, emu::SceGxmProgramType p
         LOG_DEBUG("Generated GLSL:\n{}", source);
 
     return source;
-}
-
-// ***************************
-// * Functions (exposed API) *
-// ***************************
-
-std::string generate_vertex_glsl(const SceGxmProgram &program) {
-    return generate_glsl(program, emu::SceGxmProgramType::Vertex);
-}
-
-std::string generate_fragment_glsl(const SceGxmProgram &program) {
-    return generate_glsl(program, emu::SceGxmProgramType::Fragment);
 }
 
 } // namespace spirv

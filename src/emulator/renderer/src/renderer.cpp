@@ -157,7 +157,7 @@ bool create(RenderTarget &rt, const SceGxmRenderTargetParams &params) {
 bool create(FragmentProgram &fp, State &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
-    fp.glsl = load_fragment_shader(state.fragment_glsl_cache, program, base_path, title_id);
+    fp.glsl = load_shader(emu::SceGxmProgramType::Fragment, state.fragment_glsl_cache, program, base_path, title_id);
 
     // Translate blending.
     if (blend != nullptr) {
@@ -180,7 +180,7 @@ bool create(FragmentProgram &fp, State &state, const SceGxmProgram &program, con
 bool create(VertexProgram &vp, State &state, const SceGxmProgram &program, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
-    vp.glsl = load_vertex_shader(state.vertex_glsl_cache, program, base_path, title_id);
+    vp.glsl = load_shader(emu::SceGxmProgramType::Vertex, state.vertex_glsl_cache, program, base_path, title_id);
     vp.attribute_locations = attribute_locations(program);
 
     return true;
