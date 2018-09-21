@@ -18,6 +18,7 @@
 #include <gui/functions.h>
 #include <imgui.h>
 
+#include <gui/gui_constants.h>
 #include <host/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
@@ -25,13 +26,13 @@
 
 void DrawSemaphoresDialog(HostState &host) {
     ImGui::Begin("Semaphores", &host.gui.semaphores_dialog);
-    ImGui::TextColored(ImVec4(255, 255, 0, 255), "%-16s %-32s   %-16s   %-16s", "ID", "Semaphore Name", "Status", "Locked Threads");
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s   %-16s", "ID", "Semaphore Name", "Status", "Locked Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
 
     for (auto semaphore : host.kernel.semaphores) {
         std::shared_ptr<Semaphore> sema_state = semaphore.second;
-        ImGui::Text("0x%08X       %-32s   %02d/%02d              %02zu",
+        ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d/%02d              %02zu",
             semaphore.first,
             sema_state->name,
             sema_state->val,

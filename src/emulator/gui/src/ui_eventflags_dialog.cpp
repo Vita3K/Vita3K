@@ -18,6 +18,7 @@
 #include <gui/functions.h>
 #include <imgui.h>
 
+#include <gui/gui_constants.h>
 #include <host/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
@@ -25,12 +26,12 @@
 
 void DrawEventFlagsDialog(HostState &host) {
     ImGui::Begin("Event Flags", &host.gui.eventflags_dialog);
-    ImGui::TextColored(ImVec4(255, 255, 0, 255), "%-16s %-32s  %-7s   %-8s   %-16s", "ID", "EventFlag Name", "Flags", "Attributes", "Waiting Threads");
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s  %-7s   %-8s   %-16s", "ID", "EventFlag Name", "Flags", "Attributes", "Waiting Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     for (auto event : host.kernel.eventflags) {
         std::shared_ptr<EventFlag> event_state = event.second;
-        ImGui::Text("0x%08X       %-32s  %02d        %01d         %02zu                 ",
+        ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s  %02d        %01d         %02zu                 ",
             event.first,
             event_state->name,
             event_state->flags,

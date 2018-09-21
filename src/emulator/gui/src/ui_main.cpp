@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
+#include <gui/gui_constants.h>
 #include <host/app.h>
 #include <host/state.h>
 
@@ -24,7 +25,6 @@
 using namespace std::string_literals;
 
 void DrawGameSelector(HostState &host, AppRunType *run_type) {
-    const ImVec4 text_color = ImVec4(255, 255, 0, 255);
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
@@ -33,10 +33,10 @@ void DrawGameSelector(HostState &host, AppRunType *run_type) {
 
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
-        ImGui::TextColored(text_color, "Select the game/application to start. Click on column titles to sort.");
-        ImGui::Separator();
         ImGui::Columns(2);
         ImGui::SetColumnWidth(0, 80);
+        ImGui::SetWindowFontScale(1.1);
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         if (ImGui::Button("TitleID")) {
             std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
                 return lhs.title_id < rhs.title_id;
@@ -52,6 +52,8 @@ void DrawGameSelector(HostState &host, AppRunType *run_type) {
         }
         ImGui::NextColumn();
         ImGui::Separator();
+        ImGui::SetWindowFontScale(1);
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         for (auto game : host.gui.game_selector.games) {
             bool selected_1 = false;
             bool selected_2 = false;
@@ -64,6 +66,7 @@ void DrawGameSelector(HostState &host, AppRunType *run_type) {
                 *run_type = AppRunType::Extracted;
             }
         }
+        ImGui::PopStyleColor(2);
         break;
     }
     ImGui::End();
@@ -88,6 +91,7 @@ void DrawReinstallDialog(HostState &host, GenericDialogState *status) {
 void DrawUI(HostState &host) {
     DrawMainMenuBar(host);
 
+    ImGui::PushFont(host.gui.monospaced_font);
     if (host.gui.threads_dialog) {
         DrawThreadsDialog(host);
     }
@@ -109,4 +113,5 @@ void DrawUI(HostState &host) {
     if (host.gui.eventflags_dialog) {
         DrawEventFlagsDialog(host);
     }
+    ImGui::PopFont();
 }
