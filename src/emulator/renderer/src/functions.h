@@ -29,7 +29,7 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
 SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state, const MemState &mem);
 
 // Shaders.
-std::string load_shader(emu::SceGxmProgramType program_type, GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id);
+std::string load_shader(GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id);
 
 namespace texture {
 

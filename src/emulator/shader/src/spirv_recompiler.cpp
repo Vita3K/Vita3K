@@ -1,10 +1,10 @@
-#include <shadergen/functions.h>
+#include <shader/functions.h>
 
 #include <SPIRV/SpvBuilder.h>
 #include <SPIRV/disassemble.h>
 #include <gxm/functions.h>
 #include <gxm/types.h>
-#include <shadergen/profile.h>
+#include <shader/profile.h>
 #include <spirv_glsl.hpp>
 #include <util/log.h>
 
@@ -18,8 +18,7 @@ static constexpr bool LOG_SHADER_DEBUG = true;
 
 using SpirvCode = std::vector<uint32_t>;
 
-namespace shadergen {
-namespace spirv {
+namespace shader {
 
 // **************
 // * Prototypes *
@@ -473,7 +472,7 @@ SpirvCode generate_shader(const SceGxmProgram &gxp_header, emu::SceGxmProgramTyp
     // capabilities
     spv_builder.addCapability(spv::Capability::CapabilityShader);
 
-    SpirvShaderParameters parameters = spirv::create_parameters(spv_builder, gxp_header, program_type);
+    SpirvShaderParameters parameters = create_parameters(spv_builder, gxp_header, program_type);
 
     std::string entry_point_name;
     spv::ExecutionModel execution_model;
@@ -523,7 +522,7 @@ SpirvCode generate_shader(const SceGxmProgram &gxp_header, emu::SceGxmProgramTyp
     return spirv;
 }
 
-std::string to_glsl(SpirvCode spirv_binary) {
+std::string spirv_to_glsl(SpirvCode spirv_binary) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
@@ -544,10 +543,10 @@ std::string to_glsl(SpirvCode spirv_binary) {
 // * Functions (exposed API) *
 // ***************************
 
-std::string generate_shader_glsl(const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
-    std::vector<uint32_t> spirv_binary = spirv::generate_shader(program, program_type);
+std::string convert_gxp_to_glsl(const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
+    std::vector<uint32_t> spirv_binary = generate_shader(program, program_type);
 
-    const auto source = spirv::to_glsl(spirv_binary);
+    const auto source = spirv_to_glsl(spirv_binary);
 
     if (LOG_SHADER_DEBUG)
         LOG_DEBUG("Generated GLSL:\n{}", source);
@@ -555,5 +554,4 @@ std::string generate_shader_glsl(const SceGxmProgram &program, emu::SceGxmProgra
     return source;
 }
 
-} // namespace spirv
-} // namespace shadergen
+} // namespace shader

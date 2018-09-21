@@ -4,9 +4,9 @@
 #include "profile.h"
 
 #include <gxm/types.h>
-#include <shadergen/functions.h>
-#include <util/fs.h>
+#include <shader/functions.h>
 #include <util/log.h>
+#include <util/fs.h>
 
 #include <fstream>
 #include <sstream>
@@ -78,7 +78,7 @@ std::string load_shader(emu::SceGxmProgramType program_type, GLSLCache &cache, c
     std::string source = load_shader(hash_text.data(), shader_type_str, base_path);
     if (source.empty()) {
         LOG_ERROR("Missing {} shader {}", shader_type_str, hash_text.data());
-        source = shadergen::spirv::generate_shader_glsl(program, program_type);
+        source = shader::convert_gxp_to_glsl(program, program_type);
         dump_missing_shader(hash_text.data(), shader_type_str, program, source.c_str());
     }
 
