@@ -17,7 +17,7 @@ install:
     $env:AVVER = "{0}-{1}" -f $commit_tag, $env:APPVEYOR_BUILD_NUMBER
     $env:BUILD = "Vita3K-{0}-{1}-{2}_win64.7z" -f $commit_tag, $commit_date, $commit_sha
  - git submodule update --init --recursive
- - gen.bat
+ - gen-windows.bat
 
 # Set target platform
 platform: x64 

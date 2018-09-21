@@ -6,7 +6,7 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS
 
 * [Website](https://vita3k.org/) (information for users)
 * [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
-* [Discord](https://discord.gg/MaWhJVH)
+* [**Discord**](https://discord.gg/MaWhJVH) (recommended)
 * IRC `#vita3k` on **freenode** ([Web-based IRC client](https://webchat.freenode.net/?channels=%23vita3k))
 * [Patreon](https://www.patreon.com/Vita3K)
 
@@ -39,13 +39,13 @@ After cloning, open a command prompt in Vita3K's directory and run:
 to get all submodules.
 
 ### Windows (Visual Studio)
-1. Run `gen.bat` to create a `build-windows` directory and generate a Visual Studio solution in there.
+1. Run `gen-windows.bat` to create a `build-windows` directory and generate a Visual Studio solution in there.
 2. Open the `Vita3K.sln` solution.
 3. Set the startup project to `emulator`.
 4. Build.
 
 ### macOS (Xcode)
-1. Run `gen.sh` to create a `build-macos` directory and generate an Xcode project in there.
+1. Run `gen-macos.sh` to create a `build-macos` directory and generate an Xcode project in there.
 2. Open the `Vita3K.xcodeproj` project.
 3. When prompted to create schemes, create one for the `emulator` target only. The project builds many targets, so it will make your life easier if you create schemes as needed.
 4. Build.
@@ -53,12 +53,13 @@ to get all submodules.
 ### Linux
 1. Get [SDL](https://wiki.libsdl.org/Installation#Linux.2FUnix) (2.0.7+)
 2. `git submodule init && git submodule update`
-3. `mkdir build-linux && cd build-linux`
-4. `cmake ..`
-5. `make`
+3. `gen-linux.sh`
+4. `cd build-linux`
+5. `make`, or `make -jN` where "N" is the amount of cores in your system.
 
 ## Running
-The emulator does not yet have a front end. Please specify the path to a .vpk file as the first command line argument.
+Specify the path to a .vpk file as the first command line argument, or run `Vita3K --help` from the command-line for a full list of options.
+For more detailed instructions on running/installing games on all platforms, please read the **#info-faq** channel on our [Discord server](https://discord.gg/MaWhJVH).
 
 ## Bugs and issues
 The project is at an early stage, so please be sensitive to that when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
