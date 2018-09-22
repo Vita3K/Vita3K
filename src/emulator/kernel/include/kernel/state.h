@@ -103,46 +103,41 @@ public:
 
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
-
-struct Semaphore {
+struct SyncPrimitive {
     SceUID uid;
-    int val;
+
+    uint32_t attr;
+
+    std::mutex mutex;
+    WaitingThreadQueue waiting_threads;
+
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+};
+
+struct Semaphore : SyncPrimitive {
     int max;
-    uint32_t attr;
-    std::mutex mutex;
-    WaitingThreadQueue waiting_threads;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    int val;
 };
+
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
 typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 
-struct Mutex {
-    SceUID uid;
+struct Mutex : SyncPrimitive {
     int lock_count;
-    uint32_t attr;
-    std::mutex mutex;
-    WaitingThreadQueue waiting_threads;
     ThreadStatePtr owner;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
 
-struct EventFlag {
-    SceUID uid;
-    int flags;
-    uint32_t attr;
-    std::mutex mutex;
-    WaitingThreadQueue waiting_threads;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
-};
-
-typedef std::shared_ptr<Semaphore> SemaphorePtr;
-typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 typedef std::shared_ptr<Mutex> MutexPtr;
 typedef std::map<SceUID, MutexPtr> MutexPtrs;
+
+struct EventFlag : SyncPrimitive {
+    int flags;
+};
+
 typedef std::shared_ptr<EventFlag> EventFlagPtr;
 typedef std::map<SceUID, EventFlagPtr> EventFlagPtrs;
 
-struct Condvar {
+struct Condvar : SyncPrimitive {
     struct SignalTarget {
         enum class Type {
             Any, // signal any one waiting thread
@@ -152,7 +147,7 @@ struct Condvar {
 
         SceUID thread_id; // for Type::One
 
-        SignalTarget(Type type)
+        explicit SignalTarget(Type type)
             : type(type)
             , thread_id(0) {}
         SignalTarget(Type type, SceUID thread_id)
@@ -160,12 +155,7 @@ struct Condvar {
             , thread_id(thread_id) {}
     };
 
-    SceUID uid;
-    uint32_t attr;
     MutexPtr associated_mutex;
-    std::mutex mutex;
-    WaitingThreadQueue waiting_threads;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
 typedef std::shared_ptr<Condvar> CondvarPtr;
 typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
