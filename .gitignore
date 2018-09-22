@@ -4,4 +4,4 @@
 /api.trace
 .vs/
 /src/external/boost-build
-
+.idea/

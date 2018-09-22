@@ -27,11 +27,11 @@ EXPORT(int, sceKernelExitThread, int status) {
     stop(*thread->cpu);
     thread->something_to_do.notify_all();
 
-    for (auto t : thread->waiting_threads) {
-        const std::lock_guard<std::mutex> lock(t->mutex);
-        assert(t->to_do == ThreadToDo::wait);
-        t->to_do = ThreadToDo::run;
-        t->something_to_do.notify_one();
+    for (auto &waiting_thread : thread->waiting_threads) {
+        const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
+        assert(waiting_thread->to_do == ThreadToDo::wait);
+        waiting_thread->to_do = ThreadToDo::run;
+        waiting_thread->something_to_do.notify_one();
     }
     thread->waiting_threads.clear();
 
