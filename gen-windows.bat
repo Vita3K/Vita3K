@@ -7,7 +7,7 @@ IF "%CI%"=="" (
 	cd src\external\boost
 
 	REM Build our Boost subset
-	b2 -j5 --build-dir=../boost-build --stagedir=../boost-build stage
+	b2 -j5 --build-dir=../boost-build --stagedir=../boost-build toolset=msvc stage
 	cd ../../..
 )
 
