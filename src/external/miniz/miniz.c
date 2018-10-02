@@ -1936,6 +1936,8 @@ tdefl_status tdefl_init(tdefl_compressor *d, tdefl_put_buf_func_ptr pPut_buf_fun
     d->m_pSrc = NULL;
     d->m_src_buf_left = 0;
     d->m_out_buf_ofs = 0;
+    if (!(flags & TDEFL_NONDETERMINISTIC_PARSING_FLAG))
+        MZ_CLEAR_OBJ(d->m_dict);
     memset(&d->m_huff_count[0][0], 0, sizeof(d->m_huff_count[0][0]) * TDEFL_MAX_HUFF_SYMBOLS_0);
     memset(&d->m_huff_count[1][0], 0, sizeof(d->m_huff_count[1][0]) * TDEFL_MAX_HUFF_SYMBOLS_1);
     return TDEFL_STATUS_OKAY;
@@ -2703,18 +2705,19 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                     }
                 }
 #endif
-                do
+                while(counter>2)
                 {
                     pOut_buf_cur[0] = pSrc[0];
                     pOut_buf_cur[1] = pSrc[1];
                     pOut_buf_cur[2] = pSrc[2];
                     pOut_buf_cur += 3;
                     pSrc += 3;
-                } while ((int)(counter -= 3) > 2);
-                if ((int)counter > 0)
+					counter -= 3;
+                }
+                if (counter > 0)
                 {
                     pOut_buf_cur[0] = pSrc[0];
-                    if ((int)counter > 1)
+                    if (counter > 1)
                         pOut_buf_cur[1] = pSrc[1];
                     pOut_buf_cur += counter;
                 }
@@ -3008,7 +3011,7 @@ static FILE *mz_freopen(const char *pPath, const char *pMode, FILE *pStream)
 #define MZ_FFLUSH fflush
 #define MZ_FREOPEN(p, m, s) freopen64(p, m, s)
 #define MZ_DELETE_FILE remove
-#elif defined(__APPLE__) && _LARGEFILE64_SOURCE
+#elif defined(__APPLE__)
 #ifndef MINIZ_NO_TIME
 #include <utime.h>
 #endif
@@ -3874,7 +3877,10 @@ mz_bool mz_zip_reader_init_file_v2(mz_zip_archive *pZip, const char *pFilename, 
     /* TODO: Better sanity check archive_size and the # of actual remaining bytes */
 
     if (file_size < MZ_ZIP_END_OF_CENTRAL_DIR_HEADER_SIZE)
+    {
+	MZ_FCLOSE(pFile);
         return mz_zip_set_error(pZip, MZ_ZIP_NOT_AN_ARCHIVE);
+    }
 
     if (!mz_zip_reader_init_internal(pZip, flags))
     {
@@ -6024,14 +6030,15 @@ mz_bool mz_zip_writer_add_mem_ex_v2(mz_zip_archive *pZip, const char *pArchive_n
     mz_uint8 extra_data[MZ_ZIP64_MAX_CENTRAL_EXTRA_FIELD_SIZE];
     mz_uint16 bit_flags = 0;
 
+    if ((int)level_and_flags < 0)
+        level_and_flags = MZ_DEFAULT_LEVEL;
+
     if (uncomp_size || (buf_size && !(level_and_flags & MZ_ZIP_FLAG_COMPRESSED_DATA)))
         bit_flags |= MZ_ZIP_LDH_BIT_FLAG_HAS_LOCATOR;
 
     if (!(level_and_flags & MZ_ZIP_FLAG_ASCII_FILENAME))
         bit_flags |= MZ_ZIP_GENERAL_PURPOSE_BIT_FLAG_UTF8;
 
-    if ((int)level_and_flags < 0)
-        level_and_flags = MZ_DEFAULT_LEVEL;
     level = level_and_flags & 0xF;
     store_data_uncompressed = ((!level) || (level_and_flags & MZ_ZIP_FLAG_COMPRESSED_DATA));
 
@@ -6077,6 +6084,17 @@ mz_bool mz_zip_writer_add_mem_ex_v2(mz_zip_archive *pZip, const char *pArchive_n
         mz_zip_time_t_to_dos_time(cur_time, &dos_time, &dos_date);
     }
 #endif /* #ifndef MINIZ_NO_TIME */
+
+	if (!(level_and_flags & MZ_ZIP_FLAG_COMPRESSED_DATA))
+	{
+		uncomp_crc32 = (mz_uint32)mz_crc32(MZ_CRC32_INIT, (const mz_uint8 *)pBuf, buf_size);
+		uncomp_size = buf_size;
+		if (uncomp_size <= 3)
+		{
+			level = 0;
+			store_data_uncompressed = MZ_TRUE;
+		}
+	}
 
     archive_name_size = strlen(pArchive_name);
     if (archive_name_size > MZ_UINT16_MAX)
@@ -6193,24 +6211,13 @@ mz_bool mz_zip_writer_add_mem_ex_v2(mz_zip_archive *pZip, const char *pArchive_n
         cur_archive_file_ofs += archive_name_size;
     }
 
-    if (user_extra_data_len > 0)
-    {
-        if (pZip->m_pWrite(pZip->m_pIO_opaque, cur_archive_file_ofs, user_extra_data, user_extra_data_len) != user_extra_data_len)
-            return mz_zip_set_error(pZip, MZ_ZIP_FILE_WRITE_FAILED);
+	if (user_extra_data_len > 0)
+	{
+		if (pZip->m_pWrite(pZip->m_pIO_opaque, cur_archive_file_ofs, user_extra_data, user_extra_data_len) != user_extra_data_len)
+			return mz_zip_set_error(pZip, MZ_ZIP_FILE_WRITE_FAILED);
 
-        cur_archive_file_ofs += user_extra_data_len;
-    }
-
-    if (!(level_and_flags & MZ_ZIP_FLAG_COMPRESSED_DATA))
-    {
-        uncomp_crc32 = (mz_uint32)mz_crc32(MZ_CRC32_INIT, (const mz_uint8 *)pBuf, buf_size);
-        uncomp_size = buf_size;
-        if (uncomp_size <= 3)
-        {
-            level = 0;
-            store_data_uncompressed = MZ_TRUE;
-        }
-    }
+		cur_archive_file_ofs += user_extra_data_len;
+	}
 
     if (store_data_uncompressed)
     {
