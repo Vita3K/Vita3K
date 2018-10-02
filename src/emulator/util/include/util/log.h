@@ -28,31 +28,31 @@ extern std::shared_ptr<spdlog::logger> g_logger;
 void init();
 void set_level(spdlog::level::level_enum log_level);
 
-#define LOG_TRACE(fmt, ...) logging::g_logger->trace("|T| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_DEBUG(fmt, ...) logging::g_logger->debug("|D| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_INFO(fmt, ...) logging::g_logger->info("|I| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...) logging::g_logger->warn("|W| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) logging::g_logger->error("|E| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_CRITICAL(fmt, ...) logging::g_logger->critical("|C| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_TRACE(fmt, ...) logging::g_logger->trace("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) logging::g_logger->debug("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...) logging::g_logger->info("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...) logging::g_logger->warn("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) logging::g_logger->error("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_CRITICAL(fmt, ...) logging::g_logger->critical("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 
 #define LOG_TRACE_IF(flag, fmt, ...) \
     if (flag)                        \
-    logging::g_logger->trace("|T| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+    logging::g_logger->trace("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define LOG_DEBUG_IF(flag, fmt, ...) \
     if (flag)                        \
-    logging::g_logger->debug("|D| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+    logging::g_logger->debug("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define LOG_INFO_IF(flag, fmt, ...) \
     if (flag)                       \
-    logging::g_logger->info("|I| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+    logging::g_logger->info("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define LOG_WARN_IF(flag, fmt, ...) \
     if (flag)                       \
-    logging::g_logger->warn("|W| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+    logging::g_logger->warn("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define LOG_ERROR_IF(flag, fmt, ...) \
     if (flag)                        \
-    logging::g_logger->error("|E| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+    logging::g_logger->error("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define LOG_CRITICAL_IF(flag, fmt, ...) \
     if (flag)                           \
-    logging::g_logger->critical("|C| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+    logging::g_logger->critical("[{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
 
 } // namespace logging
 
