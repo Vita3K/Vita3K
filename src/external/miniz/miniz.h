@@ -1,4 +1,4 @@
-/* miniz.c 2.0.6 beta - public domain deflate/inflate, zlib-subset, ZIP reading/writing/appending, PNG writing
+/* miniz.c 2.0.8 - public domain deflate/inflate, zlib-subset, ZIP reading/writing/appending, PNG writing
    See "unlicense" statement at the end of this file.
    Rich Geldreich <richgel99@gmail.com>, last updated Oct. 13, 2013
    Implements RFC 1950: http://www.ietf.org/rfc/rfc1950.txt and RFC 1951: http://www.ietf.org/rfc/rfc1951.txt
@@ -234,11 +234,11 @@ enum
     MZ_DEFAULT_COMPRESSION = -1
 };
 
-#define MZ_VERSION "10.0.1"
-#define MZ_VERNUM 0xA010
+#define MZ_VERSION "10.0.3"
+#define MZ_VERNUM 0xA030
 #define MZ_VER_MAJOR 10
 #define MZ_VER_MINOR 0
-#define MZ_VER_REVISION 1
+#define MZ_VER_REVISION 3
 #define MZ_VER_SUBREVISION 0
 
 #ifndef MINIZ_NO_ZLIB_APIS
@@ -1127,13 +1127,6 @@ MZ_FILE *mz_zip_get_cfile(mz_zip_archive *pZip);
 
 /* Reads n bytes of raw archive data, starting at file offset file_ofs, to pBuf. */
 size_t mz_zip_read_archive_data(mz_zip_archive *pZip, mz_uint64 file_ofs, void *pBuf, size_t n);
-
-/* Attempts to locates a file in the archive's central directory. */
-/* Valid flags: MZ_ZIP_FLAG_CASE_SENSITIVE, MZ_ZIP_FLAG_IGNORE_PATH */
-/* Returns -1 if the file cannot be found. */
-int mz_zip_locate_file(mz_zip_archive *pZip, const char *pName, const char *pComment, mz_uint flags);
-/* Returns MZ_FALSE if the file cannot be found. */
-mz_bool mz_zip_locate_file_v2(mz_zip_archive *pZip, const char *pName, const char *pComment, mz_uint flags, mz_uint32 *pIndex);
 
 /* All mz_zip funcs set the m_last_error field in the mz_zip_archive struct. These functions retrieve/manipulate this field. */
 /* Note that the m_last_error functionality is not thread safe. */
