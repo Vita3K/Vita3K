@@ -40,9 +40,8 @@ target_include_directories(spdlog INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/
 target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1)
 
 option(BUILD_SHARED_LIBS "Build shared instead of static libraries." OFF)
-option(OPTION_BUILD_TESTS "Build tests." OFF)
-option(OPTION_BUILD_GPU_TESTS "Build tests that require an OpenGL context." OFF)
 option(OPTION_BUILD_TOOLS "Build tools." OFF)
+option(OPTION_BUILD_EXAMPLES "Build examples." OFF)
 add_subdirectory(glbinding EXCLUDE_FROM_ALL)
 
 add_library(googletest STATIC googletest/googletest/src/gtest_main.cc googletest/googletest/src/gtest-all.cc)
