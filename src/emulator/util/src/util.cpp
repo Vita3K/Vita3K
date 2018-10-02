@@ -11,6 +11,8 @@
 #include <unistd.h>
 #endif
 
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #ifdef _MSC_VER
 #include <spdlog/sinks/msvc_sink.h>
 #endif
@@ -42,11 +44,8 @@ void init() {
 
     std::vector<spdlog::sink_ptr> sinks;
 
-#ifdef WIN32
-    sinks.push_back(std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>());
-#else
-    sinks.push_back(std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>());
-#endif
+    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+
     try {
         spdlog::filename_t s_cwd;
 
@@ -74,7 +73,7 @@ void init() {
         remove(full_log_path.c_str());
 #endif
 
-        sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_mt>(full_log_path));
+        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(full_log_path));
     } catch (const spdlog::spdlog_ex &ex) {
         std::cerr << "File log initialization failed: " << ex.what() << std::endl;
     }
@@ -91,7 +90,7 @@ void init() {
         std::cerr << "spdlog error: " << msg << std::endl;
     });
 
-    spdlog::set_pattern("[%H:%M:%S.%e] %v");
+    spdlog::set_pattern("%^[%H:%M:%S.%e] |%L| %v%$");
 
     g_logger->flush_on(spdlog::level::debug);
 }
