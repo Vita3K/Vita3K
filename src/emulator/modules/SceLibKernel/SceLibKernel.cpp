@@ -1081,7 +1081,7 @@ bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleIn
             return false;
         }
 
-        mod_id = load_self(entry_point, host.kernel, host.mem, data, path);
+        mod_id = load_self(entry_point, host.kernel, host.mem, data, path, host.cfg);
 
         close_file(host.io, file, export_name);
         delete[] data;

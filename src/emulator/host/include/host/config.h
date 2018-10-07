@@ -33,6 +33,8 @@ struct Config {
     optional<std::string> vpk_path;
     optional<std::string> run_title_id;
     optional<int> log_level;
+    bool log_imports = false;
+    bool log_exports = false;
     std::vector<std::string> lle_modules;
 };
 

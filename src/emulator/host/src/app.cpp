@@ -233,7 +233,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
         Ptr<const void> lib_entry_point;
 
         if (vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path)) {
-            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path);
+            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path, host.cfg);
             if (module_id >= 0) {
                 const auto module = host.kernel.loaded_modules[module_id];
                 const auto module_name = module->module_name;
@@ -248,7 +248,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
     if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, EBOOT_PATH)) {
-        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS);
+        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
             const auto module_name = module->module_name;
