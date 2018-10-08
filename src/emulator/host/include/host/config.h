@@ -36,6 +36,7 @@ struct Config {
     bool log_imports = false;
     bool log_exports = false;
     bool log_active_shaders = false;
+    bool log_uniforms = false;
     std::vector<std::string> lle_modules;
 };
 
