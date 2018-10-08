@@ -54,8 +54,8 @@ ExitCode init(Config &cfg, int argc, char **argv) {
             ("log-level,l", po::value(&cfg.log_level)->default_value(spdlog::level::trace), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
             ("log-imports,I", po::bool_switch(&cfg.log_imports), "Log Imports")
             ("log-exports,E", po::bool_switch(&cfg.log_exports), "Log Exports")
-			("log-active-shaders,S", po::bool_switch(&cfg.log_active_shaders), "Log Active Shaders")
-			("log-uniforms,U", po::bool_switch(&cfg.log_uniforms), "Log Uniforms");
+            ("log-active-shaders,S", po::bool_switch(&cfg.log_active_shaders), "Log Active Shaders")
+            ("log-uniforms,U", po::bool_switch(&cfg.log_uniforms), "Log Uniforms");
         // clang-format on
 
         // Positional args
