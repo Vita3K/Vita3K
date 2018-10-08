@@ -99,8 +99,8 @@ constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
 
 template <typename... Args>
 constexpr std::tuple<ArgsLayout<Args...>, LayoutArgsState> lay_out() {
+    std::array<LayoutArgsState, sizeof...(Args)> states = {};
     ArgsLayout<Args...> layout = {};
-    LayoutArgsStates<Args...> states = {};
 
     if (sizeof...(Args) > 0) {
         add_args_to_layout<Args...>(layout[0], states[0]);

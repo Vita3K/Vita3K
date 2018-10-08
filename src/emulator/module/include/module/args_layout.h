@@ -39,6 +39,3 @@ struct LayoutArgsState {
 
 template <typename... Args>
 using ArgsLayout = std::array<ArgLayout, sizeof...(Args)>;
-
-template <typename... Args>
-using LayoutArgsStates = std::array<LayoutArgsState, sizeof...(Args)>;

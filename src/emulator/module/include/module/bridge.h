@@ -29,15 +29,15 @@
 
 // Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>
-void call(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const std::tuple<ArgsLayout<Args...>, LayoutArgsState> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
-    const Ret ret = (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
+void call(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+    const Ret ret = (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, state, host.mem)...);
     write_return_value(cpu, ret);
 }
 
 // Function does not return a value.
 template <typename... Args, size_t... indices>
-void call(void (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const std::tuple<ArgsLayout<Args...>, LayoutArgsState> &args_layout, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
-    (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, host.mem)...);
+void call(void (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+    (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, state, host.mem)...);
 }
 
 template <typename Ret, typename... Args>
@@ -48,6 +48,6 @@ ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), co
         MICROPROFILE_SCOPEI("HLE", export_name, MP_YELLOW);
 
         using Indices = std::index_sequence_for<Args...>;
-        call(export_fn, export_name, args_layout, Indices(), thread_id, cpu, host);
+        call(export_fn, export_name, std::get<0>(args_layout), std::get<1>(args_layout), Indices(), thread_id, cpu, host);
     };
 }

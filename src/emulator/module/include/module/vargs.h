@@ -26,21 +26,15 @@
 namespace module {
 class vargs {
     LayoutArgsState layoutState;
-    LayoutArgsState originalLayoutState;
-
     ArgLayout currentLayout;
 
 public:
     vargs() {}
 
     explicit vargs(LayoutArgsState layoutState)
-        : layoutState(layoutState), originalLayoutState(layoutState) {
+        : layoutState(layoutState) {
 
         }
-
-    void reset() {
-        layoutState = originalLayoutState;
-    }
 
     template <typename T>
     T next(CPUState &cpu, MemState &mem) {

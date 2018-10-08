@@ -72,16 +72,15 @@ template <typename T>
 T make_vargs(const LayoutArgsState &state);
 
 template <typename Arg, size_t index, typename... Args>
-Arg read(CPUState &cpu, const std::tuple<ArgsLayout<Args...>, LayoutArgsState> &args, const MemState &mem) {
+Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, const LayoutArgsState &state, const MemState &mem) {
     using ArmType = typename BridgeTypes<Arg>::ArmType;
 
     // Note (bentokun): The else block was intentionally made to workaround evaluation
     // fault where MSVC evaluates the rest of the function when the Arg type is vargs
     if constexpr(std::is_same_v<Arg, module::vargs>) {
-        LayoutArgsState layoutState = std::get<1>(args);
-        return make_vargs<Arg>(layoutState);
+        return make_vargs<Arg>(state);
     } else {
-        const ArmType bridged = read<ArmType>(cpu, std::get<0>(args)[index], mem);
+        const ArmType bridged = read<ArmType>(cpu, args[index], mem);
         return BridgeTypes<Arg>::arm_to_host(bridged, mem);
     }
 }
