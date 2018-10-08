@@ -53,7 +53,8 @@ ExitCode init(Config &cfg, int argc, char **argv) {
             ("lle-modules,m", po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
             ("log-level,l", po::value(&cfg.log_level)->default_value(spdlog::level::trace), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
             ("log-imports,I", po::bool_switch(&cfg.log_imports), "Log Imports")
-            ("log-exports,E", po::bool_switch(&cfg.log_exports), "Log Exports");
+            ("log-exports,E", po::bool_switch(&cfg.log_exports), "Log Exports")
+			("log-active-shaders,S", po::bool_switch(&cfg.log_active_shaders), "Log Active Shaders");
         // clang-format on
 
         // Positional args
