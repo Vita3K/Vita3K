@@ -33,6 +33,10 @@ struct Config {
     optional<std::string> vpk_path;
     optional<std::string> run_title_id;
     optional<int> log_level;
+    bool log_imports = false;
+    bool log_exports = false;
+    bool log_active_shaders = false;
+    bool log_uniforms = false;
     std::vector<std::string> lle_modules;
 };
 
@@ -40,7 +44,7 @@ namespace config {
 
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
-  *        --help, --version, -log-level
+  *        --help, --version, --log-level
   * \param cfg Config options are returend via this parameter.
   * \return True on success, false on error.
   */

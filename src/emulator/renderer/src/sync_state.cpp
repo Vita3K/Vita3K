@@ -12,7 +12,6 @@
 #include <cmath>
 
 namespace renderer {
-static constexpr bool LOG_ACTIVE_SHADERS = false;
 
 static GLenum translate_depth_func(SceGxmDepthFunc depth_func) {
     R_PROFILE(__func__);
@@ -98,7 +97,7 @@ static void set_stencil_state(GLenum face, const GxmStencilState &state) {
     glStencilMaskSeparate(face, state.write_mask);
 }
 
-bool sync_state(Context &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache) {
+bool sync_state(Context &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool log_active_shaders, bool log_uniforms) {
     R_PROFILE(__func__);
 
     // TODO Use some kind of caching to avoid setting every draw call?
@@ -108,7 +107,7 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
     }
     glUseProgram(program->get());
 
-    if (LOG_ACTIVE_SHADERS) {
+    if (log_active_shaders) {
         const SceGxmProgram &fragment_gxp_program = *state.fragment_program.get(mem)->program.get(mem);
         const SceGxmProgram &vertex_gxp_program = *state.vertex_program.get(mem)->program.get(mem);
 
@@ -262,7 +261,7 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
     glActiveTexture(GL_TEXTURE0);
 
     // Uniforms.
-    set_uniforms(program->get(), state, mem);
+    set_uniforms(program->get(), state, mem, log_uniforms);
 
     // Vertex attributes.
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);

@@ -59,5 +59,5 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
 } // namespace texture
 
 // Uniforms.
-void set_uniforms(GLuint program, const GxmContextState &state, const MemState &mem);
+void set_uniforms(GLuint program, const GxmContextState &state, const MemState &mem, bool log_uniforms);
 } // namespace renderer
