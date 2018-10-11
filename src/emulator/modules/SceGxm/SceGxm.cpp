@@ -413,7 +413,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Available;
     }
 
-    if (!renderer::sync_state(context->renderer, context->state, host.mem, host.gui.texture_cache)) {
+    if (!renderer::sync_state(context->renderer, context->state, host.mem, host.gui.texture_cache, host.cfg.log_active_shaders, host.cfg.log_uniforms)) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
