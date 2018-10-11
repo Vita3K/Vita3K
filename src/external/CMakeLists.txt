@@ -40,9 +40,8 @@ target_include_directories(spdlog INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/
 target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1)
 
 option(BUILD_SHARED_LIBS "Build shared instead of static libraries." OFF)
-option(OPTION_BUILD_TESTS "Build tests." OFF)
-option(OPTION_BUILD_GPU_TESTS "Build tests that require an OpenGL context." OFF)
 option(OPTION_BUILD_TOOLS "Build tools." OFF)
+option(OPTION_BUILD_EXAMPLES "Build examples." OFF)
 add_subdirectory(glbinding EXCLUDE_FROM_ALL)
 
 add_library(googletest STATIC googletest/googletest/src/gtest_main.cc googletest/googletest/src/gtest-all.cc)
@@ -55,7 +54,7 @@ target_include_directories(microprofile PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/micr
 set_property(TARGET microprofile PROPERTY CXX_STANDARD 11)
 target_compile_definitions(microprofile PUBLIC MICROPROFILE_ENABLED=0 MICROPROFILE_GPU_TIMERS=0)
 
-add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp)
+add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp)
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui")
 
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
