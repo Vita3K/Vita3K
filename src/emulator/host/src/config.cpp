@@ -103,7 +103,7 @@ ExitCode init(Config &cfg, int argc, char **argv) {
         LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
         LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
         if (!cfg.lle_modules.empty()) {
-            auto modules = std::string();
+            std::string modules;
             for (const auto &mod : cfg.lle_modules) {
                 modules += mod + ",";
             }
