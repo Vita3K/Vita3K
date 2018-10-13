@@ -100,6 +100,22 @@ ExitCode init(Config &cfg, int argc, char **argv) {
 
         logging::set_level(static_cast<spdlog::level::level_enum>(*cfg.log_level));
 
+        LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
+        LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
+        if (!cfg.lle_modules.empty()) {
+            std::string modules;
+            for (const auto &mod : cfg.lle_modules) {
+                modules += mod + ",";
+            }
+            modules.pop_back();
+            LOG_INFO("lle-modules: {}", modules);
+        }
+        LOG_INFO_IF(cfg.log_level, "log-level: {}", *cfg.log_level);
+        LOG_INFO("log-imports: {}", cfg.log_imports);
+        LOG_INFO("log-exports: {}", cfg.log_exports);
+        LOG_INFO("log-active-shaders: {}", cfg.log_active_shaders);
+        LOG_INFO("log-uniforms: {}", cfg.log_uniforms);
+
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";
         return IncorrectArgs;
