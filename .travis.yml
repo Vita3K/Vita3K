@@ -39,6 +39,11 @@ matrix:
       before_script:
       - mkdir tmp && cd tmp
       - curl -Ls https://www.archlinux.org/packages/extra/x86_64/sdl2/download | tar xJ
+      - curl -Ls https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.gz | tar xJ
+      - cd boost_1_67_0
+      - ./bootstrap.sh --with-libraries=program_options,filesystem,system
+      - sudo ./b2 link=static -j 4
+      - sudo ./b2 install
       - sudo cp -r usr/* /usr/local/
       - cd .. && rm -rf tmp
       - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
