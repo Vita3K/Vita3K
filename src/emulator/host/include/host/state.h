@@ -29,6 +29,7 @@
 #include <nids/types.h>
 #include <np/state.h>
 #include <renderer/state.h>
+#include <util/fs.h>
 
 #include <psp2/display.h>
 
@@ -58,8 +59,8 @@ struct DisplayState {
 
 struct HostState {
     std::string game_title;
-    std::string base_path;
-    std::string pref_path;
+    BOOST_FSPATH base_path;
+    BOOST_FSPATH pref_path;
     Config cfg;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;

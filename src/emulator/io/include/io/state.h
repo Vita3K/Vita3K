@@ -21,26 +21,14 @@
 #include <psp2/types.h>
 
 #include <io/file.h>
+#include <util/fs.h>
 
 #include <cstdio>
 #include <map>
 #include <memory>
 
-#ifdef WIN32
-struct _WDIR;
-#else
-#include <dirent.h>
-#endif
-
-typedef std::shared_ptr<FILE> FilePtr;
 typedef std::shared_ptr<mz_zip_archive> ZipPtr;
 typedef std::shared_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;
-
-#ifdef _WIN32
-typedef std::shared_ptr<_WDIR> DirPtr;
-#else
-typedef std::shared_ptr<DIR> DirPtr;
-#endif
 
 enum TtyType : std::uint8_t {
     TTY_IN = 0b01,
@@ -48,27 +36,15 @@ enum TtyType : std::uint8_t {
     TTY_INOUT = TTY_IN | TTY_OUT
 };
 
-struct IoComponent {
-    std::string path;
-};
-
-struct File : public IoComponent {
-    FilePtr file_handle;
-};
-
-struct Directory : public IoComponent {
-    DirPtr dir_handle;
-};
-
 typedef std::map<SceUID, TtyType> TtyFiles;
-typedef std::map<SceUID, File> StdFiles;
-typedef std::map<SceUID, Directory> DirEntries;
+typedef std::map<SceUID, BOOST_FSPATH> StdFiles;
+typedef std::map<SceUID, BOOST_FSPATH> DirEntries;
 
 struct IOState {
     struct DevicePaths {
-        std::string app0;
-        std::string savedata0;
-        std::string addcont0;
+        BOOST_FSPATH app0;
+        BOOST_FSPATH savedata0;
+        BOOST_FSPATH addcont0;
     } device_paths;
 
     std::string title_id;

@@ -132,7 +132,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     load_sfo(sfo_handle, params);
     find_data(host.io.title_id, sfo_handle, "TITLE_ID");
 
-    std::string output_base_path = host.pref_path + "ux0/app/";
+    std::string output_base_path = host.pref_path.string() + "ux0/app/";
     std::string title_base_path = output_base_path;
 
     if (sfo_path.length() < 20) {
@@ -184,7 +184,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         }
     }
 
-    std::string savedata_path = host.pref_path + "ux0/user/00/savedata/" + host.io.title_id;
+    std::string savedata_path = host.pref_path.string() + "ux0/user/00/savedata/" + host.io.title_id;
     fs::create_directory(savedata_path);
 
     LOG_INFO("{} installed succesfully!", host.io.title_id);

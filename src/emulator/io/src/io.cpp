@@ -91,11 +91,6 @@ translate_open_mode(int flags) {
     }
 }
 
-void trim_leading_slash(std::string path) {
-    if (path[0] == '/')
-        path.erase(0, 1);
-}
-
 constexpr const char *
 get_device_string(VitaIoDevice dev, bool with_colon) {
     switch (dev) {
@@ -110,9 +105,7 @@ get_device_string(VitaIoDevice dev, bool with_colon) {
 }
 
 VitaIoDevice
-get_device(const std::string &path) {
-    trim_leading_slash(path);
-
+get_device(const BOOST_FSPATH &path) {
     // find which IO device the path is associated with
     const auto device_end_idx = path.find(":");
     if (device_end_idx == std::string::npos) {
@@ -132,20 +125,18 @@ get_device(const std::string &path) {
 }
 
 std::string
-get_relative_path(const std::string &full_path, VitaIoDevice device) {
+get_relative_path(const BOOST_FSPATH &full_path, VitaIoDevice device) {
     if (device == VitaIoDevice::_UKNONWN)
         device = get_device(full_path);
 
     std::string rel_path(full_path);
-
-    trim_leading_slash(rel_path);
 
     rel_path.erase(0, std::strlen(get_device_string(device, true)));
     return rel_path;
 }
 
 std::string
-normalize_path(const std::string &path, VitaIoDevice device) {
+normalize_path(const BOOST_FSPATH &path, VitaIoDevice device) {
     if (device == VitaIoDevice::_UKNONWN)
         device = get_device(path);
 
@@ -166,7 +157,7 @@ normalize_path(const std::string &path, VitaIoDevice device) {
 }
 
 std::string
-to_host_path(const std::string &path, const std::string &pref_path, VitaIoDevice device) {
+to_host_path(const BOOST_FSPATH &path, const BOOST_FSPATH &pref_path, VitaIoDevice device) {
     std::string res = normalize_path(path, device);
     return pref_path + res;
 }
@@ -175,7 +166,7 @@ to_host_path(const std::string &path, const std::string &pref_path, VitaIoDevice
 // * End of utility functions *
 // ****************************
 
-bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const std::string &vfs_file_path) {
+bool read_file(VitaIoDevice device, FileBuffer &buf, const BOOST_FSPATH &pref_path, const std::string &vfs_file_path) {
     const std::string host_file_path = pref_path + get_device_string(device) + "/" + vfs_file_path;
 
     std::ifstream f(host_file_path, std::ifstream::binary);
@@ -192,16 +183,16 @@ bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_pat
     return true;
 }
 
-bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string title_id, const std::string &vfs_file_path) {
+bool read_app_file(FileBuffer &buf, const BOOST_FSPATH &pref_path, const std::string title_id, const std::string &vfs_file_path) {
     std::string game_file_path = "app/" + title_id + "/" + vfs_file_path;
     return read_file(VitaIoDevice::UX0, buf, pref_path, game_file_path);
 }
 
 } // namespace vfs
 
-bool init(IOState &io, const char *pref_path) {
-    std::string ux0 = pref_path;
-    std::string uma0 = pref_path;
+bool init(IOState &io, BOOST_FSPATH &pref_path) {
+    std::string ux0 = pref_path.string();
+    std::string uma0 = pref_path.string();
     ux0 += "ux0";
     uma0 += "uma0";
     const std::string ux0_data = ux0 + "/data";
@@ -229,7 +220,7 @@ void init_device_paths(IOState &io) {
     io.device_paths.addcont0 = "ux0:/addcont/" + io.title_id + "/";
 }
 
-void translate_path(std::string &path, VitaIoDevice &device, const IOState::DevicePaths &device_paths) {
+void translate_path(BOOST_FSPATH &path, VitaIoDevice &device, const IOState::DevicePaths &device_paths) {
     // Redirect savedata0:/ to ux0:/user/00/savedata/<title_id>
     if (device == VitaIoDevice::SAVEDATA0) {
         const auto relative_path = get_relative_path(path, device);
@@ -252,7 +243,7 @@ void translate_path(std::string &path, VitaIoDevice &device, const IOState::Devi
     }
 }
 
-SceUID open_file(IOState &io, const std::string &path, int flags, const char *pref_path, const char *export_name) {
+SceUID open_file(IOState &io, const BOOST_FSPATH &path, int flags, BOOST_FSPATH &pref_path, const char *export_name) {
     std::string translated_path(path);
     VitaIoDevice device = get_device(translated_path);
 
@@ -442,7 +433,7 @@ void close_file(IOState &io, SceUID fd, const char *export_name) {
     io.std_files.erase(fd);
 }
 
-int remove_file(IOState &io, const char *file, const char *pref_path, const char *export_name) {
+int remove_file(IOState &io, const char *file, BOOST_FSPATH &pref_path, const char *export_name) {
     VitaIoDevice device = get_device(file);
     std::string translated_path = file;
 
@@ -465,7 +456,7 @@ int remove_file(IOState &io, const char *file, const char *pref_path, const char
     }
 }
 
-int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, const char *export_name) {
+int create_dir(IOState &io, const char *dir, int mode, BOOST_FSPATH &pref_path, const char *export_name) {
     VitaIoDevice device = get_device(dir);
     std::string translated_path = dir;
 
@@ -489,7 +480,7 @@ int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, co
     }
 }
 
-int remove_dir(IOState &io, const char *dir, const char *pref_path, const char *export_name) {
+int remove_dir(IOState &io, const char *dir, BOOST_FSPATH &pref_path, const char *export_name) {
     VitaIoDevice device = get_device(dir);
     std::string translated_path = dir;
 
@@ -512,7 +503,7 @@ int remove_dir(IOState &io, const char *dir, const char *pref_path, const char *
     }
 }
 
-int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_path, uint64_t base_tick, const char *export_name) {
+int stat_file(IOState &io, const char *file, SceIoStat *statp, BOOST_FSPATH &pref_path, uint64_t base_tick, const char *export_name) {
     assert(statp != NULL);
 
     memset(statp, '\0', sizeof(SceIoStat));
@@ -591,7 +582,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
     return 0;
 }
 
-int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const char *pref_path, uint64_t base_tick, const char *export_name) {
+int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, BOOST_FSPATH &pref_path, uint64_t base_tick, const char *export_name) {
     assert(statp != NULL);
     memset(statp, '\0', sizeof(SceIoStat));
 
@@ -604,7 +595,7 @@ int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const char *pre
     return -1;
 }
 
-int open_dir(IOState &io, const char *path, const char *pref_path, const char *export_name) {
+int open_dir(IOState &io, const char *path, BOOST_FSPATH &pref_path, const char *export_name) {
     std::string translated_path = path;
     VitaIoDevice device = get_device(translated_path);
 

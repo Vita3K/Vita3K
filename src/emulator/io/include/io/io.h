@@ -34,6 +34,6 @@ namespace vfs {
 using FileBuffer = std::vector<uint8_t>;
 
 constexpr const char *get_device_string(VitaIoDevice dev, bool with_colon = false);
-bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const std::string &file_path);
-bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string title_id, const std::string &file_path);
+bool read_file(VitaIoDevice device, FileBuffer &buf, const BOOST_FSPATH &pref_path, const std::string &file_path);
+bool read_app_file(FileBuffer &buf, const BOOST_FSPATH &pref_path, const std::string title_id, const std::string &file_path);
 } // namespace vfs

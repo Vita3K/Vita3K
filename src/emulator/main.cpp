@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 
     gl_screen_renderer gl_renderer;
 
-    if (!gl_renderer.init(host.base_path))
+    if (!gl_renderer.init(host.base_path.string()))
         return RendererInitFailed;
 
     while (handle_events(host)) {

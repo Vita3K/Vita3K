@@ -31,6 +31,7 @@
 #include <kernel/thread/thread_state.h>
 #include <nids/functions.h>
 #include <rtc/rtc.h>
+#include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -154,8 +155,8 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
 }
 
 bool init(HostState &state, Config cfg) {
-    const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
-    const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
+    BOOST_FSPATH base_path(SDL_GetBasePath(), SDL_free);
+    BOOST_FSPATH pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
 
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
@@ -167,10 +168,10 @@ bool init(HostState &state, Config cfg) {
     };
 
     state.cfg = std::move(cfg);
-    state.base_path = base_path.get();
-    state.pref_path = pref_path.get();
+    state.base_path = base_path;
+    state.pref_path = pref_path;
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
-    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str())) {
+    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path)) {
         return false;
     }
 
@@ -204,7 +205,7 @@ bool init(HostState &state, Config cfg) {
 
     state.kernel.base_tick = { rtc_base_ticks() };
 
-    std::string dir_path = state.pref_path + "ux0/app";
+    std::string dir_path = state.pref_path.string() + "ux0/app";
 #ifdef WIN32
     _WDIR *d = _wopendir((string_utils::utf_to_wide(dir_path)).c_str());
     _wdirent *dp;

@@ -317,7 +317,7 @@ EXPORT(int, sceIoDevctl) {
 }
 
 EXPORT(int, sceIoDopen, const char *dir) {
-    return open_dir(host.io, dir, host.pref_path.c_str(), export_name);
+    return open_dir(host.io, dir, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoDevctlAsync) {
@@ -332,7 +332,7 @@ EXPORT(int, sceIoDread, SceUID fd, emu::SceIoDirent *dir) {
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(host.io, file, stat, host.pref_path.c_str(), host.kernel.base_tick.tick, export_name);
+    return stat_file(host.io, file, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
@@ -340,7 +340,7 @@ EXPORT(int, sceIoGetstatAsync) {
 }
 
 EXPORT(int, sceIoGetstatByFd, const int fd, SceIoStat *stat) {
-    return stat_file_by_fd(host.io, fd, stat, host.pref_path.c_str(), host.kernel.base_tick.tick, export_name);
+    return stat_file_by_fd(host.io, fd, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoIoctl) {
@@ -356,7 +356,7 @@ EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
-    return create_dir(host.io, dir, mode, host.pref_path.c_str(), export_name);
+    return create_dir(host.io, dir, mode, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoMkdirAsync) {
@@ -372,7 +372,7 @@ EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     LOG_INFO("Opening file: {}", file);
-    return open_file(host.io, file, flags, host.pref_path.c_str(), export_name);
+    return open_file(host.io, file, flags, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoOpenAsync) {
@@ -405,7 +405,7 @@ EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_file(host.io, path, host.pref_path.c_str(), export_name);
+    return remove_file(host.io, path, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRemoveAsync) {
@@ -424,7 +424,7 @@ EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_dir(host.io, path, host.pref_path.c_str(), export_name);
+    return remove_dir(host.io, path, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRmdirAsync) {
@@ -1061,7 +1061,7 @@ bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleIn
     if (module_iter == loaded_modules.end()) {
         // module is not loaded, load it here
 
-        SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str(), export_name);
+        SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path, export_name);
         if (file < 0) {
             error_val = RET_ERROR(file);
             return false;
