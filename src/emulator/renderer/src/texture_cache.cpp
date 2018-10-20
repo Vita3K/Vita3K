@@ -10,7 +10,10 @@
 
 #include <algorithm> // find
 #include <cstring> // memcmp
-#include <numeric> // accumulate
+#include <numeric> // accumulate, reduce
+#ifdef WIN32
+#include <execution>
+#endif
 
 static bool operator==(const SceGxmTexture &a, const SceGxmTexture &b) {
     return memcmp(&a, &b, sizeof(a)) == 0;
@@ -22,7 +25,12 @@ namespace texture {
 static TextureCacheHash hash_data(const void *data, size_t size) {
     const uint8_t *const begin = static_cast<const uint8_t *>(data);
     const uint8_t *const end = begin + size;
+
+#ifdef WIN32
+    return std::reduce(std::execution::par_unseq, begin, end, TextureCacheHash(0));
+#else
     return std::accumulate(begin, end, TextureCacheHash(0));
+#endif
 }
 
 static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t count, const MemState &mem) {
