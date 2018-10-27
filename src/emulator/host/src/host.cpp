@@ -155,8 +155,8 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
 }
 
 bool init(HostState &state, Config cfg) {
-    BOOST_FSPATH base_path(SDL_GetBasePath(), SDL_free);
-    BOOST_FSPATH pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
+    BOOST_FSPATH base_path{ SDL_GetBasePath() };
+    BOOST_FSPATH pref_path{ SDL_GetPrefPath(org_name, app_name) };
 
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
@@ -168,8 +168,8 @@ bool init(HostState &state, Config cfg) {
     };
 
     state.cfg = std::move(cfg);
-    state.base_path = base_path;
-    state.pref_path = pref_path;
+    state.base_path = base_path.make_preferred(); // normalize the path without extra '/'
+    state.pref_path = pref_path.make_preferred();
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path)) {
         return false;
@@ -205,41 +205,20 @@ bool init(HostState &state, Config cfg) {
 
     state.kernel.base_tick = { rtc_base_ticks() };
 
-    std::string dir_path = state.pref_path.string() + "ux0/app";
-#ifdef WIN32
-    _WDIR *d = _wopendir((string_utils::utf_to_wide(dir_path)).c_str());
-    _wdirent *dp;
-#else
-    DIR *d = opendir(dir_path.c_str());
-    dirent *dp;
-#endif
-    do {
-        std::string d_name_utf8;
-#ifdef WIN32
-        if ((dp = _wreaddir(d)) != NULL) {
-            d_name_utf8 = string_utils::wide_to_utf(dp->d_name);
-#else
-        if ((dp = readdir(d)) != NULL) {
-            d_name_utf8 = dp->d_name;
-#endif
-            if ((strcmp(d_name_utf8.c_str(), ".")) && (strcmp(d_name_utf8.c_str(), ".."))) {
-                vfs::FileBuffer params;
-                state.io.title_id = d_name_utf8;
-                if (vfs::read_app_file(params, state.pref_path, state.io.title_id, "sce_sys/param.sfo")) {
-                    SfoFile sfo_handle;
-                    load_sfo(sfo_handle, params);
-                    find_data(state.game_title, sfo_handle, "TITLE");
-                    state.gui.game_selector.games.push_back({ state.game_title, state.io.title_id });
-                }
+    BOOST_FSPATH dir_path{ state.pref_path / "ux0/app/" };
+    fs::directory_iterator end_itr;
+    for (fs::directory_iterator itr(dir_path); itr != end_itr; ++itr) {
+        if (fs::is_directory(itr->path())) {
+            state.io.title_id = itr->path().stem().string();
+            vfs::FileBuffer params;
+            if (vfs::read_app_file(params, state.pref_path, state.io.title_id, "sce_sys/param.sfo")) {
+                SfoFile sfo_handle;
+                load_sfo(sfo_handle, params);
+                find_data(state.game_title, sfo_handle, "TITLE");
+                state.gui.game_selector.games.push_back({ state.game_title, state.io.title_id });
             }
         }
-    } while (dp);
-
-#ifdef WIN32
-    _wclosedir(d);
-#else
-    closedir(d);
-#endif
+    }
 
     return true;
 }

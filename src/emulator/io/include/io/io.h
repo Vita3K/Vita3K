@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <util/fs.h>
+
 #define SCE_ERROR_ERRNO_EBADF 0x80010051 // Invalid descriptor
 #define SCE_ERROR_ERRNO_ENOENT 0x80010002 // File doesn't exist
 
@@ -25,7 +27,7 @@
 enum class VitaIoDevice {
 #include <io/VitaIoDevice.def>
 
-    _UKNONWN = -1,
+    _UNKNOWN = -1,
     _INVALID = -2,
 };
 #undef DEVICE
@@ -33,7 +35,6 @@ enum class VitaIoDevice {
 namespace vfs {
 using FileBuffer = std::vector<uint8_t>;
 
-constexpr const char *get_device_string(VitaIoDevice dev, bool with_colon = false);
-bool read_file(VitaIoDevice device, FileBuffer &buf, const BOOST_FSPATH &pref_path, const std::string &file_path);
+bool read_file(FileBuffer &buf, const BOOST_FSPATH &pref_path, const std::string &file_path);
 bool read_app_file(FileBuffer &buf, const BOOST_FSPATH &pref_path, const std::string title_id, const std::string &file_path);
 } // namespace vfs

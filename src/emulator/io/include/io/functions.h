@@ -19,6 +19,7 @@
 
 #include <psp2/types.h>
 
+#include <io/io.h>
 #include <io/types.h>
 #include <util/fs.h>
 
@@ -32,17 +33,17 @@ struct SceIoDirent;
 void init_device_paths(IOState &io);
 
 bool init(IOState &io, BOOST_FSPATH &pref_path);
-SceUID open_file(IOState &io, const BOOST_FSPATH &path, int flags, BOOST_FSPATH &pref_path, const char *export_name);
+SceUID open_file(IOState &io, const BOOST_FSPATH &path, int flags, const BOOST_FSPATH &pref_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);
 int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export_name);
 void close_file(IOState &io, SceUID fd, const char *export_name);
-int create_dir(IOState &io, const char *dir, int mode, BOOST_FSPATH &pref_path, const char *export_name);
-int remove_file(IOState &io, const char *file, BOOST_FSPATH &pref_path, const char *export_name);
-int remove_dir(IOState &io, const char *dir, BOOST_FSPATH &pref_path, const char *export_name);
-int stat_file(IOState &io, const char *file, SceIoStat *stat, BOOST_FSPATH &pref_path, uint64_t base_tick, const char *export_name);
-int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, BOOST_FSPATH &pref_path, uint64_t base_tick, const char *export_name);
+int create_dir(IOState &io, const BOOST_FSPATH &dir, int mode, const BOOST_FSPATH &pref_path, const char *export_name);
+int stat_file(IOState &io, const BOOST_FSPATH &file, SceIoStat *statp, const BOOST_FSPATH &pref_path, uint64_t base_tick, const char *export_name);
+int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const BOOST_FSPATH &pref_path, uint64_t base_tick, const char *export_name);
 
-int open_dir(IOState &io, const char *path, BOOST_FSPATH &pref_path, const char *export_name);
-int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *export_name);
+int open_dir(IOState &io, const BOOST_FSPATH &path, const BOOST_FSPATH &pref_path, const char *export_name);
+int read_dir(IOState &io, const SceUID fd, emu::SceIoDirent *dent, const char *export_name);
 int close_dir(IOState &io, SceUID fd, const char *export_name);
+
+int io_remove(IOState &io, const BOOST_FSPATH &path, const BOOST_FSPATH &pref_path, const char *export_name);

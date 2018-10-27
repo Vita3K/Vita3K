@@ -19,12 +19,13 @@
 
 #include <mem/ptr.h>
 #include <psp2/io/stat.h>
+#include <util/fs.h>
 
 namespace emu {
 
 struct SceIoDirent {
     SceIoStat d_stat;
-    char d_name[256];
+    BOOST_FSPATH d_name;
     Ptr<void> d_private;
     int dummy;
 };

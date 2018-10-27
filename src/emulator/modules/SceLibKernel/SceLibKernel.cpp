@@ -405,7 +405,7 @@ EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_file(host.io, path, host.pref_path, export_name);
+    return io_remove(host.io, path, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRemoveAsync) {
@@ -424,7 +424,7 @@ EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_dir(host.io, path, host.pref_path, export_name);
+    return io_remove(host.io, path, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRmdirAsync) {
