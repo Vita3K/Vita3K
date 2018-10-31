@@ -25,7 +25,7 @@ namespace emu {
 
 struct SceIoDirent {
     SceIoStat d_stat;
-    BOOST_FSPATH d_name;
+    fs::path d_name;
     Ptr<void> d_private;
     int dummy;
 };

@@ -155,8 +155,8 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
 }
 
 bool init(HostState &state, Config cfg) {
-    BOOST_FSPATH base_path{ SDL_GetBasePath() };
-    BOOST_FSPATH pref_path{ SDL_GetPrefPath(org_name, app_name) };
+    fs::path base_path{ SDL_GetBasePath() };
+    fs::path pref_path{ SDL_GetPrefPath(org_name, app_name) };
 
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
@@ -205,7 +205,7 @@ bool init(HostState &state, Config cfg) {
 
     state.kernel.base_tick = { rtc_base_ticks() };
 
-    BOOST_FSPATH dir_path{ state.pref_path / "ux0/app/" };
+    fs::path dir_path{ state.pref_path / "ux0/app/" };
     fs::directory_iterator end_itr;
     for (fs::directory_iterator itr(dir_path); itr != end_itr; ++itr) {
         if (fs::is_directory(itr->path())) {

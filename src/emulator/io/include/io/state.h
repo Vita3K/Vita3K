@@ -37,14 +37,20 @@ enum TtyType : std::uint8_t {
 };
 
 typedef std::map<SceUID, TtyType> TtyFiles;
-typedef std::map<SceUID, BOOST_FSPATH> StdFiles;
-typedef std::map<SceUID, BOOST_FSPATH> DirEntries;
+typedef std::map<SceUID, fs::path> StdFiles;
+typedef std::map<SceUID, fs::path> DirEntries;
 
 struct IOState {
     struct DevicePaths {
-        BOOST_FSPATH app0;
-        BOOST_FSPATH savedata0;
-        BOOST_FSPATH addcont0;
+        std::string app0;
+        std::string appmeta0;
+        std::string cache0;
+        std::string ux0_savedata;
+        std::string ur0_savedata;
+        std::string uma0_savedata;
+        std::string addcont0;
+        std::string patch0;
+        std::string trophy0;
     } device_paths;
 
     std::string title_id;

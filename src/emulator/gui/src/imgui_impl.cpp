@@ -21,17 +21,15 @@
 
 #include <glutil/gl.h>
 #include <host/state.h>
+#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
 #include <SDL_video.h>
-#include <boost/filesystem.hpp>
 #include <imgui.h>
 
 #include <fstream>
 #include <string>
-
-namespace fs = boost::filesystem;
 
 namespace imgui {
 
@@ -111,7 +109,7 @@ void init_font(GuiState &gui) {
     // read font
     const auto font_file_size = fs::file_size(font_path);
     char *font_data = new char[font_file_size];
-    std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
+    fs::ifstream font_stream(font_path, std::ios::binary);
     font_stream.read(font_data, font_file_size);
 
     // add it to imgui

@@ -24,8 +24,8 @@
 #include <host/state.h>
 #include <host/version.h>
 #include <kernel/thread/thread_functions.h>
+#include <util/fs.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <SDL.h>
 
@@ -58,14 +58,14 @@ int main(int argc, char *argv[]) {
     else
         run_type = AppRunType::Unknown;
 
-    std::wstring vpk_path_wide;
+    fs::path vpk_path;
     if (run_type == AppRunType::Vpk) {
-        vpk_path_wide = string_utils::utf_to_wide(*cfg.vpk_path);
+        vpk_path = *cfg.vpk_path;
     } else {
         SDL_Event ev;
         while (SDL_PollEvent(&ev)) {
             if (ev.type == SDL_DROPFILE) {
-                vpk_path_wide = string_utils::utf_to_wide(ev.drop.file);
+                vpk_path = ev.drop.file;
                 SDL_free(ev.drop.file);
                 break;
             }
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 
     // TODO: Clean this, ie. make load_app overloads called depending on run type
     if (run_type == AppRunType::Extracted) {
-        vpk_path_wide = string_utils::utf_to_wide(*cfg.run_title_id);
+        vpk_path = *cfg.run_title_id;
     }
 
     HostState host;
@@ -101,12 +101,12 @@ int main(int argc, char *argv[]) {
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
         if (run_type == AppRunType::Extracted) {
-            vpk_path_wide = string_utils::utf_to_wide(host.gui.game_selector.selected_title_id);
+            vpk_path = host.gui.game_selector.selected_title_id;
         }
     }
 
     Ptr<const void> entry_point;
-    if (auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
+    if (auto err = load_app(entry_point, host, vpk_path, run_type) != Success)
         return err;
 
     if (auto err = run_app(host, entry_point) != Success)
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 
     gl_screen_renderer gl_renderer;
 
-    if (!gl_renderer.init(host.base_path.string()))
+    if (!gl_renderer.init(host.base_path.generic_path().string()))
         return RendererInitFailed;
 
     while (handle_events(host)) {

@@ -21,5 +21,3 @@
 #include <boost/filesystem/fstream.hpp> // for files (passed as references)
 
 namespace fs = boost::filesystem;
-
-using BOOST_FSPATH = fs::path; // path declaration

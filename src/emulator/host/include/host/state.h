@@ -59,8 +59,8 @@ struct DisplayState {
 
 struct HostState {
     std::string game_title;
-    BOOST_FSPATH base_path;
-    BOOST_FSPATH pref_path;
+    fs::path base_path;
+    fs::path pref_path;
     Config cfg;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;

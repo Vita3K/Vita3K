@@ -163,7 +163,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
         vfs::FileBuffer module_buffer;
         Ptr<const void> lib_entry_point;
 
-        if (vfs::read_file(module_buffer, host.pref_path, module_path)) {
+        if (vfs::read_file(VitaIoDevice::VS0, module_buffer, host.pref_path, module_path)) {
             SceUID loaded_module_uid = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), module_path, host.cfg);
             const auto module = host.kernel.loaded_modules[loaded_module_uid];
             const auto module_name = module->module_name;

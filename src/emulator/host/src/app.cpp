@@ -88,17 +88,12 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, FILE *&vpk_fp, const char *
     return true;
 }
 
-bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
+bool install_vpk(Ptr<const void> &entry_point, HostState &host, const fs::path &path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
     FILE *vpk_fp;
-
-#ifdef WIN32
-    if (_wfopen_s(&vpk_fp, path.c_str(), L"rb")) {
-#else
-    if (!(vpk_fp = fopen(string_utils::wide_to_utf(path).c_str(), "rb"))) {
-#endif
+    if (!(vpk_fp = fopen(path.generic_path().string().c_str(), "rb"))) {
         LOG_CRITICAL("Failed to open the vpk.");
         return false;
     }
@@ -131,17 +126,9 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     SfoFile sfo_handle;
     load_sfo(sfo_handle, params);
     find_data(host.io.title_id, sfo_handle, "TITLE_ID");
+    fs::path output_base_path{ host.pref_path / "ux0/app" / host.io.title_id };
 
-    std::string output_base_path = host.pref_path.string() + "ux0/app/";
-    std::string title_base_path = output_base_path;
-
-    if (sfo_path.length() < 20) {
-        output_base_path += host.io.title_id;
-    }
-
-    title_base_path += host.io.title_id;
-
-    const bool created = fs::create_directory(title_base_path);
+    const bool created = fs::create_directory(output_base_path);
     if (!created) {
         GenericDialogState status = UNK_STATE;
         while (handle_events(host) && (status == 0)) {
@@ -167,31 +154,23 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
         }
-        std::string output_path = output_base_path;
-        output_path += "/";
-        output_path += file_stat.m_filename;
+        fs::path output_path{ output_base_path / file_stat.m_filename };
         if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
             fs::create_directories(output_path);
         } else {
-            const size_t slash = output_path.rfind('/');
-            if (std::string::npos != slash) {
-                std::string directory = output_path.substr(0, slash);
-                fs::create_directories(directory);
+            if (!fs::exists(output_path.branch_path())) {
+                fs::create_directories(output_path.branch_path());
             }
-
-            LOG_INFO("Extracting {}", output_path);
-            mz_zip_reader_extract_to_file(zip.get(), i, output_path.c_str(), 0);
+            LOG_INFO("Extracting {}", output_path.generic_path().string());
+            mz_zip_reader_extract_to_file(zip.get(), i, output_path.generic_path().string().c_str(), 0);
         }
     }
-
-    std::string savedata_path = host.pref_path.string() + "ux0/user/00/savedata/" + host.io.title_id;
-    fs::create_directory(savedata_path);
 
     LOG_INFO("{} installed succesfully!", host.io.title_id);
     return true;
 }
 
-bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
+bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const fs::path &path, AppRunType run_type) {
     if (path.empty())
         return InvalidApplicationPath;
 
@@ -200,7 +179,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
             return false;
         }
     } else if (run_type == AppRunType::Extracted) {
-        host.io.title_id = string_utils::wide_to_utf(path);
+        host.io.title_id = path.generic_path().string();
     }
 
     vfs::FileBuffer params;
@@ -219,7 +198,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Category: {}", category);
 
-    init_device_paths(host.io);
+    init_game_paths(host.io, host.pref_path);
 
     // Load pre-loaded libraries
     const char *const lib_load_list[] = {
@@ -262,10 +241,10 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     return true;
 }
 
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
+ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const fs::path &path, AppRunType run_type) {
     if (!load_app_impl(entry_point, host, path, run_type)) {
         std::string message = "Failed to load \"";
-        message += string_utils::wide_to_utf(path);
+        message += path.generic_path().string();
         message += "\"";
         message += "\nSee console output for details.";
         error_dialog(message.c_str(), host.window.get());

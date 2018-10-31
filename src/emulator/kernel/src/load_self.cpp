@@ -15,17 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <host/config.h>
 #include <kernel/load_self.h>
 #include <kernel/relocation.h>
 #include <kernel/state.h>
 #include <kernel/types.h>
 #include <mem/mem.h>
-#include <host/config.h>
-
 #include <nids/functions.h>
+#include <util/fs.h>
 #include <util/log.h>
 
-#include <boost/filesystem.hpp>
 #include <elfio/elf_types.hpp>
 // clang-format off
 #define SCE_ELF_DEFS_TARGET
@@ -51,7 +50,6 @@
 #define NID_PROCESS_PARAM 0x70FBA1E7
 
 using namespace ELFIO;
-namespace fs = boost::filesystem;
 
 static constexpr bool LOG_MODULE_LOADING = false;
 static constexpr bool DUMP_SEGMENTS = false;
@@ -360,7 +358,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
             const auto filename = fs::path(fmt::format("{}/{}_seg{}_{}", DUMP_DIR, fs::path(self_path).filename().stem().string(),
                 seg_index, get_seg_header_string()));
 
-            std::ofstream out(filename.string(), std::ios::out | std::ios::binary);
+            fs::ofstream out(filename, std::ios::out | std::ios::binary);
             out.write((char *)seg_data, seg_header.p_filesz);
         };
 
