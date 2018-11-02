@@ -328,7 +328,7 @@ EXPORT(int, sceIoDread, SceUID fd, emu::SceIoDirent *dir) {
     if (dir == nullptr) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     }
-    return read_dir(host.io, fd, dir, export_name);
+    return read_dir(host.io, host.pref_path, fd, dir, export_name);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
@@ -352,7 +352,7 @@ EXPORT(int, sceIoIoctlAsync) {
 }
 
 EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
-    return seek_file(fd, offset, whence, host.io, export_name);
+    return seek_file(fd, offset, whence, host.io, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
@@ -380,10 +380,10 @@ EXPORT(int, sceIoOpenAsync) {
 }
 
 EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
-    if (seek_file(fd, offset, SEEK_SET, host.io, export_name) < 0) {
+    if (seek_file(fd, offset, SEEK_SET, host.io, host.pref_path, export_name) < 0) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return read_file(data, host.io, fd, size, export_name);
+    return read_file(data, host.pref_path, host.io, fd, size, export_name);
 }
 
 EXPORT(int, sceIoPreadAsync) {
@@ -391,10 +391,10 @@ EXPORT(int, sceIoPreadAsync) {
 }
 
 EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
-    if (seek_file(fd, offset, SEEK_SET, host.io, export_name) < 0) {
+    if (seek_file(fd, offset, SEEK_SET, host.io, host.pref_path, export_name) < 0) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return write_file(fd, data, size, host.io, export_name);
+    return write_file(fd, data, size, host.io, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoPwriteAsync) {
@@ -1066,17 +1066,17 @@ bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleIn
             error_val = RET_ERROR(file);
             return false;
         }
-        int size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
+        int size = seek_file(file, 0, SCE_SEEK_END, host.io, host.pref_path, export_name);
         if (size < 0) {
             error_val = RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
             return false;
         }
         char *data = new char[size];
-        if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0) {
+        if (seek_file(file, 0, SCE_SEEK_SET, host.io, host.pref_path, export_name) < 0) {
             error_val = RET_ERROR(size);
             return false;
         }
-        if (read_file(data, host.io, file, size, export_name) < 0) {
+        if (read_file(data, host.pref_path, host.io, file, size, export_name) < 0) {
             error_val = RET_ERROR(size);
             return false;
         }

@@ -57,11 +57,11 @@ EXPORT(int, sceIoGetThreadDefaultPriority) {
 }
 
 EXPORT(int, sceIoLseek32, SceUID fd, int offset, int whence) {
-    return seek_file(fd, offset, whence, host.io, export_name);
+    return seek_file(fd, offset, whence, host.io, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRead, SceUID fd, void *data, SceSize size) {
-    return read_file(data, host.io, fd, size, export_name);
+    return read_file(data, host.pref_path, host.io, fd, size, export_name);
 }
 
 EXPORT(int, sceIoReadAsync) {
@@ -97,7 +97,7 @@ EXPORT(int, sceIoSyncByFdAsync) {
 }
 
 EXPORT(int, sceIoWrite, SceUID fd, const void *data, SceSize size) {
-    return write_file(fd, data, size, host.io, export_name);
+    return write_file(fd, data, size, host.io, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoWriteAsync) {

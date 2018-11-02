@@ -33,18 +33,18 @@ struct SceIoDirent;
 void init_game_paths(IOState &io, fs::path pref_path);
 
 bool init(IOState &io, fs::path &pref_path);
-SceUID open_file(IOState &io, std::string path, int flags, const fs::path &pref_path, const char *export_name);
-int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
-int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);
-int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export_name);
+SceUID open_file(IOState &io, const std::string path, int flags, const fs::path &pref_path, const char *export_name);
+int read_file(void *data, const fs::path pref_path, IOState &io, SceUID fd, SceSize size, const char *export_name);
+int write_file(SceUID fd, const void *data, SceSize size, IOState &io, const fs::path pref_path, const char *export_name);
+int seek_file(SceUID fd, int offset, int whence, IOState &io, const fs::path pref_path, const char *export_name);
 void close_file(IOState &io, SceUID fd, const char *export_name);
 
 int stat_file(IOState &io, std::string file, SceIoStat *statp, const fs::path &pref_path, uint64_t base_tick, const char *export_name);
 int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const fs::path &pref_path, uint64_t base_tick, const char *export_name);
 
 int create_dir(IOState &io, std::string dir, int mode, const fs::path &pref_path, const char *export_name);
-int open_dir(IOState &io, std::string path, const fs::path &pref_path, const char *export_name);
-int read_dir(IOState &io, const SceUID fd, emu::SceIoDirent *dent, const char *export_name);
+int open_dir(IOState &io, const std::string path, const fs::path &pref_path, const char *export_name);
+int read_dir(IOState &io, const fs::path pref_path, const SceUID fd, emu::SceIoDirent *dent, const char *export_name);
 int close_dir(IOState &io, SceUID fd, const char *export_name);
 
 int io_remove(IOState &io, std::string path, const fs::path &pref_path, const char *export_name);

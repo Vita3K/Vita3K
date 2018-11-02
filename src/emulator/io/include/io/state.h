@@ -21,7 +21,6 @@
 #include <psp2/types.h>
 
 #include <io/file.h>
-#include <util/fs.h>
 
 #include <cstdio>
 #include <map>
@@ -37,8 +36,7 @@ enum TtyType : std::uint8_t {
 };
 
 typedef std::map<SceUID, TtyType> TtyFiles;
-typedef std::map<SceUID, fs::path> StdFiles;
-typedef std::map<SceUID, fs::path> DirEntries;
+typedef std::map<SceUID, std::string> FileSystem;
 
 struct IOState {
     struct DevicePaths {
@@ -56,6 +54,6 @@ struct IOState {
     std::string title_id;
     SceUID next_fd = 0;
     TtyFiles tty_files;
-    StdFiles std_files;
-    DirEntries dir_entries;
+    FileSystem std_files;
+    FileSystem dir_entries;
 };

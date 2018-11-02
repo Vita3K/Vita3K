@@ -174,8 +174,8 @@ EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, e
         switch (files[i].mode) {
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE:
             fd = open_file(host.io, file_path, SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-            seek_file(fd, files[i].offset, SCE_SEEK_SET, host.io, export_name);
-            write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, export_name);
+            seek_file(fd, files[i].offset, SCE_SEEK_SET, host.io, host.pref_path, export_name);
+            write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, host.pref_path, export_name);
             close_file(host.io, fd, export_name);
             break;
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_DIRECTORY:
@@ -183,8 +183,8 @@ EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, e
             break;
         default:
             fd = open_file(host.io, file_path, SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-            seek_file(fd, files[i].offset, SCE_SEEK_SET, host.io, export_name);
-            write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, export_name);
+            seek_file(fd, files[i].offset, SCE_SEEK_SET, host.io, host.pref_path, export_name);
+            write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, host.pref_path, export_name);
             close_file(host.io, fd, export_name);
             break;
         }
@@ -195,7 +195,7 @@ EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, e
         slot_path += std::to_string(slot->id);
         slot_path += ".bin";
         fd = open_file(host.io, slot_path, SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-        write_file(fd, &slot->slotParam, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
+        write_file(fd, &slot->slotParam, sizeof(SceAppUtilSaveDataSlotParam), host.io, host.pref_path, export_name);
         close_file(host.io, fd, export_name);
     }
 
@@ -215,7 +215,7 @@ EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDat
     slot_path += std::to_string(slotId);
     slot_path += ".bin";
     SceUID fd = open_file(host.io, slot_path, SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
+    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, host.pref_path, export_name);
     close_file(host.io, fd, export_name);
     return 0;
 }
@@ -235,7 +235,7 @@ EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveD
     SceUID fd = open_file(host.io, slot_path, SCE_O_RDONLY, host.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    read_file(param, host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+    read_file(param, host.pref_path, host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
     close_file(host.io, fd, export_name);
     return 0;
 }
@@ -251,7 +251,7 @@ EXPORT(int, sceAppUtilSaveDataSlotSetParam, unsigned int slotId, SceAppUtilSaveD
     SceUID fd = open_file(host.io, slot_path, SCE_O_WRONLY, host.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
+    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, host.pref_path, export_name);
     close_file(host.io, fd, export_name);
     return 0;
 }

@@ -298,35 +298,34 @@ std::string translate_path(const fs::path &input_path, VitaIoDevice &device, con
     default: {
         LOG_ERROR("Unimplemented device {}: used", root_name);
         device = VitaIoDevice::_INVALID;
-        temp = "";
-        break;
+        return "";
     }
     }
     return temp.make_preferred().generic_path().string();
 }
 
-void check_path(IOState &io, std::string &path, const fs::path &pref_path) {
+std::string convert_path(IOState &io, const std::string &path, const fs::path &pref_path) {
     VitaIoDevice device = VitaIoDevice::_UNKNOWN;
     fs::path translated_path = translate_path(path, device, io.device_paths);
     if (device == VitaIoDevice::IMC0) { // redirect to the base Vita path (TODO: needs checking)
-        path = pref_path.generic_path().string();
+        return pref_path.generic_path().string();
     } else if (device == VitaIoDevice::XMC0) { // assume it is uma0:/ (TODO: needs checking)
-        path = pref_path.generic_path().string() + "uma0/";
+        return pref_path.generic_path().string() + "uma0/";
     } else if (!translated_path.empty()) {
-        path = pref_path.generic_path().string() + translated_path.generic_path().string();
+        return pref_path.generic_path().string() + translated_path.generic_path().string();
     } else {
-        path = "";
+        return "";
     }
 }
 
-SceUID open_file(IOState &io, std::string path, int flags, const fs::path &pref_path, const char *export_name) {
+SceUID open_file(IOState &io, const std::string path, int flags, const fs::path &pref_path, const char *export_name) {
     VitaIoDevice device = VitaIoDevice::_UNKNOWN;
     fs::path translated_path{ pref_path / translate_path(path, device, io.device_paths) };
     if (device == VitaIoDevice::_INVALID) {
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    LOG_TRACE("{}: Opening file {}", export_name, path);
+    LOG_TRACE("{}: Opening file {} ({})", export_name, path, translated_path.generic_path().string());
 
     const SceUID fd = io.next_fd++;
 
@@ -341,23 +340,24 @@ SceUID open_file(IOState &io, std::string path, int flags, const fs::path &pref_
 
         io.tty_files.emplace(fd, static_cast<TtyType>(tty_type));
     } else {
-        io.std_files.emplace(fd, translated_path);
+        io.std_files.emplace(fd, path);
     }
 
     return fd;
 }
 
-int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name) {
+int read_file(void *data, const fs::path pref_path, IOState &io, SceUID fd, SceSize size, const char *export_name) {
     assert(data != nullptr);
     assert(fd >= 0);
     assert(size >= 0);
 
     const auto file = io.std_files.find(fd);
-    if (file != io.std_files.end() && fs::exists(file->second)) {
+    fs::path file_path = convert_path(io, file->second, pref_path);
+    if (file != io.std_files.end() && fs::exists(file_path)) {
         LOG_TRACE("{}: Reading file: fd: {}, size: {}", export_name, log_hex(fd), size);
 
-        FILE *f = fopen(file->second.generic_path().string().c_str(), "rb");
-        fs::permissions(file->second, fs::add_perms | fs::others_read | fs::group_read | fs::owner_read);
+        FILE *f = fopen(file_path.generic_path().string().c_str(), "rb");
+        fs::permissions(file_path, fs::add_perms | fs::others_read | fs::group_read | fs::owner_read);
         return fread(data, 1, size, f);
     }
 
@@ -375,7 +375,7 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *expo
     return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
 }
 
-int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name) {
+int write_file(SceUID fd, const void *data, SceSize size, IOState &io, const fs::path pref_path, const char *export_name) {
     assert(data != nullptr);
     assert(size >= 0);
     if (fd < 0) {
@@ -400,24 +400,30 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
         return IO_ERROR_UNK();
     }
 
-    const auto file = io.std_files.find(fd);
-    if (file != io.std_files.end()) {
+    const auto std_file = io.std_files.find(fd);
+    if (std_file != io.std_files.end()) {
         LOG_TRACE("{}: Writing file: fd: {}, size: {}", export_name, log_hex(fd), size);
 
-        FILE *f = fopen(file->second.generic_path().string().c_str(), "wb+");
-        fs::permissions(file->second, fs::add_perms | fs::others_write | fs::group_write | fs::owner_write);
+        fs::path file_path = convert_path(io, std_file->second, pref_path);
+        if (!fs::exists(file_path.branch_path())) {
+            fs::create_directories(file_path.branch_path());
+        }
+
+        FILE *f = fopen(file_path.generic_path().string().c_str(), "wb+");
+        fs::permissions(file_path, fs::add_perms | fs::others_write | fs::group_write | fs::owner_write);
         return fwrite(data, 1, size, f);
     }
 
     return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
 }
 
-int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export_name) {
+int seek_file(SceUID fd, int offset, int whence, IOState &io, const fs::path pref_path, const char *export_name) {
     assert(fd >= 0);
     assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
 
     const auto std_file = io.std_files.find(fd);
-    if (std_file == io.std_files.end() || !fs::exists(std_file->second)) {
+    std::string file_path = convert_path(io, std_file->second, pref_path);
+    if (std_file == io.std_files.end() || !fs::exists(file_path)) {
         return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
     }
 
@@ -448,20 +454,14 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export
 
     int ret = 0;
     long pos = 0;
-    FILE *f = fopen(std_file->second.generic_path().string().c_str(), "rb");
-
-    if (std_file != io.std_files.end()) {
-        ret = fseek(f, offset, base);
-    }
+    FILE *f = fopen(file_path.c_str(), "rb");
+    ret = fseek(f, offset, base);
 
     if (ret != 0) {
         return IO_ERROR_UNK();
     }
 
-    if (std_file != io.std_files.end()) {
-        pos = ftell(f);
-    }
-
+    pos = ftell(f);
     return pos;
 }
 
@@ -478,16 +478,13 @@ int stat_file(IOState &io, std::string file, SceIoStat *statp, const fs::path &p
     assert(statp != NULL);
     memset(statp, '\0', sizeof(SceIoStat));
 
-    std::string temp = file;
-    check_path(io, file, pref_path);
-    if (file.empty() || !fs::exists(file)) {
-        LOG_WARN("{}: Cannot find file {}", export_name, temp);
+    fs::path fs_handle = convert_path(io, file, pref_path);
+    if (!fs::exists(fs_handle)) {
+        LOG_WARN("{}: Cannot find file {} ({})", export_name, file, fs_handle.generic_path().string());
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
-    LOG_TRACE("{}: Statting file {}", export_name, temp);
-
-    fs::path fs_handle = file;
+    LOG_TRACE("{}: Statting file {}", export_name, file);
 
     std::uint64_t last_access_time_ticks;
     std::uint64_t creation_time_ticks;
@@ -507,6 +504,7 @@ int stat_file(IOState &io, std::string file, SceIoStat *statp, const fs::path &p
     creation_time_ticks = (uint64_t)sb.st_ctime * VITA_CLOCKS_PER_SEC;
 
 #undef st_atime
+#undef st_mtime
 #undef st_ctime
 #endif
 
@@ -533,53 +531,54 @@ int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const fs::path 
     memset(statp, '\0', sizeof(SceIoStat));
 
     if (io.std_files.find(fd) != io.std_files.end()) {
-        return stat_file(io, io.std_files[fd].generic_path().string(), statp, pref_path, base_tick, export_name);
+        return stat_file(io, io.std_files[fd], statp, pref_path, base_tick, export_name);
     } else if (io.dir_entries.find(fd) != io.dir_entries.end()) {
-        return stat_file(io, io.dir_entries[fd].generic_path().string(), statp, pref_path, base_tick, export_name);
+        return stat_file(io, io.dir_entries[fd], statp, pref_path, base_tick, export_name);
     }
 
     return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
 }
 
 int create_dir(IOState &io, std::string dir, int mode, const fs::path &pref_path, const char *export_name) {
-    check_path(io, dir, pref_path);
-    if (dir.empty()) {
+    std::string dir_path = convert_path(io, dir, pref_path);
+    if (dir_path.empty()) {
         return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
     }
 
-    if (!fs::exists(dir)) {
+    if (!fs::exists(dir_path)) {
         LOG_TRACE("{}: Creating new dir {}", export_name, dir);
-        fs::create_directory(dir);
+        fs::create_directories(dir_path);
     }
 
     return 0;
 }
 
-int open_dir(IOState &io, std::string path, const fs::path &pref_path, const char *export_name) {
+int open_dir(IOState &io, const std::string dir, const fs::path &pref_path, const char *export_name) {
     VitaIoDevice device = VitaIoDevice::_UNKNOWN;
-    fs::path translated_path{ pref_path / translate_path(path, device, io.device_paths) };
+    fs::path translated_path{ pref_path / translate_path(dir, device, io.device_paths) };
     if (device == VitaIoDevice::_INVALID) {
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    LOG_TRACE("{}: Opening dir {}", export_name, path);
+    LOG_TRACE("{}: Opening dir {} ({})", export_name, dir, translated_path.generic_path().string());
 
     const SceUID fd = io.next_fd++;
-    io.dir_entries.emplace(fd, translated_path);
+    io.dir_entries.emplace(fd, dir);
 
     return fd;
 }
 
-int read_dir(IOState &io, const SceUID fd, emu::SceIoDirent *dirent, const char *export_name) {
+int read_dir(IOState &io, const fs::path pref_path, const SceUID fd, emu::SceIoDirent *dirent, const char *export_name) {
     assert(dirent != NULL);
-    if (!fs::exists(io.dir_entries[fd])) {
+    fs::path dir_path = convert_path(io, io.dir_entries[fd], pref_path);
+    if (!fs::exists(dir_path)) {
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
     LOG_TRACE("{}: Reading dir fd: {}", export_name, log_hex(fd));
 
     // NOTE: based on https://stackoverflow.com/a/12737930/2173875
-    for (fs::recursive_directory_iterator end, dir(io.dir_entries[fd]); dir != end; ++dir) {
+    for (fs::recursive_directory_iterator end, dir(dir_path); dir != end; ++dir) {
         const fs::path &p = dir->path();
 
         // Hidden directory, don't recurse into it
@@ -606,13 +605,13 @@ int close_dir(IOState &io, SceUID fd, const char *export_name) {
 }
 
 int io_remove(IOState &io, std::string path, const fs::path &pref_path, const char *export_name) {
-    check_path(io, path, pref_path);
-    if (path.empty() || !fs::exists(path)) {
+    std::string dir_path = convert_path(io, path, pref_path);
+    if (dir_path.empty() || !fs::exists(dir_path)) {
         return 0;
     }
 
     LOG_TRACE("{}: Removing {}", export_name, path);
 
-    fs::remove(path);
+    fs::remove(dir_path);
     return 0;
 }
