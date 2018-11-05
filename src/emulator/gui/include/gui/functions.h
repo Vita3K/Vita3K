@@ -43,3 +43,4 @@ void DrawUI(HostState &host);
 void DrawCommonDialog(HostState &host);
 void DrawGameSelector(HostState &host, AppRunType *run_type);
 void DrawReinstallDialog(HostState &host, GenericDialogState *status);
+void DrawControlsDialog(HostState &host);

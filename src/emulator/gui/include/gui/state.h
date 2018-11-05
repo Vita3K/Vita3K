@@ -51,6 +51,9 @@ struct GuiState {
     // Optimisation menu
     bool texture_cache = true;
 
+    // Help menu
+    bool controls_dialog = false;
+
     DialogState common_dialog;
     GamesSelector game_selector;
 
