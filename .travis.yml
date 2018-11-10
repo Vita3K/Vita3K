@@ -34,6 +34,8 @@ matrix:
       - git config --global user.email "builds@travis-ci.com"
       - git config --global user.name "Travis CI"
       - cd ${TRAVIS_BUILD_DIR}/build/bin
+      - ls
+      - chmod -R 755 .
       - zip -r Vita3K-linux-nightly.zip .
       deploy:
         provider: script
