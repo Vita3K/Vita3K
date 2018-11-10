@@ -5,3 +5,6 @@
 .vs/
 /src/external/boost-build
 .idea/
+.vs
+.vscode
+build
