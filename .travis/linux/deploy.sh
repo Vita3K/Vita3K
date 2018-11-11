@@ -2,7 +2,7 @@
 set -e
 
 git clone https://github.com/Vita3K/Vita3K-builds.git
-cp $TRAVIS_BUILD_DIR/build/bin/Vita3K-linux-nightly.zip Vita3K-builds/
+cp $HOME/linux-build/bin/Vita3K-linux-nightly.zip Vita3K-builds/
 cd Vita3K-builds
 
 git config user.name "Travis CI"
