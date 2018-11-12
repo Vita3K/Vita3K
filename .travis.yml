@@ -39,7 +39,7 @@ matrix:
         provider: script
         overwrite: true
         skip_cleanup: true
-        script: bash $TRAVIS_BUILD_DIR/linux/deploy.sh
+        script: bash $TRAVIS_BUILD_DIR/.travis/linux/deploy.sh
         on:
           repo: Vita3K/Vita3K
           tags: false
