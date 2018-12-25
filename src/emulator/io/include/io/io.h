@@ -17,8 +17,9 @@
 
 #pragma once
 
-#define SCE_ERROR_ERRNO_EBADF 0x80010051 // Invalid descriptor
 #define SCE_ERROR_ERRNO_ENOENT 0x80010002 // File doesn't exist
+#define SCE_ERROR_ERRNO_EMFILE 0x80010018 // File doesn't exist
+#define SCE_ERROR_ERRNO_EBADF 0x80010051 // Invalid descriptor
 
 #define JOIN_DEVICE(p) VitaIoDevice::p
 #define DEVICE(path, name) name,
