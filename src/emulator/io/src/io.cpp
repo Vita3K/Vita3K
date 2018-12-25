@@ -295,7 +295,7 @@ SceUID open_file(IOState &io, const std::string &path, int flags, const char *pr
         const FilePtr file(fopen(file_path.c_str(), open_mode), delete_file);
 #endif
         if (!file) {
-            return SCE_ERROR_ERRNO_ENOENT;
+            return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
         }
 
         File file_node;
@@ -541,7 +541,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
         WIN32_FIND_DATAW find_data;
         HANDLE handle = FindFirstFileW(string_utils::utf_to_wide(file_path).c_str(), &find_data);
         if (handle == INVALID_HANDLE_VALUE) {
-            return IO_ERROR_UNK();
+            return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
         }
         FindClose(handle);
 
@@ -636,7 +636,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path, const char *e
     });
 #endif
     if (!dir) {
-        return SCE_ERROR_ERRNO_ENOENT;
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
     Directory dir_node;
