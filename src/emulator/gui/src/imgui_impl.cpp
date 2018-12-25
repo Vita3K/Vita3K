@@ -96,7 +96,7 @@ void init_style() {
 void init_font(GuiState &gui) {
     const auto DATA_PATH = "data";
     const auto FONT_PATH = "fonts";
-    const auto FONT_FILENAME = "Ruda-Black.ttf";
+    const auto FONT_FILENAME = "mplus-1mn-bold.ttf";
 
     // set up font paths
     fs::path font_dir = fs::path(DATA_PATH) /= FONT_PATH;
@@ -118,7 +118,7 @@ void init_font(GuiState &gui) {
     ImGuiIO &io = ImGui::GetIO();
     ImFontConfig font_config{};
     gui.monospaced_font = io.Fonts->AddFontDefault();
-    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(font_data, font_file_size, 14, &font_config);
+    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(font_data, font_file_size, 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 
     // save pointer so we can delete it later
     gui.font_data = font_data;
