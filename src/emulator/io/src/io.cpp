@@ -380,8 +380,11 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
 }
 
 int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export_name) {
-    assert(fd >= 0);
     assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
+
+    if (fd < 0) {
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
+    }
 
     const StdFiles::const_iterator std_file = io.std_files.find(fd);
 
@@ -433,13 +436,17 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export
     return pos;
 }
 
-void close_file(IOState &io, SceUID fd, const char *export_name) {
-    assert(fd >= 0);
+int close_file(IOState &io, SceUID fd, const char *export_name) {
+    if (fd < 0) {
+        return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
+    }
 
     LOG_TRACE("{}: Closing file: fd: {}", export_name, log_hex(fd));
 
     io.tty_files.erase(fd);
     io.std_files.erase(fd);
+
+    return 0;
 }
 
 int remove_file(IOState &io, const char *file, const char *pref_path, const char *export_name) {
