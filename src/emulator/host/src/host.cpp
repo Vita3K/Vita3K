@@ -228,6 +228,7 @@ bool init(HostState &state, Config cfg) {
                     SfoFile sfo_handle;
                     load_sfo(sfo_handle, params);
                     find_data(state.game_title, sfo_handle, "TITLE");
+                    std::replace(state.game_title.begin(), state.game_title.end(), '\n', ' ');
                     state.gui.game_selector.games.push_back({ state.game_title, state.io.title_id });
                 }
             }
