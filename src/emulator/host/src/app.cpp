@@ -211,6 +211,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     load_sfo(host.sfo_handle, params);
 
     find_data(host.game_title, host.sfo_handle, "TITLE");
+    std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
     find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
     std::string category;
     find_data(category, host.sfo_handle, "CATEGORY");
