@@ -80,7 +80,14 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         const ExportNids::iterator export_address_it = kernel.export_nids.find(nid);
         if (export_address_it != kernel.export_nids.end()) {
             export_address = export_address_it->second;
+
+            if (reloc_entries_count > 0)
+                // 8 is sizeof(EntryFormat1Alt)
+                if (!relocate(var_reloc_entries, reloc_entries_count * 8, segments, mem, true, export_address))
+                    return false;
         } else {
+            // TODO: Proper HLE support for var imports (map with varnid, pointer, size)
+
             const char *const name = import_name(nid);
             constexpr auto STUB_SYMVAL = 0xDEADBEEF;
             LOG_WARN("\tNID NOT FOUND {} ({}) at {}, setting to stub value {}", log_hex(nid), name, log_hex(entry.address()), log_hex(STUB_SYMVAL));
@@ -90,10 +97,6 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
             export_address = stub_symval_ptr.address();
         }
-
-        // 8 is sizeof(EntryFormat1Alt)
-        if (!relocate(var_reloc_entries, reloc_entries_count * 8, segments, mem, true, export_address))
-            return false;
     }
 
     return true;
