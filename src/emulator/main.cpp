@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     LOG_INFO("{}", window_title);
 
     std::atexit(SDL_Quit);
-    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC | SDL_INIT_VIDEO) < 0) {
         error_dialog("SDL initialisation failed.");
         return SDLInitFailed;
     }
