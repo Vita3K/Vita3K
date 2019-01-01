@@ -80,9 +80,6 @@ EXPORT(int, sceDisplayWaitSetFrameBuf) {
     if (!host.display.sync_rendering) {
         std::unique_lock<std::mutex> lock(host.display.mutex);
         host.display.condvar.wait(lock);
-#ifndef WIN32
-        lock.release();
-#endif
     } else
         host.display.condvar.notify_all();
 
@@ -109,9 +106,6 @@ EXPORT(int, sceDisplayWaitVblankStart) {
     if (!host.display.sync_rendering) {
         std::unique_lock<std::mutex> lock(host.display.mutex);
         host.display.condvar.wait(lock);
-#ifndef WIN32
-        lock.release();
-#endif
     } else
         host.display.condvar.notify_all();
 
