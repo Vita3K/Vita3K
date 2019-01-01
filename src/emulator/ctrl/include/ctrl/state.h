@@ -9,12 +9,18 @@
 struct _SDL_GameController;
 
 typedef std::shared_ptr<_SDL_GameController> GameControllerPtr;
-typedef std::map<SDL_JoystickGUID, GameControllerPtr> GameControllerList;
-
 typedef std::shared_ptr<_SDL_Haptic> HapticPtr;
-typedef std::map<SDL_JoystickGUID, HapticPtr> HapticList;
+
+struct Controller {
+    GameControllerPtr controller;
+    HapticPtr haptic;
+    int port;
+};
+
+typedef std::map<SDL_JoystickGUID, Controller> ControllerList;
 
 struct CtrlState {
-    GameControllerList controllers;
-    HapticList haptics;
+    ControllerList controllers;
+    int controllers_num;
+    bool free_ports[4] = { true, true, true, true };
 };
