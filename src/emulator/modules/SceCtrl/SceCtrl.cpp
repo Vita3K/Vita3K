@@ -21,6 +21,7 @@
 #include <psp2/kernel/error.h>
 
 #include <SDL_gamecontroller.h>
+#include <SDL_haptic.h>
 #include <SDL_keyboard.h>
 
 #include <algorithm>
@@ -150,6 +151,7 @@ static void remove_disconnected_controllers(CtrlState &state) {
         if (SDL_GameControllerGetAttached(controller->second.get())) {
             ++controller;
         } else {
+            state.haptics.erase(state.haptics.find(controller->first));
             controller = state.controllers.erase(controller);
         }
     }
@@ -162,7 +164,11 @@ static void add_new_controllers(CtrlState &state) {
             const SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(joystick_index);
             if (state.controllers.find(guid) == state.controllers.end()) {
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
+                SDL_Haptic *haptic = SDL_HapticOpenFromJoystick(SDL_GameControllerGetJoystick(controller.get()));
+                SDL_HapticRumbleInit(haptic);
+                const HapticPtr handle(haptic, SDL_HapticClose);
                 state.controllers.insert(GameControllerList::value_type(guid, controller));
+                state.haptics.insert(HapticList::value_type(guid, handle));
             }
         }
     }
@@ -193,6 +199,24 @@ static int peek_buffer_positive(HostState &host, SceCtrlData *&pad_data) {
         pad_data->ly = float_to_byte(axes[1]);
         pad_data->rx = float_to_byte(axes[2]);
         pad_data->ry = float_to_byte(axes[3]);
+    }
+
+    return 0;
+}
+
+static int rumble(HostState &host, const SceCtrlActuator *&pState) {
+    CtrlState &state = host.ctrl;
+    remove_disconnected_controllers(state);
+    add_new_controllers(state);
+
+    for (const HapticList::value_type &haptic : state.haptics) {
+        SDL_Haptic *handle = haptic.second.get();
+        if (pState->small == 0 && pState->large == 0) {
+            SDL_HapticRumbleStop(handle);
+        } else {
+            // TODO: Look into a better implementation to distinguish both motors when available
+            SDL_HapticRumblePlay(handle, ((pState->small * 1.0f) / 510.0f) + ((pState->large * 1.0f) / 510.0f), SDL_HAPTIC_INFINITY);
+        }
     }
 
     return 0;
@@ -313,8 +337,8 @@ EXPORT(int, sceCtrlResetLightBar) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceCtrlSetActuator) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
+    return rumble(host, pState);
 }
 
 EXPORT(int, sceCtrlSetAnalogStickCheckMode) {
