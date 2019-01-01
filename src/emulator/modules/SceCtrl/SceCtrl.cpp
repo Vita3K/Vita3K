@@ -147,15 +147,12 @@ static uint8_t float_to_byte(float f) {
 }
 
 static int reserve_port(CtrlState &state) {
-    int res = -1;
     for (int i = 0; i < 4; i++) {
         if (state.free_ports[i]) {
             state.free_ports[i] = false;
-            res = i + 1;
-            break;
+            return i + 1;
         }
     }
-    return res;
 }
 
 static void remove_disconnected_controllers(CtrlState &state) {
@@ -275,8 +272,12 @@ EXPORT(int, sceCtrlGetButtonIntercept) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceCtrlGetControllerPortInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
+    info->port[0] = SCE_CTRL_TYPE_PHY;
+    for (int i = 0; i < 4; i++) {
+        info->port[i + 1] = host.ctrl.free_ports[i] ? SCE_CTRL_TYPE_UNPAIRED : SCE_CTRL_TYPE_DS3;
+    }
+    return 0;
 }
 
 EXPORT(int, sceCtrlGetProcessStatus) {
