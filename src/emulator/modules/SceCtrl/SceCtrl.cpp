@@ -167,8 +167,8 @@ static void add_new_controllers(CtrlState &state) {
                 SDL_Haptic *haptic = SDL_HapticOpenFromJoystick(SDL_GameControllerGetJoystick(controller.get()));
                 SDL_HapticRumbleInit(haptic);
                 const HapticPtr handle(haptic, SDL_HapticClose);
-                state.controllers.insert(GameControllerList::value_type(guid, controller));
-                state.haptics.insert(HapticList::value_type(guid, handle));
+                state.controllers.emplace(guid, controller);
+                state.haptics.emplace(guid, handle);
             }
         }
     }
@@ -185,7 +185,7 @@ static int peek_buffer_positive(HostState &host, SceCtrlData *&pad_data) {
     std::array<float, 4> axes;
     axes.fill(0);
     apply_keyboard(&pad_data->buttons, axes.data());
-    for (const GameControllerList::value_type &controller : state.controllers) {
+    for (const auto& controller : state.controllers) {
         apply_controller(&pad_data->buttons, axes.data(), controller.second.get());
     }
 
@@ -209,7 +209,7 @@ static int rumble(HostState &host, const SceCtrlActuator *&pState) {
     remove_disconnected_controllers(state);
     add_new_controllers(state);
 
-    for (const HapticList::value_type &haptic : state.haptics) {
+    for (const auto& haptic : state.haptics) {
         SDL_Haptic *handle = haptic.second.get();
         if (pState->small == 0 && pState->large == 0) {
             SDL_HapticRumbleStop(handle);
