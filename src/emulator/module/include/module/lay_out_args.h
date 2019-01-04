@@ -23,6 +23,10 @@
 
 #include <tuple>
 
+namespace module {
+    class vargs;
+}
+
 template <typename Arg>
 constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_stack(const LayoutArgsState &state) {
     const size_t stack_alignment = alignof(Arg); // TODO Assumes host matches ARM.
@@ -82,34 +86,44 @@ constexpr std::enable_if_t<sizeof...(Args) == 0> add_args_to_layout(ArgLayout &h
     // Nothing to do.
 }
 
+// Check if the last argument is an varargs
+template <typename Arg>
+constexpr bool is_arg_vargs() {
+    if constexpr(std::is_same_v<Arg, module::vargs>) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 // One or more arguments to add.
 template <typename Head, typename... Tail>
 constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
-    // Add the argument at the head of the list.
-    const std::tuple<ArgLayout, LayoutArgsState> result = add_arg_to_layout<Head>(state);
-    head = std::get<0>(result);
-    state = std::get<1>(result);
+    // Returns immidiately if the Head is an varargs
+    if constexpr(is_arg_vargs<Head>()) {
+        return;
+    } else {
+        // Add the argument at the head of the list.
+        const std::tuple<ArgLayout, LayoutArgsState> result = add_arg_to_layout<Head>(state);
+        head = std::get<0>(result);
+        state = std::get<1>(result);
 
-    // Recursively add the remaining arguments.
-    if (sizeof...(Tail) > 0) {
-        *(&state + 1) = state;
-        add_args_to_layout<Tail...>(*(&head + 1), *(&state + 1));
+        // Recursively add the remaining arguments.
+        // If the last argument is varargs, abadon adding
+        if (sizeof...(Tail) > 0) {
+            add_args_to_layout<Tail...>(*(&head + 1), state);
+        }
     }
 }
 
 template <typename... Args>
 constexpr std::tuple<ArgsLayout<Args...>, LayoutArgsState> lay_out() {
-    std::array<LayoutArgsState, sizeof...(Args)> states = {};
+    LayoutArgsState state {};
     ArgsLayout<Args...> layout = {};
 
     if (sizeof...(Args) > 0) {
-        add_args_to_layout<Args...>(layout[0], states[0]);
+        add_args_to_layout<Args...>(layout[0], state);
     }
 
-    if (sizeof...(Args) <= 1) {
-        LayoutArgsState state {0, 0, 0};
-        return { layout, state };
-    } else {
-        return { layout, states[sizeof...(Args) - 2] };
-    }
+    return { layout, state };
 }
