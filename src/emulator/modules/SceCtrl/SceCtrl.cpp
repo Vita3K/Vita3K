@@ -305,7 +305,7 @@ EXPORT(int, sceCtrlGetWirelessControllerInfo) {
 }
 
 EXPORT(int, sceCtrlIsMultiControllerSupported) {
-    return UNIMPLEMENTED();
+    return 1;
 }
 
 EXPORT(int, sceCtrlPeekBufferNegative) {
