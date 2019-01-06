@@ -10,6 +10,7 @@
 [submodule "src/external/glbinding"]
 	path = src/external/glbinding
 	url = https://github.com/cginternals/glbinding.git
+	branch = v3.0
 [submodule "src/external/yaml-cpp"]
 	path = src/external/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
@@ -25,9 +26,11 @@
 [submodule "src/external/spdlog"]
 	path = src/external/spdlog
 	url = https://github.com/gabime/spdlog.git
+	branch = v1.x
 [submodule "src/external/dirent"]
 	path = src/external/dirent
 	url = https://github.com/tronkko/dirent
+	branch = v1.23
 [submodule "src/external/crypto-algorithms"]
 	path = src/external/crypto-algorithms
 	url = https://github.com/B-Con/crypto-algorithms.git
