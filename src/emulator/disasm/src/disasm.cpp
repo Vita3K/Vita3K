@@ -19,7 +19,7 @@
 
 #include <disasm/state.h>
 
-#include <capstone.h>
+#include <capstone/capstone.h>
 
 #include <cassert>
 #include <sstream>
