@@ -40,7 +40,7 @@ void DrawMainMenuBar(HostState &host) {
 
         if (ImGui::BeginMenu("Configuration")) {
             ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-            if (ImGui::BeginMenu("Emulation Mode")) {
+            if (ImGui::BeginMenu("Emulated Console")) {
                 if (ImGui::MenuItem("PS Vita", nullptr, !host.cfg.pstv_mode)) {
                     host.cfg.pstv_mode = false;
                 }
