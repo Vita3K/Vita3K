@@ -301,7 +301,7 @@ EXPORT(int, sceCtrlPeekBufferNegative2) {
 EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
     assert(pad_data != nullptr);
     assert(count == 1);
-    if (port > 1 && !(host.cfg.pstv_mode)) {
+    if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
     return peek_buffer_positive(host, port, pad_data);
@@ -328,7 +328,7 @@ EXPORT(int, sceCtrlReadBufferNegative2) {
 }
 
 EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int count) {
-    if (port > 1 && !(host.cfg.pstv_mode)) {
+    if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
     return peek_buffer_positive(host, port, pad_data);
