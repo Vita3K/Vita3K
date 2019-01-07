@@ -130,7 +130,7 @@ EXPORT(int, sceKernelGetSubbudgetInfo) {
 }
 
 EXPORT(bool, sceKernelIsPSVitaTV) {
-    return true;
+    return host.cfg.pstv_mode;
 }
 
 EXPORT(int, sceKernelOpenMemBlock) {
