@@ -129,8 +129,8 @@ EXPORT(int, sceKernelGetSubbudgetInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelIsPSVitaTV) {
-    return UNIMPLEMENTED();
+EXPORT(bool, sceKernelIsPSVitaTV) {
+    return true;
 }
 
 EXPORT(int, sceKernelOpenMemBlock) {
