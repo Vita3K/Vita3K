@@ -17,6 +17,8 @@
 
 #include "SceCtrl.h"
 
+#include <util/log.h>
+
 #include <psp2/ctrl.h>
 #include <psp2/kernel/error.h>
 
@@ -26,8 +28,6 @@
 
 #include <algorithm>
 #include <array>
-
-#include <util/log.h>
 
 // TODO Move elsewhere.
 static uint64_t timestamp;
