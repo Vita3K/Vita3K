@@ -17,6 +17,8 @@
 
 #include "SceCtrl.h"
 
+#include <util/log.h>
+
 #include <psp2/ctrl.h>
 #include <psp2/kernel/error.h>
 
@@ -228,26 +230,6 @@ static int peek_buffer_positive(HostState &host, int port, SceCtrlData *&pad_dat
     return 0;
 }
 
-static int rumble(HostState &host, int port, const SceCtrlActuator *&pState) {
-    CtrlState &state = host.ctrl;
-    remove_disconnected_controllers(state);
-    add_new_controllers(state);
-
-    for (const auto &controller : state.controllers) {
-        if (controller.second.port == port) {
-            SDL_Haptic *handle = controller.second.haptic.get();
-            if (pState->small == 0 && pState->large == 0) {
-                SDL_HapticRumbleStop(handle);
-            } else {
-                // TODO: Look into a better implementation to distinguish both motors when available
-                SDL_HapticRumblePlay(handle, ((pState->small * 1.0f) / 510.0f) + ((pState->large * 1.0f) / 510.0f), SDL_HAPTIC_INFINITY);
-            }
-        }
-    }
-
-    return 0;
-}
-
 EXPORT(int, sceCtrlClearRapidFire) {
     return UNIMPLEMENTED();
 }
@@ -273,9 +255,9 @@ EXPORT(int, sceCtrlGetButtonIntercept) {
 }
 
 EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
-    info->port[0] = SCE_CTRL_TYPE_PHY;
+    info->port[0] = host.cfg.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < 4; i++) {
-        info->port[i + 1] = host.ctrl.free_ports[i] ? SCE_CTRL_TYPE_UNPAIRED : SCE_CTRL_TYPE_DS3;
+        info->port[i + 1] = (host.cfg.pstv_mode && !host.ctrl.free_ports[i]) ? SCE_CTRL_TYPE_DS3 : SCE_CTRL_TYPE_UNPAIRED;
     }
     return 0;
 }
@@ -305,7 +287,7 @@ EXPORT(int, sceCtrlGetWirelessControllerInfo) {
 }
 
 EXPORT(bool, sceCtrlIsMultiControllerSupported) {
-    return true;
+    return host.cfg.pstv_mode;
 }
 
 EXPORT(int, sceCtrlPeekBufferNegative) {
@@ -319,7 +301,9 @@ EXPORT(int, sceCtrlPeekBufferNegative2) {
 EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
     assert(pad_data != nullptr);
     assert(count == 1);
-
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
     return peek_buffer_positive(host, port, pad_data);
 }
 
@@ -344,6 +328,9 @@ EXPORT(int, sceCtrlReadBufferNegative2) {
 }
 
 EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
     return peek_buffer_positive(host, port, pad_data);
 }
 
@@ -368,7 +355,28 @@ EXPORT(int, sceCtrlResetLightBar) {
 }
 
 EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
-    return rumble(host, port, pState);
+    if (!host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NOT_SUPPORTED);
+    }
+
+    CtrlState &state = host.ctrl;
+    remove_disconnected_controllers(state);
+    add_new_controllers(state);
+
+    for (const auto &controller : state.controllers) {
+        if (controller.second.port == port) {
+            SDL_Haptic *handle = controller.second.haptic.get();
+            if (pState->small == 0 && pState->large == 0) {
+                SDL_HapticRumbleStop(handle);
+            } else {
+                // TODO: Look into a better implementation to distinguish both motors when available
+                SDL_HapticRumblePlay(handle, ((pState->small * 1.0f) / 510.0f) + ((pState->large * 1.0f) / 510.0f), SDL_HAPTIC_INFINITY);
+            }
+            return 0;
+        }
+    }
+
+    return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
 }
 
 EXPORT(int, sceCtrlSetAnalogStickCheckMode) {

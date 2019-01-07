@@ -38,6 +38,7 @@ struct Config {
     bool log_active_shaders = false;
     bool log_uniforms = false;
     std::vector<std::string> lle_modules;
+    bool pstv_mode = false;
 };
 
 namespace config {

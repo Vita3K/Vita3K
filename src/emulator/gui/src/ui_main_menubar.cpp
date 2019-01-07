@@ -38,6 +38,21 @@ void DrawMainMenuBar(HostState &host) {
             ImGui::EndMenu();
         }
 
+        if (ImGui::BeginMenu("Configuration")) {
+            ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+            if (ImGui::BeginMenu("Emulated Console")) {
+                if (ImGui::MenuItem("PS Vita", nullptr, !host.cfg.pstv_mode)) {
+                    host.cfg.pstv_mode = false;
+                }
+                if (ImGui::MenuItem("PS TV", nullptr, host.cfg.pstv_mode)) {
+                    host.cfg.pstv_mode = true;
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::PopStyleColor();
+            ImGui::EndMenu();
+        }
+
         if (ImGui::BeginMenu("Optimisation")) {
             ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
             ImGui::MenuItem("Texture Cache", nullptr, &host.gui.texture_cache);
