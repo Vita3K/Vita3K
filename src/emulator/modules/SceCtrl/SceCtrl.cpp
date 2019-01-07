@@ -257,7 +257,7 @@ EXPORT(int, sceCtrlGetButtonIntercept) {
 EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
     info->port[0] = host.cfg.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < 4; i++) {
-        info->port[i + 1] = (host.cfg.pstv_mode && (!(host.ctrl.free_ports[i]))) ? SCE_CTRL_TYPE_DS3 : SCE_CTRL_TYPE_UNPAIRED;
+        info->port[i + 1] = (host.cfg.pstv_mode && !host.ctrl.free_ports[i]) ? SCE_CTRL_TYPE_DS3 : SCE_CTRL_TYPE_UNPAIRED;
     }
     return 0;
 }
