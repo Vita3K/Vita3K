@@ -1,7 +1,3 @@
-//
-// Created by Taylor Whatley on 2019-01-10.
-//
-
 #include <gui/functions.h>
 #include <gui/gui_constants.h>
 
