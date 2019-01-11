@@ -58,8 +58,8 @@ struct GuiState {
 
     DialogState common_dialog;
     GamesSelector game_selector;
-    MemoryEditor* memory_editor;
-    long memory_editor_start, memory_editor_count;
+    MemoryEditor *memory_editor;
+    size_t memory_editor_start, memory_editor_count;
 
     // imgui
     ImFont *normal_font{};
