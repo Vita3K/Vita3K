@@ -341,7 +341,7 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *expo
         return IO_ERROR_UNK();
     }
 
-    return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
+    return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 }
 
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name) {
@@ -350,7 +350,7 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
     if (fd < 0) {
         LOG_WARN("Error writing file fd: {}, size: {}", fd, size);
 
-        return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     }
 
     const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
@@ -376,14 +376,14 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
         return fwrite(data, 1, size, file->second.file_handle.get());
     }
 
-    return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
+    return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 }
 
 int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export_name) {
     assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
 
     if (fd < 0) {
-        return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     }
 
     const StdFiles::const_iterator std_file = io.std_files.find(fd);
@@ -403,7 +403,7 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export
     assert(std_file != io.std_files.end());
 
     if (std_file == io.std_files.end()) {
-        return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     }
 
     int base = SEEK_SET;
@@ -478,15 +478,23 @@ int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, co
 
     translate_path(translated_path, device, io.device_paths);
 
-    LOG_TRACE("{}: Removing dir {} ({})", export_name, dir, translated_path);
+    LOG_TRACE("{}: Creating dir {} ({})", export_name, dir, translated_path);
 
     switch (device) {
     case VitaIoDevice::SA0:
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string dir_path = to_host_path(translated_path, pref_path, device);
+        std::error_code error_code;
 
-        fs::create_directory(dir_path);
+        fs::create_directory(dir_path, error_code);
+
+        if (error_code == std::errc::no_such_file_or_directory) {
+            return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+        } else if (error_code == std::errc::file_exists) {
+            return IO_ERROR(SCE_ERROR_ERRNO_EEXIST);
+        }
+
         return 0;
     }
     default: {
@@ -691,7 +699,7 @@ int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *export_
         return 1;
     }
 
-    return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
+    return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 }
 
 int close_dir(IOState &io, SceUID fd, const char *export_name) {
@@ -700,7 +708,7 @@ int close_dir(IOState &io, SceUID fd, const char *export_name) {
     LOG_TRACE("{}: Closing dir fd: {}", export_name, log_hex(fd));
 
     if (erased_entries == 0)
-        return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     else
         return 0;
 }
