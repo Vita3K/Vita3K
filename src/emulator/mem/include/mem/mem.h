@@ -19,6 +19,7 @@
 
 #include <functional>
 #include <map>
+#include <mutex>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,6 +35,7 @@ struct MemState {
     Generation generation = 0;
     Memory memory;
     Allocated allocated_pages;
+    std::mutex generation_mutex;
     GenerationNames generation_names;
 };
 
@@ -54,4 +56,4 @@ Address alloc(MemState &state, size_t size, const char *name);
 Address alloc_at(MemState &state, Address address, size_t size, const char *name);
 void free(MemState &state, Address address);
 uint32_t mem_available(MemState &state);
-const char *mem_name(Address address, const MemState &state);
+const char *mem_name(Address address, MemState &state);

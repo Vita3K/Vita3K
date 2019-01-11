@@ -52,3 +52,6 @@
 [submodule "src/external/dlmalloc"]
 	path = src/external/dlmalloc
 	url = https://github.com/Vita3K/dlmalloc
+[submodule "src/external/imgui_club"]
+	path = src/external/imgui_club
+	url = https://github.com/ocornut/imgui_club.git
