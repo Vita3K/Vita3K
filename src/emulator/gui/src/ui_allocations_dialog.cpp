@@ -15,6 +15,7 @@ void DrawAllocationsDialog(HostState &host) {
     for (const auto &pair : host.mem.generation_names) {
         if (ImGui::TreeNode(fmt::format("{}: {}", pair.first, pair.second).c_str())) {
             long index = -1, count = 1;
+            
             for (long a = 0; a < host.mem.allocated_pages.size(); a++) {
                 if (index != -1) {
                     if (host.mem.allocated_pages[a] != pair.first) break;
@@ -25,6 +26,7 @@ void DrawAllocationsDialog(HostState &host) {
                     index = a;
                 }
             }
+
             if (index == -1) {
                 ImGui::Text("Generation no longer exists.");
             } else {
