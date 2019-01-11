@@ -34,6 +34,7 @@ void DrawMainMenuBar(HostState &host) {
             ImGui::MenuItem("Condition Variables", nullptr, &host.gui.condvars_dialog);
             ImGui::MenuItem("Lightweight Condition Variables", nullptr, &host.gui.lwcondvars_dialog);
             ImGui::MenuItem("Event Flags", nullptr, &host.gui.eventflags_dialog);
+            ImGui::MenuItem("Memory Allocations", nullptr, &host.gui.allocations_dialog);
             ImGui::PopStyleColor();
             ImGui::EndMenu();
         }
