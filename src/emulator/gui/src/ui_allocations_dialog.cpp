@@ -11,20 +11,32 @@
 void DrawAllocationsDialog(HostState &host) {
     ImGui::Begin("Memory Allocations", &host.gui.allocations_dialog);
 
+    const char *blacklist[] = {
+        "NULL",
+        "export_sceGxmDisplayQueueAddEntry"
+    };
+
     const std::lock_guard<std::mutex> lock(host.mem.generation_mutex);
     for (const auto &pair : host.mem.generation_names) {
-        if (ImGui::TreeNode(fmt::format("{}: {}", pair.first, pair.second).c_str())) {
-            long index = -1, count = 1;
+        const auto generation_num = pair.first;
+        const auto generation_name = pair.second;
 
-            for (long a = 0; a < host.mem.allocated_pages.size(); a++) {
+        if (std::find(std::begin(blacklist), std::end(blacklist), generation_name) != std::end(blacklist))
+            continue;
+
+        if (ImGui::TreeNode(fmt::format("{}: {}", generation_num, generation_name).c_str())) {
+            int32_t index = -1;
+            uint32_t count = 1;
+
+            for (const auto page : host.mem.allocated_pages) {
                 if (index != -1) {
-                    if (host.mem.allocated_pages[a] != pair.first)
+                    if (page != generation_num)
                         break;
                     count++;
                 }
 
-                if (index == -1 && host.mem.allocated_pages[a] == pair.first) {
-                    index = a;
+                if (index == -1 && page == generation_num) {
+                    index = page;
                 }
             }
 
