@@ -15,10 +15,11 @@ void DrawAllocationsDialog(HostState &host) {
     for (const auto &pair : host.mem.generation_names) {
         if (ImGui::TreeNode(fmt::format("{}: {}", pair.first, pair.second).c_str())) {
             long index = -1, count = 1;
-            
+
             for (long a = 0; a < host.mem.allocated_pages.size(); a++) {
                 if (index != -1) {
-                    if (host.mem.allocated_pages[a] != pair.first) break;
+                    if (host.mem.allocated_pages[a] != pair.first)
+                        break;
                     count++;
                 }
 
@@ -36,7 +37,8 @@ void DrawAllocationsDialog(HostState &host) {
                     if (ImGui::Selectable("View/Edit")) {
                         host.gui.memory_editor_start = index * KB(4);
                         host.gui.memory_editor_count = count * KB(4);
-                        if (!host.gui.memory_editor) host.gui.memory_editor = new MemoryEditor;
+                        if (!host.gui.memory_editor)
+                            host.gui.memory_editor = std::make_unique<MemoryEditor>();
                     }
                 }
             }
@@ -44,15 +46,9 @@ void DrawAllocationsDialog(HostState &host) {
         }
     }
 
-    if (host.gui.memory_editor) {
-        if (host.gui.memory_editor->Open) {
-            host.gui.memory_editor->DrawWindow("Editor", host.mem.memory.get() + host.gui.memory_editor_start,
-                    host.gui.memory_editor_count, host.gui.memory_editor_start);
-        } else {
-            delete host.gui.memory_editor;
-            host.gui.memory_editor = nullptr;
-        }
-    }
+    if (host.gui.memory_editor && host.gui.memory_editor->Open)
+        host.gui.memory_editor->DrawWindow("Memory Editor", host.mem.memory.get() + host.gui.memory_editor_start,
+            host.gui.memory_editor_count, host.gui.memory_editor_start);
 
     ImGui::End();
 }
