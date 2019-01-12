@@ -697,7 +697,7 @@ EXPORT(int, longjmp) {
 }
 
 EXPORT(int, malloc, SceSize size) {
-    return alloc(host.mem, size, "");
+    return alloc(host.mem, size, __FUNCTION__);
 }
 
 EXPORT(int, malloc_stats) {
