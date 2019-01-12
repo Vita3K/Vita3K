@@ -272,7 +272,7 @@ static bool relocate_entry(void *data, Code code, uint32_t symval, uint32_t adde
     return true; // ignore unhadled relocations
 }
 
-bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &segments, const MemState &mem, bool alternate_reloc_format, uint32_t explicit_symval) {
+bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &segments, const MemState &mem, bool is_var_import, uint32_t explicit_symval) {
     const void *const end = static_cast<const uint8_t *>(entries) + size;
     const Entry *entry = static_cast<const Entry *>(entries);
 
@@ -299,7 +299,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
     while (entry < end) {
         generic_entry = static_cast<const EntryFormatUnknown *>(entry);
 
-        if (alternate_reloc_format)
+        if (is_var_import)
             assert(generic_entry->format == 1);
 
         switch (generic_entry->format) {
@@ -342,7 +342,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             break;
         }
         case 1: {
-            if (!alternate_reloc_format) {
+            if (!is_var_import) {
                 const EntryFormat1 *const format1_entry = static_cast<const EntryFormat1 *>(entry);
 
                 const auto symbol_seg = format1_entry->symbol_segment;
@@ -373,16 +373,32 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                 const EntryFormat1Alt *const format1_entry = static_cast<const EntryFormat1Alt *>(entry);
 
                 const auto symbol_seg = format1_entry->symbol_segment;
-                const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
+                const auto symbol_seg_start_it = segments.find(symbol_seg);
                 const auto patch_seg = format1_entry->patch_segment;
-                const auto patch_seg_start = segments.find(patch_seg)->second.addr;
+                const auto patch_seg_start_it = segments.find(patch_seg);
                 const Address s = explicit_symval;
+
+                Address symbol_seg_start{};
+                if (symbol_seg_start_it != segments.end())
+                    symbol_seg_start = symbol_seg_start_it->second.addr;
+                else {
+                    LOG_WARN("[FORMAT1_VAR_IMPORT] symbol segment {} at {} not found. Skipping relocation.", symbol_seg, log_hex(symbol_seg_start));
+                    goto advance_entry;
+                }
+
+                Address patch_seg_start{};
+                if (patch_seg_start_it != segments.end())
+                    patch_seg_start = patch_seg_start_it->second.addr;
+                else {
+                    LOG_WARN("[FORMAT1_VAR_IMPORT] patch segment {} not found. Skipping relocation. symbol_seg {} at {}, s: {} ", patch_seg, symbol_seg, log_hex(symbol_seg_start), log_hex(s));
+                    goto advance_entry;
+                }
 
                 const Address offset = format1_entry->offset;
                 const Address p = patch_seg_start + offset;
                 const Address a = 0;
 
-                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}", format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1_VAR_IMPORT]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}", format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
 
                 if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format1_entry->code), s, a, p)) {
                     return false;
@@ -541,6 +557,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
         }
         }
 
+    advance_entry:
         // clang-format off
         switch (generic_entry->format) {
         case 0: entry = static_cast<const EntryFormat0 *>(entry) + 1; break;
