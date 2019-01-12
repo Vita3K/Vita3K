@@ -102,7 +102,6 @@ EXPORT(int, sceDisplayWaitSetFrameBufMultiCB) {
 }
 
 EXPORT(int, sceDisplayWaitVblankStart) {
-
     if (!host.display.sync_rendering) {
         std::unique_lock<std::mutex> lock(host.display.mutex);
         host.display.condvar.wait(lock);
