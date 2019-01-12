@@ -58,7 +58,7 @@ struct GuiState {
 
     DialogState common_dialog;
     GamesSelector game_selector;
-    MemoryEditor *memory_editor;
+    MemoryEditor *memory_editor = nullptr;
     size_t memory_editor_start, memory_editor_count;
 
     // imgui
