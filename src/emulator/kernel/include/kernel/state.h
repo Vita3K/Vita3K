@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cpu/common.h>
 #include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mem/ptr.h>
@@ -191,6 +192,7 @@ struct KernelState {
     SceRtcTick base_tick;
     Ptr<uint32_t> process_param;
     bool wait_for_debugger = false;
+    CPUBackend cpu_backend = CPUBackend::Unicorn;
 
     SceUID get_next_uid() {
         return next_uid++;

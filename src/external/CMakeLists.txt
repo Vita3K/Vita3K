@@ -72,7 +72,7 @@ target_compile_definitions(googletest PUBLIC GTEST_HAS_PTHREAD=0)
 add_library(microprofile STATIC microprofile/microprofile.cpp microprofile/microprofile.h)
 target_include_directories(microprofile PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/microprofile")
 set_property(TARGET microprofile PROPERTY CXX_STANDARD 11)
-target_compile_definitions(microprofile PUBLIC MICROPROFILE_ENABLED=0 MICROPROFILE_GPU_TIMERS=0)
+target_compile_definitions(microprofile PUBLIC MICROPROFILE_ENABLED=1 MICROPROFILE_GPU_TIMERS=0)
 
 # The imgui target is including both imgui and imgui_club.
 add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/misc/cpp/imgui_stdlib.cpp)
@@ -126,6 +126,9 @@ else()
 	find_library(UNICORN_LIB NAMES "${UNICORN_STATIC_LIBRARIES}" PATHS "${UNICORN_LIBRARY_DIRS}")
 	target_link_libraries(unicorn INTERFACE "${UNICORN_LIB}")
 endif()
+
+set(DYNARMIC_TESTS OFF)
+add_subdirectory(dynarmic)
 
 add_library(vita-headers INTERFACE)
 target_include_directories(vita-headers INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-headers/include")

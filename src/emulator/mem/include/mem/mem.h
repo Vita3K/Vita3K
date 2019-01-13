@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <array>
 #include <functional>
 #include <map>
 #include <memory>
@@ -37,7 +38,8 @@ struct MemState {
     Allocated allocated_pages;
     std::mutex generation_mutex;
     GenerationNames generation_names;
-    std::map<Address, uint32_t> breakpoints;
+
+    std::unique_ptr<std::array<uint8_t *, 1 << 20>> pages_cpu;
 };
 
 constexpr size_t KB(size_t kb) {

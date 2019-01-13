@@ -67,3 +67,6 @@
 [submodule "src/external/unicorn-src"]
 	path = src/external/unicorn-src
 	url = https://github.com/unicorn-engine/unicorn.git
+[submodule "src/external/dynarmic"]
+	path = src/external/dynarmic
+	url = https://github.com/merrymage/dynarmic
