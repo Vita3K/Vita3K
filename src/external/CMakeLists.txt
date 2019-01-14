@@ -45,9 +45,8 @@ endif()
 add_library(elfio INTERFACE)
 target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio")
 
-add_library(spdlog INTERFACE)
-target_include_directories(spdlog INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include")
-target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1)
+add_subdirectory(spdlog EXCLUDE_FROM_ALL)
+target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1 SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
 option(BUILD_SHARED_LIBS "Build shared instead of static libraries." OFF)
 option(OPTION_BUILD_TOOLS "Build tools." OFF)
