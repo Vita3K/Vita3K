@@ -8,4 +8,3 @@ add_library(
 )
 
 target_include_directories(nids PUBLIC include)
-target_link_libraries(cpu INTERFACE util spdlog)
