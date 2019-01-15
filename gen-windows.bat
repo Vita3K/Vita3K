@@ -18,6 +18,6 @@ pushd build-windows
 IF "%CI%"=="" (
 	cmake -G "Visual Studio 15 2017 Win64" ..
 ) ELSE (
-	cmake -G "Visual Studio 15 2017 Win64" -DCI:BOOL=ON ..
+	cmake -G "Visual Studio 15 2017 Win64" -DCI:BOOL=ON -DCMAKE_CONFIGURATION_TYPES=%CONFIGURATION% ..
 )
 popd
