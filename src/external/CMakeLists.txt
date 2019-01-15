@@ -126,6 +126,7 @@ target_link_libraries(yaml INTERFACE yaml-cpp)
 add_library(rpcs3 INTERFACE)
 target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")
 
+option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" OFF)
 option(ENABLE_GLSLANG_BINARIES "Builds glslangValidator and spirv-remap" OFF)
 option(ENABLE_AMD_EXTENSIONS "Enables support of AMD-specific extensions" OFF)
 option(ENABLE_NV_EXTENSIONS "Enables support of Nvidia-specific extensions" OFF)
