@@ -33,7 +33,7 @@ void DrawControlsDialog(HostState &host) {
     ImGui::Text("%-16s    %-16s", "Right stick", "IJKL");
     ImGui::Text("%-16s    %-16s", "D-pad", "Arrow keys");
     ImGui::Text("%-16s    %-16s", "L button", "Q");
-    ImGui::Text("%-16s    %-16s", "R button", "R");
+    ImGui::Text("%-16s    %-16s", "R button", "E");
     ImGui::Text("%-16s    %-16s", "Square button", "Z");
     ImGui::Text("%-16s    %-16s", "X button", "X");
     ImGui::Text("%-16s    %-16s", "Circle button", "C");
