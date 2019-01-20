@@ -26,7 +26,6 @@
 #include <util/string_utils.h>
 
 #include <SDL_video.h>
-#include <boost/filesystem.hpp>
 #include <imgui.h>
 
 #include <fstream>
