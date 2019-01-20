@@ -32,8 +32,17 @@ void DrawControlsDialog(HostState &host) {
     ImGui::Text("%-16s    %-16s", "Left stick", "WASD");
     ImGui::Text("%-16s    %-16s", "Right stick", "IJKL");
     ImGui::Text("%-16s    %-16s", "D-pad", "Arrow keys");
-    ImGui::Text("%-16s    %-16s", "L button", "Q");
-    ImGui::Text("%-16s    %-16s", "R button", "E");
+    if (host.cfg.pstv_mode) {
+        ImGui::Text("%-16s    %-16s", "L1 button", "Q");
+        ImGui::Text("%-16s    %-16s", "R1 button", "E");
+        ImGui::Text("%-16s    %-16s", "L2 button", "U");
+        ImGui::Text("%-16s    %-16s", "R2 button", "O");
+        ImGui::Text("%-16s    %-16s", "L3 button", "F");
+        ImGui::Text("%-16s    %-16s", "R3 button", "H");
+    } else {
+        ImGui::Text("%-16s    %-16s", "L button", "Q");
+        ImGui::Text("%-16s    %-16s", "R button", "E");
+    }
     ImGui::Text("%-16s    %-16s", "Square button", "Z");
     ImGui::Text("%-16s    %-16s", "X button", "X");
     ImGui::Text("%-16s    %-16s", "Circle button", "C");
