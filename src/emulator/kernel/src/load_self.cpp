@@ -24,8 +24,8 @@
 
 #include <nids/functions.h>
 #include <util/log.h>
+#include <util/fs.h>
 
-#include <boost/filesystem.hpp>
 #include <elfio/elf_types.hpp>
 #include <spdlog/fmt/fmt.h>
 // clang-format off
@@ -52,7 +52,6 @@
 #define NID_PROCESS_PARAM 0x70FBA1E7
 
 using namespace ELFIO;
-namespace fs = boost::filesystem;
 
 static constexpr bool LOG_MODULE_LOADING = false;
 static constexpr bool DUMP_SEGMENTS = false;
