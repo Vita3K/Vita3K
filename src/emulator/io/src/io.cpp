@@ -25,7 +25,6 @@
 
 #include <io/state.h>
 #include <io/types.h>
-#include <util/fs.h>
 #include <util/log.h>
 #include <util/preprocessor.h>
 
@@ -49,6 +48,10 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
 
 // ****************************
 // * Utility functions *
@@ -485,7 +488,7 @@ int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, co
     case VitaIoDevice::UX0:
     case VitaIoDevice::UMA0: {
         std::string dir_path = to_host_path(translated_path, pref_path, device);
-        std::error_code error_code;
+        boost::system::error_code error_code;
 
         fs::create_directory(dir_path, error_code);
 

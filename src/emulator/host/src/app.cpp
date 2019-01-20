@@ -29,7 +29,6 @@
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/find.h>
-#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -42,6 +41,8 @@
 #include <istream>
 #include <iterator>
 #include <sstream>
+
+namespace fs = boost::filesystem;
 
 static const char *EBOOT_PATH = "eboot.bin";
 static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
