@@ -72,6 +72,7 @@ void init() {
     });
 
     spdlog::set_pattern("%^[%H:%M:%S.%e] |%L| [%!]: %v%$");
+    spdlog::flush_on(spdlog::level::debug);
 }
 
 void set_level(spdlog::level::level_enum log_level) {
