@@ -1071,12 +1071,15 @@ bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleIn
             error_val = RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
             return false;
         }
-        char *data = new char[size];
+
         if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0) {
             error_val = RET_ERROR(size);
             return false;
         }
+
+        char *data = new char[size];
         if (read_file(data, host.io, file, size, export_name) < 0) {
+            delete[] data;
             error_val = RET_ERROR(size);
             return false;
         }
