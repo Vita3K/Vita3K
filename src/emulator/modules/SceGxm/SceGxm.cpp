@@ -138,28 +138,33 @@ EXPORT(Ptr<void>, sceGxmColorSurfaceGetData, emu::SceGxmColorSurface *surface) {
     return Ptr<void>(surface->pbeEmitWords[3]);
 }
 
-EXPORT(int, sceGxmColorSurfaceGetDitherMode) {
-    return UNIMPLEMENTED();
+EXPORT(SceGxmColorSurfaceDitherMode, sceGxmColorSurfaceGetDitherMode, emu::SceGxmColorSurface *surface) {
+    STUBBED("SCE_GXM_COLOR_SURFACE_DITHER_DISABLED");
+    return SceGxmColorSurfaceDitherMode::SCE_GXM_COLOR_SURFACE_DITHER_DISABLED;
 }
 
-EXPORT(int, sceGxmColorSurfaceGetFormat) {
-    return UNIMPLEMENTED();
+EXPORT(SceGxmColorFormat, sceGxmColorSurfaceGetFormat, emu::SceGxmColorSurface *surface) {
+    STUBBED("SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR");
+    return SceGxmColorFormat::SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR;
 }
 
-EXPORT(int, sceGxmColorSurfaceGetGammaMode) {
-    return UNIMPLEMENTED();
+EXPORT(SceGxmColorSurfaceGammaMode, sceGxmColorSurfaceGetGammaMode, emu::SceGxmColorSurface *surface) {
+    STUBBED("SCE_GXM_COLOR_SURFACE_GAMMA_NONE");
+    return SceGxmColorSurfaceGammaMode::SCE_GXM_COLOR_SURFACE_GAMMA_NONE;
 }
 
-EXPORT(int, sceGxmColorSurfaceGetScaleMode) {
-    return UNIMPLEMENTED();
+EXPORT(SceGxmColorSurfaceScaleMode, sceGxmColorSurfaceGetScaleMode, emu::SceGxmColorSurface *surface) {
+    STUBBED("SCE_GXM_COLOR_SURFACE_SCALE_NONE");
+    return SceGxmColorSurfaceScaleMode::SCE_GXM_COLOR_SURFACE_SCALE_NONE;
 }
 
 EXPORT(int, sceGxmColorSurfaceGetStrideInPixels, emu::SceGxmColorSurface *surface) {
     return surface->pbeEmitWords[2];
 }
 
-EXPORT(int, sceGxmColorSurfaceGetType) {
-    return UNIMPLEMENTED();
+EXPORT(SceGxmColorSurfaceType, sceGxmColorSurfaceGetType, emu::SceGxmColorSurface *surface) {
+    STUBBED("SCE_GXM_COLOR_SURFACE_LINEAR");
+    return SceGxmColorSurfaceType::SCE_GXM_COLOR_SURFACE_LINEAR;
 }
 
 EXPORT(int, sceGxmColorSurfaceInit, emu::SceGxmColorSurface *surface, SceGxmColorFormat colorFormat, SceGxmColorSurfaceType surfaceType, SceGxmColorSurfaceScaleMode scaleMode, SceGxmOutputRegisterSize outputRegisterSize, unsigned int width, unsigned int height, unsigned int strideInPixels, Ptr<void> data) {
@@ -323,13 +328,11 @@ EXPORT(int, sceGxmDepthStencilSurfaceSetBackgroundStencil) {
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceLoadMode, emu::SceGxmDepthStencilSurface *surface,
     SceGxmDepthStencilForceLoadMode forceLoad) {
     surface->zlsControl = (forceLoad & 2) | (surface->zlsControl & 0xFFFFFFFD);
-    return;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceStoreMode, emu::SceGxmDepthStencilSurface *surface,
     SceGxmDepthStencilForceStoreMode forceStore) {
     surface->zlsControl = (forceStore & 4) | (surface->zlsControl & 0xFFFFFFFB);
-    return;
 }
 
 EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
@@ -951,16 +954,18 @@ EXPORT(int, sceGxmSetAuxiliarySurface) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetBackDepthBias) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmSetBackDepthBias, SceGxmContext *context, int factor, int units) {
+    STUBBED("CHECKS");
+    context->state.back_depth_bias_factor = factor;
+    context->state.back_depth_bias_units = units;
 }
 
-EXPORT(int, sceGxmSetBackDepthFunc) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmSetBackDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
+    context->state.back_depth_func = depthFunc;
 }
 
-EXPORT(int, sceGxmSetBackDepthWriteEnable) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
+    context->state.back_depth_write_enable = enable;
 }
 
 EXPORT(int, sceGxmSetBackFragmentProgramEnable) {
@@ -971,13 +976,12 @@ EXPORT(int, sceGxmSetBackLineFillLastPixelEnable) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetBackPointLineWidth) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmSetBackPointLineWidth, SceGxmContext *context, unsigned int width) {
+    context->state.back_point_line_width = width;
 }
 
-EXPORT(int, sceGxmSetBackPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
+EXPORT(void, sceGxmSetBackPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
     context->state.back_polygon_mode = mode;
-    return SCE_KERNEL_OK;
 }
 
 EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
@@ -989,7 +993,7 @@ EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc
     context->state.back_stencil.write_mask = writeMask;
 }
 
-EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned int sref) {
+EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned char sref) {
     context->state.back_stencil.ref = sref;
 }
 
@@ -1005,9 +1009,8 @@ EXPORT(int, sceGxmSetBackVisibilityTestOp) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
+EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
     context->state.cull_mode = mode;
-    return 0;
 }
 
 EXPORT(int, sceGxmSetDefaultRegionClipAndViewport) {
@@ -1050,11 +1053,10 @@ EXPORT(int, sceGxmSetFragmentUniformBuffer) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetFrontDepthBias, SceGxmContext *context, int factor, int units) {
+EXPORT(void, sceGxmSetFrontDepthBias, SceGxmContext *context, int factor, int units) {
     STUBBED("CHECKS");
     context->state.front_depth_bias_factor = factor;
     context->state.front_depth_bias_units = units;
-    return SCE_KERNEL_OK;
 }
 
 EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
@@ -1073,14 +1075,12 @@ EXPORT(int, sceGxmSetFrontLineFillLastPixelEnable) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetFrontPointLineWidth, SceGxmContext *context, unsigned int width) {
+EXPORT(void, sceGxmSetFrontPointLineWidth, SceGxmContext *context, unsigned int width) {
     context->state.front_point_line_width = width;
-    return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
+EXPORT(void, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
     context->state.front_polygon_mode = mode;
-    return SCE_KERNEL_OK;
 }
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
@@ -1092,7 +1092,7 @@ EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFun
     context->state.front_stencil.write_mask = writeMask;
 }
 
-EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned int sref) {
+EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned char sref) {
     context->state.front_stencil.ref = sref;
 }
 
@@ -1513,7 +1513,7 @@ EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
     return Ptr<void>(texture->data_addr << 2);
 }
 
-EXPORT(int, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
+EXPORT(SceGxmTextureFormat, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
     assert(texture != nullptr);
     return gxm::get_format(texture);
 }
@@ -1557,7 +1557,7 @@ EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
     return texture->min_filter;
 }
 
-EXPORT(int, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
+EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
@@ -1579,6 +1579,7 @@ EXPORT(unsigned int, sceGxmTextureGetMipmapCountUnsafe, const SceGxmTexture *tex
 }
 
 EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
+    assert(texture != nullptr);
     return texture->normalize_mode << 31;
 }
 
@@ -1588,7 +1589,8 @@ EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
     return Ptr<void>(texture->palette_addr << 6);
 }
 
-EXPORT(int, sceGxmTextureGetStride) {
+EXPORT(int, sceGxmTextureGetStride, const SceGxmTexture *texture) {
+    assert(texture != nullptr);
     return UNIMPLEMENTED();
 }
 
@@ -1693,7 +1695,7 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
 
 EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_LINEAR);
-    
+
     if (result == 0)
         return 0;
 
@@ -1706,7 +1708,7 @@ EXPORT(int, sceGxmTextureInitLinearStrided) {
 
 EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_SWIZZLED);
-    
+
     if (result == 0)
         return 0;
 
@@ -1782,13 +1784,20 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
 
 EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *texture, SceGxmTextureFormat texFormat) {
     STUBBED("FAST");
+    if (texture == nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
     texture->base_format = (texFormat & 0x1F000000) >> 24;
     texture->swizzle_format = (texFormat & 0x7000) >> 12;
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceGxmTextureSetGammaMode) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTextureSetGammaMode, SceGxmTexture *texture, SceGxmTextureGammaMode gammaMode) {
+    if (texture == nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    texture->gamma_mode = (uint32_t)gammaMode;
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height) {
@@ -1819,11 +1828,27 @@ EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height)
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetLodBias) {
+EXPORT(int, sceGxmTextureSetLodBias, SceGxmTexture *texture, unsigned int bias) {
+    if (texture == nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
+    }
+
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureSetLodMin) {
+EXPORT(int, sceGxmTextureSetLodMin, SceGxmTexture *texture, unsigned int lodMin) {
+    if (texture == nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -1841,20 +1866,50 @@ EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilt
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
+    }
+
     texture->min_filter = (uint32_t)minFilter;
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetMipFilter) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTextureSetMipFilter, SceGxmTexture *texture, SceGxmTextureMipFilter mipFilter) {
+    if (texture == nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
+    }
+
+    texture->mip_filter = (uint32_t)mipFilter;
+    return 0;
 }
 
-EXPORT(int, sceGxmTextureSetMipmapCount) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTextureSetMipmapCount, SceGxmTexture *texture, uint32_t mipCount) {
+    if (texture == nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
+    }
+
+    texture->mip_count = (uint32_t)mipCount;
+    return 0;
 }
 
-EXPORT(int, sceGxmTextureSetNormalizeMode) {
-    return UNIMPLEMENTED();
+/**
+ * TODO: uncomment code once https://github.com/vitasdk/vita-headers/commit/2995273a998f355a498cc4e9c563974fe5938ac6 is available
+ */
+EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture /*, SceGxmTextureNormalizeMode normalizeMode*/) {
+    if (texture == nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    //texture->normalize_mode = (uint32_t)normalizeMode;
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteData) {
@@ -1868,7 +1923,15 @@ EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteDa
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetStride) {
+EXPORT(int, sceGxmTextureSetStride, SceGxmTexture *texture, uint32_t byteStride) {
+    if (texture == nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    if ((texture->type << 29) != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -1989,7 +2052,10 @@ EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
     return 0;
 }
 
-EXPORT(int, sceGxmTextureValidate) {
+EXPORT(int, sceGxmTextureValidate, const SceGxmTexture *texture) {
+    if (texture == nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
     return UNIMPLEMENTED();
 }
 
