@@ -344,8 +344,8 @@ EXPORT(int, sceKernelStopTimer) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelTryLockMutex) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelTryLockMutex, SceUID mutexid, int lock_count) {
+    return mutex_try_lock(host.kernel, export_name, thread_id, mutexid, lock_count, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelTryLockReadRWLock) {
