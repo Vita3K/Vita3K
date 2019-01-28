@@ -54,6 +54,8 @@ struct GuiState {
     bool lwmutexes_dialog = false;
     bool eventflags_dialog = false;
     bool allocations_dialog = false;
+    bool memory_editor_dialog = false;
+    bool disassembly_dialog = false;
 
     // Optimisation menu
     bool texture_cache = true;
@@ -63,7 +65,7 @@ struct GuiState {
 
     DialogState common_dialog;
     GamesSelector game_selector;
-    std::unique_ptr<MemoryEditor> memory_editor;
+    MemoryEditor memory_editor;
     size_t memory_editor_start, memory_editor_count;
 
     // imgui
