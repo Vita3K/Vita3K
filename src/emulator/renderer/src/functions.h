@@ -28,8 +28,8 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
 SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state, const MemState &mem);
 
 // Shaders.
-std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment_program, const char *base_path);
-std::string load_vertex_shader(GLSLCache &cache, const SceGxmProgram &vertex_program, const char *base_path);
+std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment_program, const char *base_path, const char *title_id);
+std::string load_vertex_shader(GLSLCache &cache, const SceGxmProgram &vertex_program, const char *base_path, const char *title_id);
 
 namespace texture {
 

@@ -30,7 +30,7 @@ struct SceIoDirent;
 
 void init_device_paths(IOState &io);
 
-bool init(IOState &io, const char *pref_path);
+bool init(IOState &io, const char *pref_path, const char *base_path);
 SceUID open_file(IOState &io, const std::string &path_, int flags, const char *pref_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);
