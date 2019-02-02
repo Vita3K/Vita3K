@@ -50,14 +50,14 @@ namespace config {
  * \param cfg Config options are returned via this parameter.
  * \return True on loading success.
 */
-ExitCode init_from_config_file(Config &cfg, const char *config_file_name);
+ExitCode deserialize(Config &cfg);
 
 /*
  * \brief Save emulator config to a YML file.
  *
  * \return True on saving success.
 */
-ExitCode save_config_to_file(Config &cfg, const char *config_file_name);
+ExitCode serialize(Config &cfg);
 
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:

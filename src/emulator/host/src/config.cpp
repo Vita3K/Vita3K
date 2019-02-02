@@ -26,7 +26,6 @@
 #include <boost/optional/optional_io.hpp>
 #include <boost/program_options.hpp>
 #include <spdlog/spdlog.h>
-
 #include <yaml-cpp/yaml.h>
 
 #include <exception>
@@ -72,7 +71,7 @@ void config_file_emit_single(YAML::Emitter &emitter, const char *name, T &val) {
 template <typename T>
 void config_file_emit_optional_single(YAML::Emitter &emitter, const char *name, boost::optional<T> &val) {
     if (val) {
-        emitter << YAML::Key << name << YAML::Value << val.value();
+        config_file_emit_single(emitter, name, val.value());
     }
 }
 
@@ -87,7 +86,7 @@ void config_file_emit_vector(YAML::Emitter &emitter, const char *name, std::vect
     emitter << YAML::EndSeq;
 }
 
-ExitCode save_config_to_file(Config &cfg, const char *config_file_name) {
+ExitCode serialize(Config &cfg) {
     YAML::Emitter emitter;
     emitter << YAML::BeginMap;
 
@@ -102,7 +101,7 @@ ExitCode save_config_to_file(Config &cfg, const char *config_file_name) {
 
     emitter << YAML::EndMap;
 
-    std::ofstream fo(config_file_name);
+    std::ofstream fo("config.yml");
     if (!fo) {
         return IncorrectArgs;
     }
@@ -111,11 +110,11 @@ ExitCode save_config_to_file(Config &cfg, const char *config_file_name) {
     return Success;
 }
 
-ExitCode init_from_config_file(Config &cfg, const char *config_file_name) {
+ExitCode deserialize(Config &cfg) {
     YAML::Node config_node {};
 
     try {
-        config_node = YAML::LoadFile(config_file_name);
+        config_node = YAML::LoadFile("config.yml");
     } catch (YAML::Exception &exception) {
         std::cerr << "Config file can't be load: Error: " << exception.what() << "\n";
         return IncorrectArgs;
@@ -145,7 +144,7 @@ ExitCode init_from_config_file(Config &cfg, const char *config_file_name) {
 }
 
 ExitCode init(Config &cfg, int argc, char **argv) {
-    init_from_config_file(cfg, "config.yml");
+    deserialize(cfg);
 
     try {
         // Declare all options
@@ -237,7 +236,7 @@ ExitCode init(Config &cfg, int argc, char **argv) {
     }
 
     // Save any changes made in command-line arguments
-    save_config_to_file(cfg, "config.yml");
+    serialize(cfg);
     return Success;
 }
 
