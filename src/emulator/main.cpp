@@ -138,6 +138,9 @@ int main(int argc, char *argv[]) {
 
     // De-initializations
     imgui::destroy(host);
+    
+    // There may be changes that made in the GUI, so we should save, again
+    config::save_config_to_file(host.cfg, "config.yml");
 
     return Success;
 }
