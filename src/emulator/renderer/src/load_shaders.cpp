@@ -5,6 +5,7 @@
 
 #include <gxm/types.h>
 #include <shadergen/functions.h>
+#include <util/fs.h>
 #include <util/log.h>
 
 #include <fstream>
@@ -32,27 +33,35 @@ static std::string load_shader(const char *hash, const char *extension, const ch
     return source;
 }
 
-static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source) {
+static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source, const char *base_path, const char *title_id) {
+    fs::path shader_base_dir;
+    shader_base_dir.append(base_path).append("shaderlog").append(title_id);
+
+    if (!fs::exists(shader_base_dir))
+        fs::create_directory(shader_base_dir);
+    
+    fs::path shader_base_path(shader_base_dir);
+    shader_base_path /= hash;
+    shader_base_path += std::string(".") + extension;
+
     // Dump missing shader GLSL.
-    std::ostringstream glsl_path;
-    glsl_path << hash << "." << extension;
-    std::ofstream glsl_file(glsl_path.str());
+    std::ofstream glsl_file(shader_base_path.string());
     if (!glsl_file.fail()) {
         glsl_file << source;
         glsl_file.close();
     }
 
     // Dump missing shader binary.
-    std::ostringstream gxp_path;
-    gxp_path << hash << ".gxp";
-    std::ofstream gxp(gxp_path.str(), std::ofstream::binary);
-    if (!gxp.fail()) {
-        gxp.write(reinterpret_cast<const char *>(&program), program.size);
-        gxp.close();
+    fs::path gxp_path(shader_base_path.string());
+    gxp_path += ".gxp";
+    std::ofstream gxp_file(gxp_path.string(), std::ofstream::binary);
+    if (!gxp_file.fail()) {
+        gxp_file.write(reinterpret_cast<const char *>(&program), program.size);
+        gxp_file.close();
     }
 }
 
-std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment_program, const char *base_path) {
+std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment_program, const char *base_path, const char *title_id) {
     const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
     const GLSLCache::const_iterator cached = cache.find(hash_bytes);
     if (cached != cache.end()) {
@@ -64,7 +73,7 @@ std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment
     if (source.empty()) {
         LOG_ERROR("Missing fragment shader {}", hash_text.data());
         source = shadergen::spirv::generate_fragment_glsl(fragment_program);
-        dump_missing_shader(hash_text.data(), "frag", fragment_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "frag", fragment_program, source.c_str(), base_path, title_id);
     }
 
     cache.emplace(hash_bytes, source);
@@ -72,7 +81,7 @@ std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment
     return source;
 }
 
-std::string load_vertex_shader(GLSLCache &cache, const SceGxmProgram &vertex_program, const char *base_path) {
+std::string load_vertex_shader(GLSLCache &cache, const SceGxmProgram &vertex_program, const char *base_path, const char *title_id) {
     const Sha256Hash hash_bytes = sha256(&vertex_program, vertex_program.size);
     const GLSLCache::const_iterator cached = cache.find(hash_bytes);
     if (cached != cache.end()) {
@@ -84,7 +93,7 @@ std::string load_vertex_shader(GLSLCache &cache, const SceGxmProgram &vertex_pro
     if (source.empty()) {
         LOG_ERROR("Missing vertex shader {}", hash_text.data());
         source = shadergen::spirv::generate_vertex_glsl(vertex_program);
-        dump_missing_shader(hash_text.data(), "vert", vertex_program, source.c_str());
+        dump_missing_shader(hash_text.data(), "vert", vertex_program, source.c_str(), base_path, title_id);
     }
 
     cache.emplace(hash_bytes, source);

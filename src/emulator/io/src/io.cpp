@@ -199,7 +199,7 @@ bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::str
 
 } // namespace vfs
 
-bool init(IOState &io, const char *pref_path) {
+bool init(IOState &io, const char *pref_path, const char *base_path) {
     std::string ux0 = pref_path;
     std::string uma0 = pref_path;
     ux0 += "ux0";
@@ -219,6 +219,8 @@ bool init(IOState &io, const char *pref_path) {
     fs::create_directory(ux0_savedata);
     fs::create_directory(uma0);
     fs::create_directory(uma0_data);
+
+    fs::create_directory(std::string(base_path) + "/shaderlog");
 
     return true;
 }
