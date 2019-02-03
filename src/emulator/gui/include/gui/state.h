@@ -22,11 +22,6 @@
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
-#include <memory>
-
-struct ImFont;
-struct MemoryEditor;
-
 enum SelectorState {
     SELECT_APP
 };
@@ -47,6 +42,7 @@ struct GuiState {
     // Debug menu
     bool renderer_focused = true;
     bool threads_dialog = false;
+    bool thread_details_dialog = false;
     bool semaphores_dialog = false;
     bool condvars_dialog = false;
     bool lwcondvars_dialog = false;
@@ -65,8 +61,15 @@ struct GuiState {
 
     DialogState common_dialog;
     GamesSelector game_selector;
+
     MemoryEditor memory_editor;
-    size_t memory_editor_start, memory_editor_count;
+    size_t memory_editor_start = 0, memory_editor_count = 0;
+
+    std::string disassembly_arch = "THUMB";
+    char disassembly_address[9] = "00000000", disassembly_count[5] = "100";
+    std::vector<std::string> disassembly;
+
+    SceUID thread_watch_index = -1;
 
     // imgui
     ImFont *normal_font{};

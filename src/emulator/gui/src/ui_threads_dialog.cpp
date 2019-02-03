@@ -20,17 +20,51 @@
 
 #include <gui/gui_constants.h>
 #include <host/state.h>
+
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
+#include <cpu/functions.h>
+
 #include <util/resource.h>
+
+#include <spdlog/fmt/fmt.h>
+
+void DrawThreadDetailsDialog(HostState &host) {
+    ThreadStatePtr &thread = host.kernel.threads[host.gui.thread_watch_index];
+    CPUState &cpu = *thread->cpu;
+
+    ImGui::Begin("Thread Viewer", &host.gui.thread_details_dialog);
+
+    uint32_t pc = read_pc(cpu);
+    uint32_t sp = read_sp(cpu);
+    uint32_t lr = read_lr(cpu);
+    uint32_t registers[16];
+    for (size_t a = 0; a < 16; a++) registers[a] = read_reg(cpu, a);
+
+    // TODO: Add THUMB/ARM mode viewer. What arch is the cpu currently using?
+
+    ImGui::Text("Name: %s (%x)", thread->name.c_str(), host.gui.thread_watch_index);
+
+    ImGui::Text("PC: %x", pc);
+    ImGui::Text("SP: %x", pc);
+    ImGui::Text("LR: %x", pc);
+    ImGui::Text("Executing: %s", disassemble(cpu, pc).c_str());
+    ImGui::Separator();
+    for (int a = 0; a < 8; a++) {
+        ImGui::Text("r%02i: %08x   r%02i: %08x", a, registers[a], a + 8, registers[a + 8]);
+    }
+
+    ImGui::End();
+}
 
 void DrawThreadsDialog(HostState &host) {
     ImGui::Begin("Threads", &host.gui.threads_dialog);
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE,
+            "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
 
-    for (auto thread : host.kernel.threads) {
+    for (const auto &thread : host.kernel.threads) {
         std::shared_ptr<ThreadState> th_state = thread.second;
         std::string run_state;
         switch (th_state->to_do) {
@@ -44,11 +78,11 @@ void DrawThreadsDialog(HostState &host) {
             run_state = "Exiting";
             break;
         }
-        ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %-16s   0x%08X       ",
-            thread.first,
-            th_state->name.c_str(),
-            run_state.c_str(),
-            th_state->stack.get()->get());
+        if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0<8X}",
+                thread.first, th_state->name, run_state, th_state->stack.get()->get()).c_str())) {
+            host.gui.thread_watch_index = thread.first;
+            host.gui.thread_details_dialog = true;
+        }
     }
     ImGui::End();
 }

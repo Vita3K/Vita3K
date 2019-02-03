@@ -5,6 +5,7 @@
 #include <imgui_memory_editor.h>
 
 #include <host/state.h>
+#include <cpu/functions.h>
 
 #include <spdlog/fmt/fmt.h>
 
@@ -44,11 +45,16 @@ void DrawAllocationsDialog(HostState &host) {
                 ImGui::Text("Generation no longer exists.");
             } else {
                 ImGui::Text("Range %08lx - %08lx.", index * KB(4), (index + count) * KB(4));
-                ImGui::Text("Size: %li KB (%li page[s])", count * 4l, count);
+                ImGui::Text("Size: %i KB (%i page[s])", count * 4, count);
                 if (ImGui::Selectable("View/Edit")) {
                     host.gui.memory_editor_start = index * KB(4);
                     host.gui.memory_editor_count = count * KB(4);
                     host.gui.memory_editor_dialog = true;
+                }
+                if (ImGui::Selectable("View Disassembly")) {
+                    sprintf(host.gui.disassembly_address, "%08zx", index * KB(4));
+                    ReevaluateCode(host);
+                    host.gui.disassembly_dialog = true;
                 }
             }
             ImGui::TreePop();

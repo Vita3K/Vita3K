@@ -22,4 +22,4 @@
 struct DisasmState;
 
 bool init(DisasmState &state);
-std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, uint64_t address, bool thumb);
+std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, uint64_t address, bool thumb, uint16_t *insnSize = nullptr);
