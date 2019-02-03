@@ -138,6 +138,9 @@ int main(int argc, char *argv[]) {
 
     // De-initializations
     imgui::destroy(host);
+    
+    // There may be changes that made in the GUI, so we should save, again
+    config::serialize(host.cfg);
 
     return Success;
 }

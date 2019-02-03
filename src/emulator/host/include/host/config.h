@@ -39,14 +39,30 @@ struct Config {
     bool log_uniforms = false;
     std::vector<std::string> lle_modules;
     bool pstv_mode = false;
+    optional<std::string> pref_path;
 };
 
 namespace config {
 
+/*
+ * \brief Initializes config system from a YML file.
+ * 
+ * \param cfg Config options are returned via this parameter.
+ * \return True on loading success.
+*/
+ExitCode deserialize(Config &cfg);
+
+/*
+ * \brief Save emulator config to a YML file.
+ *
+ * \return True on saving success.
+*/
+ExitCode serialize(Config &cfg);
+
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
   *        --help, --version, --log-level
-  * \param cfg Config options are returend via this parameter.
+  * \param cfg Config options are returned via this parameter.
   * \return True on success, false on error.
   */
 ExitCode init(Config &cfg, int argc, char **argv);
