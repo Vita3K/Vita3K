@@ -27,4 +27,5 @@ struct GxmState {
     bool is_in_scene = false;
     Queue<DisplayCallback> display_queue;
     Ptr<uint32_t> notification_region;
+    SceUID display_queue_thread;
 };
