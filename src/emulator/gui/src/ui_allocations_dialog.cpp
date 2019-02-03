@@ -4,14 +4,14 @@
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
-#include <host/state.h>
 #include <cpu/functions.h>
+#include <host/state.h>
 
 #include <spdlog/fmt/fmt.h>
 
 const char *blacklist[] = {
-        "NULL",
-        "export_sceGxmDisplayQueueAddEntry"
+    "NULL",
+    "export_sceGxmDisplayQueueAddEntry"
 };
 
 void DrawAllocationsDialog(HostState &host) {
@@ -26,7 +26,8 @@ void DrawAllocationsDialog(HostState &host) {
             continue;
 
         if (ImGui::TreeNode(fmt::format("{}: {}", generation_num, generation_name).c_str())) {
-            int32_t index = -1, count = 1;
+            int32_t index = -1;
+            int32_t count = 1;
 
             for (int32_t a = 0; a < host.mem.allocated_pages.size(); a++) {
                 auto generation = host.mem.allocated_pages[a];
@@ -64,8 +65,8 @@ void DrawAllocationsDialog(HostState &host) {
     if (host.gui.memory_editor_dialog) {
         if (host.gui.memory_editor.Open) {
             host.gui.memory_editor.DrawWindow("Memory Editor",
-                    host.mem.memory.get() + host.gui.memory_editor_start,
-                    host.gui.memory_editor_count, host.gui.memory_editor_start);
+                host.mem.memory.get() + host.gui.memory_editor_start,
+                host.gui.memory_editor_count, host.gui.memory_editor_start);
         } else {
             host.gui.memory_editor_dialog = false;
         }

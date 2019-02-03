@@ -4,8 +4,8 @@
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
-#include <host/state.h>
 #include <cpu/functions.h>
+#include <host/state.h>
 
 #include <spdlog/fmt/fmt.h>
 
@@ -31,7 +31,7 @@ void EvaluateCode(HostState &host, uint32_t from, uint32_t count, bool thumb) {
 
         // Use DisasmState for first thread.
         std::string disasm = fmt::format("{:0>8X}: {}",
-                addr, disassemble(*host.kernel.threads.begin()->second->cpu.get(), addr, thumb, &size));
+            addr, disassemble(*host.kernel.threads.begin()->second->cpu.get(), addr, thumb, &size));
         host.gui.disassembly.emplace_back(disasm);
         addr += size;
     }
@@ -52,8 +52,8 @@ void ReevaluateCode(HostState &host) {
 }
 
 std::string archs[] = {
-        "ARM",
-        "THUMB",
+    "ARM",
+    "THUMB",
 };
 
 void DrawDisassemblyDialog(HostState &host) {

@@ -21,9 +21,9 @@
 #include <gui/gui_constants.h>
 #include <host/state.h>
 
+#include <cpu/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
-#include <cpu/functions.h>
 
 #include <util/resource.h>
 
@@ -39,7 +39,8 @@ void DrawThreadDetailsDialog(HostState &host) {
     uint32_t sp = read_sp(cpu);
     uint32_t lr = read_lr(cpu);
     uint32_t registers[16];
-    for (size_t a = 0; a < 16; a++) registers[a] = read_reg(cpu, a);
+    for (size_t a = 0; a < 16; a++)
+        registers[a] = read_reg(cpu, a);
 
     // TODO: Add THUMB/ARM mode viewer. What arch is the cpu currently using?
 
@@ -60,7 +61,7 @@ void DrawThreadDetailsDialog(HostState &host) {
 void DrawThreadsDialog(HostState &host) {
     ImGui::Begin("Threads", &host.gui.threads_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE,
-            "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
+        "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
 
@@ -79,7 +80,8 @@ void DrawThreadsDialog(HostState &host) {
             break;
         }
         if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0<8X}",
-                thread.first, th_state->name, run_state, th_state->stack.get()->get()).c_str())) {
+                thread.first, th_state->name, run_state, th_state->stack.get()->get())
+                                  .c_str())) {
             host.gui.thread_watch_index = thread.first;
             host.gui.thread_details_dialog = true;
         }

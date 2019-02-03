@@ -284,14 +284,14 @@ void write_lr(CPUState &state, uint32_t value) {
     assert(err == UC_ERR_OK);
 }
 
-std::string disassemble(CPUState& state, uint64_t at, bool thumb, uint16_t *insn_size) {
+std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size) {
     MemState &mem = *state.mem;
     const uint8_t *const code = Ptr<const uint8_t>(static_cast<Address>(at)).get(mem);
     const size_t buffer_size = GB(4) - at;
     return disassemble(state.disasm, code, buffer_size, at, thumb, insn_size);
 }
 
-std::string disassemble(CPUState& state, uint64_t at, uint16_t *insn_size) {
+std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size) {
     const bool thumb = is_thumb_mode(state.uc.get());
     return disassemble(state, at, thumb, insn_size);
 }

@@ -63,10 +63,12 @@ struct GuiState {
     GamesSelector game_selector;
 
     MemoryEditor memory_editor;
-    size_t memory_editor_start = 0, memory_editor_count = 0;
+    size_t memory_editor_start = 0;
+    size_t memory_editor_count = 0;
 
     std::string disassembly_arch = "THUMB";
-    char disassembly_address[9] = "00000000", disassembly_count[5] = "100";
+    char disassembly_address[9] = "00000000";
+    char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
 
     SceUID thread_watch_index = -1;

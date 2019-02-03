@@ -54,9 +54,11 @@ std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, ui
 
     std::ostringstream out;
     out << state.insn->mnemonic << " " << state.insn->op_str;
-    if (insnSize) *insnSize = state.insn->size;
+    if (insnSize)
+        *insnSize = state.insn->size;
     if (!success) {
-        if (insnSize) *insnSize = 0;
+        if (insnSize)
+            *insnSize = 0;
         const cs_err err = cs_errno(state.csh);
         out << " (" << cs_strerror(err) << ")";
     }
