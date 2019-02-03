@@ -30,7 +30,8 @@ void EvaluateCode(HostState &host, uint32_t from, uint32_t count, bool thumb) {
         }
 
         // Use DisasmState for first thread.
-        std::string disasm = disassemble(*host.kernel.threads.begin()->second->cpu.get(), addr, thumb, &size);
+        std::string disasm = fmt::format("{:0>8X}: {}",
+                addr, disassemble(*host.kernel.threads.begin()->second->cpu.get(), addr, thumb, &size));
         host.gui.disassembly.emplace_back(disasm);
         addr += size;
     }
