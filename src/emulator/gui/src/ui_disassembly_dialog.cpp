@@ -22,9 +22,9 @@ void EvaluateCode(HostState &host, uint32_t from, uint32_t count, bool thumb) {
 
     for (int a = 0; a < count && size != 0; a++) {
         // Apparently some THUMB instructions are 4 bytes long, so check all 4 just to be safe.
-        size_t pageOfAddr = addr / KB(4), pageOfEnd = (addr + 4) / KB(4);
+        size_t addr_page = addr / KB(4), end_page = (addr + 4) / KB(4);
 
-        if (pageOfAddr == 0 || host.mem.allocated_pages[pageOfAddr] == 0 || host.mem.allocated_pages[pageOfEnd] == 0) {
+        if (addr_page == 0 || host.mem.allocated_pages[addr_page] == 0 || host.mem.allocated_pages[end_page] == 0) {
             host.gui.disassembly.emplace_back(fmt::format("Disassembled {} instructions.", a));
             break;
         }

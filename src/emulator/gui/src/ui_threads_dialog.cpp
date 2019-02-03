@@ -45,9 +45,9 @@ void DrawThreadDetailsDialog(HostState &host) {
 
     ImGui::Text("Name: %s (%x)", thread->name.c_str(), host.gui.thread_watch_index);
 
-    ImGui::Text("PC: %x", pc);
-    ImGui::Text("SP: %x", pc);
-    ImGui::Text("LR: %x", pc);
+    ImGui::Text("PC: %08x", pc);
+    ImGui::Text("SP: %08x", pc);
+    ImGui::Text("LR: %08x", pc);
     ImGui::Text("Executing: %s", disassemble(cpu, pc).c_str());
     ImGui::Separator();
     for (int a = 0; a < 8; a++) {
