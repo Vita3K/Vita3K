@@ -65,6 +65,7 @@ void DrawMainMenuBar(HostState &host) {
         if (ImGui::BeginMenu("Help")) {
             ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
             ImGui::MenuItem("Controls", nullptr, &host.gui.controls_dialog);
+            ImGui::MenuItem("About", nullptr, &host.gui.about_dialog);
             ImGui::PopStyleColor();
             ImGui::EndMenu();
         }
