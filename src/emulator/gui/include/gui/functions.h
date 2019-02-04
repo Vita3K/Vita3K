@@ -33,6 +33,7 @@ struct HostState;
 
 void DrawMainMenuBar(HostState &host);
 void DrawThreadsDialog(HostState &host);
+void DrawThreadDetailsDialog(HostState &host);
 void DrawSemaphoresDialog(HostState &host);
 void DrawMutexesDialog(HostState &host);
 void DrawLwMutexesDialog(HostState &host);
@@ -40,8 +41,11 @@ void DrawLwCondvarsDialog(HostState &host);
 void DrawCondvarsDialog(HostState &host);
 void DrawEventFlagsDialog(HostState &host);
 void DrawAllocationsDialog(HostState &host);
+void DrawDisassemblyDialog(HostState &host);
 void DrawUI(HostState &host);
 void DrawCommonDialog(HostState &host);
 void DrawGameSelector(HostState &host, AppRunType *run_type);
 void DrawReinstallDialog(HostState &host, GenericDialogState *status);
 void DrawControlsDialog(HostState &host);
+
+void ReevaluateCode(HostState &host);

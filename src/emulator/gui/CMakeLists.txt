@@ -18,7 +18,8 @@ src/ui_semaphores_dialog.cpp
 src/ui_threads_dialog.cpp
 src/ui_controls_dialog.cpp
 src/ui_allocations_dialog.cpp
+src/ui_disassembly_dialog.cpp
 )
 
 target_include_directories(gui PUBLIC include)
-target_link_libraries(gui PUBLIC sdl2 imgui glutil host kernel util dialog)
+target_link_libraries(gui PUBLIC sdl2 imgui glutil host kernel cpu util dialog)
