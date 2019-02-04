@@ -81,8 +81,8 @@ inline int find_condvar(CondvarPtr &condvar_out, CondvarPtrs **condvars_out, Ker
 }
 
 inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mutex> &thread_lock,
-        std::unique_lock<std::mutex> &primitive_lock, SyncPrimitive &primitive,
-        const WaitingThreadData &data, const SceUInt* const timeout) {
+    std::unique_lock<std::mutex> &primitive_lock, SyncPrimitive &primitive,
+    const WaitingThreadData &data, const SceUInt *const timeout) {
     if (timeout) {
         auto status = thread->something_to_do.wait_for(thread_lock, std::chrono::microseconds{ *timeout });
 

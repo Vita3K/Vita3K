@@ -15,18 +15,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <host/config.h>
 #include <kernel/load_self.h>
 #include <kernel/relocation.h>
 #include <kernel/state.h>
 #include <kernel/types.h>
 #include <mem/mem.h>
-#include <host/config.h>
 
 #include <nids/functions.h>
+#include <util/fs.h>
 #include <util/log.h>
 
-#include <boost/filesystem.hpp>
 #include <elfio/elf_types.hpp>
+#include <spdlog/fmt/fmt.h>
 // clang-format off
 #define SCE_ELF_DEFS_TARGET
 #include <sce-elf-defs.h>
@@ -51,7 +52,6 @@
 #define NID_PROCESS_PARAM 0x70FBA1E7
 
 using namespace ELFIO;
-namespace fs = boost::filesystem;
 
 static constexpr bool LOG_MODULE_LOADING = false;
 static constexpr bool DUMP_SEGMENTS = false;
@@ -92,7 +92,8 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
             constexpr auto STUB_SYMVAL = 0xDEADBEEF;
             LOG_WARN("\tNID NOT FOUND {} ({}) at {}, setting to stub value {}", log_hex(nid), name, log_hex(entry.address()), log_hex(STUB_SYMVAL));
 
-            auto stub_symval_ptr = Ptr<uint32_t>(alloc(mem, 4, "Stub var import relocation symval"));
+            auto alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), name);
+            auto stub_symval_ptr = Ptr<uint32_t>(alloc(mem, 4, alloc_name.c_str()));
             *stub_symval_ptr.get(mem) = STUB_SYMVAL;
 
             export_address = stub_symval_ptr.address();
@@ -372,10 +373,11 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         assert(seg_infos[seg_index].encryption == 2);
         if (seg_header.p_type == PT_LOAD) {
             Address segment_address = 0;
+            auto alloc_name = fmt::format("SELF at {}", self_path);
             if (elf.e_type == ET_SCE_EXEC) {
-                segment_address = alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, self_path.c_str());
+                segment_address = alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
             } else {
-                segment_address = alloc(mem, seg_header.p_memsz, self_path.c_str());
+                segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
             }
             const Ptr<uint8_t> seg_addr(segment_address);
             if (!seg_addr) {

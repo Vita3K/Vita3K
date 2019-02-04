@@ -7,15 +7,11 @@
 #include <shellapi.h>
 #include <windows.h>
 #define getcwd _getcwd // stupid MSFT "deprecation" warning
-#else
-#include <unistd.h>
 #endif
 
 #include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#ifdef _MSC_VER
 #include <spdlog/sinks/msvc_sink.h>
-#endif
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include <codecvt> // std::codecvt_utf8
 #include <iostream>
@@ -26,15 +22,13 @@
 
 namespace logging {
 
-std::shared_ptr<spdlog::logger> g_logger;
-
 static const
 #ifdef WIN32
     std::wstring &LOG_FILE_NAME
-    = L"\\vita3k.log";
+    = L"vita3k.log";
 #else
     std::string &LOG_FILE_NAME
-    = "/vita3k.log";
+    = "vita3k.log";
 #endif
 
 void init() {
@@ -47,52 +41,38 @@ void init() {
     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 
     try {
-        spdlog::filename_t s_cwd;
-
 #ifdef WIN32
         wchar_t buffer[MAX_PATH];
         GetModuleFileNameW(NULL, buffer, MAX_PATH);
         std::string::size_type pos = std::wstring(buffer).find_last_of(L"\\\\");
         std::wstring path = std::wstring(buffer).substr(0, pos);
-        if (!path.empty())
-            s_cwd = path;
-#else
-        char buffer[512];
-        char *path = getcwd(buffer, sizeof(buffer));
-        if (path)
-            s_cwd = path;
-#endif
-        else {
+
+        if (!path.empty()) {
+            const auto full_log_path = path + L"\\" + LOG_FILE_NAME;
+            sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(full_log_path, true));
+        } else {
             std::cerr << "failed to get working directory" << std::endl;
         }
-        const auto full_log_path = s_cwd + LOG_FILE_NAME;
-
-#ifdef WIN32
-        DeleteFileW(full_log_path.c_str());
 #else
-        remove(full_log_path.c_str());
+        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(LOG_FILE_NAME, true));
 #endif
-
-        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(full_log_path));
     } catch (const spdlog::spdlog_ex &ex) {
         std::cerr << "File log initialization failed: " << ex.what() << std::endl;
     }
 
 #ifdef _MSC_VER
     if (LOG_MSVC_OUTPUT)
-        sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_st>());
+        sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
 #endif
 
-    g_logger = std::make_shared<spdlog::logger>("vita3k logger", begin(sinks), end(sinks));
-    spdlog::register_logger(g_logger);
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>("vita3k logger", begin(sinks), end(sinks)));
 
     spdlog::set_error_handler([](const std::string &msg) {
         std::cerr << "spdlog error: " << msg << std::endl;
     });
 
-    spdlog::set_pattern("%^[%H:%M:%S.%e] |%L| %v%$");
-
-    g_logger->flush_on(spdlog::level::debug);
+    spdlog::set_pattern("%^[%H:%M:%S.%e] |%L| [%!]: %v%$");
+    spdlog::flush_on(spdlog::level::debug);
 }
 
 void set_level(spdlog::level::level_enum log_level) {

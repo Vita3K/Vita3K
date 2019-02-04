@@ -21,17 +21,15 @@
 
 #include <glutil/gl.h>
 #include <host/state.h>
+#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
 #include <SDL_video.h>
-#include <boost/filesystem.hpp>
 #include <imgui.h>
 
 #include <fstream>
 #include <string>
-
-namespace fs = boost::filesystem;
 
 namespace imgui {
 

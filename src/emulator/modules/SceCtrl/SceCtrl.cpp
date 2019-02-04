@@ -60,6 +60,26 @@ static const KeyBinding key_bindings[] = {
     { SDL_SCANCODE_H, SCE_CTRL_PSBUTTON },
 };
 
+static const KeyBinding key_bindings_ext[] = {
+    { SDL_SCANCODE_RSHIFT, SCE_CTRL_SELECT },
+    { SDL_SCANCODE_RETURN, SCE_CTRL_START },
+    { SDL_SCANCODE_UP, SCE_CTRL_UP },
+    { SDL_SCANCODE_RIGHT, SCE_CTRL_RIGHT },
+    { SDL_SCANCODE_DOWN, SCE_CTRL_DOWN },
+    { SDL_SCANCODE_LEFT, SCE_CTRL_LEFT },
+    { SDL_SCANCODE_Q, SCE_CTRL_L1 },
+    { SDL_SCANCODE_E, SCE_CTRL_R1 },
+    { SDL_SCANCODE_U, SCE_CTRL_L2 },
+    { SDL_SCANCODE_O, SCE_CTRL_R2 },
+    { SDL_SCANCODE_F, SCE_CTRL_L3 },
+    { SDL_SCANCODE_H, SCE_CTRL_R3 },
+    { SDL_SCANCODE_V, SCE_CTRL_TRIANGLE },
+    { SDL_SCANCODE_C, SCE_CTRL_CIRCLE },
+    { SDL_SCANCODE_X, SCE_CTRL_CROSS },
+    { SDL_SCANCODE_Z, SCE_CTRL_SQUARE },
+    { SDL_SCANCODE_H, SCE_CTRL_PSBUTTON },
+};
+
 static const size_t key_binding_count = sizeof(key_bindings) / sizeof(key_bindings[0]);
 
 static const ControllerBinding controller_bindings[] = {
@@ -71,6 +91,24 @@ static const ControllerBinding controller_bindings[] = {
     { SDL_CONTROLLER_BUTTON_DPAD_LEFT, SCE_CTRL_LEFT },
     { SDL_CONTROLLER_BUTTON_LEFTSHOULDER, SCE_CTRL_LTRIGGER },
     { SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, SCE_CTRL_RTRIGGER },
+    { SDL_CONTROLLER_BUTTON_Y, SCE_CTRL_TRIANGLE },
+    { SDL_CONTROLLER_BUTTON_B, SCE_CTRL_CIRCLE },
+    { SDL_CONTROLLER_BUTTON_A, SCE_CTRL_CROSS },
+    { SDL_CONTROLLER_BUTTON_X, SCE_CTRL_SQUARE },
+    { SDL_CONTROLLER_BUTTON_GUIDE, SCE_CTRL_PSBUTTON },
+};
+
+static const ControllerBinding controller_bindings_ext[] = {
+    { SDL_CONTROLLER_BUTTON_BACK, SCE_CTRL_SELECT },
+    { SDL_CONTROLLER_BUTTON_START, SCE_CTRL_START },
+    { SDL_CONTROLLER_BUTTON_DPAD_UP, SCE_CTRL_UP },
+    { SDL_CONTROLLER_BUTTON_DPAD_RIGHT, SCE_CTRL_RIGHT },
+    { SDL_CONTROLLER_BUTTON_DPAD_DOWN, SCE_CTRL_DOWN },
+    { SDL_CONTROLLER_BUTTON_DPAD_LEFT, SCE_CTRL_LEFT },
+    { SDL_CONTROLLER_BUTTON_LEFTSHOULDER, SCE_CTRL_L1 },
+    { SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, SCE_CTRL_R1 },
+    { SDL_CONTROLLER_BUTTON_LEFTSTICK, SCE_CTRL_L3 },
+    { SDL_CONTROLLER_BUTTON_RIGHTSTICK, SCE_CTRL_R3 },
     { SDL_CONTROLLER_BUTTON_Y, SCE_CTRL_TRIANGLE },
     { SDL_CONTROLLER_BUTTON_B, SCE_CTRL_CIRCLE },
     { SDL_CONTROLLER_BUTTON_A, SCE_CTRL_CROSS },
@@ -96,10 +134,10 @@ static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode 
     return temp;
 }
 
-static void apply_keyboard(uint32_t *buttons, float axes[4]) {
+static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext) {
     const uint8_t *const keys = SDL_GetKeyboardState(nullptr);
     for (int i = 0; i < key_binding_count; ++i) {
-        const KeyBinding &binding = key_bindings[i];
+        const KeyBinding &binding = ext ? key_bindings_ext[i] : key_bindings[i];
         if (keys[binding.scancode]) {
             *buttons |= binding.button;
         }
@@ -125,11 +163,20 @@ static float axis_to_axis(int16_t axis) {
     return output;
 }
 
-static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameController *controller) {
+static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameController *controller, bool ext) {
     for (int i = 0; i < controller_binding_count; ++i) {
-        const ControllerBinding &binding = controller_bindings[i];
+        const ControllerBinding &binding = ext ? controller_bindings_ext[i] : controller_bindings[i];
         if (SDL_GameControllerGetButton(controller, binding.controller)) {
             *buttons |= binding.button;
+        }
+    }
+
+    if (ext) {
+        if (SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 0x3FFF) {
+            *buttons |= SCE_CTRL_L2;
+        }
+        if (SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 0x3FFF) {
+            *buttons |= SCE_CTRL_R2;
         }
     }
 
@@ -193,7 +240,7 @@ static void add_new_controllers(CtrlState &state) {
     }
 }
 
-static int peek_buffer_positive(HostState &host, int port, SceCtrlData *&pad_data) {
+static int peek_buffer(HostState &host, int port, SceCtrlData *&pad_data, bool ext, bool negative) {
     if (port == 0) {
         port++;
     }
@@ -207,11 +254,11 @@ static int peek_buffer_positive(HostState &host, int port, SceCtrlData *&pad_dat
     std::array<float, 4> axes;
     axes.fill(0);
     if (port == 1) {
-        apply_keyboard(&pad_data->buttons, axes.data());
+        apply_keyboard(&pad_data->buttons, axes.data(), ext);
     }
     for (const auto &controller : state.controllers) {
         if (controller.second.port == port) {
-            apply_controller(&pad_data->buttons, axes.data(), controller.second.controller.get());
+            apply_controller(&pad_data->buttons, axes.data(), controller.second.controller.get(), ext);
         }
     }
 
@@ -227,7 +274,11 @@ static int peek_buffer_positive(HostState &host, int port, SceCtrlData *&pad_dat
         pad_data->ry = float_to_byte(axes[3]);
     }
 
-    return 0;
+    if (negative) {
+        pad_data->buttons = 0xFFFFFFFF - pad_data->buttons;
+    }
+
+    return 1;
 }
 
 EXPORT(int, sceCtrlClearRapidFire) {
@@ -255,6 +306,9 @@ EXPORT(int, sceCtrlGetButtonIntercept) {
 }
 
 EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
+    CtrlState &state = host.ctrl;
+    remove_disconnected_controllers(state);
+    add_new_controllers(state);
     info->port[0] = host.cfg.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < 4; i++) {
         info->port[i + 1] = (host.cfg.pstv_mode && !host.ctrl.free_ports[i]) ? SCE_CTRL_TYPE_DS3 : SCE_CTRL_TYPE_UNPAIRED;
@@ -290,60 +344,88 @@ EXPORT(bool, sceCtrlIsMultiControllerSupported) {
     return host.cfg.pstv_mode;
 }
 
-EXPORT(int, sceCtrlPeekBufferNegative) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, sceCtrlPeekBufferNegative2) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
-    assert(pad_data != nullptr);
-    assert(count == 1);
+EXPORT(int, sceCtrlPeekBufferNegative, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer_positive(host, port, pad_data);
+    return peek_buffer(host, port, pad_data, false, true);
 }
 
-EXPORT(int, sceCtrlPeekBufferPositive2) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlPeekBufferNegative2, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, true, true);
 }
 
-EXPORT(int, sceCtrlPeekBufferPositiveExt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, false, false);
 }
 
-EXPORT(int, sceCtrlPeekBufferPositiveExt2) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlPeekBufferPositive2, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, true, false);
 }
 
-EXPORT(int, sceCtrlReadBufferNegative) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlPeekBufferPositiveExt, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, false, false);
 }
 
-EXPORT(int, sceCtrlReadBufferNegative2) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlPeekBufferPositiveExt2, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, true, false);
+}
+
+EXPORT(int, sceCtrlReadBufferNegative, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, false, true);
+}
+
+EXPORT(int, sceCtrlReadBufferNegative2, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, true, true);
 }
 
 EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer_positive(host, port, pad_data);
+    return peek_buffer(host, port, pad_data, false, false);
 }
 
-EXPORT(int, sceCtrlReadBufferPositive2) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlReadBufferPositive2, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, true, false);
 }
 
-EXPORT(int, sceCtrlReadBufferPositiveExt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlReadBufferPositiveExt, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, false, false);
 }
 
-EXPORT(int, sceCtrlReadBufferPositiveExt2) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlReadBufferPositiveExt2, int port, SceCtrlData *pad_data, int count) {
+    if (port > 1 && !host.cfg.pstv_mode) {
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
+    }
+    return peek_buffer(host, port, pad_data, true, false);
 }
 
 EXPORT(int, sceCtrlRegisterBdRMCCallback) {

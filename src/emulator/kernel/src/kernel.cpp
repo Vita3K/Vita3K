@@ -24,6 +24,8 @@
 #include <mem/mem.h>
 #include <mem/ptr.h>
 
+#include <spdlog/fmt/fmt.h>
+
 Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key) {
     SlotToAddress &slot_to_address = kernel.tls[thread_id];
 
@@ -32,9 +34,10 @@ Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID th
         return existing->second;
     }
 
+    auto alloc_name = fmt::format("TLS for thread #{}", thread_id);
     // TODO Use a finer-grained allocator.
     // TODO This is a memory leak.
-    const Ptr<Ptr<void>> address(alloc<Ptr<void>>(mem, "TLS"));
+    const Ptr<Ptr<void>> address(alloc<Ptr<void>>(mem, alloc_name.c_str()));
     slot_to_address.insert(SlotToAddress::value_type(key, address));
 
     return address;
