@@ -26,15 +26,126 @@
 #include <boost/optional/optional_io.hpp>
 #include <boost/program_options.hpp>
 #include <spdlog/spdlog.h>
+#include <yaml-cpp/yaml.h>
 
 #include <exception>
+#include <fstream>
 #include <iostream>
 
 namespace po = boost::program_options;
 
 namespace config {
 
+template <typename T, typename Q = T>
+void get_yaml_value(YAML::Node &config_node, const char *key, T *target_val, Q default_val) {
+    try {
+        *target_val = config_node[key].as<Q>();
+    } catch (YAML::Exception &exception) {
+        *target_val = std::move(default_val);
+    }
+}
+
+template <typename T>
+void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::optional<T> *target_val, T default_val) {
+    try {
+        *target_val = config_node[key].as<T>();
+    } catch (YAML::Exception &exception) {
+        *target_val = std::move(default_val);
+    }
+}
+
+template <typename T>
+void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::optional<T> *target_val) {
+    try {
+        *target_val = config_node[key].as<T>();
+    } catch (YAML::Exception &exception) {
+        *target_val = boost::none;
+    }
+}
+
+template <typename T>
+void config_file_emit_single(YAML::Emitter &emitter, const char *name, T &val) {
+    emitter << YAML::Key << name << YAML::Value << val;
+}
+
+template <typename T>
+void config_file_emit_optional_single(YAML::Emitter &emitter, const char *name, boost::optional<T> &val) {
+    if (val) {
+        config_file_emit_single(emitter, name, val.value());
+    }
+}
+
+template <typename T>
+void config_file_emit_vector(YAML::Emitter &emitter, const char *name, std::vector<T> &values)  {
+    emitter << YAML::Key << name << YAML::BeginSeq;
+
+    for (const T &value: values) {
+        emitter << value;
+    }
+
+    emitter << YAML::EndSeq;
+}
+
+ExitCode serialize(Config &cfg) {
+    YAML::Emitter emitter;
+    emitter << YAML::BeginMap;
+
+    config_file_emit_single(emitter, "log-imports", cfg.log_imports);
+    config_file_emit_single(emitter, "log-exports", cfg.log_exports);
+    config_file_emit_single(emitter, "log-active-shaders", cfg.log_active_shaders);
+    config_file_emit_single(emitter, "log-uniforms", cfg.log_uniforms);
+    config_file_emit_single(emitter, "pstv-mode", cfg.pstv_mode);
+    config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
+    config_file_emit_optional_single(emitter, "log-level", cfg.log_level);
+    config_file_emit_optional_single(emitter, "pref-path", cfg.pref_path);
+
+    emitter << YAML::EndMap;
+
+    std::ofstream fo("config.yml");
+    if (!fo) {
+        return IncorrectArgs;
+    }
+
+    fo << emitter.c_str();
+    return Success;
+}
+
+ExitCode deserialize(Config &cfg) {
+    YAML::Node config_node {};
+
+    try {
+        config_node = YAML::LoadFile("config.yml");
+    } catch (YAML::Exception &exception) {
+        std::cerr << "Config file can't be load: Error: " << exception.what() << "\n";
+        return IncorrectArgs;
+    }
+
+    get_yaml_value(config_node, "log-imports", &cfg.log_imports, false);
+    get_yaml_value(config_node, "log-exports", &cfg.log_exports, false);
+    get_yaml_value(config_node, "log-active-shaders", &cfg.log_active_shaders, false);
+    get_yaml_value(config_node, "log-uniforms", &cfg.log_uniforms, false);
+    get_yaml_value(config_node, "pstv-mode", &cfg.pstv_mode, false);
+    
+    get_yaml_value_optional(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
+    get_yaml_value_optional(config_node, "pref-path", &cfg.pref_path);
+
+    // lle-modules
+    try {
+        YAML::Node lle_modules_node = config_node["lle-modules"];
+
+        for (auto lle_module_node: lle_modules_node) {
+            cfg.lle_modules.push_back(lle_module_node.as<std::string>());
+        }
+    } catch (YAML::Exception &exception) {
+        std::cerr << "LLE modules node listed in config file has invalid syntax, please check again!\n";
+    }
+
+    return Success;
+}
+
 ExitCode init(Config &cfg, int argc, char **argv) {
+    deserialize(cfg);
+
     try {
         // Declare all options
         // clang-format off
@@ -123,6 +234,9 @@ ExitCode init(Config &cfg, int argc, char **argv) {
         std::cerr << "Exception of unknown type!\n";
         return IncorrectArgs;
     }
+
+    // Save any changes made in command-line arguments
+    serialize(cfg);
     return Success;
 }
 

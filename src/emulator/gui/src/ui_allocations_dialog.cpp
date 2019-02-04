@@ -4,17 +4,18 @@
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
+#include <cpu/functions.h>
 #include <host/state.h>
 
 #include <spdlog/fmt/fmt.h>
 
+const char *blacklist[] = {
+    "NULL",
+    "export_sceGxmDisplayQueueAddEntry"
+};
+
 void DrawAllocationsDialog(HostState &host) {
     ImGui::Begin("Memory Allocations", &host.gui.allocations_dialog);
-
-    const char *blacklist[] = {
-        "NULL",
-        "export_sceGxmDisplayQueueAddEntry"
-    };
 
     const std::lock_guard<std::mutex> lock(host.mem.generation_mutex);
     for (const auto &pair : host.mem.generation_names) {
@@ -26,17 +27,18 @@ void DrawAllocationsDialog(HostState &host) {
 
         if (ImGui::TreeNode(fmt::format("{}: {}", generation_num, generation_name).c_str())) {
             int32_t index = -1;
-            uint32_t count = 1;
+            int32_t count = 1;
 
-            for (const auto page : host.mem.allocated_pages) {
+            for (int32_t a = 0; a < host.mem.allocated_pages.size(); a++) {
+                auto generation = host.mem.allocated_pages[a];
                 if (index != -1) {
-                    if (page != generation_num)
+                    if (generation != generation_num)
                         break;
                     count++;
                 }
 
-                if (index == -1 && page == generation_num) {
-                    index = page;
+                if (index == -1 && generation == generation_num) {
+                    index = a;
                 }
             }
 
@@ -44,23 +46,31 @@ void DrawAllocationsDialog(HostState &host) {
                 ImGui::Text("Generation no longer exists.");
             } else {
                 ImGui::Text("Range %08lx - %08lx.", index * KB(4), (index + count) * KB(4));
-                ImGui::Text("Size: %li KB (%li page[s])", count * 4l, count);
-                if (index != 0) {
-                    if (ImGui::Selectable("View/Edit")) {
-                        host.gui.memory_editor_start = index * KB(4);
-                        host.gui.memory_editor_count = count * KB(4);
-                        if (!host.gui.memory_editor)
-                            host.gui.memory_editor = std::make_unique<MemoryEditor>();
-                    }
+                ImGui::Text("Size: %i KB (%i page[s])", count * 4, count);
+                if (ImGui::Selectable("View/Edit")) {
+                    host.gui.memory_editor_start = index * KB(4);
+                    host.gui.memory_editor_count = count * KB(4);
+                    host.gui.memory_editor_dialog = true;
+                }
+                if (ImGui::Selectable("View Disassembly")) {
+                    sprintf(host.gui.disassembly_address, "%08zx", index * KB(4));
+                    ReevaluateCode(host);
+                    host.gui.disassembly_dialog = true;
                 }
             }
             ImGui::TreePop();
         }
     }
 
-    if (host.gui.memory_editor && host.gui.memory_editor->Open)
-        host.gui.memory_editor->DrawWindow("Memory Editor", host.mem.memory.get() + host.gui.memory_editor_start,
-            host.gui.memory_editor_count, host.gui.memory_editor_start);
+    if (host.gui.memory_editor_dialog) {
+        if (host.gui.memory_editor.Open) {
+            host.gui.memory_editor.DrawWindow("Memory Editor",
+                host.mem.memory.get() + host.gui.memory_editor_start,
+                host.gui.memory_editor_count, host.gui.memory_editor_start);
+        } else {
+            host.gui.memory_editor_dialog = false;
+        }
+    }
 
     ImGui::End();
 }

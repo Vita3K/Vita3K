@@ -23,8 +23,8 @@
 #include <mem/mem.h>
 
 #include <nids/functions.h>
-#include <util/log.h>
 #include <util/fs.h>
+#include <util/log.h>
 
 #include <elfio/elf_types.hpp>
 #include <spdlog/fmt/fmt.h>

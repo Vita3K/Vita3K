@@ -9,4 +9,4 @@ git config user.name "Travis CI"
 git config user.email "travis@travis-ci.org"
 git add --all
 git commit -m "Linux build ${TRAVIS_BUILD_NUMBER}"
-git push --force "https://${REPO_TOKEN}@github.com/Vita3K/Vita3K-builds.git" > /dev/null 2>&1
+git push --force "https://${REPO_TOKEN}@github.com/Vita3K/Vita3K-builds.git"

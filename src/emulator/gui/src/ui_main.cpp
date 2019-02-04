@@ -95,6 +95,9 @@ void DrawUI(HostState &host) {
     if (host.gui.threads_dialog) {
         DrawThreadsDialog(host);
     }
+    if (host.gui.thread_details_dialog) {
+        DrawThreadDetailsDialog(host);
+    }
     if (host.gui.semaphores_dialog) {
         DrawSemaphoresDialog(host);
     }
@@ -118,6 +121,12 @@ void DrawUI(HostState &host) {
     }
     if (host.gui.allocations_dialog) {
         DrawAllocationsDialog(host);
+    }
+    if (host.gui.disassembly_dialog) {
+        DrawDisassemblyDialog(host);
+    }
+    if (host.gui.about_dialog) {
+        DrawAboutDialog(host);
     }
     ImGui::PopFont();
 }

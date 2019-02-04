@@ -539,7 +539,7 @@ static int SDLCALL thread_function(void *data) {
             break;
         {
             const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
-            if (thread->to_do == ThreadToDo::exit)
+            if ((!thread) || thread->to_do == ThreadToDo::exit)
                 break;
         }
         const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
@@ -564,13 +564,13 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
 
     const auto stack_size = SCE_KERNEL_STACK_SIZE_USER_DEFAULT; // TODO: Verify this is the correct stack size
 
-    const SceUID display_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, call_import, false);
+    host.gxm.display_queue_thread = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, call_import, false);
 
-    if (display_thread_id < 0) {
+    if (host.gxm.display_queue_thread < 0) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
-    const ThreadStatePtr display_thread = find(display_thread_id, host.kernel.threads);
+    const ThreadStatePtr display_thread = find(host.gxm.display_queue_thread, host.kernel.threads);
 
     const std::function<void(SDL_Thread *)> delete_thread = [display_thread](SDL_Thread *running_thread) {
         {
@@ -583,12 +583,12 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     GxmThreadParams gxm_params;
     gxm_params.mem = &host.mem;
     gxm_params.kernel = &host.kernel;
-    gxm_params.thid = display_thread_id;
+    gxm_params.thid = host.gxm.display_queue_thread;
     gxm_params.gxm = &host.gxm;
 
     const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), delete_thread);
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
-    host.kernel.running_threads.emplace(display_thread_id, running_thread);
+    host.kernel.running_threads.emplace(host.gxm.display_queue_thread, running_thread);
     host.gxm.notification_region = Ptr<uint32_t>(alloc(host.mem, MB(1), "SceGxmNotificationRegion"));
     memset(host.gxm.notification_region.get(host.mem), 0, MB(1));
     return 0;
@@ -1281,7 +1281,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     fp->program = programId->program;
     fp->renderer_data = std::make_unique<renderer::FragmentProgram>();
 
-    if (!renderer::create(*fp->renderer_data.get(), host.renderer, *programId->program.get(mem), blendInfo, host.base_path.c_str())) {
+    if (!renderer::create(*fp->renderer_data.get(), host.renderer, *programId->program.get(mem), blendInfo, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1306,7 +1306,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
     fp->renderer_data = std::make_unique<renderer::FragmentProgram>();
 
-    if (!renderer::create(*fp->renderer_data, host.renderer, *fp->program.get(mem), nullptr, host.base_path.c_str())) {
+    if (!renderer::create(*fp->renderer_data, host.renderer, *fp->program.get(mem), nullptr, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1335,7 +1335,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
     vp->renderer_data = std::make_unique<renderer::VertexProgram>();
 
-    if (!renderer::create(*vp->renderer_data.get(), host.renderer, *programId->program.get(mem), host.base_path.c_str())) {
+    if (!renderer::create(*vp->renderer_data.get(), host.renderer, *programId->program.get(mem), host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1479,6 +1479,30 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
 }
 
 EXPORT(int, sceGxmTerminate) {
+    const ThreadStatePtr thread = lock_and_find(host.gxm.display_queue_thread, host.kernel.threads, host.kernel.mutex);
+    std::unique_lock<std::mutex> thread_lock(thread->mutex);
+
+    thread->to_do = ThreadToDo::exit;
+    stop(*thread->cpu);
+    thread->something_to_do.notify_all();
+
+    for (auto t : thread->waiting_threads) {
+        const std::lock_guard<std::mutex> lock(t->mutex);
+        assert(t->to_do == ThreadToDo::wait);
+        t->to_do = ThreadToDo::run;
+        t->something_to_do.notify_one();
+    }
+
+    thread->waiting_threads.clear();
+
+    // need to unlock thread->mutex because thread destructor (delete_thread) will get called, and it locks that mutex
+    thread_lock.unlock();
+
+    // TODO: This causes a deadlock
+    //const std::lock_guard<std::mutex> lock2(host.kernel.mutex);
+    host.kernel.running_threads.erase(host.gxm.display_queue_thread);
+    host.kernel.waiting_threads.erase(host.gxm.display_queue_thread);
+    host.kernel.threads.erase(host.gxm.display_queue_thread);
     return 0;
 }
 
