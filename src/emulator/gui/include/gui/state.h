@@ -58,6 +58,7 @@ struct GuiState {
 
     // Help menu
     bool controls_dialog = false;
+    bool about_dialog = false;
 
     DialogState common_dialog;
     GamesSelector game_selector;

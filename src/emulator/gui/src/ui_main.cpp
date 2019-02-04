@@ -125,5 +125,8 @@ void DrawUI(HostState &host) {
     if (host.gui.disassembly_dialog) {
         DrawDisassemblyDialog(host);
     }
+    if (host.gui.about_dialog) {
+        DrawAboutDialog(host);
+    }
     ImGui::PopFont();
 }
