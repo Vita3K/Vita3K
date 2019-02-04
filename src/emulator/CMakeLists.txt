@@ -80,9 +80,9 @@ main.cpp
 )
 
 if(LINUX)
-	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util stdc++fs)
+	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host shader imgui modules nids vita-toolchain util stdc++fs)
 else()
-	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util)
+	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host shader imgui modules nids vita-toolchain util)
 endif()
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
 	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
