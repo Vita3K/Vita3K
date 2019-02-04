@@ -46,7 +46,7 @@ bool init(DisasmState &state) {
     return true;
 }
 
-std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, uint64_t address, bool thumb, uint16_t *insnSize) {
+std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, uint64_t address, bool thumb, uint16_t *insn_size) {
     const cs_err err = cs_option(state.csh, CS_OPT_MODE, thumb ? CS_MODE_THUMB : CS_MODE_ARM);
     assert(err == CS_ERR_OK);
 
@@ -54,11 +54,11 @@ std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, ui
 
     std::ostringstream out;
     out << state.insn->mnemonic << " " << state.insn->op_str;
-    if (insnSize)
-        *insnSize = state.insn->size;
+    if (insn_size)
+        *insn_size = state.insn->size;
     if (!success) {
-        if (insnSize)
-            *insnSize = 0;
+        if (insn_size)
+            *insn_size = 0;
         const cs_err err = cs_errno(state.csh);
         out << " (" << cs_strerror(err) << ")";
     }
