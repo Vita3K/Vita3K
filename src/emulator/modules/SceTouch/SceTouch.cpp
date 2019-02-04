@@ -40,7 +40,7 @@ static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData) {
         SceFVector2 scale = { 1, 1 };
         if ((window_size.x > 0) && (window_size.y > 0)) {
             scale.x = static_cast<float>(host.drawable_size.x) / window_size.x;
-            scale.y = static_cast<float>(host.drawable_size.x) / window_size.x;
+            scale.y = static_cast<float>(host.drawable_size.y) / window_size.y;
         }
 
         const SceFVector2 touch_pos_drawable = {
