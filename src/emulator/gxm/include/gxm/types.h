@@ -264,9 +264,9 @@ public:
     std::uint16_t temp_reg_count2; //not sure // - verify this
     std::uint16_t unk3A; //some item count?
 
-    std::uint32_t unk3C;
+    std::uint32_t code_instr_count;
+    std::uint32_t code_offset;
 
-    std::uint32_t maybe_asm_offset;
     std::uint32_t unk44;
 
     std::uint32_t unk_offset_48;
@@ -287,14 +287,17 @@ public:
     std::uint32_t unk_78;
     std::uint32_t maybe_parameters_offset2; //not sure
 
-    SceGxmProgramType get_type() const {
-        return static_cast<SceGxmProgramType>(type & 1);
+    emu::SceGxmProgramType get_type() const {
+        return static_cast<emu::SceGxmProgramType>(type & 1);
     }
     bool is_vertex() const {
         return get_type() == emu::SceGxmProgramType::Vertex;
     }
     bool is_fragment() const {
         return get_type() == emu::SceGxmProgramType::Fragment;
+    }
+    uint64_t *get_code_start_ptr() const {
+        return (uint64_t *)((uint8_t *)&code_offset + code_offset);
     }
 };
 
