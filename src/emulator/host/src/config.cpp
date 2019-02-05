@@ -76,10 +76,10 @@ void config_file_emit_optional_single(YAML::Emitter &emitter, const char *name, 
 }
 
 template <typename T>
-void config_file_emit_vector(YAML::Emitter &emitter, const char *name, std::vector<T> &values)  {
+void config_file_emit_vector(YAML::Emitter &emitter, const char *name, std::vector<T> &values) {
     emitter << YAML::Key << name << YAML::BeginSeq;
 
-    for (const T &value: values) {
+    for (const T &value : values) {
         emitter << value;
     }
 
@@ -95,6 +95,7 @@ ExitCode serialize(Config &cfg) {
     config_file_emit_single(emitter, "log-active-shaders", cfg.log_active_shaders);
     config_file_emit_single(emitter, "log-uniforms", cfg.log_uniforms);
     config_file_emit_single(emitter, "pstv-mode", cfg.pstv_mode);
+    config_file_emit_single(emitter, "duplicate-log", cfg.duplicate_log);
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_optional_single(emitter, "log-level", cfg.log_level);
     config_file_emit_optional_single(emitter, "pref-path", cfg.pref_path);
@@ -111,7 +112,7 @@ ExitCode serialize(Config &cfg) {
 }
 
 ExitCode deserialize(Config &cfg) {
-    YAML::Node config_node {};
+    YAML::Node config_node{};
 
     try {
         config_node = YAML::LoadFile("config.yml");
@@ -125,7 +126,8 @@ ExitCode deserialize(Config &cfg) {
     get_yaml_value(config_node, "log-active-shaders", &cfg.log_active_shaders, false);
     get_yaml_value(config_node, "log-uniforms", &cfg.log_uniforms, false);
     get_yaml_value(config_node, "pstv-mode", &cfg.pstv_mode, false);
-    
+    get_yaml_value(config_node, "duplicate-log", &cfg.duplicate_log, false);
+
     get_yaml_value_optional(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value_optional(config_node, "pref-path", &cfg.pref_path);
 
@@ -133,7 +135,7 @@ ExitCode deserialize(Config &cfg) {
     try {
         YAML::Node lle_modules_node = config_node["lle-modules"];
 
-        for (auto lle_module_node: lle_modules_node) {
+        for (auto lle_module_node : lle_modules_node) {
             cfg.lle_modules.push_back(lle_module_node.as<std::string>());
         }
     } catch (YAML::Exception &exception) {
@@ -166,7 +168,8 @@ ExitCode init(Config &cfg, int argc, char **argv) {
             ("log-imports,I", po::bool_switch(&cfg.log_imports), "Log Imports")
             ("log-exports,E", po::bool_switch(&cfg.log_exports), "Log Exports")
             ("log-active-shaders,S", po::bool_switch(&cfg.log_active_shaders), "Log Active Shaders")
-            ("log-uniforms,U", po::bool_switch(&cfg.log_uniforms), "Log Uniforms");
+            ("log-uniforms,U", po::bool_switch(&cfg.log_uniforms), "Log Uniforms")
+            ("duplicate-log,D", po::bool_switch(&cfg.duplicate_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title");
         // clang-format on
 
         // Positional args

@@ -213,6 +213,13 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     find_data(host.game_title, host.sfo_handle, "TITLE");
     std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
     find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
+
+    if (host.cfg.duplicate_log) {
+        if (!fs::exists(host.base_path + "/logs"))
+            fs::create_directory(std::string(host.base_path) + "/logs");
+        logging::add_sink(host.io.title_id, host.game_title);
+    }
+
     std::string category;
     find_data(category, host.sfo_handle, "CATEGORY");
 
