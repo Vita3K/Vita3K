@@ -79,6 +79,38 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 		*/
 		INST(&V::vpck, "VPCK ()",            "01000pppknoy-ejt-rrrsssdddwwww--gg-uuuuu--vvcmm-bbffffffh--kkkkq"),
 
+        /*
+           * a = dest_bank
+           * b = dest_use_extended_bank
+           * c = end
+           * d = gpi0_abs
+           * e = gpi0_swizz_extended
+           * f = gpi1_abs
+           * g = gpi1_neg
+           * h = gpi1_swizz_extend
+           * i = increment_mode
+           * j = no_sched
+           * k = opcode2
+           * l = predicate
+           * m = repeat_count
+           * n = skipinv
+           * o = src0_abs
+           * p = src0_extended_bank
+           * q = src0_neg
+           * r = write_mask
+           * s = dest_n
+           * t = gpi0_n
+           * u = gpi0_neg
+           * v = gpi0_swizz
+           * w = gpi1_n
+           * x = gpi1_swizz
+           * y = src0_bank
+           * z = src0_n
+           * A = src0_swizz
+           * B = src0_swizz_extended
+        */
+        INST(&V::vmad, "VMAD ()",     "00011lllnh1kbcpiidmmjrrrrqogfeaayyttssssssvvvvxxxxwwuBAAAAzzzzzz"),
+
         // Special
         // s = special, c = category
 		INST(&V::special_phas, "PHAS ()",    "11111----100----------------------------------------------------"),

@@ -10,6 +10,7 @@ namespace usse {
 //
 
 USSE::Swizzle4 decode_swizzle4(uint32_t encoded_swizzle);
+USSE::Swizzle4 decode_vec34_swizzle(USSE::Imm4 swizz, const bool swizz_extended, const int type);
 
 // Register/Operand decoding
 

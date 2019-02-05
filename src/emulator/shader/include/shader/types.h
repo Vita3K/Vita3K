@@ -68,7 +68,15 @@ using Swizzle4 = Swizzle<4>;
 #define SWIZZLE_CHANNEL_4(ch1, ch2, ch3, ch4) \
     { SwizzleChannel::_##ch1, SwizzleChannel::_##ch2, SwizzleChannel::_##ch3, SwizzleChannel::_##ch4 }
 
-#define SWIZZLE_CHANNEL_4_UNDEFINED SWIZZLE_CHANNEL_4(UNDEFINED, UNDEFINED, UNDEFINED, UNDEFINED);
+#define SWIZZLE_CHANNEL_4_UNDEFINED SWIZZLE_CHANNEL_4(UNDEFINED, UNDEFINED, UNDEFINED, UNDEFINED)
+#define SWIZZLE_CHANNEL_3_UNDEFINED SWIZZLE_CHANNEL_3(UNDEFINED, UNDEFINED, UNDEFINED)
+
+#define SWIZZLE_CHANNEL_4_DEFAULT SWIZZLE_CHANNEL_4(X, Y, Z, W)
+#define SWIZZLE_CHANNEL_3_DEFAULT SWIZZLE_CHANNEL_3(X, Y, Z)
+
+static Swizzle4 to_swizzle4(Swizzle3 sw) {
+    return Swizzle4 { sw[0], sw[1], sw[2], SwizzleChannel::_X };
+}
 
 enum class RepeatCount : uint8_t {
     REPEAT_0,

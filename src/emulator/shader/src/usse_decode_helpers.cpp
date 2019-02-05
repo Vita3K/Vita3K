@@ -119,6 +119,132 @@ Swizzle4 decode_swizzle4(uint32_t encoded_swizzle) {
     };
 }
 
+Swizzle4 decode_vec34_swizzle(Imm4 swizz, const bool swizz_extended, const int type) {
+    static Swizzle4 swizz_v4_std[] = {
+        SWIZZLE_CHANNEL_4(X, X, X, X),
+        SWIZZLE_CHANNEL_4(Y, Y, Y, Y),
+        SWIZZLE_CHANNEL_4(Z, Z, Z, Z),
+        SWIZZLE_CHANNEL_4(W, W, W, W),
+        SWIZZLE_CHANNEL_4(X, Y, Z, W),
+        SWIZZLE_CHANNEL_4(Y, Z, W, W),
+        SWIZZLE_CHANNEL_4(X, Y, Z, Z),
+        SWIZZLE_CHANNEL_4(X, X, Y, Z),
+        SWIZZLE_CHANNEL_4(X, Y, X, Y),
+        SWIZZLE_CHANNEL_4(X, Y, W, Z),
+        SWIZZLE_CHANNEL_4(Z, X, Y, W),
+        SWIZZLE_CHANNEL_4(Z, W, Z, W),
+        SWIZZLE_CHANNEL_4(Y, Z, X, Z),
+        SWIZZLE_CHANNEL_4(X, X, Y, Y),
+        SWIZZLE_CHANNEL_4(X, Z, W, W),
+        SWIZZLE_CHANNEL_4(X, Y, Z, 1)
+    };
+
+    static Swizzle4 swizz_v4_ext[] = {
+        SWIZZLE_CHANNEL_4(Y, Z, X, W),
+        SWIZZLE_CHANNEL_4(Z, W, X, Y),
+        SWIZZLE_CHANNEL_4(X, Z, W, Y),
+        SWIZZLE_CHANNEL_4(Y, Y, W, W),
+        SWIZZLE_CHANNEL_4(W, Y, Z, W),
+        SWIZZLE_CHANNEL_4(W, Z, W, Z),
+        SWIZZLE_CHANNEL_4(X, Y, Z, X),
+        SWIZZLE_CHANNEL_4(Z, Z, W, W),
+        SWIZZLE_CHANNEL_4(X, W, Z, X),
+        SWIZZLE_CHANNEL_4(Y, Y, Y, X),
+        SWIZZLE_CHANNEL_4(Y, Y, Y, Z),
+        SWIZZLE_CHANNEL_4(X, Z, Y, W),
+        SWIZZLE_CHANNEL_4(X, X, X, Y),
+        SWIZZLE_CHANNEL_4(Z, Y, X, W),
+        SWIZZLE_CHANNEL_4(Y, Y, Z, Z),
+        SWIZZLE_CHANNEL_4(Z, Z, Z, Y)
+    };
+
+    static Swizzle3 swizz_v3_std[] = {
+        SWIZZLE_CHANNEL_3(X, X, X),
+        SWIZZLE_CHANNEL_3(Y, Y, Y),
+        SWIZZLE_CHANNEL_3(Z, Z, Z),
+        SWIZZLE_CHANNEL_3(W, W, W),
+        SWIZZLE_CHANNEL_3(X, Y, Z),
+        SWIZZLE_CHANNEL_3(Y, Z, W),
+        SWIZZLE_CHANNEL_3(X, X, Y),
+        SWIZZLE_CHANNEL_3(X, Y, X),
+
+        SWIZZLE_CHANNEL_3(Y, Y, X),
+        SWIZZLE_CHANNEL_3(Y, Y, Z),
+        SWIZZLE_CHANNEL_3(Z, X, Y),
+        SWIZZLE_CHANNEL_3(X, Z, Y),
+        SWIZZLE_CHANNEL_3(Y, Z, X),
+        SWIZZLE_CHANNEL_3(Z, Y, X),
+        SWIZZLE_CHANNEL_3(Z, Z, Y),
+        SWIZZLE_CHANNEL_3(X, Y, 1)
+    };
+
+    static Swizzle3 swizz_v3_ext[] = {
+        SWIZZLE_CHANNEL_3(X, Y, Y),
+        SWIZZLE_CHANNEL_3(Y, X, Y),
+        SWIZZLE_CHANNEL_3(X, X, Z),
+        SWIZZLE_CHANNEL_3(Y, X, X),
+        SWIZZLE_CHANNEL_3(X, Y, 0),
+        SWIZZLE_CHANNEL_3(X, 1, 0),
+        SWIZZLE_CHANNEL_3(0, 0, 0),
+        SWIZZLE_CHANNEL_3(1, 1, 1),
+        SWIZZLE_CHANNEL_3(H, H, H),
+        SWIZZLE_CHANNEL_3(2, 2, 2),
+        SWIZZLE_CHANNEL_3(X, 0, 0),
+        SWIZZLE_CHANNEL_3_UNDEFINED,
+        SWIZZLE_CHANNEL_3_UNDEFINED,
+        SWIZZLE_CHANNEL_3_UNDEFINED,
+        SWIZZLE_CHANNEL_3_UNDEFINED
+    };
+
+    static Swizzle4 swizz_scalar_std[] = {
+        SWIZZLE_CHANNEL_4(X, X, X, X),
+        SWIZZLE_CHANNEL_4(Y, Y, Y, Y),
+        SWIZZLE_CHANNEL_4(Z, Z, Z, Z),
+        SWIZZLE_CHANNEL_4(W, W, W, W),
+        SWIZZLE_CHANNEL_4(0, 0, 0, 0),
+        SWIZZLE_CHANNEL_4(1, 1, 1, 1),
+        SWIZZLE_CHANNEL_4(2, 2, 2, 2),
+        SWIZZLE_CHANNEL_4(H, H, H, H),
+        SWIZZLE_CHANNEL_4_UNDEFINED,
+        SWIZZLE_CHANNEL_4_UNDEFINED,
+        SWIZZLE_CHANNEL_4_UNDEFINED,
+        SWIZZLE_CHANNEL_4_UNDEFINED,
+        SWIZZLE_CHANNEL_4_UNDEFINED,
+        SWIZZLE_CHANNEL_4_UNDEFINED,
+        SWIZZLE_CHANNEL_4_UNDEFINED,
+        SWIZZLE_CHANNEL_4_UNDEFINED,
+    };
+
+    if (type == 0) {
+        if (swizz_extended) {
+            return SWIZZLE_CHANNEL_4_UNDEFINED;
+        } else {
+            return swizz_scalar_std[swizz];
+        }
+    }
+
+    // vec3
+    if (type == 1) {
+        if (swizz_extended) {
+            return to_swizzle4(swizz_v3_ext[swizz]);
+        } else {
+            return to_swizzle4(swizz_v3_std[swizz]);
+        }
+    }
+
+    // vec4
+    if (type == 2) {
+        if (swizz_extended) {
+            return swizz_v4_ext[swizz];
+        } else {
+            return swizz_v4_std[swizz];
+        }
+    }
+
+    // this is unreachable
+    return SWIZZLE_CHANNEL_4_UNDEFINED;
+}
+
 // Register/Operand decoding
 
 static void finalize_register(Operand &reg, bool is_double_regs) {
@@ -129,6 +255,7 @@ Operand decode_dest(Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_r
     Operand dest{};
     dest.num = dest_n;
     dest.bank = decode_dest_bank(dest_bank, bank_ext);
+    dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
     if (is_double_regs)
         double_reg(dest.num, dest.bank);

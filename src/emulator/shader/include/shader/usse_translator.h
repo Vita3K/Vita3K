@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License along
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 #pragma once
 
 #include <shader/types.h>
@@ -42,14 +43,123 @@ class USSETranslatorVisitor final {
 public:
     using instruction_return_type = bool;
 
+    spv::Id spv_f32;
+    spv::Id spv_vf32s[4];
+
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, emu::SceGxmProgramType program_type)
         : m_b(_b)
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
-        , m_program_type(program_type) {}
+        , m_program_type(program_type) {
+        // Build common type here, so builder won't have to look it up later
+        spv_f32 = m_b.makeFloatType(32);
+        for (std::uint8_t i = 0 ; i < 4; i++) {
+            spv_vf32s[i] = m_b.makeVectorType(spv_f32, i + 1);
+        }
+    }
 
 private:
+    #define BEGIN_REPEAT(repeat_count, roj)          \
+        const auto repeat_count_num = (uint8_t)repeat_count + 1;    \
+        const auto repeat_offset_jump = roj;                        \
+        for (auto repeat_offset = 0;                                \
+            repeat_offset < repeat_count_num * repeat_offset_jump;  \
+            repeat_offset += repeat_offset_jump) {                  
+                
+    #define END_REPEAT() }
+    
+    /*
+     * \brief Given an operand, load it and returns a SPIR-V vec4
+     * 
+     * \returns A vec4 copy of given operand
+    */
+    spv::Id load(Operand &op, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */= false) {
+        // TODO: Array (OpAccessChain)
+        const SpirvVarRegBank &bank = get_reg_bank(op.bank);
+
+        // Composite a new vector
+        SpirvReg reg1;
+        std::uint32_t out_comp_offset;
+
+        bool result = bank.find_reg_at(op.num + offset, reg1, out_comp_offset);
+        if (!result) {
+            LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
+            return spv::NoResult;
+        }
+
+        if ((op.bank != USSE::RegisterBank::PRIMATTR && 
+            op.bank != USSE::RegisterBank::SECATTR && 
+            op.bank != USSE::RegisterBank::OUTPUT) || 
+            out_comp_offset == 0) {
+            return m_b.createLoad(reg1.var_id);
+        }
+
+        // Get the next reg, so we can do a bridge
+        SpirvReg reg2;
+        std::uint32_t temp = 0;
+        result = bank.find_reg_at(op.num + offset + reg1.size, reg2, temp);
+
+        uint32_t maximum_border = 20;
+
+        // There is no more register to bridge to. For making it valid, just
+        // throws in a valid register and limit swizzle offset to 3
+        //
+        // I haven't think of any edge case, but this should be looked when there is 
+        // any problems with bridging
+        if (!result) {
+            reg2 = reg1;
+            maximum_border = 3;
+        }
+
+        // Evaluate the composition
+        uint32_t comp[4];
+        for (int i = 0; i < 4; i++) {
+            comp[i] = out_comp_offset + static_cast<std::uint32_t>(op.swizzle[i]);
+        }
+
+        return m_b.createOp(spv::OpVectorShuffle, spv_vf32s[3],
+            { reg1.var_id, reg2.var_id, std::min(comp[0], maximum_border), 
+                std::min(comp[1], maximum_border), std::min(comp[2], maximum_border), std::min(comp[3], maximum_border) });
+    }
+
+    void store(Operand &dest, spv::Id source, std::uint8_t write_mask = 0xFF, std::uint8_t off = 0) {
+        const SpirvVarRegBank &bank = get_reg_bank(dest.bank);
+
+        // Composite a new vector
+        SpirvReg dest_reg;
+        std::uint32_t out_comp_offset;
+
+        bool result = bank.find_reg_at(dest.num + off, dest_reg, out_comp_offset);
+        if (!result) {
+            LOG_ERROR("Can't find dest register {}", disasm::operand_to_str(dest, 0));
+            return;
+        }
+
+        std::vector<spv::Id> ops;
+        ops.push_back(source);
+        ops.push_back(dest_reg.var_id);
+
+        int bitwrite_count = 0;
+        int total_comp = m_b.getNumTypeComponents(dest_reg.type_id);
+
+        // Total comp = 2, limit mask scan to only x, y
+        // Total comp = 3, limit mask scan to only x, y, z
+        // So on..
+        for (std::uint8_t i = 0; i < total_comp; i++) {
+            if (write_mask & (1 << ((off + i) % 4))) {
+                ops.push_back((i + out_comp_offset % 4) % 4);
+                bitwrite_count++;
+            } else {
+                // Use original
+                ops.push_back(4 + i);
+            }
+        }
+
+        auto source_shuffle =  m_b.createOp(spv::OpVectorShuffle, dest_reg.type_id, ops);
+        m_b.createStore(source_shuffle, dest_reg.var_id);
+    }
+
     //
     // Translation helpers
     //
@@ -192,27 +302,8 @@ public:
         inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, is_double_regs);
         inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, is_double_regs);
 
-        static const Swizzle4 tb_decode_src1_swizzle[] = {
-            SWIZZLE_CHANNEL_4(X, X, X, X),
-            SWIZZLE_CHANNEL_4(Y, Y, Y, Y),
-            SWIZZLE_CHANNEL_4(Z, Z, Z, Z),
-            SWIZZLE_CHANNEL_4(W, W, W, W),
-            SWIZZLE_CHANNEL_4(X, Y, Z, W),
-            SWIZZLE_CHANNEL_4(Y, Z, W, W),
-            SWIZZLE_CHANNEL_4(X, Y, Z, Z),
-            SWIZZLE_CHANNEL_4(X, X, Y, Z),
-            SWIZZLE_CHANNEL_4(X, Y, X, Y),
-            SWIZZLE_CHANNEL_4(X, Y, W, Z),
-            SWIZZLE_CHANNEL_4(Z, X, Y, W),
-            SWIZZLE_CHANNEL_4(Z, W, Z, W),
-            SWIZZLE_CHANNEL_4(Y, Z, X, Z),
-            SWIZZLE_CHANNEL_4(X, X, Y, Y),
-            SWIZZLE_CHANNEL_4(X, Z, W, W),
-            SWIZZLE_CHANNEL_4(X, Y, Z, 1),
-        };
-
-        // TODO(?): Do this in decode_*
-        inst.opr.src1.swizzle = tb_decode_src1_swizzle[src_swiz];
+        // Velocity uses a vec4 table, non-extended, so i assumes type=vec4, extended=false
+        inst.opr.src1.swizzle = decode_vec34_swizzle(src_swiz, false, 2);
 
         // TODO: adjust dest mask if needed
         if (move_data_type != MoveDataType::F32) {
@@ -239,57 +330,10 @@ public:
 
         m_b.setLine(usse::instr_idx);
 
-        auto src_swz = inst.opr.src1.swizzle;
-
-        const SpirvVarRegBank &dest_regs = get_reg_bank(inst.opr.dest.bank);
-        const SpirvVarRegBank &src_regs = get_reg_bank(inst.opr.src1.bank);
-
-        // TODO: There can be more than one source regs
-
-        const auto spv_float = m_b.makeFloatType(32);
-        const auto spv_vec4 = m_b.makeVectorType(spv_float, 4);
-
-        const auto repeat_count_num = (uint8_t)repeat_count + 1;
-        const auto repeat_offset_jump = 2; // use dest_mask # of bits?
-
-        for (auto repeat_offset = 0;
-             repeat_offset < repeat_count_num * repeat_offset_jump;
-             repeat_offset += repeat_offset_jump) {
-            SpirvReg src_reg;
-            SpirvReg dest_reg;
-            uint32_t src_comp_offset;
-            uint32_t dest_comp_offset;
-
-            if (!src_regs.find_reg_at(inst.opr.src1.num + repeat_offset, src_reg, src_comp_offset)) {
-                LOG_WARN("Register with num {} (src1) not found.", log_hex(inst.opr.src1.num));
-                return false;
-            }
-            if (!dest_regs.find_reg_at(inst.opr.dest.num + repeat_offset, dest_reg, dest_comp_offset)) {
-                LOG_WARN("Register with num {} (dest) not found.", log_hex(inst.opr.dest.num));
-                return false;
-            }
-
-            const auto src_var_id = src_reg.var_id;
-            const auto dest_var_id = dest_reg.var_id;
-
-            uint32_t shuffle_components[4];
-            for (auto c = 0; c < 4; ++c) {
-                auto cycling_dest_mask_offset = (c + (uint8_t)repeat_offset) % 4;
-
-                if (dest_mask.val & (1 << cycling_dest_mask_offset)) {
-                    // use modified, source component
-                    shuffle_components[c] = (uint32_t)src_swz[c];
-                } else {
-                    // use original, dest component
-                    shuffle_components[c] = 4 + c;
-                }
-            }
-
-            auto shuffle = m_b.createOp(spv::OpVectorShuffle, spv_vec4,
-                { src_var_id, dest_var_id, shuffle_components[0], shuffle_components[1], shuffle_components[2], shuffle_components[3] });
-
-            m_b.createStore(shuffle, dest_var_id);
-        }
+        BEGIN_REPEAT(repeat_count, 2)
+            spv::Id source = load(inst.opr.src1, repeat_offset);
+            store(inst.opr.dest, source, dest_mask.val, repeat_offset);
+        END_REPEAT()
 
         return true;
     }
@@ -298,6 +342,64 @@ public:
         Instruction inst{};
 
         LOG_DISASM("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), "VPCK");
+        return true;
+    }
+
+    bool vmad(ExtPredicate predicate, bool skipinv, Imm1 gpi1_swizz_extended, Imm1 opcode2, Imm1 dest_use_extended_bank, Imm1 end, Imm1 src0_extended_bank, Imm2 increment_mode, Imm1 gpi0_abs, RepeatCount repeat_count, bool no_sched, Imm4 write_mask, Imm1 src0_neg, Imm1 src0_abs, Imm1 gpi1_neg, Imm1 gpi1_abs, Imm1 gpi0_swizz_extended, Imm2 dest_bank, Imm2 src0_bank, Imm2 gpi0_n, Imm6 dest_n, Imm4 gpi0_swizz, Imm4 gpi1_swizz, Imm2 gpi1_n, Imm1 gpi0_neg, Imm1 src0_swizz_extended, Imm4 src0_swizz, Imm6 src0_n) {
+        std::string disasm_str = fmt::format("{:016x}: {}{}",  m_instr, disasm::e_predicate_str(predicate), "VMAD");
+        
+        Instruction inst{};
+
+        // Is this VMAD3 or VMAD4, op2 = 0 => vec3
+        int type = 2;
+
+        if (opcode2 == 0) {
+            type = 1;
+        }
+
+        // Double regs always true for src0, dest
+        inst.opr.src0 = decode_src12(src0_n, src0_bank, src0_extended_bank, true);
+        inst.opr.dest = decode_dest(dest_n, dest_bank, dest_use_extended_bank, true); 
+        
+        // GPI0 and GPI1, setup!
+        inst.opr.src1.bank = USSE::RegisterBank::FPINTERNAL;
+        inst.opr.src1.num = gpi0_n;
+
+        inst.opr.src2.bank = USSE::RegisterBank::FPINTERNAL;
+        inst.opr.src2.num = gpi1_n;
+
+        // Swizzleee
+        if (type == 1) {
+            inst.opr.dest.swizzle[3] = USSE::SwizzleChannel::_X;
+        }
+
+        inst.opr.src0.swizzle = decode_vec34_swizzle(src0_swizz, src0_swizz_extended, type);
+        inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swizz, gpi0_swizz_extended, type);
+        inst.opr.src2.swizzle = decode_vec34_swizzle(gpi1_swizz, gpi1_swizz_extended, type);
+
+        disasm_str += fmt::format(" {} {} {} {}", disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask), disasm::operand_to_str(inst.opr.src1, write_mask), 
+            disasm::operand_to_str(inst.opr.src2, write_mask));
+
+        LOG_DISASM("{}", disasm_str);
+        m_b.setLine(usse::instr_idx);
+
+        // Write mask is a 4-bit immidiate
+        // If a bit is one, a swizzle is active
+        BEGIN_REPEAT(repeat_count, 2)
+            spv::Id vsrc0 = load(inst.opr.src0, repeat_offset, src0_abs, src0_neg);
+            spv::Id vsrc1 = load(inst.opr.src1, repeat_offset, gpi0_abs, gpi0_neg);
+            spv::Id vsrc2 = load(inst.opr.src2, repeat_offset, gpi1_abs, gpi1_neg);
+
+            if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+                return false;
+            }
+
+            auto mul_result = m_b.createBinOp(spv::OpFMul, spv_vf32s[3], vsrc0, vsrc1);
+            auto add_result = m_b.createBinOp(spv::OpFAdd, spv_vf32s[3], mul_result, vsrc2);
+
+            store(inst.opr.dest, add_result, write_mask, repeat_offset);
+        END_REPEAT()
+
         return true;
     }
 
