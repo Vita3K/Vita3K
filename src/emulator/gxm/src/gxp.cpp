@@ -85,7 +85,9 @@ SceGxmParameterType parameter_type(const SceGxmProgramParameter &parameter) {
 GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parameter) {
     if (parameter.component_count > 1) {
         if (parameter.array_size > 1) {
-            return GenericParameterType::Matrix;
+            // matrix emission disabled
+            // return GenericParameterType::Matrix;
+            return GenericParameterType::Vector;
         } else {
             return GenericParameterType::Vector;
         }

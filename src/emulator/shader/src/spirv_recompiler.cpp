@@ -103,6 +103,9 @@ using FragmentProgramInputPropertiesMap = std::map<SceGxmFragmentProgramInputs, 
 // ******************************
 
 static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, const SceGxmProgramParameter &parameter, const uint32_t explicit_array_size = 0) {
+    // disabled
+    return param_id;
+
     const auto array_size = explicit_array_size == 0 ? parameter.array_size : explicit_array_size;
     if (array_size > 1) {
         const auto array_size_id = b.makeUintConstant(array_size);
@@ -148,6 +151,7 @@ static spv::Id get_type_vector(spv::Builder &b, const SceGxmProgramParameter &pa
     return param_id;
 }
 
+// disabled
 static spv::Id get_type_matrix(spv::Builder &b, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(b, parameter);
 
@@ -175,23 +179,16 @@ static spv::Id get_param_type(spv::Builder &b, const SceGxmProgramParameter &par
     std::string name = gxp::parameter_name_raw(parameter);
     gxp::GenericParameterType param_type = gxp::parameter_generic_type(parameter);
 
-    spv::Id param_id;
-
     switch (param_type) {
     case gxp::GenericParameterType::Scalar:
-        param_id = get_type_scalar(b, parameter);
-        break;
+        return get_type_scalar(b, parameter);
     case gxp::GenericParameterType::Vector:
-        param_id = get_type_vector(b, parameter);
-        break;
-    case gxp::GenericParameterType::Matrix:
-        param_id = get_type_matrix(b, parameter);
-        break;
+        return get_type_vector(b, parameter);
+    case gxp::GenericParameterType::Matrix: // disabled
+        return get_type_matrix(b, parameter);
     default:
-        param_id = get_type_fallback(b);
+        return get_type_fallback(b);
     }
-
-    return param_id;
 }
 
 static void sanitize_variable_name(std::string &var_name) {
@@ -415,7 +412,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             if (struct_decl_ended)
                 create_struct(b, spv_params, param_struct, program_type);
 
-            spv::Id param = get_param_type(b, parameter);
+            spv::Id param_type = get_param_type(b, parameter);
 
             const bool is_uniform = param_reg_type == USSE::RegisterBank::SECATTR;
             const bool is_vertex_output = param_reg_type == USSE::RegisterBank::OUTPUT && program_type == emu::SceGxmProgramType::Vertex;
@@ -434,7 +431,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 const auto param_field_name = gxp::parameter_name(parameter);
 
                 param_struct.name = struct_name;
-                param_struct.field_ids.push_back(param);
+                param_struct.field_ids.push_back(param_type);
                 param_struct.field_names.push_back(param_field_name);
                 param_struct.reg_type = param_reg_type;
                 param_struct.is_interaface_block = can_be_interface_block;
@@ -458,7 +455,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                         std::replace(var_name.begin(), var_name.end(), '.', '_');
                 }
 
-                create_variable(b, spv_params, var_name, param_reg_type, parameter.component_count, param);
+                for (auto p = 0; p < parameter.array_size; ++p) {
+                    std::string var_elem_name = fmt::format("{}_{}", var_name, p);
+                    create_variable(b, spv_params, var_elem_name, param_reg_type, parameter.component_count, param_type);
+                }
             }
             break;
         }
