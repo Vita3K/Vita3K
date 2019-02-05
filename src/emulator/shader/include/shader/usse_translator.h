@@ -239,9 +239,9 @@ public:
 
         // Decode operands
 
-        inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, true);
-        inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true);
-        inst.opr.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, true);
+        inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, true, 7);
+        inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7);
+        inst.opr.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, true, 7);
 
         const auto src1_swizzle_enc = src1_swiz_0_6 | src1_swiz_7_8 << 7 | src1_swiz_9 << 9 | src1_swiz_10_11 << 10;
         inst.opr.src1.swizzle = decode_swizzle4(src1_swizzle_enc);
@@ -298,9 +298,10 @@ public:
         const bool is_conditional = (move_type != MoveType::UNCONDITIONAL);
 
         // Decode operands
+        uint8_t reg_bits = is_double_regs ? 7 : 6;
 
-        inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, is_double_regs);
-        inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, is_double_regs);
+        inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, is_double_regs, reg_bits);
+        inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, is_double_regs, reg_bits);
 
         // Velocity uses a vec4 table, non-extended, so i assumes type=vec4, extended=false
         inst.opr.src1.swizzle = decode_vec34_swizzle(src_swiz, false, 2);
@@ -358,9 +359,9 @@ public:
         }
 
         // Double regs always true for src0, dest
-        inst.opr.src0 = decode_src12(src0_n, src0_bank, src0_extended_bank, true);
-        inst.opr.dest = decode_dest(dest_n, dest_bank, dest_use_extended_bank, true); 
-        
+        inst.opr.src0 = decode_src12(src0_n, src0_bank, src0_extended_bank, true, 7);
+        inst.opr.dest = decode_dest(dest_n, dest_bank, dest_use_extended_bank, true, 7);
+
         // GPI0 and GPI1, setup!
         inst.opr.src1.bank = USSE::RegisterBank::FPINTERNAL;
         inst.opr.src1.num = gpi0_n;

@@ -14,8 +14,8 @@ USSE::Swizzle4 decode_vec34_swizzle(USSE::Imm4 swizz, const bool swizz_extended,
 
 // Register/Operand decoding
 
-USSE::Operand decode_dest(USSE::Imm6 dest_n, USSE::Imm2 dest_bank, bool bank_ext, bool is_double_regs);
-USSE::Operand decode_src12(USSE::Imm6 src_n, USSE::Imm2 src_bank_sel, USSE::Imm1 src_bank_ext, bool is_double_regs);
+USSE::Operand decode_dest(USSE::Imm6 dest_n, USSE::Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits);
+USSE::Operand decode_src12(USSE::Imm6 src_n, USSE::Imm2 src_bank_sel, USSE::Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits);
 
 } // namespace usse
 } // namespace shader
