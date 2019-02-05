@@ -26,7 +26,7 @@ template <std::size_t s>
 std::string swizzle_to_str(USSE::Swizzle<s> swizz, const USSE::Imm4 write_mask) {
     std::string swizzstr;
 
-    for (std::size_t i = 0 ; i < s, write_mask & (1 << i); i++) {
+    for (std::size_t i = 0; i < s, write_mask & (1 << i); i++) {
         switch (swizz[i]) {
         case USSE::SwizzleChannel::_X: {
             swizzstr += "x";

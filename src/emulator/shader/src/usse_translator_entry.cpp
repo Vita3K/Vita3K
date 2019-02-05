@@ -54,14 +54,14 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 
 		// Vector move
 		/*
-            MISC: p = predicate, s = skipinv, y = syncstart, e = end / src0 ext bank (COND ONLY), n = nosched, r = repeat
+            MISC: p = predicate, s = skipinv, y = syncstart, e = end / src0 bank ext (COND ONLY), n = nosched, r = repeat
             TYPE: t = move type, z = move data type
             TEST: c = test bit 1, o = test bit 2
             DEST: u = dest, b = dest bank sel, x = dest bank ext, w = dest mask
             SRC:  q = src swizzle
             SRC0 (COND ONLY): d = src0, v = src0 bank sel, a = src0 comp sel
-            SRC1: i = src1, g = src1 bank sel, h = src1 ext bank
-            SRC2 (COND ONLY): j = src2, l = src2 bank sel, f = src2 ext bank
+            SRC1: i = src1, g = src1 bank sel, h = src1 bank ext
+            SRC2 (COND ONLY): j = src2, l = src2 bank sel, f = src2 bank ext
 		*/
         INST(&V::vmov, "VMOV ()",            "00111pppsolyxehfttrrnzzzcqqqqvbbggaawwwwuuuuuuddddddiiiiiijjjjjj"),
 
@@ -69,16 +69,17 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 		/*
 		    MISC: p = predicate, r = repeat, k = skipinv, y = syncstart, e = end, n = nosched, c = scale
             FMT: s = src fmt, d = dest fmt
-			DEST: u = dest, w = dest mask
-            SRC:  q = comp sel 0 bit 0 / comp0 sel bit0 (COND1 ONLY), m = comp sel 1, b = comp sel 2, v = comp sel 3
-			SRC1: f = src1 (COND2 ONLY), g = src1 bank sel, j = src1 ext bank
+			DEST: u = dest, i = dest bank, x = dest bank ext, w = dest mask
+            SRC:  q = comp sel 0 bit 0, m = comp sel 1, b = comp sel 2, v = comp sel 3 bit 0
+			SRC1: f = src1 (COND2 ONLY), g = src1 bank sel, j = src1 bank ext
 			SRC (COND1 ONLY): h = comp0 sel bit1
-            SRC2 (COND1 ONLY): k = src2 / comp sel 0 bit 1 (NOT COND1) , o = src2 bank sel, t = src2 ext bank
+            SRC2 (COND1 ONLY): k = src2 / comp sel 0 bit 1 (NOT COND1) , o = src2 bank sel, t = src2 bank ext
 			COND1: if src is f32
 			COND2: if src is f32, f16 or c10
 		*/
-		INST(&V::vpck, "VPCK ()",            "01000pppknoy-ejt-rrrsssdddwwww--gg-uuuuu--vvcmm-bbffffffh--kkkkq"),
+		INST(&V::vpck, "VPCK ()",            "01000pppknoyxejt-rrrsssdddwwwwiigg--uuuuuuuvvcmmbbffffffh--kkkkq"),
 
+		// Vector multiply-add
         /*
            * a = dest_bank
            * b = dest_use_extended_bank

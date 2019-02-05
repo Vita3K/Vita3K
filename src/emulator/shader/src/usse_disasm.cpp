@@ -75,7 +75,7 @@ std::string operand_to_str(Operand op, const Imm4 write_mask) {
     }
 
     case USSE::RegisterBank::TEMP: {
-        opstr += "t";
+        opstr += "r";
         break;
     }
 
@@ -94,7 +94,7 @@ std::string operand_to_str(Operand op, const Imm4 write_mask) {
         break;
     }
     }
-    
+
     opstr += std::to_string(op.num);
 
     if (write_mask != 0) {

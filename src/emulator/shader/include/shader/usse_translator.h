@@ -54,27 +54,26 @@ public:
         , m_program_type(program_type) {
         // Build common type here, so builder won't have to look it up later
         spv_f32 = m_b.makeFloatType(32);
-        for (std::uint8_t i = 0 ; i < 4; i++) {
+        for (std::uint8_t i = 0; i < 4; i++) {
             spv_vf32s[i] = m_b.makeVectorType(spv_f32, i + 1);
         }
     }
 
 private:
-    #define BEGIN_REPEAT(repeat_count, roj)          \
-        const auto repeat_count_num = (uint8_t)repeat_count + 1;    \
-        const auto repeat_offset_jump = roj;                        \
-        for (auto repeat_offset = 0;                                \
-            repeat_offset < repeat_count_num * repeat_offset_jump;  \
-            repeat_offset += repeat_offset_jump) {                  
-                
-    #define END_REPEAT() }
-    
+#define BEGIN_REPEAT(repeat_count, roj)                         \
+    const auto repeat_count_num = (uint8_t)repeat_count + 1;    \
+    const auto repeat_offset_jump = roj;                        \
+    for (auto repeat_offset = 0;                                \
+         repeat_offset < repeat_count_num * repeat_offset_jump; \
+         repeat_offset += repeat_offset_jump) {
+#define END_REPEAT() }
+
     /*
      * \brief Given an operand, load it and returns a SPIR-V vec4
      * 
      * \returns A vec4 copy of given operand
     */
-    spv::Id load(Operand &op, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */= false) {
+    spv::Id load(Operand &op, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false) {
         // TODO: Array (OpAccessChain)
         const SpirvVarRegBank &bank = get_reg_bank(op.bank);
 
@@ -88,10 +87,8 @@ private:
             return spv::NoResult;
         }
 
-        if ((op.bank != USSE::RegisterBank::PRIMATTR && 
-            op.bank != USSE::RegisterBank::SECATTR && 
-            op.bank != USSE::RegisterBank::OUTPUT) || 
-            out_comp_offset == 0) {
+        if ((op.bank != USSE::RegisterBank::PRIMATTR && op.bank != USSE::RegisterBank::SECATTR && op.bank != USSE::RegisterBank::OUTPUT)
+            || out_comp_offset == 0) {
             return m_b.createLoad(reg1.var_id);
         }
 
@@ -105,7 +102,7 @@ private:
         // There is no more register to bridge to. For making it valid, just
         // throws in a valid register and limit swizzle offset to 3
         //
-        // I haven't think of any edge case, but this should be looked when there is 
+        // I haven't think of any edge case, but this should be looked when there is
         // any problems with bridging
         if (!result) {
             reg2 = reg1;
@@ -119,7 +116,7 @@ private:
         }
 
         return m_b.createOp(spv::OpVectorShuffle, spv_vf32s[3],
-            { reg1.var_id, reg2.var_id, std::min(comp[0], maximum_border), 
+            { reg1.var_id, reg2.var_id, std::min(comp[0], maximum_border),
                 std::min(comp[1], maximum_border), std::min(comp[2], maximum_border), std::min(comp[3], maximum_border) });
     }
 
@@ -156,7 +153,7 @@ private:
             }
         }
 
-        auto source_shuffle =  m_b.createOp(spv::OpVectorShuffle, dest_reg.type_id, ops);
+        auto source_shuffle = m_b.createOp(spv::OpVectorShuffle, dest_reg.type_id, ops);
         m_b.createStore(source_shuffle, dest_reg.var_id);
     }
 
@@ -276,7 +273,7 @@ public:
         return true;
     }
 
-    bool vmov(ExtPredicate pred, bool skipinv, bool test_2, Imm1 src2_bank_sel, bool syncstart, Imm1 dest_bank_ext, Imm1 end_or_src0_ext_bank, Imm1 src1_bank_ext, Imm1 src2_bank_ext, MoveType move_type, RepeatCount repeat_count, bool nosched, MoveDataType move_data_type, bool test_1, Imm4 src_swiz, Imm1 src0_bank_sel, Imm2 dest_bank_sel, Imm2 src1_bank_sel, Imm2 src0_comp_sel, DestinationMask dest_mask, Imm6 dest_n, Imm6 src0_n, Imm6 src1_n, Imm6 src2_n) {
+    bool vmov(ExtPredicate pred, bool skipinv, bool test_2, Imm1 src2_bank_sel, bool syncstart, Imm1 dest_bank_ext, Imm1 end_or_src0_bank_ext, Imm1 src1_bank_ext, Imm1 src2_bank_ext, MoveType move_type, RepeatCount repeat_count, bool nosched, MoveDataType move_data_type, bool test_1, Imm4 src_swiz, Imm1 src0_bank_sel, Imm2 dest_bank_sel, Imm2 src1_bank_sel, Imm2 src0_comp_sel, DestinationMask dest_mask, Imm6 dest_n, Imm6 src0_n, Imm6 src1_n, Imm6 src2_n) {
         Instruction inst{};
 
         static const Opcode tb_decode_vmov[] = {
@@ -288,7 +285,7 @@ public:
 
         inst.opcode = tb_decode_vmov[(Imm3)move_type];
 
-        LOG_DISASM("{:016x}: {}{}.{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::move_data_type_str(move_data_type));
+        std::string disasm_str = fmt::format("{:016x}: {}{}.{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::move_data_type_str(move_data_type));
 
         // TODO: dest mask
         // TODO: flags
@@ -323,32 +320,70 @@ public:
         }
 
         // if (is_conditional) {
-        //     inst.operands.src0 = decode_src0(src0_n, src0_bank_sel, end_or_src0_ext_bank, is_double_regs);
+        //     inst.operands.src0 = decode_src0(src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs);
         //     inst.operands.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, is_double_regs);
         // }
+
+        disasm_str += fmt::format(" {} {}", disasm::operand_to_str(inst.opr.dest, dest_mask.val), disasm::operand_to_str(inst.opr.src1, dest_mask.val));
+        LOG_DISASM(disasm_str);
 
         // Recompile
 
         m_b.setLine(usse::instr_idx);
 
         BEGIN_REPEAT(repeat_count, 2)
-            spv::Id source = load(inst.opr.src1, repeat_offset);
-            store(inst.opr.dest, source, dest_mask.val, repeat_offset);
+        spv::Id source = load(inst.opr.src1, repeat_offset);
+        store(inst.opr.dest, source, dest_mask.val, repeat_offset);
         END_REPEAT()
 
         return true;
     }
 
-    bool vpck(ExtPredicate pred, bool skipinv, bool nosched, Imm1 src2_bank_sel, bool syncstart, Imm1 end, Imm1 src1_ext_bank, Imm2 src2_ext_bank, RepeatCount repeat_count, Imm3 src_fmt, Imm3 dest_fmt, DestinationMask dest_mask, Imm2 src1_bank_sel, Imm5 dest_n, Imm2 comp_sel_3, Imm1 scale, Imm2 comp_sel_1, Imm2 comp_sel_2, Imm5 src1_n, Imm1 comp0_sel_bit1, Imm4 src2_n, Imm1 comp_sel_0_bit0) {
+    bool vpck(ExtPredicate pred, bool skipinv, bool nosched, Imm1 src2_bank_sel, bool syncstart, Imm1 dest_bank_ext, Imm1 end, Imm1 src1_bank_ext, Imm2 src2_bank_ext, RepeatCount repeat_count, Imm3 src_fmt, Imm3 dest_fmt, DestinationMask dest_mask, Imm2 dest_bank_sel, Imm2 src1_bank_sel, Imm7 dest_n, Imm2 comp_sel_3, Imm1 scale, Imm2 comp_sel_1, Imm2 comp_sel_2, Imm5 src1_n, Imm1 comp0_sel_bit1, Imm4 src2_n, Imm1 comp_sel_0_bit0) {
         Instruction inst{};
+        const auto FMT_F32 = 6;
 
-        LOG_DISASM("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), "VPCK");
+        // TODO: Only simple mov-like f32 to f32 supported
+        if (src_fmt != FMT_F32 || src_fmt != FMT_F32)
+            return true;
+
+        inst.opcode = Opcode::VPCKF32F32;
+        std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
+
+        inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, false, 7);
+        inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7);
+
+        if (inst.opr.dest.bank == RegisterBank::SPECIAL || inst.opr.src0.bank == RegisterBank::SPECIAL || inst.opr.src1.bank == RegisterBank::SPECIAL || inst.opr.src2.bank == RegisterBank::SPECIAL) {
+            LOG_WARN("Special regs unsupported");
+            return false;
+        }
+
+        Imm2 comp_sel_0 = comp_sel_0_bit0;
+        if (src_fmt == FMT_F32)
+            comp_sel_0 |= (comp0_sel_bit1 & 1) << 1;
+        else
+            comp_sel_0 |= (src2_n & 1) << 1;
+
+        inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_CAST(comp_sel_0, comp_sel_1, comp_sel_2, comp_sel_3);
+
+        disasm_str += fmt::format(" {} {}", disasm::operand_to_str(inst.opr.dest, dest_mask.val), disasm::operand_to_str(inst.opr.src1, dest_mask.val));
+        LOG_DISASM(disasm_str);
+
+        // Recompile
+
+        m_b.setLine(usse::instr_idx);
+
+        BEGIN_REPEAT(repeat_count, 2)
+        spv::Id source = load(inst.opr.src1, repeat_offset);
+        store(inst.opr.dest, source, dest_mask.val, repeat_offset);
+        END_REPEAT()
+
         return true;
     }
 
     bool vmad(ExtPredicate predicate, bool skipinv, Imm1 gpi1_swizz_extended, Imm1 opcode2, Imm1 dest_use_extended_bank, Imm1 end, Imm1 src0_extended_bank, Imm2 increment_mode, Imm1 gpi0_abs, RepeatCount repeat_count, bool no_sched, Imm4 write_mask, Imm1 src0_neg, Imm1 src0_abs, Imm1 gpi1_neg, Imm1 gpi1_abs, Imm1 gpi0_swizz_extended, Imm2 dest_bank, Imm2 src0_bank, Imm2 gpi0_n, Imm6 dest_n, Imm4 gpi0_swizz, Imm4 gpi1_swizz, Imm2 gpi1_n, Imm1 gpi0_neg, Imm1 src0_swizz_extended, Imm4 src0_swizz, Imm6 src0_n) {
-        std::string disasm_str = fmt::format("{:016x}: {}{}",  m_instr, disasm::e_predicate_str(predicate), "VMAD");
-        
+        std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(predicate), "VMAD");
+
         Instruction inst{};
 
         // Is this VMAD3 or VMAD4, op2 = 0 => vec3
@@ -378,8 +413,7 @@ public:
         inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swizz, gpi0_swizz_extended, type);
         inst.opr.src2.swizzle = decode_vec34_swizzle(gpi1_swizz, gpi1_swizz_extended, type);
 
-        disasm_str += fmt::format(" {} {} {} {}", disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask), disasm::operand_to_str(inst.opr.src1, write_mask), 
-            disasm::operand_to_str(inst.opr.src2, write_mask));
+        disasm_str += fmt::format(" {} {} {} {}", disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask), disasm::operand_to_str(inst.opr.src1, write_mask), disasm::operand_to_str(inst.opr.src2, write_mask));
 
         LOG_DISASM("{}", disasm_str);
         m_b.setLine(usse::instr_idx);
@@ -387,18 +421,18 @@ public:
         // Write mask is a 4-bit immidiate
         // If a bit is one, a swizzle is active
         BEGIN_REPEAT(repeat_count, 2)
-            spv::Id vsrc0 = load(inst.opr.src0, repeat_offset, src0_abs, src0_neg);
-            spv::Id vsrc1 = load(inst.opr.src1, repeat_offset, gpi0_abs, gpi0_neg);
-            spv::Id vsrc2 = load(inst.opr.src2, repeat_offset, gpi1_abs, gpi1_neg);
+        spv::Id vsrc0 = load(inst.opr.src0, repeat_offset, src0_abs, src0_neg);
+        spv::Id vsrc1 = load(inst.opr.src1, repeat_offset, gpi0_abs, gpi0_neg);
+        spv::Id vsrc2 = load(inst.opr.src2, repeat_offset, gpi1_abs, gpi1_neg);
 
-            if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
-                return false;
-            }
+        if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+            return false;
+        }
 
-            auto mul_result = m_b.createBinOp(spv::OpFMul, spv_vf32s[3], vsrc0, vsrc1);
-            auto add_result = m_b.createBinOp(spv::OpFAdd, spv_vf32s[3], mul_result, vsrc2);
+        auto mul_result = m_b.createBinOp(spv::OpFMul, spv_vf32s[3], vsrc0, vsrc1);
+        auto add_result = m_b.createBinOp(spv::OpFAdd, spv_vf32s[3], mul_result, vsrc2);
 
-            store(inst.opr.dest, add_result, write_mask, repeat_offset);
+        store(inst.opr.dest, add_result, write_mask, repeat_offset);
         END_REPEAT()
 
         return true;
