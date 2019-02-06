@@ -95,8 +95,47 @@ EXPORT(int, sceTouchGetDeviceInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceTouchGetPanelInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceTouchGetPanelInfo, SceUInt32 port, SceTouchPanelInfo *pPanelInfo) {
+    switch (port) {
+        case SCE_TOUCH_PORT_FRONT:
+            // Active Area
+            pPanelInfo->minAaX = 0;
+            pPanelInfo->minAaY = 0;
+            pPanelInfo->maxAaX = 1919;
+            pPanelInfo->maxAaY = 1087;
+
+            // Display
+            pPanelInfo->minDispX = 0;
+            pPanelInfo->minDispY = 0;
+            pPanelInfo->maxDispX = 1919;
+            pPanelInfo->maxDispY = 1087;
+
+            // Force
+            pPanelInfo->minForce = 1;
+            pPanelInfo->maxForce = 128;
+
+            return 0;
+        case SCE_TOUCH_PORT_BACK:
+            // Active Area
+            pPanelInfo->minAaX = 0;
+            pPanelInfo->minAaY = 108;
+            pPanelInfo->maxAaX = 1919;
+            pPanelInfo->maxAaY = 889;
+
+            // Display
+            pPanelInfo->minDispX = 0;
+            pPanelInfo->minDispY = 0;
+            pPanelInfo->maxDispX = 1919;
+            pPanelInfo->maxDispY = 1087;
+
+            // Force
+            pPanelInfo->minForce = 1;
+            pPanelInfo->maxForce = 128;
+
+            return 0;
+        default:
+            return SCE_TOUCH_ERROR_INVALID_ARG;
+    }
 }
 
 EXPORT(int, sceTouchGetPixelDensity) {
