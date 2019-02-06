@@ -196,7 +196,7 @@ private:
             maximum_border = 3;
         }
 
-        return mix(reg1, reg2, op.swizzle, offset, maximum_border);
+        return mix(reg1, reg2, op.swizzle, offset + out_comp_offset, maximum_border);
     }
 
     void store(Operand &dest, spv::Id source, std::uint8_t write_mask = 0xFF, std::uint8_t off = 0) {
@@ -234,7 +234,7 @@ private:
         // Total comp = 3, limit mask scan to only x, y, z
         // So on..
         for (std::uint8_t i = 0; i < total_comp; i++) {
-            if (write_mask & (1 << ((off + i) % 4))) {
+            if (write_mask & (1 << ((off + out_comp_offset + i) % 4))) {
                 ops.push_back((i + out_comp_offset % 4) % 4);
                 bitwrite_count++;
             } else {
