@@ -45,6 +45,8 @@ public:
 
     spv::Id spv_f32;
     spv::Id spv_vf32s[4];
+    spv::Id spv_fconst[4];
+    spv::Id spv_v4const[4];
 
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, emu::SceGxmProgramType program_type)
@@ -54,8 +56,16 @@ public:
         , m_program_type(program_type) {
         // Build common type here, so builder won't have to look it up later
         spv_f32 = m_b.makeFloatType(32);
+
+        spv_fconst[3] = m_b.makeFpConstant(spv_f32, 0.5f);
+        spv_fconst[0] = m_b.makeFpConstant(spv_f32, 0.0f);
+        spv_fconst[1] = m_b.makeFpConstant(spv_f32, 1.0f);
+        spv_fconst[2] = m_b.makeFpConstant(spv_f32, 2.0f);
+
         for (std::uint8_t i = 0; i < 4; i++) {
             spv_vf32s[i] = m_b.makeVectorType(spv_f32, i + 1);
+            spv_v4const[i] = m_b.makeCompositeConstant(spv_vf32s[i],
+                { spv_fconst[i], spv_fconst[i], spv_fconst[i], spv_fconst[i] });
         }
     }
 
@@ -68,34 +78,111 @@ private:
          repeat_offset += repeat_offset_jump) {
 #define END_REPEAT() }
 
+    spv::Id mix(SpirvReg &reg1, SpirvReg &reg2, USSE::Swizzle4 swizz, const std::uint32_t shift_offset, const std::uint32_t max_clamp = 20) {
+        uint32_t scomp[4];
+
+        // Queue keep track of components to be modified with given constant
+        struct constant_queue_member {
+            std::uint32_t index;
+            spv::Id constant;
+        };
+
+        std::vector<constant_queue_member> constant_queue;
+
+        for (int i = 0; i < 4; i++) {
+            switch (swizz[i]) {
+            case USSE::SwizzleChannel::_X:
+            case USSE::SwizzleChannel::_Y:
+            case USSE::SwizzleChannel::_Z:
+            case USSE::SwizzleChannel::_W: {
+                scomp[i] = std::min((uint32_t)swizz[i] + shift_offset, max_clamp);
+                break;
+            }
+
+            case USSE::SwizzleChannel::_1: case USSE::SwizzleChannel::_0:
+            case USSE::SwizzleChannel::_2: case USSE::SwizzleChannel::_H: {
+                scomp[i] = (uint32_t)USSE::SwizzleChannel::_X;
+                constant_queue_member member;
+                member.index = i;
+                member.constant = spv_fconst[(uint32_t)swizz[i] - (uint32_t)USSE::SwizzleChannel::_0];
+
+                constant_queue.push_back(std::move(member));
+
+                break;
+            }
+
+            default: {
+                LOG_ERROR("Unsupport swizzle type");
+                break;
+            }
+            }
+        }
+
+        auto shuff_result = m_b.createOp(spv::OpVectorShuffle, spv_vf32s[3],
+            { reg1.var_id, reg2.var_id, scomp[0], scomp[1], scomp[2], scomp[3] });
+
+        for (std::size_t i = 0; i < constant_queue.size(); i++) {
+            shuff_result = m_b.createOp(spv::OpVectorInsertDynamic, spv_vf32s[3],
+                { shuff_result, constant_queue[i].constant,  constant_queue[i].index });
+        }
+
+        return shuff_result;
+    }
+
     /*
      * \brief Given an operand, load it and returns a SPIR-V vec4
      * 
      * \returns A vec4 copy of given operand
     */
     spv::Id load(Operand &op, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false) {
+        // Optimization: Check for constant swizzle and emit it right away
+        for (std::uint8_t i = 0 ; i < 4; i++) {
+            USSE::SwizzleChannel channel = static_cast<USSE::SwizzleChannel>(
+                static_cast<std::uint32_t>(USSE::SwizzleChannel::_0) + i);
+    
+            if (op.swizzle == USSE::Swizzle4 { channel, channel, channel, channel }) {
+                return spv_v4const[i];
+            }
+        }
+
         // TODO: Array (OpAccessChain)
         const SpirvVarRegBank &bank = get_reg_bank(op.bank);
 
         // Composite a new vector
         SpirvReg reg1;
         std::uint32_t out_comp_offset;
+        std::uint32_t reg_offset = op.num;
 
-        bool result = bank.find_reg_at(op.num + offset, reg1, out_comp_offset);
+        switch (op.bank) {
+        case USSE::RegisterBank::FPINTERNAL: {
+            // Each GPI register is 128 bits long = 16 bytes long
+            // So we need to multiply the reg index with 16 in order to get the right offset
+            reg_offset *= 16;
+            break;
+        }
+
+        default:
+            break;
+        }
+
+        bool result = bank.find_reg_at(reg_offset + offset, reg1, out_comp_offset);
         if (!result) {
             LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
             return spv::NoResult;
         }
 
-        if ((op.bank != USSE::RegisterBank::PRIMATTR && op.bank != USSE::RegisterBank::SECATTR && op.bank != USSE::RegisterBank::OUTPUT)
-            || out_comp_offset == 0) {
-            return m_b.createLoad(reg1.var_id);
+        // If the register is already aligned
+        if (out_comp_offset == 0) {
+            // If it's not swizzled up
+            if (op.swizzle == USSE::Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT) {
+                return m_b.createLoad(reg1.var_id);
+            }
         }
 
         // Get the next reg, so we can do a bridge
         SpirvReg reg2;
         std::uint32_t temp = 0;
-        result = bank.find_reg_at(op.num + offset + reg1.size, reg2, temp);
+        result = bank.find_reg_at(reg_offset + offset + reg1.size, reg2, temp);
 
         uint32_t maximum_border = 20;
 
@@ -109,15 +196,7 @@ private:
             maximum_border = 3;
         }
 
-        // Evaluate the composition
-        uint32_t comp[4];
-        for (int i = 0; i < 4; i++) {
-            comp[i] = out_comp_offset + static_cast<std::uint32_t>(op.swizzle[i]);
-        }
-
-        return m_b.createOp(spv::OpVectorShuffle, spv_vf32s[3],
-            { reg1.var_id, reg2.var_id, std::min(comp[0], maximum_border),
-                std::min(comp[1], maximum_border), std::min(comp[2], maximum_border), std::min(comp[3], maximum_border) });
+        return mix(reg1, reg2, op.swizzle, offset, maximum_border);
     }
 
     void store(Operand &dest, spv::Id source, std::uint8_t write_mask = 0xFF, std::uint8_t off = 0) {
@@ -126,8 +205,19 @@ private:
         // Composite a new vector
         SpirvReg dest_reg;
         std::uint32_t out_comp_offset;
+        std::uint32_t reg_offset = dest.num;
 
-        bool result = bank.find_reg_at(dest.num + off, dest_reg, out_comp_offset);
+        switch (dest.bank) {
+        case USSE::RegisterBank::FPINTERNAL: {
+            reg_offset *= 16;
+            break;
+        }
+
+        default:
+            break;
+        }
+
+        bool result = bank.find_reg_at(reg_offset + off, dest_reg, out_comp_offset);
         if (!result) {
             LOG_ERROR("Can't find dest register {}", disasm::operand_to_str(dest, 0));
             return;
