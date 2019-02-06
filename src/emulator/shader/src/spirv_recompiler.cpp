@@ -506,7 +506,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         auto name = fmt::format("i{}", i);
         // TODO: these are actually 128 bits long
         auto type = b.makeVectorType(b.makeFloatType(32), 4); // TODO: Figure out correct type
-        create_variable(b, spv_params, name, USSE::RegisterBank::FPINTERNAL, 4, type);
+        create_variable(b, spv_params, name, USSE::RegisterBank::FPINTERNAL, 16, type);
     }
 
     return spv_params;
