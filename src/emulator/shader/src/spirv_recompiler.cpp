@@ -456,7 +456,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 }
 
                 for (auto p = 0; p < parameter.array_size; ++p) {
-                    std::string var_elem_name = fmt::format("{}_{}", var_name, p);
+                    std::string var_elem_name;
+                    if (parameter.array_size == 1)
+                        var_elem_name = var_name;
+                    else
+                        var_elem_name = fmt::format("{}_{}", var_name, p);
                     create_variable(b, spv_params, var_elem_name, param_reg_type, parameter.component_count, param_type);
                 }
             }

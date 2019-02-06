@@ -149,23 +149,6 @@ struct Instruction {
     InstructionFlags flags;
 };
 
-// TODO: Put this in an existing struct (maybe extend Instruction for vector instructions, since only they use it)
-#pragma pack(push, 1)
-struct DestinationMask {
-    union {
-        bf_t<Imm4, 0, 1> _0;
-        bf_t<Imm4, 1, 1> _1;
-        bf_t<Imm4, 2, 1> _2;
-        bf_t<Imm4, 3, 1> _3;
-
-        Imm4 val;
-    };
-
-    DestinationMask(Imm4 val)
-        : val(val) {}
-};
-#pragma pack(pop)
-
 } // namespace USSE
 
 // TODO: Move to another header

@@ -334,7 +334,7 @@ public:
     //
     // Instructions
     //
-    bool vnmad(ExtPredicate pred, bool skipinv, Imm2 src1_swiz_10_11, bool syncstart, Imm1 dest_bank_ext, Imm1 src1_swiz_9, Imm1 src1_bank_ext, Imm1 src2_bank_ext, Imm4 src2_swiz, bool nosched, DestinationMask dest_mask, Imm2 src1_mod, Imm1 src2_mod, Imm2 src1_swiz_7_8, Imm2 dest_bank_sel, Imm2 src1_bank_sel, Imm2 src2_bank_sel, Imm6 dest_n, Imm7 src1_swiz_0_6, Imm3 op2, Imm6 src1_n, Imm6 src2_n) {
+    bool vnmad(ExtPredicate pred, bool skipinv, Imm2 src1_swiz_10_11, bool syncstart, Imm1 dest_bank_ext, Imm1 src1_swiz_9, Imm1 src1_bank_ext, Imm1 src2_bank_ext, Imm4 src2_swiz, bool nosched, Imm4 dest_mask, Imm2 src1_mod, Imm1 src2_mod, Imm2 src1_swiz_7_8, Imm2 dest_bank_sel, Imm2 src1_bank_sel, Imm2 src2_bank_sel, Imm6 dest_n, Imm7 src1_swiz_0_6, Imm3 op2, Imm6 src1_n, Imm6 src2_n) {
         Instruction inst{};
 
         static const Opcode tb_decode_vop_f32[] = {
@@ -405,7 +405,7 @@ public:
         return true;
     }
 
-    bool vmov(ExtPredicate pred, bool skipinv, bool test_2, Imm1 src2_bank_sel, bool syncstart, Imm1 dest_bank_ext, Imm1 end_or_src0_bank_ext, Imm1 src1_bank_ext, Imm1 src2_bank_ext, MoveType move_type, RepeatCount repeat_count, bool nosched, MoveDataType move_data_type, bool test_1, Imm4 src_swiz, Imm1 src0_bank_sel, Imm2 dest_bank_sel, Imm2 src1_bank_sel, Imm2 src0_comp_sel, DestinationMask dest_mask, Imm6 dest_n, Imm6 src0_n, Imm6 src1_n, Imm6 src2_n) {
+    bool vmov(ExtPredicate pred, bool skipinv, bool test_2, Imm1 src2_bank_sel, bool syncstart, Imm1 dest_bank_ext, Imm1 end_or_src0_bank_ext, Imm1 src1_bank_ext, Imm1 src2_bank_ext, MoveType move_type, RepeatCount repeat_count, bool nosched, MoveDataType move_data_type, bool test_1, Imm4 src_swiz, Imm1 src0_bank_sel, Imm2 dest_bank_sel, Imm2 src1_bank_sel, Imm2 src0_comp_sel, Imm4 dest_mask, Imm6 dest_n, Imm6 src0_n, Imm6 src1_n, Imm6 src2_n) {
         Instruction inst{};
 
         static const Opcode tb_decode_vmov[] = {
@@ -456,7 +456,7 @@ public:
         //     inst.operands.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, is_double_regs);
         // }
 
-        disasm_str += fmt::format(" {} {}", disasm::operand_to_str(inst.opr.dest, dest_mask.val), disasm::operand_to_str(inst.opr.src1, dest_mask.val));
+        disasm_str += fmt::format(" {} {}", disasm::operand_to_str(inst.opr.dest, dest_mask), disasm::operand_to_str(inst.opr.src1, dest_mask));
         LOG_DISASM(disasm_str);
 
         // Recompile
@@ -464,14 +464,14 @@ public:
         m_b.setLine(usse::instr_idx);
 
         BEGIN_REPEAT(repeat_count, 2)
-        spv::Id source = load(inst.opr.src1, dest_mask.val, repeat_offset);
-        store(inst.opr.dest, source, dest_mask.val, repeat_offset);
+        spv::Id source = load(inst.opr.src1, dest_mask, repeat_offset);
+        store(inst.opr.dest, source, dest_mask, repeat_offset);
         END_REPEAT()
 
         return true;
     }
 
-    bool vpck(ExtPredicate pred, bool skipinv, bool nosched, Imm1 src2_bank_sel, bool syncstart, Imm1 dest_bank_ext, Imm1 end, Imm1 src1_bank_ext, Imm2 src2_bank_ext, RepeatCount repeat_count, Imm3 src_fmt, Imm3 dest_fmt, DestinationMask dest_mask, Imm2 dest_bank_sel, Imm2 src1_bank_sel, Imm7 dest_n, Imm2 comp_sel_3, Imm1 scale, Imm2 comp_sel_1, Imm2 comp_sel_2, Imm5 src1_n, Imm1 comp0_sel_bit1, Imm4 src2_n, Imm1 comp_sel_0_bit0) {
+    bool vpck(ExtPredicate pred, bool skipinv, bool nosched, Imm1 src2_bank_sel, bool syncstart, Imm1 dest_bank_ext, Imm1 end, Imm1 src1_bank_ext, Imm2 src2_bank_ext, RepeatCount repeat_count, Imm3 src_fmt, Imm3 dest_fmt, Imm4 dest_mask, Imm2 dest_bank_sel, Imm2 src1_bank_sel, Imm7 dest_n, Imm2 comp_sel_3, Imm1 scale, Imm2 comp_sel_1, Imm2 comp_sel_2, Imm5 src1_n, Imm1 comp0_sel_bit1, Imm4 src2_n, Imm1 comp_sel_0_bit0) {
         Instruction inst{};
         const auto FMT_F32 = 6;
 
@@ -498,7 +498,7 @@ public:
 
         inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_CAST(comp_sel_0, comp_sel_1, comp_sel_2, comp_sel_3);
 
-        disasm_str += fmt::format(" {} {}", disasm::operand_to_str(inst.opr.dest, dest_mask.val), disasm::operand_to_str(inst.opr.src1, dest_mask.val));
+        disasm_str += fmt::format(" {} {}", disasm::operand_to_str(inst.opr.dest, dest_mask), disasm::operand_to_str(inst.opr.src1, dest_mask));
         LOG_DISASM(disasm_str);
 
         // Recompile
@@ -506,8 +506,8 @@ public:
         m_b.setLine(usse::instr_idx);
 
         BEGIN_REPEAT(repeat_count, 2)
-        spv::Id source = load(inst.opr.src1, dest_mask.val, repeat_offset);
-        store(inst.opr.dest, source, dest_mask.val, repeat_offset);
+        spv::Id source = load(inst.opr.src1, dest_mask, repeat_offset);
+        store(inst.opr.dest, source, dest_mask, repeat_offset);
         END_REPEAT()
 
         return true;
