@@ -134,7 +134,7 @@ private:
         const std::uint32_t total_comp_concat = m_b.getNumTypeComponents(reg1.type_id) + m_b.getNumTypeComponents(reg2.type_id);
 
         for (int i = 0; i < 4; i++) {
-            if (write_mask & (1 << (i + shift_offset) % 4)) {
+            if (write_mask & (1 << i)) {
                 switch (swizz[i]) {
                 case USSE::SwizzleChannel::_X:
                 case USSE::SwizzleChannel::_Y:
@@ -144,8 +144,10 @@ private:
                     break;
                 }
 
-                case USSE::SwizzleChannel::_1: case USSE::SwizzleChannel::_0:
-                case USSE::SwizzleChannel::_2: case USSE::SwizzleChannel::_H: {
+                case USSE::SwizzleChannel::_1:
+                case USSE::SwizzleChannel::_0:
+                case USSE::SwizzleChannel::_2:
+                case USSE::SwizzleChannel::_H: {
                     ops.push_back((uint32_t)USSE::SwizzleChannel::_X);
                     constant_queue_member member;
                     member.index = i;
@@ -168,7 +170,10 @@ private:
 
         // Get total swizzle actually use, by subtracting the ops by 2
         switch (ops.size() - 2) {
-        case 1: case 2: case 3: case 4: {
+        case 1:
+        case 2:
+        case 3:
+        case 4: {
             shuff_type = spv_vf32s[ops.size() - 2 - 1];
 
             break;
@@ -182,7 +187,7 @@ private:
 
         for (std::size_t i = 0; i < constant_queue.size(); i++) {
             shuff_result = m_b.createOp(spv::OpVectorInsertDynamic, shuff_type,
-                { shuff_result, constant_queue[i].constant,  constant_queue[i].index });
+                { shuff_result, constant_queue[i].constant, constant_queue[i].index });
         }
 
         return shuff_result;
@@ -196,11 +201,11 @@ private:
     */
     spv::Id load(Operand &op, const Imm4 write_mask, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false) {
         // Optimization: Check for constant swizzle and emit it right away
-        for (std::uint8_t i = 0 ; i < 4; i++) {
+        for (std::uint8_t i = 0; i < 4; i++) {
             USSE::SwizzleChannel channel = static_cast<USSE::SwizzleChannel>(
                 static_cast<std::uint32_t>(USSE::SwizzleChannel::_0) + i);
-    
-            if (op.swizzle == USSE::Swizzle4 { channel, channel, channel, channel }) {
+
+            if (op.swizzle == USSE::Swizzle4{ channel, channel, channel, channel }) {
                 return spv_v4const[i];
             }
         }
@@ -238,7 +243,7 @@ private:
             reg_right = reg_left;
         }
 
-        return bridge(reg_left, reg_right, op.swizzle, offset + out_comp_offset, write_mask);
+        return bridge(reg_left, reg_right, op.swizzle, out_comp_offset, write_mask);
     }
 
     void store(Operand &dest, spv::Id source, std::uint8_t write_mask = 0xFF, std::uint8_t off = 0) {
@@ -272,7 +277,7 @@ private:
         // Total comp = 3, limit mask scan to only x, y, z
         // So on..
         for (std::uint8_t i = 0; i < total_comp_dest; i++) {
-            if (write_mask & (1 << ((off + out_comp_offset + i) % 4))) {
+            if (write_mask & (1 << (out_comp_offset + i) % 4)) {
                 ops.push_back((i + out_comp_offset % 4) % 4);
             } else {
                 // Use original
