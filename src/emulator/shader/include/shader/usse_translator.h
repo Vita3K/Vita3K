@@ -78,9 +78,47 @@ private:
          repeat_offset += repeat_offset_jump) {
 #define END_REPEAT() }
 
-    spv::Id mix(SpirvReg &reg1, SpirvReg &reg2, USSE::Swizzle4 swizz, const std::uint32_t shift_offset, const std::uint32_t max_clamp = 20) {
-        uint32_t scomp[4];
-
+    /*
+     * \brief Create a new vector given two another vector and a shift offset.
+     * 
+     * This uses a method called bridging (connecting). For example, we have two vec4:
+     * vec4 a1(x1, y1, z1, w1) and vec4(x2, y2, z2, w2)
+     * 
+     * When we call:
+     *  bridge(a1, a2, SWIZZLE_CHANNEL_4(Z, X, Y, W), 2, 0b1111)
+     * 
+     * Function will first concats two vector and get components starting from offset 2
+     * If the bit at current offset is set in write mask, this function will take the component at current offset
+     * 
+     *           x1   y1  [ z1   w1   x2   y2 ]  z2   w2
+     *           ^    ^     ^
+     *  Offset   0    1     2
+     * 
+     * Components in brackets are the one that will be taken to form vec4(z1, w1, x2, y2)
+     * 
+     * Then, it uses the swizzle to shuffle components.
+     * 
+     *                       SWIZZLE_CHANNEL4(Z, X, Y, W)
+     * vec4(z1, w1, x2, y2) ==============================> vec4(x2, z1, w1, y2)
+     *       ^   ^  ^   ^                                         ^   ^  ^   ^
+     *       X   Y  Z   W                                         Z   X  Y   W
+     * 
+     * In situation like example:
+     * 
+     *   a1 = vec2(x1, y1), a2 = vec2(x2, y2), and offset = 1 (swizz = SWIZZLE_CHANNEL4(X, Y, Z, W)), write_mask = 0b1111
+     * 
+     * It will returns vec4(y1, x2, y2, y2)
+     * 
+     * \param reg1 First vector in bridge operation.
+     * \param reg2 Second vector in bridge operation.
+     * \param swizz Swizzle to shuffle components after getting the vec4.
+     * \param shift_offset Offset in concats to get vec4
+     * \param write
+     * 
+     * \returns ID to a vec4 contains bridging results, or spv::NoResult if failed
+     * 
+    */
+    spv::Id bridge(SpirvReg &reg1, SpirvReg &reg2, USSE::Swizzle4 swizz, const std::uint32_t shift_offset, const Imm4 write_mask) {
         // Queue keep track of components to be modified with given constant
         struct constant_queue_member {
             std::uint32_t index;
@@ -89,40 +127,61 @@ private:
 
         std::vector<constant_queue_member> constant_queue;
 
+        std::vector<spv::Id> ops;
+        ops.push_back(reg1.var_id);
+        ops.push_back(reg2.var_id);
+
+        const std::uint32_t total_comp_concat = m_b.getNumTypeComponents(reg1.type_id) + m_b.getNumTypeComponents(reg2.type_id);
+
         for (int i = 0; i < 4; i++) {
-            switch (swizz[i]) {
-            case USSE::SwizzleChannel::_X:
-            case USSE::SwizzleChannel::_Y:
-            case USSE::SwizzleChannel::_Z:
-            case USSE::SwizzleChannel::_W: {
-                scomp[i] = std::min((uint32_t)swizz[i] + shift_offset, max_clamp);
-                break;
-            }
+            if (write_mask & (1 << (i + shift_offset) % 4)) {
+                switch (swizz[i]) {
+                case USSE::SwizzleChannel::_X:
+                case USSE::SwizzleChannel::_Y:
+                case USSE::SwizzleChannel::_Z:
+                case USSE::SwizzleChannel::_W: {
+                    ops.push_back(std::min((uint32_t)swizz[i] + shift_offset, total_comp_concat));
+                    break;
+                }
 
-            case USSE::SwizzleChannel::_1: case USSE::SwizzleChannel::_0:
-            case USSE::SwizzleChannel::_2: case USSE::SwizzleChannel::_H: {
-                scomp[i] = (uint32_t)USSE::SwizzleChannel::_X;
-                constant_queue_member member;
-                member.index = i;
-                member.constant = spv_fconst[(uint32_t)swizz[i] - (uint32_t)USSE::SwizzleChannel::_0];
+                case USSE::SwizzleChannel::_1: case USSE::SwizzleChannel::_0:
+                case USSE::SwizzleChannel::_2: case USSE::SwizzleChannel::_H: {
+                    ops.push_back((uint32_t)USSE::SwizzleChannel::_X);
+                    constant_queue_member member;
+                    member.index = i;
+                    member.constant = spv_fconst[(uint32_t)swizz[i] - (uint32_t)USSE::SwizzleChannel::_0];
 
-                constant_queue.push_back(std::move(member));
+                    constant_queue.push_back(std::move(member));
 
-                break;
-            }
+                    break;
+                }
 
-            default: {
-                LOG_ERROR("Unsupport swizzle type");
-                break;
-            }
+                default: {
+                    LOG_ERROR("Unsupport swizzle type");
+                    break;
+                }
+                }
             }
         }
 
-        auto shuff_result = m_b.createOp(spv::OpVectorShuffle, spv_vf32s[3],
-            { reg1.var_id, reg2.var_id, scomp[0], scomp[1], scomp[2], scomp[3] });
+        spv::Id shuff_type = spv::NoResult;
+
+        // Get total swizzle actually use, by subtracting the ops by 2
+        switch (ops.size() - 2) {
+        case 1: case 2: case 3: case 4: {
+            shuff_type = spv_vf32s[ops.size() - 2 - 1];
+
+            break;
+        }
+
+        default:
+            return spv::NoResult;
+        }
+
+        auto shuff_result = m_b.createOp(spv::OpVectorShuffle, shuff_type, ops);
 
         for (std::size_t i = 0; i < constant_queue.size(); i++) {
-            shuff_result = m_b.createOp(spv::OpVectorInsertDynamic, spv_vf32s[3],
+            shuff_result = m_b.createOp(spv::OpVectorInsertDynamic, shuff_type,
                 { shuff_result, constant_queue[i].constant,  constant_queue[i].index });
         }
 
@@ -130,11 +189,12 @@ private:
     }
 
     /*
-     * \brief Given an operand, load it and returns a SPIR-V vec4
+     * \brief Given an operand, load it and returns a SPIR-V vector with total components count equals to total bit set in
+     *        write/dest mask
      * 
-     * \returns A vec4 copy of given operand
+     * \returns A copy of given operand
     */
-    spv::Id load(Operand &op, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false) {
+    spv::Id load(Operand &op, const Imm4 write_mask, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false) {
         // Optimization: Check for constant swizzle and emit it right away
         for (std::uint8_t i = 0 ; i < 4; i++) {
             USSE::SwizzleChannel channel = static_cast<USSE::SwizzleChannel>(
@@ -145,58 +205,40 @@ private:
             }
         }
 
-        // TODO: Array (OpAccessChain)
         const SpirvVarRegBank &bank = get_reg_bank(op.bank);
 
         // Composite a new vector
-        SpirvReg reg1;
+        SpirvReg reg_left;
         std::uint32_t out_comp_offset;
         std::uint32_t reg_offset = op.num;
 
-        switch (op.bank) {
-        case USSE::RegisterBank::FPINTERNAL: {
+        if (op.bank == USSE::RegisterBank::FPINTERNAL) {
             // Each GPI register is 128 bits long = 16 bytes long
             // So we need to multiply the reg index with 16 in order to get the right offset
             reg_offset *= 16;
-            break;
         }
 
-        default:
-            break;
-        }
-
-        bool result = bank.find_reg_at(reg_offset + offset, reg1, out_comp_offset);
+        bool result = bank.find_reg_at(reg_offset + offset, reg_left, out_comp_offset);
         if (!result) {
             LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
             return spv::NoResult;
         }
 
-        // If the register is already aligned
-        if (out_comp_offset == 0) {
-            // If it's not swizzled up
-            if (op.swizzle == USSE::Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT) {
-                return m_b.createLoad(reg1.var_id);
-            }
-        }
-
         // Get the next reg, so we can do a bridge
-        SpirvReg reg2;
+        SpirvReg reg_right;
         std::uint32_t temp = 0;
-        result = bank.find_reg_at(reg_offset + offset + reg1.size, reg2, temp);
-
-        uint32_t maximum_border = 20;
+        result = bank.find_reg_at(reg_offset + offset + reg_left.size, reg_right, temp);
 
         // There is no more register to bridge to. For making it valid, just
-        // throws in a valid register and limit swizzle offset to 3
+        // throws in a valid register
         //
         // I haven't think of any edge case, but this should be looked when there is
         // any problems with bridging
         if (!result) {
-            reg2 = reg1;
-            maximum_border = 3;
+            reg_right = reg_left;
         }
 
-        return mix(reg1, reg2, op.swizzle, offset + out_comp_offset, maximum_border);
+        return bridge(reg_left, reg_right, op.swizzle, offset + out_comp_offset, write_mask);
     }
 
     void store(Operand &dest, spv::Id source, std::uint8_t write_mask = 0xFF, std::uint8_t off = 0) {
@@ -207,14 +249,10 @@ private:
         std::uint32_t out_comp_offset;
         std::uint32_t reg_offset = dest.num;
 
-        switch (dest.bank) {
-        case USSE::RegisterBank::FPINTERNAL: {
+        if (dest.bank == USSE::RegisterBank::FPINTERNAL) {
+            // Each GPI register is 128 bits long = 16 bytes long
+            // So we need to multiply the reg index with 16 in order to get the right offset
             reg_offset *= 16;
-            break;
-        }
-
-        default:
-            break;
         }
 
         bool result = bank.find_reg_at(reg_offset + off, dest_reg, out_comp_offset);
@@ -227,19 +265,18 @@ private:
         ops.push_back(source);
         ops.push_back(dest_reg.var_id);
 
-        int bitwrite_count = 0;
-        int total_comp = m_b.getNumTypeComponents(dest_reg.type_id);
+        const std::uint8_t total_comp_source = static_cast<std::uint8_t>(m_b.getNumComponents(source));
+        const std::uint8_t total_comp_dest = static_cast<std::uint8_t>(m_b.getNumTypeComponents(dest_reg.type_id));
 
         // Total comp = 2, limit mask scan to only x, y
         // Total comp = 3, limit mask scan to only x, y, z
         // So on..
-        for (std::uint8_t i = 0; i < total_comp; i++) {
+        for (std::uint8_t i = 0; i < total_comp_dest; i++) {
             if (write_mask & (1 << ((off + out_comp_offset + i) % 4))) {
                 ops.push_back((i + out_comp_offset % 4) % 4);
-                bitwrite_count++;
             } else {
                 // Use original
-                ops.push_back(4 + i);
+                ops.push_back(total_comp_source + i);
             }
         }
 
@@ -422,7 +459,7 @@ public:
         m_b.setLine(usse::instr_idx);
 
         BEGIN_REPEAT(repeat_count, 2)
-        spv::Id source = load(inst.opr.src1, repeat_offset);
+        spv::Id source = load(inst.opr.src1, dest_mask.val, repeat_offset);
         store(inst.opr.dest, source, dest_mask.val, repeat_offset);
         END_REPEAT()
 
@@ -464,7 +501,7 @@ public:
         m_b.setLine(usse::instr_idx);
 
         BEGIN_REPEAT(repeat_count, 2)
-        spv::Id source = load(inst.opr.src1, repeat_offset);
+        spv::Id source = load(inst.opr.src1, dest_mask.val, repeat_offset);
         store(inst.opr.dest, source, dest_mask.val, repeat_offset);
         END_REPEAT()
 
@@ -511,16 +548,16 @@ public:
         // Write mask is a 4-bit immidiate
         // If a bit is one, a swizzle is active
         BEGIN_REPEAT(repeat_count, 2)
-        spv::Id vsrc0 = load(inst.opr.src0, repeat_offset, src0_abs, src0_neg);
-        spv::Id vsrc1 = load(inst.opr.src1, repeat_offset, gpi0_abs, gpi0_neg);
-        spv::Id vsrc2 = load(inst.opr.src2, repeat_offset, gpi1_abs, gpi1_neg);
+        spv::Id vsrc0 = load(inst.opr.src0, write_mask, repeat_offset, src0_abs, src0_neg);
+        spv::Id vsrc1 = load(inst.opr.src1, write_mask, repeat_offset, gpi0_abs, gpi0_neg);
+        spv::Id vsrc2 = load(inst.opr.src2, write_mask, repeat_offset, gpi1_abs, gpi1_neg);
 
         if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
             return false;
         }
 
-        auto mul_result = m_b.createBinOp(spv::OpFMul, spv_vf32s[3], vsrc0, vsrc1);
-        auto add_result = m_b.createBinOp(spv::OpFAdd, spv_vf32s[3], mul_result, vsrc2);
+        auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
+        auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
         store(inst.opr.dest, add_result, write_mask, repeat_offset);
         END_REPEAT()
