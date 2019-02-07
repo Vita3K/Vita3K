@@ -25,7 +25,7 @@ namespace logging {
 
 void init();
 void set_level(spdlog::level::level_enum log_level);
-void add_sink(std::string title_id, std::string game_id);
+void add_sink(std::wstring log_path);
 
 #define LOG_TRACE SPDLOG_TRACE
 #define LOG_DEBUG SPDLOG_DEBUG

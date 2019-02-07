@@ -95,7 +95,7 @@ ExitCode serialize(Config &cfg) {
     config_file_emit_single(emitter, "log-active-shaders", cfg.log_active_shaders);
     config_file_emit_single(emitter, "log-uniforms", cfg.log_uniforms);
     config_file_emit_single(emitter, "pstv-mode", cfg.pstv_mode);
-    config_file_emit_single(emitter, "duplicate-log", cfg.duplicate_log);
+    config_file_emit_single(emitter, "archive-log", cfg.archive_log);
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_optional_single(emitter, "log-level", cfg.log_level);
     config_file_emit_optional_single(emitter, "pref-path", cfg.pref_path);
@@ -126,8 +126,7 @@ ExitCode deserialize(Config &cfg) {
     get_yaml_value(config_node, "log-active-shaders", &cfg.log_active_shaders, false);
     get_yaml_value(config_node, "log-uniforms", &cfg.log_uniforms, false);
     get_yaml_value(config_node, "pstv-mode", &cfg.pstv_mode, false);
-    get_yaml_value(config_node, "duplicate-log", &cfg.duplicate_log, false);
-
+    get_yaml_value(config_node, "archive-log", &cfg.archive_log, false);
     get_yaml_value_optional(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value_optional(config_node, "pref-path", &cfg.pref_path);
 
@@ -163,13 +162,13 @@ ExitCode init(Config &cfg, int argc, char **argv) {
 
         po::options_description config_desc("Configuration");
         config_desc.add_options()
+            ("archive-log,A", po::bool_switch(&cfg.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
             ("lle-modules,m", po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
             ("log-level,l", po::value(&cfg.log_level)->default_value(spdlog::level::trace), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
             ("log-imports,I", po::bool_switch(&cfg.log_imports), "Log Imports")
             ("log-exports,E", po::bool_switch(&cfg.log_exports), "Log Exports")
             ("log-active-shaders,S", po::bool_switch(&cfg.log_active_shaders), "Log Active Shaders")
-            ("log-uniforms,U", po::bool_switch(&cfg.log_uniforms), "Log Uniforms")
-            ("duplicate-log,D", po::bool_switch(&cfg.duplicate_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title");
+            ("log-uniforms,U", po::bool_switch(&cfg.log_uniforms), "Log Uniforms");
         // clang-format on
 
         // Positional args
