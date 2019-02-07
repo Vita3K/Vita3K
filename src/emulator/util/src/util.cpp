@@ -81,8 +81,11 @@ void set_level(spdlog::level::level_enum log_level) {
 }
 
 void add_sink(std::wstring log_path) {
+#ifdef _WIN32
     sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path, true));
-
+#else
+    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(string_utils::wide_to_utf(log_path), true));
+#endif
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("vita3k logger", begin(sinks), end(sinks)));
     spdlog::set_pattern(LOG_PATTERN);
 }

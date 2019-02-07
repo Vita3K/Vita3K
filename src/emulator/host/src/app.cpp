@@ -232,7 +232,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
                 std::cerr << "failed to get working directory" << std::endl;
             }
 #else
-            logging::add_sink(log_name);
+            logging::add_sink(string_utils::utf_to_wide(log_name));
 #endif
         } catch (const spdlog::spdlog_ex &ex) {
             std::cerr << "File log initialization failed: " << ex.what() << std::endl;
