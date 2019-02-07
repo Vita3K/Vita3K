@@ -31,12 +31,13 @@ static const
     = "vita3k.log";
 #endif
 
+static const char *LOG_PATTERN = "%^[%H:%M:%S.%e] |%L| [%!]: %v%$";
+std::vector<spdlog::sink_ptr> sinks;
+
 void init() {
 #ifdef _MSC_VER
     static constexpr bool LOG_MSVC_OUTPUT = true;
 #endif
-
-    std::vector<spdlog::sink_ptr> sinks;
 
     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 
@@ -71,12 +72,22 @@ void init() {
         std::cerr << "spdlog error: " << msg << std::endl;
     });
 
-    spdlog::set_pattern("%^[%H:%M:%S.%e] |%L| [%!]: %v%$");
+    spdlog::set_pattern(LOG_PATTERN);
     spdlog::flush_on(spdlog::level::debug);
 }
 
 void set_level(spdlog::level::level_enum log_level) {
     spdlog::set_level(log_level);
+}
+
+void add_sink(std::wstring log_path) {
+#ifdef _WIN32
+    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path, true));
+#else
+    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(string_utils::wide_to_utf(log_path), true));
+#endif
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>("vita3k logger", begin(sinks), end(sinks)));
+    spdlog::set_pattern(LOG_PATTERN);
 }
 
 } // namespace logging
@@ -108,6 +119,28 @@ std::wstring utf_to_wide(const std::string &str) {
 std::string wide_to_utf(const std::wstring &str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
     return myconv.to_bytes(str);
+}
+
+std::string remove_special_chars(std::string str) {
+
+    for (char &c : str) {
+        switch (c) {
+        case '/':
+        case '\\':
+        case ':':
+        case '?':
+        case '"':
+        case '<':
+        case '>':
+        case '|':
+        case '*':
+            c = ' ';
+            break;
+        default:
+            continue;
+        }
+    }
+    return str;
 }
 
 #ifdef WIN32

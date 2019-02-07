@@ -40,6 +40,7 @@ struct Config {
     std::vector<std::string> lle_modules;
     bool pstv_mode = false;
     optional<std::string> pref_path;
+    bool archive_log = false;
 };
 
 namespace config {

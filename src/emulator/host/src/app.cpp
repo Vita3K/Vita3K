@@ -213,6 +213,32 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     find_data(host.game_title, host.sfo_handle, "TITLE");
     std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
     find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
+
+    if (host.cfg.archive_log) {
+        fs::create_directory(std::string(host.base_path) + "/logs");
+        try {
+            std::string game_title = string_utils::remove_special_chars(host.game_title);
+            const auto log_name = fmt::format("{} - [{}].log", game_title, host.io.title_id);
+#ifdef WIN32
+            wchar_t buffer[MAX_PATH];
+            GetModuleFileNameW(NULL, buffer, MAX_PATH);
+            std::string::size_type pos = std::wstring(buffer).find_last_of(L"\\\\");
+            std::wstring path = std::wstring(buffer).substr(0, pos);
+
+            if (!path.empty()) {
+                const auto full_log_path = path + L"\\" + L"\\logs\\" + string_utils::utf_to_wide(log_name);
+                logging::add_sink(full_log_path);
+            } else {
+                std::cerr << "failed to get working directory" << std::endl;
+            }
+#else
+            logging::add_sink(string_utils::utf_to_wide(log_name));
+#endif
+        } catch (const spdlog::spdlog_ex &ex) {
+            std::cerr << "File log initialization failed: " << ex.what() << std::endl;
+        }
+    }
+
     std::string category;
     find_data(category, host.sfo_handle, "CATEGORY");
 
