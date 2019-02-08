@@ -164,18 +164,24 @@ EXPORT(int, sceTouchGetSamplingStateExt) {
 }
 
 EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-    assert(port >= 0);
-    assert(port <= 1);
-    assert(pData != nullptr);
+    if (port >= SCE_TOUCH_PORT_MAX_NUM) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    if (pData == nullptr) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
     assert(nBufs == 1);
 
     return peek_touch(host, port, pData);
 }
 
 EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-    assert(port >= 0);
-    assert(port <= 1);
-    assert(pData != nullptr);
+    if (port >= SCE_TOUCH_PORT_MAX_NUM) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    if (pData == nullptr) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
     assert(nBufs == 1);
 
     return peek_touch(host, port, pData);
@@ -190,18 +196,24 @@ EXPORT(int, sceTouchPeekRegionExt) {
 }
 
 EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-    assert(port >= 0);
-    assert(port <= 1);
-    assert(pData != nullptr);
+    if (port >= SCE_TOUCH_PORT_MAX_NUM) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    if (pData == nullptr) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
     assert(nBufs == 1);
 
     return peek_touch(host, port, pData);
 }
 
 EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-    assert(port >= 0);
-    assert(port <= 1);
-    assert(pData != nullptr);
+    if (port >= SCE_TOUCH_PORT_MAX_NUM) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    if (pData == nullptr) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
     assert(nBufs == 1);
 
     return peek_touch(host, port, pData);
