@@ -29,34 +29,36 @@ static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData) {
     memset(pData, 0, sizeof(*pData));
     pData->timeStamp = timestamp++; // TODO Use the real time and units.
 
-    SceIVector2 touch_pos_window = { 0, 0 };
-    const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
-    const uint32_t mask = (port == 1) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
-    if ((buttons & mask) && host.gui.renderer_focused) {
-        SceIVector2 window_size = { 0, 0 };
-        SDL_Window *const window = SDL_GetMouseFocus();
-        SDL_GetWindowSize(window, &window_size.x, &window_size.y);
+    if (host.ctrl.touch_mode[port]) {
+        SceIVector2 touch_pos_window = { 0, 0 };
+        const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
+        const uint32_t mask = (port == 1) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
+        if ((buttons & mask) && host.gui.renderer_focused) {
+            SceIVector2 window_size = { 0, 0 };
+            SDL_Window *const window = SDL_GetMouseFocus();
+            SDL_GetWindowSize(window, &window_size.x, &window_size.y);
 
-        SceFVector2 scale = { 1, 1 };
-        if ((window_size.x > 0) && (window_size.y > 0)) {
-            scale.x = static_cast<float>(host.drawable_size.x) / window_size.x;
-            scale.y = static_cast<float>(host.drawable_size.y) / window_size.y;
-        }
+            SceFVector2 scale = { 1, 1 };
+            if ((window_size.x > 0) && (window_size.y > 0)) {
+                scale.x = static_cast<float>(host.drawable_size.x) / window_size.x;
+                scale.y = static_cast<float>(host.drawable_size.y) / window_size.y;
+            }
 
-        const SceFVector2 touch_pos_drawable = {
-            touch_pos_window.x * scale.x,
-            touch_pos_window.y * scale.y
-        };
+            const SceFVector2 touch_pos_drawable = {
+                touch_pos_window.x * scale.x,
+                touch_pos_window.y * scale.y
+            };
 
-        const SceFVector2 touch_pos_viewport = {
-            (touch_pos_drawable.x - host.viewport_pos.x) / host.viewport_size.x,
-            (touch_pos_drawable.y - host.viewport_pos.y) / host.viewport_size.y
-        };
+            const SceFVector2 touch_pos_viewport = {
+                (touch_pos_drawable.x - host.viewport_pos.x) / host.viewport_size.x,
+                (touch_pos_drawable.y - host.viewport_pos.y) / host.viewport_size.y
+            };
 
-        if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {
-            pData->report[pData->reportNum].x = static_cast<uint16_t>(touch_pos_viewport.x * 1920);
-            pData->report[pData->reportNum].y = static_cast<uint16_t>(touch_pos_viewport.y * 1088);
-            ++pData->reportNum;
+            if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {
+                pData->report[pData->reportNum].x = static_cast<uint16_t>(touch_pos_viewport.x * 1920);
+                pData->report[pData->reportNum].y = static_cast<uint16_t>(touch_pos_viewport.y * 1088);
+                ++pData->reportNum;
+            }
         }
     }
 
@@ -97,44 +99,44 @@ EXPORT(int, sceTouchGetDeviceInfo) {
 
 EXPORT(int, sceTouchGetPanelInfo, SceUInt32 port, SceTouchPanelInfo *pPanelInfo) {
     switch (port) {
-        case SCE_TOUCH_PORT_FRONT:
-            // Active Area
-            pPanelInfo->minAaX = 0;
-            pPanelInfo->minAaY = 0;
-            pPanelInfo->maxAaX = 1919;
-            pPanelInfo->maxAaY = 1087;
+    case SCE_TOUCH_PORT_FRONT:
+        // Active Area
+        pPanelInfo->minAaX = 0;
+        pPanelInfo->minAaY = 0;
+        pPanelInfo->maxAaX = 1919;
+        pPanelInfo->maxAaY = 1087;
 
-            // Display
-            pPanelInfo->minDispX = 0;
-            pPanelInfo->minDispY = 0;
-            pPanelInfo->maxDispX = 1919;
-            pPanelInfo->maxDispY = 1087;
+        // Display
+        pPanelInfo->minDispX = 0;
+        pPanelInfo->minDispY = 0;
+        pPanelInfo->maxDispX = 1919;
+        pPanelInfo->maxDispY = 1087;
 
-            // Force
-            pPanelInfo->minForce = 1;
-            pPanelInfo->maxForce = 128;
+        // Force
+        pPanelInfo->minForce = 1;
+        pPanelInfo->maxForce = 128;
 
-            return 0;
-        case SCE_TOUCH_PORT_BACK:
-            // Active Area
-            pPanelInfo->minAaX = 0;
-            pPanelInfo->minAaY = 108;
-            pPanelInfo->maxAaX = 1919;
-            pPanelInfo->maxAaY = 889;
+        return 0;
+    case SCE_TOUCH_PORT_BACK:
+        // Active Area
+        pPanelInfo->minAaX = 0;
+        pPanelInfo->minAaY = 108;
+        pPanelInfo->maxAaX = 1919;
+        pPanelInfo->maxAaY = 889;
 
-            // Display
-            pPanelInfo->minDispX = 0;
-            pPanelInfo->minDispY = 0;
-            pPanelInfo->maxDispX = 1919;
-            pPanelInfo->maxDispY = 1087;
+        // Display
+        pPanelInfo->minDispX = 0;
+        pPanelInfo->minDispY = 0;
+        pPanelInfo->maxDispX = 1919;
+        pPanelInfo->maxDispY = 1087;
 
-            // Force
-            pPanelInfo->minForce = 1;
-            pPanelInfo->maxForce = 128;
+        // Force
+        pPanelInfo->minForce = 1;
+        pPanelInfo->maxForce = 128;
 
-            return 0;
-        default:
-            return SCE_TOUCH_ERROR_INVALID_ARG;
+        return 0;
+    default:
+        return SCE_TOUCH_ERROR_INVALID_ARG;
     }
 }
 
@@ -146,8 +148,15 @@ EXPORT(int, sceTouchGetProcessInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceTouchGetSamplingState) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceTouchGetSamplingState, SceUInt32 port, SceTouchSamplingState *pState) {
+    if (port >= SCE_TOUCH_PORT_MAX_NUM) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    if (pState == nullptr) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    *pState = host.ctrl.touch_mode[port];
+    return 0;
 }
 
 EXPORT(int, sceTouchGetSamplingStateExt) {
@@ -218,8 +227,15 @@ EXPORT(int, sceTouchSetRegionAttr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceTouchSetSamplingState) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceTouchSetSamplingState, SceUInt32 port, SceTouchSamplingState state) {
+    if (port >= SCE_TOUCH_PORT_MAX_NUM) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    if (state != SCE_TOUCH_SAMPLING_STATE_STOP && state != SCE_TOUCH_SAMPLING_STATE_START) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    host.ctrl.touch_mode[port] = state;
+    return 0;
 }
 
 EXPORT(int, sceTouchSetSamplingStateExt) {
