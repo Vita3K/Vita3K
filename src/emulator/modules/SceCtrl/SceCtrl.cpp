@@ -31,8 +31,6 @@
 
 // TODO Move elsewhere.
 static uint64_t timestamp;
-static SceCtrlPadInputMode input_mode;
-static SceCtrlPadInputMode input_mode_ext;
 
 struct KeyBinding {
     SDL_Scancode scancode;
@@ -262,7 +260,8 @@ static int peek_buffer(HostState &host, int port, SceCtrlData *&pad_data, bool e
         }
     }
 
-    if (input_mode == SCE_CTRL_MODE_DIGITAL) {
+    SceCtrlPadInputMode mode = ext ? state.input_mode_ext : state.input_mode;
+    if (mode == SCE_CTRL_MODE_DIGITAL) {
         pad_data->lx = 0x80;
         pad_data->ly = 0x80;
         pad_data->rx = 0x80;
@@ -324,7 +323,7 @@ EXPORT(int, sceCtrlGetSamplingMode, SceCtrlPadInputMode *mode) {
     if (mode == nullptr) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    *mode = input_mode;
+    *mode = host.ctrl.input_mode;
     return SCE_KERNEL_OK;
 }
 
@@ -332,7 +331,7 @@ EXPORT(int, sceCtrlGetSamplingModeExt, SceCtrlPadInputMode *mode) {
     if (mode == nullptr) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    *mode = input_mode_ext;
+    *mode = host.ctrl.input_mode_ext;
     return SCE_KERNEL_OK;
 }
 
@@ -488,20 +487,20 @@ EXPORT(int, sceCtrlSetRapidFire) {
 #define SCE_CTRL_MODE_UNKNOWN 3 // missing in vita-headers
 
 EXPORT(int, sceCtrlSetSamplingMode, SceCtrlPadInputMode mode) {
-    SceCtrlPadInputMode old = input_mode;
+    SceCtrlPadInputMode old = host.ctrl.input_mode;
     if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_UNKNOWN) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    input_mode = mode;
+    host.ctrl.input_mode = mode;
     return old;
 }
 
 EXPORT(int, sceCtrlSetSamplingModeExt, SceCtrlPadInputMode mode) {
-    SceCtrlPadInputMode old = input_mode_ext;
+    SceCtrlPadInputMode old = host.ctrl.input_mode_ext;
     if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_UNKNOWN) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    input_mode_ext = mode;
+    host.ctrl.input_mode_ext = mode;
     return old;
 }
 

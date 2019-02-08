@@ -1,5 +1,8 @@
 #pragma once
 
+#include <psp2/ctrl.h>
+#include <psp2/touch.h>
+
 #include <SDL_haptic.h>
 #include <SDL_joystick.h>
 
@@ -21,6 +24,9 @@ typedef std::map<SDL_JoystickGUID, Controller> ControllerList;
 
 struct CtrlState {
     ControllerList controllers;
-    int controllers_num;
+    int controllers_num = 0;
     bool free_ports[4] = { true, true, true, true };
+    SceCtrlPadInputMode input_mode = SCE_CTRL_MODE_DIGITAL;
+    SceCtrlPadInputMode input_mode_ext = SCE_CTRL_MODE_DIGITAL;
+    SceTouchSamplingState touch_mode[2] = { SCE_TOUCH_SAMPLING_STATE_STOP, SCE_TOUCH_SAMPLING_STATE_STOP };
 };
