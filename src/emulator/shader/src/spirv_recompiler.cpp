@@ -627,8 +627,7 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary) {
 // * Functions (utility) *
 // ***********************
 
-void dump_spirv_disasm(const spv::Builder& b)
-{
+void dump_spirv_disasm(const spv::Builder &b) {
     std::vector<uint32_t> spirv;
     std::stringstream spirv_disasm;
     b.dump(spirv);
