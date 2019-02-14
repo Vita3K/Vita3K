@@ -845,8 +845,10 @@ EXPORT(int, sceGxmProgramIsFragColorUsed) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmProgramIsNativeColorUsed) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramIsNativeColorUsed, Ptr<const SceGxmProgram> program_) {
+    const auto program = program_.get(host.mem);
+
+    return program->is_native_color();
 }
 
 EXPORT(int, sceGxmProgramIsSpriteCoordUsed) {

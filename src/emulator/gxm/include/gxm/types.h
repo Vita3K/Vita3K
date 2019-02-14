@@ -252,7 +252,7 @@ public:
     std::uint32_t unk18;
     std::uint32_t unk1C;
 
-    std::uint32_t unk20;
+    std::uint32_t unk20; // bit 6 denotes whether a frag shader writes directly to output (usees __nativecolor modifier) or not
     std::uint32_t parameter_count;
     std::uint32_t parameters_offset; // Number of bytes from the start of this field to the first parameter.
     std::uint32_t vertex_outputs_offset; // offset to vertex outputs, relative to this field
@@ -299,12 +299,15 @@ public:
     uint64_t *get_code_start_ptr() const {
         return (uint64_t *)((uint8_t *)&code_offset + code_offset);
     }
+    bool is_native_color() const {
+        return unk20 & 0b1000000;
+    }
 };
 
 struct SceGxmProgramParameter {
     int32_t name_offset; // Number of bytes from the start of this structure to the name string.
     union {
-        bf_t<uint16_t, 0, 4> category; // SceGxmParameterCategory - select constant or sampler
+        bf_t<uint16_t, 0, 4> category; // SceGxmParameterCategory
         bf_t<uint16_t, 4, 4> type; // SceGxmParameterType - applicable for constants, not applicable for samplers (select type like float, half, fixed ...)
         bf_t<uint16_t, 8, 4> component_count; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
         bf_t<uint16_t, 12, 4> container_index; // applicable for constants, not applicable for samplers (buffer, default, texture)
