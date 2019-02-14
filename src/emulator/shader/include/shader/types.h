@@ -173,10 +173,10 @@ struct SpirvVarRegBank {
     SpirvVarRegBank() = default;
 
     bool find_reg_at(uint32_t index, SpirvReg &out_reg, uint32_t &out_comp_offset) const {
-        for (auto idx : vars) {
-            if (index >= idx.offset && index < idx.offset + idx.size) {
-                out_reg = idx;
-                out_comp_offset = index - idx.offset;
+        for (auto var : vars) {
+            if (index >= var.offset && index < var.offset + var.size) {
+                out_reg = var;
+                out_comp_offset = index - var.offset;
                 return true;
             }
         }
@@ -195,6 +195,14 @@ struct SpirvVarRegBank {
 
         vars.push_back({ var.type_id, var.var_id, offset, size });
         next_offset += size;
+    }
+
+    size_t size() const {
+        size_t size = 0;
+        for (auto var : vars) {
+            size += var.size;
+        }
+        return size;
     }
 
 private:

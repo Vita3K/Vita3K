@@ -28,7 +28,11 @@
 #include <spirv.hpp>
 
 #include <iostream>
+#include <bitset>
 #include <tuple>
+
+// TODO: Remove
+#include "disassemble.h"
 
 using namespace USSE;
 using boost::optional;
@@ -43,33 +47,38 @@ class USSETranslatorVisitor final {
 public:
     using instruction_return_type = bool;
 
-    spv::Id spv_f32;
-    spv::Id spv_vf32s[4];
-    spv::Id spv_fconst[4];
-    spv::Id spv_v4const[4];
+    spv::Id type_f32;
+    spv::Id type_f32_v[5];   // Starts from 1 ([1] is vec 1)
+    spv::Id const_f32[4];
+    // spv::Id const_f32_v[5];  // Starts from 1 ([1] is vec 1)
 
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, emu::SceGxmProgramType program_type)
+    explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program)
         : m_b(_b)
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
-        , m_program_type(program_type) {
+        , m_program(program) {
         // Build common type here, so builder won't have to look it up later
-        spv_f32 = m_b.makeFloatType(32);
+        type_f32 = m_b.makeFloatType(32);
 
-        spv_fconst[3] = m_b.makeFpConstant(spv_f32, 0.5f);
-        spv_fconst[0] = m_b.makeFpConstant(spv_f32, 0.0f);
-        spv_fconst[1] = m_b.makeFpConstant(spv_f32, 1.0f);
-        spv_fconst[2] = m_b.makeFpConstant(spv_f32, 2.0f);
+        const_f32[3] = m_b.makeFpConstant(type_f32, 0.5f);
+        const_f32[0] = m_b.makeFpConstant(type_f32, 0.0f);
+        const_f32[1] = m_b.makeFpConstant(type_f32, 1.0f);
+        const_f32[2] = m_b.makeFpConstant(type_f32, 2.0f);
 
-        for (std::uint8_t i = 0; i < 4; i++) {
-            spv_vf32s[i] = m_b.makeVectorType(spv_f32, i + 1);
-            spv_v4const[i] = m_b.makeCompositeConstant(spv_vf32s[i],
-                { spv_fconst[i], spv_fconst[i], spv_fconst[i], spv_fconst[i] });
+        for (std::uint8_t i = 1; i < 5; i++) {
+            type_f32_v[i] = m_b.makeVectorType(type_f32, i);
+//            const_f32_v[i] = m_b.makeCompositeConstant(type_f32_v[i],
+//                { const_f32[i - 1], const_f32[i - 1], const_f32[i - 1], const_f32[i - 1] });
         }
     }
 
 private:
+
+    //
+    // Translation helpers
+    //
+
 #define BEGIN_REPEAT(repeat_count, roj)                         \
     const auto repeat_count_num = (uint8_t)repeat_count + 1;    \
     const auto repeat_offset_jump = roj;                        \
@@ -113,12 +122,12 @@ private:
      * \param reg2 Second vector in bridge operation.
      * \param swizz Swizzle to shuffle components after getting the vec4.
      * \param shift_offset Offset in concats to get vec4
-     * \param write
+     * \param dest_mask Destination/write mask
      * 
      * \returns ID to a vec4 contains bridging results, or spv::NoResult if failed
      * 
     */
-    spv::Id bridge(SpirvReg &reg1, SpirvReg &reg2, USSE::Swizzle4 swizz, const std::uint32_t shift_offset, const Imm4 write_mask) {
+    spv::Id bridge(SpirvReg &reg1, SpirvReg &reg2, USSE::Swizzle4 swizz, const std::uint32_t shift_offset, const Imm4 dest_mask) {
         // Queue keep track of components to be modified with given constant
         struct constant_queue_member {
             std::uint32_t index;
@@ -134,7 +143,7 @@ private:
         const std::uint32_t total_comp_concat = m_b.getNumTypeComponents(reg1.type_id) + m_b.getNumTypeComponents(reg2.type_id);
 
         for (int i = 0; i < 4; i++) {
-            if (write_mask & (1 << i)) {
+            if (dest_mask & (1 << i)) {
                 switch (swizz[i]) {
                 case USSE::SwizzleChannel::_X:
                 case USSE::SwizzleChannel::_Y:
@@ -151,7 +160,7 @@ private:
                     ops.push_back((uint32_t)USSE::SwizzleChannel::_X);
                     constant_queue_member member;
                     member.index = i;
-                    member.constant = spv_fconst[(uint32_t)swizz[i] - (uint32_t)USSE::SwizzleChannel::_0];
+                    member.constant = const_f32[(uint32_t)swizz[i] - (uint32_t)USSE::SwizzleChannel::_0];
 
                     constant_queue.push_back(std::move(member));
 
@@ -174,11 +183,10 @@ private:
         case 2:
         case 3:
         case 4: {
-            shuff_type = spv_vf32s[ops.size() - 2 - 1];
+            shuff_type = type_f32_v[ops.size() - 2];
 
             break;
         }
-
         default:
             return spv::NoResult;
         }
@@ -199,7 +207,8 @@ private:
      * 
      * \returns A copy of given operand
     */
-    spv::Id load(Operand &op, const Imm4 write_mask, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false) {
+    spv::Id load(Operand &op, const Imm4 dest_mask, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false) {
+        /*
         // Optimization: Check for constant swizzle and emit it right away
         for (std::uint8_t i = 0; i < 4; i++) {
             USSE::SwizzleChannel channel = static_cast<USSE::SwizzleChannel>(
@@ -208,6 +217,16 @@ private:
             if (op.swizzle == USSE::Swizzle4{ channel, channel, channel, channel }) {
                 return spv_v4const[i];
             }
+        }
+        */
+
+        const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
+
+        // TODO: Properly handle
+        if (op.bank == RegisterBank::FPCONSTANT || op.bank == RegisterBank::IMMEDIATE) {
+            auto t = m_b.makeVectorType(type_f32, dest_comp_count);
+            auto one = m_b.makeFpConstant(type_f32, 1.0);
+            return m_b.makeCompositeConstant(t, { one, one });
         }
 
         const SpirvVarRegBank &bank = get_reg_bank(op.bank);
@@ -243,7 +262,7 @@ private:
             reg_right = reg_left;
         }
 
-        return bridge(reg_left, reg_right, op.swizzle, out_comp_offset, write_mask);
+        return bridge(reg_left, reg_right, op.swizzle, out_comp_offset, dest_mask);
     }
 
     void store(Operand &dest, spv::Id source, std::uint8_t write_mask = 0xFF, std::uint8_t off = 0) {
@@ -289,9 +308,6 @@ private:
         m_b.createStore(source_shuffle, dest_reg.var_id);
     }
 
-    //
-    // Translation helpers
-    //
     const SpirvVarRegBank &get_reg_bank(RegisterBank reg_bank) const {
         switch (reg_bank) {
         case RegisterBank::PRIMATTR:
@@ -330,7 +346,31 @@ private:
         return spv::NoResult;
     }
 
+    // TODO: Separate file for translator helpers?
+    static size_t dest_mask_to_comp_count(Imm4 dest_mask) {
+        std::bitset<4> bs(dest_mask);
+        const auto bit_count = bs.count();
+        assert(bit_count <= 4);
+		return bit_count;
+    }
+
 public:
+    //
+    // Helpers
+    //
+
+    // Write pa0 to fragment output color
+    // TODO: Is this and our OpenGL blending code enough?
+    void patch_frag_output() {
+        const auto pa_bank = get_reg_bank(RegisterBank::PRIMATTR);
+        const auto o_bank = get_reg_bank(RegisterBank::OUTPUT);
+
+        const auto pa_0 = pa_bank.get_vars()[0].var_id;
+        const auto o_0 = o_bank.get_vars()[0].var_id;
+
+        m_b.createStore(m_b.createLoad(pa_0), o_0);
+    }
+
     //
     // Instructions
     //
@@ -367,6 +407,7 @@ public:
         LOG_DISASM("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(opcode));
 
         // Decode operands
+        // TODO: modifiers
 
         inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, true, 7);
         inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7);
@@ -398,9 +439,24 @@ public:
 
         // TODO: source modifiers
 
+        auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
+        assert(dest_comp_count > 0);
+
         // Recompile
 
         m_b.setLine(usse::instr_idx);
+
+        spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
+        spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
+
+        if (vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+            LOG_WARN("Could not find a src register");
+            return false;
+        }
+
+        auto mul_result = m_b.createBinOp(spv::OpFMul, type_f32_v[dest_comp_count], vsrc1, vsrc2);
+
+        store(inst.opr.dest, mul_result, dest_mask, 0);
 
         return true;
     }
@@ -592,8 +648,8 @@ private:
     // SPIR-V IDs
     const SpirvShaderParameters &m_spirv_params;
 
-    // Shader program type
-    emu::SceGxmProgramType m_program_type;
+    // Shader being translated
+    const SceGxmProgram &m_program; // unused
 };
 
 } // namespace usse

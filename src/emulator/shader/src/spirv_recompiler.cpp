@@ -335,6 +335,10 @@ static void create_vertex_outputs(spv::Builder &b, SpirvShaderParameters &parame
 
             const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), properties.component_count);
             const spv::Id out_var = create_variable(b, parameters, properties.name, USSE::RegisterBank::OUTPUT, properties.component_count, out_type);
+
+            // TODO: More decorations needed?
+            if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION)
+                b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);
         }
     }
 }
@@ -511,6 +515,22 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         // TODO: these are actually 128 bits long
         auto type = b.makeVectorType(b.makeFloatType(32), 4); // TODO: Figure out correct type
         create_variable(b, spv_params, name, USSE::RegisterBank::FPINTERNAL, 16, type);
+    }
+
+    // If this is a non-native color fragment shader (uses configurable blending, doesn't write to color buffer directly):
+    // Add extra dummy primary attributes that on hw would be patched by the shader patcher depending on blending
+    // Instead, in this case we write to the color buffer directly and emulate configurable blending with OpenGL
+    // TODO: Verify creation logic. Should we just check if there are _no_ PAs ? Or is the current approach correct?
+    if (program_type == emu::Fragment && !program.is_native_color()) {
+        const auto missing_primary_attrs = program.primary_reg_count - spv_params.ins.size();
+
+        if (missing_primary_attrs > 2) {
+            LOG_ERROR("missing primary attrs are > 2");
+        } else if (missing_primary_attrs > 0) {
+            const auto pa_type = b.makeVectorType(b.makeFloatType(32), missing_primary_attrs * 2);
+            std::string pa_name = "pa0_blend";
+            create_variable(b, spv_params, pa_name, USSE::RegisterBank::PRIMATTR, missing_primary_attrs * 2, pa_type); // TODO: * 2 is a hack because we don't yet support f16
+        }
     }
 
     return spv_params;

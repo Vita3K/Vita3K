@@ -110,7 +110,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
            * A = src0_swizz
            * B = src0_swizz_extended
         */
-        INST(&V::vmad, "VMAD ()",     "00011lllnh1kbcpiidmmjrrrrqogfeaayyttssssssvvvvxxxxwwuBAAAAzzzzzz"),
+        INST(&V::vmad, "VMAD ()",            "00011lllnh1kbcpiidmmjrrrrqogfeaayyttssssssvvvvxxxxwwuBAAAAzzzzzz"),
 
         // Special
         // s = special, c = category
@@ -139,10 +139,9 @@ namespace usse {
 void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters) {
     const uint64_t *code_ptr = program.get_code_start_ptr();
     const uint64_t instr_count = program.code_instr_count;
-    const emu::SceGxmProgramType program_type = program.get_type();
 
     uint64_t instr;
-    usse::USSETranslatorVisitor visitor(b, instr, parameters, program_type);
+    usse::USSETranslatorVisitor visitor(b, instr, parameters, program);
 
     for (auto instr_idx = 0; instr_idx < instr_count; ++instr_idx) {
         instr = code_ptr[instr_idx];
@@ -157,6 +156,10 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
         else
             LOG_DISASM("{:016x}: error: instruction unmatched", instr);
     }
+
+	if (program.get_type() == emu::Fragment && !program.is_native_color()) {
+		visitor.patch_frag_output();
+	}
 }
 
 } // namespace usse
