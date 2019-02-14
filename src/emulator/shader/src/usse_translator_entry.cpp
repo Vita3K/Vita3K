@@ -157,9 +157,9 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
             LOG_DISASM("{:016x}: error: instruction unmatched", instr);
     }
 
-	if (program.get_type() == emu::Fragment && !program.is_native_color()) {
-		visitor.patch_frag_output();
-	}
+    if (program.get_type() == emu::Fragment && !program.is_native_color()) {
+        visitor.patch_frag_output();
+    }
 }
 
 } // namespace usse
