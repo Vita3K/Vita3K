@@ -48,13 +48,13 @@ static void check_reg_internal(Operand &inout_reg, bool is_double_regs, uint8_t 
  * \brief Changes SPECIAL registers to GLOBAL or FPCONSTANT
  */
 static void fixup_reg_special(Operand &inout_reg) {
-	const auto SPECIAL_GLOBAL_FLAG = 0x40;
+    const auto SPECIAL_GLOBAL_FLAG = 0x40;
 
     if (inout_reg.num & SPECIAL_GLOBAL_FLAG) {
-	    inout_reg.num &= ~SPECIAL_GLOBAL_FLAG;
-		inout_reg.bank = RegisterBank::GLOBAL;
-	} else {
-		inout_reg.bank = RegisterBank::FPCONSTANT;
+        inout_reg.num &= ~SPECIAL_GLOBAL_FLAG;
+        inout_reg.bank = RegisterBank::GLOBAL;
+    } else {
+        inout_reg.bank = RegisterBank::FPCONSTANT;
     }
 }
 
