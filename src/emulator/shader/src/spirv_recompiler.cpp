@@ -577,11 +577,10 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     if (!spirv_log.empty())
         LOG_ERROR("SPIR-V Error:\n{}", spirv_log);
 
+    b.dump(spirv);
+
     if (LOG_SHADER_DEBUG || force_shader_debug) {
-        std::stringstream spirv_disasm;
-        b.dump(spirv);
-        spv::Disassemble(spirv_disasm, spirv);
-        LOG_DEBUG("SPIR-V Disassembly:\n{}", spirv_disasm.str());
+        dump_spirv_disasm(b);
     }
 
     return spirv;
@@ -602,6 +601,19 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary) {
     // Compile to GLSL, ready to give to GL driver.
     std::string source = glsl.compile();
     return source;
+}
+
+// ***********************
+// * Functions (utility) *
+// ***********************
+
+void dump_spirv_disasm(const spv::Builder& b)
+{
+    std::vector<uint32_t> spirv;
+    std::stringstream spirv_disasm;
+    b.dump(spirv);
+    spv::Disassemble(spirv_disasm, spirv);
+    LOG_DEBUG("SPIR-V Disassembly:\n{}", spirv_disasm.str());
 }
 
 // ***************************
