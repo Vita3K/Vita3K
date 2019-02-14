@@ -45,6 +45,20 @@ static void check_reg_internal(Operand &inout_reg, bool is_double_regs, uint8_t 
 }
 
 /**
+ * \brief Changes SPECIAL registers to GLOBAL or FPCONSTANT
+ */
+static void fixup_reg_special(Operand &inout_reg) {
+	const auto SPECIAL_GLOBAL_FLAG = 0x40;
+
+    if (inout_reg.num & SPECIAL_GLOBAL_FLAG) {
+	    inout_reg.num &= ~SPECIAL_GLOBAL_FLAG;
+		inout_reg.bank = RegisterBank::GLOBAL;
+	} else {
+		inout_reg.bank = RegisterBank::FPCONSTANT;
+    }
+}
+
+/**
  * \brief Doubles 'reg' register if necessary
  */
 static void double_reg(Imm6 &reg, RegisterBank reg_bank) {
@@ -250,6 +264,9 @@ Swizzle4 decode_vec34_swizzle(Imm4 swizz, const bool swizz_extended, const int t
 
 static void finalize_register(Operand &reg, bool is_double_regs, uint8_t reg_bits) {
     check_reg_internal(reg, is_double_regs, reg_bits);
+
+    if (reg.bank == RegisterBank::SPECIAL)
+        fixup_reg_special(reg);
 }
 
 Operand decode_dest(Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits) {
