@@ -89,6 +89,11 @@ std::string operand_to_str(Operand op, const Imm4 write_mask) {
         break;
     }
 
+    case USSE::RegisterBank::FPCONSTANT: {
+        opstr += " c";
+        break;
+    }
+
     default: {
         assert(false);
         break;
