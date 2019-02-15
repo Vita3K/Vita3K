@@ -76,8 +76,23 @@ using Swizzle4 = Swizzle<4>;
 #define SWIZZLE_CHANNEL_4_DEFAULT SWIZZLE_CHANNEL_4(X, Y, Z, W)
 #define SWIZZLE_CHANNEL_3_DEFAULT SWIZZLE_CHANNEL_3(X, Y, Z)
 
-static Swizzle4 to_swizzle4(Swizzle3 sw) {
+inline Swizzle4 to_swizzle4(Swizzle3 sw) {
     return Swizzle4{ sw[0], sw[1], sw[2], SwizzleChannel::_X };
+}
+
+inline bool is_default(Swizzle4 sw, Imm4 sw_len = 4) {
+    bool res = true;
+
+    // clang-format off
+    switch (sw_len) {
+    case 4: if (sw[3] != SwizzleChannel::_W) res = false; // fallthrough
+    case 3: if (sw[2] != SwizzleChannel::_Z) res = false; // fallthrough
+    case 2: if (sw[1] != SwizzleChannel::_Y) res = false; // fallthrough
+    case 1: if (sw[0] != SwizzleChannel::_X) res = false; // fallthrough
+    }
+    // clang-format on
+
+    return res;
 }
 
 enum class RepeatCount : uint8_t {

@@ -27,8 +27,8 @@
 #include <spdlog/fmt/fmt.h>
 #include <spirv.hpp>
 
-#include <iostream>
 #include <bitset>
+#include <iostream>
 #include <tuple>
 
 // TODO: Remove
@@ -48,7 +48,7 @@ public:
     using instruction_return_type = bool;
 
     spv::Id type_f32;
-    spv::Id type_f32_v[5];   // Starts from 1 ([1] is vec 1)
+    spv::Id type_f32_v[5]; // Starts from 1 ([1] is vec 1)
     spv::Id const_f32[4];
     // spv::Id const_f32_v[5];  // Starts from 1 ([1] is vec 1)
 
@@ -68,20 +68,18 @@ public:
 
         for (std::uint8_t i = 1; i < 5; i++) {
             type_f32_v[i] = m_b.makeVectorType(type_f32, i);
-//            const_f32_v[i] = m_b.makeCompositeConstant(type_f32_v[i],
-//                { const_f32[i - 1], const_f32[i - 1], const_f32[i - 1], const_f32[i - 1] });
+            //            const_f32_v[i] = m_b.makeCompositeConstant(type_f32_v[i],
+            //                { const_f32[i - 1], const_f32[i - 1], const_f32[i - 1], const_f32[i - 1] });
         }
     }
 
 private:
-
     //
     // Translation helpers
     //
 
-#define BEGIN_REPEAT(repeat_count, roj)                         \
+#define BEGIN_REPEAT(repeat_count, repeat_offset_jump)          \
     const auto repeat_count_num = (uint8_t)repeat_count + 1;    \
-    const auto repeat_offset_jump = roj;                        \
     for (auto repeat_offset = 0;                                \
          repeat_offset < repeat_count_num * repeat_offset_jump; \
          repeat_offset += repeat_offset_jump) {
@@ -118,16 +116,16 @@ private:
      * 
      * It will returns vec4(y1, x2, y2, y2)
      * 
-     * \param reg1 First vector in bridge operation.
-     * \param reg2 Second vector in bridge operation.
-     * \param swizz Swizzle to shuffle components after getting the vec4.
+     * \param src1 First vector in bridge operation.
+     * \param src2 Second vector in bridge operation.
+     * \param swiz Swizzle to shuffle components after getting the vec4.
      * \param shift_offset Offset in concats to get vec4
      * \param dest_mask Destination/write mask
      * 
      * \returns ID to a vec4 contains bridging results, or spv::NoResult if failed
      * 
     */
-    spv::Id bridge(SpirvReg &reg1, SpirvReg &reg2, USSE::Swizzle4 swizz, const std::uint32_t shift_offset, const Imm4 dest_mask) {
+    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, USSE::Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask) {
         // Queue keep track of components to be modified with given constant
         struct constant_queue_member {
             std::uint32_t index;
@@ -137,19 +135,21 @@ private:
         std::vector<constant_queue_member> constant_queue;
 
         std::vector<spv::Id> ops;
-        ops.push_back(reg1.var_id);
-        ops.push_back(reg2.var_id);
+        ops.push_back(src1.var_id);
+        ops.push_back(src2.var_id);
 
-        const std::uint32_t total_comp_concat = m_b.getNumTypeComponents(reg1.type_id) + m_b.getNumTypeComponents(reg2.type_id);
+        const uint32_t src1_comp_count = m_b.getNumTypeComponents(src1.type_id);
+        const uint32_t src2_comp_count = m_b.getNumTypeComponents(src2.type_id);
+        const uint32_t total_comp_count = src1_comp_count + src2_comp_count;
 
         for (int i = 0; i < 4; i++) {
             if (dest_mask & (1 << i)) {
-                switch (swizz[i]) {
+                switch (swiz[i]) {
                 case USSE::SwizzleChannel::_X:
                 case USSE::SwizzleChannel::_Y:
                 case USSE::SwizzleChannel::_Z:
                 case USSE::SwizzleChannel::_W: {
-                    ops.push_back(std::min((uint32_t)swizz[i] + shift_offset, total_comp_concat));
+                    ops.push_back(std::min((uint32_t)swiz[i] + shift_offset, total_comp_count));
                     break;
                 }
 
@@ -160,7 +160,7 @@ private:
                     ops.push_back((uint32_t)USSE::SwizzleChannel::_X);
                     constant_queue_member member;
                     member.index = i;
-                    member.constant = const_f32[(uint32_t)swizz[i] - (uint32_t)USSE::SwizzleChannel::_0];
+                    member.constant = const_f32[(uint32_t)swiz[i] - (uint32_t)USSE::SwizzleChannel::_0];
 
                     constant_queue.push_back(std::move(member));
 
@@ -258,19 +258,31 @@ private:
         //
         // I haven't think of any edge case, but this should be looked when there is
         // any problems with bridging
-        if (!result) {
+        if (!result)
             reg_right = reg_left;
-        }
 
-        return bridge(reg_left, reg_right, op.swizzle, out_comp_offset, dest_mask);
+        // Optimization: Bridging (VectorShuffle) or even swizzling is not always necessary
+
+        const bool is_reg_left = out_comp_offset == 0;
+        const bool is_reg_right = out_comp_offset == reg_left.size;
+        const bool needs_swizzle = !is_default(op.swizzle, dest_comp_count);
+
+        if (!needs_swizzle) {
+            if (is_reg_left)
+                return m_b.createLoad(reg_left.var_id);
+            else if (is_reg_right)
+                return m_b.createLoad(reg_right.var_id);
+        } else
+            // We need to bridge
+            return bridge(reg_left, reg_right, op.swizzle, out_comp_offset, dest_mask);
     }
 
-    void store(Operand &dest, spv::Id source, std::uint8_t write_mask = 0xFF, std::uint8_t off = 0) {
+    void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, std::uint8_t off = 0) {
         const SpirvVarRegBank &bank = get_reg_bank(dest.bank);
 
         // Composite a new vector
         SpirvReg dest_reg;
-        std::uint32_t out_comp_offset;
+        std::uint32_t dest_comp_offset;
         std::uint32_t reg_offset = dest.num;
 
         if (dest.bank == USSE::RegisterBank::FPINTERNAL) {
@@ -279,25 +291,39 @@ private:
             reg_offset *= 16;
         }
 
-        bool result = bank.find_reg_at(reg_offset + off, dest_reg, out_comp_offset);
+        bool result = bank.find_reg_at(reg_offset + off, dest_reg, dest_comp_offset);
         if (!result) {
             LOG_ERROR("Can't find dest register {}", disasm::operand_to_str(dest, 0));
             return;
         }
 
+        // If dest has default swizzle, is full-length (all dest component) and starts at a
+        // register boundary, translate it to just a createStore
+
+        const auto total_comp_source = static_cast<std::uint8_t>(m_b.getNumComponents(source));
+        const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
+
+        const bool needs_swizzle = !is_default(dest.swizzle, dest_comp_count);
+        const bool full_length = dest_comp_count == total_comp_source;
+        const bool starts_at_0 = dest_comp_offset == 0;
+
+        if (!needs_swizzle && full_length && starts_at_0) {
+            m_b.createStore(source, dest_reg.var_id);
+            return;
+        }
+
+        // Else do the shifting/swizzling with OpVectorShuffle
+
         std::vector<spv::Id> ops;
         ops.push_back(source);
         ops.push_back(dest_reg.var_id);
 
-        const std::uint8_t total_comp_source = static_cast<std::uint8_t>(m_b.getNumComponents(source));
-        const std::uint8_t total_comp_dest = static_cast<std::uint8_t>(m_b.getNumTypeComponents(dest_reg.type_id));
-
         // Total comp = 2, limit mask scan to only x, y
         // Total comp = 3, limit mask scan to only x, y, z
         // So on..
-        for (std::uint8_t i = 0; i < total_comp_dest; i++) {
-            if (write_mask & (1 << (out_comp_offset + i) % 4)) {
-                ops.push_back((i + out_comp_offset % 4) % 4);
+        for (std::uint8_t i = 0; i < dest_comp_count; i++) {
+            if (dest_mask & (1 << (dest_comp_offset + i) % 4)) {
+                ops.push_back((i + dest_comp_offset % 4) % 4);
             } else {
                 // Use original
                 ops.push_back(total_comp_source + i);
@@ -350,8 +376,8 @@ private:
     static size_t dest_mask_to_comp_count(Imm4 dest_mask) {
         std::bitset<4> bs(dest_mask);
         const auto bit_count = bs.count();
-        assert(bit_count <= 4);
-		return bit_count;
+        assert(bit_count <= 4 && bit_count > 0);
+        return bit_count;
     }
 
 public:
@@ -440,7 +466,6 @@ public:
         // TODO: source modifiers
 
         auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
-        assert(dest_comp_count > 0);
 
         // Recompile
 
@@ -532,6 +557,7 @@ public:
         const auto FMT_F32 = 6;
 
         // TODO: Only simple mov-like f32 to f32 supported
+        // TODO: Seems like decoding for these is wrong?
         if (src_fmt != FMT_F32 || src_fmt != FMT_F32)
             return true;
 
