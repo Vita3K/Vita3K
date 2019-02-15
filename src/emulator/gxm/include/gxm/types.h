@@ -196,14 +196,16 @@ enum SceGxmVertexProgramOutputs : int {
     _SCE_GXM_VERTEX_PROGRAM_OUTPUT_LAST = 1 << 23
 };
 
+#pragma pack(push, 1)
 struct SceGxmProgramVertexOutput {
     std::uint8_t unk[12];
 
-    std::uint16_t unk2;
+    std::uint16_t vertex_outputs_count;
     std::uint16_t pad; // padding maybe
     std::uint32_t vertex_outputs1; // includes everything except texcoord outputs
     std::uint32_t vertex_outputs2; // includes texcoord outputs
 };
+#pragma pack(pop)
 static_assert(sizeof(SceGxmProgramVertexOutput) == 24);
 
 enum SceGxmFragmentProgramInputs : int {
@@ -255,7 +257,7 @@ public:
     std::uint32_t unk20; // bit 6 denotes whether a frag shader writes directly to output (usees __nativecolor modifier) or not
     std::uint32_t parameter_count;
     std::uint32_t parameters_offset; // Number of bytes from the start of this field to the first parameter.
-    std::uint32_t vertex_outputs_offset; // offset to vertex outputs, relative to this field
+    std::uint32_t varyings_offset; // offset to vertex outputs / fragment inputs, relative to this field
 
     std::uint16_t primary_reg_count; // (PAs)
     std::uint16_t secondary_reg_count; // (SAs)
