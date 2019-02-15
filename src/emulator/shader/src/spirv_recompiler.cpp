@@ -210,7 +210,7 @@ spv::StorageClass reg_type_to_spv_storage_class(USSE::RegisterBank reg_type) {
     case USSE::RegisterBank::SECATTR:
         return spv::StorageClassUniformConstant;
     case USSE::RegisterBank::FPINTERNAL:
-        return spv::StorageClassGeneric;
+        return spv::StorageClassPrivate;
 
     case USSE::RegisterBank::SPECIAL: break;
     case USSE::RegisterBank::GLOBAL: break;
