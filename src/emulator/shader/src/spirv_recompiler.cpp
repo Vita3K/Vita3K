@@ -202,7 +202,7 @@ static void sanitize_variable_name(std::string &var_name) {
 spv::StorageClass reg_type_to_spv_storage_class(USSE::RegisterBank reg_type) {
     switch (reg_type) {
     case USSE::RegisterBank::TEMP:
-        return spv::StorageClassFunction;
+        return spv::StorageClassPrivate;
     case USSE::RegisterBank::PRIMATTR:
         return spv::StorageClassInput;
     case USSE::RegisterBank::OUTPUT:
