@@ -20,7 +20,8 @@ const std::string &opcode_str(const USSE::Opcode &e);
 const char *e_predicate_str(USSE::ExtPredicate p);
 const char *s_predicate_str(USSE::ShortPredicate p);
 const char *move_data_type_str(USSE::MoveDataType p);
-std::string operand_to_str(USSE::Operand op, const USSE::Imm4 write_mask);
+std::string reg_to_str(USSE::RegisterBank bank, uint32_t reg_num);
+std::string operand_to_str(USSE::Operand op, USSE::Imm4 write_mask);
 
 template <std::size_t s>
 std::string swizzle_to_str(USSE::Swizzle<s> swizz, const USSE::Imm4 write_mask) {

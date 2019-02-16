@@ -60,10 +60,10 @@ const char *move_data_type_str(MoveDataType p) {
     }
 }
 
-std::string operand_to_str(Operand op, const Imm4 write_mask) {
+std::string reg_to_str(USSE::RegisterBank bank, uint32_t reg_num) {
     std::string opstr;
 
-    switch (op.bank) {
+    switch (bank) {
     case USSE::RegisterBank::PRIMATTR: {
         opstr += "pa";
         break;
@@ -90,7 +90,7 @@ std::string operand_to_str(Operand op, const Imm4 write_mask) {
     }
 
     case USSE::RegisterBank::FPCONSTANT: {
-        opstr += " c";
+        opstr += "c";
         break;
     }
 
@@ -100,7 +100,12 @@ std::string operand_to_str(Operand op, const Imm4 write_mask) {
     }
     }
 
-    opstr += std::to_string(op.num);
+    opstr += std::to_string(reg_num);
+    return opstr;
+}
+
+std::string operand_to_str(Operand op, Imm4 write_mask) {
+    std::string opstr = reg_to_str(op.bank, op.num);
 
     if (write_mask != 0) {
         opstr += "." + swizzle_to_str<4>(op.swizzle, write_mask);

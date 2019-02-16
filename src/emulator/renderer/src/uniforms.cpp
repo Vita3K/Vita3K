@@ -101,7 +101,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             continue;
 
         auto name = gxp::parameter_name(parameter);
-        
+
         auto &do_supply = [&](const std::string &name, const int arr_size, const int idx) -> bool {
             auto &excluded_uniforms = shader_program.excluded_uniforms;
 

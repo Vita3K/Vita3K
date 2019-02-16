@@ -176,11 +176,11 @@ struct SpirvVar {
 };
 
 struct SpirvReg {
-    spv::Id type_id;
-    spv::Id var_id;
+    spv::Id type_id{};
+    spv::Id var_id{};
 
-    uint32_t offset;
-    uint32_t size;
+    uint32_t offset{};
+    uint32_t size{};
 };
 
 // Helper for managing USSE registers and register banks and their associated SPIR-V variables
