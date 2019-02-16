@@ -5,7 +5,7 @@
 #include <string>
 
 // TODO: make LOG_RAW
-#define LOG_DISASM(fmt_str, ...) std::cout << fmt::format(fmt_str, __VA_ARGS__) << std::endl
+#define LOG_DISASM(fmt_str, ...) std::cout << fmt::format(fmt_str, ##__VA_ARGS__) << std::endl
 
 //translator
 namespace shader {

@@ -48,7 +48,7 @@ namespace shader {
 // * Prototypes *
 // **************
 
-spv::Id get_type_fallback(spv::Builder &b);
+static spv::Id get_type_fallback(spv::Builder &b);
 
 // ******************
 // * Helper structs *
@@ -525,7 +525,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         const auto missing_primary_attrs = program.primary_reg_count - spv_params.ins.size();
 
         if (missing_primary_attrs > 2) {
-            LOG_ERROR("missing primary attrs are > 2");
+            LOG_ERROR("missing primary attributes: {}", missing_primary_attrs);
         } else if (missing_primary_attrs > 0) {
             const auto pa_type = b.makeVectorType(b.makeFloatType(32), missing_primary_attrs * 2);
             std::string pa_name = "pa0_blend";
