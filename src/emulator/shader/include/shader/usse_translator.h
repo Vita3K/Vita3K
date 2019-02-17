@@ -101,7 +101,7 @@ private:
      * \returns True on success.
     */
     bool get_spirv_reg(USSE::RegisterBank bank, std::uint32_t reg_offset, std::uint32_t shift_offset, SpirvReg &reg,
-        std::uint32_t &out_comp_offset, bool get_for_store = false) {
+        std::uint32_t &out_comp_offset, bool get_for_store) {
         const std::uint32_t original_reg_offset = reg_offset;
 
         if (bank == USSE::RegisterBank::FPINTERNAL) {
@@ -130,7 +130,7 @@ private:
 
         if (bank == USSE::RegisterBank::PRIMATTR && get_for_store) {
             if (pa_writeable.count(pa_writeable_idx) == 0) {
-                const std::string new_pa_writeable_name = fmt::format("pa{}_write", std::to_string(reg_offset));
+                const std::string new_pa_writeable_name = fmt::format("pa{}_temp", std::to_string(reg_offset));
                 const spv::Id new_pa_writeable = m_b.createVariable(spv::StorageClassPrivate, reg.type_id, new_pa_writeable_name.c_str());
                 m_b.createStore(m_b.createLoad(reg.var_id), new_pa_writeable);
 
@@ -290,7 +290,7 @@ private:
         SpirvReg reg_left{};
         std::uint32_t out_comp_offset{};
 
-        if (!get_spirv_reg(op.bank, op.num, offset, reg_left, out_comp_offset)) {
+        if (!get_spirv_reg(op.bank, op.num, offset, reg_left, out_comp_offset, false)) {
             LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
             return spv::NoResult;
         }
@@ -304,7 +304,7 @@ private:
         //
         // I haven't think of any edge case, but this should be looked when there is
         // any problems with bridging
-        if (!get_spirv_reg(op.bank, op.num, offset + reg_left.size, reg_right, temp))
+        if (!get_spirv_reg(op.bank, op.num, offset + reg_left.size, reg_right, temp, false))
             reg_right = reg_left;
 
         // Optimization: Bridging (VectorShuffle) or even swizzling is not always necessary
@@ -353,7 +353,7 @@ private:
 
         // The source needs to fit in both the dest vector and the total write components must be equal to total source components
         const bool full_length = (total_comp_dest == total_comp_source) && (dest_comp_count == total_comp_source);
-        const bool starts_at_0 = dest_comp_offset == 0;
+        const bool starts_at_0 = (dest_comp_offset == 0);
 
         if (!needs_swizzle && full_length && starts_at_0) {
             m_b.createStore(source, dest_reg.var_id);
@@ -433,25 +433,23 @@ public:
     // Helpers
     //
 
-    // Write pa0 to fragment output color
+    // In non-native frag shaders, GXM's ShaderPatcher API uses some specific PAs as the input color of its blending code
+    // This function imitates that by write pa0 to fragment output color
     // TODO: Is this and our OpenGL blending code enough?
-    void patch_frag_output() {
-        SpirvReg pa0;
-        SpirvReg o0;
+    // TOOD: Is pa0 correct or is there a GXP field or some other logic that determines the PA offfset (+size?) to use
+    void emit_non_native_frag_output() {
+        Operand pa0_operand;
+        pa0_operand.bank = RegisterBank::PRIMATTR;
+        pa0_operand.num = 0;
+        pa0_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
-        std::uint32_t temp = 0;
+        Operand o0_operand;
+        o0_operand.bank = RegisterBank::OUTPUT;
+        o0_operand.num = 0;
+        o0_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
-        if (!get_spirv_reg(RegisterBank::PRIMATTR, 0, 0, pa0, temp, false)) {
-            LOG_ERROR("Can't find pa0 for patching fragment output!");
-            return;
-        }
-
-        if (!get_spirv_reg(RegisterBank::OUTPUT, 0, 0, o0, temp, true)) {
-            LOG_ERROR("Can't find o0 for patching fragment output!");
-            return;
-        }
-
-        m_b.createStore(m_b.createLoad(pa0.var_id), o0.var_id);
+        spv::Id pa0_var = load(pa0_operand, 0xF, 0);
+        store(o0_operand, pa0_var, 0xF, 0);
     }
 
     //

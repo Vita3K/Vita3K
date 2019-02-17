@@ -158,7 +158,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     }
 
     if (program.get_type() == emu::Fragment && !program.is_native_color()) {
-        visitor.patch_frag_output();
+        visitor.emit_non_native_frag_output();
     }
 }
 

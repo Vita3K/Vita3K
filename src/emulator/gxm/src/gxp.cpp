@@ -205,7 +205,7 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
     uint8_t *vo_start = (uint8_t *)vo_ptr->vertex_outputs1;
     if (vo_start)
         vo_start += (uint64_t)&vo_ptr->vertex_outputs1;
-    uint8_t *vo_end = vo_start + 16 * vo_ptr->vertex_outputs_count;
+    uint8_t *vo_end = vo_start + 16 * vo_ptr->varyings_count;
 
     if (vo_start == vo_end)
         return _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE;
