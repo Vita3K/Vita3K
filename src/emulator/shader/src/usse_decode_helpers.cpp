@@ -15,14 +15,12 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/usse_decode_helpers.h>
+#include <shader/usse_decoder_helpers.h>
+#include <shader/usse_types.h>
 
 #include <util/log.h>
 
-using namespace USSE;
-
-namespace shader {
-namespace usse {
+namespace shader::usse {
 
 //
 // Decoder helpers
@@ -294,5 +292,4 @@ Operand decode_src12(Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_d
     return src;
 }
 
-} // namespace usse
-} // namespace shader
+} // namespace shader::usse

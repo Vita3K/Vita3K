@@ -21,6 +21,7 @@
 #include <gxm/types.h>
 #include <shader/profile.h>
 #include <shader/usse_translator_entry.h>
+#include <shader/usse_translator_types.h>
 #include <util/fs.h>
 #include <util/log.h>
 
@@ -30,19 +31,20 @@
 #include <spirv_glsl.hpp>
 
 #include <algorithm>
+#include <fstream>
 #include <functional>
 #include <iterator>
 #include <map>
-#include <fstream>
 #include <sstream>
 #include <utility>
 #include <vector>
 
 using boost::optional;
-using SpirvCode = std::vector<uint32_t>;
 
 static constexpr bool LOG_SHADER_CODE = true;
 static constexpr bool DUMP_SPIRV_BINARIES = false;
+
+using namespace shader::usse;
 
 namespace shader {
 
@@ -63,7 +65,7 @@ static spv::Id get_type_fallback(spv::Builder &b);
 //           2) there are no struct array instances
 struct StructDeclContext {
     std::string name;
-    USSE::RegisterBank reg_type = USSE::RegisterBank::INVALID;
+    usse::RegisterBank reg_type = usse::RegisterBank::INVALID;
     std::vector<spv::Id> field_ids;
     std::vector<std::string> field_names; // count must be equal to `field_ids`
     bool is_interaface_block{ false };
@@ -201,28 +203,28 @@ static void sanitize_variable_name(std::string &var_name) {
         var_name.end());
 }
 
-spv::StorageClass reg_type_to_spv_storage_class(USSE::RegisterBank reg_type) {
+spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     switch (reg_type) {
-    case USSE::RegisterBank::TEMP:
+    case usse::RegisterBank::TEMP:
         return spv::StorageClassPrivate;
-    case USSE::RegisterBank::PRIMATTR:
+    case usse::RegisterBank::PRIMATTR:
         return spv::StorageClassInput;
-    case USSE::RegisterBank::OUTPUT:
+    case usse::RegisterBank::OUTPUT:
         return spv::StorageClassOutput;
-    case USSE::RegisterBank::SECATTR:
+    case usse::RegisterBank::SECATTR:
         return spv::StorageClassUniformConstant;
-    case USSE::RegisterBank::FPINTERNAL:
+    case usse::RegisterBank::FPINTERNAL:
         return spv::StorageClassPrivate;
 
-    case USSE::RegisterBank::SPECIAL: break;
-    case USSE::RegisterBank::GLOBAL: break;
-    case USSE::RegisterBank::FPCONSTANT: break;
-    case USSE::RegisterBank::IMMEDIATE: break;
-    case USSE::RegisterBank::INDEX: break;
-    case USSE::RegisterBank::INDEXED: break;
+    case usse::RegisterBank::SPECIAL: break;
+    case usse::RegisterBank::GLOBAL: break;
+    case usse::RegisterBank::FPCONSTANT: break;
+    case usse::RegisterBank::IMMEDIATE: break;
+    case usse::RegisterBank::INDEX: break;
+    case usse::RegisterBank::INDEXED: break;
 
-    case USSE::RegisterBank::MAXIMUM:
-    case USSE::RegisterBank::INVALID:
+    case usse::RegisterBank::MAXIMUM:
+    case usse::RegisterBank::INVALID:
     default:
         return spv::StorageClassMax;
     }
@@ -231,7 +233,7 @@ spv::StorageClass reg_type_to_spv_storage_class(USSE::RegisterBank reg_type) {
     return spv::StorageClassMax;
 }
 
-static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, USSE::RegisterBank reg_type, uint32_t size, spv::Id type) {
+static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type) {
     sanitize_variable_name(name);
 
     const auto storage_class = reg_type_to_spv_storage_class(reg_type);
@@ -240,19 +242,19 @@ static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &para
     SpirvVarRegBank *var_group;
 
     switch (reg_type) {
-    case USSE::RegisterBank::SECATTR:
+    case usse::RegisterBank::SECATTR:
         var_group = &parameters.uniforms;
         break;
-    case USSE::RegisterBank::PRIMATTR:
+    case usse::RegisterBank::PRIMATTR:
         var_group = &parameters.ins;
         break;
-    case USSE::RegisterBank::OUTPUT:
+    case usse::RegisterBank::OUTPUT:
         var_group = &parameters.outs;
         break;
-    case USSE::RegisterBank::TEMP:
+    case usse::RegisterBank::TEMP:
         var_group = &parameters.temps;
         break;
-    case USSE::RegisterBank::FPINTERNAL:
+    case usse::RegisterBank::FPINTERNAL:
         var_group = &parameters.internals;
         break;
     default:
@@ -293,7 +295,7 @@ static spv::Id create_param_sampler(spv::Builder &b, SpirvShaderParameters &para
     spv::Id sampled_image_type = b.makeSampledImageType(image_type);
     std::string name = gxp::parameter_name_raw(parameter);
 
-    return create_spirv_var_reg(b, parameters, name, USSE::RegisterBank::SECATTR, 2, sampled_image_type);
+    return create_spirv_var_reg(b, parameters, name, usse::RegisterBank::SECATTR, 2, sampled_image_type);
 }
 
 static void create_vertex_outputs(spv::Builder &b, SpirvShaderParameters &parameters, const SceGxmProgram &program) {
@@ -336,7 +338,7 @@ static void create_vertex_outputs(spv::Builder &b, SpirvShaderParameters &parame
             VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
 
             const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), properties.component_count);
-            const spv::Id out_var = create_spirv_var_reg(b, parameters, properties.name, USSE::RegisterBank::OUTPUT, properties.component_count, out_type);
+            const spv::Id out_var = create_spirv_var_reg(b, parameters, properties.name, usse::RegisterBank::OUTPUT, properties.component_count, out_type);
 
             // TODO: More decorations needed?
             if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION)
@@ -377,7 +379,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             FragmentProgramInputProperties properties = vertex_properties_map.at(vo_typed);
 
             const spv::Id in_type = b.makeVectorType(b.makeFloatType(32), properties.component_count);
-            const spv::Id in_var = create_spirv_var_reg(b, parameters, properties.name, USSE::RegisterBank::PRIMATTR, properties.component_count, in_type);
+            const spv::Id in_var = create_spirv_var_reg(b, parameters, properties.name, usse::RegisterBank::PRIMATTR, properties.component_count, in_type);
         }
     }
 }
@@ -387,7 +389,7 @@ static void create_fragment_output(spv::Builder &b, SpirvShaderParameters &param
 
     std::string frag_color_name = "out_color";
     const spv::Id frag_color_type = b.makeVectorType(b.makeFloatType(32), 4);
-    const spv::Id frag_color_var = create_spirv_var_reg(b, parameters, frag_color_name, USSE::RegisterBank::OUTPUT, 4, frag_color_type);
+    const spv::Id frag_color_var = create_spirv_var_reg(b, parameters, frag_color_name, usse::RegisterBank::OUTPUT, 4, frag_color_type);
 
     b.addDecoration(frag_color_var, spv::DecorationLocation, 0);
 
@@ -404,11 +406,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         gxp::log_parameter(parameter);
 
-        USSE::RegisterBank param_reg_type = USSE::RegisterBank::PRIMATTR;
+        usse::RegisterBank param_reg_type = usse::RegisterBank::PRIMATTR;
 
         switch (parameter.category) {
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
-            param_reg_type = USSE::RegisterBank::SECATTR;
+            param_reg_type = usse::RegisterBank::SECATTR;
         // fallthrough
         case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE: {
             const std::string struct_name = gxp::parameter_struct_name(parameter);
@@ -420,9 +422,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
             spv::Id param_type = get_param_type(b, parameter);
 
-            const bool is_uniform = param_reg_type == USSE::RegisterBank::SECATTR;
-            const bool is_vertex_output = param_reg_type == USSE::RegisterBank::OUTPUT && program_type == emu::SceGxmProgramType::Vertex;
-            const bool is_fragment_input = param_reg_type == USSE::RegisterBank::PRIMATTR && program_type == emu::SceGxmProgramType::Fragment;
+            const bool is_uniform = param_reg_type == usse::RegisterBank::SECATTR;
+            const bool is_vertex_output = param_reg_type == usse::RegisterBank::OUTPUT && program_type == emu::SceGxmProgramType::Vertex;
+            const bool is_fragment_input = param_reg_type == usse::RegisterBank::PRIMATTR && program_type == emu::SceGxmProgramType::Fragment;
             const bool can_be_interface_block = is_vertex_output || is_fragment_input;
 
             // TODO: I haven't seen uniforms in 'structs' anywhere and can't test atm, so for now let's
@@ -508,7 +510,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     for (auto i = 0; i < program.temp_reg_count1; i++) {
         auto name = fmt::format("r{}", i);
         auto type = b.makeVectorType(b.makeFloatType(32), 4); // TODO: Figure out correct type
-        create_spirv_var_reg(b, spv_params, name, USSE::RegisterBank::TEMP, 4, type);
+        create_spirv_var_reg(b, spv_params, name, usse::RegisterBank::TEMP, 4, type);
     }
 
     // Create internal reg vars
@@ -516,7 +518,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         auto name = fmt::format("i{}", i);
         // TODO: these are actually 128 bits long
         auto type = b.makeVectorType(b.makeFloatType(32), 4); // TODO: Figure out correct type
-        create_spirv_var_reg(b, spv_params, name, USSE::RegisterBank::FPINTERNAL, 16, type);
+        create_spirv_var_reg(b, spv_params, name, usse::RegisterBank::FPINTERNAL, 16, type);
     }
 
     // If this is a non-native color fragment shader (uses configurable blending, doesn't write to color buffer directly):
@@ -531,7 +533,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         } else if (missing_primary_attrs > 0) {
             const auto pa_type = b.makeVectorType(b.makeFloatType(32), missing_primary_attrs * 2);
             std::string pa_name = "pa0_blend";
-            create_spirv_var_reg(b, spv_params, pa_name, USSE::RegisterBank::PRIMATTR, missing_primary_attrs * 2, pa_type); // TODO: * 2 is a hack because we don't yet support f16
+            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, missing_primary_attrs * 2, pa_type); // TODO: * 2 is a hack because we don't yet support f16
         }
     }
 
@@ -607,7 +609,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     if (DUMP_SPIRV_BINARIES) {
         // TODO: use base path host var
         std::ofstream spirv_dump(shader_hash + ".spv", std::ios::binary);
-        spirv_dump.write((char*)&spirv, spirv.size() * sizeof(uint32_t));
+        spirv_dump.write((char *)&spirv, spirv.size() * sizeof(uint32_t));
         spirv_dump.close();
     }
 
@@ -635,7 +637,7 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary) {
 // * Functions (utility) *
 // ***********************
 
-void spirv_disasm_print(const std::vector<unsigned int>& spirv_binary) {
+void spirv_disasm_print(const usse::SpirvCode &spirv_binary) {
     std::stringstream spirv_disasm;
     spv::Disassemble(spirv_disasm, spirv_binary);
     LOG_DEBUG("SPIR-V Disassembly:\n{}", spirv_disasm.str());

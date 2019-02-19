@@ -1,22 +1,20 @@
 
 #include <shader/usse_disasm.h>
 
-#include <shader/types.h>
+#include <shader/usse_types.h>
 
-#include <map>
 #include <string>
+#include <unordered_map>
 
-using namespace USSE;
+using namespace shader::usse;
 
-namespace shader {
-namespace usse {
-namespace disasm {
+namespace shader::usse::disasm {
 
 //
 // Disasm helpers
 //
 
-const std::string &opcode_str(const USSE::Opcode &e) {
+const std::string &opcode_str(const Opcode &e) {
     static const std::unordered_map<Opcode, const std::string> names = {
 #define OPCODE(n) { Opcode::n, std::string(#n) },
 #include "shader/usse_opcodes.inc"
@@ -60,42 +58,42 @@ const char *move_data_type_str(MoveDataType p) {
     }
 }
 
-std::string reg_to_str(USSE::RegisterBank bank, uint32_t reg_num) {
+std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
     std::string opstr;
 
     switch (bank) {
-    case USSE::RegisterBank::PRIMATTR: {
+    case RegisterBank::PRIMATTR: {
         opstr += "pa";
         break;
     }
 
-    case USSE::RegisterBank::SECATTR: {
+    case RegisterBank::SECATTR: {
         opstr += "sa";
         break;
     }
 
-    case USSE::RegisterBank::TEMP: {
+    case RegisterBank::TEMP: {
         opstr += "r";
         break;
     }
 
-    case USSE::RegisterBank::OUTPUT: {
+    case RegisterBank::OUTPUT: {
         opstr += "o";
         break;
     }
 
-    case USSE::RegisterBank::FPINTERNAL: {
+    case RegisterBank::FPINTERNAL: {
         opstr += "i";
         break;
     }
 
-    case USSE::RegisterBank::FPCONSTANT: {
+    case RegisterBank::FPCONSTANT: {
         opstr += "c";
         break;
     }
 
     default: {
-        assert(false);
+        opstr += "INVALID";
         break;
     }
     }
@@ -114,6 +112,4 @@ std::string operand_to_str(Operand op, Imm4 write_mask) {
     return opstr;
 }
 
-} // namespace disasm
-} // namespace usse
-} // namespace shader
+} // namespace shader::usse::disasm
