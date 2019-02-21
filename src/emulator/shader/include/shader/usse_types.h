@@ -128,8 +128,27 @@ enum class RegisterBank {
 };
 
 // TODO: Make this a std::set?
-enum RegisterFlags {
+enum RegisterFlags : uint32_t {
+    Absolute = 0x1000, ///< Absolute the value
+    Negative = 0x2000 ///< Negate the value
 };
+
+inline RegisterFlags operator|(RegisterFlags a, RegisterFlags b) {
+    return (RegisterFlags)((uint32_t)a | (uint32_t)b);
+}
+
+inline RegisterFlags operator&(RegisterFlags a, RegisterFlags b) {
+    return (RegisterFlags)((uint32_t)a & (uint32_t)b);
+}
+
+inline RegisterFlags &operator|=(RegisterFlags &a, RegisterFlags b) {
+    return (RegisterFlags &)((uint32_t &)a |= (uint32_t)b);
+}
+
+inline RegisterFlags &operator&=(RegisterFlags &a, RegisterFlags b) {
+    return (RegisterFlags &)((uint32_t &)a &= (uint32_t)b);
+}
+
 // TODO: Make this a std::set?
 enum InstructionFlags {
 };
@@ -149,9 +168,11 @@ struct InstructionOperands {
 };
 
 struct Instruction {
-    usse::Opcode opcode = usse::Opcode::INVALID;
+    Opcode opcode = Opcode::INVALID;
     InstructionOperands opr;
-    InstructionFlags flags;
+    uint32_t flags;
+    Imm4 dest_mask;
+    RepeatCount repeat_count{ RepeatCount::REPEAT_0 };
 };
 
 } // namespace usse

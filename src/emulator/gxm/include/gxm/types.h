@@ -209,6 +209,13 @@ struct SceGxmProgramVertexOutput {
 
 static_assert(sizeof(SceGxmProgramVertexOutput) == 24);
 
+struct SceGxmProgramAttributeDescriptor {
+    std::uint32_t attribute_info;
+    std::uint32_t resource_index;
+    std::uint32_t size;
+    std::uint32_t component_info; ///< Total components and type
+};
+
 enum SceGxmFragmentProgramInputs : int {
     _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE = 0,
 

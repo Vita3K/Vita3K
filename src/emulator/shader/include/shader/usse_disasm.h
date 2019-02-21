@@ -20,44 +20,9 @@ const char *e_predicate_str(ExtPredicate p);
 const char *s_predicate_str(ShortPredicate p);
 const char *move_data_type_str(MoveDataType p);
 std::string reg_to_str(RegisterBank bank, uint32_t reg_num);
-std::string operand_to_str(Operand op, Imm4 write_mask);
-
+std::string operand_to_str(Operand op, Imm4 write_mask, uint32_t shift = 0);
 template <std::size_t s>
-std::string swizzle_to_str(Swizzle<s> swizz, const Imm4 write_mask) {
-    std::string swizzstr;
-
-    for (std::size_t i = 0; i < s && write_mask & (1 << i); i++) {
-        switch (swizz[i]) {
-        case SwizzleChannel::_X: {
-            swizzstr += "x";
-            break;
-        }
-        case SwizzleChannel::_Y: {
-            swizzstr += "y";
-            break;
-        }
-        case SwizzleChannel::_Z: {
-            swizzstr += "z";
-            break;
-        }
-        case SwizzleChannel::_W: {
-            swizzstr += "w";
-            break;
-        }
-        case SwizzleChannel::_0: {
-            swizzstr += "0";
-            break;
-        }
-        case SwizzleChannel::_H: {
-            swizzstr += "H";
-            break;
-        }
-        default: break;
-        }
-    }
-
-    return swizzstr;
-}
+std::string swizzle_to_str(Swizzle<s> swizz, const Imm4 write_mask, uint32_t shift = 0);
 
 } // namespace disasm
 } // namespace usse

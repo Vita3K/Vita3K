@@ -102,14 +102,67 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
     return opstr;
 }
 
-std::string operand_to_str(Operand op, Imm4 write_mask) {
-    std::string opstr = reg_to_str(op.bank, op.num);
+std::string operand_to_str(Operand op, Imm4 write_mask, std::uint32_t shift) {
+    if (op.bank == RegisterBank::FPINTERNAL) {
+        shift /= 4;
+    }
+
+    std::string opstr = reg_to_str(op.bank, op.num + shift);
 
     if (write_mask != 0) {
-        opstr += "." + swizzle_to_str<4>(op.swizzle, write_mask);
+        opstr += "." + swizzle_to_str<4>(op.swizzle, write_mask, shift);
     }
 
     return opstr;
+}
+
+template <std::size_t s>
+std::string swizzle_to_str(Swizzle<s> swizz, Imm4 write_mask, uint32_t shift) {
+    std::string swizzstr;
+
+    for (std::size_t i = 0; i < s; i++) {
+        if (write_mask & (1 << ((i + shift) % s))) {
+            switch (swizz[(i + shift) % s]) {
+            case SwizzleChannel::_X: {
+                swizzstr += "x";
+                break;
+            }
+            case SwizzleChannel::_Y: {
+                swizzstr += "y";
+                break;
+            }
+            case SwizzleChannel::_Z: {
+                swizzstr += "z";
+                break;
+            }
+            case SwizzleChannel::_W: {
+                swizzstr += "w";
+                break;
+            }
+            case SwizzleChannel::_0: {
+                swizzstr += "0";
+                break;
+            }
+            case SwizzleChannel::_H: {
+                swizzstr += "H";
+                break;
+            }
+            default: {
+                swizzstr += "?";
+                break;
+            }
+            }
+        } else {
+            // Not available
+            swizzstr += "-";
+        }
+    }
+
+    // Erase all - at the end
+    while (!swizzstr.empty() && swizzstr.back() == '-')
+        swizzstr.pop_back();
+
+    return swizzstr;
 }
 
 } // namespace shader::usse::disasm

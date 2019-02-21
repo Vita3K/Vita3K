@@ -2,6 +2,13 @@
 
 #include <spirv_glsl.hpp>
 
+#include <unordered_map>
+#include <vector>
+
+namespace spv {
+class Builder;
+}
+
 namespace shader::usse {
 
 using SpirvCode = std::vector<uint32_t>;
@@ -84,5 +91,15 @@ struct SpirvShaderParameters {
     // Struct metadata, unused atm
     SpirvVarRegBank structs;
 };
+
+struct NonDependentTextureQueryCallInfo {
+    spv::Id sampler;
+    spv::Id coord;
+    spv::Id dest;
+    uint32_t reserved; ///< For sampling method later
+};
+
+using NonDependentTextureQueryCallInfos = std::vector<NonDependentTextureQueryCallInfo>;
+using SamplerMap = std::unordered_map<std::uint32_t, spv::Id>;
 
 } // namespace shader::usse

@@ -233,10 +233,10 @@ spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     return spv::StorageClassMax;
 }
 
-static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type) {
+static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type, optional<spv::StorageClass> force_storage = boost::none) {
     sanitize_variable_name(name);
 
-    const auto storage_class = reg_type_to_spv_storage_class(reg_type);
+    const auto storage_class = force_storage ? *force_storage : reg_type_to_spv_storage_class(reg_type);
     spv::Id var_id = b.createVariable(storage_class, type, name.c_str());
 
     SpirvVarRegBank *var_group;
@@ -347,39 +347,181 @@ static void create_vertex_outputs(spv::Builder &b, SpirvShaderParameters &parame
     }
 }
 
-static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, const SceGxmProgram &program) {
-    auto set_property = [](SceGxmFragmentProgramInputs vo, const char *name, std::uint32_t component_count) {
-        return std::make_pair(vo, FragmentProgramInputProperties(name, component_count));
+static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers, const SceGxmProgram &program) {
+    static const std::unordered_map<std::uint32_t, std::string> name_map = {
+        { 0xD000, "in_Position" },
+        { 0xC000, "in_Fog" },
+        { 0xA000, "in_Color0" },
+        { 0xB000, "in_Color1" },
+        { 0x0, "in_TexCoord0" },
+        { 0x1000, "in_TexCoord1" },
+        { 0x2000, "in_TexCoord2" },
+        { 0x3000, "in_TexCoord3" },
+        { 0x4000, "in_TexCoord4" },
+        { 0x5000, "in_TexCoord5" },
+        { 0x6000, "in_TexCoord6" },
+        { 0x7000, "in_TexCoord7" },
+        { 0x8000, "in_TexCoord8" },
+        { 0x9000, "in_TexCoord9" },
     };
 
-    // TODO: Verify component counts
-    static const FragmentProgramInputPropertiesMap vertex_properties_map = {
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_POSITION, "in_Position", 4),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_FOG, "in_Fog", 4),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_COLOR0, "in_Color0", 4),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_COLOR1, "in_Color1", 4),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD0, "in_TexCoord0", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD1, "in_TexCoord1", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD2, "in_TexCoord2", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD3, "in_TexCoord3", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD4, "in_TexCoord4", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD5, "in_TexCoord5", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD6, "in_TexCoord6", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD7, "in_TexCoord7", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD8, "in_TexCoord8", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD9, "in_TexCoord9", 2),
-        set_property(SCE_GXM_FRAGMENT_PROGRAM_INPUT_SPRITECOORD, "in_SpriteCoord", 2),
-    };
+    // Both vertex output and this struct should stay in a larger varying struct
+    auto vertex_outputs_ptr = reinterpret_cast<const SceGxmProgramVertexOutput *>(
+        reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
 
-    const SceGxmFragmentProgramInputs fragment_inputs = gxp::get_fragment_inputs(program);
+    const SceGxmProgramAttributeDescriptor *descriptor = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(
+        reinterpret_cast<const std::uint8_t *>(&vertex_outputs_ptr->vertex_outputs1) + vertex_outputs_ptr->vertex_outputs1);
 
-    for (int vo = SCE_GXM_FRAGMENT_PROGRAM_INPUT_POSITION; vo < _SCE_GXM_FRAGMENT_PROGRAM_INPUT_LAST; vo <<= 1) {
-        if (fragment_inputs & vo) {
-            const auto vo_typed = static_cast<SceGxmFragmentProgramInputs>(vo);
-            FragmentProgramInputProperties properties = vertex_properties_map.at(vo_typed);
+    std::uint32_t pa_offset = 0;
+    const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
-            const spv::Id in_type = b.makeVectorType(b.makeFloatType(32), properties.component_count);
-            const spv::Id in_var = create_spirv_var_reg(b, parameters, properties.name, usse::RegisterBank::PRIMATTR, properties.component_count, in_type);
+    // Store the coords
+    std::array<spv::Id, 9> coords;
+    std::fill(coords.begin(), coords.end(), spv::NoResult);
+
+    // It may actually be total fragments input
+    for (size_t i = 0; i < vertex_outputs_ptr->varyings_count; i++, descriptor++) {
+        // 4 bit flag indicates a PA!
+        if ((descriptor->attribute_info & 0x4000F000) != 0xF000) {
+            const uint32_t input_id = (descriptor->attribute_info & 0x4000F000);
+            std::string pa_name;
+
+            if (input_id & 0x40000000) {
+                pa_name = "in_SpriteCoord";
+            } else {
+                pa_name = name_map.at(input_id);
+            }
+
+            std::string pa_type = "uchar";
+
+            uint32_t input_type = (descriptor->attribute_info & 0x30100000);
+
+            if (input_type == 0x20000000) {
+                pa_type = "half";
+            } else if (input_type == 0x10000000) {
+                pa_type = "fixed";
+            } else if (input_type == 0x100000) {
+                if (input_id == 0xA000 || input_id == 0xB000) {
+                    pa_type = "float";
+                }
+            } else if (input_id != 0xA000 && input_id != 0xB000) {
+                pa_type = "float";
+            }
+
+            // Create PA Iterator SPIR-V variable
+            const auto num_comp = ((descriptor->attribute_info >> 22) & 3) + 1;
+            const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), num_comp);
+            const auto pa_iter_size = ((descriptor->size >> 4) & 3) + 1;
+            const auto pa_iter_var = create_spirv_var_reg(b, parameters, pa_name, RegisterBank::PRIMATTR, pa_iter_size, pa_iter_type);
+
+            LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
+
+            if (input_id >= 0 && input_id <= 0x9000) {
+                coords[input_id / 0x1000] = pa_iter_var;
+            }
+
+            pa_offset += ((descriptor->size >> 4) & 3) + 1;
+        }
+
+        uint32_t tex_coord_index = (descriptor->attribute_info & 0x40F);
+
+        // Process texture query variable (iterator), stored on a PA (primary attribute) register
+        if (tex_coord_index != 0xF) {
+            std::string tex_name = "";
+            std::string sampling_type = "2D";
+            uint32_t sampler_resource_index = 0;
+
+            for (std::uint32_t p = 0; p < program.parameter_count; p++) {
+                const SceGxmProgramParameter &parameter = gxp_parameters[p];
+
+                if (parameter.resource_index == descriptor->resource_index && parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+                    tex_name = gxp::parameter_name_raw(parameter);
+                    sampler_resource_index = parameter.resource_index;
+
+                    // ????
+                    if ((parameter.semantic >> 12) & 1) {
+                        sampling_type = "CUBE";
+                    }
+
+                    break;
+                }
+            }
+
+            const auto component_type = (descriptor->component_info >> 4) & 3;
+            const auto swizzle_texcoord = (descriptor->attribute_info & 0x300);
+
+            std::string component_type_str = "????";
+
+            if (component_type == 3) {
+                component_type_str = "float";
+            } else if (component_type == 2) {
+                component_type_str = "half";
+            }
+
+            std::string swizzle_str = ".xy";
+            std::string projecting;
+
+            if (swizzle_texcoord != 0x100) {
+                projecting = "proj";
+            }
+
+            int tex_coord_comp_count = 2;
+
+            if (swizzle_texcoord == 0x300) {
+                swizzle_str = ".xyz";
+                tex_coord_comp_count = 3;
+            } else if (swizzle_texcoord == 0x200) {
+                swizzle_str = ".xyw";
+
+                // Not really sure
+                tex_coord_comp_count = 4;
+            }
+
+            std::string centroid_str;
+
+            if ((descriptor->attribute_info & 0x10) == 0x10) {
+                centroid_str = "_CENTROID";
+            }
+
+            uint32_t num_component = 0;
+
+            if ((descriptor->component_info & 0x40) != 0x40) {
+                num_component = 4;
+            }
+
+            std::string texcoord_name = "TEXCOORD" + std::to_string(tex_coord_index);
+            LOG_TRACE("pa{} = tex{}{}<{}{}>({}, {}{}{})", pa_offset, sampling_type, projecting,
+                component_type_str, num_component, tex_name, texcoord_name, centroid_str, swizzle_str);
+
+            std::string tex_query_var_name = "tex_query";
+            tex_query_var_name += std::to_string(tex_coord_index);
+
+            NonDependentTextureQueryCallInfo tex_query_info;
+
+            // Size of this extra pa occupied
+            // Force this to be PRIVATE
+            const optional<spv::StorageClass> texture_query_storage{ spv::StorageClassPrivate };
+            const auto type = ((descriptor->size >> 6) & 3) + 1;
+            const auto size = b.makeVectorType(b.makeFloatType(32), num_component);
+
+            tex_query_info.dest = create_spirv_var_reg(b, parameters, tex_query_var_name, RegisterBank::PRIMATTR, type, size, texture_query_storage);
+
+            if (coords[tex_coord_index] == spv::NoResult) {
+                // Create an 'in' variable
+                // TODO: this really right?
+                std::string coord_name = "input_TexCoord";
+                coord_name += std::to_string(tex_coord_index);
+
+                coords[tex_coord_index] = b.createVariable(spv::StorageClassInput,
+                    b.makeVectorType(b.makeFloatType(32), tex_coord_comp_count), coord_name.c_str());
+            }
+
+            tex_query_info.coord = coords[tex_coord_index];
+            tex_query_info.sampler = samplers[sampler_resource_index];
+
+            tex_query_infos.push_back(tex_query_info);
+
+            pa_offset += ((descriptor->size >> 6) & 3) + 1;
         }
     }
 }
@@ -396,10 +538,12 @@ static void create_fragment_output(spv::Builder &b, SpirvShaderParameters &param
     parameters.outs.push({ frag_color_type, frag_color_var }, 4);
 }
 
-static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, emu::SceGxmProgramType program_type) {
+static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
     StructDeclContext param_struct = {};
+
+    SamplerMap samplers;
 
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
@@ -475,7 +619,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_SAMPLER: {
-            create_param_sampler(b, spv_params, parameter);
+            const auto sampler_spv_var = create_param_sampler(b, spv_params, parameter);
+            samplers.emplace(parameter.resource_index, sampler_spv_var);
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE: {
@@ -502,7 +647,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     if (program_type == emu::SceGxmProgramType::Vertex)
         create_vertex_outputs(b, spv_params, program);
     else if (program_type == emu::SceGxmProgramType::Fragment) {
-        create_fragment_inputs(b, spv_params, program);
+        create_fragment_inputs(b, spv_params, texture_queries, samplers, program);
         create_fragment_output(b, spv_params, program);
     }
 
@@ -540,7 +685,20 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     return spv_params;
 }
 
-static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program) {
+static void do_texture_queries(spv::Builder &b, NonDependentTextureQueryCallInfos texture_queries) {
+    for (auto &texture_query : texture_queries) {
+        const auto image_sample = b.createOp(spv::OpImageSampleImplicitLod,
+            b.getTypeId(texture_query.dest), // destination result type
+            { texture_query.sampler, texture_query.coord } // sampler and texture coordinates
+        );
+        b.createStore(image_sample, texture_query.dest);
+    }
+}
+
+static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program, NonDependentTextureQueryCallInfos texture_queries) {
+    // Do texture queries
+    do_texture_queries(b, texture_queries);
+
     usse::convert_gxp_usse_to_spirv(b, program, parameters);
 }
 
@@ -559,7 +717,8 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     // Capabilities
     b.addCapability(spv::Capability::CapabilityShader);
 
-    SpirvShaderParameters parameters = create_parameters(b, program, program_type);
+    NonDependentTextureQueryCallInfos texture_queries;
+    SpirvShaderParameters parameters = create_parameters(b, program, program_type, texture_queries);
 
     std::string entry_point_name;
     spv::ExecutionModel execution_model;
@@ -581,7 +740,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     // Entry point
     spv::Function *spv_func_main = b.makeEntryPoint(entry_point_name.c_str());
 
-    generate_shader_body(b, parameters, program);
+    generate_shader_body(b, parameters, program, texture_queries);
 
     b.leaveFunction();
 

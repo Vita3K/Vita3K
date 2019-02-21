@@ -147,7 +147,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
     auto shuff_result = m_b.createOp(spv::OpVectorShuffle, shuff_type, ops);
 
     for (std::size_t i = 0; i < constant_queue.size(); i++) {
-        const auto index  = m_b.makeIntConstant(constant_queue[i].index);
+        const auto index = m_b.makeIntConstant(constant_queue[i].index);
         shuff_result = m_b.createOp(spv::OpVectorInsertDynamic, shuff_type,
             { shuff_result, constant_queue[i].constant, index });
     }
@@ -215,7 +215,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
             if (is_reg_left_comp_offset)
                 return m_b.createLoad(reg_left.var_id);
             else if (is_reg_right_comp_offset)
-                return m_b.createLoad(reg_right.var_id);            
+                return m_b.createLoad(reg_right.var_id);
         }
     }
 
@@ -227,6 +227,11 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
     // Composite a new vector
     SpirvReg dest_reg;
     std::uint32_t dest_comp_offset;
+
+    if (source == spv::NoResult) {
+        LOG_WARN("Source invalid");
+        return;
+    }
 
     if (!get_spirv_reg(dest.bank, dest.num, off, dest_reg, dest_comp_offset, true)) {
         LOG_ERROR("Can't find dest register {}", disasm::operand_to_str(dest, 0));
@@ -721,7 +726,6 @@ bool USSETranslatorVisitor::spec(
     bool special,
     SpecialCategory category) {
     usse::instr_idx--;
-    usse::instr_idx--; // TODO: Remove?
     LOG_DISASM("{:016x}: SPEC category: {}, special: {}", m_instr, (uint8_t)category, special);
     return true;
 }
