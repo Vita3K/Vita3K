@@ -179,23 +179,23 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
 
     // Composite a new vector
     SpirvReg reg_left{};
-    std::uint32_t out_comp_offset{};
+    std::uint32_t reg_left_comp_offset{};
 
-    if (!get_spirv_reg(op.bank, op.num, offset, reg_left, out_comp_offset, false)) {
+    if (!get_spirv_reg(op.bank, op.num, offset, reg_left, reg_left_comp_offset, false)) {
         LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
         return spv::NoResult;
     }
 
     // Get the next reg, so we can do a bridge
     SpirvReg reg_right{};
-    std::uint32_t temp{};
+    std::uint32_t reg_right_comp_offset{};
 
     // There is no more register to bridge to. For making it valid, just
     // throws in a valid register
     //
     // I haven't think of any edge case, but this should be looked when there is
     // any problems with bridging
-    if (!get_spirv_reg(op.bank, op.num, offset + reg_left.size, reg_right, temp, false))
+    if (!get_spirv_reg(op.bank, op.num, offset + dest_comp_count, reg_right, reg_right_comp_offset, false))
         reg_right = reg_left;
 
     // Optimization: Bridging (VectorShuffle) or even swizzling is not always necessary
@@ -203,23 +203,24 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     const bool needs_swizzle = !is_default(op.swizzle, dest_comp_count);
 
     if (!needs_swizzle) {
-        const uint32_t reg_left_comp_count = m_b.getNumTypeComponents(reg_left.type_id);
-        const uint32_t reg_right_comp_count = m_b.getNumTypeComponents(reg_right.type_id);
+        const uint32_t reg_left_comp_count = m_b.getNumTypeComponents(reg_left.type_id) - reg_left_comp_offset;
+        const uint32_t reg_right_comp_count = m_b.getNumTypeComponents(reg_right.type_id) - reg_right_comp_offset;
 
-        const bool is_reg_left_comp_count = (reg_left_comp_count == reg_left_comp_count);
-        const bool is_reg_right_comp_count = (reg_right_comp_count == reg_right_comp_count);
+        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count);
 
-        const bool is_reg_left_comp_offset = (out_comp_offset == 0);
-        const bool is_reg_right_comp_offset = (out_comp_offset == reg_left.size);
+        if (is_equal_comp_count) {
+            const bool is_reg_left_comp_offset = (reg_left_comp_offset == 0);
+            const bool is_reg_right_comp_offset = (reg_left_comp_offset == dest_comp_count);
 
-        if (is_reg_left_comp_offset && is_reg_left_comp_count)
-            return m_b.createLoad(reg_left.var_id);
-        else if (is_reg_right_comp_offset && is_reg_right_comp_count)
-            return m_b.createLoad(reg_right.var_id);
+            if (is_reg_left_comp_offset)
+                return m_b.createLoad(reg_left.var_id);
+            else if (is_reg_right_comp_offset)
+                return m_b.createLoad(reg_right.var_id);            
+        }
     }
 
     // We need to bridge
-    return bridge(reg_left, reg_right, op.swizzle, out_comp_offset, dest_mask);
+    return bridge(reg_left, reg_right, op.swizzle, reg_left_comp_offset, dest_mask);
 }
 
 void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t dest_mask, std::uint8_t off) {
