@@ -274,13 +274,13 @@ public:
     std::uint16_t temp_reg_count2; //not sure // - verify this
     std::uint16_t unk3A; //some item count?
 
-    std::uint32_t code_instr_count;
-    std::uint32_t code_offset;
+    std::uint32_t primary_program_instr_count;
+    std::uint32_t primary_program_offset;
 
     std::uint32_t unk44;
 
-    std::uint32_t unk_offset_48;
-    std::uint32_t unk_offset_4C;
+    std::uint32_t secondary_program_offset; // relative to the beginning of this field
+    std::uint32_t secondary_program_offset_end; // relative to the beginning of this field
 
     std::uint32_t unk_50; //usually zero?
     std::uint32_t unk_54; //usually zero?
@@ -306,8 +306,14 @@ public:
     bool is_fragment() const {
         return get_type() == emu::SceGxmProgramType::Fragment;
     }
-    uint64_t *get_code_start_ptr() const {
-        return (uint64_t *)((uint8_t *)&code_offset + code_offset);
+    uint64_t *primary_program_start() const {
+        return (uint64_t *)((uint8_t *)&primary_program_offset + primary_program_offset);
+    }
+    uint64_t *secondary_program_start() const {
+        return (uint64_t *)((uint8_t *)&secondary_program_offset + secondary_program_offset);
+    }
+    uint64_t *secondary_program_end() const {
+        return (uint64_t *)((uint8_t *)&secondary_program_offset_end + secondary_program_offset_end);
     }
     bool is_native_color() const {
         return unk20 & 0b1000000;

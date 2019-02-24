@@ -175,6 +175,13 @@ struct Instruction {
     RepeatCount repeat_count{ RepeatCount::REPEAT_0 };
 };
 
+enum class ShaderPhase {
+    Pixel, // Primary phase
+    SampleRate, // Secondary phase
+
+    Max,
+};
+
 } // namespace usse
 } // namespace shader
 

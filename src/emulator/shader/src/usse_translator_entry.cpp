@@ -26,6 +26,8 @@
 
 #include <boost/optional/optional.hpp>
 
+#include <map>
+
 namespace shader::usse {
 
 template <typename Visitor>
@@ -225,24 +227,41 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 //
 
 void usse::convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters) {
-    const uint64_t *code_ptr = program.get_code_start_ptr();
-    const uint64_t instr_count = program.code_instr_count;
+    const uint64_t *primary_program = program.primary_program_start();
+    const uint64_t primary_program_instr_count = program.primary_program_instr_count;
 
+    const uint64_t *secondary_program_start = program.secondary_program_start();
+    const uint64_t *secondary_program_end = program.secondary_program_end();
+
+    std::map<ShaderPhase, std::vector<uint64_t>> shader_code;
+
+    // Collect insructions of Pixel (primary) phase
+    for (auto instr_idx = 0; instr_idx < primary_program_instr_count; ++instr_idx)
+        shader_code[ShaderPhase::Pixel].push_back(primary_program[instr_idx]);
+
+    // Collect insructions of Sample rate (secondary) phase
+    for (auto instr_idx = secondary_program_start; instr_idx != secondary_program_end; ++instr_idx)
+        shader_code[ShaderPhase::SampleRate].push_back(*instr_idx);
+
+    // Decode and recompile
     uint64_t instr;
     usse::USSETranslatorVisitor visitor(b, instr, parameters, program);
 
-    for (auto instr_idx = 0; instr_idx < instr_count; ++instr_idx) {
-        instr = code_ptr[instr_idx];
+    for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
+        const auto cur_phase_code = shader_code[(ShaderPhase)phase];
 
-        //LOG_DEBUG("instr: 0x{:016x}", instr);
+        for (auto _instr : cur_phase_code) {
+            instr = _instr;
+            //LOG_DEBUG("instr: 0x{:016x}", instr);
 
-        usse::instr_idx = instr_idx;
+            usse::instr_idx = instr_idx;
 
-        auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(instr);
-        if (decoder)
-            decoder->call(visitor, instr);
-        else
-            LOG_DISASM("{:016x}: error: instruction unmatched", instr);
+            auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(instr);
+            if (decoder)
+                decoder->call(visitor, instr);
+            else
+                LOG_DISASM("{:016x}: error: instruction unmatched", instr);
+        }
     }
 
     if (program.get_type() == emu::Fragment && !program.is_native_color()) {
