@@ -118,6 +118,8 @@ if(APPLE)
 	set_target_properties(emulator PROPERTIES LINK_FLAGS "-rpath @executable_path/../Frameworks/")
 	target_sources(emulator PRIVATE Vita3K.icns)
 	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
+	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.Vita3K.Vita3K")
+	set(MACOSX_BUNDLE_BUNDLE_NAME "Vita3K")
 elseif(LINUX)
 	add_custom_command(
 		TARGET emulator
