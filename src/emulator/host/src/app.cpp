@@ -117,6 +117,10 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
         }
+        if (strstr(file_stat.m_filename, "sce_module/steroid.suprx")) {
+            LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
+            return false;
+        }
         if (strstr(file_stat.m_filename, "sce_sys/param.sfo")) {
             sfo_path = file_stat.m_filename;
             break;
