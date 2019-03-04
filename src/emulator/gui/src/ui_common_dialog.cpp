@@ -27,6 +27,8 @@
 
 #include <SDL.h>
 
+namespace gui {
+
 void DrawImeDialog(HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin(host.gui.common_dialog.ime.title.c_str());
@@ -112,3 +114,5 @@ void DrawCommonDialog(HostState &host) {
         }
     }
 }
+
+} // namespace gui

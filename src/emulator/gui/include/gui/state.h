@@ -22,6 +22,8 @@
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
+namespace gui {
+
 enum SelectorState {
     SELECT_APP
 };
@@ -38,7 +40,7 @@ struct GamesSelector {
     SelectorState state = SELECT_APP;
 };
 
-struct GuiState {
+struct State {
     // Debug menu
     bool renderer_focused = true;
     bool threads_dialog = false;
@@ -79,3 +81,5 @@ struct GuiState {
     ImFont *monospaced_font{};
     std::vector<char> font_data;
 };
+
+} // namespace gui

@@ -91,7 +91,7 @@ static void init_style() {
     style->Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 }
 
-static void init_font(GuiState &gui) {
+static void init_font(State &gui) {
     const auto DATA_PATH = "data";
     const auto FONT_PATH = "fonts";
     const auto FONT_FILENAME = "mplus-1mn-bold.ttf";

@@ -20,6 +20,8 @@
 enum class AppRunType;
 struct HostState;
 
+namespace gui {
+
 enum GenericDialogState {
     UNK_STATE,
     CONFIRM_STATE,
@@ -30,3 +32,5 @@ void DrawCommonDialog(HostState &host);
 void DrawGameSelector(HostState &host, AppRunType *run_type);
 void DrawReinstallDialog(HostState &host, GenericDialogState *status);
 void DrawUI(HostState &host);
+
+} // namespace gui

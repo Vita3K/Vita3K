@@ -8,6 +8,8 @@
 #include <imgui_memory_editor.h>
 #include <spdlog/fmt/fmt.h>
 
+namespace gui {
+
 const char *blacklist[] = {
     "NULL",
     "export_sceGxmDisplayQueueAddEntry"
@@ -73,3 +75,5 @@ void DrawAllocationsDialog(HostState &host) {
 
     ImGui::End();
 }
+
+} // namespace gui

@@ -78,7 +78,7 @@ struct HostState {
     NetState net;
     NpState np;
     DisplayState display;
-    GuiState gui;
+    gui::State gui;
     SfoFile sfo_handle;
     NIDSet missing_nids;
 };

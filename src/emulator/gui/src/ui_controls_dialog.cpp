@@ -21,6 +21,8 @@
 
 #include <host/state.h>
 
+namespace gui {
+
 void DrawControlsDialog(HostState &host) {
     float width = ImGui::GetWindowWidth() / 1.35;
     float height = ImGui::GetWindowHeight() / 1.35;
@@ -55,3 +57,5 @@ void DrawControlsDialog(HostState &host) {
 
     ImGui::End();
 }
+
+} // namespace gui

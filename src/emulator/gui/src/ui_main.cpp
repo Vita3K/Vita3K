@@ -24,6 +24,8 @@
 
 using namespace std::string_literals;
 
+namespace gui {
+
 static constexpr auto MENUBAR_HEIGHT = 19;
 
 void DrawGameSelector(HostState &host, AppRunType *run_type) {
@@ -132,3 +134,5 @@ void DrawUI(HostState &host) {
     }
     ImGui::PopFont();
 }
+
+} // namespace gui

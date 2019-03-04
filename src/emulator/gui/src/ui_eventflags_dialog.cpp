@@ -24,6 +24,8 @@
 #include <kernel/thread/thread_state.h>
 #include <util/resource.h>
 
+namespace gui {
+
 void DrawEventFlagsDialog(HostState &host) {
     ImGui::Begin("Event Flags", &host.gui.eventflags_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s  %-7s   %-8s   %-16s", "ID", "EventFlag Name", "Flags", "Attributes", "Waiting Threads");
@@ -40,3 +42,5 @@ void DrawEventFlagsDialog(HostState &host) {
     }
     ImGui::End();
 }
+
+} // namespace gui

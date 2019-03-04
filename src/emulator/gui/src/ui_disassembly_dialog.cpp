@@ -8,6 +8,8 @@
 #include <imgui_memory_editor.h>
 #include <spdlog/fmt/fmt.h>
 
+namespace gui {
+
 void EvaluateCode(HostState &host, uint32_t from, uint32_t count, bool thumb) {
     host.gui.disassembly.clear();
 
@@ -110,3 +112,5 @@ void DrawDisassemblyDialog(HostState &host) {
 
     ImGui::End();
 }
+
+} // namespace gui

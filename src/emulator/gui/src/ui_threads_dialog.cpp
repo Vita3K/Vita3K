@@ -27,6 +27,8 @@
 
 #include <spdlog/fmt/fmt.h>
 
+namespace gui {
+
 void DrawThreadDetailsDialog(HostState &host) {
     ThreadStatePtr &thread = host.kernel.threads[host.gui.thread_watch_index];
     CPUState &cpu = *thread->cpu;
@@ -86,3 +88,5 @@ void DrawThreadsDialog(HostState &host) {
     }
     ImGui::End();
 }
+
+} // namespace gui

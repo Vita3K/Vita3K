@@ -21,6 +21,8 @@
 
 #include <host/state.h>
 
+namespace gui {
+
 void DrawMainMenuBar(HostState &host) {
     if (ImGui::BeginMainMenuBar()) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
@@ -74,3 +76,5 @@ void DrawMainMenuBar(HostState &host) {
         ImGui::EndMainMenuBar();
     }
 }
+
+} // namespace gui

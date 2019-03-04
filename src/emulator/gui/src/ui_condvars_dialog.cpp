@@ -24,6 +24,8 @@
 #include <kernel/thread/thread_state.h>
 #include <util/resource.h>
 
+namespace gui {
+
 void DrawCondvarsDialog(HostState &host) {
     ImGui::Begin("Condition Variables", &host.gui.condvars_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s %-16s", "ID", "Name", "Attributes", "Waiting Threads");
@@ -57,3 +59,5 @@ void DrawLwCondvarsDialog(HostState &host) {
     }
     ImGui::End();
 }
+
+} // namespace gui

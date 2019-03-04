@@ -24,6 +24,8 @@
 
 #include <sstream>
 
+namespace gui {
+
 #ifdef _WIN32
 static const char OS_PREFIX[] = "start ";
 #elif __APPLE__
@@ -77,3 +79,5 @@ void DrawAboutDialog(HostState &host) {
 
     ImGui::End();
 }
+
+} // namespace gui

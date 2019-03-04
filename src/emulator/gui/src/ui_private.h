@@ -21,6 +21,8 @@
 
 struct HostState;
 
+namespace gui {
+
 #define RGBA_TO_FLOAT(r, g, b, a) ImVec4(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
 
 const ImVec4 GUI_COLOR_TEXT_MENUBAR = RGBA_TO_FLOAT(242, 150, 58, 255);
@@ -45,3 +47,5 @@ void DrawControlsDialog(HostState &host);
 void DrawAboutDialog(HostState &host);
 
 void ReevaluateCode(HostState &host);
+
+} // namespace gui

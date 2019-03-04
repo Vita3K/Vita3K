@@ -24,6 +24,8 @@
 #include <kernel/thread/thread_state.h>
 #include <util/resource.h>
 
+namespace gui {
+
 void DrawMutexesDialog(HostState &host) {
     ImGui::Begin("Mutexes", &host.gui.mutexes_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
@@ -60,3 +62,5 @@ void DrawLwMutexesDialog(HostState &host) {
     }
     ImGui::End();
 }
+
+} // namespace gui
