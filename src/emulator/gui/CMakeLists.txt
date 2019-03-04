@@ -1,7 +1,6 @@
 add_library(
 gui
 STATIC
-include/gui/gui_constants.h
 include/gui/imgui_impl_sdl_gl3.h
 include/gui/imgui_impl.h
 include/gui/functions.h
@@ -14,6 +13,7 @@ src/ui_eventflags_dialog.cpp
 src/ui_main.cpp
 src/ui_main_menubar.cpp
 src/ui_mutexes_dialog.cpp
+src/ui_private.h
 src/ui_semaphores_dialog.cpp
 src/ui_threads_dialog.cpp
 src/ui_controls_dialog.cpp

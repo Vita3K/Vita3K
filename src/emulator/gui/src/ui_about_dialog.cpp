@@ -15,6 +15,15 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <gui/functions.h>
+
+#include "ui_private.h"
+
+#include <host/state.h>
+#include <host/version.h>
+
+#include <sstream>
+
 #ifdef _WIN32
 static const char OS_PREFIX[] = "start ";
 #elif __APPLE__
@@ -22,14 +31,6 @@ static const char OS_PREFIX[] = "open ";
 #else
 static const char OS_PREFIX[] = "xdg-open ";
 #endif
-
-#include <gui/functions.h>
-#include <imgui.h>
-#include <sstream>
-
-#include <gui/gui_constants.h>
-#include <host/state.h>
-#include <host/version.h>
 
 void DrawAboutDialog(HostState &host) {
     float width = ImGui::GetWindowWidth() / 0.65;

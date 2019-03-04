@@ -16,15 +16,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <imgui.h>
 
-#include <gui/gui_constants.h>
-#include <host/state.h>
+#include "ui_private.h"
 
 #include <cpu/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
-
+#include <host/state.h>
 #include <util/resource.h>
 
 #include <spdlog/fmt/fmt.h>

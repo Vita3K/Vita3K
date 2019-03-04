@@ -16,9 +16,9 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <imgui.h>
 
-#include <gui/gui_constants.h>
+#include "ui_private.h"
+
 #include <host/state.h>
 
 void DrawControlsDialog(HostState &host) {

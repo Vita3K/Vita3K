@@ -16,10 +16,10 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <gui/gui_constants.h>
-#include <host/state.h>
 
-#include <imgui.h>
+#include "ui_private.h"
+
+#include <host/state.h>
 
 void DrawMainMenuBar(HostState &host) {
     if (ImGui::BeginMainMenuBar()) {

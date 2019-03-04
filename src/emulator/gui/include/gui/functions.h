@@ -17,11 +17,8 @@
 
 #pragma once
 
-#include <host/app.h>
-
-#include <cstdint>
-
-static constexpr auto MENUBAR_HEIGHT = 19;
+enum class AppRunType;
+struct HostState;
 
 enum GenericDialogState {
     UNK_STATE,
@@ -29,24 +26,7 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-struct HostState;
-
-void DrawMainMenuBar(HostState &host);
-void DrawThreadsDialog(HostState &host);
-void DrawThreadDetailsDialog(HostState &host);
-void DrawSemaphoresDialog(HostState &host);
-void DrawMutexesDialog(HostState &host);
-void DrawLwMutexesDialog(HostState &host);
-void DrawLwCondvarsDialog(HostState &host);
-void DrawCondvarsDialog(HostState &host);
-void DrawEventFlagsDialog(HostState &host);
-void DrawAllocationsDialog(HostState &host);
-void DrawDisassemblyDialog(HostState &host);
-void DrawUI(HostState &host);
 void DrawCommonDialog(HostState &host);
 void DrawGameSelector(HostState &host, AppRunType *run_type);
 void DrawReinstallDialog(HostState &host, GenericDialogState *status);
-void DrawControlsDialog(HostState &host);
-void DrawAboutDialog(HostState &host);
-
-void ReevaluateCode(HostState &host);
+void DrawUI(HostState &host);

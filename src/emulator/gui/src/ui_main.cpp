@@ -16,13 +16,15 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <gui/gui_constants.h>
+
+#include "ui_private.h"
+
 #include <host/app.h>
 #include <host/state.h>
 
-#include <imgui.h>
-
 using namespace std::string_literals;
+
+static constexpr auto MENUBAR_HEIGHT = 19;
 
 void DrawGameSelector(HostState &host, AppRunType *run_type) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;

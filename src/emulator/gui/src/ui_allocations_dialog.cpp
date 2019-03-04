@@ -1,12 +1,11 @@
 #include <gui/functions.h>
-#include <gui/gui_constants.h>
 
-#include <imgui.h>
-#include <imgui_memory_editor.h>
+#include "ui_private.h"
 
 #include <cpu/functions.h>
 #include <host/state.h>
 
+#include <imgui_memory_editor.h>
 #include <spdlog/fmt/fmt.h>
 
 const char *blacklist[] = {
