@@ -154,7 +154,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             if (glGetUniformLocation(gl_program, name.c_str()) < 0) {
                 // Do loop
                 for (std::uint32_t i = 0; i < parameter.array_size; i++) {
-                    do_supply(name + "_" + std::to_string(i), 1, parameter.resource_index + i);
+                    do_supply(name + "_" + std::to_string(i), 1, parameter.resource_index + i * parameter.component_count);
                 }
             } else {
                 do_supply(name, parameter.array_size, parameter.resource_index);
