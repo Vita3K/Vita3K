@@ -4,12 +4,13 @@
 #include "profile.h"
 
 #include <gxm/types.h>
-#include <shadergen/functions.h>
+#include <shader/spirv_recompiler.h>
 #include <util/fs.h>
 #include <util/log.h>
 
 #include <fstream>
 #include <sstream>
+#include <utility>
 
 using namespace glbinding;
 
@@ -39,7 +40,7 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
 
     if (!fs::exists(shader_base_dir))
         fs::create_directory(shader_base_dir);
-    
+
     fs::path shader_base_path(shader_base_dir);
     shader_base_path /= hash;
     shader_base_path += std::string(".") + extension;
@@ -61,19 +62,29 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
     }
 }
 
-std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment_program, const char *base_path, const char *title_id) {
-    const Sha256Hash hash_bytes = sha256(&fragment_program, fragment_program.size);
+std::string load_shader(GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id) {
+    const Sha256Hash hash_bytes = sha256(&program, program.size);
     const GLSLCache::const_iterator cached = cache.find(hash_bytes);
     if (cached != cache.end()) {
         return cached->second;
     }
 
+    auto shader_type_to_str = [](emu::SceGxmProgramType type) {
+        return type == emu::Vertex ? "vert" : type == emu::Fragment ? "frag" : "unknown";
+    };
+
+    emu::SceGxmProgramType program_type = program.get_type();
+    const char *shader_type_str = shader_type_to_str(program_type);
+
     const Sha256HashText hash_text = hex(hash_bytes);
-    std::string source = load_shader(hash_text.data(), "frag", base_path);
+
+    std::string source = load_shader(hash_text.data(), shader_type_str, base_path);
     if (source.empty()) {
-        LOG_ERROR("Missing fragment shader {}", hash_text.data());
-        source = shadergen::spirv::generate_fragment_glsl(fragment_program);
-        dump_missing_shader(hash_text.data(), "frag", fragment_program, source.c_str(), base_path, title_id);
+        LOG_INFO("Generating {} shader {}", shader_type_str, hash_text.data());
+
+        source = shader::convert_gxp_to_glsl(program, hash_text.data());
+
+        dump_missing_shader(hash_text.data(), shader_type_str, program, source.c_str(), base_path, title_id);
     }
 
     cache.emplace(hash_bytes, source);
@@ -81,23 +92,4 @@ std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment
     return source;
 }
 
-std::string load_vertex_shader(GLSLCache &cache, const SceGxmProgram &vertex_program, const char *base_path, const char *title_id) {
-    const Sha256Hash hash_bytes = sha256(&vertex_program, vertex_program.size);
-    const GLSLCache::const_iterator cached = cache.find(hash_bytes);
-    if (cached != cache.end()) {
-        return cached->second;
-    }
-
-    const Sha256HashText hash_text = hex(hash_bytes);
-    std::string source = load_shader(hash_text.data(), "vert", base_path);
-    if (source.empty()) {
-        LOG_ERROR("Missing vertex shader {}", hash_text.data());
-        source = shadergen::spirv::generate_vertex_glsl(vertex_program);
-        dump_missing_shader(hash_text.data(), "vert", vertex_program, source.c_str(), base_path, title_id);
-    }
-
-    cache.emplace(hash_bytes, source);
-
-    return source;
-}
 } // namespace renderer

@@ -158,7 +158,8 @@ ExitCode init(Config &cfg, int argc, char **argv) {
         po::options_description input_desc("Input");
         input_desc.add_options()
             ("input-vpk-path,i", po::value(&cfg.vpk_path), "path of app in .vpk format to install & run")
-            ("input-installed-id,r", po::value(&cfg.run_title_id), "title ID of installed app to run");
+            ("input-installed-id,r", po::value(&cfg.run_title_id), "title ID of installed app to run")
+            ("recompile-shader,s", po::value(&cfg.recompile_shader_path), "Recompile the given PS Vita shader (GXP format) to SPIR-V / GLSL and quit");
 
         po::options_description config_desc("Configuration");
         config_desc.add_options()

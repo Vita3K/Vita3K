@@ -32,6 +32,7 @@ using boost::optional;
 struct Config {
     optional<std::string> vpk_path;
     optional<std::string> run_title_id;
+    optional<std::string> recompile_shader_path;
     optional<int> log_level;
     bool log_imports = false;
     bool log_exports = false;

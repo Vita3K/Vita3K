@@ -9,6 +9,7 @@ add_library(
 	include/util/resource.h
 	include/util/string_utils.h
 	include/util/log.h
+	include/util/function_info.h
 	src/util.cpp
 )
 
