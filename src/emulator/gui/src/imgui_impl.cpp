@@ -31,9 +31,9 @@
 #include <fstream>
 #include <string>
 
-namespace imgui {
+namespace gui {
 
-void init_style() {
+static void init_style() {
     ImGui::StyleColorsDark();
 
     ImGuiStyle *style = &ImGui::GetStyle();
@@ -91,7 +91,7 @@ void init_style() {
     style->Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 }
 
-void init_font(GuiState &gui) {
+static void init_font(GuiState &gui) {
     const auto DATA_PATH = "data";
     const auto FONT_PATH = "fonts";
     const auto FONT_FILENAME = "mplus-1mn-bold.ttf";
@@ -150,4 +150,4 @@ void destroy(HostState &host) {
     delete[] host.gui.font_data;
 }
 
-} // namespace imgui
+} // namespace gui
