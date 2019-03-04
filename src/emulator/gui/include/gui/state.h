@@ -77,5 +77,5 @@ struct GuiState {
     // imgui
     ImFont *normal_font{};
     ImFont *monospaced_font{};
-    char *font_data{};
+    std::vector<char> font_data;
 };

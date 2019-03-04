@@ -108,18 +108,15 @@ static void init_font(GuiState &gui) {
 
     // read font
     const auto font_file_size = fs::file_size(font_path);
-    char *font_data = new char[font_file_size];
+    gui.font_data.resize(font_file_size);
     std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
-    font_stream.read(font_data, font_file_size);
+    font_stream.read(gui.font_data.data(), font_file_size);
 
     // add it to imgui
     ImGuiIO &io = ImGui::GetIO();
     ImFontConfig font_config{};
     gui.monospaced_font = io.Fonts->AddFontDefault();
-    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(font_data, font_file_size, 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
-
-    // save pointer so we can delete it later
-    gui.font_data = font_data;
+    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), font_file_size, 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
 void init(HostState &host) {
@@ -144,10 +141,6 @@ void draw_end(SDL_Window *window) {
     ImGui::Render();
     ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
-}
-
-void destroy(HostState &host) {
-    delete[] host.gui.font_data;
 }
 
 } // namespace gui

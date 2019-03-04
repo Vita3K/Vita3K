@@ -143,9 +143,6 @@ int main(int argc, char *argv[]) {
         set_window_title(host);
     }
 
-    // De-initializations
-    gui::destroy(host);
-
     // There may be changes that made in the GUI, so we should save, again
     config::serialize(host.cfg);
 

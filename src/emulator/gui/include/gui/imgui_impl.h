@@ -25,6 +25,5 @@ namespace gui {
 void init(HostState &host);
 void draw_begin(HostState &host);
 void draw_end(SDL_Window *window);
-void destroy(HostState &host);
 
 } // namespace gui
