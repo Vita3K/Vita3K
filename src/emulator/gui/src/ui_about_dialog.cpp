@@ -39,7 +39,7 @@ void DrawAboutDialog(HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(width, height));
     ImGui::Begin("About", &host.gui.about_dialog);
 
-    ImGui::Text(window_title);
+    ImGui::Text("%s", window_title);
 
     ImGui::Separator();
 
