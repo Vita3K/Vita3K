@@ -233,7 +233,8 @@ spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     return spv::StorageClassMax;
 }
 
-static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type, optional<spv::StorageClass> force_storage = boost::none) {
+static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type, optional<spv::StorageClass> force_storage = boost::none
+    , boost::optional<std::uint32_t> force_offset = boost::none) {
     sanitize_variable_name(name);
 
     const auto storage_class = force_storage ? *force_storage : reg_type_to_spv_storage_class(reg_type);
@@ -260,6 +261,10 @@ static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &para
     default:
         LOG_WARN("Unsupported reg_type {}", static_cast<uint32_t>(reg_type));
         return spv::NoResult;
+    }
+
+    if (force_offset) {
+        var_group->set_next_offset(force_offset.value());
     }
 
     var_group->push({ type, var_id }, size);
@@ -538,6 +543,74 @@ static void create_fragment_output(spv::Builder &b, SpirvShaderParameters &param
     parameters.outs.push({ frag_color_type, frag_color_var }, 4);
 }
 
+static const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program) {
+    const SceGxmProgramParameterContainer *containers = reinterpret_cast<const SceGxmProgramParameterContainer*>
+        (reinterpret_cast<const std::uint8_t*>(&program.container_offset) + program.container_offset);
+
+    return containers;
+}
+
+static const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgram &program, const std::uint16_t idx) {
+    const SceGxmProgramParameterContainer *container = get_containers(program);
+
+    for (std::uint32_t i = 0; i < program.container_count; i++) {
+        if (container[i].container_index == idx) {
+            return &container[i];
+        }
+    }
+
+    return nullptr;
+}
+
+static const char *get_container_name(const std::uint16_t idx) {
+    switch (idx) {
+    case 0:
+        return "BUFFER0 ";
+    case 1:
+        return "BUFFER1 ";
+    case 2:
+        return "BUFFER2 ";
+    case 3:
+        return "BUFFER3 ";
+    case 4:
+        return "BUFFER4 ";
+    case 5:
+        return "BUFFER5 ";
+    case 6:
+        return "BUFFER6 ";
+    case 7:
+        return "BUFFER7 ";
+    case 8:
+        return "BUFFER8 ";
+    case 9:
+        return "BUFFER9 ";
+    case 10:
+        return "BUFFER10";
+    case 11:
+        return "BUFFER11";
+    case 12:
+        return "BUFFER12";
+    case 13:
+        return "BUFFER13";
+    case 14:
+        return "DEFAULT ";
+    case 15:
+        return "TEXTURE ";
+    case 16:
+        return "LITERAL ";
+    case 17:
+        return "SCRATCH ";
+    case 18:
+        return "THREAD  ";
+    case 19:
+        return "DATA    ";
+    default:
+        break;
+    }
+
+    return "INVALID ";
+}
+
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
@@ -548,13 +621,13 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
 
-        gxp::log_parameter(parameter);
-
         usse::RegisterBank param_reg_type = usse::RegisterBank::PRIMATTR;
 
         switch (parameter.category) {
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
             param_reg_type = usse::RegisterBank::SECATTR;
+            [[fallthrough]];
+
         // fallthrough
         case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE: {
             const std::string struct_name = gxp::parameter_struct_name(parameter);
@@ -607,13 +680,33 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                         std::replace(var_name.begin(), var_name.end(), '.', '_');
                 }
 
+                auto container = get_container_by_index(program, parameter.container_index);
+                std::uint32_t offset = parameter.resource_index;
+
+                if (parameter.resource_index < container->max_resource_index) {
+                    offset = container->base_sa_offset + parameter.resource_index;
+                }
+
+                // If no container, we use the absolute offset
                 for (auto p = 0; p < parameter.array_size; ++p) {
                     std::string var_elem_name;
                     if (parameter.array_size == 1)
                         var_elem_name = var_name;
                     else
                         var_elem_name = fmt::format("{}_{}", var_name, p);
-                    create_spirv_var_reg(b, spv_params, var_elem_name, param_reg_type, parameter.component_count, param_type);
+                        
+                    std::string param_log = fmt::format("[{} + {}] {}a{} = {}",
+                        get_container_name(parameter.container_index), parameter.resource_index,
+                        is_uniform ? "s" : "p", offset, var_name);
+
+                    if (parameter.array_size > 1) {
+                        param_log += fmt::format("[{}]", parameter.array_size);
+                    }
+
+                    LOG_DEBUG(param_log);
+
+                    create_spirv_var_reg(b, spv_params, var_elem_name, param_reg_type, parameter.component_count, param_type
+                        , boost::none, offset);
                 }
             }
             break;

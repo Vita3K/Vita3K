@@ -48,6 +48,14 @@ struct SpirvVarRegBank {
         return vars;
     }
 
+    void set_next_offset(const std::uint32_t new_next_offset) {
+        next_offset = new_next_offset;
+    }
+
+    std::uint32_t get_next_offset() {
+        return next_offset;
+    }
+
     void push(const SpirvVar &var, uint32_t size) {
         const auto offset = next_offset;
 
