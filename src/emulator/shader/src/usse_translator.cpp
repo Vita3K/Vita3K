@@ -66,8 +66,12 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
     if (bank == usse::RegisterBank::PRIMATTR && get_for_store) {
         if (pa_writeable.count(pa_writeable_idx) == 0) {
-            const std::string new_pa_writeable_name = fmt::format("pa{}_temp", std::to_string(reg_offset));
-            const spv::Id new_pa_writeable = m_b.createVariable(spv::StorageClassPrivate, reg.type_id, new_pa_writeable_name.c_str());
+            const std::string new_pa_writeable_name = fmt::format("pa{}_temp", 
+                std::to_string(((reg_offset + shift_offset) / 4) * 4));
+
+            const spv::Id v4t = m_b.makeVectorType(type_f32, 4);
+
+            const spv::Id new_pa_writeable = m_b.createVariable(spv::StorageClassPrivate, v4t, new_pa_writeable_name.c_str());
             m_b.createStore(m_b.createLoad(reg.var_id), new_pa_writeable);
 
             reg.var_id = new_pa_writeable;
