@@ -10,7 +10,7 @@
 
 namespace gui {
 
-void EvaluateCode(HostState &host, uint32_t from, uint32_t count, bool thumb) {
+static void evaluate_code(HostState &host, uint32_t from, uint32_t count, bool thumb) {
     host.gui.disassembly.clear();
 
     if (host.kernel.threads.empty()) {
@@ -50,7 +50,7 @@ void reevaluate_code(HostState &host) {
         count = static_cast<uint32_t>(std::stol(count_string));
     bool thumb = host.gui.disassembly_arch == "THUMB";
 
-    EvaluateCode(host, address, count, thumb);
+    evaluate_code(host, address, count, thumb);
 }
 
 std::string archs[] = {

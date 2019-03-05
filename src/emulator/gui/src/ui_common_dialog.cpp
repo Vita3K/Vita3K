@@ -29,7 +29,7 @@
 
 namespace gui {
 
-void DrawImeDialog(HostState &host) {
+static void draw_ime_dialog(HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin(host.gui.common_dialog.ime.title.c_str());
     if (host.gui.common_dialog.ime.multiline) {
@@ -63,7 +63,7 @@ void DrawImeDialog(HostState &host) {
     ImGui::End();
 }
 
-void DrawMessageDialog(HostState &host) {
+static void draw_message_dialog(HostState &host) {
     ImGui::SetNextWindowPosCenter();
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("Message Dialog");
@@ -79,7 +79,7 @@ void DrawMessageDialog(HostState &host) {
     ImGui::End();
 }
 
-void DrawTrophySetupDialog(HostState &host) {
+static void draw_trophy_setup_dialog(HostState &host) {
     int timer = (static_cast<int64_t>(host.gui.common_dialog.trophy.tick) - static_cast<int64_t>(SDL_GetTicks())) / 1000;
     if (timer > 0) {
         ImGui::SetNextWindowPos(ImVec2(30, 30));
@@ -101,13 +101,13 @@ void draw_common_dialog(HostState &host) {
     if (host.gui.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         switch (host.gui.common_dialog.type) {
         case IME_DIALOG:
-            DrawImeDialog(host);
+            draw_ime_dialog(host);
             break;
         case MESSAGE_DIALOG:
-            DrawMessageDialog(host);
+            draw_message_dialog(host);
             break;
         case TROPHY_SETUP_DIALOG:
-            DrawTrophySetupDialog(host);
+            draw_trophy_setup_dialog(host);
             break;
         default:
             break;
