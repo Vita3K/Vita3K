@@ -297,6 +297,13 @@ public:
     std::uint32_t unk_78;
     std::uint32_t maybe_parameters_offset2; //not sure
 
+    std::uint32_t unk_80;
+    std::uint32_t unk_84;
+    std::uint32_t unk_88;
+    std::uint32_t unk_8C;
+    std::uint32_t container_count;
+    std::uint32_t container_offset;
+
     emu::SceGxmProgramType get_type() const {
         return static_cast<emu::SceGxmProgramType>(type & 1);
     }
@@ -334,6 +341,14 @@ struct SceGxmProgramParameter {
 };
 
 static_assert(sizeof(SceGxmProgramParameter) == 16, "Incorrect structure layout.");
+
+struct SceGxmProgramParameterContainer
+{
+  uint16_t container_index;
+  uint16_t unk02;
+  uint16_t base_sa_offset;
+  uint16_t max_resource_index;
+};
 
 struct SceGxmRegisteredProgram {
     // TODO This is an opaque type.
