@@ -210,7 +210,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         const uint32_t reg_left_comp_count = m_b.getNumTypeComponents(reg_left.type_id) - reg_left_comp_offset;
         const uint32_t reg_right_comp_count = m_b.getNumTypeComponents(reg_right.type_id) - reg_right_comp_offset;
 
-        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count);
+        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count) && (reg_left_comp_count == dest_comp_count);
 
         if (is_equal_comp_count) {
             const bool is_reg_left_comp_offset = (reg_left_comp_offset == 0);
