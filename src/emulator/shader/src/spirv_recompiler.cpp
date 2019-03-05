@@ -707,6 +707,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
                     create_spirv_var_reg(b, spv_params, var_elem_name, param_reg_type, parameter.component_count, param_type
                         , boost::none, offset);
+
+                    // TODO: This may varys with component size.
+                    offset += parameter.component_count;
                 }
             }
             break;
