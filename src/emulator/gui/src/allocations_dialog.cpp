@@ -1,6 +1,6 @@
 #include <gui/functions.h>
 
-#include "ui_private.h"
+#include "private.h"
 
 #include <cpu/functions.h>
 #include <host/state.h>

@@ -17,7 +17,7 @@
 
 #include <gui/functions.h>
 
-#include "ui_private.h"
+#include "private.h"
 
 #include <host/state.h>
 #include <kernel/thread/thread_functions.h>
@@ -26,19 +26,20 @@
 
 namespace gui {
 
-void draw_event_flags_dialog(HostState &host) {
-    ImGui::Begin("Event Flags", &host.gui.eventflags_dialog);
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s  %-7s   %-8s   %-16s", "ID", "EventFlag Name", "Flags", "Attributes", "Waiting Threads");
+void draw_semaphores_dialog(HostState &host) {
+    ImGui::Begin("Semaphores", &host.gui.semaphores_dialog);
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s   %-16s", "ID", "Semaphore Name", "Status", "Locked Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    for (auto event : host.kernel.eventflags) {
-        std::shared_ptr<EventFlag> event_state = event.second;
-        ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s  %02d        %01d         %02zu                 ",
-            event.first,
-            event_state->name,
-            event_state->flags,
-            event_state->attr,
-            event_state->waiting_threads.size());
+
+    for (auto semaphore : host.kernel.semaphores) {
+        std::shared_ptr<Semaphore> sema_state = semaphore.second;
+        ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d/%02d              %02zu",
+            semaphore.first,
+            sema_state->name,
+            sema_state->val,
+            sema_state->max,
+            sema_state->waiting_threads.size());
     }
     ImGui::End();
 }

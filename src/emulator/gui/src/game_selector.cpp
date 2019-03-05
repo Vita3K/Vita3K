@@ -17,9 +17,8 @@
 
 #include <gui/functions.h>
 
-#include "ui_private.h"
+#include "private.h"
 
-#include <host/app.h>
 #include <host/state.h>
 
 using namespace std::string_literals;
@@ -74,65 +73,6 @@ void draw_game_selector(HostState &host, AppRunType *run_type) {
         break;
     }
     ImGui::End();
-}
-
-void draw_reinstall_dialog(HostState &host, GenericDialogState *status) {
-    ImGui::SetNextWindowPosCenter();
-    ImGui::SetNextWindowSize(ImVec2(0, 0));
-    ImGui::Begin("Reinstall this application?");
-    ImGui::Text("This application is already installed.");
-    ImGui::Text("Do you want to reinstall it and overwrite existing data?");
-    if (ImGui::Button("Yes")) {
-        *status = CONFIRM_STATE;
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("No")) {
-        *status = CANCEL_STATE;
-    }
-    ImGui::End();
-}
-
-void draw_ui(HostState &host) {
-    draw_main_menu_bar(host);
-
-    ImGui::PushFont(host.gui.monospaced_font);
-    if (host.gui.threads_dialog) {
-        draw_threads_dialog(host);
-    }
-    if (host.gui.thread_details_dialog) {
-        draw_thread_details_dialog(host);
-    }
-    if (host.gui.semaphores_dialog) {
-        draw_semaphores_dialog(host);
-    }
-    if (host.gui.mutexes_dialog) {
-        draw_mutexes_dialog(host);
-    }
-    if (host.gui.lwmutexes_dialog) {
-        draw_lw_mutexes_dialog(host);
-    }
-    if (host.gui.condvars_dialog) {
-        draw_condvars_dialog(host);
-    }
-    if (host.gui.lwcondvars_dialog) {
-        draw_lw_condvars_dialog(host);
-    }
-    if (host.gui.eventflags_dialog) {
-        draw_event_flags_dialog(host);
-    }
-    if (host.gui.controls_dialog) {
-        draw_controls_dialog(host);
-    }
-    if (host.gui.allocations_dialog) {
-        draw_allocations_dialog(host);
-    }
-    if (host.gui.disassembly_dialog) {
-        draw_disassembly_dialog(host);
-    }
-    if (host.gui.about_dialog) {
-        draw_about_dialog(host);
-    }
-    ImGui::PopFont();
 }
 
 } // namespace gui

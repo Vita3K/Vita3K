@@ -17,7 +17,7 @@
 
 #include <gui/functions.h>
 
-#include "ui_private.h"
+#include "private.h"
 
 #include <cpu/functions.h>
 #include <kernel/thread/thread_functions.h>

@@ -19,6 +19,7 @@
 
 enum class AppRunType;
 struct HostState;
+struct SDL_Window;
 
 namespace gui {
 
@@ -28,9 +29,13 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
+void init(HostState &host);
+void draw_begin(HostState &host);
+void draw_end(SDL_Window *window);
+void draw_ui(HostState &host);
+
 void draw_common_dialog(HostState &host);
 void draw_game_selector(HostState &host, AppRunType *run_type);
 void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
-void draw_ui(HostState &host);
 
 } // namespace gui

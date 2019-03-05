@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <gui/imgui_impl.h>
 #include <host/app.h>
 #include <host/config.h>
 #include <host/functions.h>
