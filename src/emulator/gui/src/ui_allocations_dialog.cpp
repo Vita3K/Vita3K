@@ -15,7 +15,7 @@ const char *blacklist[] = {
     "export_sceGxmDisplayQueueAddEntry"
 };
 
-void DrawAllocationsDialog(HostState &host) {
+void draw_allocations_dialog(HostState &host) {
     ImGui::Begin("Memory Allocations", &host.gui.allocations_dialog);
 
     const std::lock_guard<std::mutex> lock(host.mem.generation_mutex);
@@ -55,7 +55,7 @@ void DrawAllocationsDialog(HostState &host) {
                 }
                 if (ImGui::Selectable("View Disassembly")) {
                     sprintf(host.gui.disassembly_address, "%08zx", index * KB(4));
-                    ReevaluateCode(host);
+                    reevaluate_code(host);
                     host.gui.disassembly_dialog = true;
                 }
             }

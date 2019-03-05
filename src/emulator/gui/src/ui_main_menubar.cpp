@@ -23,7 +23,7 @@
 
 namespace gui {
 
-void DrawMainMenuBar(HostState &host) {
+void draw_main_menu_bar(HostState &host) {
     if (ImGui::BeginMainMenuBar()) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 

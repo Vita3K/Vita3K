@@ -97,7 +97,7 @@ void DrawTrophySetupDialog(HostState &host) {
     }
 }
 
-void DrawCommonDialog(HostState &host) {
+void draw_common_dialog(HostState &host) {
     if (host.gui.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         switch (host.gui.common_dialog.type) {
         case IME_DIALOG:

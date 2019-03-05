@@ -98,8 +98,8 @@ int main(int argc, char *argv[]) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_begin(host);
 
-            gui::DrawUI(host);
-            gui::DrawGameSelector(host, &run_type);
+            gui::draw_ui(host);
+            gui::draw_game_selector(host, &run_type);
 
             gui::draw_end(host.window.get());
         } else {
@@ -127,9 +127,9 @@ int main(int argc, char *argv[]) {
     while (handle_events(host)) {
         gl_renderer.render(host);
         gui::draw_begin(host);
-        gui::DrawCommonDialog(host);
+        gui::draw_common_dialog(host);
         if (host.display.imgui_render) {
-            gui::DrawUI(host);
+            gui::draw_ui(host);
         }
         gui::draw_end(host.window.get());
 

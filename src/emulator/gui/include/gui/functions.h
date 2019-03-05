@@ -28,9 +28,9 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-void DrawCommonDialog(HostState &host);
-void DrawGameSelector(HostState &host, AppRunType *run_type);
-void DrawReinstallDialog(HostState &host, GenericDialogState *status);
-void DrawUI(HostState &host);
+void draw_common_dialog(HostState &host);
+void draw_game_selector(HostState &host, AppRunType *run_type);
+void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
+void draw_ui(HostState &host);
 
 } // namespace gui

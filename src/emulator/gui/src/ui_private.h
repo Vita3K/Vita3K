@@ -32,20 +32,20 @@ const ImVec4 GUI_COLOR_TEXT = RGBA_TO_FLOAT(255, 255, 255, 255);
 
 #undef RGBA_TO_FLOAT
 
-void DrawMainMenuBar(HostState &host);
-void DrawThreadsDialog(HostState &host);
-void DrawThreadDetailsDialog(HostState &host);
-void DrawSemaphoresDialog(HostState &host);
-void DrawMutexesDialog(HostState &host);
-void DrawLwMutexesDialog(HostState &host);
-void DrawLwCondvarsDialog(HostState &host);
-void DrawCondvarsDialog(HostState &host);
-void DrawEventFlagsDialog(HostState &host);
-void DrawAllocationsDialog(HostState &host);
-void DrawDisassemblyDialog(HostState &host);
-void DrawControlsDialog(HostState &host);
-void DrawAboutDialog(HostState &host);
+void draw_main_menu_bar(HostState &host);
+void draw_threads_dialog(HostState &host);
+void draw_thread_details_dialog(HostState &host);
+void draw_semaphores_dialog(HostState &host);
+void draw_mutexes_dialog(HostState &host);
+void draw_lw_mutexes_dialog(HostState &host);
+void draw_lw_condvars_dialog(HostState &host);
+void draw_condvars_dialog(HostState &host);
+void draw_event_flags_dialog(HostState &host);
+void draw_allocations_dialog(HostState &host);
+void draw_disassembly_dialog(HostState &host);
+void draw_controls_dialog(HostState &host);
+void draw_about_dialog(HostState &host);
 
-void ReevaluateCode(HostState &host);
+void reevaluate_code(HostState &host);
 
 } // namespace gui

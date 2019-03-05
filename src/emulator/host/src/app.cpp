@@ -151,8 +151,8 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         while (handle_events(host) && (status == 0)) {
             ImGui_ImplSdlGL3_NewFrame(host.window.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gui::DrawUI(host);
-            gui::DrawReinstallDialog(host, &status);
+            gui::draw_ui(host);
+            gui::draw_reinstall_dialog(host, &status);
             glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
             ImGui::Render();
             ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());

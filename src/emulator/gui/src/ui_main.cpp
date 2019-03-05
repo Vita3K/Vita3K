@@ -28,7 +28,7 @@ namespace gui {
 
 static constexpr auto MENUBAR_HEIGHT = 19;
 
-void DrawGameSelector(HostState &host, AppRunType *run_type) {
+void draw_game_selector(HostState &host, AppRunType *run_type) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
@@ -76,7 +76,7 @@ void DrawGameSelector(HostState &host, AppRunType *run_type) {
     ImGui::End();
 }
 
-void DrawReinstallDialog(HostState &host, GenericDialogState *status) {
+void draw_reinstall_dialog(HostState &host, GenericDialogState *status) {
     ImGui::SetNextWindowPosCenter();
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("Reinstall this application?");
@@ -92,45 +92,45 @@ void DrawReinstallDialog(HostState &host, GenericDialogState *status) {
     ImGui::End();
 }
 
-void DrawUI(HostState &host) {
-    DrawMainMenuBar(host);
+void draw_ui(HostState &host) {
+    draw_main_menu_bar(host);
 
     ImGui::PushFont(host.gui.monospaced_font);
     if (host.gui.threads_dialog) {
-        DrawThreadsDialog(host);
+        draw_threads_dialog(host);
     }
     if (host.gui.thread_details_dialog) {
-        DrawThreadDetailsDialog(host);
+        draw_thread_details_dialog(host);
     }
     if (host.gui.semaphores_dialog) {
-        DrawSemaphoresDialog(host);
+        draw_semaphores_dialog(host);
     }
     if (host.gui.mutexes_dialog) {
-        DrawMutexesDialog(host);
+        draw_mutexes_dialog(host);
     }
     if (host.gui.lwmutexes_dialog) {
-        DrawLwMutexesDialog(host);
+        draw_lw_mutexes_dialog(host);
     }
     if (host.gui.condvars_dialog) {
-        DrawCondvarsDialog(host);
+        draw_condvars_dialog(host);
     }
     if (host.gui.lwcondvars_dialog) {
-        DrawLwCondvarsDialog(host);
+        draw_lw_condvars_dialog(host);
     }
     if (host.gui.eventflags_dialog) {
-        DrawEventFlagsDialog(host);
+        draw_event_flags_dialog(host);
     }
     if (host.gui.controls_dialog) {
-        DrawControlsDialog(host);
+        draw_controls_dialog(host);
     }
     if (host.gui.allocations_dialog) {
-        DrawAllocationsDialog(host);
+        draw_allocations_dialog(host);
     }
     if (host.gui.disassembly_dialog) {
-        DrawDisassemblyDialog(host);
+        draw_disassembly_dialog(host);
     }
     if (host.gui.about_dialog) {
-        DrawAboutDialog(host);
+        draw_about_dialog(host);
     }
     ImGui::PopFont();
 }

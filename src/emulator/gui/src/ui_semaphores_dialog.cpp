@@ -26,7 +26,7 @@
 
 namespace gui {
 
-void DrawSemaphoresDialog(HostState &host) {
+void draw_semaphores_dialog(HostState &host) {
     ImGui::Begin("Semaphores", &host.gui.semaphores_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s   %-16s", "ID", "Semaphore Name", "Status", "Locked Threads");
 

@@ -39,7 +39,7 @@ void EvaluateCode(HostState &host, uint32_t from, uint32_t count, bool thumb) {
     }
 }
 
-void ReevaluateCode(HostState &host) {
+void reevaluate_code(HostState &host) {
     std::string address_string = std::string(host.gui.disassembly_address);
     std::string count_string = std::string(host.gui.disassembly_count);
 
@@ -58,7 +58,7 @@ std::string archs[] = {
     "THUMB",
 };
 
-void DrawDisassemblyDialog(HostState &host) {
+void draw_disassembly_dialog(HostState &host) {
     ImGui::Begin("Disassembly", &host.gui.disassembly_dialog);
     ImGui::BeginChild("disasm", ImVec2(0, -(ImGui::GetTextLineHeightWithSpacing() + 10)));
     for (const std::string &assembly : host.gui.disassembly) {
@@ -77,7 +77,7 @@ void DrawDisassemblyDialog(HostState &host) {
     ImGui::PushItemWidth(10 * 8);
     if (ImGui::InputText("##disasm_addr", host.gui.disassembly_address, 9,
             ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
-        ReevaluateCode(host);
+        reevaluate_code(host);
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
@@ -87,7 +87,7 @@ void DrawDisassemblyDialog(HostState &host) {
     ImGui::PushItemWidth(10 * 4);
     if (ImGui::InputText("##disasm_count", host.gui.disassembly_count, 5,
             ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
-        ReevaluateCode(host);
+        reevaluate_code(host);
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
@@ -99,7 +99,7 @@ void DrawDisassemblyDialog(HostState &host) {
             bool is_selected = host.gui.disassembly_arch == arch;
             if (ImGui::Selectable(arch.c_str(), is_selected)) {
                 host.gui.disassembly_arch = arch;
-                ReevaluateCode(host);
+                reevaluate_code(host);
             }
             if (is_selected) {
                 ImGui::SetItemDefaultFocus();

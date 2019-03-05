@@ -34,7 +34,7 @@ static const char OS_PREFIX[] = "open ";
 static const char OS_PREFIX[] = "xdg-open ";
 #endif
 
-void DrawAboutDialog(HostState &host) {
+void draw_about_dialog(HostState &host) {
     float width = ImGui::GetWindowWidth() / 0.65;
     float height = ImGui::GetWindowHeight() / 1.35;
 
