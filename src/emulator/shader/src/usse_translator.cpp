@@ -81,11 +81,22 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
                 std::to_string(((reg_offset + shift_offset) / 4) * 4));
 
             const spv::Id v4t = m_b.makeVectorType(type_f32, 4);
-
             const spv::Id new_pa_writeable = m_b.createVariable(spv::StorageClassPrivate, v4t, new_pa_writeable_name.c_str());
-            m_b.createStore(m_b.createLoad(reg.var_id), new_pa_writeable);
+
+            SpirvReg org1 = reg;
+            SpirvReg org2;
+
+            uint32_t temp_comp = 0;
+
+            if (!spirv_bank.find_reg_at(reg_offset + shift_offset + m_b.getNumTypeComponents(org1.type_id), org2, temp_comp)) {
+                org2 = org1;
+            }
+
+            m_b.createStore(bridge(org1, org2, SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111), new_pa_writeable);
 
             reg.var_id = new_pa_writeable;
+            reg.type_id = v4t;
+
             pa_writeable[pa_writeable_idx] = reg;
         }
     }
@@ -189,7 +200,13 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     if (op.bank == RegisterBank::FPCONSTANT || op.bank == RegisterBank::IMMEDIATE) {
         auto t = m_b.makeVectorType(type_f32, dest_comp_count);
         auto one = m_b.makeFpConstant(type_f32, 1.0);
-        return m_b.makeCompositeConstant(t, { one, one });
+
+        std::vector<spv::Id> ops;
+        ops.resize(dest_comp_count);
+
+        std::fill(ops.begin(), ops.end(), one);
+
+        return m_b.makeCompositeConstant(t, ops);
     }
 
     // Composite a new vector
