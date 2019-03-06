@@ -23,6 +23,7 @@
 #include <util/log.h>
 
 #include <SPIRV/SpvBuilder.h>
+#include <SPIRV/GLSL.std.450.h>
 #include <boost/optional.hpp>
 #include <spdlog/fmt/fmt.h>
 #include <spirv.hpp>
@@ -647,9 +648,33 @@ bool USSETranslatorVisitor::vnmad32(
         return false;
     }
 
-    auto mul_result = m_b.createBinOp(spv::OpFMul, type_f32_v[dest_comp_count], vsrc1, vsrc2);
+    spv::Id result = spv::NoResult;
+    
+    switch (opcode) {
+    case Opcode::VMUL: case Opcode::VF16MUL: {
+        result = m_b.createBinOp(spv::OpFMul, type_f32_v[dest_comp_count], vsrc1, vsrc2);
+        break;
+    }
 
-    store(inst.opr.dest, mul_result, dest_mask, 0);
+    case Opcode::VMIN: case Opcode::VF16MIN: {
+        result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMin, { vsrc1, vsrc2 });
+        break;
+    }
+
+    case Opcode::VMAX: case Opcode::VF16MAX: {
+        result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMax, { vsrc1, vsrc2 });
+        break;
+    }
+
+    default: {
+        LOG_ERROR("Unimplemented vnmad instruction: {}", disasm::opcode_str(opcode));
+        break;
+    }
+    }
+
+    if (result != spv::NoResult) {
+        store(inst.opr.dest, result, dest_mask, 0);
+    }
 
     return true;
 }

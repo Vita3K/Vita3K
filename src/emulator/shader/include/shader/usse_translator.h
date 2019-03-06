@@ -37,6 +37,8 @@ class USSETranslatorVisitor final {
 public:
     using instruction_return_type = bool;
 
+    spv::Id std_builtins;
+
     spv::Id type_f32;
     spv::Id type_f32_v[5]; // Starts from 1 ([1] is vec 1)
     spv::Id const_f32[4];
@@ -52,6 +54,9 @@ public:
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
         , m_program(program) {
+        // Import GLSL.std.450
+        std_builtins = m_b.import("GLSL.std.450");
+        
         // Build common type here, so builder won't have to look it up later
         type_f32 = m_b.makeFloatType(32);
 
