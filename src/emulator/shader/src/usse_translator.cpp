@@ -59,11 +59,59 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         }
     }
 
+    // Again, for SECATTR, there are situation where SECATTR registers
+    if (bank == usse::RegisterBank::SECATTR) {
+        if (reg_offset > 128) {
+            return false;
+        }
+
+        if (sa_supplies[reg_offset / 4].var_id != spv::NoResult) {
+            reg = sa_supplies[reg_offset / 4];
+            return true;
+        }
+    }
+
     const SpirvVarRegBank &spirv_bank = get_reg_bank(bank);
 
+    auto create_supply_register = [&](SpirvReg base, const std::string &name) -> SpirvReg {
+        const spv::Id new_writeable = m_b.createVariable(spv::StorageClassPrivate, type_f32_v[4], name.c_str());
+
+        SpirvReg org1 = base;
+        SpirvReg org2;
+
+        uint32_t temp_comp = 0;
+
+        if (!spirv_bank.find_reg_at(reg_offset + shift_offset + m_b.getNumTypeComponents(org1.type_id), org2, temp_comp)) {
+            org2 = org1;
+        }
+
+        m_b.createStore(bridge(org1, org2, SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111), new_writeable);
+
+        base.var_id = new_writeable;
+        base.type_id = type_f32_v[4];
+
+        return base;
+    };
+
     bool result = spirv_bank.find_reg_at(reg_offset + shift_offset, reg, out_comp_offset);
-    if (!result)
+    if (!result) {
+        // Either if we get them for store or not, sometimes shader will still use SEC as temporary. Weird but ok.
+        if (bank == usse::RegisterBank::SECATTR) {
+            reg.offset = ((reg_offset + shift_offset) / 4) * 4;
+
+            const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
+            reg.type_id = type_f32_v[4];
+            reg.var_id = m_b.createVariable(spv::StorageClassPrivate, reg.type_id, new_sa_supply_name.c_str());
+            reg.size = 4;
+
+            sa_supplies[pa_writeable_idx / 4] = reg;
+            out_comp_offset = (reg_offset + shift_offset) % 4;
+
+            return true;
+        }
+        
         return false;
+    }
 
     if (m_b.isArrayType(reg.type_id)) {
         const int size_per_element = reg.size / m_b.getNumTypeComponents(reg.type_id);
@@ -78,30 +126,19 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
     if (bank == usse::RegisterBank::PRIMATTR && get_for_store) {
         if (pa_writeable.count(pa_writeable_idx) == 0) {
-            const std::string new_pa_writeable_name = fmt::format("pa{}_temp", 
-                std::to_string(((reg_offset + shift_offset) / 4) * 4));
-
-            const spv::Id v4t = m_b.makeVectorType(type_f32, 4);
-            const spv::Id new_pa_writeable = m_b.createVariable(spv::StorageClassPrivate, v4t, new_pa_writeable_name.c_str());
-
-            SpirvReg org1 = reg;
-            SpirvReg org2;
-
-            uint32_t temp_comp = 0;
-
-            if (!spirv_bank.find_reg_at(reg_offset + shift_offset + m_b.getNumTypeComponents(org1.type_id), org2, temp_comp)) {
-                org2 = org1;
-            }
-
-            m_b.createStore(bridge(org1, org2, SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111), new_pa_writeable);
-
-            reg.var_id = new_pa_writeable;
-            reg.type_id = v4t;
-
+            const std::string new_pa_writeable_name = fmt::format("pa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
+            reg = create_supply_register(reg, new_pa_writeable_name);
             pa_writeable[pa_writeable_idx] = reg;
         }
     }
 
+    // Either if we get them for store or not, sometimes shader will still use SEC as temporary. Weird but ok.
+    if (bank == usse::RegisterBank::SECATTR && get_for_store) {
+        const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
+        reg = create_supply_register(reg, new_sa_supply_name);
+        sa_supplies[pa_writeable_idx / 4] = reg;
+    }
+    
     return true;
 }
 
@@ -199,7 +236,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
 
     // TODO: Properly handle
     if (op.bank == RegisterBank::FPCONSTANT || op.bank == RegisterBank::IMMEDIATE) {
-        auto t = m_b.makeVectorType(type_f32, dest_comp_count);
+        auto t = m_b.makeVectorType(type_f32, static_cast<int>(dest_comp_count));
         auto one = m_b.makeFpConstant(type_f32, 1.0);
 
         std::vector<spv::Id> ops;
@@ -228,12 +265,12 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     //
     // I haven't think of any edge case, but this should be looked when there is
     // any problems with bridging
-    if (!get_spirv_reg(op.bank, op.num, offset + dest_comp_count, reg_right, reg_right_comp_offset, false))
+    if (!get_spirv_reg(op.bank, op.num, static_cast<std::uint32_t>(offset + dest_comp_count), reg_right, reg_right_comp_offset, false))
         reg_right = reg_left;
 
     // Optimization: Bridging (VectorShuffle) or even swizzling is not always necessary
 
-    const bool needs_swizzle = !is_default(op.swizzle, dest_comp_count);
+    const bool needs_swizzle = !is_default(op.swizzle, static_cast<Imm4>(dest_comp_count));
 
     if (!needs_swizzle) {
         const uint32_t reg_left_comp_count = m_b.getNumTypeComponents(reg_left.type_id) - reg_left_comp_offset;
@@ -279,7 +316,7 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
 
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
 
-    const bool needs_swizzle = !is_default(dest.swizzle, dest_comp_count);
+    const bool needs_swizzle = !is_default(dest.swizzle, static_cast<Imm4>(dest_comp_count));
 
     // The source needs to fit in both the dest vector and the total write components must be equal to total source components
     const bool full_length = (total_comp_dest == total_comp_source) && (dest_comp_count == total_comp_source);

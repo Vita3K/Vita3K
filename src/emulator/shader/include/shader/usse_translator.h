@@ -24,6 +24,7 @@
 #include <SPIRV/SpvBuilder.h>
 #include <boost/optional/optional.hpp>
 
+#include <array>
 #include <map>
 
 using boost::optional;
@@ -32,6 +33,7 @@ namespace shader::usse {
 
 // For debugging SPIR-V output
 static uint32_t instr_idx = 0;
+constexpr std::size_t max_sa_registers = 128;
 
 class USSETranslatorVisitor final {
 public:
@@ -48,6 +50,9 @@ public:
     // TODO: Figure out actual PA count limit
     std::unordered_map<uint16_t, SpirvReg> pa_writeable;
 
+    // Each SPIR-V reg will contains 4 SA
+    std::array<SpirvReg, max_sa_registers / 4> sa_supplies;
+
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program)
         : m_b(_b)
@@ -56,7 +61,7 @@ public:
         , m_program(program) {
         // Import GLSL.std.450
         std_builtins = m_b.import("GLSL.std.450");
-        
+
         // Build common type here, so builder won't have to look it up later
         type_f32 = m_b.makeFloatType(32);
 
