@@ -411,6 +411,7 @@ namespace gxp {
 enum class GenericParameterType {
     Scalar,
     Vector,
-    Matrix
+    Matrix,
+    Array
 };
 } // namespace gxp

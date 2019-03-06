@@ -64,6 +64,17 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
     if (!result)
         return false;
 
+    if (m_b.isArrayType(reg.type_id)) {
+        const int size_per_element = reg.size / m_b.getNumTypeComponents(reg.type_id);
+
+        // Need to do a access chain to access the elements
+        reg.var_id = m_b.createOp(spv::OpAccessChain, m_b.makePointer(spv::StorageClassPrivate, m_b.getContainedTypeId(reg.type_id)),
+            { reg.var_id, m_b.makeIntConstant(out_comp_offset / size_per_element) } );
+        reg.type_id = m_b.getContainedTypeId(reg.type_id);
+
+        out_comp_offset %= size_per_element;
+    }
+
     if (bank == usse::RegisterBank::PRIMATTR && get_for_store) {
         if (pa_writeable.count(pa_writeable_idx) == 0) {
             const std::string new_pa_writeable_name = fmt::format("pa{}_temp", 

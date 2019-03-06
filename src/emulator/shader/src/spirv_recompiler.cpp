@@ -155,26 +155,14 @@ static spv::Id get_type_vector(spv::Builder &b, const SceGxmProgramParameter &pa
     return param_id;
 }
 
-// disabled
-static spv::Id get_type_matrix(spv::Builder &b, const SceGxmProgramParameter &parameter) {
+static spv::Id get_type_array(spv::Builder &b, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(b, parameter);
-
-    // There's no information on whether the parameter was a matrix originally (such type info is lost)
-    // so attempt to make a NxN matrix, or a NxN matrix array of size M if possible (else fall back to vector array)
-    // where N = parameter.component_count
-    //       M = matrix_array_size
-    const auto total_type_size = parameter.component_count * parameter.array_size;
-    const auto matrix_size = parameter.component_count * parameter.component_count;
-    const auto matrix_array_size = total_type_size / matrix_size;
-    const auto matrix_array_size_leftover = total_type_size % matrix_size;
-
-    if (matrix_array_size_leftover == 0) {
-        param_id = b.makeMatrixType(param_id, parameter.component_count, parameter.component_count);
-        param_id = create_array_if_needed(b, param_id, parameter, matrix_array_size);
-    } else {
-        // fallback to vector array
-        param_id = get_type_vector(b, parameter);
+    if (parameter.component_count > 1) {
+        param_id = b.makeVectorType(param_id, parameter.component_count);
     }
+    
+    // TODO: Stride
+    param_id = b.makeArrayType(param_id, b.makeUintConstant(parameter.array_size), 1);
 
     return param_id;
 }
@@ -188,8 +176,8 @@ static spv::Id get_param_type(spv::Builder &b, const SceGxmProgramParameter &par
         return get_type_scalar(b, parameter);
     case gxp::GenericParameterType::Vector:
         return get_type_vector(b, parameter);
-    case gxp::GenericParameterType::Matrix: // disabled
-        return get_type_matrix(b, parameter);
+    case gxp::GenericParameterType::Array:
+        return get_type_array(b, parameter);
     default:
         return get_type_fallback(b);
     }
@@ -688,6 +676,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 }
 
                 // If no container, we use the absolute offset
+                /*
                 for (auto p = 0; p < parameter.array_size; ++p) {
                     std::string var_elem_name;
                     if (parameter.array_size == 1)
@@ -706,11 +695,22 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                     LOG_DEBUG(param_log);
 
                     create_spirv_var_reg(b, spv_params, var_elem_name, param_reg_type, parameter.component_count, param_type
-                        , boost::none, offset);
+                        , boost::none, (p == 0) ? offset : boost::none);
+                }*/
+                // Make the type
+                std::string param_log = fmt::format("[{} + {}] {}a{} = {}",
+                    get_container_name(parameter.container_index), parameter.resource_index,
+                    is_uniform ? "s" : "p", offset, var_name);
 
-                    // TODO: This may varys with component size.
-                    offset += parameter.component_count;
+                if (parameter.array_size > 1) {
+                    param_log += fmt::format("[{}]", parameter.array_size);
                 }
+
+                LOG_DEBUG(param_log);
+
+                // TODO: Size is not accurate.
+                create_spirv_var_reg(b, spv_params, var_name, param_reg_type, parameter.array_size * parameter.component_count, param_type
+                    , boost::none, offset);
             }
             break;
         }
