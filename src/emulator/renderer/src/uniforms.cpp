@@ -77,12 +77,9 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
             break;
         }
         break;
+
     case 4:
-        if (array_size % 4 == 0) {
-            uniform_matrix_4<T>(location, array_size / 4, GL_FALSE, value);
-        } else {
-            uniform_4<T>(location, array_size, value);
-        }
+        uniform_4<T>(location, array_size, value);
         break;
 
     default:
@@ -145,21 +142,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             return true;
         };
 
-        // An array only
-        if (parameter.array_size == 1) {
-            do_supply(name, 1, parameter.resource_index);
-        } else {
-            // There are two types: a matrix listed as a bunch of vector
-            //                      Or simply a matrix
-            if (glGetUniformLocation(gl_program, name.c_str()) < 0) {
-                // Do loop
-                for (std::uint32_t i = 0; i < parameter.array_size; i++) {
-                    do_supply(name + "_" + std::to_string(i), 1, parameter.resource_index + i * parameter.component_count);
-                }
-            } else {
-                do_supply(name, parameter.array_size, parameter.resource_index);
-            }
-        }
+        do_supply(name, parameter.array_size, parameter.resource_index);
     }
 }
 
