@@ -675,28 +675,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                     offset = container->base_sa_offset + parameter.resource_index;
                 }
 
-                // If no container, we use the absolute offset
-                /*
-                for (auto p = 0; p < parameter.array_size; ++p) {
-                    std::string var_elem_name;
-                    if (parameter.array_size == 1)
-                        var_elem_name = var_name;
-                    else
-                        var_elem_name = fmt::format("{}_{}", var_name, p);
-                        
-                    std::string param_log = fmt::format("[{} + {}] {}a{} = {}",
-                        get_container_name(parameter.container_index), parameter.resource_index,
-                        is_uniform ? "s" : "p", offset, var_name);
-
-                    if (parameter.array_size > 1) {
-                        param_log += fmt::format("[{}]", parameter.array_size);
-                    }
-
-                    LOG_DEBUG(param_log);
-
-                    create_spirv_var_reg(b, spv_params, var_elem_name, param_reg_type, parameter.component_count, param_type
-                        , boost::none, (p == 0) ? offset : boost::none);
-                }*/
                 // Make the type
                 std::string param_log = fmt::format("[{} + {}] {}a{} = {}",
                     get_container_name(parameter.container_index), parameter.resource_index,
@@ -772,9 +750,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         if (missing_primary_attrs > 2) {
             LOG_ERROR("missing primary attributes: {}", missing_primary_attrs);
         } else if (missing_primary_attrs > 0) {
-            const auto pa_type = b.makeVectorType(b.makeFloatType(32), missing_primary_attrs * 2);
+            const auto pa_type = b.makeVectorType(b.makeFloatType(32), static_cast<int>(missing_primary_attrs * 2));
             std::string pa_name = "pa0_blend";
-            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, missing_primary_attrs * 2, pa_type); // TODO: * 2 is a hack because we don't yet support f16
+            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, static_cast<std::uint32_t>(missing_primary_attrs * 2), pa_type); // TODO: * 2 is a hack because we don't yet support f16
         }
     }
 
