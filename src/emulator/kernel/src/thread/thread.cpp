@@ -105,6 +105,16 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     return thid;
 }
 
+void raise_waiting_threads(ThreadState *thread) {
+    for (auto t : thread->waiting_threads) {
+        const std::unique_lock<std::mutex> lock(t->mutex);
+        assert(t->to_do == ThreadToDo::wait);
+        t->to_do = ThreadToDo::run;
+        t->something_to_do.notify_one();
+    }
+    thread->waiting_threads.clear();
+}
+
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp) {
     const std::unique_lock<std::mutex> lock(kernel.mutex);
 
@@ -128,15 +138,9 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
             thread->to_do = ThreadToDo::exit;
         }
         thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
-        
-        for (auto t : thread->waiting_threads){
-            const std::unique_lock<std::mutex> lock(t->mutex);
-            assert(t->to_do == ThreadToDo::wait);
-            t->to_do = ThreadToDo::run;
-            t->something_to_do.notify_one();
-        }
-        thread->waiting_threads.clear();
-        
+
+        raise_waiting_threads(thread.get());
+
         SDL_WaitThread(running_thread, nullptr);
     };
 
@@ -185,21 +189,16 @@ bool run_thread(ThreadState &thread, bool callback) {
         case ThreadToDo::run:
             lock.unlock();
             res = run(*thread.cpu, callback);
-            if (res == 1) {
-                const std::unique_lock<std::mutex> lock(thread.mutex);
-                for (auto t : thread.waiting_threads){
-                    const std::unique_lock<std::mutex> lock(t->mutex);
-                    assert(t->to_do == ThreadToDo::wait);
-                    t->to_do = ThreadToDo::run;
-                    t->something_to_do.notify_one();
-                }
-                thread.waiting_threads.clear();
-                return true;
-            }
             if (res < 0) {
                 return false;
             }
             if (callback) {
+                return true;
+            }
+            if (res == 1) {
+                const std::unique_lock<std::mutex> lock(thread.mutex);
+                raise_waiting_threads(&thread);
+                thread.to_do = ThreadToDo::exit;
                 return true;
             }
             lock.lock();
