@@ -20,9 +20,9 @@
 #include "private.h"
 
 #include <cpu/functions.h>
+#include <host/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
-#include <host/state.h>
 #include <util/resource.h>
 
 #include <spdlog/fmt/fmt.h>

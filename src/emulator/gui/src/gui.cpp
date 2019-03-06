@@ -146,7 +146,7 @@ void draw_end(SDL_Window *window) {
 
 void draw_ui(HostState &host) {
     draw_main_menu_bar(host);
-    
+
     ImGui::PushFont(host.gui.monospaced_font);
     if (host.gui.threads_dialog) {
         draw_threads_dialog(host);
