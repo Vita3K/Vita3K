@@ -23,54 +23,67 @@
 
 namespace gui {
 
+static void draw_debug_menu(State &state) {
+    if (ImGui::BeginMenu("Debug")) {
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+        ImGui::MenuItem("Threads", nullptr, &state.threads_dialog);
+        ImGui::MenuItem("Semaphores", nullptr, &state.semaphores_dialog);
+        ImGui::MenuItem("Mutexes", nullptr, &state.mutexes_dialog);
+        ImGui::MenuItem("Lightweight Mutexes", nullptr, &state.lwmutexes_dialog);
+        ImGui::MenuItem("Condition Variables", nullptr, &state.condvars_dialog);
+        ImGui::MenuItem("Lightweight Condition Variables", nullptr, &state.lwcondvars_dialog);
+        ImGui::MenuItem("Event Flags", nullptr, &state.eventflags_dialog);
+        ImGui::MenuItem("Memory Allocations", nullptr, &state.allocations_dialog);
+        ImGui::MenuItem("Disassembly", nullptr, &state.disassembly_dialog);
+        ImGui::PopStyleColor();
+        ImGui::EndMenu();
+    }
+}
+
+static void draw_config_menu(HostState &host) {
+    if (ImGui::BeginMenu("Configuration")) {
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+        if (ImGui::BeginMenu("Emulated Console")) {
+            if (ImGui::MenuItem("PS Vita", nullptr, !host.cfg.pstv_mode)) {
+                host.cfg.pstv_mode = false;
+            }
+            if (ImGui::MenuItem("PS TV", nullptr, host.cfg.pstv_mode)) {
+                host.cfg.pstv_mode = true;
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::PopStyleColor();
+        ImGui::EndMenu();
+    }
+}
+
+static void draw_optimisation_menu(State &state) {
+    if (ImGui::BeginMenu("Optimisation")) {
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+        ImGui::MenuItem("Texture Cache", nullptr, &state.texture_cache);
+        ImGui::PopStyleColor();
+        ImGui::EndMenu();
+    }
+}
+
+static void draw_help_menu(State &state) {
+    if (ImGui::BeginMenu("Help")) {
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+        ImGui::MenuItem("Controls", nullptr, &state.controls_dialog);
+        ImGui::MenuItem("About", nullptr, &state.about_dialog);
+        ImGui::PopStyleColor();
+        ImGui::EndMenu();
+    }
+}
+
 void draw_main_menu_bar(HostState &host) {
     if (ImGui::BeginMainMenuBar()) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
-        if (ImGui::BeginMenu("Debug")) {
-            ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-            ImGui::MenuItem("Threads", nullptr, &host.gui.threads_dialog);
-            ImGui::MenuItem("Semaphores", nullptr, &host.gui.semaphores_dialog);
-            ImGui::MenuItem("Mutexes", nullptr, &host.gui.mutexes_dialog);
-            ImGui::MenuItem("Lightweight Mutexes", nullptr, &host.gui.lwmutexes_dialog);
-            ImGui::MenuItem("Condition Variables", nullptr, &host.gui.condvars_dialog);
-            ImGui::MenuItem("Lightweight Condition Variables", nullptr, &host.gui.lwcondvars_dialog);
-            ImGui::MenuItem("Event Flags", nullptr, &host.gui.eventflags_dialog);
-            ImGui::MenuItem("Memory Allocations", nullptr, &host.gui.allocations_dialog);
-            ImGui::MenuItem("Disassembly", nullptr, &host.gui.disassembly_dialog);
-            ImGui::PopStyleColor();
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Configuration")) {
-            ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-            if (ImGui::BeginMenu("Emulated Console")) {
-                if (ImGui::MenuItem("PS Vita", nullptr, !host.cfg.pstv_mode)) {
-                    host.cfg.pstv_mode = false;
-                }
-                if (ImGui::MenuItem("PS TV", nullptr, host.cfg.pstv_mode)) {
-                    host.cfg.pstv_mode = true;
-                }
-                ImGui::EndMenu();
-            }
-            ImGui::PopStyleColor();
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Optimisation")) {
-            ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-            ImGui::MenuItem("Texture Cache", nullptr, &host.gui.texture_cache);
-            ImGui::PopStyleColor();
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Help")) {
-            ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-            ImGui::MenuItem("Controls", nullptr, &host.gui.controls_dialog);
-            ImGui::MenuItem("About", nullptr, &host.gui.about_dialog);
-            ImGui::PopStyleColor();
-            ImGui::EndMenu();
-        }
+        draw_debug_menu(host.gui);
+        draw_config_menu(host);
+        draw_optimisation_menu(host.gui);
+        draw_help_menu(host.gui);
 
         ImGui::PopStyleColor();
         ImGui::EndMainMenuBar();
