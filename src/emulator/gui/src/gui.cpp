@@ -148,40 +148,40 @@ void draw_ui(HostState &host) {
     draw_main_menu_bar(host);
 
     ImGui::PushFont(host.gui.monospaced_font);
-    if (host.gui.threads_dialog) {
+    if (host.gui.debug_menu.threads_dialog) {
         draw_threads_dialog(host);
     }
-    if (host.gui.thread_details_dialog) {
+    if (host.gui.debug_menu.thread_details_dialog) {
         draw_thread_details_dialog(host);
     }
-    if (host.gui.semaphores_dialog) {
+    if (host.gui.debug_menu.semaphores_dialog) {
         draw_semaphores_dialog(host);
     }
-    if (host.gui.mutexes_dialog) {
+    if (host.gui.debug_menu.mutexes_dialog) {
         draw_mutexes_dialog(host);
     }
-    if (host.gui.lwmutexes_dialog) {
+    if (host.gui.debug_menu.lwmutexes_dialog) {
         draw_lw_mutexes_dialog(host);
     }
-    if (host.gui.condvars_dialog) {
+    if (host.gui.debug_menu.condvars_dialog) {
         draw_condvars_dialog(host);
     }
-    if (host.gui.lwcondvars_dialog) {
+    if (host.gui.debug_menu.lwcondvars_dialog) {
         draw_lw_condvars_dialog(host);
     }
-    if (host.gui.eventflags_dialog) {
+    if (host.gui.debug_menu.eventflags_dialog) {
         draw_event_flags_dialog(host);
     }
-    if (host.gui.controls_dialog) {
-        draw_controls_dialog(host);
-    }
-    if (host.gui.allocations_dialog) {
+    if (host.gui.debug_menu.allocations_dialog) {
         draw_allocations_dialog(host);
     }
-    if (host.gui.disassembly_dialog) {
+    if (host.gui.debug_menu.disassembly_dialog) {
         draw_disassembly_dialog(host);
     }
-    if (host.gui.about_dialog) {
+    if (host.gui.help_menu.controls_dialog) {
+        draw_controls_dialog(host);
+    }
+    if (host.gui.help_menu.about_dialog) {
         draw_about_dialog(host);
     }
     ImGui::PopFont();

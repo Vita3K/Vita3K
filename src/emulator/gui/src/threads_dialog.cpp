@@ -33,7 +33,7 @@ void draw_thread_details_dialog(HostState &host) {
     ThreadStatePtr &thread = host.kernel.threads[host.gui.thread_watch_index];
     CPUState &cpu = *thread->cpu;
 
-    ImGui::Begin("Thread Viewer", &host.gui.thread_details_dialog);
+    ImGui::Begin("Thread Viewer", &host.gui.debug_menu.thread_details_dialog);
 
     uint32_t pc = read_pc(cpu);
     uint32_t sp = read_sp(cpu);
@@ -59,7 +59,7 @@ void draw_thread_details_dialog(HostState &host) {
 }
 
 void draw_threads_dialog(HostState &host) {
-    ImGui::Begin("Threads", &host.gui.threads_dialog);
+    ImGui::Begin("Threads", &host.gui.debug_menu.threads_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE,
         "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
 
@@ -83,7 +83,7 @@ void draw_threads_dialog(HostState &host) {
                 thread.first, th_state->name, run_state, th_state->stack.get()->get())
                                   .c_str())) {
             host.gui.thread_watch_index = thread.first;
-            host.gui.thread_details_dialog = true;
+            host.gui.debug_menu.thread_details_dialog = true;
         }
     }
     ImGui::End();

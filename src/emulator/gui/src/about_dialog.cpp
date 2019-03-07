@@ -39,7 +39,7 @@ void draw_about_dialog(HostState &host) {
     float height = ImGui::GetWindowHeight() / 1.35;
 
     ImGui::SetNextWindowSize(ImVec2(width, height));
-    ImGui::Begin("About", &host.gui.about_dialog);
+    ImGui::Begin("About", &host.gui.help_menu.about_dialog);
 
     ImGui::Text("%s", window_title);
 

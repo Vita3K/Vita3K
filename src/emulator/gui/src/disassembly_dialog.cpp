@@ -59,7 +59,7 @@ std::string archs[] = {
 };
 
 void draw_disassembly_dialog(HostState &host) {
-    ImGui::Begin("Disassembly", &host.gui.disassembly_dialog);
+    ImGui::Begin("Disassembly", &host.gui.debug_menu.disassembly_dialog);
     ImGui::BeginChild("disasm", ImVec2(0, -(ImGui::GetTextLineHeightWithSpacing() + 10)));
     for (const std::string &assembly : host.gui.disassembly) {
         ImGui::Text("%s", assembly.c_str());

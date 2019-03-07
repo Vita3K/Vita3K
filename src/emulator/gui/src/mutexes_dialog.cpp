@@ -27,7 +27,7 @@
 namespace gui {
 
 void draw_mutexes_dialog(HostState &host) {
-    ImGui::Begin("Mutexes", &host.gui.mutexes_dialog);
+    ImGui::Begin("Mutexes", &host.gui.debug_menu.mutexes_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
@@ -46,7 +46,7 @@ void draw_mutexes_dialog(HostState &host) {
 }
 
 void draw_lw_mutexes_dialog(HostState &host) {
-    ImGui::Begin("Lightweight Mutexes", &host.gui.lwmutexes_dialog);
+    ImGui::Begin("Lightweight Mutexes", &host.gui.debug_menu.lwmutexes_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s  %-16s   %-16s", "ID", "LwMutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);

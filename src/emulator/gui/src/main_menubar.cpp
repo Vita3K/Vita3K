@@ -23,7 +23,7 @@
 
 namespace gui {
 
-static void draw_debug_menu(State &state) {
+static void draw_debug_menu(DebugMenuState &state) {
     if (ImGui::BeginMenu("Debug")) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("Threads", nullptr, &state.threads_dialog);
@@ -57,7 +57,7 @@ static void draw_config_menu(HostState &host) {
     }
 }
 
-static void draw_optimisation_menu(State &state) {
+static void draw_optimisation_menu(OptimisationMenuState &state) {
     if (ImGui::BeginMenu("Optimisation")) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("Texture Cache", nullptr, &state.texture_cache);
@@ -66,7 +66,7 @@ static void draw_optimisation_menu(State &state) {
     }
 }
 
-static void draw_help_menu(State &state) {
+static void draw_help_menu(HelpMenuState &state) {
     if (ImGui::BeginMenu("Help")) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("Controls", nullptr, &state.controls_dialog);
@@ -80,10 +80,10 @@ void draw_main_menu_bar(HostState &host) {
     if (ImGui::BeginMainMenuBar()) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
-        draw_debug_menu(host.gui);
+        draw_debug_menu(host.gui.debug_menu);
         draw_config_menu(host);
-        draw_optimisation_menu(host.gui);
-        draw_help_menu(host.gui);
+        draw_optimisation_menu(host.gui.optimisation_menu);
+        draw_help_menu(host.gui.help_menu);
 
         ImGui::PopStyleColor();
         ImGui::EndMainMenuBar();

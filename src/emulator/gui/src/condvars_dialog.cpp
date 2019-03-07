@@ -27,7 +27,7 @@
 namespace gui {
 
 void draw_condvars_dialog(HostState &host) {
-    ImGui::Begin("Condition Variables", &host.gui.condvars_dialog);
+    ImGui::Begin("Condition Variables", &host.gui.debug_menu.condvars_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s %-16s", "ID", "Name", "Attributes", "Waiting Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
@@ -44,7 +44,7 @@ void draw_condvars_dialog(HostState &host) {
 }
 
 void draw_lw_condvars_dialog(HostState &host) {
-    ImGui::Begin("Lightweight Condition Variables", &host.gui.lwcondvars_dialog);
+    ImGui::Begin("Lightweight Condition Variables", &host.gui.debug_menu.lwcondvars_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s %-16s", "ID", "Name", "Attributes", "Waiting Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
