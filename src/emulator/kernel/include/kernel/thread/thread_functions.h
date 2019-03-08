@@ -36,3 +36,4 @@ Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, Kerne
 bool run_thread(ThreadState &thread, bool callback);
 bool run_callback(ThreadState &thread, Address &pc, Address &data);
 uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp);
+void raise_waiting_threads(ThreadState *thread);
