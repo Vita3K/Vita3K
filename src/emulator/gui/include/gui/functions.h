@@ -17,11 +17,11 @@
 
 #pragma once
 
-#include <host/app.h>
+enum class AppRunType;
+struct HostState;
+struct SDL_Window;
 
-#include <cstdint>
-
-static constexpr auto MENUBAR_HEIGHT = 19;
+namespace gui {
 
 enum GenericDialogState {
     UNK_STATE,
@@ -29,24 +29,13 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-struct HostState;
+void init(HostState &host);
+void draw_begin(HostState &host);
+void draw_end(SDL_Window *window);
+void draw_ui(HostState &host);
 
-void DrawMainMenuBar(HostState &host);
-void DrawThreadsDialog(HostState &host);
-void DrawThreadDetailsDialog(HostState &host);
-void DrawSemaphoresDialog(HostState &host);
-void DrawMutexesDialog(HostState &host);
-void DrawLwMutexesDialog(HostState &host);
-void DrawLwCondvarsDialog(HostState &host);
-void DrawCondvarsDialog(HostState &host);
-void DrawEventFlagsDialog(HostState &host);
-void DrawAllocationsDialog(HostState &host);
-void DrawDisassemblyDialog(HostState &host);
-void DrawUI(HostState &host);
-void DrawCommonDialog(HostState &host);
-void DrawGameSelector(HostState &host, AppRunType *run_type);
-void DrawReinstallDialog(HostState &host, GenericDialogState *status);
-void DrawControlsDialog(HostState &host);
-void DrawAboutDialog(HostState &host);
+void draw_common_dialog(HostState &host);
+void draw_game_selector(HostState &host, AppRunType *run_type);
+void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
 
-void ReevaluateCode(HostState &host);
+} // namespace gui

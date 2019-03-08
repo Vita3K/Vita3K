@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <gui/imgui_impl.h>
 #include <host/app.h>
 #include <host/config.h>
 #include <host/functions.h>
@@ -90,18 +89,18 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    imgui::init(host);
+    gui::init(host);
 
     // Application not provided via argument, show game selector
     while (run_type == AppRunType::Unknown) {
         if (handle_events(host)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            imgui::draw_begin(host);
+            gui::draw_begin(host);
 
-            DrawUI(host);
-            DrawGameSelector(host, &run_type);
+            gui::draw_ui(host);
+            gui::draw_game_selector(host, &run_type);
 
-            imgui::draw_end(host.window.get());
+            gui::draw_end(host.window.get());
         } else {
             return QuitRequested;
         }
@@ -126,12 +125,12 @@ int main(int argc, char *argv[]) {
 
     while (handle_events(host)) {
         gl_renderer.render(host);
-        imgui::draw_begin(host);
-        DrawCommonDialog(host);
+        gui::draw_begin(host);
+        gui::draw_common_dialog(host);
         if (host.display.imgui_render) {
-            DrawUI(host);
+            gui::draw_ui(host);
         }
-        imgui::draw_end(host.window.get());
+        gui::draw_end(host.window.get());
 
         if (!host.display.sync_rendering)
             host.display.condvar.notify_all();
@@ -142,9 +141,6 @@ int main(int argc, char *argv[]) {
 
         set_window_title(host);
     }
-
-    // De-initializations
-    imgui::destroy(host);
 
     // There may be changes that made in the GUI, so we should save, again
     config::serialize(host.cfg);

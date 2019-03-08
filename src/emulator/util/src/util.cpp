@@ -122,7 +122,6 @@ std::string wide_to_utf(const std::wstring &str) {
 }
 
 std::string remove_special_chars(std::string str) {
-
     for (char &c : str) {
         switch (c) {
         case '/':

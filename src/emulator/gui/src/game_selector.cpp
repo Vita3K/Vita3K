@@ -16,15 +16,18 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <gui/gui_constants.h>
-#include <host/app.h>
-#include <host/state.h>
 
-#include <imgui.h>
+#include "private.h"
+
+#include <host/state.h>
 
 using namespace std::string_literals;
 
-void DrawGameSelector(HostState &host, AppRunType *run_type) {
+namespace gui {
+
+static constexpr auto MENUBAR_HEIGHT = 19;
+
+void draw_game_selector(HostState &host, AppRunType *run_type) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
@@ -72,61 +75,4 @@ void DrawGameSelector(HostState &host, AppRunType *run_type) {
     ImGui::End();
 }
 
-void DrawReinstallDialog(HostState &host, GenericDialogState *status) {
-    ImGui::SetNextWindowPosCenter();
-    ImGui::SetNextWindowSize(ImVec2(0, 0));
-    ImGui::Begin("Reinstall this application?");
-    ImGui::Text("This application is already installed.");
-    ImGui::Text("Do you want to reinstall it and overwrite existing data?");
-    if (ImGui::Button("Yes")) {
-        *status = CONFIRM_STATE;
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("No")) {
-        *status = CANCEL_STATE;
-    }
-    ImGui::End();
-}
-
-void DrawUI(HostState &host) {
-    DrawMainMenuBar(host);
-
-    ImGui::PushFont(host.gui.monospaced_font);
-    if (host.gui.threads_dialog) {
-        DrawThreadsDialog(host);
-    }
-    if (host.gui.thread_details_dialog) {
-        DrawThreadDetailsDialog(host);
-    }
-    if (host.gui.semaphores_dialog) {
-        DrawSemaphoresDialog(host);
-    }
-    if (host.gui.mutexes_dialog) {
-        DrawMutexesDialog(host);
-    }
-    if (host.gui.lwmutexes_dialog) {
-        DrawLwMutexesDialog(host);
-    }
-    if (host.gui.condvars_dialog) {
-        DrawCondvarsDialog(host);
-    }
-    if (host.gui.lwcondvars_dialog) {
-        DrawLwCondvarsDialog(host);
-    }
-    if (host.gui.eventflags_dialog) {
-        DrawEventFlagsDialog(host);
-    }
-    if (host.gui.controls_dialog) {
-        DrawControlsDialog(host);
-    }
-    if (host.gui.allocations_dialog) {
-        DrawAllocationsDialog(host);
-    }
-    if (host.gui.disassembly_dialog) {
-        DrawDisassemblyDialog(host);
-    }
-    if (host.gui.about_dialog) {
-        DrawAboutDialog(host);
-    }
-    ImGui::PopFont();
-}
+} // namespace gui

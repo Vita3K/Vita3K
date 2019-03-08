@@ -16,16 +16,18 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <imgui.h>
 
-#include <gui/gui_constants.h>
+#include "private.h"
+
 #include <host/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
 #include <util/resource.h>
 
-void DrawMutexesDialog(HostState &host) {
-    ImGui::Begin("Mutexes", &host.gui.mutexes_dialog);
+namespace gui {
+
+void draw_mutexes_dialog(HostState &host) {
+    ImGui::Begin("Mutexes", &host.gui.debug_menu.mutexes_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
@@ -43,8 +45,8 @@ void DrawMutexesDialog(HostState &host) {
     ImGui::End();
 }
 
-void DrawLwMutexesDialog(HostState &host) {
-    ImGui::Begin("Lightweight Mutexes", &host.gui.lwmutexes_dialog);
+void draw_lw_mutexes_dialog(HostState &host) {
+    ImGui::Begin("Lightweight Mutexes", &host.gui.debug_menu.lwmutexes_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s  %-16s   %-16s", "ID", "LwMutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
@@ -60,3 +62,5 @@ void DrawLwMutexesDialog(HostState &host) {
     }
     ImGui::End();
 }
+
+} // namespace gui

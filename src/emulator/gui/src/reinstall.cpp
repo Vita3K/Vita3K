@@ -15,16 +15,26 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <gui/functions.h>
 
-struct HostState;
-struct SDL_Window;
+#include <imgui.h>
 
-namespace imgui {
+namespace gui {
 
-void init(HostState &host);
-void draw_begin(HostState &host);
-void draw_end(SDL_Window *window);
-void destroy(HostState &host);
+void draw_reinstall_dialog(HostState &host, GenericDialogState *status) {
+    ImGui::SetNextWindowPosCenter();
+    ImGui::SetNextWindowSize(ImVec2(0, 0));
+    ImGui::Begin("Reinstall this application?");
+    ImGui::Text("This application is already installed.");
+    ImGui::Text("Do you want to reinstall it and overwrite existing data?");
+    if (ImGui::Button("Yes")) {
+        *status = CONFIRM_STATE;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("No")) {
+        *status = CANCEL_STATE;
+    }
+    ImGui::End();
+}
 
-} // namespace imgui
+} // namespace gui

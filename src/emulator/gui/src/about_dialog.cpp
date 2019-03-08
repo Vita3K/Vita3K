@@ -15,6 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <gui/functions.h>
+
+#include "private.h"
+
+#include <host/state.h>
+#include <host/version.h>
+
+#include <sstream>
+
+namespace gui {
+
 #ifdef _WIN32
 static const char OS_PREFIX[] = "start ";
 #elif __APPLE__
@@ -23,22 +34,14 @@ static const char OS_PREFIX[] = "open ";
 static const char OS_PREFIX[] = "xdg-open ";
 #endif
 
-#include <gui/functions.h>
-#include <imgui.h>
-#include <sstream>
-
-#include <gui/gui_constants.h>
-#include <host/state.h>
-#include <host/version.h>
-
-void DrawAboutDialog(HostState &host) {
+void draw_about_dialog(HostState &host) {
     float width = ImGui::GetWindowWidth() / 0.65;
     float height = ImGui::GetWindowHeight() / 1.35;
 
     ImGui::SetNextWindowSize(ImVec2(width, height));
-    ImGui::Begin("About", &host.gui.about_dialog);
+    ImGui::Begin("About", &host.gui.help_menu.about_dialog);
 
-    ImGui::Text(window_title);
+    ImGui::Text("%s", window_title);
 
     ImGui::Separator();
 
@@ -76,3 +79,5 @@ void DrawAboutDialog(HostState &host) {
 
     ImGui::End();
 }
+
+} // namespace gui

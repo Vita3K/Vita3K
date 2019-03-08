@@ -16,16 +16,18 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <imgui.h>
 
-#include <gui/gui_constants.h>
+#include "private.h"
+
 #include <host/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
 #include <util/resource.h>
 
-void DrawSemaphoresDialog(HostState &host) {
-    ImGui::Begin("Semaphores", &host.gui.semaphores_dialog);
+namespace gui {
+
+void draw_semaphores_dialog(HostState &host) {
+    ImGui::Begin("Semaphores", &host.gui.debug_menu.semaphores_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s   %-16s", "ID", "Semaphore Name", "Status", "Locked Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
@@ -41,3 +43,5 @@ void DrawSemaphoresDialog(HostState &host) {
     }
     ImGui::End();
 }
+
+} // namespace gui

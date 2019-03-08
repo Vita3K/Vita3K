@@ -16,24 +16,24 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <imgui.h>
 
-#include <gui/gui_constants.h>
-#include <host/state.h>
+#include "private.h"
 
 #include <cpu/functions.h>
+#include <host/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
-
 #include <util/resource.h>
 
 #include <spdlog/fmt/fmt.h>
 
-void DrawThreadDetailsDialog(HostState &host) {
+namespace gui {
+
+void draw_thread_details_dialog(HostState &host) {
     ThreadStatePtr &thread = host.kernel.threads[host.gui.thread_watch_index];
     CPUState &cpu = *thread->cpu;
 
-    ImGui::Begin("Thread Viewer", &host.gui.thread_details_dialog);
+    ImGui::Begin("Thread Viewer", &host.gui.debug_menu.thread_details_dialog);
 
     uint32_t pc = read_pc(cpu);
     uint32_t sp = read_sp(cpu);
@@ -47,8 +47,8 @@ void DrawThreadDetailsDialog(HostState &host) {
     ImGui::Text("Name: %s (%x)", thread->name.c_str(), host.gui.thread_watch_index);
 
     ImGui::Text("PC: %08x", pc);
-    ImGui::Text("SP: %08x", pc);
-    ImGui::Text("LR: %08x", pc);
+    ImGui::Text("SP: %08x", sp);
+    ImGui::Text("LR: %08x", lr);
     ImGui::Text("Executing: %s", disassemble(cpu, pc).c_str());
     ImGui::Separator();
     for (int a = 0; a < 8; a++) {
@@ -58,8 +58,8 @@ void DrawThreadDetailsDialog(HostState &host) {
     ImGui::End();
 }
 
-void DrawThreadsDialog(HostState &host) {
-    ImGui::Begin("Threads", &host.gui.threads_dialog);
+void draw_threads_dialog(HostState &host) {
+    ImGui::Begin("Threads", &host.gui.debug_menu.threads_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE,
         "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
 
@@ -83,8 +83,10 @@ void DrawThreadsDialog(HostState &host) {
                 thread.first, th_state->name, run_state, th_state->stack.get()->get())
                                   .c_str())) {
             host.gui.thread_watch_index = thread.first;
-            host.gui.thread_details_dialog = true;
+            host.gui.debug_menu.thread_details_dialog = true;
         }
     }
     ImGui::End();
 }
+
+} // namespace gui

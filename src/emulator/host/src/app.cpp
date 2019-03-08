@@ -147,21 +147,21 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
 
     const bool created = fs::create_directory(title_base_path);
     if (!created) {
-        GenericDialogState status = UNK_STATE;
+        gui::GenericDialogState status = gui::UNK_STATE;
         while (handle_events(host) && (status == 0)) {
             ImGui_ImplSdlGL3_NewFrame(host.window.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            DrawUI(host);
-            DrawReinstallDialog(host, &status);
+            gui::draw_ui(host);
+            gui::draw_reinstall_dialog(host, &status);
             glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
             ImGui::Render();
             ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
             SDL_GL_SwapWindow(host.window.get());
         }
-        if (status == CANCEL_STATE) {
+        if (status == gui::CANCEL_STATE) {
             LOG_INFO("{} already installed, launching application...", host.io.title_id);
             return true;
-        } else if (status == UNK_STATE) {
+        } else if (status == gui::UNK_STATE) {
             exit(0);
         }
     }

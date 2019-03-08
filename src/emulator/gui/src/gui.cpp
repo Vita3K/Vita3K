@@ -15,7 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <gui/imgui_impl.h>
+#include <gui/functions.h>
+
+#include "private.h"
 
 #include <gui/imgui_impl_sdl_gl3.h>
 
@@ -26,14 +28,13 @@
 #include <util/string_utils.h>
 
 #include <SDL_video.h>
-#include <imgui.h>
 
 #include <fstream>
 #include <string>
 
-namespace imgui {
+namespace gui {
 
-void init_style() {
+static void init_style() {
     ImGui::StyleColorsDark();
 
     ImGuiStyle *style = &ImGui::GetStyle();
@@ -91,7 +92,7 @@ void init_style() {
     style->Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 }
 
-void init_font(GuiState &gui) {
+static void init_font(State &gui) {
     const auto DATA_PATH = "data";
     const auto FONT_PATH = "fonts";
     const auto FONT_FILENAME = "mplus-1mn-bold.ttf";
@@ -108,18 +109,15 @@ void init_font(GuiState &gui) {
 
     // read font
     const auto font_file_size = fs::file_size(font_path);
-    char *font_data = new char[font_file_size];
+    gui.font_data.resize(font_file_size);
     std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
-    font_stream.read(font_data, font_file_size);
+    font_stream.read(gui.font_data.data(), font_file_size);
 
     // add it to imgui
     ImGuiIO &io = ImGui::GetIO();
     ImFontConfig font_config{};
     gui.monospaced_font = io.Fonts->AddFontDefault();
-    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(font_data, font_file_size, 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
-
-    // save pointer so we can delete it later
-    gui.font_data = font_data;
+    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), font_file_size, 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
 void init(HostState &host) {
@@ -146,8 +144,47 @@ void draw_end(SDL_Window *window) {
     SDL_GL_SwapWindow(window);
 }
 
-void destroy(HostState &host) {
-    delete[] host.gui.font_data;
+void draw_ui(HostState &host) {
+    draw_main_menu_bar(host);
+
+    ImGui::PushFont(host.gui.monospaced_font);
+    if (host.gui.debug_menu.threads_dialog) {
+        draw_threads_dialog(host);
+    }
+    if (host.gui.debug_menu.thread_details_dialog) {
+        draw_thread_details_dialog(host);
+    }
+    if (host.gui.debug_menu.semaphores_dialog) {
+        draw_semaphores_dialog(host);
+    }
+    if (host.gui.debug_menu.mutexes_dialog) {
+        draw_mutexes_dialog(host);
+    }
+    if (host.gui.debug_menu.lwmutexes_dialog) {
+        draw_lw_mutexes_dialog(host);
+    }
+    if (host.gui.debug_menu.condvars_dialog) {
+        draw_condvars_dialog(host);
+    }
+    if (host.gui.debug_menu.lwcondvars_dialog) {
+        draw_lw_condvars_dialog(host);
+    }
+    if (host.gui.debug_menu.eventflags_dialog) {
+        draw_event_flags_dialog(host);
+    }
+    if (host.gui.debug_menu.allocations_dialog) {
+        draw_allocations_dialog(host);
+    }
+    if (host.gui.debug_menu.disassembly_dialog) {
+        draw_disassembly_dialog(host);
+    }
+    if (host.gui.help_menu.controls_dialog) {
+        draw_controls_dialog(host);
+    }
+    if (host.gui.help_menu.about_dialog) {
+        draw_about_dialog(host);
+    }
+    ImGui::PopFont();
 }
 
-} // namespace imgui
+} // namespace gui

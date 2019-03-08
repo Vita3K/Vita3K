@@ -22,6 +22,8 @@
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
+namespace gui {
+
 enum SelectorState {
     SELECT_APP
 };
@@ -38,9 +40,7 @@ struct GamesSelector {
     SelectorState state = SELECT_APP;
 };
 
-struct GuiState {
-    // Debug menu
-    bool renderer_focused = true;
+struct DebugMenuState {
     bool threads_dialog = false;
     bool thread_details_dialog = false;
     bool semaphores_dialog = false;
@@ -52,14 +52,22 @@ struct GuiState {
     bool allocations_dialog = false;
     bool memory_editor_dialog = false;
     bool disassembly_dialog = false;
+};
 
-    // Optimisation menu
+struct OptimisationMenuState {
     bool texture_cache = true;
+};
 
-    // Help menu
+struct HelpMenuState {
     bool controls_dialog = false;
     bool about_dialog = false;
+};
 
+struct State {
+    bool renderer_focused = true;
+    DebugMenuState debug_menu;
+    OptimisationMenuState optimisation_menu;
+    HelpMenuState help_menu;
     DialogState common_dialog;
     GamesSelector game_selector;
 
@@ -77,5 +85,7 @@ struct GuiState {
     // imgui
     ImFont *normal_font{};
     ImFont *monospaced_font{};
-    char *font_data{};
+    std::vector<char> font_data;
 };
+
+} // namespace gui
