@@ -17,8 +17,10 @@
 
 #pragma once
 
-#define SCE_ERROR_ERRNO_EBADF 0x80010051 // Invalid descriptor
-#define SCE_ERROR_ERRNO_ENOENT 0x80010002 // File doesn't exist
+#define SCE_ERROR_ERRNO_ENOENT 0x80010002 // Associated file or directory does not exist
+#define SCE_ERROR_ERRNO_EEXIST 0x80010011 // File exists
+#define SCE_ERROR_ERRNO_EMFILE 0x80010018 // Too many files are open
+#define SCE_ERROR_ERRNO_EBADFD 0x80010051 // File descriptor is invalid for this operation
 
 #define JOIN_DEVICE(p) VitaIoDevice::p
 #define DEVICE(path, name) name,

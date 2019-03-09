@@ -48,6 +48,8 @@ static void alloc_inner(MemState &state, Address address, size_t page_count, All
 
     const Generation generation = ++state.generation;
     std::fill_n(block, page_count, generation);
+
+    const std::lock_guard<std::mutex> lock(state.generation_mutex);
     state.generation_names[generation] = name;
 
 #ifdef WIN32
@@ -159,7 +161,7 @@ uint32_t mem_available(MemState &state) {
     return address;
 }
 
-const char *mem_name(Address address, const MemState &state) {
+const char *mem_name(Address address, MemState &state) {
     const size_t page = address / state.page_size;
     assert(page >= 0);
     assert(page < state.allocated_pages.size());
@@ -169,6 +171,7 @@ const char *mem_name(Address address, const MemState &state) {
         return "UNALLOCATED";
     }
 
+    const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const GenerationNames::const_iterator found = state.generation_names.find(generation);
     assert(found != state.generation_names.end());
     if (found == state.generation_names.end()) {

@@ -9,8 +9,6 @@
 
 #include <algorithm>
 
-static constexpr bool LOG_UNIFORMS = false;
-
 namespace renderer {
 template <class T>
 static void uniform_4(GLint location, GLsizei count, const T *value);
@@ -52,8 +50,8 @@ void uniform_matrix_4<GLint>(GLint location, GLsizei count, GLboolean transpose,
 }
 
 template <class T>
-static void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value, const std::string &name) {
-    if (LOG_UNIFORMS) {
+static void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value, const std::string &name, bool log_uniforms) {
+    if (log_uniforms) {
         // warning: shit code
         std::string values = "{ ";
         for (auto i = 0; i < array_size; ++i) {
@@ -93,7 +91,7 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
     }
 }
 
-static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem) {
+static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem, bool log_uniforms) {
     R_PROFILE(__func__);
 
     const SceGxmProgramParameter *const parameters = gxp::program_parameters(gxm_program);
@@ -102,48 +100,70 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
         if (parameter.category != SCE_GXM_PARAMETER_CATEGORY_UNIFORM)
             continue;
 
-        const auto name = gxp::parameter_name(parameter);
-        auto &excluded_uniforms = shader_program.excluded_uniforms;
+        auto name = gxp::parameter_name(parameter);
 
-        if (std::find(excluded_uniforms.begin(), excluded_uniforms.end(), name) != excluded_uniforms.end())
-            continue;
+        auto do_supply = [&](const std::string &name, const int arr_size, const int idx) -> bool {
+            auto &excluded_uniforms = shader_program.excluded_uniforms;
 
-        const GLint location = glGetUniformLocation(gl_program, name.c_str());
-        if (location < 0) {
-            // NOTE: This can happen because the uniform isn't used in the shader, thus optimized away by the shader compiler.
-            LOG_WARN("Uniform parameter {} not found in current OpenGL program, it will not be set again.", name);
-            excluded_uniforms.push_back(name);
-            continue;
-        }
+            if (std::find(excluded_uniforms.begin(), excluded_uniforms.end(), name) != excluded_uniforms.end())
+                return false;
 
-        const SceGxmParameterType type = static_cast<SceGxmParameterType>(static_cast<uint16_t>(parameter.type));
-        const Ptr<const void> uniform_buffer = uniform_buffers[parameter.container_index];
-        if (!uniform_buffer) {
-            LOG_WARN("Uniform buffer {} not set for parameter {}.", parameter.container_index, name);
-            continue;
-        }
+            const GLint location = glGetUniformLocation(gl_program, name.c_str());
 
-        const GLint *src_s32;
-        const GLfloat *src_f32;
+            if (location < 0) {
+                // NOTE: This can happen because the uniform isn't used in the shader, thus optimized away by the shader compiler.
+                LOG_WARN("Uniform parameter {} not found in current OpenGL program, it will not be set again.", name);
+                excluded_uniforms.push_back(name);
+                return false;
+            }
 
-        const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
-        switch (type) {
-        case SCE_GXM_PARAMETER_TYPE_S32:
-            src_s32 = reinterpret_cast<const GLint *>(base + parameter.resource_index * 4); // TODO What offset?
-            set_uniform<GLint>(location, parameter.component_count, parameter.array_size, src_s32, name);
-            break;
-        case SCE_GXM_PARAMETER_TYPE_F32:
-            src_f32 = reinterpret_cast<const GLfloat *>(base + parameter.resource_index * 4); // TODO What offset?
-            set_uniform<GLfloat>(location, parameter.component_count, parameter.array_size, src_f32, name);
-            break;
-        default:
-            LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
-            break;
+            const SceGxmParameterType type = static_cast<SceGxmParameterType>(static_cast<uint16_t>(parameter.type));
+            const Ptr<const void> uniform_buffer = uniform_buffers[parameter.container_index];
+            if (!uniform_buffer) {
+                LOG_WARN("Uniform buffer {} not set for parameter {}.", parameter.container_index, name);
+                return false;
+            }
+
+            const GLint *src_s32;
+            const GLfloat *src_f32;
+
+            const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
+            switch (type) {
+            case SCE_GXM_PARAMETER_TYPE_S32:
+                src_s32 = reinterpret_cast<const GLint *>(base + idx * 4); // TODO What offset?
+                set_uniform<GLint>(location, parameter.component_count, arr_size, src_s32, name, log_uniforms);
+                break;
+            case SCE_GXM_PARAMETER_TYPE_F32:
+                src_f32 = reinterpret_cast<const GLfloat *>(base + idx * 4); // TODO What offset?
+                set_uniform<GLfloat>(location, parameter.component_count, arr_size, src_f32, name, log_uniforms);
+                break;
+            default:
+                LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
+                break;
+            }
+
+            return true;
+        };
+
+        // An array only
+        if (parameter.array_size == 1) {
+            do_supply(name, 1, parameter.resource_index);
+        } else {
+            // There are two types: a matrix listed as a bunch of vector
+            //                      Or simply a matrix
+            if (glGetUniformLocation(gl_program, name.c_str()) < 0) {
+                // Do loop
+                for (std::uint32_t i = 0; i < parameter.array_size; i++) {
+                    do_supply(name + "_" + std::to_string(i), 1, parameter.resource_index + i * parameter.component_count);
+                }
+            } else {
+                do_supply(name, parameter.array_size, parameter.resource_index);
+            }
         }
     }
 }
 
-void set_uniforms(GLuint program, const GxmContextState &state, const MemState &mem) {
+void set_uniforms(GLuint program, const GxmContextState &state, const MemState &mem, bool log_uniforms) {
     R_PROFILE(__func__);
 
     assert(state.fragment_program);
@@ -154,7 +174,7 @@ void set_uniforms(GLuint program, const GxmContextState &state, const MemState &
     const SceGxmProgram &fragment_program = *fragment_shader.program.get(mem);
     const SceGxmProgram &vertex_program = *vertex_shader.program.get(mem);
 
-    set_uniforms(program, *fragment_shader.renderer_data, state.fragment_uniform_buffers, fragment_program, mem);
-    set_uniforms(program, *vertex_shader.renderer_data, state.vertex_uniform_buffers, vertex_program, mem);
+    set_uniforms(program, *fragment_shader.renderer_data, state.fragment_uniform_buffers, fragment_program, mem, log_uniforms);
+    set_uniforms(program, *vertex_shader.renderer_data, state.vertex_uniform_buffers, vertex_program, mem, log_uniforms);
 }
 } // namespace renderer

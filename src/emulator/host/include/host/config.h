@@ -17,11 +17,14 @@
 
 #pragma once
 
+#include <host/app.h>
+
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>
 
 #include <string>
+#include <vector>
 
 using boost::optional;
 
@@ -29,17 +32,41 @@ using boost::optional;
 struct Config {
     optional<std::string> vpk_path;
     optional<std::string> run_title_id;
+    optional<std::string> recompile_shader_path;
     optional<int> log_level;
+    bool log_imports = false;
+    bool log_exports = false;
+    bool log_active_shaders = false;
+    bool log_uniforms = false;
+    std::vector<std::string> lle_modules;
+    bool pstv_mode = false;
+    optional<std::string> pref_path;
+    bool archive_log = false;
 };
 
 namespace config {
 
+/*
+ * \brief Initializes config system from a YML file.
+ * 
+ * \param cfg Config options are returned via this parameter.
+ * \return True on loading success.
+*/
+ExitCode deserialize(Config &cfg);
+
+/*
+ * \brief Save emulator config to a YML file.
+ *
+ * \return True on saving success.
+*/
+ExitCode serialize(Config &cfg);
+
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
-  *        --help, --version, -log-level
-  * \param cfg Config options are returend via this parameter.
+  *        --help, --version, --log-level
+  * \param cfg Config options are returned via this parameter.
   * \return True on success, false on error.
   */
-bool init(Config &cfg, int argc, char **argv);
+ExitCode init(Config &cfg, int argc, char **argv);
 
 } // namespace config

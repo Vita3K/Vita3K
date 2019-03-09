@@ -6,8 +6,11 @@ matrix:
   include:
     - os: osx
       osx_image: xcode9.3
+      addons:
+        homebrew:
+          packages:
+          - ccache
       install:
-      - brew install ccache
       - export PATH="/usr/local/opt/ccache/libexec:$PATH"
       before_script:
       - export CMAKE=cmake
@@ -20,54 +23,29 @@ matrix:
         provider: script
         overwrite: true
         skip_cleanup: true
-        script: bash $TRAVIS_BUILD_DIR/deploy-mac-nightly.sh
+        script: bash $TRAVIS_BUILD_DIR/.travis/macos/deploy.sh
         on:
           repo: Vita3K/Vita3K
           tags: false
+      script: bash $TRAVIS_BUILD_DIR/.travis/macos/build.sh
     - os: linux
+      sudo: required
+      services: docker
       dist: trusty
-      addons:
-        apt:
-          update: true
-          sources:
-          - ubuntu-toolchain-r-test
-          packages:
-          - gcc-7
-          - g++-7
-          - binutils-2.26
-          - libboost-all-dev
-      before_script:
-      - mkdir tmp && cd tmp
-      - curl -Ls https://www.archlinux.org/packages/extra/x86_64/sdl2/download | tar xJ
-      - sudo cp -r usr/* /usr/local/
-      - cd .. && rm -rf tmp
-      - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
-      - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
-      - curl -Ls https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh -o cmake-3.10.3-Linux-x86_64.sh
-      - bash cmake-3.10.3-Linux-x86_64.sh --skip-license
-      - export CMAKE=$(pwd)/bin/cmake
-      - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
-      - ld -v
+      script: bash $TRAVIS_BUILD_DIR/.travis/linux/build.sh
       before_deploy:
       - git config --global user.email "builds@travis-ci.com"
       - git config --global user.name "Travis CI"
-      - cd ${TRAVIS_BUILD_DIR}/build/bin
+      - cd "$HOME/linux-build/bin/"
       - zip -r Vita3K-linux-nightly.zip .
       deploy:
         provider: script
         overwrite: true
         skip_cleanup: true
-        script: bash $TRAVIS_BUILD_DIR/deploy-linux-nightly.sh
+        script: bash $TRAVIS_BUILD_DIR/.travis/linux/deploy.sh
         on:
           repo: Vita3K/Vita3K
           tags: false
-      
-script:
-- mkdir build
-- cd build/
-- ${CMAKE} -DCMAKE_BUILD_TYPE=Release -DCI:BOOL=ON ..
-- make -j4
-- make CTEST_OUTPUT_ON_FAILURE=1 test
 
 env:
   global:

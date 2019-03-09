@@ -1,5 +1,9 @@
 #pragma once
 
+#include <psp2/ctrl.h>
+#include <psp2/touch.h>
+
+#include <SDL_haptic.h>
 #include <SDL_joystick.h>
 
 #include <map>
@@ -8,8 +12,21 @@
 struct _SDL_GameController;
 
 typedef std::shared_ptr<_SDL_GameController> GameControllerPtr;
-typedef std::map<SDL_JoystickGUID, GameControllerPtr> GameControllerList;
+typedef std::shared_ptr<_SDL_Haptic> HapticPtr;
+
+struct Controller {
+    GameControllerPtr controller;
+    HapticPtr haptic;
+    int port;
+};
+
+typedef std::map<SDL_JoystickGUID, Controller> ControllerList;
 
 struct CtrlState {
-    GameControllerList controllers;
+    ControllerList controllers;
+    int controllers_num = 0;
+    bool free_ports[4] = { true, true, true, true };
+    SceCtrlPadInputMode input_mode = SCE_CTRL_MODE_DIGITAL;
+    SceCtrlPadInputMode input_mode_ext = SCE_CTRL_MODE_DIGITAL;
+    SceTouchSamplingState touch_mode[2] = { SCE_TOUCH_SAMPLING_STATE_STOP, SCE_TOUCH_SAMPLING_STATE_STOP };
 };

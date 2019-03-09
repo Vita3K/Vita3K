@@ -50,6 +50,10 @@ struct DisplayState {
     std::condition_variable condvar;
     std::atomic<bool> abort{ false };
     std::atomic<bool> imgui_render{ true };
+
+    // Synchronize host rendering to guest (GXM) rendering
+    // Used for debugging (so that graphics debuggers pick up GXM OpenGL calls)
+    static constexpr bool sync_rendering{ false };
 };
 
 struct HostState {
@@ -74,7 +78,7 @@ struct HostState {
     NetState net;
     NpState np;
     DisplayState display;
-    GuiState gui;
+    gui::State gui;
     SfoFile sfo_handle;
     NIDSet missing_nids;
 };

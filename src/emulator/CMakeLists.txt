@@ -68,7 +68,7 @@ add_subdirectory(modules)
 add_subdirectory(nids)
 add_subdirectory(renderer)
 add_subdirectory(rtc)
-add_subdirectory(shadergen)
+add_subdirectory(shader)
 add_subdirectory(util)
 add_subdirectory(threads)
 add_subdirectory(gui)
@@ -80,12 +80,13 @@ main.cpp
 )
 
 if(LINUX)
-	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util stdc++fs)
+	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host shader imgui modules nids vita-toolchain util stdc++fs)
 else()
-	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host imgui modules nids vita-toolchain util)
+	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host shader imgui modules nids vita-toolchain util)
 endif()
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
-	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 if(APPLE)
@@ -110,16 +111,20 @@ if(APPLE)
 	add_custom_command(
 		TARGET emulator
 		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../../data" "$<TARGET_FILE_DIR:emulator>/../Resources/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/../Resources/shaders"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:emulator>/../Resources/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/src/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:emulator>/../Frameworks/SDL2.framework")
 	set_target_properties(emulator PROPERTIES LINK_FLAGS "-rpath @executable_path/../Frameworks/")
 	target_sources(emulator PRIVATE Vita3K.icns)
 	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
+	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.Vita3K.Vita3K")
+	set(MACOSX_BUNDLE_BUNDLE_NAME "Vita3K")
 elseif(LINUX)
 	add_custom_command(
 		TARGET emulator
 		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../../data" "$<TARGET_FILE_DIR:emulator>/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/shaders"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:emulator>/shaders-builtin")
 elseif(WIN32)
@@ -129,6 +134,7 @@ elseif(WIN32)
 	add_custom_command(
 		TARGET emulator
 		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../../data" "$<TARGET_FILE_DIR:emulator>/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/shaders"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:emulator>/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/sdl/windows/lib/x64/SDL2.dll" "$<TARGET_FILE_DIR:emulator>"

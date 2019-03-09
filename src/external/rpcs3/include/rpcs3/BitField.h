@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 using uint = unsigned int;
 
 template <typename T, uint N>

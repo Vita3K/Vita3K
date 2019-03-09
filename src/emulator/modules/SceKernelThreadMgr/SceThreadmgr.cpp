@@ -144,8 +144,8 @@ EXPORT(int, sceKernelDeleteCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelDeleteCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDeleteCond, SceUID condition_variable_id) {
+    return condvar_delete(host.kernel, export_name, thread_id, condition_variable_id, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelDeleteEventFlag, SceUID event_id) {
@@ -156,7 +156,7 @@ EXPORT(int, sceKernelDeleteMsgPipe) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelDeleteMutex, SceInt32 mutexid) {
+EXPORT(int, sceKernelDeleteMutex, SceUID mutexid) {
     return mutex_delete(host.kernel, export_name, thread_id, mutexid, SyncWeight::Heavy);
 }
 
@@ -164,8 +164,8 @@ EXPORT(int, sceKernelDeleteRWLock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelDeleteSema) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDeleteSema, SceUID semaid) {
+    return semaphore_delete(host.kernel, export_name, thread_id, semaid);
 }
 
 EXPORT(int, sceKernelDeleteSimpleEvent) {
@@ -310,7 +310,7 @@ EXPORT(int, sceKernelSetEvent) {
 }
 
 EXPORT(int, sceKernelSetEventFlag, SceUID eventid, unsigned int flags) {
-    return eventflag_set(host.kernel, export_name, eventid, flags);
+    return eventflag_set(host.kernel, export_name, thread_id, eventid, flags);
 }
 
 EXPORT(int, sceKernelSetTimerTimeWide) {
@@ -333,7 +333,7 @@ EXPORT(int, sceKernelSignalCondTo, SceUID condid, SceUID thread_target) {
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
-    return semaphore_signal(host.kernel, export_name, semaid, signal);
+    return semaphore_signal(host.kernel, export_name, thread_id, semaid, signal);
 }
 
 EXPORT(int, sceKernelStartTimer) {
@@ -344,8 +344,8 @@ EXPORT(int, sceKernelStopTimer) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelTryLockMutex) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelTryLockMutex, SceUID mutexid, int lock_count) {
+    return mutex_try_lock(host.kernel, export_name, thread_id, mutexid, lock_count, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelTryLockReadRWLock) {

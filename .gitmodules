@@ -10,12 +10,13 @@
 [submodule "src/external/glbinding"]
 	path = src/external/glbinding
 	url = https://github.com/cginternals/glbinding.git
+	branch = v3.0
 [submodule "src/external/yaml-cpp"]
 	path = src/external/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
 [submodule "src/external/vita-toolchain"]
 	path = src/external/vita-toolchain
-	url = https://github.com/vitasdk/vita-toolchain
+	url = https://github.com/Vita3K/vita-toolchain
 [submodule "src/external/microprofile"]
 	path = src/external/microprofile
 	url = https://github.com/jonasmr/microprofile.git
@@ -25,9 +26,11 @@
 [submodule "src/external/spdlog"]
 	path = src/external/spdlog
 	url = https://github.com/gabime/spdlog.git
+	branch = v1.x
 [submodule "src/external/dirent"]
 	path = src/external/dirent
 	url = https://github.com/tronkko/dirent
+	branch = v1.23
 [submodule "src/external/crypto-algorithms"]
 	path = src/external/crypto-algorithms
 	url = https://github.com/B-Con/crypto-algorithms.git
@@ -55,3 +58,6 @@
 [submodule "src/external/printf"]
 	path = src/external/printf
 	url = https://github.com/vita3k/printf
+[submodule "src/external/imgui_club"]
+	path = src/external/imgui_club
+	url = https://github.com/ocornut/imgui_club.git

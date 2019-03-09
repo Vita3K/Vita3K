@@ -23,36 +23,35 @@
 
 namespace logging {
 
-extern std::shared_ptr<spdlog::logger> g_logger;
-
 void init();
 void set_level(spdlog::level::level_enum log_level);
+void add_sink(std::wstring log_path);
 
-#define LOG_TRACE(fmt, ...) logging::g_logger->trace("|T| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_DEBUG(fmt, ...) logging::g_logger->debug("|D| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_INFO(fmt, ...) logging::g_logger->info("|I| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...) logging::g_logger->warn("|W| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) logging::g_logger->error("|E| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_CRITICAL(fmt, ...) logging::g_logger->critical("|C| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_TRACE SPDLOG_TRACE
+#define LOG_DEBUG SPDLOG_DEBUG
+#define LOG_INFO SPDLOG_INFO
+#define LOG_WARN SPDLOG_WARN
+#define LOG_ERROR SPDLOG_ERROR
+#define LOG_CRITICAL SPDLOG_CRITICAL
 
-#define LOG_TRACE_IF(flag, fmt, ...) \
-    if (flag)                        \
-    logging::g_logger->trace("|T| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_DEBUG_IF(flag, fmt, ...) \
-    if (flag)                        \
-    logging::g_logger->debug("|D| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_INFO_IF(flag, fmt, ...) \
-    if (flag)                       \
-    logging::g_logger->info("|I| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_WARN_IF(flag, fmt, ...) \
-    if (flag)                       \
-    logging::g_logger->warn("|W| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_ERROR_IF(flag, fmt, ...) \
-    if (flag)                        \
-    logging::g_logger->error("|E| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define LOG_CRITICAL_IF(flag, fmt, ...) \
-    if (flag)                           \
-    logging::g_logger->critical("|C| [{:s}]:  " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define LOG_TRACE_IF(flag, ...) \
+    if (flag)                   \
+    LOG_TRACE(__VA_ARGS__)
+#define LOG_DEBUG_IF(flag, ...) \
+    if (flag)                   \
+    LOG_DEBUG(__VA_ARGS__)
+#define LOG_INFO_IF(flag, ...) \
+    if (flag)                  \
+    LOG_INFO(__VA_ARGS__)
+#define LOG_WARN_IF(flag, ...) \
+    if (flag)                  \
+    LOG_WARN(__VA_ARGS__)
+#define LOG_ERROR_IF(flag, ...) \
+    if (flag)                   \
+    LOG_ERROR(__VA_ARGS__)
+#define LOG_CRITICAL_IF(flag, ...) \
+    if (flag)                      \
+    LOG_CRITICAL(__VA_ARGS__)
 
 } // namespace logging
 

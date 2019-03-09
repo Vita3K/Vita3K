@@ -24,8 +24,7 @@ EXPORT(int, sceIoCancel) {
 }
 
 EXPORT(int, sceIoClose, SceUID fd) {
-    close_file(host.io, fd, export_name);
-    return 0;
+    return close_file(host.io, fd, export_name);
 }
 
 EXPORT(int, sceIoCloseAsync) {

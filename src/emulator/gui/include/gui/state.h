@@ -19,6 +19,11 @@
 
 #include <dialog/state.h>
 
+#include <imgui.h>
+#include <imgui_memory_editor.h>
+
+namespace gui {
+
 enum SelectorState {
     SELECT_APP
 };
@@ -35,20 +40,52 @@ struct GamesSelector {
     SelectorState state = SELECT_APP;
 };
 
-struct GuiState {
-    // Debug menu
-    bool renderer_focused = true;
+struct DebugMenuState {
     bool threads_dialog = false;
+    bool thread_details_dialog = false;
     bool semaphores_dialog = false;
     bool condvars_dialog = false;
     bool lwcondvars_dialog = false;
     bool mutexes_dialog = false;
     bool lwmutexes_dialog = false;
     bool eventflags_dialog = false;
+    bool allocations_dialog = false;
+    bool memory_editor_dialog = false;
+    bool disassembly_dialog = false;
+};
 
-    // Optimisation menu
+struct OptimisationMenuState {
     bool texture_cache = true;
+};
 
+struct HelpMenuState {
+    bool controls_dialog = false;
+    bool about_dialog = false;
+};
+
+struct State {
+    bool renderer_focused = true;
+    DebugMenuState debug_menu;
+    OptimisationMenuState optimisation_menu;
+    HelpMenuState help_menu;
     DialogState common_dialog;
     GamesSelector game_selector;
+
+    MemoryEditor memory_editor;
+    size_t memory_editor_start = 0;
+    size_t memory_editor_count = 0;
+
+    std::string disassembly_arch = "THUMB";
+    char disassembly_address[9] = "00000000";
+    char disassembly_count[5] = "100";
+    std::vector<std::string> disassembly;
+
+    SceUID thread_watch_index = -1;
+
+    // imgui
+    ImFont *normal_font{};
+    ImFont *monospaced_font{};
+    std::vector<char> font_data;
 };
+
+} // namespace gui

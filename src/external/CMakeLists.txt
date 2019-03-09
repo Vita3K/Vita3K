@@ -11,16 +11,29 @@ function(check_submodules_present)
 endfunction()
 check_submodules_present()
 
+# Fix a glslang hack
+# See https://github.com/KhronosGroup/glslang/issues/1015 and https://github.com/Vita3K/Vita3K/pull/369 for details
+if(NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+	if(WIN32)
+		set(CMAKE_INSTALL_PREFIX "C:/Program Files/${PROJECT_NAME}" CACHE STRING "Default install prefix is: C:/Program Files" FORCE)
+	elseif(UNIX)
+		set(CMAKE_INSTALL_PREFIX /usr/local CACHE STRING "Default install prefix is: /usr/local" FORCE)
+	endif()
+endif()
+
 option(CAPSTONE_BUILD_SHARED "Build shared library" OFF)
 option(CAPSTONE_BUILD_TESTS "Build tests" OFF)
-option(CAPSTONE_ARM_SUPPORT "ARM support" ON)
 option(CAPSTONE_ARM64_SUPPORT "ARM64 support" OFF)
+option(CAPSTONE_M68K_SUPPORT "M68K support" OFF)
 option(CAPSTONE_MIPS_SUPPORT "MIPS support" OFF)
 option(CAPSTONE_PPC_SUPPORT "PowerPC support" OFF)
 option(CAPSTONE_SPARC_SUPPORT "Sparc support" OFF)
 option(CAPSTONE_SYSZ_SUPPORT "SystemZ support" OFF)
 option(CAPSTONE_XCORE_SUPPORT "XCore support" OFF)
 option(CAPSTONE_X86_SUPPORT "x86 support" OFF)
+option(CAPSTONE_TMS320C64X_SUPPORT "TMS320C64x support" OFF)
+option(CAPSTONE_M680X_SUPPORT "M680x support" OFF)
+option(CAPSTONE_EVM_SUPPORT "EVM support" OFF)
 add_subdirectory(capstone EXCLUDE_FROM_ALL)
 set(capstone_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/capstone/include" PARENT_SCOPE)
 
@@ -38,14 +51,12 @@ target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf"
 add_library(elfio INTERFACE)
 target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio")
 
-add_library(spdlog INTERFACE)
-target_include_directories(spdlog INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include")
-target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1)
+add_subdirectory(spdlog EXCLUDE_FROM_ALL)
+target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1 SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
 option(BUILD_SHARED_LIBS "Build shared instead of static libraries." OFF)
-option(OPTION_BUILD_TESTS "Build tests." OFF)
-option(OPTION_BUILD_GPU_TESTS "Build tests that require an OpenGL context." OFF)
 option(OPTION_BUILD_TOOLS "Build tools." OFF)
+option(OPTION_BUILD_EXAMPLES "Build examples." OFF)
 add_subdirectory(glbinding EXCLUDE_FROM_ALL)
 
 add_library(googletest STATIC googletest/googletest/src/gtest_main.cc googletest/googletest/src/gtest-all.cc)
@@ -58,8 +69,10 @@ target_include_directories(microprofile PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/micr
 set_property(TARGET microprofile PROPERTY CXX_STANDARD 11)
 target_compile_definitions(microprofile PUBLIC MICROPROFILE_ENABLED=0 MICROPROFILE_GPU_TIMERS=0)
 
-add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp)
-target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui")
+# The imgui target is including both imgui and imgui_club.
+add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp)
+target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
+		"${CMAKE_CURRENT_SOURCE_DIR}/imgui_club/imgui_memory_editor/")
 
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
@@ -109,6 +122,7 @@ target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}
 option(YAML_CPP_BUILD_TESTS "Enable testing" OFF)
 option(YAML_CPP_BUILD_TOOLS "Enable parse tools" OFF)
 option(YAML_CPP_BUILD_CONTRIB "Enable contrib stuff in library" OFF)
+option(YAML_CPP_INSTALL "Enable generation of install target" OFF)
 add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
 add_library(yaml INTERFACE)
 target_include_directories(yaml INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp/include")
@@ -117,6 +131,7 @@ target_link_libraries(yaml INTERFACE yaml-cpp)
 add_library(rpcs3 INTERFACE)
 target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")
 
+option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" OFF)
 option(ENABLE_GLSLANG_BINARIES "Builds glslangValidator and spirv-remap" OFF)
 option(ENABLE_AMD_EXTENSIONS "Enables support of AMD-specific extensions" OFF)
 option(ENABLE_NV_EXTENSIONS "Enables support of Nvidia-specific extensions" OFF)

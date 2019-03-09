@@ -196,15 +196,25 @@ enum SceGxmVertexProgramOutputs : int {
     _SCE_GXM_VERTEX_PROGRAM_OUTPUT_LAST = 1 << 23
 };
 
+#pragma pack(push, 1)
 struct SceGxmProgramVertexOutput {
-    std::uint8_t unk[12];
+    std::uint8_t unk0[12];
 
-    std::uint16_t unk2;
-    std::uint16_t pad; // padding maybe
+    std::uint16_t varyings_count;
+    std::uint16_t pad0; // padding maybe
     std::uint32_t vertex_outputs1; // includes everything except texcoord outputs
     std::uint32_t vertex_outputs2; // includes texcoord outputs
 };
+#pragma pack(pop)
+
 static_assert(sizeof(SceGxmProgramVertexOutput) == 24);
+
+struct SceGxmProgramAttributeDescriptor {
+    std::uint32_t attribute_info;
+    std::uint32_t resource_index;
+    std::uint32_t size;
+    std::uint32_t component_info; ///< Total components and type
+};
 
 enum SceGxmFragmentProgramInputs : int {
     _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE = 0,
@@ -252,10 +262,10 @@ public:
     std::uint32_t unk18;
     std::uint32_t unk1C;
 
-    std::uint32_t unk20;
+    std::uint32_t unk20; // bit 6 denotes whether a frag shader writes directly to output (usees __nativecolor modifier) or not
     std::uint32_t parameter_count;
     std::uint32_t parameters_offset; // Number of bytes from the start of this field to the first parameter.
-    std::uint32_t vertex_outputs_offset; // offset to vertex outputs, relative to this field
+    std::uint32_t varyings_offset; // offset to vertex outputs / fragment inputs, relative to this field
 
     std::uint16_t primary_reg_count; // (PAs)
     std::uint16_t secondary_reg_count; // (SAs)
@@ -264,13 +274,13 @@ public:
     std::uint16_t temp_reg_count2; //not sure // - verify this
     std::uint16_t unk3A; //some item count?
 
-    std::uint32_t unk3C;
+    std::uint32_t primary_program_instr_count;
+    std::uint32_t primary_program_offset;
 
-    std::uint32_t maybe_asm_offset;
     std::uint32_t unk44;
 
-    std::uint32_t unk_offset_48;
-    std::uint32_t unk_offset_4C;
+    std::uint32_t secondary_program_offset; // relative to the beginning of this field
+    std::uint32_t secondary_program_offset_end; // relative to the beginning of this field
 
     std::uint32_t unk_50; //usually zero?
     std::uint32_t unk_54; //usually zero?
@@ -287,8 +297,8 @@ public:
     std::uint32_t unk_78;
     std::uint32_t maybe_parameters_offset2; //not sure
 
-    SceGxmProgramType get_type() const {
-        return static_cast<SceGxmProgramType>(type & 1);
+    emu::SceGxmProgramType get_type() const {
+        return static_cast<emu::SceGxmProgramType>(type & 1);
     }
     bool is_vertex() const {
         return get_type() == emu::SceGxmProgramType::Vertex;
@@ -296,12 +306,24 @@ public:
     bool is_fragment() const {
         return get_type() == emu::SceGxmProgramType::Fragment;
     }
+    uint64_t *primary_program_start() const {
+        return (uint64_t *)((uint8_t *)&primary_program_offset + primary_program_offset);
+    }
+    uint64_t *secondary_program_start() const {
+        return (uint64_t *)((uint8_t *)&secondary_program_offset + secondary_program_offset);
+    }
+    uint64_t *secondary_program_end() const {
+        return (uint64_t *)((uint8_t *)&secondary_program_offset_end + secondary_program_offset_end);
+    }
+    bool is_native_color() const {
+        return unk20 & 0b1000000;
+    }
 };
 
 struct SceGxmProgramParameter {
     int32_t name_offset; // Number of bytes from the start of this structure to the name string.
     union {
-        bf_t<uint16_t, 0, 4> category; // SceGxmParameterCategory - select constant or sampler
+        bf_t<uint16_t, 0, 4> category; // SceGxmParameterCategory
         bf_t<uint16_t, 4, 4> type; // SceGxmParameterType - applicable for constants, not applicable for samplers (select type like float, half, fixed ...)
         bf_t<uint16_t, 8, 4> component_count; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
         bf_t<uint16_t, 12, 4> container_index; // applicable for constants, not applicable for samplers (buffer, default, texture)

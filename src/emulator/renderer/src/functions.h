@@ -2,6 +2,7 @@
 
 #include <crypto/hash.h>
 #include <glutil/object.h>
+#include <gxm/types.h>
 
 #include <psp2/gxm.h>
 
@@ -28,8 +29,7 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
 SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state, const MemState &mem);
 
 // Shaders.
-std::string load_fragment_shader(GLSLCache &cache, const SceGxmProgram &fragment_program, const char *base_path);
-std::string load_vertex_shader(GLSLCache &cache, const SceGxmProgram &vertex_program, const char *base_path);
+std::string load_shader(GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id);
 
 namespace texture {
 
@@ -59,5 +59,5 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
 } // namespace texture
 
 // Uniforms.
-void set_uniforms(GLuint program, const GxmContextState &state, const MemState &mem);
+void set_uniforms(GLuint program, const GxmContextState &state, const MemState &mem, bool log_uniforms);
 } // namespace renderer

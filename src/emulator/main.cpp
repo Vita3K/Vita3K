@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
-#include <gui/imgui_impl.h>
 #include <host/app.h>
 #include <host/config.h>
 #include <host/functions.h>
@@ -24,6 +23,7 @@
 #include <host/state.h>
 #include <host/version.h>
 #include <kernel/thread/thread_functions.h>
+#include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -37,13 +37,19 @@ int main(int argc, char *argv[]) {
     logging::init();
 
     Config cfg{};
-    if (!config::init(cfg, argc, argv))
-        return IncorrectArgs;
+    if (const bool ret = config::init(cfg, argc, argv))
+        return ret;
 
     LOG_INFO("{}", window_title);
 
+    if (cfg.recompile_shader_path) {
+        LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
+        shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
+        return Success;
+    }
+
     std::atexit(SDL_Quit);
-    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC | SDL_INIT_VIDEO) < 0) {
         error_dialog("SDL initialisation failed.");
         return SDLInitFailed;
     }
@@ -83,18 +89,18 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    imgui::init(host.window.get());
+    gui::init(host);
 
     // Application not provided via argument, show game selector
     while (run_type == AppRunType::Unknown) {
         if (handle_events(host)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            imgui::draw_begin(host);
+            gui::draw_begin(host);
 
-            DrawUI(host);
-            DrawGameSelector(host, &run_type);
+            gui::draw_ui(host);
+            gui::draw_game_selector(host, &run_type);
 
-            imgui::draw_end(host.window.get());
+            gui::draw_end(host.window.get());
         } else {
             return QuitRequested;
         }
@@ -119,17 +125,25 @@ int main(int argc, char *argv[]) {
 
     while (handle_events(host)) {
         gl_renderer.render(host);
-        imgui::draw_begin(host);
-        DrawCommonDialog(host);
+        gui::draw_begin(host);
+        gui::draw_common_dialog(host);
         if (host.display.imgui_render) {
-            DrawUI(host);
+            gui::draw_ui(host);
         }
-        imgui::draw_end(host.window.get());
+        gui::draw_end(host.window.get());
 
-        host.display.condvar.notify_all();
+        if (!host.display.sync_rendering)
+            host.display.condvar.notify_all();
+        else {
+            std::unique_lock<std::mutex> lock(host.display.mutex);
+            host.display.condvar.wait(lock);
+        }
 
         set_window_title(host);
     }
+
+    // There may be changes that made in the GUI, so we should save, again
+    config::serialize(host.cfg);
 
     return Success;
 }

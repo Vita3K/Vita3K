@@ -18,7 +18,7 @@
 #include <host/functions.h>
 
 #include <host/app.h>
-#include <host/import_fn.h>
+#include <host/imports.h>
 #include <host/state.h>
 #include <host/version.h>
 
@@ -75,7 +75,7 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 using namespace glbinding;
 
-static constexpr bool LOG_IMPORT_CALLS = false;
+static bool LOG_IMPORT_CALLS = false;
 static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
 #define NID(name, nid) extern const ImportFn import_##name;
@@ -168,9 +168,17 @@ bool init(HostState &state, Config cfg) {
 
     state.cfg = std::move(cfg);
     state.base_path = base_path.get();
-    state.pref_path = pref_path.get();
+
+    // If configuration already provides preference path
+    if (!state.cfg.pref_path) {
+        state.pref_path = pref_path.get();
+        state.cfg.pref_path = state.pref_path;
+    } else {
+        state.pref_path = state.cfg.pref_path.value();
+    }
+
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
-    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str())) {
+    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str(), state.base_path.c_str())) {
         return false;
     }
 
@@ -228,6 +236,7 @@ bool init(HostState &state, Config cfg) {
                     SfoFile sfo_handle;
                     load_sfo(sfo_handle, params);
                     find_data(state.game_title, sfo_handle, "TITLE");
+                    std::replace(state.game_title.begin(), state.game_title.end(), '\n', ' ');
                     state.gui.game_selector.games.push_back({ state.game_title, state.io.title_id });
                 }
             }
@@ -320,4 +329,8 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         const std::lock_guard<std::mutex> lock(thread->mutex);
         write_pc(*thread->cpu, export_pc);
     }
+}
+
+void log_import_calls(bool enabled) {
+    LOG_IMPORT_CALLS = enabled;
 }

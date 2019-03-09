@@ -1,6 +1,10 @@
-/build/
+/build-linux/
 /build-macos/
 /build-windows/
 /api.trace
 .vs/
 /src/external/boost-build
+.idea/
+.vs
+.vscode
+build

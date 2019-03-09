@@ -117,6 +117,10 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
         }
+        if (strstr(file_stat.m_filename, "sce_module/steroid.suprx")) {
+            LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
+            return false;
+        }
         if (strstr(file_stat.m_filename, "sce_sys/param.sfo")) {
             sfo_path = file_stat.m_filename;
             break;
@@ -143,21 +147,21 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
 
     const bool created = fs::create_directory(title_base_path);
     if (!created) {
-        GenericDialogState status = UNK_STATE;
+        gui::GenericDialogState status = gui::UNK_STATE;
         while (handle_events(host) && (status == 0)) {
             ImGui_ImplSdlGL3_NewFrame(host.window.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            DrawUI(host);
-            DrawReinstallDialog(host, &status);
+            gui::draw_ui(host);
+            gui::draw_reinstall_dialog(host, &status);
             glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
             ImGui::Render();
             ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
             SDL_GL_SwapWindow(host.window.get());
         }
-        if (status == CANCEL_STATE) {
+        if (status == gui::CANCEL_STATE) {
             LOG_INFO("{} already installed, launching application...", host.io.title_id);
             return true;
-        } else if (status == UNK_STATE) {
+        } else if (status == gui::UNK_STATE) {
             exit(0);
         }
     }
@@ -211,7 +215,34 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     load_sfo(host.sfo_handle, params);
 
     find_data(host.game_title, host.sfo_handle, "TITLE");
+    std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
     find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
+
+    if (host.cfg.archive_log) {
+        fs::create_directory(std::string(host.base_path) + "/logs");
+        try {
+            std::string game_title = string_utils::remove_special_chars(host.game_title);
+            const auto log_name = fmt::format("{} - [{}].log", game_title, host.io.title_id);
+#ifdef WIN32
+            wchar_t buffer[MAX_PATH];
+            GetModuleFileNameW(NULL, buffer, MAX_PATH);
+            std::string::size_type pos = std::wstring(buffer).find_last_of(L"\\\\");
+            std::wstring path = std::wstring(buffer).substr(0, pos);
+
+            if (!path.empty()) {
+                const auto full_log_path = path + L"\\" + L"\\logs\\" + string_utils::utf_to_wide(log_name);
+                logging::add_sink(full_log_path);
+            } else {
+                std::cerr << "failed to get working directory" << std::endl;
+            }
+#else
+            logging::add_sink(string_utils::utf_to_wide(log_name));
+#endif
+        } catch (const spdlog::spdlog_ex &ex) {
+            std::cerr << "File log initialization failed: " << ex.what() << std::endl;
+        }
+    }
+
     std::string category;
     find_data(category, host.sfo_handle, "CATEGORY");
 
@@ -233,7 +264,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
         Ptr<const void> lib_entry_point;
 
         if (vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path)) {
-            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path);
+            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path, host.cfg);
             if (module_id >= 0) {
                 const auto module = host.kernel.loaded_modules[module_id];
                 const auto module_name = module->module_name;
@@ -248,7 +279,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
     if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, EBOOT_PATH)) {
-        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS);
+        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
             const auto module_name = module->module_name;
