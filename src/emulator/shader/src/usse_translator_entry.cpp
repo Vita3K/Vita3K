@@ -226,7 +226,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
-void usse::convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters) {
+void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
 
