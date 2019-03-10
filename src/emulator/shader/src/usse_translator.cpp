@@ -47,13 +47,13 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         reg_offset *= 16;
     }
 
-    const auto pa_writeable_idx = (reg_offset + shift_offset) / 4;
+    const auto writeable_idx = (reg_offset + shift_offset) / 4;
 
     // If we are getting a PRIMATTR reg, we need to check whether a writeable one has already been created
     // If it is, get the writeable one, else proceed
     if (bank == usse::RegisterBank::PRIMATTR) {
         decltype(pa_writeable)::iterator pa;
-        if ((pa = pa_writeable.find(pa_writeable_idx)) != pa_writeable.end()) {
+        if ((pa = pa_writeable.find(writeable_idx)) != pa_writeable.end()) {
             reg = pa->second;
             return true;
         }
@@ -65,8 +65,8 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
             return false;
         }
 
-        if (sa_supplies[reg_offset / 4].var_id != spv::NoResult) {
-            reg = sa_supplies[reg_offset / 4];
+        if (sa_supplies[writeable_idx].var_id != spv::NoResult) {
+            reg = sa_supplies[writeable_idx];
             return true;
         }
     }
@@ -97,14 +97,14 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
     if (!result) {
         // Either if we get them for store or not, sometimes shader will still use SEC as temporary. Weird but ok.
         if (bank == usse::RegisterBank::SECATTR) {
-            reg.offset = ((reg_offset + shift_offset) / 4) * 4;
+            reg.offset = writeable_idx * 4;
 
-            const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
+            const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(writeable_idx * 4));
             reg.type_id = type_f32_v[4];
             reg.var_id = m_b.createVariable(spv::StorageClassPrivate, reg.type_id, new_sa_supply_name.c_str());
             reg.size = 4;
 
-            sa_supplies[pa_writeable_idx / 4] = reg;
+            sa_supplies[writeable_idx] = reg;
             out_comp_offset = (reg_offset + shift_offset) % 4;
 
             return true;
@@ -125,10 +125,10 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
     }
 
     if (bank == usse::RegisterBank::PRIMATTR && get_for_store) {
-        if (pa_writeable.count(pa_writeable_idx) == 0) {
+        if (pa_writeable.count(writeable_idx) == 0) {
             const std::string new_pa_writeable_name = fmt::format("pa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
             reg = create_supply_register(reg, new_pa_writeable_name);
-            pa_writeable[pa_writeable_idx] = reg;
+            pa_writeable[writeable_idx] = reg;
         }
     }
 
@@ -136,7 +136,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
     if (bank == usse::RegisterBank::SECATTR && get_for_store) {
         const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
         reg = create_supply_register(reg, new_sa_supply_name);
-        sa_supplies[pa_writeable_idx / 4] = reg;
+        sa_supplies[writeable_idx] = reg;
     }
     
     return true;
