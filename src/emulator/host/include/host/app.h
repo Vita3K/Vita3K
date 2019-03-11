@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <glbinding/gl/types.h>
-
 #include <memory>
 #include <string>
 #include <vector>
