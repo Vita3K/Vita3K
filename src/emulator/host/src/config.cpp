@@ -17,7 +17,6 @@
 
 #include <host/config.h>
 
-#include <host/app.h>
 #include <host/version.h>
 #include <util/log.h>
 #include <util/string_utils.h>
