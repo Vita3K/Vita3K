@@ -78,6 +78,9 @@ using namespace glbinding;
 static bool LOG_IMPORT_CALLS = false;
 static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
+static constexpr auto DEFAULT_RES_WIDTH = 960;
+static constexpr auto DEFAULT_RES_HEIGHT = 544;
+
 #define NID(name, nid) extern const ImportFn import_##name;
 #include <nids/nids.h>
 #undef NID

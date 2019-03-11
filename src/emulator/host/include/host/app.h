@@ -17,20 +17,12 @@
 
 #pragma once
 
-#include <memory>
 #include <string>
-#include <vector>
-
-static constexpr auto DEFAULT_RES_WIDTH = 960;
-static constexpr auto DEFAULT_RES_HEIGHT = 544;
 
 struct HostState;
 struct SDL_Window;
-struct SDL_Surface;
 template <class T>
 class Ptr;
-
-typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
 
 enum ExitCode {
     Success = 0,
