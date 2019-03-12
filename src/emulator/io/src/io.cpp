@@ -91,7 +91,9 @@ translate_open_mode(int flags) {
     }
 }
 
-void trim_leading_slash(std::string path) {
+void trim_leading_slash(std::string &path) {
+    if (path[0] == '.')
+        path.erase(0, 1);
     if (path[0] == '/')
         path.erase(0, 1);
 }
@@ -111,8 +113,6 @@ get_device_string(VitaIoDevice dev, bool with_colon) {
 
 VitaIoDevice
 get_device(const std::string &path) {
-    trim_leading_slash(path);
-
     // find which IO device the path is associated with
     const auto device_end_idx = path.find(":");
     if (device_end_idx == std::string::npos) {
@@ -256,6 +256,7 @@ void translate_path(std::string &path, VitaIoDevice &device, const IOState::Devi
 
 SceUID open_file(IOState &io, const std::string &path, int flags, const char *pref_path, const char *export_name) {
     std::string translated_path(path);
+    trim_leading_slash(translated_path);
     VitaIoDevice device = get_device(translated_path);
 
     translate_path(translated_path, device, io.device_paths);
@@ -301,7 +302,7 @@ SceUID open_file(IOState &io, const std::string &path, int flags, const char *pr
         }
 
         File file_node;
-        file_node.path = path;
+        file_node.path = translated_path;
         file_node.file_handle = file;
 
         const SceUID fd = io.next_fd++;
@@ -452,9 +453,9 @@ int close_file(IOState &io, SceUID fd, const char *export_name) {
 }
 
 int remove_file(IOState &io, const char *file, const char *pref_path, const char *export_name) {
-    VitaIoDevice device = get_device(file);
     std::string translated_path = file;
-
+    trim_leading_slash(translated_path);
+    VitaIoDevice device = get_device(translated_path);
     translate_path(translated_path, device, io.device_paths);
 
     LOG_TRACE("{}: Removing file {} ({})", export_name, file, translated_path);
@@ -475,9 +476,9 @@ int remove_file(IOState &io, const char *file, const char *pref_path, const char
 }
 
 int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, const char *export_name) {
-    VitaIoDevice device = get_device(dir);
     std::string translated_path = dir;
-
+    trim_leading_slash(translated_path);
+    VitaIoDevice device = get_device(translated_path);
     translate_path(translated_path, device, io.device_paths);
 
     LOG_TRACE("{}: Creating dir {} ({})", export_name, dir, translated_path);
@@ -507,9 +508,9 @@ int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, co
 }
 
 int remove_dir(IOState &io, const char *dir, const char *pref_path, const char *export_name) {
-    VitaIoDevice device = get_device(dir);
     std::string translated_path = dir;
-
+    trim_leading_slash(translated_path);
+    VitaIoDevice device = get_device(translated_path);
     translate_path(translated_path, device, io.device_paths);
 
     LOG_TRACE("{}: Removing dir {} ({})", export_name, dir, translated_path);
@@ -534,8 +535,9 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
 
     memset(statp, '\0', sizeof(SceIoStat));
 
-    VitaIoDevice device = get_device(file);
     std::string translated_path = file;
+    trim_leading_slash(translated_path);
+    VitaIoDevice device = get_device(translated_path);
 
     // read and execute access rights
     statp->st_mode = SCE_S_IRUSR | SCE_S_IRGRP | SCE_S_IROTH | SCE_S_IXUSR | SCE_S_IXGRP | SCE_S_IXOTH;
@@ -623,11 +625,11 @@ int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const char *pre
 
 int open_dir(IOState &io, const char *path, const char *pref_path, const char *export_name) {
     std::string translated_path = path;
+    trim_leading_slash(translated_path);
     VitaIoDevice device = get_device(translated_path);
-
     translate_path(translated_path, device, io.device_paths);
 
-    LOG_TRACE("{}: Opening dir {} ({})", export_name, translated_path, translated_path);
+    LOG_TRACE("{}: Opening dir {} ({})", export_name, path, translated_path);
 
     std::string dir_path;
     switch (device) {
@@ -658,7 +660,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path, const char *e
 
     Directory dir_node;
     dir_node.dir_handle = dir;
-    dir_node.path = path;
+    dir_node.path = translated_path;
 
     const SceUID fd = io.next_fd++;
     io.dir_entries.emplace(fd, dir_node);
