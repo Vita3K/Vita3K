@@ -355,7 +355,7 @@ EXPORT(int, sceIoDread, SceUID fd, emu::SceIoDirent *dir) {
     if (dir == nullptr) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     }
-    return read_dir(host.io, fd, dir, export_name);
+    return read_dir(host.io, fd, dir, host.pref_path.c_str(), host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
