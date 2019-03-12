@@ -564,9 +564,10 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
         }
         FindClose(handle);
 
-        statp->st_mode |= SCE_S_IFREG;
         if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) {
             statp->st_mode |= SCE_S_IFDIR;
+        } else {
+            statp->st_mode |= SCE_S_IFREG;
         }
 
         statp->st_size = (std::uint64_t)find_data.nFileSizeHigh << 32 | (std::uint64_t)find_data.nFileSizeLow;
