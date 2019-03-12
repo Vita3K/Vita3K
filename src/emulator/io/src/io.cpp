@@ -302,7 +302,7 @@ SceUID open_file(IOState &io, const std::string &path, int flags, const char *pr
         }
 
         File file_node;
-        file_node.path = translated_path;
+        file_node.path = path;
         file_node.file_handle = file;
 
         const SceUID fd = io.next_fd++;
@@ -661,7 +661,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path, const char *e
 
     Directory dir_node;
     dir_node.dir_handle = dir;
-    dir_node.path = translated_path;
+    dir_node.path = path;
 
     const SceUID fd = io.next_fd++;
     io.dir_entries.emplace(fd, dir_node);
@@ -669,7 +669,7 @@ int open_dir(IOState &io, const char *path, const char *pref_path, const char *e
     return fd;
 }
 
-int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *export_name) {
+int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *pref_path, uint64_t base_tick, const char *export_name) {
     assert(dent != nullptr);
 
     memset(dent->d_name, '\0', sizeof(dent->d_name));
@@ -696,10 +696,11 @@ int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *export_
 #endif
         if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) {
             // Skip . and .. folders
-            return read_dir(io, fd, dent, export_name);
+            return read_dir(io, fd, dent, pref_path, base_tick, export_name);
         }
 
-        dent->d_stat.st_mode = d->d_type == DT_DIR ? SCE_S_IFDIR : SCE_S_IFREG;
+        std::string filename = dir->second.path + "/" + dent->d_name;
+        stat_file(io, filename.c_str(), &dent->d_stat, pref_path, base_tick, export_name);
 
         return 1;
     }
