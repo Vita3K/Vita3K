@@ -9,11 +9,12 @@ add_library(
 	include/module/read_arg.h
 	include/module/write_return_value.h
 	src/module.cpp
+	src/read_arg.cpp
 	src/write_return_value.cpp
 )
 
 target_include_directories(module PUBLIC include)
-target_link_libraries(module PUBLIC kernel host microprofile rpcs3 dlmalloc)
+target_link_libraries(module PUBLIC kernel host microprofile rpcs3 dlmalloc printf)
 
 add_executable(
 	module-tests

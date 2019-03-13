@@ -17,25 +17,33 @@
 
 #pragma once
 
-#include <array>
-#include <tuple>
+#include <cstdint>
 
-enum class ArgLocation {
-    gpr,
-    stack,
-    fp
+#include "args_layout.h"
+#include "lay_out_args.h"
+#include "read_arg.h"
+
+namespace module {
+class vargs {
+    LayoutArgsState layoutState;
+    ArgLayout currentLayout;
+
+public:
+    vargs() {}
+
+    explicit vargs(LayoutArgsState layoutState)
+        : layoutState(layoutState) {
+
+        }
+
+    template <typename T>
+    T next(CPUState &cpu, MemState &mem) {
+        const auto state_tuple = add_arg_to_layout<T>(layoutState);
+
+        layoutState = std::move(std::get<1>(state_tuple));
+        currentLayout = std::move(std::get<0>(state_tuple));
+
+        return read<T>(cpu, currentLayout, mem);
+    }
 };
-
-struct ArgLayout {
-    ArgLocation location;
-    size_t offset;
-};
-
-struct LayoutArgsState {
-    size_t gpr_used;
-    size_t stack_used;
-    size_t float_used;
-};
-
-template <typename... Args>
-using ArgsLayout = std::array<ArgLayout, sizeof...(Args)>;
+}

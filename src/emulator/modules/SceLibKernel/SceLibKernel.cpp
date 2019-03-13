@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceLibKernel.h"
+#include <v3kprintf.h>
 
 #include <cpu/functions.h>
 #include <dlmalloc.h>
@@ -176,15 +177,41 @@ EXPORT(int, sceClibMspaceReallocalign) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibPrintf, const char *format, void *args) {
-    // TODO args
-    LOG_INFO("{}", format);
+EXPORT(int, sceClibPrintf, const char *format, module::vargs args) {
+    std::string buffer;
+    buffer.resize(1024);
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+
+    int result = utils::sprintf(&buffer[0], format, *(thread->cpu), host.mem, args);
+    
+    if (!result) {
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    }
+
+    LOG_INFO("{}", buffer);
+
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceClibSnprintf, char *dest, SceSize size, const char *format, void *args) {
-    // TODO args
-    return snprintf(dest, size, "%s", format);
+EXPORT(int, sceClibSnprintf, char *dest, SceSize size, const char *format, module::vargs args) {
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+
+    int result = utils::snprintf(dest, size, format, *(thread->cpu), host.mem, args);
+    
+    if (!result) {
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    }
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceClibSnprintfChk) {
