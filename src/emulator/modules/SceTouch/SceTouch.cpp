@@ -29,36 +29,38 @@ static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData) {
     memset(pData, 0, sizeof(*pData));
     pData->timeStamp = timestamp++; // TODO Use the real time and units.
 
-    if (host.ctrl.touch_mode[port]) {
-        SceIVector2 touch_pos_window = { 0, 0 };
-        const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
-        const uint32_t mask = (port == 1) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
-        if ((buttons & mask) && host.gui.renderer_focused) {
-            SceIVector2 window_size = { 0, 0 };
-            SDL_Window *const window = SDL_GetMouseFocus();
-            SDL_GetWindowSize(window, &window_size.x, &window_size.y);
+    SceIVector2 touch_pos_window = { 0, 0 };
+    const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
+    const uint32_t mask = (port == 1) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
+    if ((buttons & mask) && host.gui.renderer_focused) {
+        SceIVector2 window_size = { 0, 0 };
+        SDL_Window *const window = SDL_GetMouseFocus();
+        SDL_GetWindowSize(window, &window_size.x, &window_size.y);
 
-            SceFVector2 scale = { 1, 1 };
-            if ((window_size.x > 0) && (window_size.y > 0)) {
-                scale.x = static_cast<float>(host.drawable_size.x) / window_size.x;
-                scale.y = static_cast<float>(host.drawable_size.y) / window_size.y;
-            }
+        SceFVector2 scale = { 1, 1 };
+        if ((window_size.x > 0) && (window_size.y > 0)) {
+            scale.x = static_cast<float>(host.drawable_size.x) / window_size.x;
+            scale.y = static_cast<float>(host.drawable_size.y) / window_size.y;
+        }
 
-            const SceFVector2 touch_pos_drawable = {
-                touch_pos_window.x * scale.x,
-                touch_pos_window.y * scale.y
-            };
+        const SceFVector2 touch_pos_drawable = {
+            touch_pos_window.x * scale.x,
+            touch_pos_window.y * scale.y
+        };
 
-            const SceFVector2 touch_pos_viewport = {
-                (touch_pos_drawable.x - host.viewport_pos.x) / host.viewport_size.x,
-                (touch_pos_drawable.y - host.viewport_pos.y) / host.viewport_size.y
-            };
+        const SceFVector2 touch_pos_viewport = {
+            (touch_pos_drawable.x - host.viewport_pos.x) / host.viewport_size.x,
+            (touch_pos_drawable.y - host.viewport_pos.y) / host.viewport_size.y
+        };
 
-            if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {
-                pData->report[pData->reportNum].x = static_cast<uint16_t>(touch_pos_viewport.x * 1920);
-                pData->report[pData->reportNum].y = static_cast<uint16_t>(touch_pos_viewport.y * 1088);
-                ++pData->reportNum;
-            }
+        if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {
+            pData->report[pData->reportNum].x = static_cast<uint16_t>(touch_pos_viewport.x * 1920);
+            pData->report[pData->reportNum].y = static_cast<uint16_t>(touch_pos_viewport.y * 1088);
+            ++pData->reportNum;
+        }
+		
+        if (!host.ctrl.touch_mode[port]) {
+            pData->reportNum = 0;
         }
     }
 
