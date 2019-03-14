@@ -19,7 +19,6 @@
 
 #include "private.h"
 
-#include <host/app.h>
 #include <host/state.h>
 
 using namespace std::string_literals;
@@ -28,7 +27,7 @@ namespace gui {
 
 static constexpr auto MENUBAR_HEIGHT = 19;
 
-void draw_game_selector(HostState &host, AppRunType *run_type) {
+void draw_game_selector(HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
@@ -78,7 +77,6 @@ void draw_game_selector(HostState &host, AppRunType *run_type) {
             ImGui::NextColumn();
             if (selected_1 || selected_2 || selected_3) {
                 host.gui.game_selector.selected_title_id = game.title_id;
-                *run_type = AppRunType::Extracted;
             }
         }
         ImGui::PopStyleColor(2);

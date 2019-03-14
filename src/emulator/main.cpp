@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
             gui::draw_begin(host);
 
             gui::draw_ui(host);
-            gui::draw_game_selector(host, &run_type);
+            gui::draw_game_selector(host);
 
             gui::draw_end(host.window.get());
         } else {
@@ -107,8 +107,9 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
-        if (run_type == AppRunType::Extracted) {
+        if (!host.gui.game_selector.selected_title_id.empty()) {
             vpk_path_wide = string_utils::utf_to_wide(host.gui.game_selector.selected_title_id);
+            run_type = AppRunType::Extracted;
         }
     }
 

@@ -17,7 +17,6 @@
 
 #pragma once
 
-enum class AppRunType;
 struct HostState;
 struct SDL_Window;
 
@@ -35,7 +34,7 @@ void draw_end(SDL_Window *window);
 void draw_ui(HostState &host);
 
 void draw_common_dialog(HostState &host);
-void draw_game_selector(HostState &host, AppRunType *run_type);
+void draw_game_selector(HostState &host);
 void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
 
 } // namespace gui
