@@ -26,7 +26,7 @@ class Ptr;
 
 enum ExitCode {
     Success = 0,
-    IncorrectArgs,
+    InitConfigFailed,
     SDLInitFailed,
     HostInitFailed,
     RendererInitFailed,

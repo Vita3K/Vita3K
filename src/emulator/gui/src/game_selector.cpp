@@ -19,6 +19,7 @@
 
 #include "private.h"
 
+#include <host/app.h>
 #include <host/state.h>
 
 using namespace std::string_literals;

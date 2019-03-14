@@ -17,11 +17,7 @@
 
 #pragma once
 
-#include <host/app.h>
-
-#include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
-#include <boost/optional/optional_io.hpp>
 
 #include <string>
 #include <vector>
@@ -47,20 +43,26 @@ struct Config {
 
 namespace config {
 
+enum class InitResult {
+    OK,
+    QUIT,
+    INCORRECT_ARGS,
+};
+
 /*
  * \brief Initializes config system from a YML file.
  * 
  * \param cfg Config options are returned via this parameter.
  * \return True on loading success.
 */
-ExitCode deserialize(Config &cfg);
+bool deserialize(Config &cfg);
 
 /*
  * \brief Save emulator config to a YML file.
  *
  * \return True on saving success.
 */
-ExitCode serialize(Config &cfg);
+bool serialize(Config &cfg);
 
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
@@ -68,6 +70,6 @@ ExitCode serialize(Config &cfg);
   * \param cfg Config options are returned via this parameter.
   * \return True on success, false on error.
   */
-ExitCode init(Config &cfg, int argc, char **argv);
+InitResult init(Config &cfg, int argc, char **argv);
 
 } // namespace config

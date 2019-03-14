@@ -85,7 +85,7 @@ void config_file_emit_vector(YAML::Emitter &emitter, const char *name, std::vect
     emitter << YAML::EndSeq;
 }
 
-ExitCode serialize(Config &cfg) {
+bool serialize(Config &cfg) {
     YAML::Emitter emitter;
     emitter << YAML::BeginMap;
 
@@ -104,21 +104,21 @@ ExitCode serialize(Config &cfg) {
 
     std::ofstream fo("config.yml");
     if (!fo) {
-        return IncorrectArgs;
+        return false;
     }
 
     fo << emitter.c_str();
-    return Success;
+    return true;
 }
 
-ExitCode deserialize(Config &cfg) {
+bool deserialize(Config &cfg) {
     YAML::Node config_node{};
 
     try {
         config_node = YAML::LoadFile("config.yml");
     } catch (YAML::Exception &exception) {
         std::cerr << "Config file can't be load: Error: " << exception.what() << "\n";
-        return IncorrectArgs;
+        return false;
     }
 
     get_yaml_value(config_node, "log-imports", &cfg.log_imports, false);
@@ -142,10 +142,10 @@ ExitCode deserialize(Config &cfg) {
         std::cerr << "LLE modules node listed in config file has invalid syntax, please check again!\n";
     }
 
-    return Success;
+    return true;
 }
 
-ExitCode init(Config &cfg, int argc, char **argv) {
+InitResult init(Config &cfg, int argc, char **argv) {
     deserialize(cfg);
 
     try {
@@ -206,11 +206,11 @@ ExitCode init(Config &cfg, int argc, char **argv) {
         // Handle some basic args
         if (var_map.count("help")) {
             std::cout << visible << std::endl;
-            return QuitRequested;
+            return InitResult::QUIT;
         }
         if (var_map.count("version")) {
             std::cout << window_title << std::endl;
-            return QuitRequested;
+            return InitResult::QUIT;
         }
 
         logging::set_level(static_cast<spdlog::level::level_enum>(*cfg.log_level));
@@ -233,15 +233,15 @@ ExitCode init(Config &cfg, int argc, char **argv) {
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";
-        return IncorrectArgs;
+        return InitResult::INCORRECT_ARGS;
     } catch (...) {
         std::cerr << "Exception of unknown type!\n";
-        return IncorrectArgs;
+        return InitResult::INCORRECT_ARGS;
     }
 
     // Save any changes made in command-line arguments
     serialize(cfg);
-    return Success;
+    return InitResult::OK;
 }
 
 } // namespace config
