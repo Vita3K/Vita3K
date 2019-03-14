@@ -17,7 +17,6 @@
 
 #include "SceSysmodule.h"
 
-#include <host/app.h>
 #include <host/functions.h>
 #include <io/io.h>
 #include <kernel/load_self.h>
