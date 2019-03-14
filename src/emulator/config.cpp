@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <host/config.h>
+#include "config.h"
 
 #include <host/version.h>
 #include <util/log.h>
@@ -111,7 +111,7 @@ bool serialize(Config &cfg) {
     return true;
 }
 
-bool deserialize(Config &cfg) {
+static bool deserialize(Config &cfg) {
     YAML::Node config_node{};
 
     try {

@@ -17,7 +17,8 @@
 
 #include "SceAppMgrUser.h"
 
-#include <host/sfo.h>
+#include <host/functions.h>
+
 #include <psp2/appmgr.h>
 
 EXPORT(int, _sceAppMgrGetAppState, void *appState, uint32_t len, uint32_t version) {

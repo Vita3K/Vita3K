@@ -19,7 +19,7 @@
 
 #include <cstdint>
 #include <string>
-
+#include <utility> // pair
 #include <vector>
 
 struct SfoHeader {
@@ -48,7 +48,3 @@ struct SfoFile {
 
     std::vector<SfoEntry> entries;
 };
-
-bool load_sfo(SfoFile &file, const std::vector<uint8_t> &data);
-bool find_data(std::string &out_data, SfoFile &file, const std::string &key);
-bool get_data(std::string &out_data, SfoFile &file, int id);

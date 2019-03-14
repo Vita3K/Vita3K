@@ -76,14 +76,24 @@ add_subdirectory(gui)
 add_executable(
 emulator
 MACOSX_BUNDLE
+app.cpp
+app.h
+config.cpp
+config.h
+init.cpp
 main.cpp
+performance.cpp
+screen_render.cpp
+screen_render.h
+sfo.cpp
+sfo.h
 )
 
+target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glbinding-aux glutil gui host shader imgui modules nids util vita-toolchain yaml-cpp)
 if(LINUX)
-	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host shader imgui modules nids vita-toolchain util stdc++fs)
-else()
-	target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glutil gui host shader imgui modules nids vita-toolchain util)
+	target_link_libraries(emulator PRIVATE stdc++fs)
 endif()
+
 set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
 	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"

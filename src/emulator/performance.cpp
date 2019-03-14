@@ -15,15 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <cstdint>
 
-#include <psp2/types.h>
+#ifdef _WIN32
 
-#include <string>
+extern "C" {
+// http://developer.download.nvidia.com/devzone/devcenter/gamegraphics/files/OptimusRenderingPolicies.pdf
+__declspec(dllexport) uint32_t NvOptimusEnablement = 1;
 
-struct CPUState;
-struct HostState;
-struct SfoFile;
+// https://gpuopen.com/amdpowerxpressrequesthighperformance/
+__declspec(dllexport) uint32_t AmdPowerXpressRequestHighPerformance = 1;
+}
 
-void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
-bool get_data(std::string &out_data, SfoFile &file, int id);
+#endif // _WIN32

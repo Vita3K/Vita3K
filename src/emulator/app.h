@@ -19,6 +19,7 @@
 
 #include <string>
 
+struct Config;
 struct HostState;
 struct SDL_Window;
 template <class T>
@@ -47,6 +48,9 @@ enum class AppRunType {
     Vpk,
 };
 
+bool init(HostState &state, Config cfg);
+void update_viewport(HostState &state);
+bool handle_events(HostState &host);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
 ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type);
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point);

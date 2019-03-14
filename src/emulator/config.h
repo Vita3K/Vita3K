@@ -17,13 +17,29 @@
 
 #pragma once
 
-#include <psp2/types.h>
+#include <host/config.h>
 
-#include <string>
+namespace config {
 
-struct CPUState;
-struct HostState;
-struct SfoFile;
+enum class InitResult {
+    OK,
+    QUIT,
+    INCORRECT_ARGS,
+};
 
-void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
-bool get_data(std::string &out_data, SfoFile &file, int id);
+/*
+ * \brief Save emulator config to a YML file.
+ *
+ * \return True on saving success.
+*/
+bool serialize(Config &cfg);
+
+/**
+  * \brief Initializes config system, parsing command-line args and handling some basic ones:
+  *        --help, --version, --log-level
+  * \param cfg Config options are returned via this parameter.
+  * \return True on success, false on error.
+  */
+InitResult init(Config &cfg, int argc, char **argv);
+
+} // namespace config
