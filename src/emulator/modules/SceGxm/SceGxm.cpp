@@ -1636,7 +1636,8 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+static int init_texture_base(const char *export_name, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount,
+    const SceGxmTextureType &texture_type) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     } else if (!data) {
@@ -1680,7 +1681,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     texture->height = height - 1;
     texture->width = width - 1;
     texture->base_format = (texFormat & 0x1F000000) >> 24;
-    texture->type = SCE_GXM_TEXTURE_LINEAR >> 29;
+    texture->type = texture_type >> 29;
     texture->data_addr = data.address() >> 2;
     texture->swizzle_format = (texFormat & 0x7000) >> 12;
     texture->normalize_mode = 1;
@@ -1690,12 +1691,26 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     return 0;
 }
 
+EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+    const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_LINEAR);
+    
+    if (result == 0)
+        return 0;
+
+    return result;
+}
+
 EXPORT(int, sceGxmTextureInitLinearStrided) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureInitSwizzled) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+    const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_SWIZZLED);
+    
+    if (result == 0)
+        return 0;
+
+    return result;
 }
 
 EXPORT(int, sceGxmTextureInitSwizzledArbitrary) {
