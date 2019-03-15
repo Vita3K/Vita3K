@@ -36,13 +36,21 @@ void draw_game_selector(HostState &host, AppRunType *run_type) {
 
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
-        ImGui::Columns(2);
+        ImGui::Columns(3);
         ImGui::SetColumnWidth(0, 80);
         ImGui::SetWindowFontScale(1.1);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         if (ImGui::Button("TitleID")) {
             std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
                 return lhs.title_id < rhs.title_id;
+            });
+            host.gui.game_selector.is_game_list_sorted = true;
+        }
+        ImGui::NextColumn();
+        ImGui::SetColumnWidth(1, 70);
+        if (ImGui::Button("Version")) {
+            std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                return lhs.app_ver < rhs.app_ver;
             });
             host.gui.game_selector.is_game_list_sorted = true;
         }
@@ -60,11 +68,14 @@ void draw_game_selector(HostState &host, AppRunType *run_type) {
         for (auto game : host.gui.game_selector.games) {
             bool selected_1 = false;
             bool selected_2 = false;
+            bool selected_3 = false;
             ImGui::Selectable(game.title_id.c_str(), &selected_1, ImGuiSelectableFlags_SpanAllColumns);
             ImGui::NextColumn();
-            ImGui::Selectable(game.title.c_str(), &selected_2, ImGuiSelectableFlags_SpanAllColumns);
+            ImGui::Selectable(game.app_ver.c_str(), &selected_2, ImGuiSelectableFlags_SpanAllColumns);
             ImGui::NextColumn();
-            if (selected_1 || selected_2) {
+            ImGui::Selectable(game.title.c_str(), &selected_3, ImGuiSelectableFlags_SpanAllColumns);
+            ImGui::NextColumn();
+            if (selected_1 || selected_2 || selected_3) {
                 host.gui.game_selector.selected_title_id = game.title_id;
                 *run_type = AppRunType::Extracted;
             }

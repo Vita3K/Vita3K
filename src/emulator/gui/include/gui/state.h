@@ -29,6 +29,7 @@ enum SelectorState {
 };
 
 struct Game {
+    std::string app_ver;
     std::string title;
     std::string title_id;
 };
