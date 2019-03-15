@@ -49,7 +49,7 @@ static ImportFn resolve_import(uint32_t nid) {
  * \param nid NID to resolve
  * \return Resolved address, 0 if not found
  */
-Address resolve_export(KernelState &kernel, uint32_t nid) {
+static Address resolve_export(KernelState &kernel, uint32_t nid) {
     const ExportNids::iterator export_address = kernel.export_nids.find(nid);
     if (export_address == kernel.export_nids.end()) {
         return 0;
