@@ -1118,10 +1118,10 @@ EXPORT(int, sceGxmSetPrecomputedVertexState) {
 
 EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int yMin, unsigned int xMax, unsigned int yMax) {
     context->state.region_clip_mode = mode;
-    context->state.region_clip_min.x = align(xMin, SCE_GXM_TILE_SIZEX);
-    context->state.region_clip_min.y = align(yMin, SCE_GXM_TILE_SIZEY);
-    context->state.region_clip_max.x = align(xMax, SCE_GXM_TILE_SIZEX);
-    context->state.region_clip_max.y = align(yMax, SCE_GXM_TILE_SIZEY);
+    context->state.region_clip_min.x = static_cast<SceInt>(align(xMin, SCE_GXM_TILE_SIZEX));
+    context->state.region_clip_min.y = static_cast<SceInt>(align(yMin, SCE_GXM_TILE_SIZEY));
+    context->state.region_clip_max.x = static_cast<SceInt>(align(xMax, SCE_GXM_TILE_SIZEX));
+    context->state.region_clip_max.y = static_cast<SceInt>(align(yMax, SCE_GXM_TILE_SIZEY));
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
@@ -1525,7 +1525,7 @@ EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return gxm::get_height(texture);
+    return static_cast<unsigned int>(gxm::get_height(texture));
 }
 
 EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
@@ -1625,7 +1625,7 @@ EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return gxm::get_width(texture);
+    return static_cast<unsigned int>(gxm::get_width(texture));
 }
 
 EXPORT(int, sceGxmTextureInitCube) {
