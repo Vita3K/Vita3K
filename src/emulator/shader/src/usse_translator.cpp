@@ -23,6 +23,7 @@
 #include <util/log.h>
 
 #include <SPIRV/SpvBuilder.h>
+#include <SPIRV/GLSL.std.450.h>
 #include <boost/optional.hpp>
 #include <spdlog/fmt/fmt.h>
 #include <spirv.hpp>
@@ -46,35 +47,98 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         reg_offset *= 16;
     }
 
-    const auto pa_writeable_idx = (reg_offset + shift_offset) / 4;
+    const auto writeable_idx = (reg_offset + shift_offset) / 4;
 
     // If we are getting a PRIMATTR reg, we need to check whether a writeable one has already been created
     // If it is, get the writeable one, else proceed
     if (bank == usse::RegisterBank::PRIMATTR) {
         decltype(pa_writeable)::iterator pa;
-        if ((pa = pa_writeable.find(pa_writeable_idx)) != pa_writeable.end()) {
+        if ((pa = pa_writeable.find(writeable_idx)) != pa_writeable.end()) {
             reg = pa->second;
+            return true;
+        }
+    }
+
+    // Again, for SECATTR, there are situation where SECATTR registers
+    if (bank == usse::RegisterBank::SECATTR) {
+        if (reg_offset > 128) {
+            return false;
+        }
+
+        if (sa_supplies[writeable_idx].var_id != spv::NoResult) {
+            reg = sa_supplies[writeable_idx];
             return true;
         }
     }
 
     const SpirvVarRegBank &spirv_bank = get_reg_bank(bank);
 
+    auto create_supply_register = [&](SpirvReg base, const std::string &name) -> SpirvReg {
+        const spv::Id new_writeable = m_b.createVariable(spv::StorageClassPrivate, type_f32_v[4], name.c_str());
+
+        SpirvReg org1 = base;
+        SpirvReg org2;
+
+        uint32_t temp_comp = 0;
+
+        if (!spirv_bank.find_reg_at(reg_offset + shift_offset + m_b.getNumTypeComponents(org1.type_id), org2, temp_comp)) {
+            org2 = org1;
+        }
+
+        m_b.createStore(bridge(org1, org2, SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111), new_writeable);
+
+        base.var_id = new_writeable;
+        base.type_id = type_f32_v[4];
+
+        return base;
+    };
+
     bool result = spirv_bank.find_reg_at(reg_offset + shift_offset, reg, out_comp_offset);
-    if (!result)
+    if (!result) {
+        // Either if we get them for store or not, sometimes shader will still use SEC as temporary. Weird but ok.
+        if (bank == usse::RegisterBank::SECATTR) {
+            reg.offset = writeable_idx * 4;
+
+            const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(writeable_idx * 4));
+            reg.type_id = type_f32_v[4];
+            reg.var_id = m_b.createVariable(spv::StorageClassPrivate, reg.type_id, new_sa_supply_name.c_str());
+            reg.size = 4;
+
+            sa_supplies[writeable_idx] = reg;
+            out_comp_offset = (reg_offset + shift_offset) % 4;
+
+            return true;
+        }
+        
         return false;
+    }
+
+    if (m_b.isArrayType(reg.type_id)) {
+        const int size_per_element = reg.size / m_b.getNumTypeComponents(reg.type_id);
+
+        // Need to do a access chain to access the elements
+        reg.var_id = m_b.createOp(spv::OpAccessChain, m_b.makePointer(spv::StorageClassPrivate, m_b.getContainedTypeId(reg.type_id)),
+            { reg.var_id, m_b.makeIntConstant(out_comp_offset / size_per_element) } );
+        reg.type_id = m_b.getContainedTypeId(reg.type_id);
+
+        out_comp_offset %= size_per_element;
+    }
 
     if (bank == usse::RegisterBank::PRIMATTR && get_for_store) {
-        if (pa_writeable.count(pa_writeable_idx) == 0) {
-            const std::string new_pa_writeable_name = fmt::format("pa{}_temp", std::to_string(reg_offset));
-            const spv::Id new_pa_writeable = m_b.createVariable(spv::StorageClassPrivate, reg.type_id, new_pa_writeable_name.c_str());
-            m_b.createStore(m_b.createLoad(reg.var_id), new_pa_writeable);
-
-            reg.var_id = new_pa_writeable;
-            pa_writeable[pa_writeable_idx] = reg;
+        if (pa_writeable.count(writeable_idx) == 0) {
+            const std::string new_pa_writeable_name = fmt::format("pa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
+            reg = create_supply_register(reg, new_pa_writeable_name);
+            pa_writeable[writeable_idx] = reg;
         }
     }
 
+    // Either if we get them for store or not, sometimes shader will still use SEC as temporary. Weird but ok.
+    if (bank == usse::RegisterBank::SECATTR && get_for_store) {
+        const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
+        reg = create_supply_register(reg, new_sa_supply_name);
+        sa_supplies[writeable_idx] = reg;
+    }
+    
     return true;
 }
 
@@ -172,9 +236,15 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
 
     // TODO: Properly handle
     if (op.bank == RegisterBank::FPCONSTANT || op.bank == RegisterBank::IMMEDIATE) {
-        auto t = m_b.makeVectorType(type_f32, dest_comp_count);
+        auto t = m_b.makeVectorType(type_f32, static_cast<int>(dest_comp_count));
         auto one = m_b.makeFpConstant(type_f32, 1.0);
-        return m_b.makeCompositeConstant(t, { one, one });
+
+        std::vector<spv::Id> ops;
+        ops.resize(dest_comp_count);
+
+        std::fill(ops.begin(), ops.end(), one);
+
+        return m_b.makeCompositeConstant(t, ops);
     }
 
     // Composite a new vector
@@ -195,18 +265,18 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     //
     // I haven't think of any edge case, but this should be looked when there is
     // any problems with bridging
-    if (!get_spirv_reg(op.bank, op.num, offset + dest_comp_count, reg_right, reg_right_comp_offset, false))
+    if (!get_spirv_reg(op.bank, op.num, static_cast<std::uint32_t>(offset + dest_comp_count), reg_right, reg_right_comp_offset, false))
         reg_right = reg_left;
 
     // Optimization: Bridging (VectorShuffle) or even swizzling is not always necessary
 
-    const bool needs_swizzle = !is_default(op.swizzle, dest_comp_count);
+    const bool needs_swizzle = !is_default(op.swizzle, static_cast<Imm4>(dest_comp_count));
 
     if (!needs_swizzle) {
         const uint32_t reg_left_comp_count = m_b.getNumTypeComponents(reg_left.type_id) - reg_left_comp_offset;
         const uint32_t reg_right_comp_count = m_b.getNumTypeComponents(reg_right.type_id) - reg_right_comp_offset;
 
-        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count);
+        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count) && (reg_left_comp_count == dest_comp_count);
 
         if (is_equal_comp_count) {
             const bool is_reg_left_comp_offset = (reg_left_comp_offset == 0);
@@ -246,7 +316,7 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
 
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
 
-    const bool needs_swizzle = !is_default(dest.swizzle, dest_comp_count);
+    const bool needs_swizzle = !is_default(dest.swizzle, static_cast<Imm4>(dest_comp_count));
 
     // The source needs to fit in both the dest vector and the total write components must be equal to total source components
     const bool full_length = (total_comp_dest == total_comp_source) && (dest_comp_count == total_comp_source);
@@ -615,9 +685,33 @@ bool USSETranslatorVisitor::vnmad32(
         return false;
     }
 
-    auto mul_result = m_b.createBinOp(spv::OpFMul, type_f32_v[dest_comp_count], vsrc1, vsrc2);
+    spv::Id result = spv::NoResult;
+    
+    switch (opcode) {
+    case Opcode::VMUL: case Opcode::VF16MUL: {
+        result = m_b.createBinOp(spv::OpFMul, type_f32_v[dest_comp_count], vsrc1, vsrc2);
+        break;
+    }
 
-    store(inst.opr.dest, mul_result, dest_mask, 0);
+    case Opcode::VMIN: case Opcode::VF16MIN: {
+        result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMin, { vsrc1, vsrc2 });
+        break;
+    }
+
+    case Opcode::VMAX: case Opcode::VF16MAX: {
+        result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMax, { vsrc1, vsrc2 });
+        break;
+    }
+
+    default: {
+        LOG_ERROR("Unimplemented vnmad instruction: {}", disasm::opcode_str(opcode));
+        break;
+    }
+    }
+
+    if (result != spv::NoResult) {
+        store(inst.opr.dest, result, dest_mask, 0);
+    }
 
     return true;
 }

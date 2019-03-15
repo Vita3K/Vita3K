@@ -50,7 +50,7 @@ void uniform_matrix_4<GLint>(GLint location, GLsizei count, GLboolean transpose,
 }
 
 template <class T>
-static void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value, const std::string &name, bool log_uniforms) {
+static void set_uniform(GLint location, size_t component_count, GLsizei array_size, const T *value, const std::string &name, bool is_matrix, bool log_uniforms) {
     if (log_uniforms) {
         // warning: shit code
         std::string values = "{ ";
@@ -77,12 +77,14 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
             break;
         }
         break;
+
     case 4:
-        if (array_size % 4 == 0) {
+        if (is_matrix) {
             uniform_matrix_4<T>(location, array_size / 4, GL_FALSE, value);
-        } else {
-            uniform_4<T>(location, array_size, value);
+            break;
         }
+
+        uniform_4<T>(location, array_size, value);
         break;
 
     default:
@@ -117,6 +119,20 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
                 return false;
             }
 
+            // This was added for compability with hand-written shaders. GXP shaders don't use matrix, but rather flatten them as array.
+            // Hand-written shaders usually convet them to matrix if possible. Until we get rid of hand-written shaders, this will stay here.
+            bool is_matrix = false;
+
+            gl::GLint usize = 0;
+            gl::GLenum utype {};
+
+            glGetActiveUniform(gl_program, location, 0, nullptr, &usize, &utype, nullptr);
+
+            // TODO: Add more types
+            if (utype == GL_FLOAT_MAT2 || utype == GL_FLOAT_MAT3 || utype == GL_FLOAT_MAT4) {
+                is_matrix = true;
+            }
+
             const SceGxmParameterType type = static_cast<SceGxmParameterType>(static_cast<uint16_t>(parameter.type));
             const Ptr<const void> uniform_buffer = uniform_buffers[parameter.container_index];
             if (!uniform_buffer) {
@@ -131,11 +147,11 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             switch (type) {
             case SCE_GXM_PARAMETER_TYPE_S32:
                 src_s32 = reinterpret_cast<const GLint *>(base + idx * 4); // TODO What offset?
-                set_uniform<GLint>(location, parameter.component_count, arr_size, src_s32, name, log_uniforms);
+                set_uniform<GLint>(location, parameter.component_count, arr_size, src_s32, name, is_matrix, log_uniforms);
                 break;
             case SCE_GXM_PARAMETER_TYPE_F32:
                 src_f32 = reinterpret_cast<const GLfloat *>(base + idx * 4); // TODO What offset?
-                set_uniform<GLfloat>(location, parameter.component_count, arr_size, src_f32, name, log_uniforms);
+                set_uniform<GLfloat>(location, parameter.component_count, arr_size, src_f32, name, is_matrix, log_uniforms);
                 break;
             default:
                 LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
@@ -145,21 +161,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             return true;
         };
 
-        // An array only
-        if (parameter.array_size == 1) {
-            do_supply(name, 1, parameter.resource_index);
-        } else {
-            // There are two types: a matrix listed as a bunch of vector
-            //                      Or simply a matrix
-            if (glGetUniformLocation(gl_program, name.c_str()) < 0) {
-                // Do loop
-                for (std::uint32_t i = 0; i < parameter.array_size; i++) {
-                    do_supply(name + "_" + std::to_string(i), 1, parameter.resource_index + i * parameter.component_count);
-                }
-            } else {
-                do_supply(name, parameter.array_size, parameter.resource_index);
-            }
-        }
+        do_supply(name, parameter.array_size, parameter.resource_index);
     }
 }
 
