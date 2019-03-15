@@ -235,9 +235,10 @@ bool init(HostState &state, Config cfg) {
                 if (vfs::read_app_file(params, state.pref_path, state.io.title_id, "sce_sys/param.sfo")) {
                     SfoFile sfo_handle;
                     load_sfo(sfo_handle, params);
+                    find_data(state.game_version, sfo_handle, "APP_VER");
                     find_data(state.game_title, sfo_handle, "TITLE");
                     std::replace(state.game_title.begin(), state.game_title.end(), '\n', ' ');
-                    state.gui.game_selector.games.push_back({ state.game_title, state.io.title_id });
+                    state.gui.game_selector.games.push_back({ state.game_version, state.game_title, state.io.title_id });
                 }
             }
         }

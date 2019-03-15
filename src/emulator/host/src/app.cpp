@@ -214,6 +214,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
 
     load_sfo(host.sfo_handle, params);
 
+    find_data(host.game_version, host.sfo_handle, "APP_VER");
     find_data(host.game_title, host.sfo_handle, "TITLE");
     std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
     find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
@@ -248,6 +249,7 @@ bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wst
 
     LOG_INFO("Title: {}", host.game_title);
     LOG_INFO("Serial: {}", host.io.title_id);
+    LOG_INFO("Version: {}", host.game_version);
     LOG_INFO("Category: {}", category);
 
     init_device_paths(host.io);
