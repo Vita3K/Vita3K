@@ -26,4 +26,5 @@ struct HostState;
 struct SfoFile;
 
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
+void log_import_calls(bool enabled);
 bool get_data(std::string &out_data, SfoFile &file, int id);

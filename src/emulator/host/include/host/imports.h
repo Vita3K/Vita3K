@@ -25,5 +25,3 @@ struct CPUState;
 struct HostState;
 
 using ImportFn = std::function<void(HostState &host, CPUState &cpu, SceUID thread_id)>;
-
-void log_import_calls(bool enabled);

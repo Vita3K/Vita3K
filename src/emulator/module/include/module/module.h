@@ -19,7 +19,6 @@
 
 #include "bridge.h"
 
-#include <host/imports.h>
 #include <host/state.h>
 
 #include <cassert>
