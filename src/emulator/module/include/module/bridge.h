@@ -29,7 +29,7 @@
 
 // Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>
-void call(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+std::enable_if_t<!std::is_same_v<Ret, void>> call(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
     const Ret ret = (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, state, host.mem)...);
     write_return_value(cpu, ret);
 }
