@@ -122,11 +122,33 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             // This was added for compability with hand-written shaders. GXP shaders don't use matrix, but rather flatten them as array.
             // Hand-written shaders usually convet them to matrix if possible. Until we get rid of hand-written shaders, this will stay here.
             bool is_matrix = false;
-
-            gl::GLint usize = 0;
             gl::GLenum utype {};
 
-            glGetActiveUniform(gl_program, location, 0, nullptr, &usize, &utype, nullptr);
+            auto uniform_type_ite = shader_program.uniform_types.find(location);
+            if (uniform_type_ite == shader_program.uniform_types.end()) {
+                GLint total_uniforms = 0;
+                glGetProgramiv(gl_program, GL_ACTIVE_UNIFORMS, &total_uniforms);
+
+                GLint max_uniform_name_length = 0;
+                glGetProgramiv(gl_program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_uniform_name_length);
+
+                gl::GLint usize = 0;
+
+                std::string uname;
+                uname.resize(max_uniform_name_length);
+
+                GLint written_name_length = 0;
+
+                for (GLint i = 0; i < total_uniforms; i++) {
+                    glGetActiveUniform(gl_program, i, max_uniform_name_length, &written_name_length, &usize, &utype, &uname[0]);
+                    if (written_name_length == name.length() && strncmp(name.c_str(), uname.c_str(), written_name_length) == 0) {
+                        shader_program.uniform_types[location] = utype;
+                        break;
+                    }
+                }
+            } else {
+                utype = uniform_type_ite->second;
+            }
 
             // TODO: Add more types
             if (utype == GL_FLOAT_MAT2 || utype == GL_FLOAT_MAT3 || utype == GL_FLOAT_MAT4) {
