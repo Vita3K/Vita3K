@@ -18,7 +18,7 @@
 #include <host/functions.h>
 
 #include <cpu/functions.h>
-#include <host/imports.h>
+#include <host/import_fn.h>
 #include <host/state.h>
 #include <nids/functions.h>
 #include <util/lock_and_find.h>
