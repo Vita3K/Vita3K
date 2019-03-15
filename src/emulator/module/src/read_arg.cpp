@@ -4,5 +4,5 @@
 // Workaround for old Clang and GCC
 template <>
 module::vargs make_vargs(const LayoutArgsState &state) {
-    return module::vargs {state};
+    return module::vargs{ state };
 }

@@ -160,7 +160,7 @@ static spv::Id get_type_array(spv::Builder &b, const SceGxmProgramParameter &par
     if (parameter.component_count > 1) {
         param_id = b.makeVectorType(param_id, parameter.component_count);
     }
-    
+
     // TODO: Stride
     param_id = b.makeArrayType(param_id, b.makeUintConstant(parameter.array_size), 1);
 
@@ -221,8 +221,7 @@ spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     return spv::StorageClassMax;
 }
 
-static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type, optional<spv::StorageClass> force_storage = boost::none
-    , boost::optional<std::uint32_t> force_offset = boost::none) {
+static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type, optional<spv::StorageClass> force_storage = boost::none, boost::optional<std::uint32_t> force_offset = boost::none) {
     sanitize_variable_name(name);
 
     const auto storage_class = force_storage ? *force_storage : reg_type_to_spv_storage_class(reg_type);
@@ -532,8 +531,7 @@ static void create_fragment_output(spv::Builder &b, SpirvShaderParameters &param
 }
 
 static const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program) {
-    const SceGxmProgramParameterContainer *containers = reinterpret_cast<const SceGxmProgramParameterContainer*>
-        (reinterpret_cast<const std::uint8_t*>(&program.container_offset) + program.container_offset);
+    const SceGxmProgramParameterContainer *containers = reinterpret_cast<const SceGxmProgramParameterContainer *>(reinterpret_cast<const std::uint8_t *>(&program.container_offset) + program.container_offset);
 
     return containers;
 }
@@ -687,8 +685,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 LOG_DEBUG(param_log);
 
                 // TODO: Size is not accurate.
-                create_spirv_var_reg(b, spv_params, var_name, param_reg_type, parameter.array_size * parameter.component_count, param_type
-                    , boost::none, offset);
+                create_spirv_var_reg(b, spv_params, var_name, param_reg_type, parameter.array_size * parameter.component_count, param_type, boost::none, offset);
             }
             break;
         }

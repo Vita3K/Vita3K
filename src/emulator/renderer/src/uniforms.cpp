@@ -122,7 +122,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             // This was added for compability with hand-written shaders. GXP shaders don't use matrix, but rather flatten them as array.
             // Hand-written shaders usually convet them to matrix if possible. Until we get rid of hand-written shaders, this will stay here.
             bool is_matrix = false;
-            gl::GLenum utype {};
+            gl::GLenum utype{};
 
             auto uniform_type_ite = shader_program.uniform_types.find(location);
             if (uniform_type_ite == shader_program.uniform_types.end()) {
