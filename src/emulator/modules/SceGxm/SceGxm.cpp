@@ -1118,10 +1118,10 @@ EXPORT(int, sceGxmSetPrecomputedVertexState) {
 
 EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int yMin, unsigned int xMax, unsigned int yMax) {
     context->state.region_clip_mode = mode;
-    context->state.region_clip_min.x = align(xMin, SCE_GXM_TILE_SIZEX);
-    context->state.region_clip_min.y = align(yMin, SCE_GXM_TILE_SIZEY);
-    context->state.region_clip_max.x = align(xMax, SCE_GXM_TILE_SIZEX);
-    context->state.region_clip_max.y = align(yMax, SCE_GXM_TILE_SIZEY);
+    context->state.region_clip_min.x = static_cast<SceInt>(align(xMin, SCE_GXM_TILE_SIZEX));
+    context->state.region_clip_min.y = static_cast<SceInt>(align(yMin, SCE_GXM_TILE_SIZEY));
+    context->state.region_clip_max.x = static_cast<SceInt>(align(xMax, SCE_GXM_TILE_SIZEX));
+    context->state.region_clip_max.y = static_cast<SceInt>(align(yMax, SCE_GXM_TILE_SIZEY));
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
@@ -1525,7 +1525,7 @@ EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return gxm::get_height(texture);
+    return static_cast<unsigned int>(gxm::get_height(texture));
 }
 
 EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
@@ -1625,7 +1625,7 @@ EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return gxm::get_width(texture);
+    return static_cast<unsigned int>(gxm::get_width(texture));
 }
 
 EXPORT(int, sceGxmTextureInitCube) {
@@ -1636,7 +1636,8 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+static int init_texture_base(const char *export_name, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount,
+    const SceGxmTextureType &texture_type) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     } else if (!data) {
@@ -1680,7 +1681,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     texture->height = height - 1;
     texture->width = width - 1;
     texture->base_format = (texFormat & 0x1F000000) >> 24;
-    texture->type = SCE_GXM_TEXTURE_LINEAR >> 29;
+    texture->type = texture_type >> 29;
     texture->data_addr = data.address() >> 2;
     texture->swizzle_format = (texFormat & 0x7000) >> 12;
     texture->normalize_mode = 1;
@@ -1690,12 +1691,26 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     return 0;
 }
 
+EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+    const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_LINEAR);
+    
+    if (result == 0)
+        return 0;
+
+    return result;
+}
+
 EXPORT(int, sceGxmTextureInitLinearStrided) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureInitSwizzled) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+    const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_SWIZZLED);
+    
+    if (result == 0)
+        return 0;
+
+    return result;
 }
 
 EXPORT(int, sceGxmTextureInitSwizzledArbitrary) {

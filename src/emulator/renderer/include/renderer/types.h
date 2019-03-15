@@ -20,6 +20,7 @@ typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 typedef std::tuple<std::string, std::string> ProgramGLSLs;
 typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 typedef std::vector<std::string> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
+typedef std::map<GLuint, GLenum> UniformTypes;
 
 struct Context {
     GLContextPtr gl;
@@ -33,6 +34,7 @@ struct Context {
 struct ShaderProgram {
     std::string glsl;
     ExcludedUniforms excluded_uniforms;
+    UniformTypes uniform_types;
 };
 
 struct FragmentProgram : ShaderProgram {

@@ -688,6 +688,11 @@ bool USSETranslatorVisitor::vnmad32(
     spv::Id result = spv::NoResult;
     
     switch (opcode) {
+    case Opcode::VADD: case Opcode::VF16ADD: {
+        result = m_b.createBinOp(spv::OpFAdd, type_f32_v[dest_comp_count], vsrc1, vsrc2);
+        break;
+    }
+
     case Opcode::VMUL: case Opcode::VF16MUL: {
         result = m_b.createBinOp(spv::OpFMul, type_f32_v[dest_comp_count], vsrc1, vsrc2);
         break;
