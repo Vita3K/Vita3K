@@ -44,6 +44,6 @@ std::uint64_t convert_filetime(const _FILETIME &filetime);
 std::uint64_t convert_timespec(const timespec &timespec);
 #endif
 time_t rtc_timegm(struct tm *tm);
-void __RtcPspTimeToTm(tm &val, const SceDateTime &pt);
-void __RtcTicksToPspTime(SceDateTime &t, std::uint64_t ticks);
-std::uint64_t __RtcPspTimeToTicks(const SceDateTime &pt);
+void __RtcPspTimeToTm(tm &val, const SceDateTime *pt);
+void __RtcTicksToPspTime(SceDateTime *t, std::uint64_t ticks);
+std::uint64_t __RtcPspTimeToTicks(const SceDateTime *pt);

@@ -604,9 +604,9 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const char *pref_
         return IO_ERROR_UNK();
     }
     }
-    __RtcTicksToPspTime(statp->st_atime, last_access_time_ticks);
-    __RtcTicksToPspTime(statp->st_mtime, last_modification_time_ticks);
-    __RtcTicksToPspTime(statp->st_ctime, creation_time_ticks);
+    __RtcTicksToPspTime(&statp->st_atime, last_access_time_ticks);
+    __RtcTicksToPspTime(&statp->st_mtime, last_modification_time_ticks);
+    __RtcTicksToPspTime(&statp->st_ctime, creation_time_ticks);
 
     return 0;
 }
