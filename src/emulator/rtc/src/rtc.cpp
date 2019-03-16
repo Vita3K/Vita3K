@@ -84,28 +84,28 @@ time_t rtc_timegm(struct tm *tm) {
 }
 #endif
 
-void __RtcPspTimeToTm(tm &val, const SceDateTime &pt) {
-    val.tm_year = pt.year - 1900;
-    val.tm_mon = pt.month - 1;
-    val.tm_mday = pt.day;
-    val.tm_wday = -1;
-    val.tm_yday = -1;
-    val.tm_hour = pt.hour;
-    val.tm_min = pt.minute;
-    val.tm_sec = pt.second;
-    val.tm_isdst = 0;
+void __RtcPspTimeToTm(tm *val, const SceDateTime *pt) {
+    val->tm_year = pt->year - 1900;
+    val->tm_mon = pt->month - 1;
+    val->tm_mday = pt->day;
+    val->tm_wday = -1;
+    val->tm_yday = -1;
+    val->tm_hour = pt->hour;
+    val->tm_min = pt->minute;
+    val->tm_sec = pt->second;
+    val->tm_isdst = 0;
 }
 
-void __RtcTicksToPspTime(SceDateTime &t, std::uint64_t ticks) {
+void __RtcTicksToPspTime(SceDateTime *t, std::uint64_t ticks) {
     int numYearAdd = 0;
     if (ticks < 1000000ULL) {
-        t.year = 1;
-        t.month = 1;
-        t.day = 1;
-        t.hour = 0;
-        t.minute = 0;
-        t.second = 0;
-        t.microsecond = ticks % 1000000ULL;
+        t->year = 1;
+        t->month = 1;
+        t->day = 1;
+        t->hour = 0;
+        t->minute = 0;
+        t->second = 0;
+        t->microsecond = ticks % 1000000ULL;
         return;
     } else if (ticks < RTC_OFFSET) {
         // Need to get a year past 1970 for gmtime
@@ -120,7 +120,7 @@ void __RtcTicksToPspTime(SceDateTime &t, std::uint64_t ticks) {
     }
 
     time_t time = (ticks - RTC_OFFSET) / 1000000ULL;
-    t.microsecond = ticks % 1000000ULL;
+    t->microsecond = ticks % 1000000ULL;
 
     tm *local = gmtime(&time);
     if (!local) {
@@ -128,17 +128,17 @@ void __RtcTicksToPspTime(SceDateTime &t, std::uint64_t ticks) {
         return;
     }
 
-    t.year = local->tm_year + 1900 - numYearAdd * 400;
-    t.month = local->tm_mon + 1;
-    t.day = local->tm_mday;
-    t.hour = local->tm_hour;
-    t.minute = local->tm_min;
-    t.second = local->tm_sec;
+    t->year = local->tm_year + 1900 - numYearAdd * 400;
+    t->month = local->tm_mon + 1;
+    t->day = local->tm_mday;
+    t->hour = local->tm_hour;
+    t->minute = local->tm_min;
+    t->second = local->tm_sec;
 }
 
-std::uint64_t __RtcPspTimeToTicks(const SceDateTime &pt) {
+std::uint64_t __RtcPspTimeToTicks(const SceDateTime *pt) {
     tm local;
-    __RtcPspTimeToTm(local, pt);
+    __RtcPspTimeToTm(&local, pt);
 
     std::int64_t tickOffset = 0;
     while (local.tm_year < 70) {
@@ -152,6 +152,6 @@ std::uint64_t __RtcPspTimeToTicks(const SceDateTime &pt) {
 
     time_t seconds = rtc_timegm(&local);
     std::uint64_t result = RTC_OFFSET + (std::uint64_t)seconds * 1000000ULL;
-    result += pt.microsecond;
+    result += pt->microsecond;
     return result + tickOffset;
 }
