@@ -78,12 +78,20 @@ EXPORT(int, sceRtcCompareTick) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRtcConvertLocalTimeToUtc) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc) {
+    if (pUtc == nullptr && pLocalTime == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+    pUtc->tick = pLocalTime->tick;
+    return 0;
 }
 
-EXPORT(int, sceRtcConvertUtcToLocalTime) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pLocalTime) {
+    if (pUtc == nullptr && pLocalTime == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+    pLocalTime->tick = pUtc->tick;
+    return 0;
 }
 
 EXPORT(int, sceRtcFormatRFC2822) {
@@ -102,16 +110,30 @@ EXPORT(int, sceRtcFormatRFC3339LocalTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRtcGetCurrentClock) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcGetCurrentClock, Ptr<SceDateTime> datePtr, int iTimeZone) {
+    if (!datePtr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+	
+    auto datetime = *datePtr.get(host.mem);
+    uint64_t tick = rtc_get_ticks(host.kernel.base_tick.tick) + iTimeZone * 60 * 60 * VITA_CLOCKS_PER_SEC;
+    __RtcTicksToPspTime(datetime, tick);
+    
+    return 0;
 }
 
 EXPORT(int, sceRtcGetCurrentClockLocalTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRtcGetCurrentNetworkTick) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
+    if (tick == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+
+    tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
+
+    return 0;
 }
 
 EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
@@ -206,8 +228,13 @@ EXPORT(int, sceRtcGetLastReincarnatedTick) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRtcGetTick) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcGetTick, Ptr<SceDateTime> datePtr, SceRtcTick *pTick) {
+    if (datePtr && pTick != nullptr) {
+        const auto datetime = *datePtr.get(host.mem);
+        pTick->tick = __RtcPspTimeToTicks(datetime);
+        return 0;
+    }
+    return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
 }
 
 EXPORT(unsigned int, sceRtcGetTickResolution) {
@@ -264,8 +291,13 @@ EXPORT(int, sceRtcSetDosTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRtcSetTick) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcSetTick, Ptr<SceDateTime> datePtr, const SceRtcTick *pTick) {
+    if (datePtr && pTick != nullptr) {
+        auto datetime = *datePtr.get(host.mem);
+        __RtcTicksToPspTime(datetime, pTick->tick);
+        return 0;
+    }
+    return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
 }
 
 EXPORT(int, sceRtcSetTime64_t) {
