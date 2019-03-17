@@ -75,7 +75,7 @@ struct GxmStencilState {
     SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP; // TODO What's the default value?
     uint8_t compare_mask = 0xff; // TODO What's the default value?
     uint8_t write_mask = 0xff; // TODO What's the default value?
-    uint32_t ref = 0; // TODO What's the default value?
+    uint8_t ref = 0; // TODO What's the default value?
 };
 
 enum class SceGxmLastReserveStatus {
@@ -123,7 +123,9 @@ struct GxmContextState {
 
     // Depth.
     SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
+    SceGxmDepthFunc back_depth_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
     SceGxmDepthWriteMode front_depth_write_enable = SCE_GXM_DEPTH_WRITE_ENABLED;
+    SceGxmDepthWriteMode back_depth_write_enable = SCE_GXM_DEPTH_WRITE_ENABLED;
 
     // Stencil.
     GxmStencilState front_stencil;
@@ -135,10 +137,13 @@ struct GxmContextState {
 
     // Line Width
     unsigned int front_point_line_width = 1;
+    unsigned int back_point_line_width = 1;
 
     // Depth Bias
     int front_depth_bias_factor = 0;
     int front_depth_bias_units = 0;
+    int back_depth_bias_factor = 0;
+    int back_depth_bias_units = 0;
 
     // Textures.
     std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> fragment_textures;
