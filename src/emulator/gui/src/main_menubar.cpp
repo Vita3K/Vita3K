@@ -52,6 +52,10 @@ static void draw_config_menu(HostState &host) {
             }
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu("GUI")) {
+            ImGui::MenuItem("Enable", nullptr, &host.cfg.show_gui);
+            ImGui::EndMenu();
+        }
         ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
