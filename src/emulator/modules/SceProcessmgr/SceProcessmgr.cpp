@@ -26,6 +26,10 @@ struct VitaTimeval {
     uint32_t tv_sec;
     uint32_t tv_usec;
 };
+struct VitaTimezone {
+    int tz_minuteswest;
+    int tz_dsttime;
+};
 
 EXPORT(int, sceKernelCDialogSessionClose) {
     return UNIMPLEMENTED();
@@ -99,16 +103,17 @@ EXPORT(int, sceKernelLibcClock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> tzAddr) {
-    if (timeAddr) {
-        auto *tv = timeAddr.get(host.mem);
-
-        const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick) - RTC_OFFSET;
-
-        tv->tv_sec = ticks / VITA_CLOCKS_PER_SEC;
-        tv->tv_usec = ticks % VITA_CLOCKS_PER_SEC;
+EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAddr) {
+    const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick) - RTC_OFFSET;
+    if (timeAddr != nullptr) {
+        timeAddr->tv_sec = ticks / VITA_CLOCKS_PER_SEC;
+        timeAddr->tv_usec = ticks % VITA_CLOCKS_PER_SEC;
     }
-
+    if (tzAddr != nullptr) {
+        std::time_t t = std::time(nullptr);
+        std::time_t lt = mktime(std::localtime(&t));
+        tzAddr->tz_minuteswest = (lt - t) / 60;
+    }
     return 0;
 }
 

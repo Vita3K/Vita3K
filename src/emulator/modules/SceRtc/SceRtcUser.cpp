@@ -79,18 +79,24 @@ EXPORT(int, sceRtcCompareTick) {
 }
 
 EXPORT(int, sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc) {
-    if (pUtc == nullptr && pLocalTime == nullptr) {
+    if (pUtc == nullptr || pLocalTime == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
-    pUtc->tick = pLocalTime->tick;
+    std::time_t t = std::time(nullptr);
+    std::time_t local = std::mktime(std::localtime(&t));
+    std::time_t gmt = std::mktime(std::gmtime(&t));
+    pUtc->tick = pLocalTime->tick - (local - gmt) * VITA_CLOCKS_PER_SEC;
     return 0;
 }
 
 EXPORT(int, sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pLocalTime) {
-    if (pUtc == nullptr && pLocalTime == nullptr) {
+    if (pUtc == nullptr || pLocalTime == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
-    pLocalTime->tick = pUtc->tick;
+    std::time_t t = std::time(nullptr);
+    std::time_t local = std::mktime(std::localtime(&t));
+    std::time_t gmt = std::mktime(std::gmtime(&t));
+    pLocalTime->tick = pUtc->tick + (local - gmt) * VITA_CLOCKS_PER_SEC;
     return 0;
 }
 
@@ -121,8 +127,17 @@ EXPORT(int, sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone) {
     return 0;
 }
 
-EXPORT(int, sceRtcGetCurrentClockLocalTime) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
+    if (datePtr == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+
+    std::time_t t = std::time(nullptr);
+    std::time_t local = std::mktime(std::localtime(&t));
+    std::time_t gmt = std::mktime(std::gmtime(&t));
+    uint64_t tick = rtc_get_ticks(host.kernel.base_tick.tick) + (local - gmt) * VITA_CLOCKS_PER_SEC;
+    __RtcTicksToPspTime(datePtr, tick);
+    return 0;
 }
 
 EXPORT(int, sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
