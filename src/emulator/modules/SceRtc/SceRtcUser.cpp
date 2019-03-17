@@ -261,7 +261,7 @@ EXPORT(int, sceRtcGetTime_t, SceDateTime *datePtr, uint32_t *timePtr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    *timePtr = __RtcPspTimeToTicks(datePtr) - RTC_OFFSET / VITA_CLOCKS_PER_SEC;
+    *timePtr = (__RtcPspTimeToTicks(datePtr) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC;
     return 0;
 }
 
@@ -270,7 +270,7 @@ EXPORT(int, sceRtcGetTime64_t, SceDateTime *datePtr, uint64_t *timePtr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    *timePtr = __RtcPspTimeToTicks(datePtr) - RTC_OFFSET / VITA_CLOCKS_PER_SEC;
+    *timePtr = (__RtcPspTimeToTicks(datePtr) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC;
     return 0;
 }
 
@@ -310,12 +310,24 @@ EXPORT(int, sceRtcSetTick, SceDateTime *datePtr, const SceRtcTick *pTick) {
     return 0;
 }
 
-EXPORT(int, sceRtcSetTime64_t) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcSetTime64_t, SceDateTime *datePtr, uint64_t iTime) {
+    if (datePtr == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+	
+    uint64_t ticks = RTC_OFFSET + iTime * VITA_CLOCKS_PER_SEC;
+    __RtcTicksToPspTime(datePtr, ticks);
+    return 0;
 }
 
-EXPORT(int, sceRtcSetTime_t) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcSetTime_t, SceDateTime *datePtr, uint32_t iTime) {
+    if (datePtr == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+	
+    uint64_t ticks = RTC_OFFSET + iTime * VITA_CLOCKS_PER_SEC;
+    __RtcTicksToPspTime(datePtr, ticks);
+    return 0;
 }
 
 EXPORT(int, sceRtcSetWin32FileTime) {
