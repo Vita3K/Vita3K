@@ -95,6 +95,7 @@ ExitCode serialize(Config &cfg) {
     config_file_emit_single(emitter, "log-active-shaders", cfg.log_active_shaders);
     config_file_emit_single(emitter, "log-uniforms", cfg.log_uniforms);
     config_file_emit_single(emitter, "pstv-mode", cfg.pstv_mode);
+    config_file_emit_single(emitter, "show-gui", cfg.show_gui);
     config_file_emit_single(emitter, "archive-log", cfg.archive_log);
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_optional_single(emitter, "log-level", cfg.log_level);
@@ -126,6 +127,7 @@ ExitCode deserialize(Config &cfg) {
     get_yaml_value(config_node, "log-active-shaders", &cfg.log_active_shaders, false);
     get_yaml_value(config_node, "log-uniforms", &cfg.log_uniforms, false);
     get_yaml_value(config_node, "pstv-mode", &cfg.pstv_mode, false);
+    get_yaml_value(config_node, "show-gui", &cfg.show_gui, false);
     get_yaml_value(config_node, "archive-log", &cfg.archive_log, false);
     get_yaml_value_optional(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value_optional(config_node, "pref-path", &cfg.pref_path);

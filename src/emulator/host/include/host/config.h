@@ -40,6 +40,7 @@ struct Config {
     bool log_uniforms = false;
     std::vector<std::string> lle_modules;
     bool pstv_mode = false;
+    bool show_gui = false;
     optional<std::string> pref_path;
     bool archive_log = false;
 };
