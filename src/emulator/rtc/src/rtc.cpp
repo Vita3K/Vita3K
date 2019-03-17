@@ -19,23 +19,18 @@
 
 #include <util/log.h>
 
-std::uint64_t rtc_base_ticks() {
-    const auto now = std::chrono::system_clock::now();
+std::uint64_t rtc_ticks_since_epoch() {
+    const auto now = std::chrono::high_resolution_clock::now();
     const auto now_timepoint = std::chrono::time_point_cast<VitaClocks>(now);
-    const auto clocks_since_unix_time = now_timepoint.time_since_epoch().count();
+    return now_timepoint.time_since_epoch().count();
+}
 
-    // host high_resolution_clock offset (implementations dependant)
-    const auto host_clock_offset = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-
-    return RTC_OFFSET + clocks_since_unix_time - host_clock_offset;
+std::uint64_t rtc_base_ticks() {
+    return RTC_OFFSET + std::time(0) * VITA_CLOCKS_PER_SEC - rtc_ticks_since_epoch();
 }
 
 std::uint64_t rtc_get_ticks(uint64_t base_ticks) {
-    const auto now = std::chrono::high_resolution_clock::now();
-    const auto now_timepoint = std::chrono::time_point_cast<VitaClocks>(now);
-    const uint64_t now_ticks = now_timepoint.time_since_epoch().count();
-
-    return base_ticks + now_ticks;
+    return base_ticks + rtc_ticks_since_epoch();
 }
 
 #ifdef WIN32
@@ -98,14 +93,14 @@ void __RtcPspTimeToTm(tm *val, const SceDateTime *pt) {
 
 void __RtcTicksToPspTime(SceDateTime *t, std::uint64_t ticks) {
     int numYearAdd = 0;
-    if (ticks < 1000000ULL) {
+    if (ticks < VITA_CLOCKS_PER_SEC) {
         t->year = 1;
         t->month = 1;
         t->day = 1;
         t->hour = 0;
         t->minute = 0;
         t->second = 0;
-        t->microsecond = ticks % 1000000ULL;
+        t->microsecond = ticks % VITA_CLOCKS_PER_SEC;
         return;
     } else if (ticks < RTC_OFFSET) {
         // Need to get a year past 1970 for gmtime
@@ -119,8 +114,8 @@ void __RtcTicksToPspTime(SceDateTime *t, std::uint64_t ticks) {
         --numYearAdd;
     }
 
-    time_t time = (ticks - RTC_OFFSET) / 1000000ULL;
-    t->microsecond = ticks % 1000000ULL;
+    time_t time = (ticks - RTC_OFFSET) / VITA_CLOCKS_PER_SEC;
+    t->microsecond = ticks % VITA_CLOCKS_PER_SEC;
 
     tm *local = gmtime(&time);
     if (!local) {
@@ -151,7 +146,7 @@ std::uint64_t __RtcPspTimeToTicks(const SceDateTime *pt) {
     }
 
     time_t seconds = rtc_timegm(&local);
-    std::uint64_t result = RTC_OFFSET + (std::uint64_t)seconds * 1000000ULL;
+    std::uint64_t result = RTC_OFFSET + (std::uint64_t)seconds * VITA_CLOCKS_PER_SEC;
     result += pt->microsecond;
     return result + tickOffset;
 }
