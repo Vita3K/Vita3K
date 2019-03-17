@@ -26,7 +26,7 @@ std::uint64_t rtc_ticks_since_epoch() {
 }
 
 std::uint64_t rtc_base_ticks() {
-    return RTC_OFFSET + std::time(0) * VITA_CLOCKS_PER_SEC - rtc_ticks_since_epoch();
+    return RTC_OFFSET + std::time(nullptr) * VITA_CLOCKS_PER_SEC - rtc_ticks_since_epoch();
 }
 
 std::uint64_t rtc_get_ticks(uint64_t base_ticks) {
