@@ -103,7 +103,7 @@ EXPORT(int, sceKernelLibcGettimeofday, Ptr<VitaTimeval> timeAddr, Ptr<Address> t
     if (timeAddr) {
         auto *tv = timeAddr.get(host.mem);
 
-        const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick);
+        const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick) - RTC_OFFSET;
 
         tv->tv_sec = ticks / VITA_CLOCKS_PER_SEC;
         tv->tv_usec = ticks % VITA_CLOCKS_PER_SEC;
