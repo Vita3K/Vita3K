@@ -18,10 +18,11 @@
 #include "SceNet.h"
 
 #include <net/functions.h>
-
 #include <psp2/net/net.h>
 
-#ifndef WIN32
+#ifdef WIN32
+#include <iphlpapi.h>
+#else
 #include <cerrno>
 #endif
 
@@ -213,8 +214,23 @@ EXPORT(int, sceNetEtherStrton) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetGetMacAddress) {
+EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
+    if (addr == nullptr) {
+        return RET_ERROR(SCE_NET_EINVAL);
+    }
+#ifdef WIN32
+    IP_ADAPTER_INFO AdapterInfo[16];
+    DWORD dwBufLen = sizeof(AdapterInfo);
+    if (GetAdaptersInfo(AdapterInfo, &dwBufLen) != ERROR_SUCCESS) {
+        return RET_ERROR(SCE_NET_EINVAL);
+    } else {
+        memcpy(addr->data, AdapterInfo->Address, 6);
+    }
+#else
+    // TODO: Implement the function for non Windows OS
     return UNIMPLEMENTED();
+#endif
+    return 0;
 }
 
 EXPORT(int, sceNetGetSockIdInfo) {
