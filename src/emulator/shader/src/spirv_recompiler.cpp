@@ -432,7 +432,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     sampler_resource_index = parameter.resource_index;
 
                     // ????
-                    if ((parameter.semantic >> 12) & 1) {
+                    if (parameter.is_sampler_cube()) {
                         sampling_type = "CUBE";
                     }
 
