@@ -22,8 +22,8 @@
 #include <shader/usse_types.h>
 #include <util/log.h>
 
-#include <SPIRV/SpvBuilder.h>
 #include <SPIRV/GLSL.std.450.h>
+#include <SPIRV/SpvBuilder.h>
 #include <boost/optional.hpp>
 #include <spdlog/fmt/fmt.h>
 #include <spirv.hpp>
@@ -109,7 +109,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
             return true;
         }
-        
+
         return false;
     }
 
@@ -118,7 +118,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
         // Need to do a access chain to access the elements
         reg.var_id = m_b.createOp(spv::OpAccessChain, m_b.makePointer(spv::StorageClassPrivate, m_b.getContainedTypeId(reg.type_id)),
-            { reg.var_id, m_b.makeIntConstant(out_comp_offset / size_per_element) } );
+            { reg.var_id, m_b.makeIntConstant(out_comp_offset / size_per_element) });
         reg.type_id = m_b.getContainedTypeId(reg.type_id);
 
         out_comp_offset %= size_per_element;
@@ -138,7 +138,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         reg = create_supply_register(reg, new_sa_supply_name);
         sa_supplies[writeable_idx] = reg;
     }
-    
+
     return true;
 }
 
@@ -686,24 +686,28 @@ bool USSETranslatorVisitor::vnmad32(
     }
 
     spv::Id result = spv::NoResult;
-    
+
     switch (opcode) {
-    case Opcode::VADD: case Opcode::VF16ADD: {
+    case Opcode::VADD:
+    case Opcode::VF16ADD: {
         result = m_b.createBinOp(spv::OpFAdd, type_f32_v[dest_comp_count], vsrc1, vsrc2);
         break;
     }
 
-    case Opcode::VMUL: case Opcode::VF16MUL: {
+    case Opcode::VMUL:
+    case Opcode::VF16MUL: {
         result = m_b.createBinOp(spv::OpFMul, type_f32_v[dest_comp_count], vsrc1, vsrc2);
         break;
     }
 
-    case Opcode::VMIN: case Opcode::VF16MIN: {
+    case Opcode::VMIN:
+    case Opcode::VF16MIN: {
         result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMin, { vsrc1, vsrc2 });
         break;
     }
 
-    case Opcode::VMAX: case Opcode::VF16MAX: {
+    case Opcode::VMAX:
+    case Opcode::VF16MAX: {
         result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMax, { vsrc1, vsrc2 });
         break;
     }

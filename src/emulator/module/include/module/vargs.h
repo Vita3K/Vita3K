@@ -33,8 +33,7 @@ public:
 
     explicit vargs(LayoutArgsState layoutState)
         : layoutState(layoutState) {
-
-        }
+    }
 
     template <typename T>
     T next(CPUState &cpu, MemState &mem) {
@@ -46,4 +45,4 @@ public:
         return read<T>(cpu, currentLayout, mem);
     }
 };
-}
+} // namespace module
