@@ -2,11 +2,6 @@
 
 #include <mem/ptr.h>
 
-#include <array>
-#include <map>
-#include <mutex>
-#include <tuple>
-
 #include <psp2/apputil.h>
 
 namespace emu {
