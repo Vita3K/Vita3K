@@ -19,8 +19,6 @@
 
 #include "bridge.h"
 
-#include <host/state.h>
-
 #include <cassert>
 
 int unimplemented_impl(const char *name);
