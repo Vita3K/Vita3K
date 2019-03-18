@@ -82,7 +82,7 @@ inline int find_condvar(CondvarPtr &condvar_out, CondvarPtrs **condvars_out, Ker
 
 inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mutex> &thread_lock,
     std::unique_lock<std::mutex> &primitive_lock, SyncPrimitive &primitive,
-    const WaitingThreadData &data, const SceUInt *const timeout) {
+    const WaitingThreadData &data, const char *export_name, const SceUInt *const timeout) {
     if (timeout) {
         auto status = thread->something_to_do.wait_for(thread_lock, std::chrono::microseconds{ *timeout });
 
@@ -92,7 +92,7 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
             primitive_lock.lock();
             primitive.waiting_threads.remove(data);
 
-            return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+            return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
         }
     }
 
@@ -169,9 +169,9 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
                 return SCE_KERNEL_OK;
             } else {
                 if (weight == SyncWeight::Light)
-                    return SCE_KERNEL_ERROR_LW_MUTEX_RECURSIVE;
+                    return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_RECURSIVE);
                 else
-                    return SCE_KERNEL_ERROR_MUTEX_RECURSIVE;
+                    return RET_ERROR(SCE_KERNEL_ERROR_MUTEX_RECURSIVE);
             }
         } else {
             // Owned by someone else
@@ -179,9 +179,9 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
             // Don't sleep if only_try is set
             if (only_try) {
                 if (weight == SyncWeight::Light)
-                    return SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN;
+                    return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN);
                 else
-                    return SCE_KERNEL_ERROR_MUTEX_FAILED_TO_OWN;
+                    return RET_ERROR(SCE_KERNEL_ERROR_MUTEX_FAILED_TO_OWN);
             }
 
             // Sleep thread!
@@ -199,7 +199,7 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
 
             stop(*thread->cpu);
 
-            return handle_timeout(thread, thread_lock, mutex_lock, *mutex, data, timeout);
+            return handle_timeout(thread, thread_lock, mutex_lock, *mutex, data, export_name, timeout);
         }
     } else {
         // Not owned
@@ -376,7 +376,7 @@ int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_i
 
         stop(*thread->cpu);
 
-        return handle_timeout(thread, thread_lock, semaphore_lock, *semaphore, data, timeout);
+        return handle_timeout(thread, thread_lock, semaphore_lock, *semaphore, data, export_name, timeout);
     } else {
         semaphore->val -= signal;
     }
@@ -523,7 +523,7 @@ int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id,
 
     stop(*thread->cpu);
 
-    return handle_timeout(thread, thread_lock, condition_variable_lock, *condvar, data, timeout);
+    return handle_timeout(thread, thread_lock, condition_variable_lock, *condvar, data, export_name, timeout);
 }
 
 int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, Condvar::SignalTarget signal_target, SyncWeight weight) {
@@ -710,7 +710,7 @@ int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_i
 
         stop(*thread->cpu);
 
-        return handle_timeout(thread, thread_lock, event_lock, *event, data, timeout);
+        return handle_timeout(thread, thread_lock, event_lock, *event, data, export_name, timeout);
     }
 
     return SCE_KERNEL_OK;
