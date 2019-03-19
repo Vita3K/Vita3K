@@ -90,17 +90,17 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
             auto alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), name);
             auto stub_symval_ptr = Ptr<uint32_t>(alloc(mem, 4, alloc_name.c_str()));
             *stub_symval_ptr.get(mem) = STUB_SYMVAL;
-            
-            // Use same stub for other var imports
-            kernel.export_nids.emplace(nid, export_address);
 
             export_address = stub_symval_ptr.address();
+
+            // Use same stub for other var imports
+            kernel.export_nids.emplace(nid, export_address);
         }
 
         if (reloc_entries_count > 0)
-                // 8 is sizeof(EntryFormat1Alt)
-                if (!relocate(var_reloc_entries, reloc_entries_count * 8, segments, mem, true, export_address))
-                    return false;
+            // 8 is sizeof(EntryFormat1Alt)
+            if (!relocate(var_reloc_entries, reloc_entries_count * 8, segments, mem, true, export_address))
+                return false;
     }
 
     return true;
