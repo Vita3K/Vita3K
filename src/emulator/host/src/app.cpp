@@ -309,7 +309,8 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
         auto &imgui_render = host.display.imgui_render;
 
         bool old_imgui_render = imgui_render.load();
-        while (!imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render));
+        while (!imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
+        }
     }
 
     return Success;
