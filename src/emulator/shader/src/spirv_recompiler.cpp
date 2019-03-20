@@ -123,7 +123,7 @@ static spv::Id get_type_basic(spv::Builder &b, const SceGxmProgramParameter &par
 
     switch (type) {
     // clang-format off
-    case SCE_GXM_PARAMETER_TYPE_F16:return b.makeFloatType(32); // TODO: support f16
+    case SCE_GXM_PARAMETER_TYPE_F16: return b.makeFloatType(32); // TODO: support f16
     case SCE_GXM_PARAMETER_TYPE_F32: return b.makeFloatType(32);
     case SCE_GXM_PARAMETER_TYPE_U8: return b.makeUintType(8);
     case SCE_GXM_PARAMETER_TYPE_U16: return b.makeUintType(16);
@@ -714,6 +714,34 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
+    const std::uint32_t *literals = reinterpret_cast<const std::uint32_t*>(reinterpret_cast<const std::uint8_t*>(&program.literals_offset)
+        + program.literals_offset);
+
+    // Get base SA offset for literal
+    // The container index of those literals are 16
+    auto container = get_container_by_index(program, 16);
+
+    if (!container) {
+        // Alternative is 19, which is DATA
+        container = get_container_by_index(program, 19);
+    }
+
+    if (!container) {
+        LOG_WARN("Container for literal not found, skipping creating literals!");
+    } else {
+        spv::Id f32_type = b.makeFloatType(32);
+
+        for (std::uint32_t i = 0; i < program.literals_count; i+= 2) {
+            auto literal_offset = container->base_sa_offset + literals[i];
+            auto literal_data = reinterpret_cast<const float*>(literals)[i + 1];
+
+            spv_params.uniforms.set_next_offset(literal_offset);
+
+            spv_params.uniforms.push({ f32_type, b.makeFpConstant(f32_type, literal_data) }, 4);
+            LOG_TRACE("[LITERAL + {}] sa{} = {} (0x{:X})", literals[i], literal_offset, literal_data, literals[i+1]);
+        }
+    }
+
     // Declarations ended with a struct, so it didn't get handled and we need to do it here
     if (!param_struct.empty())
         create_struct(b, spv_params, param_struct, program_type);
@@ -752,7 +780,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         } else if (missing_primary_attrs > 0) {
             const auto pa_type = b.makeVectorType(b.makeFloatType(32), static_cast<int>(missing_primary_attrs * 2));
             std::string pa_name = "pa0_blend";
-            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, static_cast<std::uint32_t>(missing_primary_attrs * 2), pa_type); // TODO: * 2 is a hack because we don't yet support f16
+            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, static_cast<std::uint32_t>(missing_primary_attrs * 2), pa_type,
+                spv::StorageClass::StorageClassPrivate); // TODO: * 2 is a hack because we don't yet support f16
         }
     }
 
