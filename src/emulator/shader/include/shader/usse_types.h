@@ -85,6 +85,18 @@ inline bool is_default(Swizzle4 sw, Imm4 sw_len = 4) {
     return res;
 }
 
+inline bool is_identical(const Swizzle4 &lhs, const Swizzle4 &rhs, Imm4 dest_mask) {
+    for (int i = 0; i < 4; i++) {
+        if (dest_mask & (1 << i)) {
+            if (lhs[i] != rhs[i]) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 enum class RepeatCount : uint8_t {
     REPEAT_0,
     REPEAT_1,
@@ -158,6 +170,10 @@ struct Operand {
     RegisterBank bank = RegisterBank::INVALID;
     RegisterFlags flags{};
     Swizzle4 swizzle = SWIZZLE_CHANNEL_4_UNDEFINED;
+
+    bool is_same(const Operand &op, const Imm4 mask) {
+        return (op.bank == bank) && (is_identical(swizzle, op.swizzle, mask)) && (num == op.num);
+    }
 };
 
 struct InstructionOperands {
