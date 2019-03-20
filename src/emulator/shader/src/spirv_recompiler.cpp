@@ -737,7 +737,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
             spv_params.uniforms.set_next_offset(literal_offset);
 
-            spv_params.uniforms.push({ f32_type, b.makeFpConstant(f32_type, literal_data) }, 4);
+            spv_params.uniforms.push({ f32_type, b.makeFpConstant(f32_type, literal_data) }, 1);
             LOG_TRACE("[LITERAL + {}] sa{} = {} (0x{:X})", literals[i], literal_offset, literal_data, literals[i+1]);
         }
     }
