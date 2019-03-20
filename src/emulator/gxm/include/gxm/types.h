@@ -298,7 +298,7 @@ public:
     std::uint32_t unk_6C;
 
     std::uint32_t literals_count;
-    std::uint32_t maybe_literals_offset; //not sure
+    std::uint32_t literals_offset;
     std::uint32_t unk_78;
     std::uint32_t maybe_parameters_offset2; //not sure
 
