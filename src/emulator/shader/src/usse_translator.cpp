@@ -708,6 +708,21 @@ bool USSETranslatorVisitor::vnmad32(
         break;
     }
 
+    case Opcode::VFRC: case Opcode::VF16FRC: {
+        // Dest = Source1 - Floor(Source2)
+        // If two source are identical, let's use the fractional function
+        if (inst.opr.src1.is_same(inst.opr.src2, dest_mask)) {
+            result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450Fract, { vsrc1 });
+        } else {
+            // We need to floor source 2
+            spv::Id source2_floored = m_b.createBuiltinCall(m_b.getTypeId(vsrc2), std_builtins, GLSLstd450Floor, { vsrc2 });
+            // Then subtract source 1 with the floored source 2. TADA!
+            result = m_b.createBinOp(spv::OpFSub, m_b.getTypeId(vsrc1), vsrc1, source2_floored);
+        }
+
+        break;
+    }
+
     default: {
         LOG_ERROR("Unimplemented vnmad instruction: {}", disasm::opcode_str(opcode));
         break;
