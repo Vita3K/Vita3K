@@ -38,6 +38,25 @@
 using namespace shader;
 using namespace usse;
 
+void shader::usse::USSETranslatorVisitor::make_f16_unpack_func() {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *f16_unpack_func_block;
+    spv::Block *last_build_point = m_b.getBuildPoint();
+
+    f16_unpack_func = m_b.makeFunctionEntry(spv::NoPrecision, type_f32_v[2], "f32_2_2xf16", { type_f32 }, decorations, &f16_unpack_func_block);
+    spv::Id extracted = f16_unpack_func->getParamId(0);
+
+    std::vector<spv::Id> cast_ops;
+    cast_ops.push_back(extracted);
+
+    extracted = m_b.createOp(spv::OpBitcast, type_ui32, cast_ops);
+    extracted = m_b.createBuiltinCall(type_f32_v[2], std_builtins, GLSLstd450UnpackUnorm2x16, { extracted });
+
+    m_b.makeReturn(false, extracted);
+    m_b.setBuildPoint(last_build_point);
+}
+
 bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank, std::uint32_t reg_offset, std::uint32_t shift_offset, SpirvReg &reg, std::uint32_t &out_comp_offset, bool get_for_store) {
     const std::uint32_t original_reg_offset = reg_offset;
 
@@ -142,7 +161,8 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
     return true;
 }
 
-spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask) {
+spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask,
+    const std::size_t size_comp) {
     // Queue keep track of components to be modified with given constant
     struct constant_queue_member {
         std::uint32_t index;
@@ -166,7 +186,13 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
             case usse::SwizzleChannel::_Y:
             case usse::SwizzleChannel::_Z:
             case usse::SwizzleChannel::_W: {
-                ops.push_back(std::min((uint32_t)swiz[i] + shift_offset, total_comp_count));
+                std::uint32_t swizz_off = (uint32_t)swiz[i] + shift_offset;
+
+                if (size_comp != 4) {
+                    swizz_off = swizz_off / size_comp + (swizz_off % size_comp != 0) ? 1 : 0;
+                }
+
+                ops.push_back(std::min(swizz_off, total_comp_count));
                 break;
             }
 
@@ -233,14 +259,26 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     */
 
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
+    const std::size_t size_comp = get_data_type_size(op.type);
+
+    // Default load will get word as default component
+    std::size_t dest_comp_count_to_get = 0;
+    bool already[4] = {false, false, false, false};
+
+    for (int i = 0; i < 4; i++) {
+        if (dest_mask & (1 << i) && (already[i * size_comp / 4] == false)) {
+            dest_comp_count_to_get++;
+            already[i * size_comp / 4] = true;
+        }
+    }
 
     // TODO: Properly handle
     if (op.bank == RegisterBank::FPCONSTANT || op.bank == RegisterBank::IMMEDIATE) {
-        auto t = m_b.makeVectorType(type_f32, static_cast<int>(dest_comp_count));
+        auto t = m_b.makeVectorType(type_f32, static_cast<int>(dest_comp_count_to_get));
         auto one = m_b.makeFpConstant(type_f32, 1.0);
 
         std::vector<spv::Id> ops;
-        ops.resize(dest_comp_count);
+        ops.resize(dest_comp_count_to_get);
 
         std::fill(ops.begin(), ops.end(), one);
 
@@ -265,7 +303,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     //
     // I haven't think of any edge case, but this should be looked when there is
     // any problems with bridging
-    if (!get_spirv_reg(op.bank, op.num, static_cast<std::uint32_t>(offset + dest_comp_count), reg_right, reg_right_comp_offset, false))
+    if (!get_spirv_reg(op.bank, op.num, static_cast<std::uint32_t>(offset + dest_comp_count_to_get), reg_right, reg_right_comp_offset, false))
         reg_right = reg_left;
 
     // Optimization: Bridging (VectorShuffle) or even swizzling is not always necessary
@@ -276,11 +314,11 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         const uint32_t reg_left_comp_count = m_b.getNumTypeComponents(reg_left.type_id) - reg_left_comp_offset;
         const uint32_t reg_right_comp_count = m_b.getNumTypeComponents(reg_right.type_id) - reg_right_comp_offset;
 
-        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count) && (reg_left_comp_count == dest_comp_count);
+        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count) && (reg_left_comp_count == dest_comp_count_to_get);
 
         if (is_equal_comp_count) {
             const bool is_reg_left_comp_offset = (reg_left_comp_offset == 0);
-            const bool is_reg_right_comp_offset = (reg_left_comp_offset == dest_comp_count);
+            const bool is_reg_right_comp_offset = (reg_left_comp_offset == dest_comp_count_to_get);
 
             if (is_reg_left_comp_offset)
                 return m_b.createLoad(reg_left.var_id);
@@ -290,7 +328,53 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     }
 
     // We need to bridge
-    return bridge(reg_left, reg_right, op.swizzle, reg_left_comp_offset, dest_mask);
+    spv::Id first_pass = bridge(reg_left, reg_right, op.swizzle, reg_left_comp_offset, dest_mask, size_comp);
+
+    if (size_comp == 4) {
+        return first_pass;
+    }
+
+    // Second pass: Do unpack. We will f16 as example
+    // We can use unpackHalf2x16, but since we need to provide compability for older version (4.0, 4.1)
+    // We need to cast the float vector to an int vector, unpack each component as two snorm16, store them, than cast result vector back to f16
+    std::vector<spv::Id> unpack_results;
+    unpack_results.resize(dest_comp_count_to_get);
+
+    for (std::size_t i = 0; i < unpack_results.size(); i++) {
+        spv::Id extracted = first_pass;
+
+        std::vector<spv::Id> extract_ops;
+        extract_ops.push_back(first_pass);
+        extract_ops.push_back(m_b.makeIntConstant(static_cast<int>(i)));
+
+        if (dest_comp_count_to_get > 1) {
+            extracted = m_b.createOp(spv::OpVectorExtractDynamic, type_f32, extract_ops);
+        }
+
+        unpack_results[i] = m_b.createFunctionCall(f16_unpack_func, { extracted });
+    }
+
+    if (unpack_results.size() == 1) {
+        return unpack_results[0];
+    }
+
+    reg_left.type_id = type_f32_v[2];
+    reg_right.type_id = type_f32_v[2];
+
+    reg_left.var_id = unpack_results[0];
+    reg_right.var_id = unpack_results[1];
+    
+    spv::Id last_shuffled = bridge(reg_left, reg_right, op.swizzle, 0, dest_mask);
+
+    // It won't probably go up to two, but just in case ?
+    for (std::size_t i = 2; i < unpack_results.size() - 2; i++) {
+        reg_left.var_id = last_shuffled;
+        reg_right.var_id = unpack_results[i];
+
+        last_shuffled = bridge(reg_left, reg_right, op.swizzle, 0, dest_mask);
+    }
+
+    return last_shuffled;
 }
 
 void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t dest_mask, std::uint8_t off) {
@@ -310,16 +394,27 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
 
     // If dest has default swizzle, is full-length (all dest component) and starts at a
     // register boundary, translate it to just a createStore
-
     const auto total_comp_source = static_cast<std::uint8_t>(m_b.getNumComponents(source));
     const auto total_comp_dest = static_cast<std::uint8_t>(m_b.getNumTypeComponents(dest_reg.type_id));
 
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
+    const std::size_t size_comp = get_data_type_size(dest.type);
+
+    // Default load will get word as default component
+    std::size_t comp_count_to_store = 0;
+    bool already[4] = {false, false, false, false};
+
+    for (int i = 0; i < 4; i++) {
+        if (dest_mask & (1 << i) && (already[i * size_comp / 4] == false)) {
+            comp_count_to_store++;
+            already[i * size_comp / 4] = true;
+        }
+    }
 
     const bool needs_swizzle = !is_default(dest.swizzle, static_cast<Imm4>(dest_comp_count));
 
     // The source needs to fit in both the dest vector and the total write components must be equal to total source components
-    const bool full_length = (total_comp_dest == total_comp_source) && (dest_comp_count == total_comp_source);
+    const bool full_length = (total_comp_dest == total_comp_source) && (comp_count_to_store == total_comp_source);
     const bool starts_at_0 = (dest_comp_offset == 0);
 
     if (!needs_swizzle && full_length && starts_at_0) {
@@ -422,7 +517,7 @@ bool USSETranslatorVisitor::vmov(
     MoveType move_type,
     RepeatCount repeat_count,
     bool nosched,
-    MoveDataType move_data_type,
+    DataType move_data_type,
     Imm1 test_bit_1,
     Imm4 src0_swiz,
     Imm1 src0_bank_sel,
@@ -445,13 +540,13 @@ bool USSETranslatorVisitor::vmov(
 
     inst.opcode = tb_decode_vmov[(Imm3)move_type];
 
-    std::string disasm_str = fmt::format("{:016x}: {}{}.{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::move_data_type_str(move_data_type));
+    std::string disasm_str = fmt::format("{:016x}: {}{}.{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type));
 
     // TODO: dest mask
     // TODO: flags
     // TODO: test type
 
-    const bool is_double_regs = move_data_type == MoveDataType::C10 || move_data_type == MoveDataType::F16 || move_data_type == MoveDataType::F32;
+    const bool is_double_regs = move_data_type == DataType::C10 || move_data_type == DataType::F16 || move_data_type == DataType::F32;
     const bool is_conditional = (move_type != MoveType::UNCONDITIONAL);
 
     // Decode operands
@@ -463,11 +558,15 @@ bool USSETranslatorVisitor::vmov(
     // Velocity uses a vec4 table, non-extended, so i assumes type=vec4, extended=false
     inst.opr.src1.swizzle = decode_vec34_swizzle(src0_swiz, false, 2);
 
+    inst.opr.src1.type = move_data_type;
+    inst.opr.dest.type = move_data_type;
+
     // TODO: adjust dest mask if needed
-    if (move_data_type != MoveDataType::F32) {
+    /*
+    if (move_data_type != DataType::F32) {
         LOG_WARN("Data type != F32 unsupported");
         return false;
-    }
+    }*/
 
     if (is_conditional) {
         LOG_WARN("Conditional vmov instructions unsupported");

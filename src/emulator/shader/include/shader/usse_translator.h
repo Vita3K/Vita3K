@@ -42,9 +42,12 @@ public:
     spv::Id std_builtins;
 
     spv::Id type_f32;
+    spv::Id type_ui32;
     spv::Id type_f32_v[5]; // Starts from 1 ([1] is vec 1)
     spv::Id const_f32[4];
     // spv::Id const_f32_v[5];  // Starts from 1 ([1] is vec 1)
+
+    spv::Function *f16_unpack_func;
 
     // SPIR-V inputs are read-only, so we need to write to these temporaries instead
     // TODO: Figure out actual PA count limit
@@ -52,6 +55,8 @@ public:
 
     // Each SPIR-V reg will contains 4 SA
     std::array<SpirvReg, max_sa_registers / 4> sa_supplies;
+
+    void make_f16_unpack_func();
 
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program)
@@ -64,7 +69,8 @@ public:
 
         // Build common type here, so builder won't have to look it up later
         type_f32 = m_b.makeFloatType(32);
-
+        type_ui32 = m_b.makeUintType(32);
+   
         const_f32[3] = m_b.makeFpConstant(type_f32, 0.5f);
         const_f32[0] = m_b.makeFpConstant(type_f32, 0.0f);
         const_f32[1] = m_b.makeFpConstant(type_f32, 1.0f);
@@ -75,6 +81,8 @@ public:
             //            const_f32_v[i] = m_b.makeCompositeConstant(type_f32_v[i],
             //                { const_f32[i - 1], const_f32[i - 1], const_f32[i - 1], const_f32[i - 1] });
         }
+
+        make_f16_unpack_func();
     }
 
 private:
@@ -142,7 +150,7 @@ private:
      * \returns ID to a vec4 contains bridging results, or spv::NoResult if failed
      * 
     */
-    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask);
+    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask, const std::size_t comp_size = 4);
 
     /*
      * \brief Given an operand, load it and returns a SPIR-V vector with total components count equals to total bit set in
@@ -188,7 +196,7 @@ public:
         MoveType move_type,
         RepeatCount repeat_count,
         bool nosched,
-        MoveDataType move_data_type,
+        DataType move_data_type,
         Imm1 test_bit_1,
         Imm4 src0_swiz,
         Imm1 src0_bank_sel,

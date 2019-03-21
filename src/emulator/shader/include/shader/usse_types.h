@@ -110,7 +110,7 @@ enum class MoveType : uint8_t {
     CONDITIONALU8,
 };
 
-enum class MoveDataType : uint8_t {
+enum class DataType : uint8_t {
     INT8,
     INT16,
     INT32,
@@ -161,6 +161,28 @@ inline RegisterFlags &operator&=(RegisterFlags &a, RegisterFlags b) {
     return (RegisterFlags &)((uint32_t &)a &= (uint32_t)b);
 }
 
+inline std::size_t get_data_type_size(const DataType type) {
+    switch (type) {
+    case DataType::INT8: 
+        return 1;
+
+    case DataType::INT16:
+    case DataType::F16: {
+        return 2;
+    }
+
+    case DataType::INT32:
+    case DataType::F32: {
+        return 4;
+    }
+
+    default:
+        break;
+    }
+
+    return 4;
+}
+
 // TODO: Make this a std::set?
 enum InstructionFlags {
 };
@@ -170,6 +192,7 @@ struct Operand {
     RegisterBank bank = RegisterBank::INVALID;
     RegisterFlags flags{};
     Swizzle4 swizzle = SWIZZLE_CHANNEL_4_UNDEFINED;
+    DataType type = DataType::F32;
 
     bool is_same(const Operand &op, const Imm4 mask) {
         return (op.bank == bank) && (is_identical(swizzle, op.swizzle, mask)) && (num == op.num);
