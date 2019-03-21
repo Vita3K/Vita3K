@@ -118,11 +118,11 @@ EXPORT(int, sceKernelGetMemBlockInfoByRange) {
 }
 
 EXPORT(int, sceKernelGetModel) {
-    return UNIMPLEMENTED();
+    return host.cfg.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetModelForCDialog) {
-    return UNIMPLEMENTED();
+    return host.cfg.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetSubbudgetInfo) {
