@@ -144,7 +144,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
     return true;
 }
 
-bool install_vpk(Ptr<const void> &entry_point, HostState &host, const fs::path &path) {
+static bool install_vpk(Ptr<const void> &entry_point, HostState &host, const fs::path &path) {
     if (!fs::exists(path)) {
         LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_path().string());
         return false;
