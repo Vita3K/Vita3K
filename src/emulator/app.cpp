@@ -132,7 +132,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, FILE *&vpk_fp, const char *
     return true;
 }
 
-bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
+static bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
@@ -239,7 +239,7 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     return true;
 }
 
-bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
+static bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
     if (path.empty())
         return InvalidApplicationPath;
 
