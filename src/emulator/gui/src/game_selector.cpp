@@ -20,6 +20,7 @@
 #include "private.h"
 
 #include <host/state.h>
+#include <util/string_utils.h>
 
 using namespace std::string_literals;
 
@@ -37,29 +38,106 @@ void draw_game_selector(HostState &host, AppRunType *run_type) {
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
         ImGui::Columns(3);
-        ImGui::SetColumnWidth(0, 80);
+        std::string title_id_label = "TitleID";
+        switch (host.gui.game_selector.title_id_sort_state) {
+        case ASCENDANT:
+            title_id_label += " >";
+            ImGui::SetColumnWidth(0, 100);
+            break;
+        case DESCENDANT:
+            title_id_label += " <";
+            ImGui::SetColumnWidth(0, 100);
+            break;
+        default:
+            ImGui::SetColumnWidth(0, 80);
+            break;
+        }
         ImGui::SetWindowFontScale(1.1);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-        if (ImGui::Button("TitleID")) {
-            std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
-                return lhs.title_id < rhs.title_id;
-            });
-            host.gui.game_selector.is_game_list_sorted = true;
+        if (ImGui::Button(title_id_label.c_str())) {
+            host.gui.game_selector.title_id_sort_state = static_cast<gui::SortState>(std::max(1, (host.gui.game_selector.title_id_sort_state + 1) % 3));
+            host.gui.game_selector.app_ver_sort_state = NOT_SORTED;
+            host.gui.game_selector.title_sort_state = NOT_SORTED;
+            switch (host.gui.game_selector.title_id_sort_state) {
+            case ASCENDANT:
+                std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                    return lhs.title_id < rhs.title_id;
+                });
+                break;
+            case DESCENDANT:
+                std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                    return lhs.title_id > rhs.title_id;
+                });
+                break;
+            default:
+                break;
+            }
         }
         ImGui::NextColumn();
-        ImGui::SetColumnWidth(1, 70);
-        if (ImGui::Button("Version")) {
-            std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
-                return lhs.app_ver < rhs.app_ver;
-            });
-            host.gui.game_selector.is_game_list_sorted = true;
+        std::string app_ver_label = "Version";
+        switch (host.gui.game_selector.app_ver_sort_state) {
+        case ASCENDANT:
+            app_ver_label += " >";
+            ImGui::SetColumnWidth(1, 90);
+            break;
+        case DESCENDANT:
+            app_ver_label += " <";
+            ImGui::SetColumnWidth(1, 90);
+            break;
+        default:
+            ImGui::SetColumnWidth(1, 70);
+            break;
+        }
+        if (ImGui::Button(app_ver_label.c_str())) {
+            host.gui.game_selector.title_id_sort_state = NOT_SORTED;
+            host.gui.game_selector.app_ver_sort_state = static_cast<gui::SortState>(std::max(1, (host.gui.game_selector.app_ver_sort_state + 1) % 3));
+            host.gui.game_selector.title_sort_state = NOT_SORTED;
+            switch (host.gui.game_selector.app_ver_sort_state) {
+            case ASCENDANT:
+                std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                    return lhs.app_ver < rhs.app_ver;
+                });
+                break;
+            case DESCENDANT:
+                std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                    return lhs.app_ver > rhs.app_ver;
+                });
+                break;
+            default:
+                break;
+            }
         }
         ImGui::NextColumn();
-        if (ImGui::Button("Title") || !host.gui.game_selector.is_game_list_sorted) {
-            std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
-                return lhs.title < rhs.title;
-            });
+        std::string title_label = "Title";
+        switch (host.gui.game_selector.title_sort_state) {
+        case ASCENDANT:
+            title_label += " >";
+            break;
+        case DESCENDANT:
+            title_label += " <";
+            break;
+        default:
+            break;
+        }
+        if (ImGui::Button(title_label.c_str()) || !host.gui.game_selector.is_game_list_sorted) {
+            host.gui.game_selector.title_id_sort_state = NOT_SORTED;
+            host.gui.game_selector.app_ver_sort_state = NOT_SORTED;
+            host.gui.game_selector.title_sort_state = static_cast<gui::SortState>(std::max(1, (host.gui.game_selector.title_sort_state + 1) % 3));
             host.gui.game_selector.is_game_list_sorted = true;
+            switch (host.gui.game_selector.title_sort_state) {
+            case ASCENDANT:
+                std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                    return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
+                });
+                break;
+            case DESCENDANT:
+                std::sort(host.gui.game_selector.games.begin(), host.gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                    return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
+                });
+                break;
+            default:
+                break;
+            }
         }
         ImGui::NextColumn();
         ImGui::Separator();
