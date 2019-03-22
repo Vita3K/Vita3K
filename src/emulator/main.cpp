@@ -16,11 +16,11 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "app_functions.h"
+#include "app_state.h"
 #include "config.h"
 #include "screen_render.h"
 
 #include <gui/functions.h>
-#include <host/state.h>
 #include <host/version.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
@@ -29,6 +29,8 @@
 #include <SDL.h>
 
 #include <cstdlib>
+
+using namespace app;
 
 int main(int argc, char *argv[]) {
     logging::init();
@@ -81,68 +83,68 @@ int main(int argc, char *argv[]) {
         vpk_path_wide = string_utils::utf_to_wide(*cfg.run_title_id);
     }
 
-    HostState host;
-    if (!init(host, std::move(cfg))) {
-        error_dialog("Host initialisation failed.", host.window.get());
+    State state;
+    if (!init(state.host, std::move(cfg))) {
+        error_dialog("Host initialisation failed.", state.host.window.get());
         return HostInitFailed;
     }
 
-    gui::init(host);
+    gui::init(state.host);
 
     // Application not provided via argument, show game selector
     while (run_type == AppRunType::Unknown) {
-        if (handle_events(host)) {
+        if (handle_events(state.host)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gui::draw_begin(host);
+            gui::draw_begin(state.host);
 
-            gui::draw_ui(host);
-            gui::draw_game_selector(host);
+            gui::draw_ui(state.host);
+            gui::draw_game_selector(state.host);
 
-            gui::draw_end(host.window.get());
+            gui::draw_end(state.host.window.get());
         } else {
             return QuitRequested;
         }
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
-        if (!host.gui.game_selector.selected_title_id.empty()) {
-            vpk_path_wide = string_utils::utf_to_wide(host.gui.game_selector.selected_title_id);
+        if (!state.host.gui.game_selector.selected_title_id.empty()) {
+            vpk_path_wide = string_utils::utf_to_wide(state.host.gui.game_selector.selected_title_id);
             run_type = AppRunType::Extracted;
         }
     }
 
     Ptr<const void> entry_point;
-    if (auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
+    if (auto err = load_app(entry_point, state.host, vpk_path_wide, run_type) != Success)
         return err;
 
-    if (auto err = run_app(host, entry_point) != Success)
+    if (auto err = run_app(state.host, entry_point) != Success)
         return err;
 
     gl_screen_renderer gl_renderer;
 
-    if (!gl_renderer.init(host.base_path))
+    if (!gl_renderer.init(state.host.base_path))
         return RendererInitFailed;
 
-    while (handle_events(host)) {
-        gl_renderer.render(host);
-        gui::draw_begin(host);
-        gui::draw_common_dialog(host);
-        if (host.display.imgui_render) {
-            gui::draw_ui(host);
+    while (handle_events(state.host)) {
+        gl_renderer.render(state.host);
+        gui::draw_begin(state.host);
+        gui::draw_common_dialog(state.host);
+        if (state.host.display.imgui_render) {
+            gui::draw_ui(state.host);
         }
-        gui::draw_end(host.window.get());
+        gui::draw_end(state.host.window.get());
 
-        if (!host.display.sync_rendering)
-            host.display.condvar.notify_all();
+        if (!state.host.display.sync_rendering)
+            state.host.display.condvar.notify_all();
         else {
-            std::unique_lock<std::mutex> lock(host.display.mutex);
-            host.display.condvar.wait(lock);
+            std::unique_lock<std::mutex> lock(state.host.display.mutex);
+            state.host.display.condvar.wait(lock);
         }
 
-        set_window_title(host);
+        set_window_title(state.host);
     }
 
     // There may be changes that made in the GUI, so we should save, again
-    config::serialize(host.cfg);
+    config::serialize(state.host.cfg);
 
     return Success;
 }

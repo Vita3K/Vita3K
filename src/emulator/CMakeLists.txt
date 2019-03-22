@@ -77,6 +77,7 @@ add_executable(
 emulator
 MACOSX_BUNDLE
 app_functions.h
+app_state.h
 app.cpp
 config.cpp
 config.h
