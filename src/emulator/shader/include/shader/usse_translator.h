@@ -48,6 +48,7 @@ public:
     // spv::Id const_f32_v[5];  // Starts from 1 ([1] is vec 1)
 
     spv::Function *f16_unpack_func;
+    spv::Function *f16_pack_func;
 
     // SPIR-V inputs are read-only, so we need to write to these temporaries instead
     // TODO: Figure out actual PA count limit
@@ -57,6 +58,7 @@ public:
     std::array<SpirvReg, max_sa_registers / 4> sa_supplies;
 
     void make_f16_unpack_func();
+    void make_f16_pack_func();
 
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program)
@@ -82,7 +84,9 @@ public:
             //                { const_f32[i - 1], const_f32[i - 1], const_f32[i - 1], const_f32[i - 1] });
         }
 
+        // Make utility functions
         make_f16_unpack_func();
+        make_f16_pack_func();
     }
 
 private:
@@ -159,6 +163,22 @@ private:
      * \returns A copy of given operand
     */
     spv::Id load(Operand &op, const Imm4 dest_mask, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false);
+
+    /**
+     * \brief Unpack a vector/scalar as given component data type.
+     * 
+     * \param target Target vector/scalar. Component type must be f32.
+     * \param type   Data type to unpack to. If the data is F32, target will be returned.
+     * 
+     * \returns A new vector with [total_comp_count(target) * 4 / size(type)] components
+     */
+    spv::Id unpack(spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask, 
+        const std::uint32_t shift_offset = 0);
+
+    /**
+     * \brief Unpack one scalar.
+     */
+    spv::Id unpack_one(spv::Id scalar, const DataType type);
 
     void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, std::uint8_t off = 0);
 

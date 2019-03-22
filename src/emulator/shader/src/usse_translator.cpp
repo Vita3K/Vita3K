@@ -57,6 +57,26 @@ void shader::usse::USSETranslatorVisitor::make_f16_unpack_func() {
     m_b.setBuildPoint(last_build_point);
 }
 
+void shader::usse::USSETranslatorVisitor::make_f16_pack_func() {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *f16_pack_func_block;
+    spv::Block *last_build_point = m_b.getBuildPoint();
+
+    f16_pack_func = m_b.makeFunctionEntry(spv::NoPrecision, type_f32, "twoXf16_2_f32", { type_f32_v[2] }, decorations, &f16_pack_func_block);
+    spv::Id extracted = f16_pack_func->getParamId(0);
+
+    extracted = m_b.createBuiltinCall(type_ui32, std_builtins, GLSLstd450PackUnorm2x16, { extracted });
+
+    std::vector<spv::Id> cast_ops;
+    cast_ops.push_back(extracted);
+
+    extracted = m_b.createOp(spv::OpBitcast, type_f32, cast_ops);
+
+    m_b.makeReturn(false, extracted);
+    m_b.setBuildPoint(last_build_point);
+}
+
 bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank, std::uint32_t reg_offset, std::uint32_t shift_offset, SpirvReg &reg, std::uint32_t &out_comp_offset, bool get_for_store) {
     const std::uint32_t original_reg_offset = reg_offset;
 
@@ -161,6 +181,75 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
     return true;
 }
 
+spv::Id USSETranslatorVisitor::unpack_one(spv::Id scalar, const DataType type) {
+    switch (type) {
+    case DataType::F16: {
+        return m_b.createFunctionCall(f16_unpack_func, { scalar });
+    }
+
+    default:
+        break;
+    }
+
+    return spv::NoResult;
+}
+
+spv::Id USSETranslatorVisitor::unpack(spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
+    const std::uint32_t shift_offset) {
+    if (type == DataType::F32) {
+        return target;
+    }
+
+    std::vector<spv::Id> unpack_results;
+
+    const spv::Id target_type = m_b.getTypeId(target);
+    const std::uint32_t target_comp_count = m_b.getNumTypeComponents(target_type);
+
+    unpack_results.resize(target_comp_count);
+
+    spv::Id unpacked_type = spv::NoResult;
+
+    for (std::size_t i = 0; i < unpack_results.size(); i++) {
+        spv::Id extracted = target;
+
+        std::vector<spv::Id> extract_ops;
+        extract_ops.push_back(target);
+        extract_ops.push_back(m_b.makeIntConstant(static_cast<int>(i)));
+
+        if (target_comp_count > 1) {
+            extracted = m_b.createOp(spv::OpVectorExtractDynamic, type_f32, extract_ops);
+        }
+
+        unpack_results[i] = unpack_one(extracted, type);
+        unpacked_type = m_b.getTypeId(unpack_results[i]);
+    }
+
+    if (unpack_results.size() == 1) {
+        return unpack_results[0];
+    }
+
+    SpirvReg reg_left {};
+    SpirvReg reg_right {};
+
+    reg_left.type_id = unpacked_type;
+    reg_right.type_id = unpacked_type;
+
+    reg_left.var_id = unpack_results[0];
+    reg_right.var_id = unpack_results[1];
+    
+    spv::Id last_shuffled = bridge(reg_left, reg_right, swizz, shift_offset, dest_mask);
+
+    // It won't probably go up to two, but just in case ?
+    for (std::size_t i = 2; i < unpack_results.size() - 2; i++) {
+        reg_left.var_id = last_shuffled;
+        reg_right.var_id = unpack_results[i];
+
+        last_shuffled = bridge(reg_left, reg_right, swizz, shift_offset, dest_mask);
+    }
+    
+    return last_shuffled;
+}
+
 spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask,
     const std::size_t size_comp) {
     // Queue keep track of components to be modified with given constant
@@ -179,6 +268,8 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
     const uint32_t src2_comp_count = m_b.getNumTypeComponents(src2.type_id);
     const uint32_t total_comp_count = src1_comp_count + src2_comp_count;
 
+    std::unordered_map<std::uint32_t, bool> already;
+
     for (int i = 0; i < 4; i++) {
         if (dest_mask & (1 << i)) {
             switch (swiz[i]) {
@@ -189,10 +280,14 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
                 std::uint32_t swizz_off = (uint32_t)swiz[i] + shift_offset;
 
                 if (size_comp != 4) {
-                    swizz_off = swizz_off / size_comp + (swizz_off % size_comp != 0) ? 1 : 0;
+                    swizz_off = swizz_off / static_cast<std::uint32_t>(size_comp);
                 }
 
-                ops.push_back(std::min(swizz_off, total_comp_count));
+                if (!already[swizz_off]) {
+                    already[swizz_off] = true;
+                    ops.push_back(std::min(swizz_off, total_comp_count));
+                }
+
                 break;
             }
 
@@ -333,48 +428,9 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     if (size_comp == 4) {
         return first_pass;
     }
-
-    // Second pass: Do unpack. We will f16 as example
-    // We can use unpackHalf2x16, but since we need to provide compability for older version (4.0, 4.1)
-    // We need to cast the float vector to an int vector, unpack each component as two snorm16, store them, than cast result vector back to f16
-    std::vector<spv::Id> unpack_results;
-    unpack_results.resize(dest_comp_count_to_get);
-
-    for (std::size_t i = 0; i < unpack_results.size(); i++) {
-        spv::Id extracted = first_pass;
-
-        std::vector<spv::Id> extract_ops;
-        extract_ops.push_back(first_pass);
-        extract_ops.push_back(m_b.makeIntConstant(static_cast<int>(i)));
-
-        if (dest_comp_count_to_get > 1) {
-            extracted = m_b.createOp(spv::OpVectorExtractDynamic, type_f32, extract_ops);
-        }
-
-        unpack_results[i] = m_b.createFunctionCall(f16_unpack_func, { extracted });
-    }
-
-    if (unpack_results.size() == 1) {
-        return unpack_results[0];
-    }
-
-    reg_left.type_id = type_f32_v[2];
-    reg_right.type_id = type_f32_v[2];
-
-    reg_left.var_id = unpack_results[0];
-    reg_right.var_id = unpack_results[1];
-    
-    spv::Id last_shuffled = bridge(reg_left, reg_right, op.swizzle, 0, dest_mask);
-
-    // It won't probably go up to two, but just in case ?
-    for (std::size_t i = 2; i < unpack_results.size() - 2; i++) {
-        reg_left.var_id = last_shuffled;
-        reg_right.var_id = unpack_results[i];
-
-        last_shuffled = bridge(reg_left, reg_right, op.swizzle, 0, dest_mask);
-    }
-
-    return last_shuffled;
+    // Second pass: Do unpack
+    // We already handle shift offset above, so now let's use 0
+    return unpack(first_pass, op.type, op.swizzle, dest_mask, 0);
 }
 
 void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t dest_mask, std::uint8_t off) {
@@ -422,26 +478,108 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
         return;
     }
 
-    // Else do the shifting/swizzling with OpVectorShuffle
+    spv::Id result = spv::NoResult;
 
-    std::vector<spv::Id> ops;
-    ops.push_back(source);
-    ops.push_back(dest_reg.var_id);
+    // Else do the shifting/swizzling with OpVectorShuffle, if data type is f32
+    if (dest.type == DataType::F32) {
+        std::vector<spv::Id> ops;
 
-    // Total comp = 2, limit mask scan to only x, y
-    // Total comp = 3, limit mask scan to only x, y, z
-    // So on..
-    for (std::uint8_t i = 0; i < total_comp_dest; i++) {
-        if (dest_mask & (1 << (dest_comp_offset + i) % 4)) {
-            ops.push_back((i + dest_comp_offset % 4) % 4);
-        } else {
-            // Use original
-            ops.push_back(total_comp_source + i);
+        ops.push_back(source);
+        ops.push_back(dest_reg.var_id);
+
+        // Total comp = 2, limit mask scan to only x, y
+        // Total comp = 3, limit mask scan to only x, y, z
+        // So on..
+        for (std::uint8_t i = 0; i < total_comp_dest; i++) {
+            if (dest_mask & (1 << (dest_comp_offset + i) % 4)) {
+                ops.push_back((i + dest_comp_offset % 4) % 4);
+            } else {
+                // Use original
+                ops.push_back(total_comp_source + i);
+            }
         }
+
+        result = m_b.createOp(spv::OpVectorShuffle, dest_reg.type_id, ops);
+    } else {
+        // Extract each of the component
+        // We could unpack all of them and do shuffle, but we want to avoid it as we can
+        // Since bit operations are just costly
+        std::vector<spv::Id> vars;
+        std::unordered_map<std::uint32_t, spv::Id> cached_packed;
+        int total_mask_on_so_far = 0;
+
+        for (std::uint8_t i = 0; i < 4; i++) {
+            std::uint32_t swizz_off = (dest_comp_offset + i) % 4;
+            
+            if (!(dest_mask & (1 << swizz_off))) {
+                swizz_off = i;
+
+                std::uint32_t extract_offset = (swizz_off % size_comp) % 4;
+                swizz_off = swizz_off / static_cast<std::uint32_t>(size_comp);
+
+                // Unpack the destination value
+                if (cached_packed[swizz_off] == spv::NoResult) {
+                    cached_packed[swizz_off] = m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
+                        { dest_reg.var_id, m_b.makeIntConstant(swizz_off) });
+
+                    cached_packed[swizz_off] = unpack_one(cached_packed[swizz_off], dest.type);
+                }
+                
+                vars.push_back(m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
+                    { cached_packed[swizz_off], m_b.makeIntConstant(extract_offset) }));
+            } else {
+                vars.push_back(m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
+                    { source, m_b.makeIntConstant(total_mask_on_so_far++) }));
+            }
+        }
+
+        // Pack variables
+        const int total_comp_per_pack = 4 / static_cast<int>(size_comp);
+        std::vector<spv::Id> composite_ops;
+
+        for (int i = 0; i < vars.size() - 1; i += total_comp_per_pack) {
+            std::vector<spv::Id> ops;
+
+            for (int j = 0; j < total_comp_per_pack; j++) {
+                ops.push_back(vars[i + j]);
+            }
+
+            vars[i] = m_b.createCompositeConstruct(type_f32_v[total_comp_per_pack], ops);
+
+            switch (dest.type) {
+            case DataType::F16: {
+                vars[i] = m_b.createFunctionCall(f16_pack_func, { vars[i] });
+                break;
+            }
+
+            default: {
+                LOG_ERROR("Can't handle packing unknown type!");
+                break;
+            }
+            }
+
+            composite_ops.push_back(vars[i]);
+        }
+
+        result = m_b.createCompositeConstruct(type_f32_v[composite_ops.size()], composite_ops);
+
+        std::vector<spv::Id> shuffle_ops;
+        shuffle_ops.push_back(result);
+        shuffle_ops.push_back(dest_reg.var_id);
+
+        for (int i = 0; i < composite_ops.size(); i++) {
+            shuffle_ops.push_back(i);
+        }
+
+        // Shuffle so that we would get the best
+        for (int i = static_cast<int>(composite_ops.size()); i < total_comp_dest; i++) {
+            shuffle_ops.push_back(static_cast<int>(composite_ops.size() + i));
+        }
+
+        result = m_b.createOp(spv::OpVectorShuffle, dest_reg.type_id, shuffle_ops);
     }
 
-    auto source_shuffle = m_b.createOp(spv::OpVectorShuffle, dest_reg.type_id, ops);
-    m_b.createStore(source_shuffle, dest_reg.var_id);
+    m_b.createStore(result, dest_reg.var_id);
 }
 
 const SpirvVarRegBank &USSETranslatorVisitor::get_reg_bank(RegisterBank reg_bank) const {
@@ -494,6 +632,7 @@ void USSETranslatorVisitor::emit_non_native_frag_output() {
     pa0_operand.bank = RegisterBank::PRIMATTR;
     pa0_operand.num = 0;
     pa0_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    pa0_operand.type = DataType::F16;
 
     Operand o0_operand;
     o0_operand.bank = RegisterBank::OUTPUT;
