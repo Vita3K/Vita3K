@@ -188,7 +188,7 @@ EXPORT(int, sceClibPrintf, const char *format, module::vargs args) {
     }
 
     int result = utils::sprintf(&buffer[0], format, *(thread->cpu), host.mem, args);
-    
+
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     }
@@ -206,7 +206,7 @@ EXPORT(int, sceClibSnprintf, char *dest, SceSize size, const char *format, modul
     }
 
     int result = utils::snprintf(dest, size, format, *(thread->cpu), host.mem, args);
-    
+
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     }

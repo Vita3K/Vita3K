@@ -858,56 +858,61 @@ EXPORT(int, sceGxmProgramIsSpriteCoordUsed) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmProgramParameterGetArraySize) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramParameterGetArraySize, const SceGxmProgramParameter *parameter) {
+    return parameter->array_size;
 }
 
 EXPORT(int, sceGxmProgramParameterGetCategory, const SceGxmProgramParameter *parameter) {
-    assert(parameter != nullptr);
-
     return parameter->category;
 }
 
-EXPORT(int, sceGxmProgramParameterGetComponentCount) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramParameterGetComponentCount, const SceGxmProgramParameter *parameter) {
+    return (int32_t)parameter->component_count;
 }
 
-EXPORT(int, sceGxmProgramParameterGetContainerIndex) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramParameterGetContainerIndex, const SceGxmProgramParameter *parameter) {
+    return parameter->container_index;
 }
 
-EXPORT(int, sceGxmProgramParameterGetIndex) {
-    return UNIMPLEMENTED();
+EXPORT(uint32_t, sceGxmProgramParameterGetIndex, const SceGxmProgram *program, const SceGxmProgramParameter *parameter) {
+    uint64_t parameter_offset = program->parameters_offset;
+
+    if (parameter_offset > 0)
+        parameter_offset += (uint64_t)&program->parameters_offset;
+    return (uint32_t)((uint64_t)parameter - parameter_offset) >> 4;
 }
 
-EXPORT(Ptr<void>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramParameter> parameter) {
-    return Ptr<void>(parameter.address() + parameter.get(host.mem)->name_offset);
+EXPORT(Ptr<const char>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramParameter> parameter) {
+    if (!parameter)
+        return {};
+    return Ptr<const char>(parameter.address() + parameter.get(host.mem)->name_offset);
 }
 
 EXPORT(unsigned int, sceGxmProgramParameterGetResourceIndex, const SceGxmProgramParameter *parameter) {
-    assert(parameter != nullptr);
-
     return parameter->resource_index;
 }
 
-EXPORT(int, sceGxmProgramParameterGetSemantic) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *parameter) {
+    if (parameter->category != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE)
+        return 0;
+
+    return parameter->semantic;
 }
 
-EXPORT(int, sceGxmProgramParameterGetSemanticIndex) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramParameterGetSemanticIndex, const SceGxmProgramParameter *parameter) {
+    return parameter->semantic & 0xF00;
 }
 
-EXPORT(int, sceGxmProgramParameterGetType) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmProgramParameterGetType, const SceGxmProgramParameter *parameter) {
+    return parameter->type;
 }
 
 EXPORT(int, sceGxmProgramParameterIsRegFormat) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmProgramParameterIsSamplerCube) {
-    return UNIMPLEMENTED();
+EXPORT(bool, sceGxmProgramParameterIsSamplerCube, const SceGxmProgramParameter *parameter) {
+    return parameter->is_sampler_cube();
 }
 
 EXPORT(int, sceGxmPushUserMarker) {
@@ -1129,7 +1134,7 @@ EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode
 }
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
-    assert(uniformBuffer != nullptr);
+//    assert(uniformBuffer != nullptr);
     assert(parameter != nullptr);
     assert(parameter->container_index == SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX);
     assert(componentCount > 0);

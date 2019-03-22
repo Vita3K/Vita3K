@@ -36,3 +36,7 @@ void write_return_value(CPUState &cpu, uint64_t ret) {
     write_reg(cpu, 0, ret & UINT32_MAX);
     write_reg(cpu, 1, ret >> 32);
 }
+
+void write_return_value(CPUState &cpu, bool ret) {
+    write_reg(cpu, 0, ret);
+}

@@ -24,7 +24,7 @@
 #include <tuple>
 
 namespace module {
-    class vargs;
+class vargs;
 }
 
 template <typename Arg>
@@ -90,7 +90,7 @@ constexpr std::enable_if_t<sizeof...(Args) == 0> add_args_to_layout(ArgLayout &h
 template <typename Head, typename... Tail>
 constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
     // Returns immidiately if the Head is an varargs
-    if constexpr(std::is_same_v<Head, module::vargs>) {
+    if constexpr (std::is_same_v<Head, module::vargs>) {
         return;
     } else {
         // Add the argument at the head of the list.
@@ -108,7 +108,7 @@ constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
 
 template <typename... Args>
 constexpr std::tuple<ArgsLayout<Args...>, LayoutArgsState> lay_out() {
-    LayoutArgsState state {};
+    LayoutArgsState state{};
     ArgsLayout<Args...> layout = {};
 
     if (sizeof...(Args) > 0) {

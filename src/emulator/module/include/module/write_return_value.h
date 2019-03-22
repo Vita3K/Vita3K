@@ -25,6 +25,7 @@ void write_return_value(CPUState &cpu, int32_t ret);
 void write_return_value(CPUState &cpu, int64_t ret);
 void write_return_value(CPUState &cpu, uint32_t ret);
 void write_return_value(CPUState &cpu, uint64_t ret);
+void write_return_value(CPUState &cpu, bool ret);
 
 template <typename Pointee>
 void write_return_value(CPUState &cpu, const Ptr<Pointee> &ret) {

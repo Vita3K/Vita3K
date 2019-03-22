@@ -343,16 +343,19 @@ struct SceGxmProgramParameter {
     uint16_t semantic; // applicable only for for vertex attributes, for everything else it's 0
     uint32_t array_size;
     int32_t resource_index;
+
+    bool is_sampler_cube() const {
+        return (semantic >> 12) & 1;
+    }
 };
 
 static_assert(sizeof(SceGxmProgramParameter) == 16, "Incorrect structure layout.");
 
-struct SceGxmProgramParameterContainer
-{
-  uint16_t container_index;
-  uint16_t unk02;
-  uint16_t base_sa_offset;
-  uint16_t max_resource_index;
+struct SceGxmProgramParameterContainer {
+    uint16_t container_index;
+    uint16_t unk02;
+    uint16_t base_sa_offset;
+    uint16_t max_resource_index;
 };
 
 struct SceGxmRegisteredProgram {

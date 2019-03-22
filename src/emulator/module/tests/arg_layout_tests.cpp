@@ -113,10 +113,8 @@ TEST(lay_out, dword_alignment_can_waste_gprs) {
 
 TEST(lay_out, vargs_does_not_affect_layout) {
     const auto actual = lay_out<int16_t, int16_t, module::vargs>();
-    const std::array<ArgLayout, 3> layouts = { {
-        { ArgLocation::gpr, 0 },
-        { ArgLocation::gpr, 1 }
-    } };
+    const std::array<ArgLayout, 3> layouts = { { { ArgLocation::gpr, 0 },
+        { ArgLocation::gpr, 1 } } };
 
     const LayoutArgsState state = {
         2, 0, 0

@@ -314,7 +314,7 @@ EXPORT(int, sceRtcSetTime64_t, SceDateTime *datePtr, uint64_t iTime) {
     if (datePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
-	
+
     uint64_t ticks = RTC_OFFSET + iTime * VITA_CLOCKS_PER_SEC;
     __RtcTicksToPspTime(datePtr, ticks);
     return 0;
@@ -324,7 +324,7 @@ EXPORT(int, sceRtcSetTime_t, SceDateTime *datePtr, uint32_t iTime) {
     if (datePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
-	
+
     uint64_t ticks = RTC_OFFSET + iTime * VITA_CLOCKS_PER_SEC;
     __RtcTicksToPspTime(datePtr, ticks);
     return 0;

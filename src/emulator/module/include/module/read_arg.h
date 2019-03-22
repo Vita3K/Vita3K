@@ -23,7 +23,7 @@
 #include <cpu/functions.h>
 
 namespace module {
-    class vargs;
+class vargs;
 }
 
 // Read 32-bit (or smaller) values from a single register.
@@ -77,7 +77,7 @@ Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, const LayoutArgsState &
 
     // Note (bentokun): The else block was intentionally made to workaround evaluation
     // fault where MSVC evaluates the rest of the function when the Arg type is vargs
-    if constexpr(std::is_same_v<Arg, module::vargs>) {
+    if constexpr (std::is_same_v<Arg, module::vargs>) {
         return make_vargs<Arg>(state);
     } else {
         const ArmType bridged = read<ArmType>(cpu, args[index], mem);
