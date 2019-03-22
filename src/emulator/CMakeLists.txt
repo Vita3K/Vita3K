@@ -76,8 +76,8 @@ add_subdirectory(gui)
 add_executable(
 emulator
 MACOSX_BUNDLE
+app_functions.h
 app.cpp
-app.h
 config.cpp
 config.h
 init.cpp
