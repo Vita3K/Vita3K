@@ -481,7 +481,7 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
     spv::Id result = spv::NoResult;
 
     // Else do the shifting/swizzling with OpVectorShuffle, if data type is f32
-    if (dest.type == DataType::F32) {
+    if (dest.type == DataType::F32 || dest.bank == RegisterBank::FPINTERNAL) {
         std::vector<spv::Id> ops;
 
         ops.push_back(source);
@@ -883,6 +883,8 @@ bool USSETranslatorVisitor::vnmad32(
     inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7);
     inst.opr.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, true, 7);
 
+    inst.opr.dest.type = is_32_bit ? DataType::F32 : DataType::F16;
+
     const auto src1_swizzle_enc = src1_swiz_0_6 | src1_swiz_7_8 << 7 | src1_swiz_9 << 9 | src1_swiz_10_11 << 10;
     inst.opr.src1.swizzle = decode_swizzle4(src1_swizzle_enc);
 
@@ -1027,18 +1029,121 @@ bool USSETranslatorVisitor::vpck(
     Imm4 src2_n,
     Imm1 comp_sel_0_bit0) {
     Instruction inst{};
-    const auto FMT_F32 = 6;
+    
+    // TODO: There are some combinations that are invalid.
+    const DataType dest_data_type_table[] = {
+        DataType::UINT8,
+        DataType::INT8,
+        DataType::O8,
+        DataType::UINT16,
+        DataType::INT16,
+        DataType::F16,
+        DataType::F32,
+        DataType::C10
+    };
 
-    // TODO: Only simple mov-like f32 to f32 supported
-    // TODO: Seems like decoding for these is wrong?
-    if (src_fmt != FMT_F32 || src_fmt != FMT_F32)
-        return true;
+    const DataType src_data_type_table[] = {
+        DataType::UINT8,
+        DataType::INT8,
+        DataType::O8,
+        DataType::UINT16,
+        DataType::INT16,
+        DataType::F16,
+        DataType::F32,
+        DataType::C10
+    };
 
-    inst.opcode = Opcode::VPCKF32F32;
+    const Opcode op_table[][static_cast<int>(DataType::TOTAL_TYPE)] = {
+        {
+            Opcode::VPCKU8U8,
+            Opcode::VPCKU8S8,
+            Opcode::VPCKU8O8,
+            Opcode::VPCKU8U16,
+            Opcode::VPCKU8S16,
+            Opcode::VPCKU8F16,
+            Opcode::VPCKU8F32,
+            Opcode::INVALID
+        },
+        {
+            Opcode::VPCKS8U8,
+            Opcode::VPCKS8S8,
+            Opcode::VPCKS8O8,
+            Opcode::VPCKS8U16,
+            Opcode::VPCKS8S16,
+            Opcode::VPCKS8F16,
+            Opcode::VPCKS8F32,
+            Opcode::INVALID
+        },
+        {
+            Opcode::VPCKO8U8,
+            Opcode::VPCKO8S8,
+            Opcode::VPCKO8O8,
+            Opcode::VPCKO8U16,
+            Opcode::VPCKO8S16,
+            Opcode::VPCKO8F16,
+            Opcode::VPCKO8F32,
+            Opcode::INVALID
+        },
+        {
+            Opcode::VPCKU16U8,
+            Opcode::VPCKU16S8,
+            Opcode::VPCKU16O8,
+            Opcode::VPCKU16U16,
+            Opcode::VPCKU16S16,
+            Opcode::VPCKU16F16,
+            Opcode::VPCKU16F32,
+            Opcode::INVALID
+        },
+        {
+            Opcode::VPCKS16U8,
+            Opcode::VPCKS16S8,
+            Opcode::VPCKS16O8,
+            Opcode::VPCKS16U16,
+            Opcode::VPCKS16S16,
+            Opcode::VPCKS16F16,
+            Opcode::VPCKS16F32,
+            Opcode::INVALID
+        },
+        {
+            Opcode::VPCKF16U8,
+            Opcode::VPCKF16S8,
+            Opcode::VPCKF16O8,
+            Opcode::VPCKF16U16,
+            Opcode::VPCKF16S16,
+            Opcode::VPCKF16F16,
+            Opcode::VPCKF16F32,
+            Opcode::VPCKF16C10
+        },
+        {
+            Opcode::VPCKF32U8,
+            Opcode::VPCKF32S8,
+            Opcode::VPCKF32O8,
+            Opcode::VPCKF32U16,
+            Opcode::VPCKF32S16,
+            Opcode::VPCKF32F16,
+            Opcode::VPCKF32F32,
+            Opcode::VPCKF32C10
+        },
+        {
+            Opcode::INVALID,
+            Opcode::INVALID,
+            Opcode::INVALID,
+            Opcode::INVALID,
+            Opcode::INVALID,
+            Opcode::VPCKC10F16,
+            Opcode::VPCKC10F32,
+            Opcode::VPCKC10C10
+        }
+    };
+
+    inst.opcode = op_table[dest_fmt][src_fmt];
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
 
     inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, false, 7);
     inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7);
+
+    inst.opr.dest.type = dest_data_type_table[dest_fmt];
+    inst.opr.src1.type = src_data_type_table[src_fmt];
 
     if (inst.opr.dest.bank == RegisterBank::SPECIAL || inst.opr.src0.bank == RegisterBank::SPECIAL || inst.opr.src1.bank == RegisterBank::SPECIAL || inst.opr.src2.bank == RegisterBank::SPECIAL) {
         LOG_WARN("Special regs unsupported");
@@ -1046,7 +1151,8 @@ bool USSETranslatorVisitor::vpck(
     }
 
     Imm2 comp_sel_0 = comp_sel_0_bit0;
-    if (src_fmt == FMT_F32)
+
+    if (inst.opr.src1.type == DataType::F32)
         comp_sel_0 |= (comp0_sel_bit1 & 1) << 1;
     else
         comp_sel_0 |= (src2_n & 1) << 1;

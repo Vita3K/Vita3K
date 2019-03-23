@@ -117,6 +117,10 @@ enum class DataType : uint8_t {
     C10,
     F16,
     F32,
+    UINT8,
+    UINT16,
+    O8,
+    TOTAL_TYPE
 };
 
 enum class SpecialCategory : uint8_t {
