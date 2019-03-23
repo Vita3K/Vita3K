@@ -15,37 +15,28 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <functional>
+#include <thread>
+#include <memory>
 
-#include <mem/mem.h> // Address.
+typedef int32_t socket_t;
 
-#include <condition_variable>
-#include <mutex>
-#include <string>
+constexpr uint32_t GDB_SERVER_PORT = 2159;
+constexpr socket_t BAD_SOCK = -1;
 
-struct CPUState;
-template <typename T>
-class Resource;
+struct GDBState {
+    socket_t listen_socket = BAD_SOCK;
+    socket_t client_socket = BAD_SOCK;
 
-typedef Resource<Address> ThreadStack;
-typedef std::shared_ptr<ThreadStack> ThreadStackPtr;
-typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
+    std::shared_ptr<std::thread> server_thread;
+    bool server_just_listen = false;
+    bool server_die = false;
 
-enum class ThreadToDo {
-    exit,
-    run,
-    step,
-    wait,
-};
+    std::string last_reply = "";
 
-struct ThreadState {
-    ThreadStackPtr stack;
-    int priority;
-    int stack_size;
-    CPUStatePtr cpu;
-    ThreadToDo to_do = ThreadToDo::run;
-    std::mutex mutex;
-    std::condition_variable something_to_do;
-    std::vector<std::shared_ptr<ThreadState>> waiting_threads;
-    std::string name;
+    bool extended_mode = false;
+//    SceUID current_continue_thread = 0;
+    SceUID current_thread = 0;
+
+    bool is_running = false;
 };

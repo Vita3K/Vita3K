@@ -16,5 +16,5 @@ version.cpp
 configure_file(src/version.cpp.in version.cpp)
 
 target_include_directories(host PUBLIC include)
-target_link_libraries(host PUBLIC audio cpu ctrl gxm io kernel mem net nids np renderer rtc util gui)
+target_link_libraries(host PUBLIC audio cpu ctrl gxm io kernel mem net nids np renderer rtc util gui gdbstub)
 target_link_libraries(host PRIVATE ${Boost_LIBRARIES} glutil microprofile sdl2)

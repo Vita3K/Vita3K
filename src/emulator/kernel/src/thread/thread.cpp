@@ -187,8 +187,12 @@ bool run_thread(ThreadState &thread, bool callback) {
         case ThreadToDo::exit:
             return true;
         case ThreadToDo::run:
+        case ThreadToDo::step:
             lock.unlock();
-            res = run(*thread.cpu, callback);
+            if (thread.to_do == ThreadToDo::step) {
+                res = step(*thread.cpu, callback);
+                thread.to_do = ThreadToDo::wait;
+            } else res = run(*thread.cpu, callback);
             if (res < 0) {
                 return false;
             }
@@ -208,6 +212,8 @@ bool run_thread(ThreadState &thread, bool callback) {
             break;
         }
     }
+
+    if (true) { }
 }
 
 bool run_callback(ThreadState &thread, Address &pc, Address &data) {

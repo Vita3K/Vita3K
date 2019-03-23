@@ -35,6 +35,7 @@
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <gdbstub/functions.h>
 
 #include <SDL.h>
 #include <glutil/gl.h>
@@ -357,6 +358,10 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
         }
     }
 
+#ifdef USE_GDBSTUB
+    server_open(host);
+#endif
+    
     return Success;
 }
 

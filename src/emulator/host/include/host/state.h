@@ -29,6 +29,7 @@
 #include <nids/types.h>
 #include <np/state.h>
 #include <renderer/state.h>
+#include <gdbstub/state.h>
 
 #include <psp2/display.h>
 
@@ -82,4 +83,5 @@ struct HostState {
     gui::State gui;
     SfoFile sfo_handle;
     NIDSet missing_nids;
+    GDBState gdb;
 };
