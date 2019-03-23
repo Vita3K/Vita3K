@@ -245,7 +245,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
 
     // Decode and recompile
     uint64_t instr;
-    usse::USSETranslatorVisitor visitor(b, instr, parameters, program);
+    usse::USSETranslatorVisitor visitor(b, instr, parameters, program, true);
 
     for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
         const auto cur_phase_code = shader_code[(ShaderPhase)phase];

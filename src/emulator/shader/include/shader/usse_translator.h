@@ -61,11 +61,13 @@ public:
     void make_f16_pack_func();
 
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program)
+    explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program,
+        bool is_secondary_program = false)
         : m_b(_b)
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
-        , m_program(program) {
+        , m_program(program)
+        , m_second_program(is_secondary_program) {
         // Import GLSL.std.450
         std_builtins = m_b.import("GLSL.std.450");
 
@@ -189,7 +191,13 @@ private:
     // TODO: Separate file for translator helpers?
     static size_t dest_mask_to_comp_count(Imm4 dest_mask);
 
+    bool m_second_program { false };
+    
 public:
+    void set_secondary_program(const bool is_it) {
+        m_second_program = is_it;
+    }
+
     //
     // Helpers
     //

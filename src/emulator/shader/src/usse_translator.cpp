@@ -691,8 +691,8 @@ bool USSETranslatorVisitor::vmov(
     // Decode operands
     uint8_t reg_bits = is_double_regs ? 7 : 6;
 
-    inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, is_double_regs, reg_bits);
-    inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, is_double_regs, reg_bits);
+    inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, is_double_regs, reg_bits, m_second_program);
+    inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, is_double_regs, reg_bits, m_second_program);
 
     // Velocity uses a vec4 table, non-extended, so i assumes type=vec4, extended=false
     inst.opr.src1.swizzle = decode_vec34_swizzle(src0_swiz, false, 2);
@@ -778,8 +778,8 @@ bool USSETranslatorVisitor::vmad(
     }
 
     // Double regs always true for src0, dest
-    inst.opr.src0 = decode_src12(src0_n, src0_bank, src0_bank_ext, true, 7);
-    inst.opr.dest = decode_dest(dest_n, dest_bank, dest_use_bank_ext, true, 7);
+    inst.opr.src0 = decode_src12(src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
+    inst.opr.dest = decode_dest(dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
 
     // GPI0 and GPI1, setup!
     inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
@@ -879,9 +879,9 @@ bool USSETranslatorVisitor::vnmad32(
     // Decode operands
     // TODO: modifiers
 
-    inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, true, 7);
-    inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7);
-    inst.opr.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, true, 7);
+    inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, true, 7, m_second_program);
+    inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
+    inst.opr.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
 
     inst.opr.dest.type = is_32_bit ? DataType::F32 : DataType::F16;
 
@@ -1139,8 +1139,8 @@ bool USSETranslatorVisitor::vpck(
     inst.opcode = op_table[dest_fmt][src_fmt];
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
 
-    inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, false, 7);
-    inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7);
+    inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, false, 7, m_second_program);
+    inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
 
     inst.opr.dest.type = dest_data_type_table[dest_fmt];
     inst.opr.src1.type = src_data_type_table[src_fmt];

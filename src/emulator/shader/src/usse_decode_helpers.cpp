@@ -260,14 +260,18 @@ Swizzle4 decode_vec34_swizzle(Imm4 swizz, const bool swizz_extended, const int t
 
 // Register/Operand decoding
 
-static void finalize_register(Operand &reg, bool is_double_regs, uint8_t reg_bits) {
+static void finalize_register(Operand &reg, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
     check_reg_internal(reg, is_double_regs, reg_bits);
 
     if (reg.bank == RegisterBank::SPECIAL)
         fixup_reg_special(reg);
+
+    // Basically, if it's secondary program, PRIMATTR bank is SECATTR
+    if (reg.bank == RegisterBank::PRIMATTR && is_second_program)
+        reg.bank = RegisterBank::SECATTR;
 }
 
-Operand decode_dest(Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits) {
+Operand decode_dest(Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
     Operand dest{};
     dest.num = dest_n;
     dest.bank = decode_dest_bank(dest_bank, bank_ext);
@@ -276,11 +280,11 @@ Operand decode_dest(Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_r
     if (is_double_regs)
         double_reg(dest.num, dest.bank);
 
-    finalize_register(dest, is_double_regs, reg_bits);
+    finalize_register(dest, is_double_regs, reg_bits, is_second_program);
     return dest;
 }
 
-Operand decode_src12(Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits) {
+Operand decode_src12(Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
     Operand src{};
     src.num = src_n;
     src.bank = decode_src12_bank(src_bank_sel, src_bank_ext);
@@ -288,7 +292,7 @@ Operand decode_src12(Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_d
     if (is_double_regs)
         double_reg(src.num, src.bank);
 
-    finalize_register(src, is_double_regs, reg_bits);
+    finalize_register(src, is_double_regs, reg_bits, is_second_program);
     return src;
 }
 
