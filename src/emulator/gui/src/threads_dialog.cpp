@@ -38,8 +38,8 @@ void draw_thread_details_dialog(HostState &host) {
     uint32_t pc = read_pc(cpu);
     uint32_t sp = read_sp(cpu);
     uint32_t lr = read_lr(cpu);
-    uint32_t registers[16];
-    for (size_t a = 0; a < 16; a++)
+    uint32_t registers[13];
+    for (size_t a = 0; a < 13; a++)
         registers[a] = read_reg(cpu, a);
 
     // TODO: Add THUMB/ARM mode viewer. What arch is the cpu currently using?
