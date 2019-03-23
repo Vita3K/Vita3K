@@ -170,6 +170,13 @@ std::u16string utf8_to_utf16(const std::string &str) {
 }
 #endif
 
+std::string toupper(const std::string &s) {
+    std::string r = s;
+    std::transform(r.begin(), r.end(), r.begin(),
+        [](unsigned char c) { return std::toupper(c); });
+    return r;
+}
+
 } // namespace string_utils
 
 ProgramArgsWide process_args(int argc, char *argv[]) {
