@@ -51,9 +51,10 @@ void draw_thread_details_dialog(HostState &host) {
     ImGui::Text("LR: %08x", lr);
     ImGui::Text("Executing: %s", disassemble(cpu, pc).c_str());
     ImGui::Separator();
-    for (int a = 0; a < 8; a++) {
-        ImGui::Text("r%02i: %08x   r%02i: %08x", a, registers[a], a + 8, registers[a + 8]);
+    for (int a = 0; a < 6; a++) {
+        ImGui::Text("r%02i: %08x   r%02i: %08x", a, registers[a], a + 6, registers[a + 6]);
     }
+    ImGui::Text("r12: %08x", registers[12]);
 
     ImGui::End();
 }
@@ -79,7 +80,7 @@ void draw_threads_dialog(HostState &host) {
             run_state = "Exiting";
             break;
         }
-        if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0<8X}",
+        if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0>8X}",
                 thread.first, th_state->name, run_state, th_state->stack.get()->get())
                                   .c_str())) {
             host.gui.thread_watch_index = thread.first;
