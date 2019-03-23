@@ -266,8 +266,9 @@ static void finalize_register(Operand &reg, bool is_double_regs, uint8_t reg_bit
     if (reg.bank == RegisterBank::SPECIAL)
         fixup_reg_special(reg);
 
-    // Basically, if it's secondary program, PRIMATTR bank is SECATTR
-    if (reg.bank == RegisterBank::PRIMATTR && is_second_program)
+    // In secondary program, data are computed and stored as SA, internal register stay the same.
+    // TODO: Constant ?
+    if (reg.bank != RegisterBank::FPINTERNAL && is_second_program)
         reg.bank = RegisterBank::SECATTR;
 }
 
