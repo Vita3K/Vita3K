@@ -249,12 +249,14 @@ spv::Id USSETranslatorVisitor::unpack(spv::Id target, const DataType type, Swizz
     for (std::size_t i = 0; i < unpack_results.size(); i++) {
         spv::Id extracted = target;
 
-        std::vector<spv::Id> extract_ops;
-        extract_ops.push_back(target);
-        extract_ops.push_back(m_b.makeIntConstant(static_cast<int>(i)));
+        if (!m_b.isScalar(target) && !m_b.isConstant(target)) {
+            std::vector<spv::Id> extract_ops;
+            extract_ops.push_back(target);
+            extract_ops.push_back(m_b.makeIntConstant(static_cast<int>(i)));
 
-        if (target_comp_count > 1) {
-            extracted = m_b.createOp(spv::OpVectorExtractDynamic, type_f32, extract_ops);
+            if (target_comp_count > 1) {
+                extracted = m_b.createOp(spv::OpVectorExtractDynamic, type_f32, extract_ops);
+            }
         }
 
         unpack_results[i] = unpack_one(extracted, type);
@@ -354,7 +356,6 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
 
     // Get total swizzle actually use, by subtracting the ops by 2
     switch (ops.size() - 2) {
-    case 1:
     case 2:
     case 3:
     case 4: {
@@ -362,8 +363,16 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
 
         break;
     }
+    case 1: {
+        shuff_type = type_f32;
+        break;
+    }
     default:
         return spv::NoResult;
+    }
+
+    if (shuff_type == type_f32 && constant_queue.size() == 1) {
+        return constant_queue[0].constant;
     }
 
     auto shuff_result = m_b.createOp(spv::OpVectorShuffle, shuff_type, ops);
@@ -557,8 +566,12 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
 
                 // Unpack the destination value
                 if (cached_packed[swizz_off] == spv::NoResult) {
-                    cached_packed[swizz_off] = m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
-                        { dest_reg.var_id, m_b.makeIntConstant(swizz_off) });
+                    cached_packed[swizz_off] = dest_reg.var_id;
+
+                    if (!m_b.isScalarType(dest_reg.type_id) && !m_b.isConstant(dest_reg.var_id)) {
+                        cached_packed[swizz_off] = m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
+                            { dest_reg.var_id, m_b.makeIntConstant(swizz_off) });
+                    }
 
                     cached_packed[swizz_off] = unpack_one(cached_packed[swizz_off], dest.type);
                 }
@@ -566,8 +579,12 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
                 vars.push_back(m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
                     { cached_packed[swizz_off], m_b.makeIntConstant(extract_offset) }));
             } else {
-                vars.push_back(m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
-                    { source, m_b.makeIntConstant(total_mask_on_so_far++) }));
+                if (m_b.isScalar(source) || m_b.isConstant(source)) {
+                    vars.push_back(source);
+                } else {
+                    vars.push_back(m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
+                        { source, m_b.makeIntConstant(total_mask_on_so_far++) }));
+                }
             }
         }
 
@@ -801,7 +818,6 @@ bool USSETranslatorVisitor::vmad(
     Imm4 src0_swiz,
     Imm6 src0_n) {
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), "VMAD");
-    write_mask = decode_write_mask(write_mask, false);
     
     Instruction inst{};
 
@@ -908,8 +924,6 @@ bool USSETranslatorVisitor::vnmad32(
         opcode = tb_decode_vop_f32[op2];
     else
         opcode = tb_decode_vop_f16[op2];
-
-    dest_mask = decode_write_mask(dest_mask, !is_32_bit);
 
     LOG_DISASM("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(opcode));
 

@@ -76,10 +76,10 @@ public:
         type_f32 = m_b.makeFloatType(32);
         type_ui32 = m_b.makeUintType(32);
    
-        const_f32[3] = m_b.makeFpConstant(type_f32, 0.5f);
-        const_f32[0] = m_b.makeFpConstant(type_f32, 0.0f);
-        const_f32[1] = m_b.makeFpConstant(type_f32, 1.0f);
-        const_f32[2] = m_b.makeFpConstant(type_f32, 2.0f);
+        const_f32[3] = m_b.makeFloatConstant(0.5f);
+        const_f32[0] = m_b.makeFloatConstant(0.0f);
+        const_f32[1] = m_b.makeFloatConstant(1.0f);
+        const_f32[2] = m_b.makeFloatConstant(2.0f);
 
         for (std::uint8_t i = 1; i < 5; i++) {
             type_f32_v[i] = m_b.makeVectorType(type_f32, i);
