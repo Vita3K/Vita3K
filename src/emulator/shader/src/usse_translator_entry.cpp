@@ -22,6 +22,7 @@
 #include <shader/matcher.h>
 #include <shader/usse_disasm.h>
 #include <shader/usse_translator.h>
+#include <shader/usse_translator_types.h>
 #include <util/log.h>
 
 #include <boost/optional/optional.hpp>
@@ -226,7 +227,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters) {
+void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
 
@@ -245,7 +246,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
 
     // Decode and recompile
     uint64_t instr;
-    usse::USSETranslatorVisitor visitor(b, instr, parameters, program, true);
+    usse::USSETranslatorVisitor visitor(b, instr, parameters, program, queries, true);
 
     for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
         const auto cur_phase_code = shader_code[(ShaderPhase)phase];

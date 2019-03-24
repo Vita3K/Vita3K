@@ -59,10 +59,11 @@ public:
 
     void make_f16_unpack_func();
     void make_f16_pack_func();
+    void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
 
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program,
-        bool is_secondary_program = false)
+        const NonDependentTextureQueryCallInfos &queries, bool is_secondary_program = false)
         : m_b(_b)
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
@@ -89,6 +90,8 @@ public:
         // Make utility functions
         make_f16_unpack_func();
         make_f16_pack_func();
+
+        do_texture_queries(queries);
     }
 
 private:
@@ -181,6 +184,7 @@ private:
      * \brief Unpack one scalar.
      */
     spv::Id unpack_one(spv::Id scalar, const DataType type);
+    spv::Id pack_one(spv::Id vec, const DataType source_type);
 
     void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, std::uint8_t off = 0);
 

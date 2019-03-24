@@ -490,14 +490,15 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             tex_query_var_name += std::to_string(tex_coord_index);
 
             NonDependentTextureQueryCallInfo tex_query_info;
+            tex_query_info.store_type = (component_type == 3) ? static_cast<int>(DataType::F32) : static_cast<int>(DataType::F16);
 
             // Size of this extra pa occupied
             // Force this to be PRIVATE
             const optional<spv::StorageClass> texture_query_storage{ spv::StorageClassPrivate };
-            const auto type = ((descriptor->size >> 6) & 3) + 1;
-            const auto size = b.makeVectorType(b.makeFloatType(32), num_component);
-
-            tex_query_info.dest = create_spirv_var_reg(b, parameters, tex_query_var_name, RegisterBank::PRIMATTR, type, size, texture_query_storage);
+            const auto size = ((descriptor->size >> 6) & 3) + 1;
+            const auto type = b.makeVectorType(b.makeFloatType(32), num_component * size / 4);
+            
+            tex_query_info.dest = create_spirv_var_reg(b, parameters, tex_query_var_name, RegisterBank::PRIMATTR, size, type, texture_query_storage);
 
             if (coords[tex_coord_index] == spv::NoResult) {
                 // Create an 'in' variable
@@ -790,21 +791,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     return spv_params;
 }
 
-static void do_texture_queries(spv::Builder &b, NonDependentTextureQueryCallInfos texture_queries) {
-    for (auto &texture_query : texture_queries) {
-        const auto image_sample = b.createOp(spv::OpImageSampleImplicitLod,
-            b.getTypeId(texture_query.dest), // destination result type
-            { texture_query.sampler, texture_query.coord } // sampler and texture coordinates
-        );
-        b.createStore(image_sample, texture_query.dest);
-    }
-}
-
-static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program, NonDependentTextureQueryCallInfos texture_queries) {
+static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program, const NonDependentTextureQueryCallInfos &texture_queries) {
     // Do texture queries
-    do_texture_queries(b, texture_queries);
-
-    usse::convert_gxp_usse_to_spirv(b, program, parameters);
+    usse::convert_gxp_usse_to_spirv(b, program, parameters, texture_queries);
 }
 
 static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, bool force_shader_debug) {

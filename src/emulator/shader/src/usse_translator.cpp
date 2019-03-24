@@ -77,6 +77,30 @@ void shader::usse::USSETranslatorVisitor::make_f16_pack_func() {
     m_b.setBuildPoint(last_build_point);
 }
 
+void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries) {
+    for (auto &texture_query : texture_queries) {
+        const bool query_f16 = texture_query.store_type == static_cast<int>(DataType::F16);
+        
+        auto image_sample = m_b.createOp(spv::OpImageSampleImplicitLod,
+            query_f16 ? type_f32_v[4] : m_b.getTypeId(texture_query.dest), // destination result type
+            { texture_query.sampler, texture_query.coord } // sampler and texture coordinates
+        );
+
+        if (query_f16) {
+            // Pack them
+            spv::Id pack1 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { image_sample, image_sample, 0, 1 });
+            pack1 = pack_one(pack1, DataType::F16);
+
+            spv::Id pack2 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { image_sample, image_sample, 2, 3 });
+            pack2 = pack_one(pack2, DataType::F16);
+
+            image_sample = m_b.createCompositeConstruct(type_f32_v[2], { pack1, pack2 });
+        }
+        
+        m_b.createStore(image_sample, texture_query.dest);
+    }
+}
+
 bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank, std::uint32_t reg_offset, std::uint32_t shift_offset, SpirvReg &reg, std::uint32_t &out_comp_offset, bool get_for_store) {
     const std::uint32_t original_reg_offset = reg_offset;
 
@@ -185,6 +209,19 @@ spv::Id USSETranslatorVisitor::unpack_one(spv::Id scalar, const DataType type) {
     switch (type) {
     case DataType::F16: {
         return m_b.createFunctionCall(f16_unpack_func, { scalar });
+    }
+
+    default:
+        break;
+    }
+
+    return spv::NoResult;
+}
+
+spv::Id USSETranslatorVisitor::pack_one(spv::Id vec, const DataType source_type) {
+    switch (source_type) {
+    case DataType::F16: {
+        return m_b.createFunctionCall(f16_pack_func, { vec });
     }
 
     default:
@@ -403,13 +440,14 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
 
     // Optimization: Bridging (VectorShuffle) or even swizzling is not always necessary
 
-    const bool needs_swizzle = !is_default(op.swizzle, static_cast<Imm4>(dest_comp_count));
+    const bool needs_swizzle = !is_default(op.swizzle, static_cast<Imm4>(dest_comp_count_to_get));
 
-    if (!needs_swizzle) {
+    // Disable optimizations with any type !F32 for now. Its causing us trouble.
+    if (!needs_swizzle && size_comp == 4) {
         const uint32_t reg_left_comp_count = m_b.getNumTypeComponents(reg_left.type_id) - reg_left_comp_offset;
         const uint32_t reg_right_comp_count = m_b.getNumTypeComponents(reg_right.type_id) - reg_right_comp_offset;
 
-        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count) && (reg_left_comp_count == dest_comp_count_to_get);
+        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count) && (reg_left_comp_count == dest_comp_count);
 
         if (is_equal_comp_count) {
             const bool is_reg_left_comp_offset = (reg_left_comp_offset == 0);
@@ -678,6 +716,7 @@ bool USSETranslatorVisitor::vmov(
     };
 
     inst.opcode = tb_decode_vmov[(Imm3)move_type];
+    dest_mask = decode_write_mask(dest_mask, move_data_type == DataType::F16);
 
     std::string disasm_str = fmt::format("{:016x}: {}{}.{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type));
 
@@ -701,11 +740,6 @@ bool USSETranslatorVisitor::vmov(
     inst.opr.dest.type = move_data_type;
 
     // TODO: adjust dest mask if needed
-    /*
-    if (move_data_type != DataType::F32) {
-        LOG_WARN("Data type != F32 unsupported");
-        return false;
-    }*/
 
     if (is_conditional) {
         LOG_WARN("Conditional vmov instructions unsupported");
@@ -767,7 +801,8 @@ bool USSETranslatorVisitor::vmad(
     Imm4 src0_swiz,
     Imm6 src0_n) {
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), "VMAD");
-
+    write_mask = decode_write_mask(write_mask, false);
+    
     Instruction inst{};
 
     // Is this VMAD3 or VMAD4, op2 = 0 => vec3
@@ -873,6 +908,8 @@ bool USSETranslatorVisitor::vnmad32(
         opcode = tb_decode_vop_f32[op2];
     else
         opcode = tb_decode_vop_f16[op2];
+
+    dest_mask = decode_write_mask(dest_mask, !is_32_bit);
 
     LOG_DISASM("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(opcode));
 
@@ -1137,6 +1174,7 @@ bool USSETranslatorVisitor::vpck(
     };
 
     inst.opcode = op_table[dest_fmt][src_fmt];
+
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
 
     inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, false, 7, m_second_program);
