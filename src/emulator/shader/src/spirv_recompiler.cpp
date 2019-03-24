@@ -754,7 +754,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     // Create temp reg vars
-    for (auto i = 0; i < (program.temp_reg_count1 / 4) + ((program.temp_reg_count1 % 4) != 0 ? 1 : 0); i++) {
+    const std::size_t total_temp_reg_v4 = (program.temp_reg_count1 / 4) + ((program.temp_reg_count1 % 4) ? 1 : 0);
+
+    for (auto i = 0; i < total_temp_reg_v4; i++) {
         auto name = fmt::format("r{}", i * 4);
         auto type = b.makeVectorType(b.makeFloatType(32), 4); // TODO: Figure out correct type
         create_spirv_var_reg(b, spv_params, name, usse::RegisterBank::TEMP, 4, type);

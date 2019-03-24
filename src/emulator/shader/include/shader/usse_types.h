@@ -219,8 +219,8 @@ struct Instruction {
 };
 
 enum class ShaderPhase {
-    Pixel, // Primary phase
     SampleRate, // Secondary phase
+    Pixel, // Primary phase
 
     Max,
 };
