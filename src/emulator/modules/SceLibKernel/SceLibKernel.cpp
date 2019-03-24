@@ -88,30 +88,31 @@ EXPORT(int, sceClibMemchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMemcmp) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibMemcmp, const void *ptr1, const void *ptr2, SceSize num) {
+    return memcmp(ptr1, ptr2, num);
 }
 
 EXPORT(int, sceClibMemcmpConstTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMemcpy, void *destination, const void *source, SceSize num) {
-    memcpy(destination, source, num);
-    return 0;
+EXPORT(Ptr<void>, sceClibMemcpy, Ptr<void> destination, const void *source, SceSize num) {
+    memcpy(destination.get(host.mem), source, num);
+    return destination;
 }
 
 EXPORT(int, sceClibMemcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMemcpy_safe, void *destination, const void *source, SceSize num) {
-    memcpy(destination, source, num);
-    return 0;
+EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> destination, const void *source, SceSize num) {
+    memcpy(destination.get(host.mem), source, num);
+    return destination;
 }
 
-EXPORT(int, sceClibMemmove) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMemmove, Ptr<void> destination, const void *source, SceSize num) {
+    memmove(destination.get(host.mem), source, num);
+    return destination;
 }
 
 EXPORT(int, sceClibMemmoveChk) {
@@ -227,8 +228,8 @@ EXPORT(Ptr<char>, sceClibStrchr, const char *str, int c) {
     return Ptr<char>(res, host.mem);
 }
 
-EXPORT(int, sceClibStrcmp) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibStrcmp, const char *string1, const char *string2) {
+    return strcmp(string1, string2);
 }
 
 EXPORT(int, sceClibStrcpyChk) {
