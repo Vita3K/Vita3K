@@ -11,6 +11,7 @@ namespace usse {
 
 usse::Swizzle4 decode_swizzle4(uint32_t encoded_swizzle);
 usse::Swizzle4 decode_vec34_swizzle(usse::Imm4 swizz, const bool swizz_extended, const int type);
+usse::Imm4 decode_write_mask(usse::Imm4 write_mask, const bool f16);
 
 // Register/Operand decoding
 

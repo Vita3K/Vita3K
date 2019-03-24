@@ -297,4 +297,21 @@ Operand decode_src12(Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_d
     return src;
 }
 
+usse::Imm4 decode_write_mask(usse::Imm4 write_mask, const bool f16) {
+    if (!f16) {
+        return write_mask;
+    }
+
+    usse::Imm4 new_write_mask = 0;
+    if (write_mask & 0b0001) {
+        new_write_mask |= 0b11;
+    }
+
+    if (write_mask & 0b0100) {
+        new_write_mask |= 0b1100;
+    }
+
+    return new_write_mask;
+}
+
 } // namespace shader::usse
