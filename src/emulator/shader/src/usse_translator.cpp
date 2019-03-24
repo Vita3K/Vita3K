@@ -454,9 +454,9 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
             const bool is_reg_right_comp_offset = (reg_left_comp_offset == dest_comp_count_to_get);
 
             if (is_reg_left_comp_offset)
-                return m_b.createLoad(reg_left.var_id);
+                return m_b.isConstant(reg_left.var_id) ? reg_left.var_id : m_b.createLoad(reg_left.var_id);
             else if (is_reg_right_comp_offset)
-                return m_b.createLoad(reg_right.var_id);
+                return m_b.isConstant(reg_right.var_id) ? reg_right.var_id : m_b.createLoad(reg_right.var_id);
         }
     }
 
