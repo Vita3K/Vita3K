@@ -58,9 +58,9 @@ static constexpr bool DUMP_SEGMENTS = false;
 
 static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, const Config &cfg) {
     struct VarImportsHeader {
-        uint8_t unk; // seems to always be 0x40
-        uint8_t reloc_count;
-        uint16_t pad; // padding maybe, seems to always be 0x0000
+        uint32_t unk : 7; // seems to always be 0x40
+        uint32_t reloc_count : 17;
+        uint32_t pad : 8; // padding maybe, seems to always be 0x0000
     };
 
     for (size_t i = 0; i < count; ++i) {
@@ -73,7 +73,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         }
 
         VarImportsHeader *const var_reloc_header = reinterpret_cast<VarImportsHeader *>(entry.get(mem));
-        const uint32_t reloc_entries_count = var_reloc_header->reloc_count * 2;
+        const uint32_t reloc_entries_count = var_reloc_header->reloc_count;
         const auto var_reloc_entries = static_cast<void *>(var_reloc_header + 1);
 
         Address export_address;

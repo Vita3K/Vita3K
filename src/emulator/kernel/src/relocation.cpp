@@ -81,7 +81,8 @@ struct EntryFormat1Alt : Entry {
     uint32_t format : 4;
     uint32_t symbol_segment : 4;
     uint32_t code : 8;
-    uint32_t patch_segment : 4;
+    uint32_t patch_segment : 2;
+    uint32_t unknown : 2;
     uint32_t pad : 4;
 
     uint32_t offset;
