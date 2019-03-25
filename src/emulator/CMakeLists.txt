@@ -49,8 +49,9 @@ endmacro(configure_boost)
 
 configure_boost()
 
-# The next line compiles Vita3K with a gdbstub.
-add_definitions(-DUSE_GDBSTUB)
+# -DUSE_GDBSTUB will compile Vita3K with a GDB stub.
+# -DWAIT_FOR_DEBUGGER will force Vita3K to wait for a debugger to connect before starting the game.
+add_definitions(-DUSE_GDBSTUB -DWAIT_FOR_DEBUGGER)
 
 add_subdirectory(audio)
 add_subdirectory(cpu)

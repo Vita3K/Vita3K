@@ -291,7 +291,7 @@ uint32_t read_lr(CPUState &state) {
     return value;
 }
 
-uint32_t read_fps(CPUState &state) {
+uint32_t read_fpscr(CPUState &state) {
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_FPSCR, &value);
     assert(err == UC_ERR_OK);

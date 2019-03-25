@@ -48,6 +48,9 @@ static int SDLCALL thread_function(void *data) {
     const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
     write_reg(*thread->cpu, 0, params.arglen);
     write_reg(*thread->cpu, 1, params.argp.address());
+#ifdef WAIT_FOR_DEBUGGER
+    thread->to_do = ThreadToDo::wait;
+#endif
     const bool succeeded = run_thread(*thread, false);
     assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);

@@ -36,20 +36,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define LOG_GDB_EVERYTHING
-//#define LOG_GDB_DEBUG
+#define LOG_GDB_LEVEL 2
 
-#ifdef LOG_GDB_EVERYTHING
-#define LOG_GDB_DEBUG
-#endif
-
-#ifdef LOG_GDB_DEBUG
+#if LOG_GDB_LEVEL >= 1
 #define LOG_GDB LOG_INFO
 #else
 #define LOG_GDB(a, ...)
 #endif
 
-// Based off RPCS3's implementation.
+// Credit to jfhs for their GDB stub for RPCS3 which this stub is based on.
 
 typedef char PacketData[1200];
 
@@ -75,11 +70,6 @@ struct PacketFunctionBundle {
     std::string name;
     PacketFunction function;
 };
-
-// DEBUG + LOGGING
-std::string pd_string(const char *data, ssize_t length) {
-    return std::string(data, static_cast<unsigned long>(length));
-}
 
 std::string content_string(PacketCommand &command) {
     return std::string(command.content_start, static_cast<unsigned long>(command.content_length));
@@ -147,7 +137,7 @@ PacketCommand parse_command(char *data, ssize_t length) {
 
 ssize_t server_reply(GDBState &state, const char *data, ssize_t length) {
     uint8_t checksum = make_checksum(data, length);
-    std::string packet_data = fmt::format("${}#{:0>2x}", pd_string(data, length), checksum);
+    std::string packet_data = fmt::format("${}#{:0>2x}", std::string(data, length), checksum);
 
     return write(state.client_socket, &packet_data[0], packet_data.size());
 }
@@ -220,7 +210,7 @@ uint32_t fetch_reg(CPUState &state, uint32_t reg) {
     }
 
     if (reg == 24)
-        return read_fps(state);
+        return read_fpscr(state);
     if (reg == 25)
         return read_cpsr(state);
 
@@ -345,6 +335,7 @@ std::string cmd_continue(HostState &state, PacketCommand &command) {
         index = next;
     } while (next != std::string::npos);
 
+    // This is not a good solution :/
     state.gdb.server_just_listen = true;
     return "";
 }
@@ -487,7 +478,7 @@ static ssize_t server_next(HostState &state) {
             break; // Cool.
         }
         case '-': {
-            LOG_GDB("GDB Server Transmission Error. {}", pd_string(buffer, length));
+            LOG_GDB("GDB Server Transmission Error. {}", std::string(buffer, length));
             server_reply(state.gdb, state.gdb.last_reply.c_str());
             break;
         }
@@ -513,14 +504,14 @@ static ssize_t server_next(HostState &state) {
 
                 a += command.content_length + 3;
 
-#ifdef LOG_GDB_EVERYTHING
+#if LOG_GDB_LEVEL >= 2
                 LOG_GDB("GDB Server Recognized Command as {}. {}", debug_func_name,
-                    pd_string(command.content_start, command.content_length));
+                    std::string(command.content_start, command.content_length));
 #endif
             } else {
                 server_ack(state.gdb, '-');
 
-                LOG_GDB("GDB Server Invalid Command. {}", pd_string(buffer, length));
+                LOG_GDB("GDB Server Invalid Command. {}", std::string(buffer, length));
             }
             break;
         }
@@ -543,7 +534,7 @@ static void server_listen(HostState &state) {
         return;
     }
 
-    for (auto thread : state.kernel.threads) {
+    for (const auto &thread : state.kernel.threads) {
         stop(*thread.second->cpu);
         thread.second->to_do = ThreadToDo::wait;
     }

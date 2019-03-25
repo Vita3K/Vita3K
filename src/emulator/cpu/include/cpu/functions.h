@@ -37,7 +37,7 @@ float read_float_reg(CPUState &state, size_t index);
 uint32_t read_sp(CPUState &state);
 uint32_t read_pc(CPUState &state);
 uint32_t read_lr(CPUState &state);
-uint32_t read_fps(CPUState &state);
+uint32_t read_fpscr(CPUState &state);
 uint32_t read_cpsr(CPUState &state);
 void write_reg(CPUState &state, size_t index, uint32_t value);
 void write_sp(CPUState &state, uint32_t value);
