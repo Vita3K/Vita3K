@@ -1,3 +1,5 @@
+#include <memory>
+
 // Vita3K emulator project
 // Copyright (C) 2018 Vita3K team
 //
@@ -29,12 +31,14 @@
 #include <sstream>
 
 // Sockets
+#ifndef _WIN32
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#endif
 
 #define LOG_GDB_LEVEL 2
 
@@ -50,11 +54,11 @@ typedef char PacketData[1200];
 
 struct PacketCommand {
     char *data{};
-    ssize_t length = -1;
+    int64_t length = -1;
 
-    ssize_t begin_index = -1;
-    ssize_t end_index = -1;
-    ssize_t content_length = -1;
+    int64_t begin_index = -1;
+    int64_t end_index = -1;
+    int64_t content_length = -1;
 
     char *content_start{};
     char *checksum_start{};
@@ -92,17 +96,17 @@ uint32_t parse_hex(const std::string &hex) {
     return value;
 }
 
-uint8_t make_checksum(const char *data, ssize_t length) {
+uint8_t make_checksum(const char *data, int64_t length) {
     size_t sum = 0;
 
-    for (ssize_t a = 0; a < length; a++) {
+    for (int64_t a = 0; a < length; a++) {
         sum += data[a];
     }
 
     return static_cast<uint8_t>(sum % 256);
 }
 
-PacketCommand parse_command(char *data, ssize_t length) {
+PacketCommand parse_command(char *data, int64_t length) {
     PacketCommand command = {};
 
     command.data = data;
@@ -111,7 +115,7 @@ PacketCommand parse_command(char *data, ssize_t length) {
     // TODO: Use std::find() to find packet begin and end.
     if (length > 1)
         command.begin_index = 1;
-    for (ssize_t a = 0; a < length; a++) {
+    for (int64_t a = 0; a < length; a++) {
         if (data[a] == '#')
             command.end_index = a;
     }
@@ -135,19 +139,19 @@ PacketCommand parse_command(char *data, ssize_t length) {
     return command;
 }
 
-ssize_t server_reply(GDBState &state, const char *data, ssize_t length) {
+int64_t server_reply(GDBState &state, const char *data, int64_t length) {
     uint8_t checksum = make_checksum(data, length);
     std::string packet_data = fmt::format("${}#{:0>2x}", std::string(data, length), checksum);
 
-    return write(state.client_socket, &packet_data[0], packet_data.size());
+    return send(state.client_socket, &packet_data[0], packet_data.size(), 0);
 }
 
-ssize_t server_reply(GDBState &state, const char *text) {
+int64_t server_reply(GDBState &state, const char *text) {
     return server_reply(state, text, strlen(text));
 }
 
-ssize_t server_ack(GDBState &state, char ack = '+') {
-    return write(state.client_socket, &ack, 1);
+int64_t server_ack(GDBState &state, char ack = '+') {
+    return send(state.client_socket, &ack, 1, 0);
 }
 
 std::string cmd_supported(HostState &state, PacketCommand &command) {
@@ -262,7 +266,7 @@ std::string cmd_read_memory(HostState &state, PacketCommand &command) {
 
     bool memory_safe = true;
 
-    // Probably could be an std::find
+    // Probably coulserd be an std::find
     for (int a = 0; a < page_length; a++) {
         if (state.mem.allocated_pages[page_first + a] == 0 || state.mem.allocated_pages[page_first + a] == 1) {
             memory_safe = false;
@@ -323,7 +327,8 @@ std::string cmd_continue(HostState &state, PacketCommand &command) {
             }
 
             // Actually wait for all threads to finish.
-            if (step) return "S05";
+            if (step)
+                return "S05";
 
             break;
         }
@@ -461,10 +466,10 @@ static bool begins(PacketCommand &command, const std::string &small) {
     return std::memcmp(command.content_start, small.c_str(), small.size()) == 0;
 }
 
-static ssize_t server_next(HostState &state) {
+static int64_t server_next(HostState &state) {
     PacketData buffer;
 
-    ssize_t length = read(state.gdb.client_socket, buffer, sizeof(buffer));
+    int64_t length = recv(state.gdb.client_socket, buffer, sizeof(buffer), 0);
     buffer[length] = '\0';
 
     if (length <= 0) {
@@ -472,7 +477,7 @@ static ssize_t server_next(HostState &state) {
         return -1;
     }
 
-    for (ssize_t a = 0; a < length; a++) {
+    for (int64_t a = 0; a < length; a++) {
         switch (buffer[a]) {
         case '+': {
             break; // Cool.
@@ -541,7 +546,7 @@ static void server_listen(HostState &state) {
 
     LOG_GDB("GDB Server Received Connection");
 
-    ssize_t status;
+    int64_t status;
 
     do {
         status = server_next(state);
@@ -555,6 +560,14 @@ static void server_listen(HostState &state) {
 void server_open(HostState &state) {
     LOG_GDB("Starting GDB Server...");
 
+#ifdef _WIN32
+    int32_t err = WSAStartup(MAKEWORD(2, 2), &state.gdb.wsaData);
+    if (err) {
+        LOG_GDB("GDB Server Failed: Could not start WSA service.");
+        return;
+    }
+#endif
+
     state.gdb.listen_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (state.gdb.listen_socket == -1) {
         LOG_GDB("GDB Server Failed: Could not create socket.");
@@ -564,7 +577,11 @@ void server_open(HostState &state) {
     sockaddr_in socket_address = { 0 };
     socket_address.sin_family = AF_INET;
     socket_address.sin_port = htons(GDB_SERVER_PORT);
+#ifdef _WIN32
+    socket_address.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+#else
     socket_address.sin_addr.s_addr = htonl(INADDR_ANY);
+#endif
 
     if (bind(state.gdb.listen_socket, (sockaddr *)&socket_address, sizeof(socket_address)) == -1) {
         LOG_GDB("GDB Server Failed: Could not bind socket.");
@@ -576,13 +593,18 @@ void server_open(HostState &state) {
         return;
     }
 
-    state.gdb.server_thread = std::shared_ptr<std::thread>(new std::thread(server_listen, std::ref(state)));
+    state.gdb.server_thread = std::make_shared<std::thread>(server_listen, std::ref(state));
 
     LOG_GDB("GDB Server is listening on port {}", GDB_SERVER_PORT);
 }
 
 void server_close(HostState &state) {
+#ifdef _WIN32
+    closesocket(state.gdb.listen_socket);
+    WSACleanup();
+#else
     close(state.gdb.listen_socket);
+#endif
 }
 
 #endif

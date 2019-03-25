@@ -19,12 +19,21 @@
 #include <thread>
 #include <memory>
 
+#ifdef _WIN32
+typedef SOCKET socket_t;
+constexpr socket_t BAD_SOCK = INVALID_SOCKET;
+#else
 typedef int32_t socket_t;
+constexpr socket_t BAD_SOCK = -1;
+#endif
 
 constexpr uint32_t GDB_SERVER_PORT = 2159;
-constexpr socket_t BAD_SOCK = -1;
 
 struct GDBState {
+#ifdef _WIN32
+    WSADATA wsaData;
+#endif
+
     socket_t listen_socket = BAD_SOCK;
     socket_t client_socket = BAD_SOCK;
 
@@ -35,7 +44,6 @@ struct GDBState {
     std::string last_reply = "";
 
     bool extended_mode = false;
-//    SceUID current_continue_thread = 0;
     SceUID current_thread = 0;
 
     bool is_running = false;
