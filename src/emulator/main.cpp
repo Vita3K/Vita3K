@@ -20,6 +20,11 @@
 #include "screen_render.h"
 
 #include <gui/functions.h>
+#include <gdbstub/functions.h>
+#include <host/app.h>
+#include <host/config.h>
+#include <host/functions.h>
+#include <host/screen_render.h>
 #include <host/state.h>
 #include <host/version.h>
 #include <shader/spirv_recompiler.h>
@@ -140,6 +145,10 @@ int main(int argc, char *argv[]) {
 
         set_window_title(host);
     }
+
+#ifdef USE_GDBSTUB
+    server_close(host);
+#endif
 
     // There may be changes that made in the GUI, so we should save, again
     config::serialize(host.cfg);

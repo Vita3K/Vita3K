@@ -821,8 +821,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         } else if (missing_primary_attrs > 0) {
             const auto pa_type = b.makeVectorType(b.makeFloatType(32), static_cast<int>(missing_primary_attrs * 2));
             std::string pa_name = "pa0_blend";
-            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, static_cast<std::uint32_t>(missing_primary_attrs * 2), pa_type,
-                spv::StorageClass::StorageClassPrivate); // TODO: * 2 is a hack because we don't yet support f16
+            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, static_cast<std::uint32_t>(missing_primary_attrs * 2), pa_type, spv::StorageClass::StorageClassPrivate); // TODO: * 2 is a hack because we don't yet support f16
         }
     }
 

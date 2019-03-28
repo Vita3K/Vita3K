@@ -42,6 +42,7 @@ struct CPUState {
     DisasmState disasm;
     UnicornPtr uc;
     Address entry_point;
+    std::vector<uint32_t> breakpoints;
 };
 
 // Log code for specified threads (arg to create_thread)
@@ -148,6 +149,10 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     temp_uc = nullptr;
 
     uc_hook hh = 0;
+#ifdef USE_GDBSTUB
+    watch_breakpoints(*state);
+#endif
+
     if ((log_code && LOG_CODE) || LOG_CODE_ALL) {
         log_code_add(*state);
     }
@@ -166,11 +171,9 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     assert(err == UC_ERR_OK);
 
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_PC, &pc);
-
     assert(err == UC_ERR_OK);
 
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_LR, &pc);
-
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(state->uc.get());
@@ -212,8 +215,6 @@ int run(CPUState &state, bool callback) {
 }
 
 int step(CPUState &state, bool callback) {
-    LOG_INFO("On shift.");
-
     uint32_t pc = read_pc(state);
     bool thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
@@ -330,6 +331,25 @@ void write_lr(CPUState &state, uint32_t value) {
     assert(err == UC_ERR_OK);
 }
 
+void breakpoint_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+    CPUState &state = *reinterpret_cast<CPUState *>(user_data);
+    auto breakpoint = std::find(state.breakpoints.begin(), state.breakpoints.end(), address);
+
+    if (breakpoint != state.breakpoints.end()) {
+        LOG_INFO("Breakpoint Hit at {}.", log_hex(address));
+        uc_emu_stop(uc);
+    }
+}
+
+void add_breakpoint(CPUState &state, uint32_t address) {
+    state.breakpoints.push_back(address);
+}
+
+void remove_breakpoint(CPUState &state, uint32_t address) {
+    state.breakpoints.erase(
+            std::remove(state.breakpoints.begin(), state.breakpoints.end(), address), state.breakpoints.end());
+}
+
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size) {
     MemState &mem = *state.mem;
     const uint8_t *const code = Ptr<const uint8_t>(static_cast<Address>(at)).get(mem);
@@ -340,6 +360,18 @@ std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn
 std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size) {
     const bool thumb = is_thumb_mode(state.uc.get());
     return disassemble(state, at, thumb, insn_size);
+}
+
+// Breakpoints using this method kills performance. Maybe hook interupts and drop a BKPT instruction in the future.
+void watch_breakpoints(CPUState &state) {
+    uc_hook hh = 0;
+    const uc_err err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_CODE, reinterpret_cast<void *>(breakpoint_hook), &state, 1, 0);
+
+    assert(err == UC_ERR_OK);
+}
+
+bool hit_breakpoint(CPUState &state) {
+    return std::find(state.breakpoints.begin(), state.breakpoints.end(), read_pc(state)) != state.breakpoints.end();
 }
 
 void log_code_add(CPUState &state) {

@@ -47,5 +47,9 @@ void write_lr(CPUState &state, uint32_t value);
 // Debugging helpers
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size = nullptr);
 std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size = nullptr);
+void add_breakpoint(CPUState &state, uint32_t address);
+void remove_breakpoint(CPUState &state, uint32_t address);
+void watch_breakpoints(CPUState &state);
+bool hit_breakpoint(CPUState &state);
 void log_code_add(CPUState &state);
 void log_mem_add(CPUState &state);

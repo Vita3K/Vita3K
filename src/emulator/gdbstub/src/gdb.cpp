@@ -264,15 +264,12 @@ std::string cmd_read_memory(HostState &state, PacketCommand &command) {
     auto page_first = static_cast<uint32_t>(address / KB(4));
     auto page_length = static_cast<uint32_t>(length + KB(4)) / KB(4);
 
-    bool memory_safe = true;
+    auto pages_begin = state.mem.allocated_pages.begin();
+    auto range_end = pages_begin + page_first + page_length;
 
-    // Probably coulserd be an std::find
-    for (int a = 0; a < page_length; a++) {
-        if (state.mem.allocated_pages[page_first + a] == 0 || state.mem.allocated_pages[page_first + a] == 1) {
-            memory_safe = false;
-            break;
-        }
-    }
+    bool memory_none = std::find(pages_begin + page_first, range_end, 0) != range_end;
+    bool memory_null = std::find(pages_begin + page_first, range_end, 1) != range_end;
+    bool memory_safe = !(memory_none || memory_null);
 
     if (!memory_safe) {
         LOG_GDB("Reading from unsafe page. {} - {}", page_first, page_length);
@@ -282,7 +279,7 @@ std::string cmd_read_memory(HostState &state, PacketCommand &command) {
     std::stringstream stream;
 
     for (int a = 0; a < length; a++) {
-        stream << fmt::format("{:0>2}", (int)state.mem.memory[address + a]);
+        stream << fmt::format("{:0>2x}", static_cast<uint8_t>(state.mem.memory[address + a]));
     }
 
     return stream.str();
@@ -326,11 +323,19 @@ std::string cmd_continue(HostState &state, PacketCommand &command) {
                 }
             }
 
-            // Actually wait for all threads to finish.
-            if (step)
-                return "S05";
+            if (!step) {
+                bool hit_break = false;
+                while (!hit_break) {
+                    for (const auto &thread : state.kernel.threads) {
+                        if (thread.second->to_do == ThreadToDo::wait && hit_breakpoint(*thread.second->cpu)) {
+                            hit_break = true;
+                            break;
+                        }
+                    }
+                }
+            }
 
-            break;
+            return "S05";
         }
         default:
             LOG_GDB("Unsupported vCont command '{}'", cmd);
@@ -382,13 +387,39 @@ std::string cmd_list_threads(HostState &state, PacketCommand &command) {
 }
 
 std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) {
+    std::string content = content_string(command);
+    uint32_t type, address, kind;
+
+    uint64_t first = content.find(',');
+    uint64_t second = content.find(',', first + 1);
+    type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
+    address = parse_hex(content.substr(first + 1, second - 1 - first));
+    kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+
+    LOG_GDB("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+    for (const auto &thread : state.kernel.threads) {
+        add_breakpoint(*thread.second->cpu, address);
+    }
+
     return "OK";
 }
 
 std::string cmd_remove_breakpoint(HostState &state, PacketCommand &command) {
-    LOG_GDB("GDB Server Removing Breakpoints is Unsupported.");
+    std::string content = content_string(command);
+    uint32_t type, address, kind;
 
-    return "";
+    uint64_t first = content.find(',');
+    uint64_t second = content.find(',', first + 1);
+    type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
+    address = parse_hex(content.substr(first + 1, second - 1 - first));
+    kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+
+    LOG_GDB("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+    for (const auto &thread : state.kernel.threads) {
+        remove_breakpoint(*thread.second->cpu, address);
+    }
+
+    return "OK";
 }
 
 std::string cmd_deprecated(HostState &state, PacketCommand &command) {
@@ -550,7 +581,7 @@ static void server_listen(HostState &state) {
 
     do {
         status = server_next(state);
-    } while (status > 0 || state.gdb.server_die);
+    } while (status >= 0 || state.gdb.server_die);
 
     state.gdb.is_running = false;
 

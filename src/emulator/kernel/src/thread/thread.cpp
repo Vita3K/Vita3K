@@ -29,9 +29,12 @@
 
 #include <SDL_thread.h>
 #include <spdlog/fmt/fmt.h>
+#include <util/log.h>
 
 #include <cassert>
 #include <cstring>
+
+constexpr static bool wait_for_debugger = false;
 
 struct ThreadParams {
     KernelState *kernel = nullptr;
@@ -48,9 +51,7 @@ static int SDLCALL thread_function(void *data) {
     const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
     write_reg(*thread->cpu, 0, params.arglen);
     write_reg(*thread->cpu, 1, params.argp.address());
-#ifdef WAIT_FOR_DEBUGGER
-    thread->to_do = ThreadToDo::wait;
-#endif
+    if (wait_for_debugger) thread->to_do = ThreadToDo::wait;
     const bool succeeded = run_thread(*thread, false);
     assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
@@ -196,6 +197,12 @@ bool run_thread(ThreadState &thread, bool callback) {
                 res = step(*thread.cpu, callback);
                 thread.to_do = ThreadToDo::wait;
             } else res = run(*thread.cpu, callback);
+#ifdef USE_GDBSTUB
+            if (hit_breakpoint(*thread.cpu)) {
+                thread.to_do = ThreadToDo::wait;
+                LOG_INFO("Stopping thread \"{}\" at breakpoint.", thread.name);
+            }
+#endif
             if (res < 0) {
                 return false;
             }
