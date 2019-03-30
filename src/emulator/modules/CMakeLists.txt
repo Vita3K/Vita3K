@@ -35,6 +35,7 @@ add_library(modules STATIC
 	SceFiber/SceFiber.cpp SceFiber/SceFiber.h
 	SceFios2/SceFios2.cpp SceFios2/SceFios2.h
 	SceFios2/SceFios2User.cpp SceFios2/SceFios2User.h
+	SceFios2Kernel/SceFios2Kernel.cpp SceFios2Kernel/SceFios2Kernel.h
 	SceGameUpdate/SceGameUpdate.cpp SceGameUpdate/SceGameUpdate.h
 	SceGpuEs4/SceGpuEs4ForUser.cpp SceGpuEs4/SceGpuEs4ForUser.h
 	SceGxm/SceGxm.cpp SceGxm/SceGxm.h
