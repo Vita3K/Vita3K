@@ -765,7 +765,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         for (std::uint32_t i = 1; i < program.literals_count; i++) {
             // Detect sequence literals.
-            if (literal_pairs[i].first == composite_base + constituents.size()) {
+            if (literal_pairs[i].first == composite_base + constituents.size() && constituents.size() < 4) {
                 constituents.push_back(literal_pairs[i].second);
             } else {
                 // The sequence ended. Create new literal pack.
