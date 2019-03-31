@@ -729,17 +729,58 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     if (!container) {
         LOG_WARN("Container for literal not found, skipping creating literals!");
-    } else {
+    } else if (program.literals_count != 0) {
         spv::Id f32_type = b.makeFloatType(32);
+        using literal_pair = std::pair<std::uint32_t, spv::Id>;
 
-        for (std::uint32_t i = 0; i < program.literals_count; i+= 2) {
+        std::vector<literal_pair> literal_pairs; 
+
+        for (std::uint32_t i = 0; i < program.literals_count * 2; i += 2) {
             auto literal_offset = container->base_sa_offset + literals[i];
             auto literal_data = reinterpret_cast<const float*>(literals)[i + 1];
 
-            spv_params.uniforms.set_next_offset(literal_offset);
+            literal_pairs.emplace_back(literal_offset, b.makeFloatConstant(literal_data));
 
-            spv_params.uniforms.push({ f32_type, b.makeFloatConstant(literal_data) }, 1);
+            // Pair sort automatically sort offset for us
+            std::sort(literal_pairs.begin(), literal_pairs.end());
+
             LOG_TRACE("[LITERAL + {}] sa{} = {} (0x{:X})", literals[i], literal_offset, literal_data, literals[i+1]);
+        }
+
+        std::uint32_t composite_base = literal_pairs[0].first;
+
+        // We should avoid ugly and long GLSL code generated. Also, inefficient SPIR-V code.
+        // Packing literals into vector may help solving this.
+        std::vector<spv::Id> constituents;
+        constituents.push_back(literal_pairs[0].second);
+
+        auto create_new_literal_pack = [&]() {
+            // Create new literal composite
+            spv_params.uniforms.set_next_offset(composite_base);
+            spv::Id composite_var =  b.makeCompositeConstant(b.makeVectorType(f32_type, static_cast<int>(constituents.size())), 
+                constituents);
+
+            spv_params.uniforms.push({ f32_type, composite_var }, static_cast<int>(constituents.size()));
+        };
+
+        for (std::uint32_t i = 1; i < program.literals_count; i++) {
+            // Detect sequence literals.
+            if (literal_pairs[i].first == composite_base + constituents.size()) {
+                constituents.push_back(literal_pairs[i].second);
+            } else {
+                // The sequence ended. Create new literal pack.
+                create_new_literal_pack();
+
+                // Reset and set new base
+                composite_base = literal_pairs[i].first;
+                constituents.clear();
+                constituents.push_back(literal_pairs[i].second);
+            }
+        }
+
+        // Is there any constituents left ? We should create a literal pack if there is.
+        if (!constituents.empty()) {
+            create_new_literal_pack();
         }
     }
 
