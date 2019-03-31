@@ -398,6 +398,10 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         }
     }
     */
+    if (op.bank == RegisterBank::FPINTERNAL) {
+        // Automatically F32
+        op.type = DataType::F32;
+    }
 
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
     const std::size_t size_comp = get_data_type_size(op.type);
@@ -940,8 +944,6 @@ bool USSETranslatorVisitor::vnmad32(
     else
         opcode = tb_decode_vop_f16[op2];
 
-    LOG_DISASM("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(opcode));
-
     // Decode operands
     // TODO: modifiers
 
@@ -950,6 +952,8 @@ bool USSETranslatorVisitor::vnmad32(
     inst.opr.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
 
     inst.opr.dest.type = is_32_bit ? DataType::F32 : DataType::F16;
+    inst.opr.src1.type = inst.opr.dest.type;
+    inst.opr.src2.type = inst.opr.dest.type;
 
     const auto src1_swizzle_enc = src1_swiz_0_6 | src1_swiz_7_8 << 7 | src1_swiz_9 << 9 | src1_swiz_10_11 << 10;
     inst.opr.src1.swizzle = decode_swizzle4(src1_swizzle_enc);
@@ -978,6 +982,9 @@ bool USSETranslatorVisitor::vnmad32(
     // TODO: source modifiers
 
     auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
+
+    LOG_DISASM("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(opcode), disasm::operand_to_str(inst.opr.dest, dest_mask),
+        disasm::operand_to_str(inst.opr.src1, dest_mask), disasm::operand_to_str(inst.opr.src2, dest_mask));
 
     // Recompile
 
