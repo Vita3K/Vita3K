@@ -309,7 +309,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
 
     std::unordered_map<std::uint32_t, bool> already;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < std::min(4, static_cast<int>(total_comp_count)); i++) {
         if (dest_mask & (1 << i)) {
             switch (swiz[i]) {
             case usse::SwizzleChannel::_X:
@@ -428,53 +428,68 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
 
     // Composite a new vector
     SpirvReg reg_left{};
-    std::uint32_t reg_left_comp_offset{};
+    std::uint32_t comp_offset{};
 
-    if (!get_spirv_reg(op.bank, op.num, offset, reg_left, reg_left_comp_offset, false)) {
+    if (!get_spirv_reg(op.bank, op.num, offset, reg_left, comp_offset, false)) {
         LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
         return spv::NoResult;
     }
 
-    // Get the next reg, so we can do a bridge
-    SpirvReg reg_right{};
-    std::uint32_t reg_right_comp_offset{};
+    if (comp_offset == 0 && is_default(op.swizzle, static_cast<Imm4>(dest_comp_count)) && 
+        m_b.getNumTypeComponents(reg_left.type_id) == dest_comp_count_to_get) {
+        spv::Id loaded = m_b.isConstant(reg_left.var_id) ? reg_left.var_id : m_b.createLoad(reg_left.var_id);
+        
+        if (size_comp == 4) {
+            return loaded;
+        } else {
+            // Unpack
+            return unpack(loaded, op.type, op.swizzle, dest_mask, 0);
+        }
+    }
 
-    // There is no more register to bridge to. For making it valid, just
-    // throws in a valid register
-    //
-    // I haven't think of any edge case, but this should be looked when there is
-    // any problems with bridging
-    if (!get_spirv_reg(op.bank, op.num, static_cast<std::uint32_t>(offset + dest_comp_count_to_get), reg_right, reg_right_comp_offset, false))
-        reg_right = reg_left;
+    std::uint32_t size_gotten = m_b.getNumTypeComponents(reg_left.type_id) - comp_offset;
 
-    // Optimization: Bridging (VectorShuffle) or even swizzling is not always necessary
+    std::vector<SpirvReg> to_bridge;
 
-    const bool needs_swizzle = !is_default(op.swizzle, static_cast<Imm4>(dest_comp_count_to_get));
+    while (size_gotten < dest_comp_count_to_get) {
+        SpirvReg another_one {};
+        std::uint32_t temp_comp = 0;
 
-    // Disable optimizations with any type !F32 for now. Its causing us trouble.
-    if (!needs_swizzle && size_comp == 4) {
-        const uint32_t reg_left_comp_count = m_b.getNumTypeComponents(reg_left.type_id) - reg_left_comp_offset;
-        const uint32_t reg_right_comp_count = m_b.getNumTypeComponents(reg_right.type_id) - reg_right_comp_offset;
+        if (!get_spirv_reg(op.bank, op.num, offset + size_gotten, another_one, temp_comp, false)) {
+            break;
+        }
 
-        const bool is_equal_comp_count = (reg_left_comp_count == reg_right_comp_count) && (reg_left_comp_count == dest_comp_count);
+        to_bridge.push_back(another_one);
+        size_gotten += another_one.size;
+    }
 
-        if (is_equal_comp_count) {
-            const bool is_reg_left_comp_offset = (reg_left_comp_offset == 0);
-            const bool is_reg_right_comp_offset = (reg_left_comp_offset == dest_comp_count_to_get);
-
-            if (is_reg_left_comp_offset)
-                return m_b.isConstant(reg_left.var_id) ? reg_left.var_id : m_b.createLoad(reg_left.var_id);
-            else if (is_reg_right_comp_offset)
-                return m_b.isConstant(reg_right.var_id) ? reg_right.var_id : m_b.createLoad(reg_right.var_id);
+    if (size_gotten < dest_comp_count_to_get) {
+        LOG_ERROR("Can't load register {}, missing registers to bridge", disasm::operand_to_str(op, 0));
+        return spv::NoResult;
+    } else {
+        // To bridge is empty. We need a place holder to shuffle the original up
+        if (to_bridge.empty()) {
+            to_bridge.push_back(reg_left);
         }
     }
 
     // We need to bridge
-    spv::Id first_pass = bridge(reg_left, reg_right, op.swizzle, reg_left_comp_offset, dest_mask, size_comp);
+    spv::Id first_pass = spv::NoResult;
+    first_pass = bridge(reg_left, to_bridge[0], op.swizzle, comp_offset, dest_mask, size_comp);
+    
+    SpirvReg first_pass_wrapper {};
+
+    for (std::size_t i = 1; i < to_bridge.size(); i++) {
+        first_pass_wrapper.type_id = m_b.getTypeId(first_pass);
+        first_pass_wrapper.var_id = first_pass;
+
+        first_pass = bridge(first_pass_wrapper, to_bridge[i], op.swizzle, comp_offset, dest_mask, size_comp);
+    }
 
     if (size_comp == 4) {
         return first_pass;
     }
+
     // Second pass: Do unpack
     // We already handle shift offset above, so now let's use 0
     return unpack(first_pass, op.type, op.swizzle, dest_mask, 0);
