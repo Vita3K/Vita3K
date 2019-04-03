@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -76,6 +76,18 @@ extern DECLSPEC SDL_bool SDLCALL SDL_DXGIGetOutputInfo( int displayIndex, int *a
 #endif /* __WIN32__ */
 
 
+/* Platform specific functions for Linux */
+#ifdef __LINUX__
+
+/**
+   \brief Sets the UNIX nice value for a thread, using setpriority() if possible, and RealtimeKit if available.
+
+   \return 0 on success, or -1 on error.
+ */
+extern DECLSPEC int SDLCALL SDL_LinuxSetThreadPriority(Sint64 threadID, int priority);
+ 
+#endif /* __LINUX__ */
+	
 /* Platform specific functions for iOS */
 #if defined(__IPHONEOS__) && __IPHONEOS__
 
@@ -107,6 +119,26 @@ extern DECLSPEC void * SDLCALL SDL_AndroidGetJNIEnv(void);
    (using env->Push/PopLocalFrame or manually with env->DeleteLocalRef)
  */
 extern DECLSPEC void * SDLCALL SDL_AndroidGetActivity(void);
+
+/**
+   \brief Return true if the application is running on Android TV
+ */
+extern DECLSPEC SDL_bool SDLCALL SDL_IsAndroidTV(void);
+
+/**
+   \brief Return true if the application is running on a Chromebook
+ */
+extern DECLSPEC SDL_bool SDLCALL SDL_IsChromebook(void);
+
+/**
+  \brief Return true is the application is running on a Samsung DeX docking station
+ */
+extern DECLSPEC SDL_bool SDLCALL SDL_IsDeXMode(void);
+
+/**
+ \brief Trigger the Android system back button behavior.
+ */
+extern DECLSPEC void SDLCALL SDL_AndroidBackButton(void);
 
 /**
    See the official Android developer guide for more information:
@@ -170,6 +202,25 @@ typedef enum
 
 
 /**
+ *  \brief WinRT Device Family
+ */
+typedef enum
+{
+    /** \brief Unknown family  */
+    SDL_WINRT_DEVICEFAMILY_UNKNOWN,
+
+    /** \brief Desktop family*/
+    SDL_WINRT_DEVICEFAMILY_DESKTOP,
+
+    /** \brief Mobile family (for example smartphone) */
+    SDL_WINRT_DEVICEFAMILY_MOBILE,
+
+    /** \brief XBox family */
+    SDL_WINRT_DEVICEFAMILY_XBOX,
+} SDL_WinRT_DeviceFamily;
+
+
+/**
  *  \brief Retrieves a WinRT defined path on the local file system
  *
  *  \note Documentation on most app-specific path types on WinRT
@@ -203,7 +254,19 @@ extern DECLSPEC const wchar_t * SDLCALL SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path
  */
 extern DECLSPEC const char * SDLCALL SDL_WinRTGetFSPathUTF8(SDL_WinRT_Path pathType);
 
+/**
+ *  \brief Detects the device family of WinRT plattform on runtime
+ *
+ *  \return Device family
+ */
+extern DECLSPEC SDL_WinRT_DeviceFamily SDLCALL SDL_WinRTGetDeviceFamily();
+
 #endif /* __WINRT__ */
+
+/**
+ \brief Return true if the current device is a tablet.
+ */
+extern DECLSPEC SDL_bool SDLCALL SDL_IsTablet(void);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
