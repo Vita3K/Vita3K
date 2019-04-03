@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -32,12 +32,6 @@
 #include "SDL_error.h"
 #include "SDL_video.h"
 #include "SDL_version.h"
-
-#include "begin_code.h"
-/* Set up for C function definitions, even when using C++ */
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
  *  \file SDL_syswm.h
@@ -108,6 +102,12 @@ typedef void *EGLSurface;
 
 #if defined(SDL_VIDEO_DRIVER_VIVANTE)
 #include "SDL_egl.h"
+#endif
+
+#include "begin_code.h"
+/* Set up for C function definitions, even when using C++ */
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 /**
