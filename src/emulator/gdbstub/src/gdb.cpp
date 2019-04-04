@@ -345,8 +345,6 @@ std::string cmd_continue(HostState &state, PacketCommand &command) {
         index = next;
     } while (next != std::string::npos);
 
-    // This is not a good solution :/
-    state.gdb.server_just_listen = true;
     return "";
 }
 
@@ -354,7 +352,9 @@ std::string cmd_continue_supported(HostState &state, PacketCommand &command) {
     return "vCont;c;C;s;S;t;r";
 }
 
-std::string cmd_kill(HostState &state, PacketCommand &command) { return "OK"; }
+std::string cmd_kill(HostState &state, PacketCommand &command) {
+    return "OK";
+}
 
 std::string cmd_die(HostState &state, PacketCommand &command) {
     state.gdb.server_die = true;
@@ -397,9 +397,7 @@ std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) {
     kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     LOG_GDB("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
-    for (const auto &thread : state.kernel.threads) {
-        add_breakpoint(*thread.second->cpu, address);
-    }
+    add_breakpoint(state.mem, address);
 
     return "OK";
 }
@@ -415,9 +413,7 @@ std::string cmd_remove_breakpoint(HostState &state, PacketCommand &command) {
     kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     LOG_GDB("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
-    for (const auto &thread : state.kernel.threads) {
-        remove_breakpoint(*thread.second->cpu, address);
-    }
+    remove_breakpoint(state.mem, address);
 
     return "OK";
 }
@@ -487,7 +483,6 @@ PacketFunctionBundle functions[] = {
     { "X", cmd_unimplemented },
     { "z", cmd_remove_breakpoint },
     { "Z", cmd_add_breakpoint },
-    { "Z", cmd_unimplemented },
 };
 
 static bool begins(PacketCommand &command, const std::string &small) {
@@ -499,6 +494,16 @@ static bool begins(PacketCommand &command, const std::string &small) {
 
 static int64_t server_next(HostState &state) {
     PacketData buffer;
+
+    // Wait for the server to close or a packet to be received.
+    fd_set readSet;
+    timeval timeout = { 1, 0 };
+    do {
+        readSet = { 0 };
+        FD_SET(state.gdb.client_socket, &readSet);
+    } while (select(state.gdb.client_socket + 1, &readSet, nullptr, nullptr, &timeout) < 1 && !state.gdb.server_die);
+    if (state.gdb.server_die)
+        return -1;
 
     int64_t length = recv(state.gdb.client_socket, buffer, sizeof(buffer), 0);
     buffer[length] = '\0';
@@ -530,8 +535,6 @@ static int64_t server_next(HostState &state) {
                         debug_func_name = function.name;
                         state.gdb.last_reply = function.function(state, command);
                         if (state.gdb.server_die)
-                            break;
-                        if (state.gdb.server_just_listen)
                             break;
                         server_reply(state.gdb, state.gdb.last_reply.c_str());
                         break;
@@ -581,7 +584,7 @@ static void server_listen(HostState &state) {
 
     do {
         status = server_next(state);
-    } while (status >= 0 || state.gdb.server_die);
+    } while (status >= 0 && !state.gdb.server_die);
 
     state.gdb.is_running = false;
 
@@ -636,6 +639,10 @@ void server_close(HostState &state) {
 #else
     close(state.gdb.listen_socket);
 #endif
+
+    state.gdb.server_die = true;
+    if (state.gdb.server_thread && state.gdb.server_thread->get_id() != std::this_thread::get_id())
+        state.gdb.server_thread->join();
 }
 
 #endif

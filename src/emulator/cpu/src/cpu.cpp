@@ -42,7 +42,7 @@ struct CPUState {
     DisasmState disasm;
     UnicornPtr uc;
     Address entry_point;
-    std::vector<uint32_t> breakpoints;
+    bool did_break = false;
 };
 
 // Log code for specified threads (arg to create_thread)
@@ -89,29 +89,39 @@ static void write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int si
     log_memory_access(uc, "Write", static_cast<Address>(address), size, value, mem);
 }
 
+constexpr uint32_t INT_SVC = 2;
+constexpr uint32_t INT_BKPT = 7;
+
 static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
-    assert(intno == 2);
+    assert(intno == INT_SVC || intno == INT_BKPT);
 
     CPUState &state = *static_cast<CPUState *>(user_data);
 
-    uint32_t pc = 0;
-    uc_err err = uc_reg_read(uc, UC_ARM_REG_PC, &pc);
-    assert(err == UC_ERR_OK);
+    uint32_t pc = read_pc(state);
 
-    if (is_thumb_mode(uc)) {
-        const Address svc_address = pc - 2;
-        uint16_t svc_instruction = 0;
-        err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
-        assert(err == UC_ERR_OK);
-        const uint8_t imm = svc_instruction & 0xff;
-        state.call_svc(state, imm, pc);
-    } else {
-        const Address svc_address = pc - 4;
-        uint32_t svc_instruction = 0;
-        err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
-        assert(err == UC_ERR_OK);
-        const uint32_t imm = svc_instruction & 0xffffff;
-        state.call_svc(state, imm, pc);
+    switch (intno) {
+    case INT_SVC:
+        if (is_thumb_mode(uc)) {
+            const Address svc_address = pc - 2;
+            uint16_t svc_instruction = 0;
+            uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
+            assert(err == UC_ERR_OK);
+            const uint8_t imm = svc_instruction & 0xff;
+            state.call_svc(state, imm, pc);
+        } else {
+            const Address svc_address = pc - 4;
+            uint32_t svc_instruction = 0;
+            uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
+            assert(err == UC_ERR_OK);
+            const uint32_t imm = svc_instruction & 0xffffff;
+            state.call_svc(state, imm, pc);
+        }
+        break;
+    case INT_BKPT:
+        stop(state);
+        state.did_break = true;
+        break;
+    default: break;
     }
 }
 
@@ -149,9 +159,6 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     temp_uc = nullptr;
 
     uc_hook hh = 0;
-#ifdef USE_GDBSTUB
-    watch_breakpoints(*state);
-#endif
 
     if ((log_code && LOG_CODE) || LOG_CODE_ALL) {
         log_code_add(*state);
@@ -202,7 +209,7 @@ int run(CPUState &state, bool callback) {
         std::uint32_t error_pc = read_pc(state);
         uint32_t lr = read_lr(state);
         LOG_CRITICAL("Unicorn error {} at: start PC: {} error PC {} LR: {}",
-                log_hex(err), log_hex(pc), log_hex(error_pc), log_hex(lr));
+            log_hex(err), log_hex(pc), log_hex(error_pc), log_hex(lr));
         return -1;
     }
     pc = read_pc(state);
@@ -229,8 +236,8 @@ int step(CPUState &state, bool callback) {
     if (err != UC_ERR_OK) {
         std::uint32_t error_pc = read_pc(state);
         uint32_t lr = read_lr(state);
-                LOG_CRITICAL("Unicorn error {} at: start PC: {} error PC {} LR: {}",
-                        log_hex(err), log_hex(pc), log_hex(error_pc), log_hex(lr));
+        LOG_CRITICAL("Unicorn error {} at: start PC: {} error PC {} LR: {}",
+            log_hex(err), log_hex(pc), log_hex(error_pc), log_hex(lr));
         return -1;
     }
     pc = read_pc(state);
@@ -331,23 +338,8 @@ void write_lr(CPUState &state, uint32_t value) {
     assert(err == UC_ERR_OK);
 }
 
-void breakpoint_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
-    CPUState &state = *reinterpret_cast<CPUState *>(user_data);
-    auto breakpoint = std::find(state.breakpoints.begin(), state.breakpoints.end(), address);
-
-    if (breakpoint != state.breakpoints.end()) {
-        LOG_INFO("Breakpoint Hit at {}.", log_hex(address));
-        uc_emu_stop(uc);
-    }
-}
-
-void add_breakpoint(CPUState &state, uint32_t address) {
-    state.breakpoints.push_back(address);
-}
-
-void remove_breakpoint(CPUState &state, uint32_t address) {
-    state.breakpoints.erase(
-            std::remove(state.breakpoints.begin(), state.breakpoints.end(), address), state.breakpoints.end());
+bool hit_breakpoint(CPUState &state) {
+    return state.did_break;
 }
 
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size) {
@@ -360,18 +352,6 @@ std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn
 std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size) {
     const bool thumb = is_thumb_mode(state.uc.get());
     return disassemble(state, at, thumb, insn_size);
-}
-
-// Breakpoints using this method kills performance. Maybe hook interupts and drop a BKPT instruction in the future.
-void watch_breakpoints(CPUState &state) {
-    uc_hook hh = 0;
-    const uc_err err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_CODE, reinterpret_cast<void *>(breakpoint_hook), &state, 1, 0);
-
-    assert(err == UC_ERR_OK);
-}
-
-bool hit_breakpoint(CPUState &state) {
-    return std::find(state.breakpoints.begin(), state.breakpoints.end(), read_pc(state)) != state.breakpoints.end();
 }
 
 void log_code_add(CPUState &state) {

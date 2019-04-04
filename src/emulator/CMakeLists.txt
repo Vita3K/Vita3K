@@ -50,7 +50,7 @@ endmacro(configure_boost)
 configure_boost()
 
 # -DUSE_GDBSTUB will compile Vita3K with a GDB stub.
-add_definitions(-DUSE_GDBSTUB)
+# add_definitions(-DUSE_GDBSTUB)
 
 add_subdirectory(audio)
 add_subdirectory(cpu)

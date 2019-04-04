@@ -37,6 +37,7 @@ struct MemState {
     Allocated allocated_pages;
     std::mutex generation_mutex;
     GenerationNames generation_names;
+    std::map<Address, uint32_t> breakpoints;
 };
 
 constexpr size_t KB(size_t kb) {
@@ -57,3 +58,5 @@ Address alloc_at(MemState &state, Address address, size_t size, const char *name
 void free(MemState &state, Address address);
 uint32_t mem_available(MemState &state);
 const char *mem_name(Address address, MemState &state);
+void add_breakpoint(MemState &state, Address at);
+void remove_breakpoint(MemState &state, Address at);

@@ -20,6 +20,7 @@
 #include "config.h"
 #include <audio/state.h>
 #include <ctrl/state.h>
+#include <gdbstub/state.h>
 #include <gui/state.h>
 #include <gxm/state.h>
 #include <host/sfo.h>
@@ -29,7 +30,6 @@
 #include <nids/types.h>
 #include <np/state.h>
 #include <renderer/state.h>
-#include <gdbstub/state.h>
 
 #include <psp2/display.h>
 

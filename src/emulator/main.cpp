@@ -21,6 +21,7 @@
 
 #include <gui/functions.h>
 #include <gdbstub/functions.h>
+#include <gui/functions.h>
 #include <host/app.h>
 #include <host/config.h>
 #include <host/functions.h>

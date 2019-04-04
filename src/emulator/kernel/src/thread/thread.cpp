@@ -34,7 +34,7 @@
 #include <cassert>
 #include <cstring>
 
-constexpr static bool wait_for_debugger = false;
+static bool wait_for_debugger = false;
 
 struct ThreadParams {
     KernelState *kernel = nullptr;
@@ -51,7 +51,11 @@ static int SDLCALL thread_function(void *data) {
     const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
     write_reg(*thread->cpu, 0, params.arglen);
     write_reg(*thread->cpu, 1, params.argp.address());
-    if (wait_for_debugger) thread->to_do = ThreadToDo::wait;
+    if (wait_for_debugger) {
+        thread->to_do = ThreadToDo::wait;
+        // Any following threads opened with thread_function will not wait.
+        wait_for_debugger = false;
+    }
     const bool succeeded = run_thread(*thread, false);
     assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
@@ -196,7 +200,8 @@ bool run_thread(ThreadState &thread, bool callback) {
             if (thread.to_do == ThreadToDo::step) {
                 res = step(*thread.cpu, callback);
                 thread.to_do = ThreadToDo::wait;
-            } else res = run(*thread.cpu, callback);
+            } else
+                res = run(*thread.cpu, callback);
 #ifdef USE_GDBSTUB
             if (hit_breakpoint(*thread.cpu)) {
                 thread.to_do = ThreadToDo::wait;
@@ -223,7 +228,8 @@ bool run_thread(ThreadState &thread, bool callback) {
         }
     }
 
-    if (true) { }
+    if (true) {
+    }
 }
 
 bool run_callback(ThreadState &thread, Address &pc, Address &data) {

@@ -16,8 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <functional>
-#include <thread>
 #include <memory>
+#include <thread>
 
 #ifdef _WIN32
 typedef SOCKET socket_t;
@@ -37,8 +37,7 @@ struct GDBState {
     socket_t listen_socket = BAD_SOCK;
     socket_t client_socket = BAD_SOCK;
 
-    std::shared_ptr<std::thread> server_thread;
-    bool server_just_listen = false;
+    std::shared_ptr<std::thread> server_thread = nullptr;
     bool server_die = false;
 
     std::string last_reply = "";
