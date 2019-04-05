@@ -1134,7 +1134,7 @@ EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode
 }
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
-    //    assert(uniformBuffer != nullptr);
+//    assert(uniformBuffer != nullptr);
     assert(parameter != nullptr);
     assert(parameter->container_index == SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX);
     assert(componentCount > 0);

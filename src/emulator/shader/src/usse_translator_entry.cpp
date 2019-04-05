@@ -37,7 +37,7 @@ using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 template <typename V>
 boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     static const std::vector<USSEMatcher<V>> table = {
-    // clang-format off
+// clang-format off
     #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
 
     // Vector move

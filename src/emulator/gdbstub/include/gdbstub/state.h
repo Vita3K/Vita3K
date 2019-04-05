@@ -15,13 +15,15 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#ifdef USE_GDBSTUB
+
 #include <functional>
 #include <memory>
 #include <thread>
 
 #ifdef _WIN32
 typedef SOCKET socket_t;
-constexpr socket_t BAD_SOCK = INVALID_SOCKET;
+constexpr socket_t BAD_SOCK = (socket_t)~0;
 #else
 typedef int32_t socket_t;
 constexpr socket_t BAD_SOCK = -1;
@@ -47,3 +49,5 @@ struct GDBState {
 
     bool is_running = false;
 };
+
+#endif

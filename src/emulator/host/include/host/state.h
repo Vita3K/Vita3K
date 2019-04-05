@@ -20,7 +20,6 @@
 #include "config.h"
 #include <audio/state.h>
 #include <ctrl/state.h>
-#include <gdbstub/state.h>
 #include <gui/state.h>
 #include <gxm/state.h>
 #include <host/sfo.h>
@@ -30,6 +29,9 @@
 #include <nids/types.h>
 #include <np/state.h>
 #include <renderer/state.h>
+
+// The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
+#include <gdbstub/state.h>
 
 #include <psp2/display.h>
 
@@ -83,5 +85,7 @@ struct HostState {
     gui::State gui;
     SfoFile sfo_handle;
     NIDSet missing_nids;
+#ifdef USE_GDBSTUB
     GDBState gdb;
+#endif
 };

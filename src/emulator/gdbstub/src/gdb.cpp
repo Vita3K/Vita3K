@@ -40,12 +40,18 @@
 #include <unistd.h>
 #endif
 
-#define LOG_GDB_LEVEL 2
+#define LOG_GDB_LEVEL 1
 
 #if LOG_GDB_LEVEL >= 1
 #define LOG_GDB LOG_INFO
 #else
 #define LOG_GDB(a, ...)
+#endif
+
+#if LOG_GDB_LEVEL >= 2
+#define LOG_GDB_DEBUG LOG_INFO
+#else
+#define LOG_GDB_DEBUG(a, ...)
 #endif
 
 // Credit to jfhs for their GDB stub for RPCS3 which this stub is based on.
@@ -273,7 +279,7 @@ std::string cmd_read_memory(HostState &state, PacketCommand &command) {
 
     if (!memory_safe) {
         LOG_GDB("Reading from unsafe page. {} - {}", page_first, page_length);
-        return "E01";
+        return "EAA";
     }
 
     std::stringstream stream;
@@ -543,10 +549,8 @@ static int64_t server_next(HostState &state) {
 
                 a += command.content_length + 3;
 
-#if LOG_GDB_LEVEL >= 2
-                LOG_GDB("GDB Server Recognized Command as {}. {}", debug_func_name,
+                LOG_GDB_DEBUG("GDB Server Recognized Command as {}. {}", debug_func_name,
                     std::string(command.content_start, command.content_length));
-#endif
             } else {
                 server_ack(state.gdb, '-');
 

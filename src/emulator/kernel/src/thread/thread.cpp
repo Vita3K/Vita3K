@@ -227,9 +227,6 @@ bool run_thread(ThreadState &thread, bool callback) {
             break;
         }
     }
-
-    if (true) {
-    }
 }
 
 bool run_callback(ThreadState &thread, Address &pc, Address &data) {
