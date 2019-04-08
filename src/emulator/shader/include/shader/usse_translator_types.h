@@ -104,7 +104,7 @@ struct NonDependentTextureQueryCallInfo {
     spv::Id sampler;
     spv::Id coord;
     spv::Id dest;
-    uint32_t reserved; ///< For sampling method later
+    int store_type; ///< For sampling method later
 };
 
 using NonDependentTextureQueryCallInfos = std::vector<NonDependentTextureQueryCallInfo>;

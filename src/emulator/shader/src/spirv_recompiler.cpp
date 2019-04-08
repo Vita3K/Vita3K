@@ -123,7 +123,7 @@ static spv::Id get_type_basic(spv::Builder &b, const SceGxmProgramParameter &par
 
     switch (type) {
     // clang-format off
-    case SCE_GXM_PARAMETER_TYPE_F16:return b.makeFloatType(32); // TODO: support f16
+    case SCE_GXM_PARAMETER_TYPE_F16: return b.makeFloatType(32); // TODO: support f16
     case SCE_GXM_PARAMETER_TYPE_F32: return b.makeFloatType(32);
     case SCE_GXM_PARAMETER_TYPE_U8: return b.makeUintType(8);
     case SCE_GXM_PARAMETER_TYPE_U16: return b.makeUintType(16);
@@ -489,14 +489,15 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             tex_query_var_name += std::to_string(tex_coord_index);
 
             NonDependentTextureQueryCallInfo tex_query_info;
+            tex_query_info.store_type = (component_type == 3) ? static_cast<int>(DataType::F32) : static_cast<int>(DataType::F16);
 
             // Size of this extra pa occupied
             // Force this to be PRIVATE
             const optional<spv::StorageClass> texture_query_storage{ spv::StorageClassPrivate };
-            const auto type = ((descriptor->size >> 6) & 3) + 1;
-            const auto size = b.makeVectorType(b.makeFloatType(32), num_component);
+            const auto size = ((descriptor->size >> 6) & 3) + 1;
+            const auto type = b.makeVectorType(b.makeFloatType(32), num_component * size / 4);
 
-            tex_query_info.dest = create_spirv_var_reg(b, parameters, tex_query_var_name, RegisterBank::PRIMATTR, type, size, texture_query_storage);
+            tex_query_info.dest = create_spirv_var_reg(b, parameters, tex_query_var_name, RegisterBank::PRIMATTR, size, type, texture_query_storage);
 
             if (coords[tex_coord_index] == spv::NoResult) {
                 // Create an 'in' variable
@@ -711,6 +712,75 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
+    const std::uint32_t *literals = reinterpret_cast<const std::uint32_t *>(reinterpret_cast<const std::uint8_t *>(&program.literals_offset)
+        + program.literals_offset);
+
+    // Get base SA offset for literal
+    // The container index of those literals are 16
+    auto container = get_container_by_index(program, 16);
+
+    if (!container) {
+        // Alternative is 19, which is DATA
+        container = get_container_by_index(program, 19);
+    }
+
+    if (!container) {
+        LOG_WARN("Container for literal not found, skipping creating literals!");
+    } else if (program.literals_count != 0) {
+        spv::Id f32_type = b.makeFloatType(32);
+        using literal_pair = std::pair<std::uint32_t, spv::Id>;
+
+        std::vector<literal_pair> literal_pairs;
+
+        for (std::uint32_t i = 0; i < program.literals_count * 2; i += 2) {
+            auto literal_offset = container->base_sa_offset + literals[i];
+            auto literal_data = reinterpret_cast<const float *>(literals)[i + 1];
+
+            literal_pairs.emplace_back(literal_offset, b.makeFloatConstant(literal_data));
+
+            // Pair sort automatically sort offset for us
+            std::sort(literal_pairs.begin(), literal_pairs.end());
+
+            LOG_TRACE("[LITERAL + {}] sa{} = {} (0x{:X})", literals[i], literal_offset, literal_data, literals[i + 1]);
+        }
+
+        std::uint32_t composite_base = literal_pairs[0].first;
+
+        // We should avoid ugly and long GLSL code generated. Also, inefficient SPIR-V code.
+        // Packing literals into vector may help solving this.
+        std::vector<spv::Id> constituents;
+        constituents.push_back(literal_pairs[0].second);
+
+        auto create_new_literal_pack = [&]() {
+            // Create new literal composite
+            spv_params.uniforms.set_next_offset(composite_base);
+            spv::Id composite_var = b.makeCompositeConstant(b.makeVectorType(f32_type, static_cast<int>(constituents.size())),
+                constituents);
+
+            spv_params.uniforms.push({ f32_type, composite_var }, static_cast<int>(constituents.size()));
+        };
+
+        for (std::uint32_t i = 1; i < program.literals_count; i++) {
+            // Detect sequence literals.
+            if (literal_pairs[i].first == composite_base + constituents.size() && constituents.size() < 4) {
+                constituents.push_back(literal_pairs[i].second);
+            } else {
+                // The sequence ended. Create new literal pack.
+                create_new_literal_pack();
+
+                // Reset and set new base
+                composite_base = literal_pairs[i].first;
+                constituents.clear();
+                constituents.push_back(literal_pairs[i].second);
+            }
+        }
+
+        // Is there any constituents left ? We should create a literal pack if there is.
+        if (!constituents.empty()) {
+            create_new_literal_pack();
+        }
+    }
+
     // Declarations ended with a struct, so it didn't get handled and we need to do it here
     if (!param_struct.empty())
         create_struct(b, spv_params, param_struct, program_type);
@@ -723,8 +793,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     // Create temp reg vars
-    for (auto i = 0; i < program.temp_reg_count1; i++) {
-        auto name = fmt::format("r{}", i);
+    const std::size_t total_temp_reg_v4 = (program.temp_reg_count1 / 4) + ((program.temp_reg_count1 % 4) ? 1 : 0);
+
+    for (auto i = 0; i < total_temp_reg_v4; i++) {
+        auto name = fmt::format("r{}", i * 4);
         auto type = b.makeVectorType(b.makeFloatType(32), 4); // TODO: Figure out correct type
         create_spirv_var_reg(b, spv_params, name, usse::RegisterBank::TEMP, 4, type);
     }
@@ -749,28 +821,17 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         } else if (missing_primary_attrs > 0) {
             const auto pa_type = b.makeVectorType(b.makeFloatType(32), static_cast<int>(missing_primary_attrs * 2));
             std::string pa_name = "pa0_blend";
-            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, static_cast<std::uint32_t>(missing_primary_attrs * 2), pa_type); // TODO: * 2 is a hack because we don't yet support f16
+            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, static_cast<std::uint32_t>(missing_primary_attrs * 2), pa_type,
+                spv::StorageClass::StorageClassPrivate); // TODO: * 2 is a hack because we don't yet support f16
         }
     }
 
     return spv_params;
 }
 
-static void do_texture_queries(spv::Builder &b, NonDependentTextureQueryCallInfos texture_queries) {
-    for (auto &texture_query : texture_queries) {
-        const auto image_sample = b.createOp(spv::OpImageSampleImplicitLod,
-            b.getTypeId(texture_query.dest), // destination result type
-            { texture_query.sampler, texture_query.coord } // sampler and texture coordinates
-        );
-        b.createStore(image_sample, texture_query.dest);
-    }
-}
-
-static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program, NonDependentTextureQueryCallInfos texture_queries) {
+static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program, const NonDependentTextureQueryCallInfos &texture_queries) {
     // Do texture queries
-    do_texture_queries(b, texture_queries);
-
-    usse::convert_gxp_usse_to_spirv(b, program, parameters);
+    usse::convert_gxp_usse_to_spirv(b, program, parameters, texture_queries);
 }
 
 static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, bool force_shader_debug) {

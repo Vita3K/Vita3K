@@ -46,14 +46,14 @@ const char *s_predicate_str(ShortPredicate p) {
     }
 }
 
-const char *move_data_type_str(MoveDataType p) {
+const char *data_type_str(DataType p) {
     switch (p) {
-    case MoveDataType::INT8: return "i8";
-    case MoveDataType::INT16: return "i16";
-    case MoveDataType::INT32: return "i32";
-    case MoveDataType::C10: return "c10";
-    case MoveDataType::F16: return "f16";
-    case MoveDataType::F32: return "f32";
+    case DataType::INT8: return "i8";
+    case DataType::INT16: return "i16";
+    case DataType::INT32: return "i32";
+    case DataType::C10: return "c10";
+    case DataType::F16: return "f16";
+    case DataType::F32: return "f32";
     default: return "invalid";
     }
 }
