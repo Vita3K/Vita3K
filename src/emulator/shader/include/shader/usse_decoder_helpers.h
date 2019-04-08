@@ -15,7 +15,7 @@ usse::Imm4 decode_write_mask(usse::Imm4 write_mask, const bool f16);
 
 // Register/Operand decoding
 
-usse::Operand decode_dest(usse::Imm6 dest_n, usse::Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits, 
+usse::Operand decode_dest(usse::Imm6 dest_n, usse::Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits,
     bool is_second_program);
 usse::Operand decode_src12(usse::Imm6 src_n, usse::Imm2 src_bank_sel, usse::Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits,
     bool is_second_program);

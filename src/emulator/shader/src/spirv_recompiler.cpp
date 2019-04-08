@@ -160,7 +160,7 @@ static spv::Id get_type_array(spv::Builder &b, const SceGxmProgramParameter &par
     if (parameter.component_count > 1) {
         param_id = b.makeVectorType(param_id, parameter.component_count);
     }
-    
+
     // TODO: Stride
     param_id = b.makeArrayType(param_id, b.makeUintConstant(parameter.array_size), 1);
 
@@ -221,8 +221,7 @@ spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     return spv::StorageClassMax;
 }
 
-static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type, optional<spv::StorageClass> force_storage = boost::none
-    , boost::optional<std::uint32_t> force_offset = boost::none) {
+static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type, optional<spv::StorageClass> force_storage = boost::none, boost::optional<std::uint32_t> force_offset = boost::none) {
     sanitize_variable_name(name);
 
     const auto storage_class = force_storage ? *force_storage : reg_type_to_spv_storage_class(reg_type);
@@ -497,7 +496,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             const optional<spv::StorageClass> texture_query_storage{ spv::StorageClassPrivate };
             const auto size = ((descriptor->size >> 6) & 3) + 1;
             const auto type = b.makeVectorType(b.makeFloatType(32), num_component * size / 4);
-            
+
             tex_query_info.dest = create_spirv_var_reg(b, parameters, tex_query_var_name, RegisterBank::PRIMATTR, size, type, texture_query_storage);
 
             if (coords[tex_coord_index] == spv::NoResult) {
@@ -533,8 +532,7 @@ static void create_fragment_output(spv::Builder &b, SpirvShaderParameters &param
 }
 
 static const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program) {
-    const SceGxmProgramParameterContainer *containers = reinterpret_cast<const SceGxmProgramParameterContainer*>
-        (reinterpret_cast<const std::uint8_t*>(&program.container_offset) + program.container_offset);
+    const SceGxmProgramParameterContainer *containers = reinterpret_cast<const SceGxmProgramParameterContainer *>(reinterpret_cast<const std::uint8_t *>(&program.container_offset) + program.container_offset);
 
     return containers;
 }
@@ -688,8 +686,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 LOG_DEBUG(param_log);
 
                 // TODO: Size is not accurate.
-                create_spirv_var_reg(b, spv_params, var_name, param_reg_type, parameter.array_size * parameter.component_count, param_type
-                    , boost::none, offset);
+                create_spirv_var_reg(b, spv_params, var_name, param_reg_type, parameter.array_size * parameter.component_count, param_type, boost::none, offset);
             }
             break;
         }
@@ -715,7 +712,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    const std::uint32_t *literals = reinterpret_cast<const std::uint32_t*>(reinterpret_cast<const std::uint8_t*>(&program.literals_offset)
+    const std::uint32_t *literals = reinterpret_cast<const std::uint32_t *>(reinterpret_cast<const std::uint8_t *>(&program.literals_offset)
         + program.literals_offset);
 
     // Get base SA offset for literal
@@ -733,18 +730,18 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         spv::Id f32_type = b.makeFloatType(32);
         using literal_pair = std::pair<std::uint32_t, spv::Id>;
 
-        std::vector<literal_pair> literal_pairs; 
+        std::vector<literal_pair> literal_pairs;
 
         for (std::uint32_t i = 0; i < program.literals_count * 2; i += 2) {
             auto literal_offset = container->base_sa_offset + literals[i];
-            auto literal_data = reinterpret_cast<const float*>(literals)[i + 1];
+            auto literal_data = reinterpret_cast<const float *>(literals)[i + 1];
 
             literal_pairs.emplace_back(literal_offset, b.makeFloatConstant(literal_data));
 
             // Pair sort automatically sort offset for us
             std::sort(literal_pairs.begin(), literal_pairs.end());
 
-            LOG_TRACE("[LITERAL + {}] sa{} = {} (0x{:X})", literals[i], literal_offset, literal_data, literals[i+1]);
+            LOG_TRACE("[LITERAL + {}] sa{} = {} (0x{:X})", literals[i], literal_offset, literal_data, literals[i + 1]);
         }
 
         std::uint32_t composite_base = literal_pairs[0].first;
@@ -757,7 +754,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         auto create_new_literal_pack = [&]() {
             // Create new literal composite
             spv_params.uniforms.set_next_offset(composite_base);
-            spv::Id composite_var =  b.makeCompositeConstant(b.makeVectorType(f32_type, static_cast<int>(constituents.size())), 
+            spv::Id composite_var = b.makeCompositeConstant(b.makeVectorType(f32_type, static_cast<int>(constituents.size())),
                 constituents);
 
             spv_params.uniforms.push({ f32_type, composite_var }, static_cast<int>(constituents.size()));

@@ -75,7 +75,7 @@ public:
         // Build common type here, so builder won't have to look it up later
         type_f32 = m_b.makeFloatType(32);
         type_ui32 = m_b.makeUintType(32);
-   
+
         const_f32[3] = m_b.makeFloatConstant(0.5f);
         const_f32[0] = m_b.makeFloatConstant(0.0f);
         const_f32[1] = m_b.makeFloatConstant(1.0f);
@@ -177,7 +177,7 @@ private:
      * 
      * \returns A new vector with [total_comp_count(target) * 4 / size(type)] components
      */
-    spv::Id unpack(spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask, 
+    spv::Id unpack(spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
         const std::uint32_t shift_offset = 0);
 
     /**
@@ -195,8 +195,8 @@ private:
     // TODO: Separate file for translator helpers?
     static size_t dest_mask_to_comp_count(Imm4 dest_mask);
 
-    bool m_second_program { false };
-    
+    bool m_second_program{ false };
+
 public:
     void set_secondary_program(const bool is_it) {
         m_second_program = is_it;

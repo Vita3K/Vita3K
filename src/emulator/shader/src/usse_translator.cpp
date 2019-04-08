@@ -22,8 +22,8 @@
 #include <shader/usse_types.h>
 #include <util/log.h>
 
-#include <SPIRV/SpvBuilder.h>
 #include <SPIRV/GLSL.std.450.h>
+#include <SPIRV/SpvBuilder.h>
 #include <boost/optional.hpp>
 #include <spdlog/fmt/fmt.h>
 #include <spirv.hpp>
@@ -80,7 +80,7 @@ void shader::usse::USSETranslatorVisitor::make_f16_pack_func() {
 void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries) {
     for (auto &texture_query : texture_queries) {
         const bool query_f16 = texture_query.store_type == static_cast<int>(DataType::F16);
-        
+
         auto image_sample = m_b.createOp(spv::OpImageSampleImplicitLod,
             query_f16 ? type_f32_v[4] : m_b.getTypeId(texture_query.dest), // destination result type
             { texture_query.sampler, texture_query.coord } // sampler and texture coordinates
@@ -96,7 +96,7 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
 
             image_sample = m_b.createCompositeConstruct(type_f32_v[2], { pack1, pack2 });
         }
-        
+
         m_b.createStore(image_sample, texture_query.dest);
     }
 }
@@ -172,7 +172,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
             return true;
         }
-        
+
         return false;
     }
 
@@ -181,7 +181,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
         // Need to do a access chain to access the elements
         reg.var_id = m_b.createOp(spv::OpAccessChain, m_b.makePointer(spv::StorageClassPrivate, m_b.getContainedTypeId(reg.type_id)),
-            { reg.var_id, m_b.makeIntConstant(out_comp_offset / size_per_element) } );
+            { reg.var_id, m_b.makeIntConstant(out_comp_offset / size_per_element) });
         reg.type_id = m_b.getContainedTypeId(reg.type_id);
 
         out_comp_offset %= size_per_element;
@@ -201,7 +201,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         reg = create_supply_register(reg, new_sa_supply_name);
         sa_supplies[writeable_idx] = reg;
     }
-    
+
     return true;
 }
 
@@ -267,15 +267,15 @@ spv::Id USSETranslatorVisitor::unpack(spv::Id target, const DataType type, Swizz
         return unpack_results[0];
     }
 
-    SpirvReg reg_left {};
-    SpirvReg reg_right {};
+    SpirvReg reg_left{};
+    SpirvReg reg_right{};
 
     reg_left.type_id = unpacked_type;
     reg_right.type_id = unpacked_type;
 
     reg_left.var_id = unpack_results[0];
     reg_right.var_id = unpack_results[1];
-    
+
     spv::Id last_shuffled = bridge(reg_left, reg_right, swizz, shift_offset, dest_mask);
 
     // It won't probably go up to two, but just in case ?
@@ -285,7 +285,7 @@ spv::Id USSETranslatorVisitor::unpack(spv::Id target, const DataType type, Swizz
 
         last_shuffled = bridge(reg_left, reg_right, swizz, shift_offset, dest_mask);
     }
-    
+
     return last_shuffled;
 }
 
@@ -408,7 +408,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
 
     // Default load will get word as default component
     std::size_t dest_comp_count_to_get = 0;
-    bool already[4] = {false, false, false, false};
+    bool already[4] = { false, false, false, false };
 
     for (int i = 0; i < 4; i++) {
         if (dest_mask & (1 << i) && (already[i * size_comp / 4] == false)) {
@@ -439,10 +439,9 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         return spv::NoResult;
     }
 
-    if (comp_offset == 0 && is_default(op.swizzle, static_cast<Imm4>(dest_comp_count)) && 
-        m_b.getNumTypeComponents(reg_left.type_id) == dest_comp_count_to_get) {
+    if (comp_offset == 0 && is_default(op.swizzle, static_cast<Imm4>(dest_comp_count)) && m_b.getNumTypeComponents(reg_left.type_id) == dest_comp_count_to_get) {
         spv::Id loaded = m_b.isConstant(reg_left.var_id) ? reg_left.var_id : m_b.createLoad(reg_left.var_id);
-        
+
         if (size_comp == 4) {
             return loaded;
         } else {
@@ -456,7 +455,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     std::vector<SpirvReg> to_bridge;
 
     while (size_gotten < dest_comp_count_to_get) {
-        SpirvReg another_one {};
+        SpirvReg another_one{};
         std::uint32_t temp_comp = 0;
 
         if (!get_spirv_reg(op.bank, op.num, offset + size_gotten, another_one, temp_comp, false)) {
@@ -480,8 +479,8 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     // We need to bridge
     spv::Id first_pass = spv::NoResult;
     first_pass = bridge(reg_left, to_bridge[0], op.swizzle, comp_offset, dest_mask, size_comp);
-    
-    SpirvReg first_pass_wrapper {};
+
+    SpirvReg first_pass_wrapper{};
 
     for (std::size_t i = 1; i < to_bridge.size(); i++) {
         first_pass_wrapper.type_id = m_b.getTypeId(first_pass);
@@ -524,7 +523,7 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
 
     // Default load will get word as default component
     std::size_t comp_count_to_store = 0;
-    bool already[4] = {false, false, false, false};
+    bool already[4] = { false, false, false, false };
 
     for (int i = 0; i < 4; i++) {
         if (dest_mask & (1 << i) && (already[i * size_comp / 4] == false)) {
@@ -576,7 +575,7 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
 
         for (std::uint8_t i = 0; i < 4; i++) {
             std::uint32_t swizz_off = (dest_comp_offset + i) % 4;
-            
+
             if (!(dest_mask & (1 << swizz_off))) {
                 swizz_off = i;
 
@@ -594,7 +593,7 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
 
                     cached_packed[swizz_off] = unpack_one(cached_packed[swizz_off], dest.type);
                 }
-                
+
                 vars.push_back(m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
                     { cached_packed[swizz_off], m_b.makeIntConstant(extract_offset) }));
             } else {
@@ -837,7 +836,7 @@ bool USSETranslatorVisitor::vmad(
     Imm4 src0_swiz,
     Imm6 src0_n) {
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), "VMAD");
-    
+
     Instruction inst{};
 
     // Is this VMAD3 or VMAD4, op2 = 0 => vec3
@@ -999,29 +998,34 @@ bool USSETranslatorVisitor::vnmad32(
     }
 
     spv::Id result = spv::NoResult;
-    
+
     switch (opcode) {
-    case Opcode::VADD: case Opcode::VF16ADD: {
+    case Opcode::VADD:
+    case Opcode::VF16ADD: {
         result = m_b.createBinOp(spv::OpFAdd, type_f32_v[dest_comp_count], vsrc1, vsrc2);
         break;
     }
 
-    case Opcode::VMUL: case Opcode::VF16MUL: {
+    case Opcode::VMUL:
+    case Opcode::VF16MUL: {
         result = m_b.createBinOp(spv::OpFMul, type_f32_v[dest_comp_count], vsrc1, vsrc2);
         break;
     }
 
-    case Opcode::VMIN: case Opcode::VF16MIN: {
+    case Opcode::VMIN:
+    case Opcode::VF16MIN: {
         result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMin, { vsrc1, vsrc2 });
         break;
     }
 
-    case Opcode::VMAX: case Opcode::VF16MAX: {
+    case Opcode::VMAX:
+    case Opcode::VF16MAX: {
         result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMax, { vsrc1, vsrc2 });
         break;
     }
 
-    case Opcode::VFRC: case Opcode::VF16FRC: {
+    case Opcode::VFRC:
+    case Opcode::VF16FRC: {
         // Dest = Source1 - Floor(Source2)
         // If two source are identical, let's use the fractional function
         if (inst.opr.src1.is_same(inst.opr.src2, dest_mask)) {
@@ -1102,7 +1106,7 @@ bool USSETranslatorVisitor::vpck(
     Imm4 src2_n,
     Imm1 comp_sel_0_bit0) {
     Instruction inst{};
-    
+
     // TODO: There are some combinations that are invalid.
     const DataType dest_data_type_table[] = {
         DataType::UINT8,
@@ -1127,86 +1131,70 @@ bool USSETranslatorVisitor::vpck(
     };
 
     const Opcode op_table[][static_cast<int>(DataType::TOTAL_TYPE)] = {
-        {
-            Opcode::VPCKU8U8,
+        { Opcode::VPCKU8U8,
             Opcode::VPCKU8S8,
             Opcode::VPCKU8O8,
             Opcode::VPCKU8U16,
             Opcode::VPCKU8S16,
             Opcode::VPCKU8F16,
             Opcode::VPCKU8F32,
-            Opcode::INVALID
-        },
-        {
-            Opcode::VPCKS8U8,
+            Opcode::INVALID },
+        { Opcode::VPCKS8U8,
             Opcode::VPCKS8S8,
             Opcode::VPCKS8O8,
             Opcode::VPCKS8U16,
             Opcode::VPCKS8S16,
             Opcode::VPCKS8F16,
             Opcode::VPCKS8F32,
-            Opcode::INVALID
-        },
-        {
-            Opcode::VPCKO8U8,
+            Opcode::INVALID },
+        { Opcode::VPCKO8U8,
             Opcode::VPCKO8S8,
             Opcode::VPCKO8O8,
             Opcode::VPCKO8U16,
             Opcode::VPCKO8S16,
             Opcode::VPCKO8F16,
             Opcode::VPCKO8F32,
-            Opcode::INVALID
-        },
-        {
-            Opcode::VPCKU16U8,
+            Opcode::INVALID },
+        { Opcode::VPCKU16U8,
             Opcode::VPCKU16S8,
             Opcode::VPCKU16O8,
             Opcode::VPCKU16U16,
             Opcode::VPCKU16S16,
             Opcode::VPCKU16F16,
             Opcode::VPCKU16F32,
-            Opcode::INVALID
-        },
-        {
-            Opcode::VPCKS16U8,
+            Opcode::INVALID },
+        { Opcode::VPCKS16U8,
             Opcode::VPCKS16S8,
             Opcode::VPCKS16O8,
             Opcode::VPCKS16U16,
             Opcode::VPCKS16S16,
             Opcode::VPCKS16F16,
             Opcode::VPCKS16F32,
-            Opcode::INVALID
-        },
-        {
-            Opcode::VPCKF16U8,
+            Opcode::INVALID },
+        { Opcode::VPCKF16U8,
             Opcode::VPCKF16S8,
             Opcode::VPCKF16O8,
             Opcode::VPCKF16U16,
             Opcode::VPCKF16S16,
             Opcode::VPCKF16F16,
             Opcode::VPCKF16F32,
-            Opcode::VPCKF16C10
-        },
-        {
-            Opcode::VPCKF32U8,
+            Opcode::VPCKF16C10 },
+        { Opcode::VPCKF32U8,
             Opcode::VPCKF32S8,
             Opcode::VPCKF32O8,
             Opcode::VPCKF32U16,
             Opcode::VPCKF32S16,
             Opcode::VPCKF32F16,
             Opcode::VPCKF32F32,
-            Opcode::VPCKF32C10
-        },
-        {
-            Opcode::INVALID,
+            Opcode::VPCKF32C10 },
+        { Opcode::INVALID,
             Opcode::INVALID,
             Opcode::INVALID,
             Opcode::INVALID,
             Opcode::INVALID,
             Opcode::VPCKC10F16,
             Opcode::VPCKC10F32,
-            Opcode::VPCKC10C10
-        }
+            Opcode::VPCKC10C10 }
     };
 
     inst.opcode = op_table[dest_fmt][src_fmt];
