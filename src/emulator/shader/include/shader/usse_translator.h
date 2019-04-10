@@ -42,9 +42,13 @@ public:
     spv::Id std_builtins;
 
     spv::Id type_f32;
+    spv::Id type_ui32;
     spv::Id type_f32_v[5]; // Starts from 1 ([1] is vec 1)
     spv::Id const_f32[4];
     // spv::Id const_f32_v[5];  // Starts from 1 ([1] is vec 1)
+
+    spv::Function *f16_unpack_func;
+    spv::Function *f16_pack_func;
 
     // SPIR-V inputs are read-only, so we need to write to these temporaries instead
     // TODO: Figure out actual PA count limit
@@ -53,28 +57,41 @@ public:
     // Each SPIR-V reg will contains 4 SA
     std::array<SpirvReg, max_sa_registers / 4> sa_supplies;
 
+    void make_f16_unpack_func();
+    void make_f16_pack_func();
+    void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
+
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program)
+    explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program,
+        const NonDependentTextureQueryCallInfos &queries, bool is_secondary_program = false)
         : m_b(_b)
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
-        , m_program(program) {
+        , m_program(program)
+        , m_second_program(is_secondary_program) {
         // Import GLSL.std.450
         std_builtins = m_b.import("GLSL.std.450");
 
         // Build common type here, so builder won't have to look it up later
         type_f32 = m_b.makeFloatType(32);
+        type_ui32 = m_b.makeUintType(32);
 
-        const_f32[3] = m_b.makeFpConstant(type_f32, 0.5f);
-        const_f32[0] = m_b.makeFpConstant(type_f32, 0.0f);
-        const_f32[1] = m_b.makeFpConstant(type_f32, 1.0f);
-        const_f32[2] = m_b.makeFpConstant(type_f32, 2.0f);
+        const_f32[3] = m_b.makeFloatConstant(0.5f);
+        const_f32[0] = m_b.makeFloatConstant(0.0f);
+        const_f32[1] = m_b.makeFloatConstant(1.0f);
+        const_f32[2] = m_b.makeFloatConstant(2.0f);
 
         for (std::uint8_t i = 1; i < 5; i++) {
             type_f32_v[i] = m_b.makeVectorType(type_f32, i);
             //            const_f32_v[i] = m_b.makeCompositeConstant(type_f32_v[i],
             //                { const_f32[i - 1], const_f32[i - 1], const_f32[i - 1], const_f32[i - 1] });
         }
+
+        // Make utility functions
+        make_f16_unpack_func();
+        make_f16_pack_func();
+
+        do_texture_queries(queries);
     }
 
 private:
@@ -142,7 +159,7 @@ private:
      * \returns ID to a vec4 contains bridging results, or spv::NoResult if failed
      * 
     */
-    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask);
+    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask, const std::size_t comp_size = 4);
 
     /*
      * \brief Given an operand, load it and returns a SPIR-V vector with total components count equals to total bit set in
@@ -151,6 +168,23 @@ private:
      * \returns A copy of given operand
     */
     spv::Id load(Operand &op, const Imm4 dest_mask, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false);
+
+    /**
+     * \brief Unpack a vector/scalar as given component data type.
+     * 
+     * \param target Target vector/scalar. Component type must be f32.
+     * \param type   Data type to unpack to. If the data is F32, target will be returned.
+     * 
+     * \returns A new vector with [total_comp_count(target) * 4 / size(type)] components
+     */
+    spv::Id unpack(spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
+        const std::uint32_t shift_offset = 0);
+
+    /**
+     * \brief Unpack one scalar.
+     */
+    spv::Id unpack_one(spv::Id scalar, const DataType type);
+    spv::Id pack_one(spv::Id vec, const DataType source_type);
 
     void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, std::uint8_t off = 0);
 
@@ -161,7 +195,13 @@ private:
     // TODO: Separate file for translator helpers?
     static size_t dest_mask_to_comp_count(Imm4 dest_mask);
 
+    bool m_second_program{ false };
+
 public:
+    void set_secondary_program(const bool is_it) {
+        m_second_program = is_it;
+    }
+
     //
     // Helpers
     //
@@ -188,7 +228,7 @@ public:
         MoveType move_type,
         RepeatCount repeat_count,
         bool nosched,
-        MoveDataType move_data_type,
+        DataType move_data_type,
         Imm1 test_bit_1,
         Imm4 src0_swiz,
         Imm1 src0_bank_sel,

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -140,7 +140,8 @@ typedef Uint16 SDL_AudioFormat;
 #define SDL_AUDIO_ALLOW_FREQUENCY_CHANGE    0x00000001
 #define SDL_AUDIO_ALLOW_FORMAT_CHANGE       0x00000002
 #define SDL_AUDIO_ALLOW_CHANNELS_CHANGE     0x00000004
-#define SDL_AUDIO_ALLOW_ANY_CHANGE          (SDL_AUDIO_ALLOW_FREQUENCY_CHANGE|SDL_AUDIO_ALLOW_FORMAT_CHANGE|SDL_AUDIO_ALLOW_CHANNELS_CHANGE)
+#define SDL_AUDIO_ALLOW_SAMPLES_CHANGE      0x00000008
+#define SDL_AUDIO_ALLOW_ANY_CHANGE          (SDL_AUDIO_ALLOW_FREQUENCY_CHANGE|SDL_AUDIO_ALLOW_FORMAT_CHANGE|SDL_AUDIO_ALLOW_CHANNELS_CHANGE|SDL_AUDIO_ALLOW_SAMPLES_CHANGE)
 /* @} */
 
 /* @} *//* Audio flags */
@@ -527,7 +528,7 @@ extern DECLSPEC SDL_AudioStream * SDLCALL SDL_NewAudioStream(const SDL_AudioForm
  *
  *  \param stream The stream the audio data is being added to
  *  \param buf A pointer to the audio data to add
- *  \param int The number of bytes to write to the stream
+ *  \param len The number of bytes to write to the stream
  *  \return 0 on success, or -1 on error.
  *
  *  \sa SDL_NewAudioStream

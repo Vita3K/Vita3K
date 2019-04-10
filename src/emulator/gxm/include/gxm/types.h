@@ -298,7 +298,7 @@ public:
     std::uint32_t unk_6C;
 
     std::uint32_t literals_count;
-    std::uint32_t maybe_literals_offset; //not sure
+    std::uint32_t literals_offset;
     std::uint32_t unk_78;
     std::uint32_t maybe_parameters_offset2; //not sure
 
@@ -343,6 +343,10 @@ struct SceGxmProgramParameter {
     uint16_t semantic; // applicable only for for vertex attributes, for everything else it's 0
     uint32_t array_size;
     int32_t resource_index;
+
+    bool is_sampler_cube() const {
+        return (semantic >> 12) & 1;
+    }
 };
 
 static_assert(sizeof(SceGxmProgramParameter) == 16, "Incorrect structure layout.");

@@ -28,6 +28,12 @@ enum SelectorState {
     SELECT_APP
 };
 
+enum SortState {
+    NOT_SORTED,
+    ASCENDANT,
+    DESCENDANT
+};
+
 struct Game {
     std::string app_ver;
     std::string title;
@@ -38,6 +44,9 @@ struct GamesSelector {
     std::vector<Game> games;
     std::string selected_title_id;
     bool is_game_list_sorted{ false };
+    SortState title_id_sort_state = NOT_SORTED;
+    SortState app_ver_sort_state = NOT_SORTED;
+    SortState title_sort_state = NOT_SORTED;
     SelectorState state = SELECT_APP;
 };
 

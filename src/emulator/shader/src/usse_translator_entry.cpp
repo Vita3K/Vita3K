@@ -22,6 +22,7 @@
 #include <shader/matcher.h>
 #include <shader/usse_disasm.h>
 #include <shader/usse_translator.h>
+#include <shader/usse_translator_types.h>
 #include <util/log.h>
 
 #include <boost/optional/optional.hpp>
@@ -226,7 +227,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters) {
+void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
 
@@ -235,20 +236,26 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
 
     std::map<ShaderPhase, std::vector<uint64_t>> shader_code;
 
-    // Collect insructions of Pixel (primary) phase
+    // Collect instructions of Pixel (primary) phase
     for (auto instr_idx = 0; instr_idx < primary_program_instr_count; ++instr_idx)
         shader_code[ShaderPhase::Pixel].push_back(primary_program[instr_idx]);
 
-    // Collect insructions of Sample rate (secondary) phase
+    // Collect instructions of Sample rate (secondary) phase
     for (auto instr_idx = secondary_program_start; instr_idx != secondary_program_end; ++instr_idx)
         shader_code[ShaderPhase::SampleRate].push_back(*instr_idx);
 
     // Decode and recompile
     uint64_t instr;
-    usse::USSETranslatorVisitor visitor(b, instr, parameters, program);
+    usse::USSETranslatorVisitor visitor(b, instr, parameters, program, queries, true);
 
     for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
         const auto cur_phase_code = shader_code[(ShaderPhase)phase];
+
+        if (static_cast<ShaderPhase>(phase) == ShaderPhase::SampleRate) {
+            visitor.set_secondary_program(true);
+        } else {
+            visitor.set_secondary_program(false);
+        }
 
         for (auto _instr : cur_phase_code) {
             instr = _instr;

@@ -85,6 +85,18 @@ inline bool is_default(Swizzle4 sw, Imm4 sw_len = 4) {
     return res;
 }
 
+inline bool is_identical(const Swizzle4 &lhs, const Swizzle4 &rhs, Imm4 dest_mask) {
+    for (int i = 0; i < 4; i++) {
+        if (dest_mask & (1 << i)) {
+            if (lhs[i] != rhs[i]) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 enum class RepeatCount : uint8_t {
     REPEAT_0,
     REPEAT_1,
@@ -98,13 +110,17 @@ enum class MoveType : uint8_t {
     CONDITIONALU8,
 };
 
-enum class MoveDataType : uint8_t {
+enum class DataType : uint8_t {
     INT8,
     INT16,
     INT32,
     C10,
     F16,
     F32,
+    UINT8,
+    UINT16,
+    O8,
+    TOTAL_TYPE
 };
 
 enum class SpecialCategory : uint8_t {
@@ -149,6 +165,28 @@ inline RegisterFlags &operator&=(RegisterFlags &a, RegisterFlags b) {
     return (RegisterFlags &)((uint32_t &)a &= (uint32_t)b);
 }
 
+inline std::size_t get_data_type_size(const DataType type) {
+    switch (type) {
+    case DataType::INT8:
+        return 1;
+
+    case DataType::INT16:
+    case DataType::F16: {
+        return 2;
+    }
+
+    case DataType::INT32:
+    case DataType::F32: {
+        return 4;
+    }
+
+    default:
+        break;
+    }
+
+    return 4;
+}
+
 // TODO: Make this a std::set?
 enum InstructionFlags {
 };
@@ -158,6 +196,11 @@ struct Operand {
     RegisterBank bank = RegisterBank::INVALID;
     RegisterFlags flags{};
     Swizzle4 swizzle = SWIZZLE_CHANNEL_4_UNDEFINED;
+    DataType type = DataType::F32;
+
+    bool is_same(const Operand &op, const Imm4 mask) {
+        return (op.bank == bank) && (is_identical(swizzle, op.swizzle, mask)) && (num == op.num);
+    }
 };
 
 struct InstructionOperands {
@@ -176,8 +219,8 @@ struct Instruction {
 };
 
 enum class ShaderPhase {
-    Pixel, // Primary phase
     SampleRate, // Secondary phase
+    Pixel, // Primary phase
 
     Max,
 };

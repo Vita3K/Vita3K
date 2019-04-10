@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -82,6 +82,9 @@ typedef unsigned int uintptr_t;
 #define HAVE_DSOUND_H 1
 #define HAVE_DXGI_H 1
 #define HAVE_XINPUT_H 1
+#define HAVE_MMDEVICEAPI_H 1
+#define HAVE_AUDIOCLIENT_H 1
+#define HAVE_ENDPOINTVOLUME_H 1
 
 /* This is disabled by default to avoid C runtime dependencies and manifest requirements */
 #ifdef HAVE_LIBC
@@ -109,13 +112,15 @@ typedef unsigned int uintptr_t;
 #define HAVE_MEMCMP 1
 #define HAVE_STRLEN 1
 #define HAVE__STRREV 1
-#define HAVE__STRUPR 1
-#define HAVE__STRLWR 1
+/* These functions have security warnings, so we won't use them */
+/* #undef HAVE__STRUPR */
+/* #undef HAVE__STRLWR */
 #define HAVE_STRCHR 1
 #define HAVE_STRRCHR 1
 #define HAVE_STRSTR 1
-#define HAVE__LTOA 1
-#define HAVE__ULTOA 1
+/* These functions have security warnings, so we won't use them */
+/* #undef HAVE__LTOA */
+/* #undef HAVE__ULTOA */
 #define HAVE_STRTOL 1
 #define HAVE_STRTOUL 1
 #define HAVE_STRTOD 1
@@ -125,30 +130,45 @@ typedef unsigned int uintptr_t;
 #define HAVE_STRNCMP 1
 #define HAVE__STRICMP 1
 #define HAVE__STRNICMP 1
-#define HAVE_ATAN 1
-#define HAVE_ATAN2 1
-#define HAVE_ACOS  1
-#define HAVE_ASIN  1
-#define HAVE_CEIL 1
-#define HAVE_COS 1
-#define HAVE_COSF 1
-#define HAVE_FABS 1
-#define HAVE_FLOOR 1
-#define HAVE_LOG 1
-#define HAVE_POW 1
-#define HAVE_SIN 1
-#define HAVE_SINF 1
-#define HAVE_SQRT 1
-#define HAVE_SQRTF 1
-#define HAVE_TAN 1
-#define HAVE_TANF 1
-#define HAVE__COPYSIGN 1
+#define HAVE_ACOS   1
+#define HAVE_ACOSF  1
+#define HAVE_ASIN   1
+#define HAVE_ASINF  1
+#define HAVE_ATAN   1
+#define HAVE_ATANF  1
+#define HAVE_ATAN2  1
+#define HAVE_ATAN2F 1
+#define HAVE_CEILF  1
+#define HAVE__COPYSIGN  1
+#define HAVE_COS    1
+#define HAVE_COSF   1
+#define HAVE_EXP    1
+#define HAVE_EXPF   1
+#define HAVE_FABS   1
+#define HAVE_FABSF  1
+#define HAVE_FLOOR  1
+#define HAVE_FLOORF 1
+#define HAVE_FMOD   1
+#define HAVE_FMODF  1
+#define HAVE_LOG    1
+#define HAVE_LOGF   1
+#define HAVE_LOG10  1
+#define HAVE_LOG10F 1
+#define HAVE_POW    1
+#define HAVE_POWF   1
+#define HAVE_SIN    1
+#define HAVE_SINF   1
+#define HAVE_SQRT   1
+#define HAVE_SQRTF  1
+#define HAVE_TAN    1
+#define HAVE_TANF   1
 #if defined(_MSC_VER)
 /* These functions were added with the VC++ 2013 C runtime library */
 #if _MSC_VER >= 1800
 #define HAVE_STRTOLL 1
 #define HAVE_VSSCANF 1
 #define HAVE_SCALBN 1
+#define HAVE_SCALBNF    1
 #endif
 /* This function is available with at least the VC++ 2008 C runtime library */
 #if _MSC_VER >= 1400
@@ -166,7 +186,6 @@ typedef unsigned int uintptr_t;
 /* Enable various audio drivers */
 #define SDL_AUDIO_DRIVER_WASAPI 1
 #define SDL_AUDIO_DRIVER_DSOUND 1
-#define SDL_AUDIO_DRIVER_XAUDIO2    0
 #define SDL_AUDIO_DRIVER_WINMM  1
 #define SDL_AUDIO_DRIVER_DISK   1
 #define SDL_AUDIO_DRIVER_DUMMY  1
@@ -174,8 +193,12 @@ typedef unsigned int uintptr_t;
 /* Enable various input drivers */
 #define SDL_JOYSTICK_DINPUT 1
 #define SDL_JOYSTICK_XINPUT 1
+#define SDL_JOYSTICK_HIDAPI 1
 #define SDL_HAPTIC_DINPUT   1
 #define SDL_HAPTIC_XINPUT   1
+
+/* Enable the dummy sensor driver */
+#define SDL_SENSOR_DUMMY  1
 
 /* Enable various shared object loading systems */
 #define SDL_LOADSO_WINDOWS  1
@@ -194,7 +217,7 @@ typedef unsigned int uintptr_t;
 #define SDL_VIDEO_RENDER_D3D    1
 #endif
 #ifndef SDL_VIDEO_RENDER_D3D11
-#define SDL_VIDEO_RENDER_D3D11	0
+#define SDL_VIDEO_RENDER_D3D11  0
 #endif
 
 /* Enable OpenGL support */
