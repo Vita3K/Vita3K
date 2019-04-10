@@ -77,11 +77,12 @@ EXPORT(int, sceDisplayUnregisterVblankStartCallback) {
 EXPORT(int, sceDisplayWaitSetFrameBuf) {
     STUBBED("move after setframebuf");
 
-    if (!host.display.sync_rendering) {
+    if (host.display.sync_rendering) {
+        host.display.condvar.notify_all();
+    } else {
         std::unique_lock<std::mutex> lock(host.display.mutex);
         host.display.condvar.wait(lock);
-    } else
-        host.display.condvar.notify_all();
+    }
 
     if (host.display.abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
@@ -102,11 +103,12 @@ EXPORT(int, sceDisplayWaitSetFrameBufMultiCB) {
 }
 
 EXPORT(int, sceDisplayWaitVblankStart) {
-    if (!host.display.sync_rendering) {
+    if (host.display.sync_rendering) {
+        host.display.condvar.notify_all();
+    } else {
         std::unique_lock<std::mutex> lock(host.display.mutex);
         host.display.condvar.wait(lock);
-    } else
-        host.display.condvar.notify_all();
+    }
 
     if (host.display.abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;

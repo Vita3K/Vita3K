@@ -133,11 +133,11 @@ int main(int argc, char *argv[]) {
         }
         gui::draw_end(state.host.window.get());
 
-        if (!state.host.display.sync_rendering)
-            state.host.display.condvar.notify_all();
-        else {
+        if (state.host.display.sync_rendering) {
             std::unique_lock<std::mutex> lock(state.host.display.mutex);
             state.host.display.condvar.wait(lock);
+        } else {
+            state.host.display.condvar.notify_all();
         }
 
         set_window_title(state.host);
