@@ -19,10 +19,12 @@
 
 #include <psp2/types.h>
 
-struct Config;
+#include <string>
+
 struct CPUState;
 struct HostState;
+struct SfoFile;
 
-bool init(HostState &state, Config cfg);
-bool handle_events(HostState &host);
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
+void log_import_calls(bool enabled);
+bool get_data(std::string &out_data, SfoFile &file, int id);

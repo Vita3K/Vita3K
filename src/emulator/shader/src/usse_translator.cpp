@@ -681,7 +681,7 @@ spv::Id USSETranslatorVisitor::swizzle_to_spv_comp(spv::Id composite, spv::Id ty
     case SwizzleChannel::_W:
         return m_b.createCompositeExtract(composite, type, static_cast<Imm4>(swizzle));
 
-        // TODO: Implement these with OpCompositeExtract
+    // TODO: Implement these with OpCompositeExtract
     case SwizzleChannel::_0: break;
     case SwizzleChannel::_1: break;
     case SwizzleChannel::_2: break;

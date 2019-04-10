@@ -15,16 +15,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "app.h"
+
+#include "sfo.h"
+
 #include <gui/functions.h>
 #include <gui/imgui_impl_sdl_gl3.h>
-#include <host/app.h>
 #include <host/functions.h>
-#include <host/sfo.h>
 #include <host/state.h>
 #include <host/version.h>
 #include <io/functions.h>
 #include <io/io.h>
 #include <io/state.h>
+#include <kernel/functions.h>
 #include <kernel/load_self.h>
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
@@ -47,6 +50,47 @@ static const char *EBOOT_PATH = "eboot.bin";
 static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
 
 using namespace gl;
+
+static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
+    switch (static_cast<SDL_WindowEventID>(event.event)) {
+    case SDL_WINDOWEVENT_SIZE_CHANGED:
+        update_viewport(state);
+        break;
+    default:
+        break;
+    }
+}
+
+bool handle_events(HostState &host) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        ImGui_ImplSdlGL3_ProcessEvent(&event);
+        switch (event.type) {
+        case SDL_QUIT:
+            stop_all_threads(host.kernel);
+            host.gxm.display_queue.abort();
+            host.display.abort.exchange(true);
+            host.display.condvar.notify_all();
+            return false;
+
+        case SDL_KEYDOWN:
+            if (event.key.keysym.sym == SDLK_g) {
+                auto &display = host.display;
+
+                // toggle gui state
+                bool old_imgui_render = display.imgui_render.load();
+                while (!display.imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
+                }
+            }
+
+        case SDL_WINDOWEVENT:
+            handle_window_event(host, event.window);
+            break;
+        }
+    }
+
+    return true;
+}
 
 void error_dialog(const std::string &message, SDL_Window *window) {
     if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window) < 0) {

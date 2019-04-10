@@ -17,13 +17,10 @@
 
 #pragma once
 
-#include <psp2/types.h>
+#include <string>
+#include <vector>
 
-#include <functional>
+struct SfoFile;
 
-struct CPUState;
-struct HostState;
-
-using ImportFn = std::function<void(HostState &host, CPUState &cpu, SceUID thread_id)>;
-
-void log_import_calls(bool enabled);
+bool load_sfo(SfoFile &file, const std::vector<uint8_t> &data);
+bool find_data(std::string &out_data, SfoFile &file, const std::string &key);

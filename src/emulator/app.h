@@ -17,26 +17,17 @@
 
 #pragma once
 
-#include <glbinding/gl/types.h>
-
-#include <memory>
 #include <string>
-#include <vector>
 
-static constexpr auto DEFAULT_RES_WIDTH = 960;
-static constexpr auto DEFAULT_RES_HEIGHT = 544;
-
+struct Config;
 struct HostState;
 struct SDL_Window;
-struct SDL_Surface;
 template <class T>
 class Ptr;
 
-typedef std::unique_ptr<SDL_Surface, void (*)(SDL_Surface *)> SurfacePtr;
-
 enum ExitCode {
     Success = 0,
-    IncorrectArgs,
+    InitConfigFailed,
     SDLInitFailed,
     HostInitFailed,
     RendererInitFailed,
@@ -57,6 +48,9 @@ enum class AppRunType {
     Vpk,
 };
 
+bool init(HostState &state, Config cfg);
+void update_viewport(HostState &state);
+bool handle_events(HostState &host);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
 ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type);
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point);

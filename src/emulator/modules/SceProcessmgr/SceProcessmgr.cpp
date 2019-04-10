@@ -22,6 +22,8 @@
 #include <psp2/kernel/processmgr.h>
 #include <rtc/rtc.h>
 
+#include <ctime>
+
 struct VitaTimeval {
     uint32_t tv_sec;
     uint32_t tv_usec;

@@ -15,26 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <cstdint>
 
-struct HostState;
-struct SDL_Window;
+#ifdef _WIN32
 
-namespace gui {
+extern "C" {
+// http://developer.download.nvidia.com/devzone/devcenter/gamegraphics/files/OptimusRenderingPolicies.pdf
+__declspec(dllexport) uint32_t NvOptimusEnablement = 1;
 
-enum GenericDialogState {
-    UNK_STATE,
-    CONFIRM_STATE,
-    CANCEL_STATE
-};
+// https://gpuopen.com/amdpowerxpressrequesthighperformance/
+__declspec(dllexport) uint32_t AmdPowerXpressRequestHighPerformance = 1;
+}
 
-void init(HostState &host);
-void draw_begin(HostState &host);
-void draw_end(SDL_Window *window);
-void draw_ui(HostState &host);
-
-void draw_common_dialog(HostState &host);
-void draw_game_selector(HostState &host);
-void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
-
-} // namespace gui
+#endif // _WIN32

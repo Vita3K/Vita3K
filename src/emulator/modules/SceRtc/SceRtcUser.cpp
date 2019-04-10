@@ -20,6 +20,7 @@
 #include <rtc/rtc.h>
 
 #include <chrono>
+#include <ctime>
 
 #define VITA_CLOCKS_PER_SEC 1000000
 

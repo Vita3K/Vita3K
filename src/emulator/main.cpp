@@ -15,14 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "app.h"
+#include "config.h"
+#include "screen_render.h"
+
 #include <gui/functions.h>
-#include <host/app.h>
-#include <host/config.h>
-#include <host/functions.h>
-#include <host/screen_render.h>
 #include <host/state.h>
 #include <host/version.h>
-#include <kernel/thread/thread_functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -30,15 +29,14 @@
 #include <SDL.h>
 
 #include <cstdlib>
-#include <iterator>
-#include <utility>
 
 int main(int argc, char *argv[]) {
     logging::init();
 
     Config cfg{};
-    if (const bool ret = config::init(cfg, argc, argv))
-        return ret;
+    const config::InitResult ret = config::init(cfg, argc, argv);
+    if (ret != config::InitResult::OK)
+        return InitConfigFailed;
 
     LOG_INFO("{}", window_title);
 
@@ -98,7 +96,7 @@ int main(int argc, char *argv[]) {
             gui::draw_begin(host);
 
             gui::draw_ui(host);
-            gui::draw_game_selector(host, &run_type);
+            gui::draw_game_selector(host);
 
             gui::draw_end(host.window.get());
         } else {
@@ -106,8 +104,9 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
-        if (run_type == AppRunType::Extracted) {
+        if (!host.gui.game_selector.selected_title_id.empty()) {
             vpk_path_wide = string_utils::utf_to_wide(host.gui.game_selector.selected_title_id);
+            run_type = AppRunType::Extracted;
         }
     }
 

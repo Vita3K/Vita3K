@@ -17,13 +17,7 @@
 
 #include "SceDisplayUser.h"
 
-#include <host/version.h>
-
-#include <SDL_timer.h>
-#include <SDL_video.h>
 #include <psp2/display.h>
-
-#include <sstream>
 
 namespace emu {
 struct SceDisplayFrameBuf {

@@ -17,24 +17,11 @@
 
 #pragma once
 
+#include <psp2/types.h>
+
+#include <functional>
+
+struct CPUState;
 struct HostState;
-struct SDL_Window;
 
-namespace gui {
-
-enum GenericDialogState {
-    UNK_STATE,
-    CONFIRM_STATE,
-    CANCEL_STATE
-};
-
-void init(HostState &host);
-void draw_begin(HostState &host);
-void draw_end(SDL_Window *window);
-void draw_ui(HostState &host);
-
-void draw_common_dialog(HostState &host);
-void draw_game_selector(HostState &host);
-void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
-
-} // namespace gui
+using ImportFn = std::function<void(HostState &host, CPUState &cpu, SceUID thread_id)>;

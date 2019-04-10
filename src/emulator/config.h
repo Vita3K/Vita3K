@@ -17,24 +17,29 @@
 
 #pragma once
 
-struct HostState;
-struct SDL_Window;
+#include <host/config.h>
 
-namespace gui {
+namespace config {
 
-enum GenericDialogState {
-    UNK_STATE,
-    CONFIRM_STATE,
-    CANCEL_STATE
+enum class InitResult {
+    OK,
+    QUIT,
+    INCORRECT_ARGS,
 };
 
-void init(HostState &host);
-void draw_begin(HostState &host);
-void draw_end(SDL_Window *window);
-void draw_ui(HostState &host);
+/*
+ * \brief Save emulator config to a YML file.
+ *
+ * \return True on saving success.
+*/
+bool serialize(Config &cfg);
 
-void draw_common_dialog(HostState &host);
-void draw_game_selector(HostState &host);
-void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
+/**
+  * \brief Initializes config system, parsing command-line args and handling some basic ones:
+  *        --help, --version, --log-level
+  * \param cfg Config options are returned via this parameter.
+  * \return True on success, false on error.
+  */
+InitResult init(Config &cfg, int argc, char **argv);
 
-} // namespace gui
+} // namespace config
