@@ -23,7 +23,7 @@ Requirements
     typically do not include support for creating WinRT apps, to note.
     (The "Community" editions of Visual C++ do, however, support both
     desktop/Win32 and WinRT development).
-  - Visual Studio 2017 can be used, however it is recommented that you install
+  - Visual Studio 2017 can be used, however it is recommended that you install
     the Visual C++ 2015 build tools.  These build tools can be installed
     using VS 2017's installer.  Be sure to also install the workload for
     "Universal Windows Platform development", its optional component, the
@@ -33,7 +33,7 @@ Requirements
     earlier versions of Windows, such as Windows 7, is not always supported
     by Visual Studio, and you may get error(s) when attempting to do so.
   - Visual C++ 2012 can only build apps that target versions 8.0 of Windows,
-    or  Windows Phone.  8.0-targetted apps will run on devices running 8.1
+    or  Windows Phone.  8.0-targeted apps will run on devices running 8.1
     editions of Windows, however they will not be able to take advantage of
     8.1-specific features.
   - Visual C++ 2013 cannot create app projects that target Windows 8.0.
@@ -54,7 +54,7 @@ Requirements
 Status
 ------
 
-Here is a rough list of what works, and what doens't:
+Here is a rough list of what works, and what doesn't:
 
 * What works:
   * compilation via Visual C++ 2012 through 2015
@@ -70,7 +70,10 @@ Here is a rough list of what works, and what doens't:
     SDL_GetPerformanceFrequency(), etc.)
   * file I/O via SDL_RWops
   * mouse input  (unsupported on Windows Phone)
-  * audio, via a modified version of SDL's XAudio2 backend
+  * audio, via SDL's WASAPI backend (if you want to record, your app must 
+    have "Microphone" capabilities enabled in its manifest, and the user must 
+    not have blocked access. Otherwise, capture devices will fail to work,
+    presenting as a device disconnect shortly after opening it.)
   * .DLL file loading.  Libraries *MUST* be packaged inside applications.  Loading
     anything outside of the app is not supported.
   * system path retrieval via SDL's filesystem APIs
