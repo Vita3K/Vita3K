@@ -2,7 +2,7 @@
 set -ex
 
 # CI uses pre-built Boost
-if [[ -z "${CI}" ]]; then
+if [[ -z "${CI}" && "$1" -ne "brew" ]]; then
 	# Create build dir
 	mkdir -p src/external/boost-build
 	cd src/external/boost
