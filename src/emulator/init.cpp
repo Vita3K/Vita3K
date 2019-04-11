@@ -135,7 +135,7 @@ bool init(HostState &state, Config cfg) {
 
     state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
     if (!state.glcontext) {
-        LOG_ERROR("Could not create OpenGL context.");
+        error_dialog("Could not create OpenGL context!\nDoes your GPU support OpenGL 4.1?", NULL);
         return false;
     }
 
