@@ -12,7 +12,7 @@ if [[ -z "${CI}" ]]; then
 	sh bootstrap.sh
 
 	# Build our Boost subset
-	./b2 -j5 --build-dir=../boost-build --stagedir=../boost-build stage
+	./b2 --ignore-site-config -j5 --build-dir=../boost-build --stagedir=../boost-build stage
 	cd ../../..
 fi
 
