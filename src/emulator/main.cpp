@@ -19,13 +19,8 @@
 #include "config.h"
 #include "screen_render.h"
 
-#include <gui/functions.h>
 #include <gdbstub/functions.h>
 #include <gui/functions.h>
-#include <host/app.h>
-#include <host/config.h>
-#include <host/functions.h>
-#include <host/screen_render.h>
 #include <host/state.h>
 #include <host/version.h>
 #include <shader/spirv_recompiler.h>

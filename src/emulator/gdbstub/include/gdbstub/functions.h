@@ -21,3 +21,5 @@ struct HostState;
 
 void server_open(HostState &state);
 void server_close(HostState &state);
+void add_breakpoint(HostState &state, uint32_t address);
+void remove_breakpoint(HostState &state, uint32_t address);

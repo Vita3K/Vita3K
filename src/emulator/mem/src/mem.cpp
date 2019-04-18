@@ -180,20 +180,3 @@ const char *mem_name(Address address, MemState &state) {
 
     return found->second.c_str();
 }
-
-// TODO: Do breakpoints work in thumb code? This is an arm breakpoint.
-constexpr unsigned char breakpoint[] = { 0x70, 0x00, 0x20, 0xe1 };
-
-void add_breakpoint(MemState &state, uint32_t at) {
-    uint32_t last;
-    std::memcpy(&last, &state.memory[at], sizeof(last));
-    std::memcpy(&state.memory[at], breakpoint, sizeof(breakpoint));
-    state.breakpoints[at] = last;
-}
-
-void remove_breakpoint(MemState &state, uint32_t at) {
-    if (state.breakpoints.find(at) != state.breakpoints.end()) {
-        std::memcpy(&state.memory[at], &state.breakpoints[at], sizeof(uint32_t));
-        state.breakpoints.erase(at);
-    }
-}

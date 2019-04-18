@@ -58,5 +58,3 @@ Address alloc_at(MemState &state, Address address, size_t size, const char *name
 void free(MemState &state, Address address);
 uint32_t mem_available(MemState &state);
 const char *mem_name(Address address, MemState &state);
-void add_breakpoint(MemState &state, Address at);
-void remove_breakpoint(MemState &state, Address at);

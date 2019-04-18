@@ -81,20 +81,20 @@ struct PacketFunctionBundle {
     PacketFunction function;
 };
 
-std::string content_string(PacketCommand &command) {
+static std::string content_string(PacketCommand &command) {
     return std::string(command.content_start, static_cast<unsigned long>(command.content_length));
 }
 
 // Hexes
-std::string be_hex(uint32_t value) {
+static std::string be_hex(uint32_t value) {
     return fmt::format("{:0>8x}", htonl(value));
 }
 
-std::string to_hex(uint32_t value) {
+static std::string to_hex(uint32_t value) {
     return fmt::format("{:0>8x}", value);
 }
 
-uint32_t parse_hex(const std::string &hex) {
+static uint32_t parse_hex(const std::string &hex) {
     std::stringstream stream;
     uint32_t value;
     stream << std::hex << hex;
@@ -102,7 +102,7 @@ uint32_t parse_hex(const std::string &hex) {
     return value;
 }
 
-uint8_t make_checksum(const char *data, int64_t length) {
+static uint8_t make_checksum(const char *data, int64_t length) {
     size_t sum = 0;
 
     for (int64_t a = 0; a < length; a++) {
@@ -112,7 +112,7 @@ uint8_t make_checksum(const char *data, int64_t length) {
     return static_cast<uint8_t>(sum % 256);
 }
 
-PacketCommand parse_command(char *data, int64_t length) {
+static PacketCommand parse_command(char *data, int64_t length) {
     PacketCommand command = {};
 
     command.data = data;
@@ -145,31 +145,48 @@ PacketCommand parse_command(char *data, int64_t length) {
     return command;
 }
 
-int64_t server_reply(GDBState &state, const char *data, int64_t length) {
+static int64_t server_reply(GDBState &state, const char *data, int64_t length) {
     uint8_t checksum = make_checksum(data, length);
     std::string packet_data = fmt::format("${}#{:0>2x}", std::string(data, length), checksum);
 
     return send(state.client_socket, &packet_data[0], packet_data.size(), 0);
 }
 
-int64_t server_reply(GDBState &state, const char *text) {
+static int64_t server_reply(GDBState &state, const char *text) {
     return server_reply(state, text, strlen(text));
 }
 
-int64_t server_ack(GDBState &state, char ack = '+') {
+static int64_t server_ack(GDBState &state, char ack = '+') {
     return send(state.client_socket, &ack, 1, 0);
 }
 
-std::string cmd_supported(HostState &state, PacketCommand &command) {
+// TODO: Do breakpoints work in thumb code? This is an arm breakpoint.
+constexpr unsigned char breakpoint[] = { 0x70, 0x00, 0x20, 0xe1 };
+
+void add_breakpoint(HostState &state, uint32_t at) {
+    uint32_t last;
+    std::memcpy(&last, &state.mem.memory[at], sizeof(last));
+    std::memcpy(&state.mem.memory[at], breakpoint, sizeof(breakpoint));
+    state.gdb.breakpoints[at] = last;
+}
+
+void remove_breakpoint(HostState &state, uint32_t at) {
+    if (state.gdb.breakpoints.find(at) != state.gdb.breakpoints.end()) {
+        std::memcpy(&state.mem.memory[at], &state.gdb.breakpoints[at], sizeof(uint32_t));
+        state.gdb.breakpoints.erase(at);
+    }
+}
+
+static std::string cmd_supported(HostState &state, PacketCommand &command) {
     return "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
            "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;xmlRegisters=arm";
 }
 
-std::string cmd_reply_empty(HostState &state, PacketCommand &command) {
+static std::string cmd_reply_empty(HostState &state, PacketCommand &command) {
     return "";
 }
 
-SceUID select_thread(HostState &state, int thread_id) {
+static SceUID select_thread(HostState &state, int thread_id) {
     if (thread_id == 0) {
         if (state.kernel.threads.empty())
             return -1;
@@ -178,7 +195,7 @@ SceUID select_thread(HostState &state, int thread_id) {
     return thread_id;
 }
 
-std::string cmd_set_current_thread(HostState &state, PacketCommand &command) {
+static std::string cmd_set_current_thread(HostState &state, PacketCommand &command) {
     int32_t thread_id = std::stoi(
         std::string(command.content_start + 2, static_cast<unsigned long>(command.content_length - 2)));
 
@@ -198,11 +215,11 @@ std::string cmd_set_current_thread(HostState &state, PacketCommand &command) {
     return "OK";
 }
 
-std::string cmd_get_current_thread(HostState &state, PacketCommand &command) {
+static std::string cmd_get_current_thread(HostState &state, PacketCommand &command) {
     return "QC" + to_hex(static_cast<uint32_t>(state.gdb.current_thread));
 }
 
-uint32_t fetch_reg(CPUState &state, uint32_t reg) {
+static uint32_t fetch_reg(CPUState &state, uint32_t reg) {
     if (reg <= 12) {
         return read_reg(state, reg);
     }
@@ -228,7 +245,7 @@ uint32_t fetch_reg(CPUState &state, uint32_t reg) {
     return 0;
 }
 
-std::string cmd_read_registers(HostState &state, PacketCommand &command) {
+static std::string cmd_read_registers(HostState &state, PacketCommand &command) {
     if (state.gdb.current_thread == -1)
         return "";
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
@@ -241,9 +258,9 @@ std::string cmd_read_registers(HostState &state, PacketCommand &command) {
     return stream.str();
 }
 
-std::string cmd_write_registers(HostState &state, PacketCommand &command) { return ""; }
+static std::string cmd_write_registers(HostState &state, PacketCommand &command) { return ""; }
 
-std::string cmd_read_register(HostState &state, PacketCommand &command) {
+static std::string cmd_read_register(HostState &state, PacketCommand &command) {
     if (state.gdb.current_thread == -1)
         return "";
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
@@ -254,11 +271,11 @@ std::string cmd_read_register(HostState &state, PacketCommand &command) {
     return be_hex(fetch_reg(cpu, static_cast<uint32_t>(reg)));
 }
 
-std::string cmd_write_register(HostState &state, PacketCommand &command) {
+static std::string cmd_write_register(HostState &state, PacketCommand &command) {
     return "";
 }
 
-std::string cmd_read_memory(HostState &state, PacketCommand &command) {
+static std::string cmd_read_memory(HostState &state, PacketCommand &command) {
     std::string content = content_string(command);
     size_t pos = content.find(',');
 
@@ -291,11 +308,11 @@ std::string cmd_read_memory(HostState &state, PacketCommand &command) {
     return stream.str();
 }
 
-std::string cmd_write_memory(HostState &state, PacketCommand &command) { return ""; }
+static std::string cmd_write_memory(HostState &state, PacketCommand &command) { return ""; }
 
-std::string cmd_detach(HostState &state, PacketCommand &command) { return "OK"; }
+static std::string cmd_detach(HostState &state, PacketCommand &command) { return "OK"; }
 
-std::string cmd_continue(HostState &state, PacketCommand &command) {
+static std::string cmd_continue(HostState &state, PacketCommand &command) {
     std::string content = content_string(command);
 
     uint64_t index = 5;
@@ -354,27 +371,27 @@ std::string cmd_continue(HostState &state, PacketCommand &command) {
     return "";
 }
 
-std::string cmd_continue_supported(HostState &state, PacketCommand &command) {
+static std::string cmd_continue_supported(HostState &state, PacketCommand &command) {
     return "vCont;c;C;s;S;t;r";
 }
 
-std::string cmd_kill(HostState &state, PacketCommand &command) {
+static std::string cmd_kill(HostState &state, PacketCommand &command) {
     return "OK";
 }
 
-std::string cmd_die(HostState &state, PacketCommand &command) {
+static std::string cmd_die(HostState &state, PacketCommand &command) {
     state.gdb.server_die = true;
     return "";
 }
 
-std::string cmd_attached(HostState &state, PacketCommand &command) { return "1"; }
+static std::string cmd_attached(HostState &state, PacketCommand &command) { return "1"; }
 
-std::string cmd_thread_status(HostState &state, PacketCommand &command) { return "T0"; }
+static std::string cmd_thread_status(HostState &state, PacketCommand &command) { return "T0"; }
 
-std::string cmd_reason(HostState &state, PacketCommand &command) { return "S05"; }
+static std::string cmd_reason(HostState &state, PacketCommand &command) { return "S05"; }
 
 // TODO: Implement qsThreadInfo if list becomes too large.
-std::string cmd_list_threads(HostState &state, PacketCommand &command) {
+static std::string cmd_list_threads(HostState &state, PacketCommand &command) {
     std::stringstream stream;
 
     stream << "m";
@@ -392,7 +409,7 @@ std::string cmd_list_threads(HostState &state, PacketCommand &command) {
     return stream.str();
 }
 
-std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) {
+static std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) {
     std::string content = content_string(command);
     uint32_t type, address, kind;
 
@@ -403,12 +420,12 @@ std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) {
     kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     LOG_GDB("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
-    add_breakpoint(state.mem, address);
+    add_breakpoint(state, address);
 
     return "OK";
 }
 
-std::string cmd_remove_breakpoint(HostState &state, PacketCommand &command) {
+static std::string cmd_remove_breakpoint(HostState &state, PacketCommand &command) {
     std::string content = content_string(command);
     uint32_t type, address, kind;
 
@@ -419,24 +436,24 @@ std::string cmd_remove_breakpoint(HostState &state, PacketCommand &command) {
     kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     LOG_GDB("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
-    remove_breakpoint(state.mem, address);
+    remove_breakpoint(state, address);
 
     return "OK";
 }
 
-std::string cmd_deprecated(HostState &state, PacketCommand &command) {
+static std::string cmd_deprecated(HostState &state, PacketCommand &command) {
     LOG_GDB("GDB Server: Deprecated Packet. {}", content_string(command));
 
     return "";
 }
 
-std::string cmd_unimplemented(HostState &state, PacketCommand &command) {
+static std::string cmd_unimplemented(HostState &state, PacketCommand &command) {
     LOG_GDB("GDB Server: Unimplemented Packet. {}", content_string(command));
 
     return "";
 }
 
-PacketFunctionBundle functions[] = {
+const static PacketFunctionBundle functions[] = {
     { "!", cmd_unimplemented },
     { "?", cmd_reason },
     { "A", cmd_unimplemented },
@@ -491,7 +508,7 @@ PacketFunctionBundle functions[] = {
     { "Z", cmd_add_breakpoint },
 };
 
-static bool begins(PacketCommand &command, const std::string &small) {
+static bool command_begins_with(PacketCommand &command, const std::string &small) {
     if (small.size() > command.content_length)
         return false;
 
@@ -537,7 +554,7 @@ static int64_t server_next(HostState &state) {
                 std::string debug_func_name = "INVALID FUNC";
 
                 for (const auto &function : functions) {
-                    if (begins(command, function.name)) {
+                    if (command_begins_with(command, function.name)) {
                         debug_func_name = function.name;
                         state.gdb.last_reply = function.function(state, command);
                         if (state.gdb.server_die)
@@ -568,8 +585,6 @@ static int64_t server_next(HostState &state) {
 }
 
 static void server_listen(HostState &state) {
-    state.gdb.is_running = true;
-
     state.gdb.client_socket = accept(state.gdb.listen_socket, nullptr, nullptr);
 
     if (state.gdb.client_socket == -1) {
@@ -589,8 +604,6 @@ static void server_listen(HostState &state) {
     do {
         status = server_next(state);
     } while (status >= 0 && !state.gdb.server_die);
-
-    state.gdb.is_running = false;
 
     server_close(state);
 }
