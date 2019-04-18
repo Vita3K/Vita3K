@@ -40,7 +40,7 @@
 #include <unistd.h>
 #endif
 
-#define LOG_GDB_LEVEL 1
+#define LOG_GDB_LEVEL 0
 
 #if LOG_GDB_LEVEL >= 1
 #define LOG_GDB LOG_INFO
@@ -343,6 +343,7 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                         thread.second->to_do = step ? ThreadToDo::step : ThreadToDo::run;
                         thread.second->something_to_do.notify_one();
                     }
+                    if (state.gdb.server_die) break;
                 }
             }
 
@@ -354,6 +355,7 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                             hit_break = true;
                             break;
                         }
+                        if (state.gdb.server_die) break;
                     }
                 }
             }
@@ -597,7 +599,7 @@ static void server_listen(HostState &state) {
         thread.second->to_do = ThreadToDo::wait;
     }
 
-    LOG_GDB("GDB Server Received Connection");
+    LOG_INFO("GDB Server Received Connection");
 
     int64_t status;
 
@@ -646,7 +648,7 @@ void server_open(HostState &state) {
 
     state.gdb.server_thread = std::make_shared<std::thread>(server_listen, std::ref(state));
 
-    LOG_GDB("GDB Server is listening on port {}", GDB_SERVER_PORT);
+    LOG_INFO("GDB Server is listening on port {}", GDB_SERVER_PORT);
 }
 
 void server_close(HostState &state) {

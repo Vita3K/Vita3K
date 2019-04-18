@@ -39,4 +39,5 @@ struct Config {
     bool show_gui = false;
     optional<std::string> pref_path;
     bool archive_log = false;
+    optional<bool> wait_for_debugger;
 };

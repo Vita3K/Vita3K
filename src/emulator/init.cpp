@@ -114,6 +114,9 @@ bool init(HostState &state, Config cfg) {
     };
 
     state.cfg = std::move(cfg);
+    if (state.cfg.wait_for_debugger) {
+        state.kernel.wait_for_debugger = state.cfg.wait_for_debugger.value();
+    }
     state.base_path = base_path.get();
 
     // If configuration already provides preference path
