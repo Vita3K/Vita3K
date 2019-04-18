@@ -19,6 +19,7 @@
 #include "config.h"
 #include "screen_render.h"
 
+#include <gdbstub/functions.h>
 #include <gui/functions.h>
 #include <host/state.h>
 #include <host/version.h>
@@ -140,6 +141,10 @@ int main(int argc, char *argv[]) {
 
         set_window_title(host);
     }
+
+#ifdef USE_GDBSTUB
+    server_close(host);
+#endif
 
     // There may be changes that made in the GUI, so we should save, again
     config::serialize(host.cfg);

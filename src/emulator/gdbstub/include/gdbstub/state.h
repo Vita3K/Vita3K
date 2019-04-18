@@ -17,35 +17,38 @@
 
 #pragma once
 
-#include <mem/mem.h> // Address.
+#ifdef USE_GDBSTUB
 
-#include <condition_variable>
-#include <mutex>
-#include <string>
+#include <functional>
+#include <memory>
+#include <thread>
 
-struct CPUState;
-template <typename T>
-class Resource;
+#ifdef _WIN32
+typedef SOCKET socket_t;
+constexpr socket_t BAD_SOCK = (socket_t)~0;
+#else
+typedef int32_t socket_t;
+constexpr socket_t BAD_SOCK = -1;
+#endif
 
-typedef Resource<Address> ThreadStack;
-typedef std::shared_ptr<ThreadStack> ThreadStackPtr;
-typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
+constexpr uint32_t GDB_SERVER_PORT = 2159;
 
-enum class ThreadToDo {
-    exit,
-    run,
-    step,
-    wait,
+struct GDBState {
+#ifdef _WIN32
+    WSADATA wsaData;
+#endif
+
+    socket_t listen_socket = BAD_SOCK;
+    socket_t client_socket = BAD_SOCK;
+
+    std::shared_ptr<std::thread> server_thread = nullptr;
+    bool server_die = false;
+
+    std::string last_reply = "";
+
+    SceUID current_thread = 0;
+
+    std::map<Address, uint32_t> breakpoints;
 };
 
-struct ThreadState {
-    ThreadStackPtr stack;
-    int priority;
-    int stack_size;
-    CPUStatePtr cpu;
-    ThreadToDo to_do = ThreadToDo::run;
-    std::mutex mutex;
-    std::condition_variable something_to_do;
-    std::vector<std::shared_ptr<ThreadState>> waiting_threads;
-    std::string name;
-};
+#endif

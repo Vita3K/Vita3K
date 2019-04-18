@@ -17,35 +17,9 @@
 
 #pragma once
 
-#include <mem/mem.h> // Address.
+struct HostState;
 
-#include <condition_variable>
-#include <mutex>
-#include <string>
-
-struct CPUState;
-template <typename T>
-class Resource;
-
-typedef Resource<Address> ThreadStack;
-typedef std::shared_ptr<ThreadStack> ThreadStackPtr;
-typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
-
-enum class ThreadToDo {
-    exit,
-    run,
-    step,
-    wait,
-};
-
-struct ThreadState {
-    ThreadStackPtr stack;
-    int priority;
-    int stack_size;
-    CPUStatePtr cpu;
-    ThreadToDo to_do = ThreadToDo::run;
-    std::mutex mutex;
-    std::condition_variable something_to_do;
-    std::vector<std::shared_ptr<ThreadState>> waiting_threads;
-    std::string name;
-};
+void server_open(HostState &state);
+void server_close(HostState &state);
+void add_breakpoint(HostState &state, uint32_t address);
+void remove_breakpoint(HostState &state, uint32_t address);

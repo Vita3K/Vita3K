@@ -190,6 +190,7 @@ struct KernelState {
     ExportNids export_nids;
     SceRtcTick base_tick;
     Ptr<uint32_t> process_param;
+    bool wait_for_debugger = false;
 
     SceUID get_next_uid() {
         return next_uid++;

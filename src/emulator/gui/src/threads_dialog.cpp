@@ -73,6 +73,9 @@ void draw_threads_dialog(HostState &host) {
         case ThreadToDo::run:
             run_state = "Running";
             break;
+        case ThreadToDo::step:
+            run_state = "Stepping";
+            break;
         case ThreadToDo::wait:
             run_state = "Waiting";
             break;
