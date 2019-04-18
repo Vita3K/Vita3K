@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(Vita3K)
 
-option(USE_GDBSTUB "Build Vita3K with GDB Debugger." ON)
+option(USE_GDBSTUB "Build Vita3K with GDB Debugger." OFF)
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
