@@ -195,7 +195,7 @@ private:
 
     void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, std::uint8_t off = 0);
 
-    const SpirvVarRegBank &get_reg_bank(RegisterBank reg_bank) const;
+    const SpirvVarRegBank *get_reg_bank(RegisterBank reg_bank) const;
 
     spv::Id swizzle_to_spv_comp(spv::Id composite, spv::Id type, SwizzleChannel swizzle);
 

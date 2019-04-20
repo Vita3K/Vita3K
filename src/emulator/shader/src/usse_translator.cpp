@@ -134,7 +134,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         }
     }
 
-    const SpirvVarRegBank &spirv_bank = get_reg_bank(bank);
+    const SpirvVarRegBank *spirv_bank = get_reg_bank(bank);
 
     auto create_supply_register = [&](SpirvReg base, const std::string &name) -> SpirvReg {
         const spv::Id new_writeable = m_b.createVariable(spv::StorageClassPrivate, type_f32_v[4], name.c_str());
@@ -144,7 +144,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
         uint32_t temp_comp = 0;
 
-        if (!spirv_bank.find_reg_at(reg_offset + shift_offset + m_b.getNumTypeComponents(org1.type_id), org2, temp_comp)) {
+        if (!spirv_bank->find_reg_at(reg_offset + shift_offset + m_b.getNumTypeComponents(org1.type_id), org2, temp_comp)) {
             org2 = org1;
         }
 
@@ -156,7 +156,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         return base;
     };
 
-    bool result = spirv_bank.find_reg_at(reg_offset + shift_offset, reg, out_comp_offset);
+    bool result = spirv_bank->find_reg_at(reg_offset + shift_offset, reg, out_comp_offset);
     if (!result) {
         // Either if we get them for store or not, sometimes shader will still use SEC as temporary. Weird but ok.
         if (bank == usse::RegisterBank::SECATTR) {
@@ -666,22 +666,22 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
     m_b.createStore(result, dest_reg.var_id);
 }
 
-const SpirvVarRegBank &USSETranslatorVisitor::get_reg_bank(RegisterBank reg_bank) const {
+const SpirvVarRegBank *USSETranslatorVisitor::get_reg_bank(RegisterBank reg_bank) const {
     switch (reg_bank) {
     case RegisterBank::PRIMATTR:
-        return m_spirv_params.ins;
+        return &m_spirv_params.ins;
     case RegisterBank::SECATTR:
-        return m_spirv_params.uniforms;
+        return &m_spirv_params.uniforms;
     case RegisterBank::OUTPUT:
-        return m_spirv_params.outs;
+        return &m_spirv_params.outs;
     case RegisterBank::TEMP:
-        return m_spirv_params.temps;
+        return &m_spirv_params.temps;
     case RegisterBank::FPINTERNAL:
-        return m_spirv_params.internals;
+        return &m_spirv_params.internals;
     }
 
     LOG_WARN("Reg bank {} unsupported", static_cast<uint8_t>(reg_bank));
-    return {};
+    return nullptr;
 }
 
 spv::Id USSETranslatorVisitor::swizzle_to_spv_comp(spv::Id composite, spv::Id type, SwizzleChannel swizzle) {
