@@ -352,6 +352,26 @@ public:
         Imm4 src2_n,
         Imm1 comp_sel_0_bit0);
 
+    bool vcomp(
+        ExtPredicate pred,
+        bool skipinv,
+        Imm2 dest_type,
+        bool syncstart,
+        bool dest_bank_ext,
+        bool end,
+        bool src1_bank_ext,
+        RepeatCount repeat_count,
+        bool nosched,
+        Imm2 op2,
+        Imm2 src_type,
+        Imm2 src1_mod,
+        Imm2 src_comp,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm7 dest_n,
+        Imm6 src1_n,
+        Imm4 write_mask);
+        
     bool phas();
 
     bool spec(

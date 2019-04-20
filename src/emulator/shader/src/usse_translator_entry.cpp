@@ -213,6 +213,34 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::spec, "SPEC ()", "11111----scc----------------------------------------------------"),
 
+    // Vector Complex Instructions
+    /*
+                                00110 = op1
+                                      ppp = pred (3 bits, ExtPredicate)
+                                        s = skipinv (1 bit, bool)
+                                          dd = dest_type (2 bits)
+                                            y = syncstart (1 bit, bool)
+                                            e = dest_bank_ext (1 bit, bool)
+                                              n = end (1 bit, bool)
+                                              r = src1_bank_ext (1 bit, bool)
+                                                - = don't care
+                                                aaaa = repeat_count (4 bits, RepeatCount)
+                                                    o = nosched (1 bit, bool)
+                                                      bb = op2 (2 bits)
+                                                        cc = src_type (2 bits)
+                                                          mm = src1_mod (2 bits)
+                                                            ff = src_comp (2 bits)
+                                                              - = don't care
+                                                              tt = dest_bank (2 bits)
+                                                                kk = src1_bank (2 bits)
+                                                                  -- = don't care
+                                                                    ggggggg = dest_n (7 bits)
+                                                                            -------- = don't care
+                                                                                    hhhhhh = src1_n (6 bits)
+                                                                                          --- = don't care
+                                                                                            wwww = write_mask (4 bits)
+    */
+    INST(&V::vcomp, "VCOMP ()", "00110pppsddyenr-aaaaobbccmmff-ttkk--ggggggg--------hhhhhh---wwww"),
         // clang-format on
     };
 #undef INST

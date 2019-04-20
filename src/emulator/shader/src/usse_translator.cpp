@@ -1253,6 +1253,29 @@ bool USSETranslatorVisitor::vpck(
     return true;
 }
 
+bool USSETranslatorVisitor::vcomp(
+    ExtPredicate pred,
+    bool skipinv,
+    Imm2 dest_type,
+    bool syncstart,
+    bool dest_bank_ext,
+    bool end,
+    bool src1_bank_ext,
+    RepeatCount repeat_count,
+    bool nosched,
+    Imm2 op2,
+    Imm2 src_type,
+    Imm2 src1_mod,
+    Imm2 src_comp,
+    Imm2 dest_bank,
+    Imm2 src1_bank,
+    Imm7 dest_n,
+    Imm6 src1_n,
+    Imm4 write_mask)
+{
+    return true;
+}
+
 bool USSETranslatorVisitor::phas() {
     usse::instr_idx--;
     LOG_DISASM("{:016x}: PHAS", m_instr);
