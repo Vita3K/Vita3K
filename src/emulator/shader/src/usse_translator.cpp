@@ -489,13 +489,24 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         first_pass = bridge(first_pass_wrapper, to_bridge[i], op.swizzle, comp_offset, dest_mask, size_comp);
     }
 
-    if (size_comp == 4) {
-        return first_pass;
+    if (size_comp != 4) {
+        // Second pass: Do unpack
+        // We already handle shift offset above, so now let's use 0
+        first_pass = unpack(first_pass, op.type, op.swizzle, dest_mask, 0);
     }
 
-    // Second pass: Do unpack
-    // We already handle shift offset above, so now let's use 0
-    return unpack(first_pass, op.type, op.swizzle, dest_mask, 0);
+    // Apply modifier flags
+    if (op.flags & RegisterFlags::Negative) {
+        // Negate the value
+        first_pass = m_b.createBinOp(spv::OpFSub, type_f32_v[dest_comp_count], const_f32_v0[dest_comp_count], first_pass);
+    }
+
+    if (op.flags & RegisterFlags::Absolute) {
+        // Absolute the result
+        first_pass = m_b.createBuiltinCall(type_f32_v[dest_comp_count], std_builtins, GLSLstd450FAbs, { first_pass });
+    }
+
+    return first_pass;
 }
 
 void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t dest_mask, std::uint8_t off) {
@@ -948,7 +959,13 @@ bool USSETranslatorVisitor::vnmad32(
 
     inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, true, 7, m_second_program);
     inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
+    inst.opr.src1.flags = decode_modifier(src1_mod);
+
     inst.opr.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
+
+    if (src2_mod == 1) {
+        inst.opr.src2.flags = RegisterFlags::Absolute;
+    }
 
     inst.opr.dest.type = is_32_bit ? DataType::F32 : DataType::F16;
     inst.opr.src1.type = inst.opr.dest.type;

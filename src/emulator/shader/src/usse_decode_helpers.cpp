@@ -314,4 +314,26 @@ usse::Imm4 decode_write_mask(usse::Imm4 write_mask, const bool f16) {
     return new_write_mask;
 }
 
+usse::RegisterFlags decode_modifier(usse::Imm2 mod) {
+    switch (mod) {
+    case 1: {
+        return RegisterFlags::Negative;
+    }
+
+    case 2: {
+        return RegisterFlags::Absolute;
+    }
+
+    case 3: {
+        return RegisterFlags::Negative | RegisterFlags::Absolute;
+    }
+
+    default: {
+        break;
+    }
+    }
+
+    return static_cast<usse::RegisterFlags>(0);
+}
+
 } // namespace shader::usse

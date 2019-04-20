@@ -45,7 +45,8 @@ public:
     spv::Id type_ui32;
     spv::Id type_f32_v[5]; // Starts from 1 ([1] is vec 1)
     spv::Id const_f32[4];
-    // spv::Id const_f32_v[5];  // Starts from 1 ([1] is vec 1)
+
+    spv::Id const_f32_v0[5];
 
     spv::Function *f16_unpack_func;
     spv::Function *f16_pack_func;
@@ -83,8 +84,14 @@ public:
 
         for (std::uint8_t i = 1; i < 5; i++) {
             type_f32_v[i] = m_b.makeVectorType(type_f32, i);
-            //            const_f32_v[i] = m_b.makeCompositeConstant(type_f32_v[i],
-            //                { const_f32[i - 1], const_f32[i - 1], const_f32[i - 1], const_f32[i - 1] });
+
+            std::vector<spv::Id> consts;
+
+            for (std::uint8_t j = 1; j < i + 1; j++) {
+                consts.push_back(const_f32[0]);
+            }
+
+            const_f32_v0[i] = m_b.makeCompositeConstant(type_f32_v[i], consts);
         }
 
         // Make utility functions
