@@ -120,7 +120,8 @@ enum class DataType : uint8_t {
     UINT8,
     UINT16,
     O8,
-    TOTAL_TYPE
+    TOTAL_TYPE,
+    UNK
 };
 
 enum class SpecialCategory : uint8_t {

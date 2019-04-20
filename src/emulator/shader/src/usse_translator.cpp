@@ -1273,6 +1273,90 @@ bool USSETranslatorVisitor::vcomp(
     Imm6 src1_n,
     Imm4 write_mask)
 {
+    Instruction inst;
+
+    // All of them needs to be doubled
+    inst.opr.dest = decode_dest(dest_n, dest_bank, dest_bank_ext, true, 7, m_second_program);
+    inst.opr.src1 = decode_src12(src1_n, src1_bank, src1_bank_ext, true, 7, m_second_program);
+    inst.opr.src1.flags = decode_modifier(src1_mod);
+
+    // The thing is, these instructions are designed to only work with one component
+    // I'm pretty sure, but should leave note here in the future if other devs maintain and develop this.
+    static const Opcode tb_decode_vop[] = {
+        Opcode::VRCP,
+        Opcode::VRSQ,
+        Opcode::VLOG,
+        Opcode::VEXP
+    };
+
+    static const DataType tb_decode_src_type[] = {
+        DataType::F32,
+        DataType::F16,
+        DataType::C10,
+        DataType::UNK
+    };
+    
+    static const DataType tb_decode_dest_type[] = {
+        DataType::F32,
+        DataType::F16,
+        DataType::C10,
+        DataType::UNK
+    };
+
+    const Opcode op = tb_decode_vop[op2];
+    inst.opr.src1.type = tb_decode_src_type[src_type];
+    inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    inst.opr.dest.type = tb_decode_dest_type[dest_type];
+    inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+
+    // TODO: Should we do this ?
+    write_mask = decode_write_mask(write_mask, inst.opr.src1.type == DataType::F16);
+
+    std::uint32_t src_mask = 0;
+
+    // Build the source mask. It should only be one component
+    switch (src_comp) {
+    case 0: {
+        src_mask = 0b0001;
+        break;
+    }
+
+    case 1: {
+        src_mask = 0b0010;
+        break;
+    }
+
+    case 2: {
+        src_mask = 0b0100;
+        break;
+    }
+
+    case 3: {
+        src_mask = 0b1000;
+        break;
+    }
+
+    default: break;
+    }
+
+    // TODO: Log
+    BEGIN_REPEAT(repeat_count, 2)
+        spv::Id result = load(inst.opr.src1, src_mask, repeat_offset);
+        
+        switch (op) {
+        case Opcode::VRCP: {
+            // We have to manually divide by 1
+            result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), const_f32[1], result);
+            break;
+        }
+
+        default:
+            break;
+        }
+
+        store(inst.opr.dest, result, write_mask, repeat_offset);
+    END_REPEAT()
+
     return true;
 }
 
