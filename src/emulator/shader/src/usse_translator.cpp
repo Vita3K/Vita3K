@@ -1483,6 +1483,12 @@ bool USSETranslatorVisitor::vcomp(
             break;
         }
 
+        case Opcode::VEXP: {
+            // y = e^src0 => return y
+            result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Exp, { result });
+            break;
+        }
+
         default:
             break;
         }
