@@ -1477,6 +1477,12 @@ bool USSETranslatorVisitor::vcomp(
             break;
         }
 
+        case Opcode::VLOG: {
+            // src0 = e^y => return y
+            result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Log, { result });
+            break;
+        }
+
         default:
             break;
         }
