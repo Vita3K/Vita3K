@@ -203,6 +203,19 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::phas, "PHAS ()", "11111----100----------------------------------------------------"),
 
+
+    // Nop
+    /*
+                            11111 = op1
+                                  ---- = don't care
+                                      0 = opcat_extra
+                                      00 = op2_flow_ctrl
+                                        ----------- = don't care
+                                                    101 = nop
+                                                      -------------------------------------- = don't care
+    */
+    INST(&V::nop, "NOP ()", "11111----000-----------101--------------------------------------"),
+    
     // Special
     /*
                                11111 = op1
@@ -240,7 +253,8 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                           --- = don't care
                                                                                             wwww = write_mask (4 bits)
     */
-    INST(&V::vcomp, "VCOMP ()", "00110pppsddyenr-aaaaobbccmmff-ttkk--ggggggg--------hhhhhh---wwww"),
+    INST(&V::vcomp, "VCOMP ()", "00110pppsddyenr-aaaaobbccmmff-ttkk--ggggggg--------hhhhhh---wwww")
+
         // clang-format on
     };
 #undef INST

@@ -371,7 +371,8 @@ public:
         Imm7 dest_n,
         Imm6 src1_n,
         Imm4 write_mask);
-        
+    
+    bool nop();
     bool phas();
 
     bool spec(

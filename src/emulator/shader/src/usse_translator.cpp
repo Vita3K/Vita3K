@@ -1366,6 +1366,11 @@ bool USSETranslatorVisitor::phas() {
     return true;
 }
 
+bool USSETranslatorVisitor::nop() {
+    LOG_DISASM("{:016x}: NOP", m_instr);
+    return true;
+}
+
 bool USSETranslatorVisitor::spec(
     bool special,
     SpecialCategory category) {
