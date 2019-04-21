@@ -1350,6 +1350,12 @@ bool USSETranslatorVisitor::vcomp(
             break;
         }
 
+        case Opcode::VRSQ: {
+            // Inverse squareroot. Call a builtin this case.
+            result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450InverseSqrt, { result });
+            break;
+        }
+
         default:
             break;
         }
