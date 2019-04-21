@@ -174,7 +174,7 @@ private:
      * 
      * \returns A copy of given operand
     */
-    spv::Id load(Operand &op, const Imm4 dest_mask, const std::uint8_t offset = 0, bool /* abs */ = false, bool /* neg */ = false);
+    spv::Id load(Operand &op, const Imm4 dest_mask, const std::uint8_t offset = 0);
 
     /**
      * \brief Unpack a vector/scalar as given component data type.
@@ -371,7 +371,34 @@ public:
         Imm7 dest_n,
         Imm6 src1_n,
         Imm4 write_mask);
-    
+
+    bool vdp(
+        ExtPredicate pred,
+        Imm1 skipinv,
+        bool clip_plane_enable,
+        Imm1 opcode2,
+        Imm1 dest_use_bank_ext,
+        Imm1 end,
+        Imm1 src0_bank_ext,
+        Imm2 increment_mode,
+        Imm1 gpi0_abs,
+        RepeatCount repeat_count,
+        bool nosched,
+        Imm4 write_mask,
+        Imm1 src0_neg,
+        Imm1 src0_abs,
+        Imm3 clip_plane_n,
+        Imm2 dest_bank,
+        Imm2 src0_bank,
+        Imm2 gpi0_n,
+        Imm6 dest_n,
+        Imm4 gpi0_swiz,
+        Imm3 src0_swiz_w,
+        Imm3 src0_swiz_z,
+        Imm3 src0_swiz_y,
+        Imm3 src0_swiz_x,
+        Imm6 src0_n);
+
     bool nop();
     bool phas();
 

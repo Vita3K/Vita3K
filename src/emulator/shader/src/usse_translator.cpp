@@ -386,7 +386,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
     return shuff_result;
 }
 
-spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std::uint8_t offset, bool, bool) {
+spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std::uint8_t offset) {
     /*
     // Optimization: Check for constant swizzle and emit it right away
     for (std::uint8_t i = 0; i < 4; i++) {
@@ -878,6 +878,30 @@ bool USSETranslatorVisitor::vmad(
     inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swiz, gpi0_swiz_ext, type);
     inst.opr.src2.swizzle = decode_vec34_swizzle(gpi1_swiz, gpi1_swiz_ext, type);
 
+    if (src0_abs) {
+        inst.opr.src0.flags |= RegisterFlags::Absolute;
+    }
+    
+    if (src0_neg) {
+        inst.opr.src0.flags |= RegisterFlags::Negative;
+    }
+    
+    if (gpi0_abs) {
+        inst.opr.src1.flags |= RegisterFlags::Absolute;
+    }
+    
+    if (gpi0_neg) {
+        inst.opr.src1.flags |= RegisterFlags::Negative;
+    }
+
+    if (gpi1_abs) {
+        inst.opr.src2.flags |= RegisterFlags::Absolute;
+    }
+    
+    if (gpi1_neg) {
+        inst.opr.src2.flags |= RegisterFlags::Negative;
+    }
+
     disasm_str += fmt::format(" {} {} {} {}", disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask), disasm::operand_to_str(inst.opr.src1, write_mask), disasm::operand_to_str(inst.opr.src2, write_mask));
 
     LOG_DISASM("{}", disasm_str);
@@ -886,9 +910,9 @@ bool USSETranslatorVisitor::vmad(
     // Write mask is a 4-bit immidiate
     // If a bit is one, a swizzle is active
     BEGIN_REPEAT(repeat_count, 2)
-    spv::Id vsrc0 = load(inst.opr.src0, write_mask, repeat_offset, src0_abs, src0_neg);
-    spv::Id vsrc1 = load(inst.opr.src1, write_mask, repeat_offset, gpi0_abs, gpi0_neg);
-    spv::Id vsrc2 = load(inst.opr.src2, write_mask, repeat_offset, gpi1_abs, gpi1_neg);
+    spv::Id vsrc0 = load(inst.opr.src0, write_mask, repeat_offset);
+    spv::Id vsrc1 = load(inst.opr.src1, write_mask, repeat_offset);
+    spv::Id vsrc2 = load(inst.opr.src2, write_mask, repeat_offset);
 
     if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
         return false;
@@ -898,6 +922,100 @@ bool USSETranslatorVisitor::vmad(
     auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
     store(inst.opr.dest, add_result, write_mask, repeat_offset);
+    END_REPEAT()
+
+    return true;
+}
+
+bool USSETranslatorVisitor::vdp(
+    ExtPredicate pred,
+    Imm1 skipinv,
+    bool clip_plane_enable,
+    Imm1 opcode2,
+    Imm1 dest_use_bank_ext,
+    Imm1 end,
+    Imm1 src0_bank_ext,
+    Imm2 increment_mode,
+    Imm1 gpi0_abs,
+    RepeatCount repeat_count,
+    bool nosched,
+    Imm4 write_mask,
+    Imm1 src0_neg,
+    Imm1 src0_abs,
+    Imm3 clip_plane_n,
+    Imm2 dest_bank,
+    Imm2 src0_bank,
+    Imm2 gpi0_n,
+    Imm6 dest_n,
+    Imm4 gpi0_swiz,
+    Imm3 src0_swiz_w,
+    Imm3 src0_swiz_z,
+    Imm3 src0_swiz_y,
+    Imm3 src0_swiz_x,
+    Imm6 src0_n)
+{
+    Instruction inst{};
+
+    // Is this VDP3 or VDP4, op2 = 0 => vec3
+    int type = 2;
+    usse::Imm4 src_mask = 0b1111;
+
+    if (opcode2 == 0) {
+        type = 1;
+        src_mask = 0b0111;
+    }
+
+    // Double regs always true for src0, dest
+    inst.opr.src0 = decode_src12(src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
+    inst.opr.dest = decode_dest(dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
+
+    inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
+    inst.opr.src1.num = gpi0_n;
+
+    inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swiz, false, type);
+
+    // Decode first source swizzle
+    const SwizzleChannel tb_swizz_dec[] = {
+        SwizzleChannel::_X,
+        SwizzleChannel::_Y,
+        SwizzleChannel::_Z,
+        SwizzleChannel::_W,
+        SwizzleChannel::_0,
+        SwizzleChannel::_1,
+        SwizzleChannel::_2,
+        SwizzleChannel::_H,
+        SwizzleChannel::_UNDEFINED
+    };
+
+    inst.opr.src0.swizzle[0] = tb_swizz_dec[src0_swiz_x];
+    inst.opr.src0.swizzle[1] = tb_swizz_dec[src0_swiz_y];
+    inst.opr.src0.swizzle[2] = tb_swizz_dec[src0_swiz_z];
+    inst.opr.src0.swizzle[3] = tb_swizz_dec[src0_swiz_w];
+
+    // Set modifiers
+    if (src0_neg) {
+        inst.opr.src0.flags |= RegisterFlags::Negative;
+    }
+
+    if (src0_abs) {
+        inst.opr.src0.flags |= RegisterFlags::Absolute;
+    }
+
+    if (gpi0_abs) {
+        inst.opr.src1.flags |= RegisterFlags::Absolute;
+    }
+
+    // Decoding done
+    BEGIN_REPEAT(repeat_count, 2)
+        LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, repeat_offset),
+            disasm::operand_to_str(inst.opr.src0, src_mask, repeat_offset), disasm::operand_to_str(inst.opr.src1, src_mask, repeat_offset));
+            
+        spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, repeat_offset);
+        spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, repeat_offset);
+
+        spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
+
+        store(inst.opr.dest, result, write_mask, repeat_offset);
     END_REPEAT()
 
     return true;

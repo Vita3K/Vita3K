@@ -253,7 +253,39 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                           --- = don't care
                                                                                             wwww = write_mask (4 bits)
     */
-    INST(&V::vcomp, "VCOMP ()", "00110pppsddyenr-aaaaobbccmmff-ttkk--ggggggg--------hhhhhh---wwww")
+    INST(&V::vcomp, "VCOMP ()", "00110pppsddyenr-aaaaobbccmmff-ttkk--ggggggg--------hhhhhh---wwww"),
+
+    // Vector Dot Product (single issue)
+    /*
+                            00011 = opcode1
+                                  ppp = pred (3 bits, ExtPredicate)
+                                    s = skipinv (1 bit)
+                                      c = clip_plane_enable (1 bit, bool)
+                                      0 = present_bit_0
+                                        o = opcode2 (1 bit)
+                                        d = dest_use_bank_ext (1 bit)
+                                          e = end (1 bit)
+                                          r = src0_bank_ext (1 bit)
+                                            ii = increment_mode (2 bits)
+                                              g = gpi0_abs (1 bit)
+                                              aa = repeat_count (2 bits, RepeatCount)
+                                                n = nosched (1 bit, bool)
+                                                  wwww = write_mask (4 bits)
+                                                      b = src0_neg (1 bit)
+                                                      f = src0_abs (1 bit)
+                                                        lll = clip_plane_n (3 bits)
+                                                          tt = dest_bank (2 bits)
+                                                            kk = src0_bank (2 bits)
+                                                              hh = gpi0_n (2 bits)
+                                                                jjjjjj = dest_n (6 bits)
+                                                                      zzzz = gpi0_swiz (4 bits)
+                                                                          mmm = src0_swiz_w (3 bits)
+                                                                              qqq = src0_swiz_z (3 bits)
+                                                                                yyy = src0_swiz_y (3 bits)
+                                                                                    xxx = src0_swiz_x (3 bits)
+                                                                                      uuuuuu = src0_n (6 bits)
+    */
+    INST(&V::vdp, "VDP ()", "00011pppsc0oderiigaanwwwwbflllttkkhhjjjjjjzzzzmmmqqqyyyxxxuuuuuu"),
 
         // clang-format on
     };
