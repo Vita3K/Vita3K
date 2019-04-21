@@ -100,6 +100,8 @@ bool serialize(Config &cfg) {
     config_file_emit_optional_single(emitter, "log-level", cfg.log_level);
     config_file_emit_optional_single(emitter, "pref-path", cfg.pref_path);
     config_file_emit_optional_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
+    config_file_emit_optional_single(emitter, "background-image", cfg.background_image);
+    config_file_emit_optional_single(emitter, "background-alpha", cfg.background_alpha);
 
     emitter << YAML::EndMap;
 
@@ -118,7 +120,7 @@ static bool deserialize(Config &cfg) {
     try {
         config_node = YAML::LoadFile("config.yml");
     } catch (YAML::Exception &exception) {
-        std::cerr << "Config file can't be load: Error: " << exception.what() << "\n";
+        std::cerr << "Config file can't be loaded: Error: " << exception.what() << "\n";
         return false;
     }
 
@@ -132,6 +134,8 @@ static bool deserialize(Config &cfg) {
     get_yaml_value_optional(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value_optional(config_node, "pref-path", &cfg.pref_path);
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
+    get_yaml_value_optional(config_node, "background-image", &cfg.background_image);
+    get_yaml_value_optional(config_node, "background-alpha", &cfg.background_alpha);
 
     // lle-modules
     try {

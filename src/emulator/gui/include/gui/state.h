@@ -90,6 +90,8 @@ struct State {
     char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
 
+    uint32_t background_texture = 0;
+
     SceUID thread_watch_index = -1;
 
     // imgui

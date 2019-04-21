@@ -23,4 +23,4 @@ src/about_dialog.cpp
 )
 
 target_include_directories(gui PUBLIC include)
-target_link_libraries(gui PUBLIC sdl2 imgui glutil host kernel cpu util dialog)
+target_link_libraries(gui PUBLIC sdl2 stb imgui glutil host kernel cpu util dialog)

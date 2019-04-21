@@ -54,6 +54,9 @@ target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio")
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
 target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1 SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
+
 option(BUILD_SHARED_LIBS "Build shared instead of static libraries." OFF)
 option(OPTION_BUILD_TOOLS "Build tools." OFF)
 option(OPTION_BUILD_EXAMPLES "Build examples." OFF)
