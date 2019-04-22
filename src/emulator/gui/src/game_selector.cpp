@@ -35,6 +35,8 @@ void draw_game_selector(HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiSetCond_Always);
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
+    static ImGuiTextFilter search_bar;
+
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
         ImGui::Columns(3);
@@ -139,6 +141,13 @@ void draw_game_selector(HostState &host) {
                 break;
             }
         }
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 300));
+        ImGui::TextColored(GUI_COLOR_TEXT, "Search");
+        ImGui::SameLine();
+        search_bar.Draw("", 300);
+
         ImGui::NextColumn();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1);
@@ -147,6 +156,8 @@ void draw_game_selector(HostState &host) {
             bool selected_1 = false;
             bool selected_2 = false;
             bool selected_3 = false;
+            if (!search_bar.PassFilter(game.title.c_str()) && !search_bar.PassFilter(game.title_id.c_str()))
+                continue;
             ImGui::Selectable(game.title_id.c_str(), &selected_1, ImGuiSelectableFlags_SpanAllColumns);
             ImGui::NextColumn();
             ImGui::Selectable(game.app_ver.c_str(), &selected_2, ImGuiSelectableFlags_SpanAllColumns);
@@ -157,7 +168,7 @@ void draw_game_selector(HostState &host) {
                 host.gui.game_selector.selected_title_id = game.title_id;
             }
         }
-        ImGui::PopStyleColor(2);
+        ImGui::PopStyleColor(4);
         break;
     }
     ImGui::End();
