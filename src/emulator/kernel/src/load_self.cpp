@@ -458,9 +458,16 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     strncpy(sceKernelModuleInfo->path, self_path.c_str(), 255);
 
     for (Elf_Half segment_index = 0; segment_index < elf.e_phnum; ++segment_index) {
-        sceKernelModuleInfo->segments[segment_index].size = sizeof(sceKernelModuleInfo->segments[segment_index]);
-        sceKernelModuleInfo->segments[segment_index].vaddr = segment_reloc_info[segment_index].addr;
-        sceKernelModuleInfo->segments[segment_index].memsz = segments[segment_index].p_memsz;
+        emu::SceKernelSegmentInfo &segment = sceKernelModuleInfo->segments[segment_index];
+        segment.size = sizeof(segment);
+
+        auto it = segment_reloc_info.find(segment_index);
+        if (it != segment_reloc_info.end())
+            segment.vaddr = it->second.addr;
+        else
+            segment.vaddr = 0;
+
+        segment.memsz = segments[segment_index].p_memsz;
     }
 
     sceKernelModuleInfo->type = module_info->type;
