@@ -36,7 +36,6 @@ void draw_game_selector(HostState &host) {
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     static ImGuiTextFilter search_bar;
-    search_bar.Draw("Search", 300);
 
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
@@ -142,6 +141,13 @@ void draw_game_selector(HostState &host) {
                 break;
             }
         }
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 300));
+        ImGui::TextColored(GUI_COLOR_TEXT, "Search");
+        ImGui::SameLine();
+        search_bar.Draw("", 300);
+
         ImGui::NextColumn();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1);
@@ -162,7 +168,7 @@ void draw_game_selector(HostState &host) {
                 host.gui.game_selector.selected_title_id = game.title_id;
             }
         }
-        ImGui::PopStyleColor(2);
+        ImGui::PopStyleColor(4);
         break;
     }
     ImGui::End();
