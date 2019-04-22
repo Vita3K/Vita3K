@@ -131,7 +131,7 @@ static void init_background(State &gui, const std::string &image_path) {
 
     int32_t width = 0;
     int32_t height = 0;
-    stbi_uc *data = stbi_load(image_path.c_str(), &width, &height, nullptr, 3);
+    stbi_uc *data = stbi_load(image_path.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
         LOG_INFO("Could not load background from {}.", image_path);
@@ -140,7 +140,7 @@ static void init_background(State &gui, const std::string &image_path) {
 
     glGenTextures(1, &gui.background_texture);
     glBindTexture(GL_TEXTURE_2D, gui.background_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
