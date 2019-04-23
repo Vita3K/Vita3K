@@ -463,7 +463,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         if (it == segment_reloc_info.end())
             continue;
 
-        if (segment_index >= 4) {
+        if (segment_index >= MODULE_INFO_NUM_SEGMENTS) {
             LOG_ERROR("Segment {} should not be loadable", segment_index);
             continue;
         }
