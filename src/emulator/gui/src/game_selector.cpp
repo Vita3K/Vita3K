@@ -41,7 +41,7 @@ void draw_game_selector(HostState &host) {
     search_bar.Draw("Search", 300);
 
     if (host.gui.background_texture) {
-        ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(host.gui.background_texture),
+        ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(host.gui.background_texture.get()),
             ImVec2(0, 0), display_size);
     }
 

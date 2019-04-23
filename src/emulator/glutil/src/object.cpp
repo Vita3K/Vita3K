@@ -20,20 +20,35 @@
 #include <cassert>
 
 GLObject::~GLObject() {
-    if (deleter != nullptr) {
-        deleter(name);
+    if (aggregate_deleter != nullptr) {
+        aggregate_deleter(1, &name);
+    }
+    if (singular_deleter != nullptr) {
+        singular_deleter(name);
     }
     name = 0;
 }
 
-bool GLObject::init(GLuint name, Deleter deleter) {
+bool GLObject::init(GLuint name) {
     assert(name != 0);
     assert(this->name == 0);
     this->name = name;
-    if (deleter)
-        this->deleter = deleter;
 
     return name != 0;
+}
+
+bool GLObject::init(GLuint name, AggregateDeleter aggregate_deleter) {
+    if (aggregate_deleter)
+        this->aggregate_deleter = aggregate_deleter;
+
+    return init(name);
+}
+
+bool GLObject::init(GLuint name, SingularDeleter singular_deleter) {
+    if (singular_deleter)
+        this->singular_deleter = singular_deleter;
+
+    return init(name);
 }
 
 GLuint GLObject::get() const {
@@ -43,5 +58,9 @@ GLuint GLObject::get() const {
 
 GLObject::operator GLuint() const {
     assert(name != 0);
+    return name;
+}
+
+GLObject::operator bool() const {
     return name;
 }

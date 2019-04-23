@@ -22,6 +22,8 @@
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
+#include <glutil/object.h>
+
 namespace gui {
 
 enum SelectorState {
@@ -90,7 +92,7 @@ struct State {
     char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
 
-    uint32_t background_texture = 0;
+    GLObject background_texture;
 
     SceUID thread_watch_index = -1;
 

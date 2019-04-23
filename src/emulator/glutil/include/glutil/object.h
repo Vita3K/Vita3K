@@ -24,20 +24,25 @@
 
 class GLObject {
 public:
-    using Deleter = std::function<void(GLuint)>;
+    using SingularDeleter = std::function<void(GLuint)>;
+    using AggregateDeleter = std::function<void(int, const GLuint *)>;
 
     GLObject() = default;
     ~GLObject();
 
-    bool init(GLuint name, Deleter deleter);
+    bool init(GLuint name, AggregateDeleter aggregate_deleter);
+    bool init(GLuint name, SingularDeleter singular_deleter);
     GLuint get() const;
     operator GLuint() const;
+    operator bool() const;
 
 private:
+    bool init(GLuint name);
     const GLObject &operator=(const GLObject &) = delete;
 
     GLuint name = 0;
-    Deleter deleter = nullptr;
+    AggregateDeleter aggregate_deleter = nullptr;
+    SingularDeleter singular_deleter = nullptr;
 };
 
 using SharedGLObject = std::shared_ptr<GLObject>;
