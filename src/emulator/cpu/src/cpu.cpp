@@ -174,7 +174,9 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_SP, &sp);
     assert(err == UC_ERR_OK);
 
-    err = uc_mem_map_ptr(state->uc.get(), 0, GB(4), UC_PROT_ALL, &mem.memory[0]);
+    // Don't map the null page into unicorn so that unicorn returns access error instead of
+    // crashing the whole emulator on invalid access
+    err = uc_mem_map_ptr(state->uc.get(), mem.page_size, GB(4) - mem.page_size, UC_PROT_ALL, &mem.memory[mem.page_size]);
     assert(err == UC_ERR_OK);
 
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_PC, &pc);
