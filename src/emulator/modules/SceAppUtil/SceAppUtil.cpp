@@ -174,7 +174,7 @@ EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, e
         switch (files[i].mode) {
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE:
             fd = open_file(host.io, file_path, SCE_O_WRONLY | SCE_O_CREAT, host.pref_path.c_str(), export_name);
-            seek_file(fd, files[i].offset, SCE_SEEK_SET, host.io, export_name);
+            seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, host.io, export_name);
             write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, export_name);
             close_file(host.io, fd, export_name);
             break;
@@ -183,7 +183,7 @@ EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, e
             break;
         default:
             fd = open_file(host.io, file_path, SCE_O_WRONLY | SCE_O_CREAT, host.pref_path.c_str(), export_name);
-            seek_file(fd, files[i].offset, SCE_SEEK_SET, host.io, export_name);
+            seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, host.io, export_name);
             write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, export_name);
             close_file(host.io, fd, export_name);
             break;
