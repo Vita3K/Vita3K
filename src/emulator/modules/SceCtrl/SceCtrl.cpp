@@ -148,7 +148,7 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext) {
 }
 
 static float axis_to_axis(int16_t axis) {
-    const float unsigned_axis = axis - INT16_MIN;
+    const float unsigned_axis = static_cast<float>(axis - INT16_MIN);
     assert(unsigned_axis >= 0);
     assert(unsigned_axis <= UINT16_MAX);
 
@@ -200,6 +200,9 @@ static int reserve_port(CtrlState &state) {
             return i + 1;
         }
     }
+
+    // No free port found.
+    return 0;
 }
 
 static void remove_disconnected_controllers(CtrlState &state) {
