@@ -117,7 +117,7 @@ static void init_font(State &gui) {
     ImGuiIO &io = ImGui::GetIO();
     ImFontConfig font_config{};
     gui.monospaced_font = io.Fonts->AddFontDefault();
-    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), font_file_size, 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
+    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
 void init(HostState &host) {
