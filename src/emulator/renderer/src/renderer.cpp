@@ -202,8 +202,8 @@ void end_scene(Context &context, SceGxmSyncObject *sync_object, size_t width, si
         sync_object->value = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, GL_NONE_BIT);
     }
 
-    glPixelStorei(GL_PACK_ROW_LENGTH, stride_in_pixels);
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<gl::GLint>(stride_in_pixels));
+    glReadPixels(0, 0, static_cast<gl::GLsizei>(width), static_cast<gl::GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 
     flip_vertically(pixels, width, height, stride_in_pixels);
