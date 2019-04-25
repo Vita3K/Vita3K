@@ -151,7 +151,7 @@ normalize_path(const std::string &path, VitaIoDevice device) {
 
     std::string device_string = get_device_string(device);
     std::string normalized_path(device_string + "/");
-    uint32_t dev_length = device_string.length();
+    uint32_t dev_length = static_cast<uint32_t>(device_string.length());
 
     if (path.empty())
         return normalized_path;
@@ -332,7 +332,7 @@ int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *expo
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
-        return fread(data, 1, size, file->second.file_handle.get());
+        return static_cast<int>(fread(data, 1, size, file->second.file_handle.get()));
     }
 
     const TtyFiles::const_iterator tty_file = io.tty_files.find(fd);
@@ -376,7 +376,7 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
 
     const StdFiles::const_iterator file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
-        return fwrite(data, 1, size, file->second.file_handle.get());
+        return static_cast<int>(fwrite(data, 1, size, file->second.file_handle.get()));
     }
 
     return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
