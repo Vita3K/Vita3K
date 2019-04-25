@@ -33,9 +33,16 @@ void draw_game_selector(HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiSetCond_Always);
+    if (host.cfg.background_alpha)
+        ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha.value());
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     static ImGuiTextFilter search_bar;
+
+    if (host.gui.background_texture) {
+        ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(host.gui.background_texture.get()),
+            ImVec2(0, 0), display_size);
+    }
 
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
