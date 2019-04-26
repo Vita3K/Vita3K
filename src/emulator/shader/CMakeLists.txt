@@ -23,3 +23,12 @@ add_library(
 target_include_directories(shader PUBLIC include)
 target_link_libraries(shader PUBLIC util spirv-cross-glsl vita-headers)
 target_link_libraries(shader PRIVATE gxm SPIRV microprofile)
+
+add_executable(
+	shader-tests
+	tests/usse_program_analyzer_test.cpp
+)
+
+target_include_directories(shader-tests PRIVATE include)
+target_link_libraries(shader-tests PRIVATE googletest util)
+add_test(NAME shader COMMAND shader-tests)
