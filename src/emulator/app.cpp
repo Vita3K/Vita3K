@@ -19,6 +19,7 @@
 
 #include "sfo.h"
 
+#include <gdbstub/functions.h>
 #include <gui/functions.h>
 #include <gui/imgui_impl_sdl_gl3.h>
 #include <host/functions.h>
@@ -356,6 +357,10 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
         while (!imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
         }
     }
+
+#ifdef USE_GDBSTUB
+    server_open(host);
+#endif
 
     return Success;
 }

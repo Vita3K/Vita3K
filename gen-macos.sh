@@ -1,8 +1,10 @@
 #! /bin/bash
 set -ex
 
+BOOST_FOUND="$(cmake --find-package -DNAME=Boost -DCOMPILER_ID=GNU -DLANGUAGE=C -DMODE=EXIST)"
+
 # CI uses pre-built Boost
-if [[ -z "${CI}" ]]; then
+if [[ -z "${CI}" && ${BOOST_FOUND} != "Boost found." ]]; then
 	# Create build dir
 	mkdir -p src/external/boost-build
 	cd src/external/boost

@@ -76,7 +76,8 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
     }
 
     const std::lock_guard<std::mutex> lock(thread->mutex);
-    assert(thread->to_do == ThreadToDo::run);
+    if (thread->to_do != ThreadToDo::run)
+        return 0;
     thread->to_do = ThreadToDo::wait;
     stop(*thread->cpu);
 

@@ -30,6 +30,9 @@
 #include <np/state.h>
 #include <renderer/state.h>
 
+// The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
+#include <gdbstub/state.h>
+
 #include <psp2/display.h>
 
 #include <atomic>
@@ -82,4 +85,7 @@ struct HostState {
     gui::State gui;
     SfoFile sfo_handle;
     NIDSet missing_nids;
+#ifdef USE_GDBSTUB
+    GDBState gdb;
+#endif
 };

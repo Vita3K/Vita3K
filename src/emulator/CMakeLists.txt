@@ -49,12 +49,17 @@ endmacro(configure_boost)
 
 configure_boost()
 
+if (USE_GDBSTUB)
+	add_definitions(-DUSE_GDBSTUB)
+endif()
+
 add_subdirectory(audio)
 add_subdirectory(cpu)
 add_subdirectory(crypto)
 add_subdirectory(ctrl)
 add_subdirectory(dialog)
 add_subdirectory(disasm)
+add_subdirectory(gdbstub)
 add_subdirectory(glutil)
 add_subdirectory(gxm)
 add_subdirectory(net)
@@ -90,7 +95,7 @@ sfo.cpp
 sfo.h
 )
 
-target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio glbinding-aux glutil gui host shader imgui modules nids util vita-toolchain yaml-cpp)
+target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio gdbstub glbinding-aux glutil gui host shader imgui modules nids util vita-toolchain yaml-cpp)
 if(LINUX)
 	target_link_libraries(emulator PRIVATE stdc++fs)
 endif()

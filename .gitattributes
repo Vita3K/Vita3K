@@ -1,0 +1,17 @@
+# Properly detect files as C++ on Github
+*.h			linguist-language=cpp
+*.inc			linguist-language=cpp
+*.frag			linguist-language=GLSL
+*.vert			linguist-language=GLSL
+
+src/external/*	linguist-vendored
+
+# Enforce line endings to LF for cross-compiling
+*.cpp			eol=lf
+*.inc			eol=lf
+*.frag			eol=lf
+*.vert			eol=lf
+*.h			eol=lf
+*.sh			eol=lf
+
+*.bat			eol=crlf

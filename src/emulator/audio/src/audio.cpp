@@ -49,8 +49,9 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
             output.buf += bytes_to_put;
             output.len_bytes -= bytes_to_put;
             if (output.len_bytes <= 0) {
+                const SceUID thread = output.thread;
                 port.shared.outputs.pop();
-                resume_thread(output.thread);
+                resume_thread(thread);
             }
         }
 

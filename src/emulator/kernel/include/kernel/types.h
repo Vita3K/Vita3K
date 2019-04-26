@@ -26,6 +26,8 @@
 
 #define SCE_ERROR_ERRNO_EINVAL 0x80010016
 
+constexpr size_t MODULE_INFO_NUM_SEGMENTS = 4;
+
 namespace emu {
 struct SceKernelSegmentInfo {
     SceUInt size; //!< sizeof(SceKernelSegmentInfo)
@@ -53,7 +55,7 @@ struct SceKernelModuleInfo {
     SceSize tlsInitSize;
     SceSize tlsAreaSize;
     char path[256];
-    SceKernelSegmentInfo segments[4];
+    SceKernelSegmentInfo segments[MODULE_INFO_NUM_SEGMENTS];
     SceUInt type; //!< 6 = user-mode PRX?
 };
 

@@ -27,6 +27,9 @@
 	path = src/external/spdlog
 	url = https://github.com/gabime/spdlog.git
 	branch = v1.x
+[submodule "src/external/stb"]
+	path = src/external/stb
+	url = https://github.com/nothings/stb
 [submodule "src/external/dirent"]
 	path = src/external/dirent
 	url = https://github.com/tronkko/dirent

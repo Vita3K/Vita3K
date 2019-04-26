@@ -34,6 +34,7 @@ typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 enum class ThreadToDo {
     exit,
     run,
+    step,
     wait,
 };
 

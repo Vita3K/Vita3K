@@ -17,33 +17,38 @@
 
 #pragma once
 
-#include <glutil/gl.h>
+#ifdef USE_GDBSTUB
 
 #include <functional>
 #include <memory>
+#include <thread>
 
-class GLObject {
-public:
-    using SingularDeleter = std::function<void(GLuint)>;
-    using AggregateDeleter = std::function<void(int, const GLuint *)>;
+#ifdef _WIN32
+typedef SOCKET socket_t;
+constexpr socket_t BAD_SOCK = (socket_t)~0;
+#else
+typedef int32_t socket_t;
+constexpr socket_t BAD_SOCK = -1;
+#endif
 
-    GLObject() = default;
-    ~GLObject();
+constexpr uint32_t GDB_SERVER_PORT = 2159;
 
-    bool init(GLuint name, AggregateDeleter aggregate_deleter);
-    bool init(GLuint name, SingularDeleter singular_deleter);
-    GLuint get() const;
-    operator GLuint() const;
-    operator bool() const;
+struct GDBState {
+#ifdef _WIN32
+    WSADATA wsaData;
+#endif
 
-private:
-    bool init(GLuint name);
-    const GLObject &operator=(const GLObject &) = delete;
+    socket_t listen_socket = BAD_SOCK;
+    socket_t client_socket = BAD_SOCK;
 
-    GLuint name = 0;
-    AggregateDeleter aggregate_deleter = nullptr;
-    SingularDeleter singular_deleter = nullptr;
+    std::shared_ptr<std::thread> server_thread = nullptr;
+    bool server_die = false;
+
+    std::string last_reply = "";
+
+    SceUID current_thread = 0;
+
+    std::map<Address, uint32_t> breakpoints;
 };
 
-using SharedGLObject = std::shared_ptr<GLObject>;
-using UniqueGLObject = std::unique_ptr<GLObject>;
+#endif

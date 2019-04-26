@@ -29,6 +29,9 @@
 
 #include <SDL_video.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <fstream>
 #include <string>
 
@@ -120,12 +123,43 @@ static void init_font(State &gui) {
     gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), font_file_size, 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
+static void init_background(State &gui, const std::string &image_path) {
+    if (!std::ifstream(image_path).good()) {
+        LOG_INFO("Invalid background file path {}.", image_path);
+        return;
+    }
+
+    int32_t width = 0;
+    int32_t height = 0;
+    stbi_uc *data = stbi_load(image_path.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+
+    if (!data) {
+        LOG_INFO("Could not load background from {}.", image_path);
+        return;
+    }
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    gui.background_texture.init(texture, glDeleteTextures);
+
+    glBindTexture(GL_TEXTURE_2D, gui.background_texture.get());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+}
+
 void init(HostState &host) {
     ImGui::CreateContext();
     ImGui_ImplSdlGL3_Init(host.window.get());
 
     init_style();
     init_font(host.gui);
+    if (host.cfg.background_image) {
+        init_background(host.gui, host.cfg.background_image.value());
+    }
 }
 
 void draw_begin(HostState &host) {

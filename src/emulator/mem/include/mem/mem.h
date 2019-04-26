@@ -37,6 +37,7 @@ struct MemState {
     Allocated allocated_pages;
     std::mutex generation_mutex;
     GenerationNames generation_names;
+    std::map<Address, uint32_t> breakpoints;
 };
 
 constexpr size_t KB(size_t kb) {

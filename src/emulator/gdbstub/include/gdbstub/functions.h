@@ -17,33 +17,9 @@
 
 #pragma once
 
-#include <glutil/gl.h>
+struct HostState;
 
-#include <functional>
-#include <memory>
-
-class GLObject {
-public:
-    using SingularDeleter = std::function<void(GLuint)>;
-    using AggregateDeleter = std::function<void(int, const GLuint *)>;
-
-    GLObject() = default;
-    ~GLObject();
-
-    bool init(GLuint name, AggregateDeleter aggregate_deleter);
-    bool init(GLuint name, SingularDeleter singular_deleter);
-    GLuint get() const;
-    operator GLuint() const;
-    operator bool() const;
-
-private:
-    bool init(GLuint name);
-    const GLObject &operator=(const GLObject &) = delete;
-
-    GLuint name = 0;
-    AggregateDeleter aggregate_deleter = nullptr;
-    SingularDeleter singular_deleter = nullptr;
-};
-
-using SharedGLObject = std::shared_ptr<GLObject>;
-using UniqueGLObject = std::unique_ptr<GLObject>;
+void server_open(HostState &state);
+void server_close(HostState &state);
+void add_breakpoint(HostState &state, uint32_t address);
+void remove_breakpoint(HostState &state, uint32_t address);
