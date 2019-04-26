@@ -216,6 +216,29 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::nop, "NOP ()", "11111----000-----------101--------------------------------------"),
     
+    // Branch
+    /*
+                          11111 = op1
+                                ppp = pred (3 bits, ExtPredicate)
+                                  s = syncend (1 bit)
+                                    0 = opcat_extra
+                                    00 = op2_flow_ctrl
+                                      e = exception (1 bit, bool)
+                                        ----- = don't care
+                                            w = pwait (1 bit, bool)
+                                              y = sync_ext (1 bit)
+                                              n = nosched (1 bit, bool)
+                                                b = br_monitor (1 bit, bool)
+                                                a = save_link (1 bit, bool)
+                                                  00 = br_op
+                                                    r = br_type (1 bit)
+                                                    ---------------- = don't care
+                                                                    i = any_inst (1 bit)
+                                                                      l = all_inst (1 bit)
+                                                                      oooooooooooooooooooo = br_off (20 bits)
+    */
+    INST(&V::br, "BR ()", "11111ppps000e-----wynba00r----------------iloooooooooooooooooooo"),
+
     // Special
     /*
                                11111 = op1

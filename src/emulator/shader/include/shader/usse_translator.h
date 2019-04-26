@@ -399,6 +399,20 @@ public:
         Imm3 src0_swiz_x,
         Imm6 src0_n);
 
+    bool br(
+        ExtPredicate pred,
+        Imm1 syncend,
+        bool exception,
+        bool pwait,
+        Imm1 sync_ext,
+        bool nosched,
+        bool br_monitor,
+        bool save_link,
+        Imm1 br_type,
+        Imm1 any_inst,
+        Imm1 all_inst,
+        std::uint32_t br_off);
+
     bool nop();
     bool phas();
 

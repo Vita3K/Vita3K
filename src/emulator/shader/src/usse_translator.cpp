@@ -1502,6 +1502,32 @@ bool USSETranslatorVisitor::vcomp(
     return true;
 }
 
+bool USSETranslatorVisitor::br(
+    ExtPredicate pred,
+    Imm1 syncend,
+    bool exception,
+    bool pwait,
+    Imm1 sync_ext,
+    bool nosched,
+    bool br_monitor,
+    bool save_link,
+    Imm1 br_type,
+    Imm1 any_inst,
+    Imm1 all_inst,
+    std::uint32_t br_off)
+{
+    Opcode op = (br_type == 0) ? Opcode::BA : Opcode::BR;
+
+    if (op == Opcode::BR && (br_off & (1 << 19))) {
+        // PC bits on SGX543 is 20 bits
+        br_off |= 0xFFFFFFFF << 20;
+    }
+
+    LOG_DISASM("{:016x}: {}{} #{}", m_instr, disasm::e_predicate_str(pred), (br_type == 0) ? "BA" : "BR", br_off);
+
+    return true;
+}
+
 bool USSETranslatorVisitor::phas() {
     usse::instr_idx--;
     LOG_DISASM("{:016x}: PHAS", m_instr);
