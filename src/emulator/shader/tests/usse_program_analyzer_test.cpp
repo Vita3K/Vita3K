@@ -20,6 +20,8 @@
 
 #include <unordered_map>
 
+using namespace shader;
+
 TEST(program_analyzer, simple_branching) {
     const std::uint64_t ops[] = {
         17870293491888685056,   //     nop
@@ -37,10 +39,10 @@ TEST(program_analyzer, simple_branching) {
         17870293491888685056,   //     nop
     };
 
-    std::unordered_map<usse::usse_offset, usse::usse_block> blocks;
+    std::unordered_map<usse::USSEOffset, usse::USSEBlock> blocks;
 
-    usse::analyze(sizeof(ops) / 8 - 1, [&](usse::usse_offset off) -> std::uint64_t { return ops[off]; }, 
-        [&](const usse::usse_block &sub) -> usse::usse_block* { 
+    usse::analyze(sizeof(ops) / 8 - 1, [&](usse::USSEOffset off) -> std::uint64_t { return ops[off]; }, 
+        [&](const usse::USSEBlock &sub) -> usse::USSEBlock* { 
             auto result = blocks.emplace(sub.first, sub); 
             if (result.second) {
                 return &(result.first->second);
@@ -50,7 +52,7 @@ TEST(program_analyzer, simple_branching) {
         });
 
     ASSERT_EQ(blocks.size(), 3);
-    ASSERT_EQ(blocks[0], usse::usse_block(0, 9));
-    ASSERT_EQ(blocks[9], usse::usse_block(9, 3));
-    ASSERT_EQ(blocks[10], usse::usse_block(10, 2));
+    ASSERT_EQ(blocks[0], usse::USSEBlock(0, 9));
+    ASSERT_EQ(blocks[9], usse::USSEBlock(9, 3));
+    ASSERT_EQ(blocks[10], usse::USSEBlock(10, 2));
 }

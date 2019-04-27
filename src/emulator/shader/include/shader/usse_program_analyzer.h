@@ -15,11 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#pragma once
+
 #include <cstdint>
 #include <tuple>
 #include <queue>
 
-namespace usse {
+namespace shader::usse {
     /**
      * \brief Check if an instruction is a branch.
      * 
@@ -32,7 +34,7 @@ namespace usse {
      * 
      * \returns True on instruction being a branch.
      */
-    static bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off) {
+    inline bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off) {
         const std::uint32_t high = (inst >> 32);
         const std::uint32_t low = static_cast<std::uint32_t>(inst);
 
@@ -47,15 +49,15 @@ namespace usse {
         return br_inst_is;
     }
 
-    using usse_block = std::pair<std::uint32_t, std::uint32_t>;
-    using usse_offset = std::uint32_t;
+    using USSEBlock = std::pair<std::uint32_t, std::uint32_t>;
+    using USSEOffset = std::uint32_t;
 
     template <typename F, typename H>
-    void analyze(usse_offset end_offset, F read_func, H handler_func) {
-        std::queue<usse_block*> blocks_queue;
+    void analyze(USSEOffset end_offset, F read_func, H handler_func) {
+        std::queue<USSEBlock*> blocks_queue;
 
-        auto add_block = [&](usse_offset block_addr) {
-            usse_block routine = { block_addr, 0 };
+        auto add_block = [&](USSEOffset block_addr) {
+            USSEBlock routine = { block_addr, 0 };
 
             if (auto sub_ptr = handler_func(routine)) {
                 blocks_queue.push(sub_ptr);
@@ -97,7 +99,7 @@ namespace usse {
             }
 
             if (block->second == 0) {
-                block->second = end_offset - block->first;
+                block->second = end_offset - block->first + 1;
             }
 
             blocks_queue.pop();
