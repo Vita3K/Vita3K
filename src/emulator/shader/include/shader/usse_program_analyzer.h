@@ -38,8 +38,8 @@ namespace shader::usse {
         const std::uint32_t high = (inst >> 32);
         const std::uint32_t low = static_cast<std::uint32_t>(inst);
 
-        const bool br_inst_is = (((high & ~0xFFCFFFFFU) >> 20) == 0) && !(high & 0x00400000) && ((((high & ~0xFFFFFE3FU) >> 6) == 0)
-            || ((high & ~0xFFFFFE3FU) >> 6) == 1);
+        const bool br_inst_is = ((high & ~0x07FFFFFFU) >> 27 == 0b11111) && (((high & ~0xFFCFFFFFU) >> 20) == 0) && 
+            !(high & 0x00400000) && ((((high & ~0xFFFFFE3FU) >> 6) == 0) || ((high & ~0xFFFFFE3FU) >> 6) == 1);
             
         if (br_inst_is) {
             br_off = (low & ((1 << 20) - 1));
