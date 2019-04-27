@@ -20,6 +20,7 @@
 #include <gxm/types.h>
 #include <shader/spirv_recompiler.h>
 #include <shader/usse_translator_types.h>
+#include <shader/usse_program_analyzer.h>
 
 #include <SPIRV/SpvBuilder.h>
 #include <boost/optional/optional.hpp>
@@ -34,6 +35,8 @@ namespace shader::usse {
 // For debugging SPIR-V output
 static uint32_t instr_idx = 0;
 constexpr std::size_t max_sa_registers = 128;
+
+struct USSERecompiler;
 
 class USSETranslatorVisitor final {
 public:
@@ -63,12 +66,12 @@ public:
     void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
 
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const SceGxmProgram &program,
-        const NonDependentTextureQueryCallInfos &queries, bool is_secondary_program = false)
+    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries, 
+        bool is_secondary_program = false)
         : m_b(_b)
+        , m_recompiler(_recompiler)
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
-        , m_program(program)
         , m_second_program(is_secondary_program) {
         // Import GLSL.std.450
         std_builtins = m_b.import("GLSL.std.450");
@@ -430,8 +433,26 @@ private:
     // SPIR-V IDs
     const SpirvShaderParameters &m_spirv_params;
 
-    // Shader being translated
-    const SceGxmProgram &m_program; // unused
+    USSERecompiler &m_recompiler;
+};
+
+using BlockCacheMap = std::map<shader::usse::USSEOffset, spv::Block*>;
+constexpr int sgx543_pc_bits = 20;
+
+struct USSERecompiler final {
+  BlockCacheMap cache;
+  const std::uint64_t *inst;
+  std::size_t count;
+  spv::Builder &b;
+  USSETranslatorVisitor visitor;
+  std::uint64_t cur_instr;
+
+  std::unordered_map<usse::USSEOffset, usse::USSEBlock> avail_blocks;
+
+  explicit USSERecompiler(spv::Builder &b, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries);
+
+  void reset(const std::uint64_t *inst, const std::size_t count);
+  spv::Block *get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom = nullptr);
 };
 
 } // namespace shader::usse

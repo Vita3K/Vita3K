@@ -324,6 +324,86 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
+USSERecompiler::USSERecompiler(spv::Builder &b, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries)
+  : b(b)
+  , inst(inst)
+  , count(count)
+  , visitor(b, *this, cur_instr, parameters, queries, true) {
+}
+
+void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count) {
+  inst = _inst;
+  count = _count;
+  cache.clear();
+  avail_blocks.clear();
+
+  usse::analyze(static_cast<shader::usse::USSEOffset>(_count - 1), [&](usse::USSEOffset off) -> std::uint64_t { return inst[off]; }, 
+      [&](const usse::USSEBlock &sub) -> usse::USSEBlock* { 
+          auto result = avail_blocks.emplace(sub.first, sub); 
+          if (result.second) {
+              return &(result.first->second);
+          }
+
+          return nullptr;
+      });
+}
+
+spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom) {
+  if (!custom) {
+    auto result = cache.find(block.first);
+
+    if (result != cache.end()) {
+      return result->second;
+    }
+  }
+
+  spv::Block *last_build_point = nullptr;
+
+  // We may divide it to smaller one
+  auto begin_new_block = [&]() -> spv::Block* {
+    // Create new block
+    spv::Block &blck = custom ? *custom : b.makeNewBlock();
+    last_build_point = b.getBuildPoint();
+
+    b.setBuildPoint(&blck);
+
+    return &blck;
+  };
+
+  auto end_new_block = [&]() {
+    b.setBuildPoint(last_build_point);
+  };
+
+  const usse::USSEOffset pc_end = block.first + block.second;
+
+  spv::Block *new_block = begin_new_block();
+
+  for (usse::USSEOffset pc = block.first; pc < pc_end; pc++) {
+    if (pc != block.first && avail_blocks[pc].first != 0 && avail_blocks[pc].second + pc < pc_end) {
+      spv::Block *fast_link = get_or_recompile_block(avail_blocks[pc]);
+      b.createBranch(fast_link);
+
+      // Since we already link with the available block, skip recompile the overlapped.
+      // Subtract to 1 so we can continue recompile
+      pc += avail_blocks[pc].second - 1;
+    } else {
+      cur_instr = inst[pc];
+
+      // Recompile the instruction, to the current block
+      auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
+      if (decoder)
+          decoder->call(visitor, cur_instr);
+      else
+          LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
+    }
+  }
+
+  end_new_block();
+  cache.emplace(block.first, new_block);
+
+  return new_block;  
+}
+
 void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
@@ -331,45 +411,34 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     const uint64_t *secondary_program_start = program.secondary_program_start();
     const uint64_t *secondary_program_end = program.secondary_program_end();
 
-    std::map<ShaderPhase, std::vector<uint64_t>> shader_code;
+    std::map<ShaderPhase, std::pair<const std::uint64_t*, std::uint64_t>> shader_code;
 
     // Collect instructions of Pixel (primary) phase
-    for (auto instr_idx = 0; instr_idx < primary_program_instr_count; ++instr_idx)
-        shader_code[ShaderPhase::Pixel].push_back(primary_program[instr_idx]);
+    shader_code[ShaderPhase::Pixel] = std::make_pair(primary_program, primary_program_instr_count);
 
     // Collect instructions of Sample rate (secondary) phase
-    for (auto instr_idx = secondary_program_start; instr_idx != secondary_program_end; ++instr_idx)
-        shader_code[ShaderPhase::SampleRate].push_back(*instr_idx);
+    shader_code[ShaderPhase::SampleRate] = std::make_pair(secondary_program_start, secondary_program_end - secondary_program_start);
 
     // Decode and recompile
-    uint64_t instr;
-    usse::USSETranslatorVisitor visitor(b, instr, parameters, program, queries, true);
+    usse::USSERecompiler recomp(b, parameters, queries);
 
     for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
         const auto cur_phase_code = shader_code[(ShaderPhase)phase];
 
         if (static_cast<ShaderPhase>(phase) == ShaderPhase::SampleRate) {
-            visitor.set_secondary_program(true);
+            recomp.visitor.set_secondary_program(true);
         } else {
-            visitor.set_secondary_program(false);
+            recomp.visitor.set_secondary_program(false);
         }
 
-        for (auto _instr : cur_phase_code) {
-            instr = _instr;
-            //LOG_DEBUG("instr: 0x{:016x}", instr);
+        recomp.reset(cur_phase_code.first, cur_phase_code.second);
 
-            usse::instr_idx = instr_idx;
-
-            auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(instr);
-            if (decoder)
-                decoder->call(visitor, instr);
-            else
-                LOG_DISASM("{:016x}: error: instruction unmatched", instr);
-        }
+        // recompile the entry block.
+        recomp.get_or_recompile_block({ 0, static_cast<std::uint32_t>(cur_phase_code.second) }, b.getBuildPoint());
     }
 
     if (program.get_type() == emu::Fragment && !program.is_native_color()) {
-        visitor.emit_non_native_frag_output();
+        recomp.visitor.emit_non_native_frag_output();
     }
 }
 

@@ -764,9 +764,6 @@ bool USSETranslatorVisitor::vmov(
     inst.opcode = tb_decode_vmov[(Imm3)move_type];
     dest_mask = decode_write_mask(dest_mask, move_data_type == DataType::F16);
 
-    std::string disasm_str = fmt::format("{:016x}: {}{}.{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type),
-        disasm::operand_to_str(inst.opr.dest, dest_mask), disasm::operand_to_str(inst.opr.src1, dest_mask));
-
     // TODO: dest mask
     // TODO: flags
     // TODO: test type
@@ -797,6 +794,9 @@ bool USSETranslatorVisitor::vmov(
         LOG_WARN("Special regs unsupported");
         return false;
     }
+
+    std::string disasm_str = fmt::format("{:016x}: {}{}.{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type),
+        disasm::operand_to_str(inst.opr.dest, dest_mask), disasm::operand_to_str(inst.opr.src1, dest_mask));
 
     // if (is_conditional) {
     //     inst.operands.src0 = decode_src0(src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs);
