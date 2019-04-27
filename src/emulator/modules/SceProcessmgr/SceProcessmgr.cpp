@@ -108,13 +108,13 @@ EXPORT(int, sceKernelLibcClock) {
 EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAddr) {
     const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick) - RTC_OFFSET;
     if (timeAddr != nullptr) {
-        timeAddr->tv_sec = ticks / VITA_CLOCKS_PER_SEC;
+        timeAddr->tv_sec = static_cast<std::uint32_t>(ticks / VITA_CLOCKS_PER_SEC);
         timeAddr->tv_usec = ticks % VITA_CLOCKS_PER_SEC;
     }
     if (tzAddr != nullptr) {
         std::time_t t = std::time(nullptr);
         std::time_t lt = mktime(std::localtime(&t));
-        tzAddr->tz_minuteswest = (lt - t) / 60;
+        tzAddr->tz_minuteswest = static_cast<int>((lt - t) / 60);
     }
     return 0;
 }
@@ -135,10 +135,10 @@ EXPORT(int, sceKernelLibcTime, uint32_t *time) {
     const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick) / VITA_CLOCKS_PER_SEC;
 
     if (time) {
-        *time = ticks;
+        *time = static_cast<std::uint32_t>(ticks);
     }
 
-    return ticks;
+    return static_cast<int>(ticks);
 }
 
 EXPORT(int, sceKernelPowerLock) {

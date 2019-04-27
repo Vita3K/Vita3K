@@ -38,8 +38,8 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 
     const GLenum internal_format = translate_internal_format(fmt);
-    const unsigned int width = gxm::get_width(&gxm_texture);
-    const unsigned int height = gxm::get_height(&gxm_texture);
+    const auto width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));
+    const auto height = static_cast<uint32_t>(gxm::get_height(&gxm_texture));
     const GLenum format = translate_format(fmt);
     const GLenum type = translate_type(fmt);
 
@@ -50,8 +50,8 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
-    const unsigned int width = gxm::get_width(&gxm_texture);
-    const unsigned int height = gxm::get_height(&gxm_texture);
+    const auto width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));
+    const auto height = static_cast<uint32_t>(gxm::get_height(&gxm_texture));
     const Ptr<const uint8_t> data(gxm_texture.data_addr << 2);
     const uint8_t *const texture_data = data.get(mem);
     std::vector<uint32_t> palette_texture_pixels; // TODO Move to context to avoid frequent allocation?
@@ -77,7 +77,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     const GLenum format = translate_format(fmt);
     const GLenum type = translate_type(fmt);
 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<gl::GLint>(stride));
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, pixels);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }

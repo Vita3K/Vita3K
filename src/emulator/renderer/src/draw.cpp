@@ -67,6 +67,6 @@ void draw(Context &context, const GxmContextState &state, SceGxmPrimitiveType ty
 
     const GLenum mode = translate_primitive(type);
     const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
-    glDrawElements(mode, count, gl_type, nullptr);
+    glDrawElements(mode, static_cast<gl::GLsizei>(count), gl_type, nullptr);
 }
 } // namespace renderer

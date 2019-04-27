@@ -40,7 +40,7 @@ static void convertPosixSockaddrToSce(struct sockaddr *src, struct SceNetSockadd
     memset(dst, 0, sizeof(struct SceNetSockaddr));
     SceNetSockaddrIn *dst_in = (SceNetSockaddrIn *)dst;
     sockaddr_in *src_in = (sockaddr_in *)src;
-    dst_in->sin_family = src_in->sin_family;
+    dst_in->sin_family = static_cast<unsigned char>(src_in->sin_family);
     dst_in->sin_port = src_in->sin_port;
     memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
 }

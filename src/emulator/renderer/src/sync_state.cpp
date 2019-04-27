@@ -213,11 +213,11 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
 
     // Point Line Width
 
-    glLineWidth(state.front_point_line_width);
-    glPointSize(state.front_point_line_width);
+    glLineWidth(static_cast<gl::GLfloat>(state.front_point_line_width));
+    glPointSize(static_cast<gl::GLfloat>(state.front_point_line_width));
 
     // Depth Bias
-    glPolygonOffset(state.front_depth_bias_factor, state.front_depth_bias_units);
+    glPolygonOffset(static_cast<gl::GLfloat>(state.front_depth_bias_factor), static_cast<gl::GLfloat>(state.front_depth_bias_units));
 
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
@@ -250,7 +250,7 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
             continue;
         }
 
-        glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + texture_unit));
+        glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + texture_unit));
 
         if (enable_texture_cache) {
             texture::cache_and_bind_texture(context.texture_cache, texture, mem);

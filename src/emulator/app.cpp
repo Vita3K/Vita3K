@@ -240,9 +240,9 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     return true;
 }
 
-bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
+static bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
     if (path.empty())
-        return InvalidApplicationPath;
+        return false;
 
     if (run_type == AppRunType::Vpk) {
         if (!install_vpk(entry_point, host, path)) {
@@ -370,7 +370,9 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         ::call_import(host, cpu, nid, main_thread_id);
     };
 
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_MAIN, call_import, false);
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
+        call_import, false);
+
     if (main_thread_id < 0) {
         error_dialog("Failed to init main thread.", host.window.get());
         return InitThreadFailed;
@@ -390,7 +392,8 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         LOG_DEBUG("Running module_start of library: {}", module_name);
 
         Ptr<void> argp = Ptr<void>();
-        const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, call_import, false);
+        const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
+            call_import, false);
         const ThreadStatePtr module_thread = find(module_thread_id, host.kernel.threads);
         const auto ret = run_on_current(*module_thread, module_start, 0, argp);
         module_thread->to_do = ThreadToDo::exit;
@@ -413,8 +416,8 @@ void set_window_title(HostState &host) {
     const uint32_t sdl_ticks_now = SDL_GetTicks();
     const uint32_t ms = sdl_ticks_now - host.sdl_ticks;
     if (ms >= 1000 && host.frame_count > 0) {
-        const uint32_t fps = (host.frame_count * 1000) / ms;
-        const uint32_t ms_per_frame = ms / host.frame_count;
+        const std::uint32_t fps = static_cast<std::uint32_t>((host.frame_count * 1000) / ms);
+        const std::uint32_t ms_per_frame = ms / static_cast<std::uint32_t>(host.frame_count);
         std::ostringstream title;
         title << window_title << " | " << host.game_title << " (" << host.io.title_id << ") | " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
         SDL_SetWindowTitle(host.window.get(), title.str().c_str());

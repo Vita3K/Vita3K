@@ -82,12 +82,12 @@ void update_viewport(HostState &state) {
         if (window_aspect > vita_aspect) {
             // Window is wide. Pin top and bottom.
             state.viewport_size.x = h * vita_aspect;
-            state.viewport_size.y = h;
+            state.viewport_size.y = static_cast<SceFloat>(h);
             state.viewport_pos.x = (w - state.viewport_size.x) / 2;
             state.viewport_pos.y = 0;
         } else {
             // Window is tall. Pin left and right.
-            state.viewport_size.x = w;
+            state.viewport_size.x = static_cast<SceFloat>(w);
             state.viewport_size.y = w / vita_aspect;
             state.viewport_pos.x = 0;
             state.viewport_pos.y = (h - state.viewport_size.y) / 2;

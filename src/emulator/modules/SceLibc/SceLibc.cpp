@@ -1052,7 +1052,7 @@ EXPORT(int, strftime) {
 }
 
 EXPORT(int, strlen, char *str) {
-    return strlen(str);
+    return static_cast<int>(strlen(str));
 }
 
 EXPORT(int, strncasecmp) {
@@ -1091,7 +1091,7 @@ EXPORT(int, strpbrk) {
 EXPORT(Ptr<char>, strrchr, Ptr<char> str, char ch) {
     Ptr<char> res = Ptr<char>();
     char *_str = str.get(host.mem);
-    for (int i = strlen(_str) - 1; i >= 0; i--) {
+    for (int i = static_cast<int>(strlen(_str) - 1); i >= 0; i--) {
         const char ch1 = _str[i];
         if (ch1 == ch) {
             res = str + i * sizeof(char);

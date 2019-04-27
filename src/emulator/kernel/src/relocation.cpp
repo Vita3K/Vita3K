@@ -520,7 +520,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
 
             do {
                 auto offset = (offsets & mask) * sizeof(uint32_t);
-                g_offset += offset;
+                g_offset += static_cast<Address>(offset);
 
                 const auto patch_seg_start = segments.find(g_patchseg)->second.addr;
 
