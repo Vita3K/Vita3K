@@ -49,6 +49,7 @@
 
 using namespace glbinding;
 
+namespace app {
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
 
@@ -203,3 +204,4 @@ bool init(HostState &state, Config cfg) {
 
     return true;
 }
+} // namespace app

@@ -19,9 +19,9 @@
 
 #include <host/config.h>
 
-namespace config {
+namespace app {
 
-enum class InitResult {
+enum class ConfigResult {
     OK,
     QUIT,
     INCORRECT_ARGS,
@@ -40,6 +40,6 @@ bool serialize(Config &cfg);
   * \param cfg Config options are returned via this parameter.
   * \return True on success, false on error.
   */
-InitResult init(Config &cfg, int argc, char **argv);
+ConfigResult init(Config &cfg, int argc, char **argv);
 
-} // namespace config
+} // namespace app

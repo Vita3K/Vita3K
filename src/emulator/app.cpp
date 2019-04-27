@@ -47,10 +47,11 @@
 #include <iterator>
 #include <sstream>
 
+using namespace gl;
+
+namespace app {
 static const char *EBOOT_PATH = "eboot.bin";
 static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
-
-using namespace gl;
 
 static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
     switch (static_cast<SDL_WindowEventID>(event.event)) {
@@ -422,3 +423,4 @@ void set_window_title(HostState &host) {
         host.frame_count = 0;
     }
 }
+} // namespace app

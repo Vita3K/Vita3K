@@ -37,8 +37,8 @@ int main(int argc, char *argv[]) {
     logging::init();
 
     Config cfg{};
-    const config::InitResult ret = config::init(cfg, argc, argv);
-    if (ret != config::InitResult::OK)
+    const ConfigResult ret = init(cfg, argc, argv);
+    if (ret != ConfigResult::OK)
         return InitConfigFailed;
 
     LOG_INFO("{}", window_title);
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     // There may be changes that made in the GUI, so we should save, again
-    config::serialize(state.host.cfg);
+    serialize(state.host.cfg);
 
     return Success;
 }

@@ -25,6 +25,7 @@ struct SDL_Window;
 template <class T>
 class Ptr;
 
+namespace app {
 enum ExitCode {
     Success = 0,
     InitConfigFailed,
@@ -56,3 +57,4 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
 
 void set_window_title(HostState &host);
+} // namespace app

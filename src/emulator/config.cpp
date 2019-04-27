@@ -33,7 +33,7 @@
 
 namespace po = boost::program_options;
 
-namespace config {
+namespace app {
 
 template <typename T, typename Q = T>
 void get_yaml_value(YAML::Node &config_node, const char *key, T *target_val, Q default_val) {
@@ -151,7 +151,7 @@ static bool deserialize(Config &cfg) {
     return true;
 }
 
-InitResult init(Config &cfg, int argc, char **argv) {
+ConfigResult init(Config &cfg, int argc, char **argv) {
     deserialize(cfg);
 
     try {
@@ -212,11 +212,11 @@ InitResult init(Config &cfg, int argc, char **argv) {
         // Handle some basic args
         if (var_map.count("help")) {
             std::cout << visible << std::endl;
-            return InitResult::QUIT;
+            return ConfigResult::QUIT;
         }
         if (var_map.count("version")) {
             std::cout << window_title << std::endl;
-            return InitResult::QUIT;
+            return ConfigResult::QUIT;
         }
 
         logging::set_level(static_cast<spdlog::level::level_enum>(*cfg.log_level));
@@ -239,15 +239,15 @@ InitResult init(Config &cfg, int argc, char **argv) {
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";
-        return InitResult::INCORRECT_ARGS;
+        return ConfigResult::INCORRECT_ARGS;
     } catch (...) {
         std::cerr << "Exception of unknown type!\n";
-        return InitResult::INCORRECT_ARGS;
+        return ConfigResult::INCORRECT_ARGS;
     }
 
     // Save any changes made in command-line arguments
     serialize(cfg);
-    return InitResult::OK;
+    return ConfigResult::OK;
 }
 
-} // namespace config
+} // namespace app
