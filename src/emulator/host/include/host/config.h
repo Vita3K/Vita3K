@@ -42,4 +42,5 @@ struct Config {
     optional<bool> wait_for_debugger;
     optional<std::string> background_image;
     optional<float> background_alpha;
+    int icon_size;
 };
