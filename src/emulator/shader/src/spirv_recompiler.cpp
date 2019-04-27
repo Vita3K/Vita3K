@@ -712,12 +712,26 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
+    const SceGxmProgramParameterContainer *container = get_container_by_index(program, 19);
+
+    if (container) {
+        // Create dependent sampler
+        const SceGxmDependentSampler *dependent_samplers = reinterpret_cast<const SceGxmDependentSampler*>(reinterpret_cast<const std::uint8_t *>(&program.dependent_sampler_offset)
+            + program.dependent_sampler_offset);
+
+        for (std::uint32_t i = 0; i < program.dependent_sampler_count; i ++) {
+            const std::uint32_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;
+            spv_params.uniforms.set_next_offset(container->base_sa_offset + dependent_samplers[i].sa_offset);
+            spv_params.uniforms.push({ b.getTypeId(samplers[rsc_index]), samplers[rsc_index] }, 1);
+        }
+    }
+
     const std::uint32_t *literals = reinterpret_cast<const std::uint32_t *>(reinterpret_cast<const std::uint8_t *>(&program.literals_offset)
         + program.literals_offset);
 
     // Get base SA offset for literal
     // The container index of those literals are 16
-    auto container = get_container_by_index(program, 16);
+    container = get_container_by_index(program, 16);
 
     if (!container) {
         // Alternative is 19, which is DATA
