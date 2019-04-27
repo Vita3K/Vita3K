@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
     if (auto err = run_app(state.host, entry_point) != Success)
         return err;
 
-    gl_screen_renderer gl_renderer;
+    ScreenRenderer gl_renderer;
 
     if (!gl_renderer.init(state.host.base_path))
         return RendererInitFailed;

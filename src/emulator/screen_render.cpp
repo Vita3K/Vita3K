@@ -17,39 +17,43 @@
 
 #include "screen_render.h"
 
+#include <glutil/shader.h>
 #include <host/state.h>
 #include <util/log.h>
 
-#include <SDL_video.h>
-
 namespace app {
-bool gl_screen_renderer::init(const std::string &base_path) {
-    glGenTextures(1, &m_screen_texture);
+bool ScreenRenderer::init(const std::string &base_path) {
+    glGenTextures(1, &texture);
 
     const auto builtin_shaders_path = base_path + "shaders-builtin/";
 
-    m_render_shader = gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main.frag");
-    if (!m_render_shader) {
+    program = gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main.frag");
+    if (!program) {
         LOG_CRITICAL("Couldn't compile essential shaders for rendering. Exiting");
         return false;
     }
 
-    glGenVertexArrays(1, &m_vao);
-    glBindVertexArray(m_vao);
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
-    static const screen_vertices_t vertex_buffer_data = {
+    struct Vertex {
+        SceFVector3 pos;
+        SceFVector2 uv;
+    };
+
+    static const Vertex vertex_buffer_data[] = {
         { { -1.f, -1.f, 0.0f }, { 0.f, 1.f } },
         { { 1.f, -1.f, 0.0f }, { 1.f, 1.f } },
         { { 1.f, 1.f, 0.0f }, { 1.f, 0.f } },
         { { -1.f, 1.f, 0.0f }, { 0.f, 0.f } }
     };
 
-    glGenBuffers(1, &m_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_STATIC_DRAW);
 
-    GLint posAttrib = glGetAttribLocation(*m_render_shader, "position_vertex");
-    GLint uvAttrib = glGetAttribLocation(*m_render_shader, "uv_vertex");
+    GLint posAttrib = glGetAttribLocation(*program, "position_vertex");
+    GLint uvAttrib = glGetAttribLocation(*program, "uv_vertex");
 
     // 1st attribute: positions
     glVertexAttribPointer(
@@ -57,8 +61,8 @@ bool gl_screen_renderer::init(const std::string &base_path) {
         3, // size
         GL_FLOAT, // type
         GL_FALSE, // normalized?
-        screen_vertex_size, // stride
-        reinterpret_cast<void *>(0) // array buffer offset
+        sizeof(Vertex), // stride
+        nullptr // array buffer offset
     );
     glEnableVertexAttribArray(posAttrib);
 
@@ -68,8 +72,8 @@ bool gl_screen_renderer::init(const std::string &base_path) {
         2, // size
         GL_FLOAT, // type
         GL_FALSE, // normalized?
-        screen_vertex_size, // stride
-        reinterpret_cast<void *>(3 * sizeof(GLfloat)) // array buffer offset
+        sizeof(Vertex), // stride
+        reinterpret_cast<const void *>(offsetof(Vertex, uv)) // array buffer offset
     );
     glEnableVertexAttribArray(uvAttrib);
 
@@ -79,7 +83,7 @@ bool gl_screen_renderer::init(const std::string &base_path) {
     return true;
 }
 
-void gl_screen_renderer::render(const HostState &host) {
+void ScreenRenderer::render(const HostState &host) {
     const DisplayState &display = host.display;
     const MemState &mem = host.mem;
 
@@ -88,10 +92,10 @@ void gl_screen_renderer::render(const HostState &host) {
     glViewport(host.viewport_pos.x, host.viewport_pos.y, host.viewport_size.x, host.viewport_size.y);
 
     if ((display.image_size.x > 0) && (display.image_size.y > 0)) {
-        glUseProgram(*m_render_shader);
-        glBindVertexArray(m_vao);
+        glUseProgram(*program);
+        glBindVertexArray(vao);
 
-        glBindTexture(GL_TEXTURE_2D, m_screen_texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
         const auto pixels = display.base.cast<void>().get(mem);
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, display.pitch);
@@ -105,18 +109,14 @@ void gl_screen_renderer::render(const HostState &host) {
     }
 }
 
-void gl_screen_renderer::destroy() {
-    glDeleteBuffers(1, &m_vbo);
-    m_vbo = 0;
+ScreenRenderer::~ScreenRenderer() {
+    glDeleteBuffers(1, &vbo);
+    vbo = 0;
 
-    glDeleteVertexArrays(1, &m_vao);
-    m_vao = 0;
+    glDeleteVertexArrays(1, &vao);
+    vao = 0;
 
-    glDeleteTextures(1, &m_screen_texture);
-    m_screen_texture = 0;
-}
-
-gl_screen_renderer::~gl_screen_renderer() {
-    destroy();
+    glDeleteTextures(1, &texture);
+    texture = 0;
 }
 } // namespace app

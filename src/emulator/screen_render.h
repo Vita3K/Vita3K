@@ -17,35 +17,22 @@
 
 #pragma once
 
-#include <glutil/shader.h>
+#include <glutil/object.h>
 
 struct HostState;
 
 namespace app {
-class gl_screen_renderer {
+class ScreenRenderer {
 public:
-    gl_screen_renderer() {}
-    ~gl_screen_renderer();
+    ~ScreenRenderer();
 
     bool init(const std::string &base_path);
     void render(const HostState &state);
-    void destroy();
 
 private:
-    struct screen_vertex {
-        GLfloat pos[3];
-        GLfloat uv[2];
-    };
-
-    static constexpr size_t screen_vertex_size = sizeof(screen_vertex);
-    static constexpr uint32_t screen_vertex_count = 4;
-
-    using screen_vertices_t = screen_vertex[screen_vertex_count];
-
-private:
-    GLuint m_vao{ 0 };
-    GLuint m_vbo{ 0 };
-    SharedGLObject m_render_shader;
-    GLuint m_screen_texture{ 0 };
+    GLuint vao{ 0 };
+    GLuint vbo{ 0 };
+    SharedGLObject program;
+    GLuint texture{ 0 };
 };
 } // namespace app
