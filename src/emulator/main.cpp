@@ -18,7 +18,6 @@
 #include "app_functions.h"
 #include "app_state.h"
 #include "config.h"
-#include "screen_render.h"
 
 #include <gdbstub/functions.h>
 #include <gui/functions.h>
@@ -85,7 +84,7 @@ int main(int argc, char *argv[]) {
     }
 
     State state;
-    if (!init(state.host, std::move(cfg))) {
+    if (!init(state, std::move(cfg))) {
         error_dialog("Host initialisation failed.", state.host.window.get());
         return HostInitFailed;
     }
@@ -120,13 +119,8 @@ int main(int argc, char *argv[]) {
     if (auto err = run_app(state.host, entry_point) != Success)
         return err;
 
-    ScreenRenderer gl_renderer;
-
-    if (!gl_renderer.init(state.host.base_path))
-        return RendererInitFailed;
-
     while (handle_events(state.host)) {
-        gl_renderer.render(state.host);
+        state.screen_renderer.render(state.host);
         gui::draw_begin(state.host);
         gui::draw_common_dialog(state.host);
         if (state.host.display.imgui_render) {

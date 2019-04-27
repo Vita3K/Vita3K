@@ -17,6 +17,7 @@
 
 #include "app_functions.h"
 
+#include "app_state.h"
 #include "sfo.h"
 
 #include <audio/functions.h>
@@ -102,10 +103,7 @@ void update_viewport(HostState &state) {
     }
 }
 
-bool init(HostState &state, Config cfg) {
-    const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
-    const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
-
+static bool init_host(HostState &state, Config cfg, const char *base_path, const char *pref_path) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
@@ -119,11 +117,11 @@ bool init(HostState &state, Config cfg) {
     if (state.cfg.wait_for_debugger) {
         state.kernel.wait_for_debugger = state.cfg.wait_for_debugger.value();
     }
-    state.base_path = base_path.get();
+    state.base_path = base_path;
 
     // If configuration already provides preference path
     if (!state.cfg.pref_path) {
-        state.pref_path = pref_path.get();
+        state.pref_path = pref_path;
         state.cfg.pref_path = state.pref_path;
     } else {
         state.pref_path = state.cfg.pref_path.value();
@@ -201,6 +199,22 @@ bool init(HostState &state, Config cfg) {
 #else
     closedir(d);
 #endif
+
+    return true;
+}
+
+bool init(State &state, Config cfg) {
+    const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
+    const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
+
+    if (!init_host(state.host, cfg, base_path.get(), pref_path.get())) {
+        return false;
+    }
+
+    if (!state.screen_renderer.init(base_path.get())) {
+        error_dialog("Could not create screen renderer", NULL);
+        return false;
+    }
 
     return true;
 }

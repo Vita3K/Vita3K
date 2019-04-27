@@ -17,10 +17,13 @@
 
 #pragma once
 
+#include "screen_render.h"
+
 #include <host/state.h>
 
 namespace app {
 struct State {
     HostState host;
+    ScreenRenderer screen_renderer;
 };
 } // namespace app

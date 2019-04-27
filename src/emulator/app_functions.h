@@ -31,7 +31,6 @@ enum ExitCode {
     InitConfigFailed,
     SDLInitFailed,
     HostInitFailed,
-    RendererInitFailed,
     ModuleLoadFailed,
     InitThreadFailed,
     RunThreadFailed,
@@ -49,7 +48,9 @@ enum class AppRunType {
     Vpk,
 };
 
-bool init(HostState &state, Config cfg);
+struct State;
+
+bool init(State &state, Config cfg);
 void update_viewport(HostState &state);
 bool handle_events(HostState &host);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
