@@ -239,6 +239,36 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::br, "BR ()", "11111ppps000e-----wynba00r----------------iloooooooooooooooooooo"),
 
+    // Sample Instructions
+    /*
+                            11100 = op1
+                                  ppp = pred (3 bits, ExtPredicate)
+                                    s = skipinv (1 bit)
+                                      n = nosched (1 bit)
+                                      - = don't care
+                                        y = syncstart (1 bit)
+                                        m = minpack (1 bit)
+                                          r = src0_ext (1 bit)
+                                          c = src1_ext (1 bit)
+                                            e = src2_ext (1 bit)
+                                            ff = fconv_type (2 bits)
+                                              aa = mask_count (2 bits)
+                                                dd = dim (2 bits)
+                                                  ll = lod_mode (2 bits)
+                                                    t = dest_use_pa (1 bit, bool)
+                                                      bb = sb_mode (2 bits)
+                                                        gg = src0_type (2 bits)
+                                                          k = src0_bank (1 bit)
+                                                          hh = drc_sel (2 bits)
+                                                            ii = src1_bank (2 bits)
+                                                              jj = src2_bank (2 bits)
+                                                                ooooooo = dest_n (7 bits)
+                                                                        qqqqqqq = src0_n (7 bits)
+                                                                              uuuuuuu = src1_n (7 bits)
+                                                                                      vvvvvvv = src2_n (7 bits)
+    */
+    INST(&V::smp, "SMP ()", "11100pppsn-ymrceffaaddlltbbggkhhiijjoooooooqqqqqqquuuuuuuvvvvvvv"),
+
     // Special
     /*
                                11111 = op1

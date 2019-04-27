@@ -65,6 +65,8 @@ public:
     void make_f16_pack_func();
     void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
 
+    spv::Id do_fetch_texture(const spv::Id tex, const spv::Id coord, const DataType dest_type);
+
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries, 
         bool is_secondary_program = false)
@@ -416,6 +418,31 @@ public:
         Imm1 all_inst,
         std::uint32_t br_off);
 
+    bool smp(
+        ExtPredicate pred,
+        Imm1 skipinv,
+        Imm1 nosched,
+        Imm1 syncstart,
+        Imm1 minpack,
+        Imm1 src0_ext,
+        Imm1 src1_ext,
+        Imm1 src2_ext,
+        Imm2 fconv_type,
+        Imm2 mask_count,
+        Imm2 dim,
+        Imm2 lod_mode,
+        bool dest_use_pa,
+        Imm2 sb_mode,
+        Imm2 src0_type,
+        Imm1 src0_bank,
+        Imm2 drc_sel,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm7 src0_n,
+        Imm7 src1_n,
+        Imm7 src2_n);
+        
     bool nop();
     bool phas();
 
