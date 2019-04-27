@@ -178,7 +178,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
                 LOG_DEBUG("Running module_start of module: {}", module_name);
 
                 Ptr<void> argp = Ptr<void>();
-                const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, 
+                const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
                     static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, false);
                 const ThreadStatePtr module_thread = find(module_thread_id, host.kernel.threads);
                 const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);

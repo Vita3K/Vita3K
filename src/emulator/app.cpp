@@ -392,7 +392,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         LOG_DEBUG("Running module_start of library: {}", module_name);
 
         Ptr<void> argp = Ptr<void>();
-        const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), 
+        const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
             call_import, false);
         const ThreadStatePtr module_thread = find(module_thread_id, host.kernel.threads);
         const auto ret = run_on_current(*module_thread, module_start, 0, argp);
