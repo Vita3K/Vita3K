@@ -297,6 +297,19 @@ Operand decode_src12(Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_d
     return src;
 }
 
+usse::Operand decode_src0(usse::Imm6 src_n, usse::Imm1 src_bank_sel, usse::Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits,
+    bool is_second_program) {
+    Operand src{};
+    src.num = src_n;
+    src.bank = decode_src0_bank(src_bank_sel, src_bank_ext);
+
+    if (is_double_regs)
+        double_reg(src.num, src.bank);
+
+    finalize_register(src, is_double_regs, reg_bits, is_second_program);
+    return src;
+}
+
 usse::Imm4 decode_write_mask(usse::Imm4 write_mask, const bool f16) {
     if (!f16) {
         return write_mask;
