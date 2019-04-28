@@ -367,11 +367,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                   -- = don't care
                                                                     ggggggg = dest_n (7 bits)
                                                                             -------- = don't care
-                                                                                    hhhhhh = src1_n (6 bits)
+                                                                                    hhhhhhh = src1_n (7 bits)
                                                                                           --- = don't care
                                                                                             wwww = write_mask (4 bits)
     */
-    INST(&V::vcomp, "VCOMP ()", "00110pppsddyenr-aaaaobbccmmff-ttkk--ggggggg--------hhhhhh---wwww"),
+    INST(&V::vcomp, "VCOMP ()", "00110pppsddyenr-aaaaobbccmmff-ttkk--ggggggg-------hhhhhhh---wwww"),
 
     // Vector Dot Product (single issue)
     /*

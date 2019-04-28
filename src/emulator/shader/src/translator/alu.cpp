@@ -443,7 +443,7 @@ bool USSETranslatorVisitor::vcomp(
     Imm2 dest_bank,
     Imm2 src1_bank,
     Imm7 dest_n,
-    Imm6 src1_n,
+    Imm7 src1_n,
     Imm4 write_mask)
 {
     Instruction inst;
