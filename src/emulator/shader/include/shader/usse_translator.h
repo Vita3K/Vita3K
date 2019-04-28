@@ -60,6 +60,7 @@ public:
 
     // Each SPIR-V reg will contains 4 SA
     std::array<SpirvReg, max_sa_registers / 4> sa_supplies;
+    std::array<spv::Id, 4> predicates;
 
     void make_f16_unpack_func();
     void make_f16_pack_func();
@@ -99,6 +100,8 @@ public:
             const_f32_v0[i] = m_b.makeCompositeConstant(type_f32_v[i], consts);
         }
 
+        std::fill(predicates.begin(), predicates.end(), spv::NoResult);
+
         // Make utility functions
         make_f16_unpack_func();
         make_f16_pack_func();
@@ -117,6 +120,8 @@ private:
          repeat_offset < repeat_count_num * repeat_offset_jump; \
          repeat_offset += repeat_offset_jump) {
 #define END_REPEAT() }
+
+    bool set_predicate(const Imm2 idx, const spv::Id value);
 
     /**
      * \brief Get a SPIR-V variable corresponding to the given bank and register offset.
@@ -444,7 +449,7 @@ public:
         Imm7 src2_n);
 
     bool vtst(
-        Imm3 pred,
+        ExtPredicate pred,
         Imm1 skipinv,
         Imm1 onceonly,
         Imm1 syncstart,

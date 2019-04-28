@@ -694,3 +694,17 @@ void USSETranslatorVisitor::emit_non_native_frag_output() {
     spv::Id pa0_var = load(pa0_operand, 0xF, 0);
     store(o0_operand, pa0_var, 0xF, 0);
 }
+
+bool USSETranslatorVisitor::set_predicate(const Imm2 idx, const spv::Id value) {
+    if (idx >= 4) {
+        return false;
+    }
+
+    if (predicates[idx] == spv::NoResult) {
+        const auto pred_name = fmt::format("p{}", idx);
+        predicates[idx] = m_b.createVariable(spv::StorageClass::StorageClassPrivate, m_b.makeBoolType(), pred_name.c_str());
+    }
+
+    m_b.createStore(value, predicates[idx]);
+    return true;
+}
