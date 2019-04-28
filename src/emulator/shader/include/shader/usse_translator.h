@@ -122,6 +122,7 @@ private:
 #define END_REPEAT() }
 
     bool set_predicate(const Imm2 idx, const spv::Id value);
+    spv::Id load_predicate(const Imm2 idx, const bool neg = false);
 
     /**
      * \brief Get a SPIR-V variable corresponding to the given bank and register offset.

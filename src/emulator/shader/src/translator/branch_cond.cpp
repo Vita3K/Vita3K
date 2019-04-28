@@ -334,10 +334,26 @@ bool USSETranslatorVisitor::br(
         br_off |= 0xFFFFFFFF << 20;
     }
 
-    LOG_DISASM("{:016x}: {}{} #{}", m_instr, disasm::e_predicate_str(pred), (br_type == 0) ? "BA" : "BR", br_off + m_recompiler.cur_pc);
+    auto cur_pc = m_recompiler.cur_pc;
+
+    LOG_DISASM("{:016x}: {}{} #{}", m_instr, disasm::e_predicate_str(pred), (br_type == 0) ? "BA" : "BR", br_off + cur_pc);
+    spv::Block *br_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[br_off + cur_pc]);
 
     if (pred == ExtPredicate::NONE) {
-        m_b.createBranch(m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[br_off + m_recompiler.cur_pc]));
+        m_b.createBranch(br_block);
+    } else {
+        spv::Id pred_v = spv::NoResult;
+
+        if (pred >= ExtPredicate::P0 && pred <= ExtPredicate::P1) {
+            int pred_n = static_cast<int>(pred) - static_cast<int>(ExtPredicate::P0);
+            pred_v = load_predicate(pred_n);
+        } else if (pred >= ExtPredicate::NEGP0 && pred <= ExtPredicate::NEGP1) {
+            int pred_n = static_cast<int>(pred) - static_cast<int>(ExtPredicate::NEGP0);
+            pred_v = load_predicate(pred_n, true);
+        }
+
+        spv::Block *continous_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);
+        m_b.createConditionalBranch(pred_v, br_block, continous_block);
     }
 
     return true;

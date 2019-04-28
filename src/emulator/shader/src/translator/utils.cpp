@@ -708,3 +708,26 @@ bool USSETranslatorVisitor::set_predicate(const Imm2 idx, const spv::Id value) {
     m_b.createStore(value, predicates[idx]);
     return true;
 }
+
+spv::Id USSETranslatorVisitor::load_predicate(const Imm2 idx, const bool neg) {
+    if (idx >= 4) {
+        return spv::NoResult;
+    }
+
+    if (predicates[idx] == spv::NoResult) {
+        const auto pred_name = fmt::format("p{}", idx);
+        predicates[idx] = m_b.createVariable(spv::StorageClass::StorageClassPrivate, m_b.makeBoolType(), pred_name.c_str());
+        m_b.createStore(m_b.makeBoolConstant(false), predicates[idx]);
+    }
+
+    spv::Id result = m_b.createLoad(predicates[idx]);
+
+    if (neg) {
+        std::vector<spv::Id> ops;
+        ops.push_back(result);
+
+        result = m_b.createOp(spv::OpLogicalNot, m_b.makeBoolType(), ops);
+    }
+
+    return result;
+}

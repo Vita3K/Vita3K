@@ -485,7 +485,7 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
         LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
   }
 
-  if (cur_pc == count - 1 && !visitor.is_translating_secondary_program()) {
+  if ((cur_pc >= count - 1 || block.first == 0) && !visitor.is_translating_secondary_program()) {
     // We reach the end, for whatever the current block is. Make a return
     b.leaveFunction();
   }
