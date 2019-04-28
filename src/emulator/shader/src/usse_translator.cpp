@@ -78,8 +78,7 @@ void shader::usse::USSETranslatorVisitor::make_f16_pack_func() {
 }
 
 spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const spv::Id coord, const DataType dest_type) {
-    const std::size_t dsize = get_data_type_size(dest_type);
-    auto image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[dsize], { tex, coord });
+    auto image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { tex, coord });
 
     if (dest_type == DataType::F16) {
         // Pack them
