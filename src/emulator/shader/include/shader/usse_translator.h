@@ -442,7 +442,58 @@ public:
         Imm7 src0_n,
         Imm7 src1_n,
         Imm7 src2_n);
-        
+
+    bool vtst(
+        Imm3 pred,
+        Imm1 skipinv,
+        Imm1 onceonly,
+        Imm1 syncstart,
+        Imm1 dest_ext,
+        Imm1 test_flag_2,
+        Imm1 src1_ext,
+        Imm1 src2_ext,
+        Imm1 prec,
+        RepeatCount rpt_count,
+        Imm2 sign_test,
+        Imm2 zero_test,
+        Imm1 test_crcomb_and,
+        Imm3 chan_cc,
+        Imm2 pdst_n,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm1 test_wben,
+        Imm2 alu_sel,
+        Imm4 alu_op,
+        Imm7 src1_n,
+        Imm7 src2_n);
+
+    bool vtstmsk(
+        Imm3 pred,
+        Imm1 skipinv,
+        Imm1 onceonly,
+        Imm1 syncstart,
+        Imm1 dest_ext,
+        Imm1 test_flag_2,
+        Imm1 src1_ext,
+        Imm1 src2_ext,
+        Imm1 prec,
+        RepeatCount rpt_count,
+        Imm2 sign_test,
+        Imm2 zero_test,
+        Imm1 test_crcomb_and,
+        Imm2 tst_mask_type,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm1 test_wben,
+        Imm2 alu_sel,
+        Imm4 alu_op,
+        Imm7 src1_n,
+        Imm7 src2_n);
+
     bool nop();
     bool phas();
 

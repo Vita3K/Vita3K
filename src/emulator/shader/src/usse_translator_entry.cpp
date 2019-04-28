@@ -193,6 +193,71 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                               w = comp_sel_0_bit0 (1 bit)
     */
     INST(&V::vpck, "VPCK ()", "01000pppsnrydecb-aaaffftttmmmmkkll--gggggggoohiijjqqqqqqu--vvvvw"),
+    
+    // Test Instructions
+    /*
+                              01001 = op1
+                                    ppp = pred (3 bits)
+                                      s = skipinv (1 bit)
+                                        - = don't care
+                                        o = onceonly (1 bit)
+                                          y = syncstart (1 bit)
+                                          d = dest_ext (1 bit)
+                                            t = test_flag_2 (1 bit)
+                                            r = src1_ext (1 bit)
+                                              c = src2_ext (1 bit)
+                                              e = prec (1 bit)
+                                                - = don't care
+                                                uu = rpt_count (2 bits, RepeatCount)
+                                                  ii = sign_test (2 bits)
+                                                    zz = zero_test (2 bits)
+                                                      m = test_crcomb_and (1 bit)
+                                                        hhh = chan_cc (3 bits)
+                                                          nn = pdst_n (2 bits)
+                                                            bb = dest_bank (2 bits)
+                                                              aa = src1_bank (2 bits)
+                                                                kk = src2_bank (2 bits)
+                                                                  fffffff = dest_n (7 bits)
+                                                                          w = test_wben (1 bit)
+                                                                          ll = alu_sel (2 bits)
+                                                                            gggg = alu_op (4 bits)
+                                                                                jjjjjjj = src1_n (7 bits)
+                                                                                        qqqqqqq = src2_n (7 bits)
+    */
+    INST(&V::vtst, "VTST ()", "01001ppps-oydtrce-uuiizzmhhhnnbbaakkfffffffwllggggjjjjjjjqqqqqqq"),
+
+    // Test mask Instructions
+    /*
+                                    01111 = op1
+                                          ppp = pred (3 bits)
+                                            s = skipinv (1 bit)
+                                              - = don't care
+                                              o = onceonly (1 bit)
+                                                y = syncstart (1 bit)
+                                                d = dest_ext (1 bit)
+                                                  t = test_flag_2 (1 bit)
+                                                  r = src1_ext (1 bit)
+                                                    c = src2_ext (1 bit)
+                                                    e = prec (1 bit)
+                                                      - = don't care
+                                                      uu = rpt_count (2 bits, RepeatCount)
+                                                        ii = sign_test (2 bits)
+                                                          zz = zero_test (2 bits)
+                                                            m = test_crcomb_and (1 bit)
+                                                              - = don't care
+                                                              aa = tst_mask_type (2 bits)
+                                                                -- = don't care
+                                                                  bb = dest_bank (2 bits)
+                                                                    nn = src1_bank (2 bits)
+                                                                      kk = src2_bank (2 bits)
+                                                                        fffffff = dest_n (7 bits)
+                                                                                w = test_wben (1 bit)
+                                                                                ll = alu_sel (2 bits)
+                                                                                  gggg = alu_op (4 bits)
+                                                                                      hhhhhhh = src1_n (7 bits)
+                                                                                              jjjjjjj = src2_n (7 bits)
+    */
+    INST(&V::vtstmsk, "VTSTMSK ()", "01111ppps-oydtrce-uuiizzm-aa--bbnnkkfffffffwllgggghhhhhhhjjjjjjj"),
 
     // Phase
     /*
