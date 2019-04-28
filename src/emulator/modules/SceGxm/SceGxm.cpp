@@ -232,7 +232,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     SceGxmContext *const ctx = context->get(host.mem);
     ctx->state.params = *params;
 
-    if (!renderer::create(ctx->renderer, host.window.get())) {
+    if (!renderer::create(ctx->renderer, host.gxm.window.get())) {
         free(host.mem, *context);
         context->reset();
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);

@@ -22,7 +22,6 @@
 
 #include <audio/functions.h>
 #include <glutil/gl.h>
-#include <host/state.h>
 #include <host/version.h>
 #include <io/functions.h>
 #include <io/io.h> // vfs
@@ -71,39 +70,40 @@ static void after_callback(const glbinding::FunctionCall &fn) {
     }
 }
 
-void update_viewport(HostState &state) {
+void update_viewport(State &app) {
     int w = 0;
     int h = 0;
-    SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
+    SDL_GL_GetDrawableSize(app.window.get(), &w, &h);
 
-    state.drawable_size.x = w;
-    state.drawable_size.y = h;
+    HostState &host = app.host;
+    host.drawable_size.x = w;
+    host.drawable_size.y = h;
 
     if (h > 0) {
         const float window_aspect = static_cast<float>(w) / h;
         const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
         if (window_aspect > vita_aspect) {
             // Window is wide. Pin top and bottom.
-            state.viewport_size.x = h * vita_aspect;
-            state.viewport_size.y = h;
-            state.viewport_pos.x = (w - state.viewport_size.x) / 2;
-            state.viewport_pos.y = 0;
+            host.viewport_size.x = h * vita_aspect;
+            host.viewport_size.y = h;
+            host.viewport_pos.x = (w - host.viewport_size.x) / 2;
+            host.viewport_pos.y = 0;
         } else {
             // Window is tall. Pin left and right.
-            state.viewport_size.x = w;
-            state.viewport_size.y = w / vita_aspect;
-            state.viewport_pos.x = 0;
-            state.viewport_pos.y = (h - state.viewport_size.y) / 2;
+            host.viewport_size.x = w;
+            host.viewport_size.y = w / vita_aspect;
+            host.viewport_pos.x = 0;
+            host.viewport_pos.y = (h - host.viewport_size.y) / 2;
         }
     } else {
-        state.viewport_pos.x = 0;
-        state.viewport_pos.y = 0;
-        state.viewport_size.x = 0;
-        state.viewport_size.y = 0;
+        host.viewport_pos.x = 0;
+        host.viewport_pos.y = 0;
+        host.viewport_size.x = 0;
+        host.viewport_size.y = 0;
     }
 }
 
-static bool init_host(HostState &state, Config cfg, const char *base_path, const char *pref_path) {
+static bool init_host(HostState &state, const WindowPtr &window, Config cfg, const char *base_path, const char *pref_path) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
@@ -127,8 +127,8 @@ static bool init_host(HostState &state, Config cfg, const char *base_path, const
         state.pref_path = state.cfg.pref_path.value();
     }
 
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
-    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str(), state.base_path.c_str())) {
+    state.gxm.window = window;
+    if (!init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str(), state.base_path.c_str())) {
         return false;
     }
 
@@ -136,13 +136,11 @@ static bool init_host(HostState &state, Config cfg, const char *base_path, const
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
+    state.glcontext = GLContextPtr(SDL_GL_CreateContext(window.get()), SDL_GL_DeleteContext);
     if (!state.glcontext) {
         error_dialog("Could not create OpenGL context!\nDoes your GPU support OpenGL 4.1?", NULL);
         return false;
     }
-
-    update_viewport(state);
 
     // Try adaptive vsync first, falling back to regular vsync.
     if (SDL_GL_SetSwapInterval(-1) < 0) {
@@ -203,16 +201,24 @@ static bool init_host(HostState &state, Config cfg, const char *base_path, const
     return true;
 }
 
-bool init(State &state, Config cfg) {
+bool init(State &app, Config cfg) {
     const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
     const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
 
-    if (!init_host(state.host, cfg, base_path.get(), pref_path.get())) {
+    app.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+    if (!app.window) {
+        error_dialog("Could not create window", NULL);
         return false;
     }
 
-    if (!state.screen_renderer.init(base_path.get())) {
-        error_dialog("Could not create screen renderer", NULL);
+    if (!init_host(app.host, app.window, cfg, base_path.get(), pref_path.get())) {
+        return false;
+    }
+
+    update_viewport(app);
+
+    if (!app.screen_renderer.init(base_path.get())) {
+        error_dialog("Could not create screen renderer", app.window.get());
         return false;
     }
 

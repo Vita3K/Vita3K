@@ -50,12 +50,12 @@ enum class AppRunType {
 
 struct State;
 
-bool init(State &state, Config cfg);
-void update_viewport(HostState &state);
-bool handle_events(HostState &host);
+bool init(State &app, Config cfg);
+void update_viewport(State &app);
+bool handle_events(State &app);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type);
-ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
+ExitCode load_app(Ptr<const void> &entry_point, State &app, const std::wstring &path, AppRunType run_type);
+ExitCode run_app(State &app, Ptr<const void> &entry_point);
 
-void set_window_title(HostState &host);
+void set_window_title(State &app);
 } // namespace app

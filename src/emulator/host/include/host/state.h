@@ -39,9 +39,7 @@
 #include <memory>
 #include <string>
 
-struct SDL_Window;
 typedef void *SDL_GLContext;
-typedef std::shared_ptr<SDL_Window> WindowPtr;
 typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 
 struct DisplayState {
@@ -67,7 +65,6 @@ struct HostState {
     Config cfg;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
-    WindowPtr window;
     GLContextPtr glcontext;
     SceIVector2 drawable_size = { 0, 0 };
     SceFVector2 viewport_pos = { 0, 0 };

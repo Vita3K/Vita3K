@@ -23,6 +23,7 @@
 
 namespace app {
 struct State {
+    WindowPtr window;
     HostState host;
     ScreenRenderer screen_renderer;
 };

@@ -17,13 +17,13 @@
 
 #include "app_functions.h"
 
+#include "app_state.h"
 #include "sfo.h"
 
 #include <gdbstub/functions.h>
 #include <gui/functions.h>
 #include <gui/imgui_impl_sdl_gl3.h>
 #include <host/functions.h>
-#include <host/state.h>
 #include <host/version.h>
 #include <io/functions.h>
 #include <io/io.h>
@@ -53,17 +53,19 @@ namespace app {
 static const char *EBOOT_PATH = "eboot.bin";
 static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
 
-static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
+static void handle_window_event(State &app, const SDL_WindowEvent event) {
     switch (static_cast<SDL_WindowEventID>(event.event)) {
     case SDL_WINDOWEVENT_SIZE_CHANGED:
-        update_viewport(state);
+        update_viewport(app);
         break;
     default:
         break;
     }
 }
 
-bool handle_events(HostState &host) {
+bool handle_events(State &app) {
+    HostState &host = app.host;
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSdlGL3_ProcessEvent(&event);
@@ -86,7 +88,7 @@ bool handle_events(HostState &host) {
             }
 
         case SDL_WINDOWEVENT:
-            handle_window_event(host, event.window);
+            handle_window_event(app, event.window);
             break;
         }
     }
@@ -134,7 +136,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, FILE *&vpk_fp, const char *
     return true;
 }
 
-static bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
+static bool install_vpk(Ptr<const void> &entry_point, State &app, const std::wstring &path) {
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
@@ -180,6 +182,8 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std
 
     SfoFile sfo_handle;
     load_sfo(sfo_handle, params);
+
+    HostState &host = app.host;
     find_data(host.io.title_id, sfo_handle, "TITLE_ID");
 
     std::string output_base_path = host.pref_path + "ux0/app/";
@@ -194,15 +198,15 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std
     const bool created = fs::create_directory(title_base_path);
     if (!created) {
         gui::GenericDialogState status = gui::UNK_STATE;
-        while (handle_events(host) && (status == 0)) {
-            ImGui_ImplSdlGL3_NewFrame(host.window.get());
+        while (handle_events(app) && (status == 0)) {
+            ImGui_ImplSdlGL3_NewFrame(app.window.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_ui(host);
             gui::draw_reinstall_dialog(host, &status);
             glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
             ImGui::Render();
             ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-            SDL_GL_SwapWindow(host.window.get());
+            SDL_GL_SwapWindow(app.window.get());
         }
         if (status == gui::CANCEL_STATE) {
             LOG_INFO("{} already installed, launching application...", host.io.title_id);
@@ -241,12 +245,13 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std
     return true;
 }
 
-static bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
+static bool load_app_impl(Ptr<const void> &entry_point, State &app, const std::wstring &path, AppRunType run_type) {
     if (path.empty())
         return InvalidApplicationPath;
 
+    HostState &host = app.host;
     if (run_type == AppRunType::Vpk) {
-        if (!install_vpk(entry_point, host, path)) {
+        if (!install_vpk(entry_point, app, path)) {
             return false;
         }
     } else if (run_type == AppRunType::Extracted) {
@@ -341,18 +346,18 @@ static bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const s
     return true;
 }
 
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
-    if (!load_app_impl(entry_point, host, path, run_type)) {
+ExitCode load_app(Ptr<const void> &entry_point, State &app, const std::wstring &path, AppRunType run_type) {
+    if (!load_app_impl(entry_point, app, path, run_type)) {
         std::string message = "Failed to load \"";
         message += string_utils::wide_to_utf(path);
         message += "\"";
         message += "\nSee console output for details.";
-        error_dialog(message.c_str(), host.window.get());
+        error_dialog(message.c_str(), app.window.get());
         return ModuleLoadFailed;
     }
 
-    if (!host.cfg.show_gui) {
-        auto &imgui_render = host.display.imgui_render;
+    if (!app.host.cfg.show_gui) {
+        auto &imgui_render = app.host.display.imgui_render;
 
         bool old_imgui_render = imgui_render.load();
         while (!imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
@@ -366,14 +371,15 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
     return Success;
 }
 
-ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
+ExitCode run_app(State &app, Ptr<const void> &entry_point) {
+    HostState &host = app.host;
     const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
         ::call_import(host, cpu, nid, main_thread_id);
     };
 
     const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_MAIN, call_import, false);
     if (main_thread_id < 0) {
-        error_dialog("Failed to init main thread.", host.window.get());
+        error_dialog("Failed to init main thread.", app.window.get());
         return InitThreadFailed;
     }
 
@@ -403,14 +409,15 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     }
 
     if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
-        error_dialog("Failed to run main thread.", host.window.get());
+        error_dialog("Failed to run main thread.", app.window.get());
         return RunThreadFailed;
     }
 
     return Success;
 }
 
-void set_window_title(HostState &host) {
+void set_window_title(State &app) {
+    HostState &host = app.host;
     const uint32_t sdl_ticks_now = SDL_GetTicks();
     const uint32_t ms = sdl_ticks_now - host.sdl_ticks;
     if (ms >= 1000 && host.frame_count > 0) {
@@ -418,7 +425,7 @@ void set_window_title(HostState &host) {
         const uint32_t ms_per_frame = ms / host.frame_count;
         std::ostringstream title;
         title << window_title << " | " << host.game_title << " (" << host.io.title_id << ") | " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
-        SDL_SetWindowTitle(host.window.get(), title.str().c_str());
+        SDL_SetWindowTitle(app.window.get(), title.str().c_str());
         host.sdl_ticks = sdl_ticks_now;
         host.frame_count = 0;
     }

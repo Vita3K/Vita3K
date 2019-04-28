@@ -85,22 +85,22 @@ int main(int argc, char *argv[]) {
 
     State state;
     if (!init(state, std::move(cfg))) {
-        error_dialog("Host initialisation failed.", state.host.window.get());
+        error_dialog("Host initialisation failed.", state.window.get());
         return HostInitFailed;
     }
 
-    gui::init(state.host);
+    gui::init(state.window.get(), state.host);
 
     // Application not provided via argument, show game selector
     while (run_type == AppRunType::Unknown) {
-        if (handle_events(state.host)) {
+        if (handle_events(state)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gui::draw_begin(state.host);
+            gui::draw_begin(state.window.get(), state.host);
 
             gui::draw_ui(state.host);
             gui::draw_game_selector(state.host);
 
-            gui::draw_end(state.host.window.get());
+            gui::draw_end(state.window.get());
         } else {
             return QuitRequested;
         }
@@ -113,20 +113,20 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    if (auto err = load_app(entry_point, state.host, vpk_path_wide, run_type) != Success)
+    if (auto err = load_app(entry_point, state, vpk_path_wide, run_type) != Success)
         return err;
 
-    if (auto err = run_app(state.host, entry_point) != Success)
+    if (auto err = run_app(state, entry_point) != Success)
         return err;
 
-    while (handle_events(state.host)) {
+    while (handle_events(state)) {
         state.screen_renderer.render(state.host);
-        gui::draw_begin(state.host);
+        gui::draw_begin(state.window.get(), state.host);
         gui::draw_common_dialog(state.host);
         if (state.host.display.imgui_render) {
             gui::draw_ui(state.host);
         }
-        gui::draw_end(state.host.window.get());
+        gui::draw_end(state.window.get());
 
         if (state.host.display.sync_rendering) {
             std::unique_lock<std::mutex> lock(state.host.display.mutex);
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
             state.host.display.condvar.notify_all();
         }
 
-        set_window_title(state.host);
+        set_window_title(state);
     }
 
 #ifdef USE_GDBSTUB

@@ -151,9 +151,9 @@ static void init_background(State &gui, const std::string &image_path) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
-void init(HostState &host) {
+void init(SDL_Window *window, HostState &host) {
     ImGui::CreateContext();
-    ImGui_ImplSdlGL3_Init(host.window.get());
+    ImGui_ImplSdlGL3_Init(window);
 
     init_style();
     init_font(host.gui);
@@ -162,8 +162,8 @@ void init(HostState &host) {
     }
 }
 
-void draw_begin(HostState &host) {
-    ImGui_ImplSdlGL3_NewFrame(host.window.get());
+void draw_begin(SDL_Window *window, HostState &host) {
+    ImGui_ImplSdlGL3_NewFrame(window);
     host.gui.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
 
     ImGui::PushFont(host.gui.normal_font);

@@ -3,6 +3,9 @@
 #include <mem/ptr.h>
 #include <threads/queue.h>
 
+struct SDL_Window;
+typedef std::shared_ptr<SDL_Window> WindowPtr;
+
 namespace emu {
 typedef void SceGxmDisplayQueueCallback(Ptr<const void> callbackData);
 
@@ -23,6 +26,7 @@ struct DisplayCallback {
 };
 
 struct GxmState {
+    WindowPtr window;
     emu::SceGxmInitializeParams params;
     bool is_in_scene = false;
     Queue<DisplayCallback> display_queue;

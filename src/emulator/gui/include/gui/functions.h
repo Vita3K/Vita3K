@@ -28,8 +28,8 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-void init(HostState &host);
-void draw_begin(HostState &host);
+void init(SDL_Window *window, HostState &host);
+void draw_begin(SDL_Window *window, HostState &host);
 void draw_end(SDL_Window *window);
 void draw_ui(HostState &host);
 
