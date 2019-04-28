@@ -449,8 +449,8 @@ bool USSETranslatorVisitor::vcomp(
     Instruction inst;
 
     // All of them needs to be doubled
-    inst.opr.dest = decode_dest(dest_n, dest_bank, dest_bank_ext, true, 7, m_second_program);
-    inst.opr.src1 = decode_src12(src1_n, src1_bank, src1_bank_ext, true, 7, m_second_program);
+    inst.opr.dest = decode_dest(dest_n, dest_bank, dest_bank_ext, true, 8, m_second_program);
+    inst.opr.src1 = decode_src12(src1_n, src1_bank, src1_bank_ext, true, 8, m_second_program);
     inst.opr.src1.flags = decode_modifier(src1_mod);
 
     // The thing is, these instructions are designed to only work with one component
