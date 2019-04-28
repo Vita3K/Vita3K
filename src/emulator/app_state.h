@@ -21,10 +21,15 @@
 
 #include <host/state.h>
 
+typedef void *SDL_GLContext;
+
 namespace app {
+typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
+
 struct State {
     WindowPtr window;
-    HostState host;
+    GLContextPtr gl_context;
     ScreenRenderer screen_renderer;
+    HostState host;
 };
 } // namespace app

@@ -54,8 +54,6 @@ int main(int argc, char *argv[]) {
         return SDLInitFailed;
     }
 
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
     AppRunType run_type;
     if (cfg.run_title_id)
         run_type = AppRunType::Extracted;

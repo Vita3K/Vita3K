@@ -36,11 +36,7 @@
 #include <psp2/display.h>
 
 #include <atomic>
-#include <memory>
 #include <string>
-
-typedef void *SDL_GLContext;
-typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -65,7 +61,6 @@ struct HostState {
     Config cfg;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
-    GLContextPtr glcontext;
     SceIVector2 drawable_size = { 0, 0 };
     SceFVector2 viewport_pos = { 0, 0 };
     SceFVector2 viewport_size = { 0, 0 };

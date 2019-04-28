@@ -132,32 +132,6 @@ static bool init_host(HostState &state, const WindowPtr &window, Config cfg, con
         return false;
     }
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-    state.glcontext = GLContextPtr(SDL_GL_CreateContext(window.get()), SDL_GL_DeleteContext);
-    if (!state.glcontext) {
-        error_dialog("Could not create OpenGL context!\nDoes your GPU support OpenGL 4.1?", NULL);
-        return false;
-    }
-
-    // Try adaptive vsync first, falling back to regular vsync.
-    if (SDL_GL_SetSwapInterval(-1) < 0) {
-        SDL_GL_SetSwapInterval(1);
-    }
-    LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
-
-    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
-        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
-    };
-    Binding::initialize(get_proc_address, false);
-    Binding::setCallbackMaskExcept(CallbackMask::Before | CallbackMask::After, { "glGetError" });
-#if MICROPROFILE_ENABLED != 0
-    Binding::setBeforeCallback(before_callback);
-#endif // MICROPROFILE_ENABLED
-    Binding::setAfterCallback(after_callback);
-
     state.kernel.base_tick = { rtc_base_ticks() };
 
     std::string dir_path = state.pref_path + "ux0/app";
@@ -211,16 +185,42 @@ bool init(State &app, Config cfg) {
         return false;
     }
 
-    if (!init_host(app.host, app.window, cfg, base_path.get(), pref_path.get())) {
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+    app.gl_context = GLContextPtr(SDL_GL_CreateContext(app.window.get()), SDL_GL_DeleteContext);
+    if (!app.gl_context) {
+        error_dialog("Could not create OpenGL context!\nDoes your GPU support OpenGL 4.1?", NULL);
         return false;
     }
 
-    update_viewport(app);
+    // Try adaptive vsync first, falling back to regular vsync.
+    if (SDL_GL_SetSwapInterval(-1) < 0) {
+        SDL_GL_SetSwapInterval(1);
+    }
+    LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
+
+    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
+        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
+    };
+    Binding::initialize(get_proc_address, false);
+    Binding::setCallbackMaskExcept(CallbackMask::Before | CallbackMask::After, { "glGetError" });
+#if MICROPROFILE_ENABLED != 0
+    Binding::setBeforeCallback(before_callback);
+#endif // MICROPROFILE_ENABLED
+    Binding::setAfterCallback(after_callback);
 
     if (!app.screen_renderer.init(base_path.get())) {
         error_dialog("Could not create screen renderer", app.window.get());
         return false;
     }
+
+    if (!init_host(app.host, app.window, cfg, base_path.get(), pref_path.get())) {
+        return false;
+    }
+
+    update_viewport(app);
 
     return true;
 }
