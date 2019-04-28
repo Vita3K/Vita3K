@@ -86,12 +86,14 @@ namespace shader::usse {
                 if (is_branch(inst, pred, br_off)) {
                     add_block(baddr + br_off);
 
+                    block->second = baddr - block->first;
+                    should_stop = true;
+
                     // An unconditional branch if predicator is 0
                     // This should work fine with the pattern of most shaders encountered
                     // There are places that a link can be used, it certainly will be used, but when generate
-                    if (pred == 0) {
-                        block->second = baddr - block->first;
-                        should_stop = true;
+                    if (pred != 0) {
+                        add_block(baddr + 1);
                     }
                 }
 
