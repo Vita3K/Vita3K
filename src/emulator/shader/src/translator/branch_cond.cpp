@@ -334,7 +334,11 @@ bool USSETranslatorVisitor::br(
         br_off |= 0xFFFFFFFF << 20;
     }
 
-    LOG_DISASM("{:016x}: {}{} #{}", m_instr, disasm::e_predicate_str(pred), (br_type == 0) ? "BA" : "BR", br_off);
+    LOG_DISASM("{:016x}: {}{} #{}", m_instr, disasm::e_predicate_str(pred), (br_type == 0) ? "BA" : "BR", br_off + m_recompiler.cur_pc);
+
+    if (pred == ExtPredicate::NONE) {
+        m_b.createBranch(m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[br_off + m_recompiler.cur_pc]));
+    }
 
     return true;
 }

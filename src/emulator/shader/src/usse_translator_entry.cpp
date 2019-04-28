@@ -473,24 +473,21 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
 
   spv::Block *new_block = begin_new_block();
 
-  for (usse::USSEOffset pc = block.first; pc < pc_end; pc++) {
-    if (pc != block.first && avail_blocks[pc].first != 0 && avail_blocks[pc].second + pc < pc_end) {
-      spv::Block *fast_link = get_or_recompile_block(avail_blocks[pc]);
-      b.createBranch(fast_link);
+  for (usse::USSEOffset pc = block.first; pc <= pc_end; pc++) {
+    cur_pc = pc;
+    cur_instr = inst[pc];
 
-      // Since we already link with the available block, skip recompile the overlapped.
-      // Subtract to 1 so we can continue recompile
-      pc += avail_blocks[pc].second - 1;
-    } else {
-      cur_instr = inst[pc];
+    // Recompile the instruction, to the current block
+    auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
+    if (decoder)
+        decoder->call(visitor, cur_instr);
+    else
+        LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
+  }
 
-      // Recompile the instruction, to the current block
-      auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
-      if (decoder)
-          decoder->call(visitor, cur_instr);
-      else
-          LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
-    }
+  if (cur_pc == count - 1 && !visitor.is_translating_secondary_program()) {
+    // We reach the end, for whatever the current block is. Make a return
+    b.leaveFunction();
   }
 
   end_new_block();
@@ -529,7 +526,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
         recomp.reset(cur_phase_code.first, cur_phase_code.second);
 
         // recompile the entry block.
-        recomp.get_or_recompile_block({ 0, static_cast<std::uint32_t>(cur_phase_code.second) }, b.getBuildPoint());
+        recomp.get_or_recompile_block(recomp.avail_blocks[0], b.getBuildPoint());
     }
 
     if (program.get_type() == emu::Fragment && !program.is_native_color()) {

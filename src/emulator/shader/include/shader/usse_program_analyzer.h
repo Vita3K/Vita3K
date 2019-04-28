@@ -90,7 +90,7 @@ namespace shader::usse {
                     // This should work fine with the pattern of most shaders encountered
                     // There are places that a link can be used, it certainly will be used, but when generate
                     if (pred == 0) {
-                        block->second = baddr - block->first + 1;
+                        block->second = baddr - block->first;
                         should_stop = true;
                     }
                 }
@@ -99,7 +99,7 @@ namespace shader::usse {
             }
 
             if (block->second == 0) {
-                block->second = end_offset - block->first + 1;
+                block->second = end_offset - block->first;
             }
 
             blocks_queue.pop();

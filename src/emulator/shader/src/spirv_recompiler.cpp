@@ -888,8 +888,6 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
 
     generate_shader_body(b, parameters, program, texture_queries);
 
-    b.leaveFunction();
-
     // Execution modes
     if (program_type == emu::SceGxmProgramType::Fragment)
         b.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);

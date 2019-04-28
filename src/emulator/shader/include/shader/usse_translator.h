@@ -219,6 +219,10 @@ public:
         m_second_program = is_it;
     }
 
+    bool is_translating_secondary_program() {
+        return m_second_program;
+    }
+
     //
     // Helpers
     //
@@ -529,6 +533,7 @@ struct USSERecompiler final {
   spv::Builder &b;
   USSETranslatorVisitor visitor;
   std::uint64_t cur_instr;
+  usse::USSEOffset cur_pc;
 
   std::unordered_map<usse::USSEOffset, usse::USSEBlock> avail_blocks;
 
