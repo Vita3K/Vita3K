@@ -38,7 +38,7 @@ static void evaluate_code(HostState &host, uint32_t from, uint32_t count, bool t
     uint16_t size = 1;
     uint32_t addr = from;
 
-    for (int a = 0; a < count && size != 0; a++) {
+    for (std::uint32_t a = 0; a < count && size != 0; a++) {
         // Apparently some THUMB instructions are 4 bytes long, so check all 4 just to be safe.
         size_t addr_page = addr / KB(4);
         size_t end_page = (addr + 4) / KB(4);

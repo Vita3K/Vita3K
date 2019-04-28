@@ -95,9 +95,9 @@ public:
     }
 
 private:
-//
-// Translation helpers
-//
+    //
+    // Translation helpers
+    //
 
 #define BEGIN_REPEAT(repeat_count, repeat_offset_jump)          \
     const auto repeat_count_num = (uint8_t)repeat_count + 1;    \

@@ -61,7 +61,7 @@ void draw_game_selector(HostState &host) {
             ImGui::SetColumnWidth(0, 80);
             break;
         }
-        ImGui::SetWindowFontScale(1.1);
+        ImGui::SetWindowFontScale(1.1f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         if (ImGui::Button(title_id_label.c_str())) {
             host.gui.game_selector.title_id_sort_state = static_cast<gui::SortState>(std::max(1, (host.gui.game_selector.title_id_sort_state + 1) % 3));

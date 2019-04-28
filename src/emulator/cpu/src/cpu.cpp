@@ -260,7 +260,7 @@ uint32_t read_reg(CPUState &state, size_t index) {
     assert(index >= 0);
 
     uint32_t value = 0;
-    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_R0 + index, &value);
+    const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_R0 + static_cast<int>(index), &value);
     assert(err == UC_ERR_OK);
 
     return value;
@@ -271,7 +271,7 @@ float read_float_reg(CPUState &state, size_t index) {
 
     DoubleReg value;
 
-    int single_index = index / 2;
+    const int single_index = static_cast<int>(index / 2);
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_D0 + single_index, &value);
     assert(err == UC_ERR_OK);
     return value.f[index % 2];
@@ -321,7 +321,7 @@ void write_reg(CPUState &state, size_t index, uint32_t value) {
     assert(index >= 0);
     assert(index <= 1);
 
-    const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_R0 + index, &value);
+    const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_R0 + static_cast<int>(index), &value);
     assert(err == UC_ERR_OK);
 }
 

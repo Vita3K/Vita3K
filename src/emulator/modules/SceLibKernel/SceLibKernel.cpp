@@ -283,7 +283,7 @@ EXPORT(int, sceClibStrncpyChk) {
 }
 
 EXPORT(uint32_t, sceClibStrnlen, const char *str, uint32_t maxlen) {
-    return strnlen(str, maxlen);
+    return static_cast<uint32_t>(strnlen(str, maxlen));
 }
 
 EXPORT(Ptr<char>, sceClibStrrchr, const char *str, int character) {
@@ -380,7 +380,7 @@ EXPORT(int, sceIoIoctlAsync) {
 }
 
 EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
-    return seek_file(fd, offset, whence, host.io, export_name);
+    return seek_file(fd, static_cast<int>(offset), whence, host.io, export_name);
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
@@ -408,7 +408,7 @@ EXPORT(int, sceIoOpenAsync) {
 }
 
 EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
-    if (seek_file(fd, offset, SEEK_SET, host.io, export_name) < 0) {
+    if (seek_file(fd, static_cast<int>(offset), SEEK_SET, host.io, export_name) < 0) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     return read_file(data, host.io, fd, size, export_name);
@@ -419,7 +419,7 @@ EXPORT(int, sceIoPreadAsync) {
 }
 
 EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
-    if (seek_file(fd, offset, SEEK_SET, host.io, export_name) < 0) {
+    if (seek_file(fd, static_cast<int>(offset), SEEK_SET, host.io, export_name) < 0) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     return write_file(fd, data, size, host.io, export_name);
@@ -1158,7 +1158,8 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
         ::call_import(host, cpu, nid, thread_id);
     };
 
-    const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, call_import, false);
+    const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
+        static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, false);
 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 

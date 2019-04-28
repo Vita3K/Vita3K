@@ -24,8 +24,8 @@
 namespace gui {
 
 void draw_controls_dialog(HostState &host) {
-    float width = ImGui::GetWindowWidth() / 1.35;
-    float height = ImGui::GetWindowHeight() / 1.35;
+    float width = ImGui::GetWindowWidth() / 1.35f;
+    float height = ImGui::GetWindowHeight() / 1.35f;
     ImGui::SetNextWindowSize(ImVec2(width, height));
     ImGui::SetNextWindowPosCenter();
     ImGui::Begin("Controls", &host.gui.help_menu.controls_dialog);

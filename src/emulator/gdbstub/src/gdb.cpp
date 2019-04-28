@@ -343,7 +343,8 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                         thread.second->to_do = step ? ThreadToDo::step : ThreadToDo::run;
                         thread.second->something_to_do.notify_one();
                     }
-                    if (state.gdb.server_die) break;
+                    if (state.gdb.server_die)
+                        break;
                 }
             }
 
@@ -355,7 +356,8 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                             hit_break = true;
                             break;
                         }
-                        if (state.gdb.server_die) break;
+                        if (state.gdb.server_die)
+                            break;
                     }
                 }
             }

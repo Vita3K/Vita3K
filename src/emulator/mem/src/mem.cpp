@@ -156,7 +156,7 @@ uint32_t mem_available(MemState &state) {
     }
 
     const size_t block_page_index = block - state.allocated_pages.begin();
-    const Address address = GB(4) - static_cast<Address>(block_page_index * state.page_size);
+    const Address address = static_cast<Address>(GB(4) - static_cast<Address>(block_page_index * state.page_size));
 
     return address;
 }

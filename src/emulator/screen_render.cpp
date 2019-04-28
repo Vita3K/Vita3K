@@ -89,7 +89,8 @@ void ScreenRenderer::render(const HostState &host) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glViewport(host.viewport_pos.x, host.viewport_pos.y, host.viewport_size.x, host.viewport_size.y);
+    glViewport(static_cast<gl::GLint>(host.viewport_pos.x), static_cast<gl::GLint>(host.viewport_pos.y), static_cast<gl::GLsizei>(host.viewport_size.x),
+        static_cast<gl::GLsizei>(host.viewport_size.y));
 
     if ((display.image_size.x > 0) && (display.image_size.y > 0)) {
         glUseProgram(*program);

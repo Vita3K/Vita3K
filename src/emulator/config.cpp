@@ -39,7 +39,7 @@ template <typename T, typename Q = T>
 void get_yaml_value(YAML::Node &config_node, const char *key, T *target_val, Q default_val) {
     try {
         *target_val = config_node[key].as<Q>();
-    } catch (YAML::Exception &exception) {
+    } catch (...) {
         *target_val = std::move(default_val);
     }
 }
@@ -48,7 +48,7 @@ template <typename T>
 void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::optional<T> *target_val, T default_val) {
     try {
         *target_val = config_node[key].as<T>();
-    } catch (YAML::Exception &exception) {
+    } catch (...) {
         *target_val = std::move(default_val);
     }
 }
@@ -57,7 +57,7 @@ template <typename T>
 void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::optional<T> *target_val) {
     try {
         *target_val = config_node[key].as<T>();
-    } catch (YAML::Exception &exception) {
+    } catch (...) {
         *target_val = boost::none;
     }
 }
@@ -144,7 +144,7 @@ static bool deserialize(Config &cfg) {
         for (auto lle_module_node : lle_modules_node) {
             cfg.lle_modules.push_back(lle_module_node.as<std::string>());
         }
-    } catch (YAML::Exception &exception) {
+    } catch (...) {
         std::cerr << "LLE modules node listed in config file has invalid syntax, please check again!\n";
     }
 

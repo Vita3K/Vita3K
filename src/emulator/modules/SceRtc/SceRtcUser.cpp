@@ -262,7 +262,7 @@ EXPORT(int, sceRtcGetTime_t, SceDateTime *datePtr, uint32_t *timePtr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    *timePtr = (__RtcPspTimeToTicks(datePtr) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC;
+    *timePtr = static_cast<std::uint32_t>((__RtcPspTimeToTicks(datePtr) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC);
     return 0;
 }
 
