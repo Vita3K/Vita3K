@@ -248,7 +248,7 @@ bool USSETranslatorVisitor::vtst(
                 spv::OpAll
             },
             {
-                spv::OpAny,
+                spv::OpFOrdEqual,
                 spv::OpFOrdLessThanEqual,
                 spv::OpFOrdGreaterThanEqual,
                 spv::OpAll
