@@ -43,7 +43,7 @@ TEST(program_analyzer, simple_branching) {
 
     usse::analyze(sizeof(ops) / 8 - 1, [&](usse::USSEOffset off) -> std::uint64_t { return ops[off]; }, 
         [&](const usse::USSEBlock &sub) -> usse::USSEBlock* { 
-            auto result = blocks.emplace(sub.first, sub); 
+            auto result = blocks.emplace(sub.offset, sub); 
             if (result.second) {
                 return &(result.first->second);
             }
@@ -51,8 +51,9 @@ TEST(program_analyzer, simple_branching) {
             return nullptr;
         });
 
-    ASSERT_EQ(blocks.size(), 3);
-    ASSERT_EQ(blocks[0], usse::USSEBlock(0, 9));
-    ASSERT_EQ(blocks[9], usse::USSEBlock(9, 3));
-    ASSERT_EQ(blocks[10], usse::USSEBlock(10, 2));
+    ASSERT_EQ(blocks.size(), 4);
+    ASSERT_EQ(blocks[0], usse::USSEBlock(0, 2, 0, -1));
+    ASSERT_EQ(blocks[2], usse::USSEBlock(2, 7, 0, -1));
+    ASSERT_EQ(blocks[9], usse::USSEBlock(9, 4, 0, -1));
+    ASSERT_EQ(blocks[10], usse::USSEBlock(10, 3, 0, -1));
 }
