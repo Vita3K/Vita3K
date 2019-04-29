@@ -20,6 +20,7 @@
 #include <SPIRV/GLSL.std.450.h>
 #include <SPIRV/SpvBuilder.h>
 
+#include <shader/usse_constant_table.h>
 #include <shader/usse_decoder_helpers.h>
 #include <shader/usse_disasm.h>
 #include <shader/usse_types.h>
@@ -231,10 +232,6 @@ spv::Id USSETranslatorVisitor::unpack(spv::Id target, const DataType type, Swizz
         unpacked_type = m_b.getTypeId(unpack_results[i]);
     }
 
-    if (unpack_results.size() == 1) {
-        return unpack_results[0];
-    }
-
     SpirvReg reg_left{};
     SpirvReg reg_right{};
 
@@ -242,12 +239,12 @@ spv::Id USSETranslatorVisitor::unpack(spv::Id target, const DataType type, Swizz
     reg_right.type_id = unpacked_type;
 
     reg_left.var_id = unpack_results[0];
-    reg_right.var_id = unpack_results[1];
+    reg_right.var_id = unpack_results.size() == 1 ? unpack_results[0] : unpack_results[1];
 
     spv::Id last_shuffled = bridge(reg_left, reg_right, swizz, shift_offset, dest_mask);
 
     // It won't probably go up to two, but just in case ?
-    for (std::size_t i = 2; i < unpack_results.size() - 2; i++) {
+    for (std::size_t i = 1; i < unpack_results.size() - 1; i++) {
         reg_left.var_id = last_shuffled;
         reg_right.var_id = unpack_results[i];
 
@@ -366,6 +363,83 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         }
     }
     */
+    if (op.bank == RegisterBank::FPCONSTANT) {
+        std::vector<spv::Id> consts;
+
+        // Load constants. Ignore mask
+        if (op.type == DataType::F32) {
+            auto get_f32_from_bank = [&](const int num, const int bank) -> spv::Id {
+                switch (bank) {
+                case 0: {
+                    return m_b.makeFloatConstant(*reinterpret_cast<const float*>(&
+                        usse::f32_constant_table_bank_0_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
+                }
+
+                case 1: {
+                    return m_b.makeFloatConstant(*reinterpret_cast<const float*>(&
+                        usse::f32_constant_table_bank_1_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
+                }
+
+                default:
+                    break;
+                }
+
+                return spv::NoResult;
+            };
+
+            for (int i = 0; i < 4; i++) {
+                if (dest_mask & (1 << i)) {
+                    if (i == 1 && op.index == 0) {
+                        consts.push_back(get_f32_from_bank(i, 1));
+                    } else {
+                        consts.push_back(get_f32_from_bank(i, 0));
+                    }
+                }
+            }
+        } else if (op.type == DataType::F16) {
+            auto get_f16_from_bank = [&](const int num, const int bank) -> spv::Id {
+                switch (bank) {
+                case 0: {
+                    return m_b.makeFloatConstant(
+                        usse::f16_constant_table_bank0[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                }
+
+                case 1: {
+                    return m_b.makeFloatConstant(
+                        usse::f16_constant_table_bank1[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                }
+                
+                case 2: {
+                    return m_b.makeFloatConstant(
+                        usse::f16_constant_table_bank2[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                }
+
+                case 3: {
+                    return m_b.makeFloatConstant(
+                        usse::f16_constant_table_bank3[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                }
+
+                default:
+                    break;
+                }
+
+                return spv::NoResult;
+            };
+
+            for (int i = 0; i < 4; i++) {
+                if (dest_mask & (1 << i)) {
+                    if (i >= 1 && op.index == 0) {
+                        consts.push_back(get_f16_from_bank(i, i));
+                    } else {
+                        consts.push_back(get_f16_from_bank(i, 0));
+                    }
+                }
+            }
+        }
+
+        return m_b.makeCompositeConstant(type_f32_v[consts.size()], consts);
+    }
+
     if (op.bank == RegisterBank::FPINTERNAL) {
         // Automatically F32
         op.type = DataType::F32;
@@ -526,24 +600,36 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
 
     // Else do the shifting/swizzling with OpVectorShuffle, if data type is f32
     if (dest.type == DataType::F32 || dest.bank == RegisterBank::FPINTERNAL) {
-        std::vector<spv::Id> ops;
+        if (total_comp_source == 1 && dest_comp_count == 1) {
+            // Use OpInsertDynamic
+            for (int i = 0; i < total_comp_dest; i++) {
+                if (dest_mask & (1 << (dest_comp_offset + i) % 4)) {
+                    result = m_b.createOp(spv::OpVectorInsertDynamic, dest_reg.type_id, { m_b.createLoad(dest_reg.var_id), source, 
+                        m_b.makeIntConstant((i + dest_comp_offset % 4) % 4) });
 
-        ops.push_back(source);
-        ops.push_back(dest_reg.var_id);
-
-        // Total comp = 2, limit mask scan to only x, y
-        // Total comp = 3, limit mask scan to only x, y, z
-        // So on..
-        for (std::uint8_t i = 0; i < total_comp_dest; i++) {
-            if (dest_mask & (1 << (dest_comp_offset + i) % 4)) {
-                ops.push_back((i + dest_comp_offset % 4) % 4);
-            } else {
-                // Use original
-                ops.push_back(total_comp_source + i);
+                    break;
+                }
             }
-        }
+        } else {
+            std::vector<spv::Id> ops;
 
-        result = m_b.createOp(spv::OpVectorShuffle, dest_reg.type_id, ops);
+            ops.push_back(source);
+            ops.push_back(dest_reg.var_id);
+
+            // Total comp = 2, limit mask scan to only x, y
+            // Total comp = 3, limit mask scan to only x, y, z
+            // So on..
+            for (std::uint8_t i = 0; i < total_comp_dest; i++) {
+                if (dest_mask & (1 << (dest_comp_offset + i) % 4)) {
+                    ops.push_back((i + dest_comp_offset % 4) % 4);
+                } else {
+                    // Use original
+                    ops.push_back(total_comp_source + i);
+                }
+            }
+
+            result = m_b.createOp(spv::OpVectorShuffle, dest_reg.type_id, ops);
+        }
     } else {
         // Extract each of the component
         // We could unpack all of them and do shuffle, but we want to avoid it as we can
@@ -576,7 +662,7 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
                 vars.push_back(m_b.createOp(spv::OpVectorExtractDynamic, type_f32,
                     { cached_packed[swizz_off], m_b.makeIntConstant(extract_offset) }));
             } else {
-                if (m_b.isScalar(source) || m_b.isConstant(source)) {
+                if (m_b.isScalar(source) || m_b.isConstant(source) || m_b.getNumComponents(source) == 1) {
                     vars.push_back(source);
                 } else {
                     vars.push_back(m_b.createOp(spv::OpVectorExtractDynamic, type_f32,

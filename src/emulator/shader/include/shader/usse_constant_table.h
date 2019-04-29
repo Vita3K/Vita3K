@@ -19,13 +19,13 @@
 
 #include <cstdint>
 
-namespace usse {
+namespace shader::usse {
     // Thanks motoharu for original reversing work.
-    constexpr std::uint32_t NaN_raw = 0x7FFF7FFF;
-    constexpr std::uint32_t neg_NaN_raw = 0xFFFFFFFF;
+    static const std::uint32_t NaN_raw = 0x7FFF7FFF;
+    static const std::uint32_t neg_NaN_raw = 0xFFFFFFFF;
 
-    static const float NaN = *reinterpret_cast<float*>(NaN_raw);
-    static const float neg_NaN = *reinterpret_cast<float*>(neg_NaN_raw);
+    static const float NaN = *reinterpret_cast<const float*>(&NaN_raw);
+    static const float neg_NaN = *reinterpret_cast<const float*>(&neg_NaN_raw);
     
     constexpr std::uint32_t f32_constant_table_bank_0_raw[] = {
         0x00000000,

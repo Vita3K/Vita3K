@@ -748,7 +748,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         for (std::uint32_t i = 0; i < program.literals_count * 2; i += 2) {
             auto literal_offset = container->base_sa_offset + literals[i];
-            auto literal_data = reinterpret_cast<const float *>(literals)[i + 1];
+            auto literal_data = *reinterpret_cast<const float *>(&literals[i + 1]);
 
             literal_pairs.emplace_back(literal_offset, b.makeFloatConstant(literal_data));
 

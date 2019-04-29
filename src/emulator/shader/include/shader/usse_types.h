@@ -199,6 +199,8 @@ struct Operand {
     Swizzle4 swizzle = SWIZZLE_CHANNEL_4_UNDEFINED;
     DataType type = DataType::F32;
 
+    int index { 0 };
+
     bool is_same(const Operand &op, const Imm4 mask) {
         return (op.bank == bank) && (is_identical(swizzle, op.swizzle, mask)) && (num == op.num);
     }
@@ -209,6 +211,12 @@ struct InstructionOperands {
     Operand src0;
     Operand src1;
     Operand src2;
+
+    InstructionOperands() {
+        src0.index = 0;
+        src1.index = 1;
+        src2.index = 2;
+    }
 };
 
 struct Instruction {
