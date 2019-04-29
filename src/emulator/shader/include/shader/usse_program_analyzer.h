@@ -55,6 +55,15 @@ namespace shader::usse {
 
         std::uint8_t pred;              ///< The predicator requires to execute this block.
         std::int32_t offset_link;       ///< The offset of block to link at the end of the block. -1 for none.
+
+        USSEBlock() = default;
+        USSEBlock(const std::uint32_t off, const std::uint32_t size, const std::uint8_t pred, const std::int32_t off_link)
+            : offset(off), size(size), pred(pred), offset_link(off_link) {
+        }
+
+        bool operator == (const USSEBlock &rhs) const {
+            return (offset == rhs.offset) && (size == rhs.size) && (pred == rhs.pred) && (offset_link == rhs.offset_link);
+        }
     };
 
     using USSEOffset = std::uint32_t;
