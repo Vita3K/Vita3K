@@ -434,7 +434,7 @@ void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count)
 
   usse::analyze(static_cast<shader::usse::USSEOffset>(_count - 1), [&](usse::USSEOffset off) -> std::uint64_t { return inst[off]; }, 
       [&](const usse::USSEBlock &sub) -> usse::USSEBlock* { 
-          auto result = avail_blocks.emplace(sub.first, sub); 
+          auto result = avail_blocks.emplace(sub.offset, sub); 
           if (result.second) {
               return &(result.first->second);
           }
@@ -445,7 +445,7 @@ void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count)
 
 spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom) {
   if (!custom) {
-    auto result = cache.find(block.first);
+    auto result = cache.find(block.offset);
 
     if (result != cache.end()) {
       return result->second;
@@ -469,31 +469,65 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
     b.setBuildPoint(last_build_point);
   };
 
-  const usse::USSEOffset pc_end = block.first + block.second;
-
   spv::Block *new_block = begin_new_block();
 
-  for (usse::USSEOffset pc = block.first; pc <= pc_end; pc++) {
-    cur_pc = pc;
-    cur_instr = inst[pc];
+  if (block.size > 0) {
+    const usse::USSEOffset pc_end = block.offset + block.size - 1;
 
-    // Recompile the instruction, to the current block
-    auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
-    if (decoder)
-        decoder->call(visitor, cur_instr);
-    else
-        LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
+    for (usse::USSEOffset pc = block.offset; pc <= pc_end; pc++) {
+      cur_pc = pc;
+      cur_instr = inst[pc];
+
+      // Recompile the instruction, to the current block
+      auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
+      if (decoder)
+          decoder->call(visitor, cur_instr);
+      else
+          LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
+    }
   }
 
-  if ((cur_pc >= count - 1 || block.first == 0) && !visitor.is_translating_secondary_program()) {
-    // We reach the end, for whatever the current block is. Make a return
+  if ((cur_pc >= count - 1 || (block.offset == 0 && block.size == 0)) && !visitor.is_translating_secondary_program()) {
+    // We reach the end, for whatever the current block is.
+    // Emit non native frag output if neccessary first
+    if (program->get_type() == emu::Fragment && !program->is_native_color()) {
+        visitor.emit_non_native_frag_output();
+    }
+
+    // Make a return
     b.leaveFunction();
   }
 
-  end_new_block();
-  cache.emplace(block.first, new_block);
+  if (block.offset_link != -1) {
+    b.createBranch(get_or_recompile_block(avail_blocks[block.offset_link]));
+  }
 
-  return new_block;  
+  end_new_block();
+  
+  // Generate predicate guards
+  if (block.pred != 0) {
+    spv::Block *trampoline_block = begin_new_block();
+    spv::Id pred_v = spv::NoResult;
+
+    const ExtPredicate predicator = static_cast<ExtPredicate>(block.pred);
+
+    if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P1) {
+        int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
+        pred_v = visitor.load_predicate(pred_n);
+    } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
+        int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
+        pred_v = visitor.load_predicate(pred_n, true);
+    }
+
+    b.createConditionalBranch(pred_v, new_block, get_or_recompile_block(avail_blocks[block.offset + block.size]));
+    end_new_block();
+
+    new_block = trampoline_block;
+  }
+
+  cache.emplace(block.offset, new_block);
+
+  return new_block;
 }
 
 void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries) {
@@ -512,7 +546,11 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     shader_code[ShaderPhase::SampleRate] = std::make_pair(secondary_program_start, secondary_program_end - secondary_program_start);
 
     // Decode and recompile
+    // TODO: Reuse this
     usse::USSERecompiler recomp(b, parameters, queries);
+
+    // Set the program
+    recomp.program = &program;
 
     for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
         const auto cur_phase_code = shader_code[(ShaderPhase)phase];
@@ -527,10 +565,6 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
 
         // recompile the entry block.
         recomp.get_or_recompile_block(recomp.avail_blocks[0], b.getBuildPoint());
-    }
-
-    if (program.get_type() == emu::Fragment && !program.is_native_color()) {
-        recomp.visitor.emit_non_native_frag_output();
     }
 }
 

@@ -263,7 +263,7 @@ bool USSETranslatorVisitor::vtst(
                 "inv"
             },
             {
-                "alwaystrue",
+                "equal",
                 "le",
                 "ge",
                 "inv"

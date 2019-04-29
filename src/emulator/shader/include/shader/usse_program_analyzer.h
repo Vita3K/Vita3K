@@ -49,7 +49,14 @@ namespace shader::usse {
         return br_inst_is;
     }
 
-    using USSEBlock = std::pair<std::uint32_t, std::uint32_t>;
+    struct USSEBlock {
+        std::uint32_t offset;
+        std::uint32_t size;
+
+        std::uint8_t pred;              ///< The predicator requires to execute this block.
+        std::int32_t offset_link;       ///< The offset of block to link at the end of the block. -1 for none.
+    };
+
     using USSEOffset = std::uint32_t;
 
     template <typename F, typename H>
@@ -57,7 +64,7 @@ namespace shader::usse {
         std::queue<USSEBlock*> blocks_queue;
 
         auto add_block = [&](USSEOffset block_addr) {
-            USSEBlock routine = { block_addr, 0 };
+            USSEBlock routine = { block_addr, 0, 0, -1 };
 
             if (auto sub_ptr = handler_func(routine)) {
                 blocks_queue.push(sub_ptr);
@@ -70,38 +77,54 @@ namespace shader::usse {
         for (auto block = blocks_queue.front(); !blocks_queue.empty();) {
             bool should_stop = false;
 
-            for (auto baddr = block->first; baddr <= end_offset && !should_stop;) {
+            for (auto baddr = block->offset; baddr <= end_offset && !should_stop;) {
                 auto inst = read_func(baddr);
 
                 if (inst == 0) {
-                    block->second = baddr - block->first;
+                    block->size = baddr - block->offset;
                     should_stop = true;
 
                     break;
                 }
 
-                std::uint8_t pred = 0;
+                std::uint8_t pred = ((inst >> 32)  & ~0xF8FFFFFFU) >> 24;
                 std::uint32_t br_off = 0;
 
+                if ((inst >> 59) != 0b11111 && (inst >> 59) != 0) {
+                    if (baddr == block->offset) {
+                        block->pred = pred;
+                    }
+                } else {
+                    pred = 0;
+                }
+                
                 if (is_branch(inst, pred, br_off)) {
                     add_block(baddr + br_off);
 
-                    block->second = baddr - block->first;
+                    // No need to specify link offset. The translator will do it for us once it met BR.
+                    block->size = baddr - block->offset + 1;
                     should_stop = true;
 
-                    // An unconditional branch if predicator is 0
-                    // This should work fine with the pattern of most shaders encountered
-                    // There are places that a link can be used, it certainly will be used, but when generate
                     if (pred != 0) {
                         add_block(baddr + 1);
+                    }
+                } else {
+                    // Predicate exists, stop here
+                    if (pred != block->pred) {
+                        add_block(baddr);
+
+                        block->size = baddr - block->offset;
+                        block->offset_link = baddr;
+
+                        should_stop = true;
                     }
                 }
 
                 baddr += 1;
             }
 
-            if (block->second == 0) {
-                block->second = end_offset - block->first;
+            if (block->size == 0) {
+                block->size = end_offset - block->offset + 1;
             }
 
             blocks_queue.pop();

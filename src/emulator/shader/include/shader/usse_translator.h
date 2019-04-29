@@ -121,9 +121,6 @@ private:
          repeat_offset += repeat_offset_jump) {
 #define END_REPEAT() }
 
-    bool set_predicate(const Imm2 idx, const spv::Id value);
-    spv::Id load_predicate(const Imm2 idx, const bool neg = false);
-
     /**
      * \brief Get a SPIR-V variable corresponding to the given bank and register offset.
      * 
@@ -511,6 +508,9 @@ public:
         bool special,
         SpecialCategory category);
 
+    bool set_predicate(const Imm2 idx, const spv::Id value);
+    spv::Id load_predicate(const Imm2 idx, const bool neg = false);
+
 private:
     // SPIR-V emitter
     spv::Builder &m_b;
@@ -535,6 +535,8 @@ struct USSERecompiler final {
   USSETranslatorVisitor visitor;
   std::uint64_t cur_instr;
   usse::USSEOffset cur_pc;
+
+  const SceGxmProgram *program;
 
   std::unordered_map<usse::USSEOffset, usse::USSEBlock> avail_blocks;
 
