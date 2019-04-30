@@ -771,7 +771,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             spv::Id composite_var = b.makeCompositeConstant(b.makeVectorType(f32_type, static_cast<int>(constituents.size())),
                 constituents);
 
-            spv_params.uniforms.push({ f32_type, composite_var }, static_cast<int>(constituents.size()));
+            spv_params.uniforms.push({ b.getTypeId(composite_var), composite_var }, static_cast<int>(constituents.size()));
         };
 
         for (std::uint32_t i = 1; i < program.literals_count; i++) {
