@@ -34,20 +34,8 @@ namespace shader::usse {
      * 
      * \returns True on instruction being a branch.
      */
-    inline bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off) {
-        const std::uint32_t high = (inst >> 32);
-        const std::uint32_t low = static_cast<std::uint32_t>(inst);
-
-        const bool br_inst_is = ((high & ~0x07FFFFFFU) >> 27 == 0b11111) && (((high & ~0xFFCFFFFFU) >> 20) == 0) && 
-            !(high & 0x00400000) && ((((high & ~0xFFFFFE3FU) >> 6) == 0) || ((high & ~0xFFFFFE3FU) >> 6) == 1);
-            
-        if (br_inst_is) {
-            br_off = (low & ((1 << 20) - 1));
-            pred = (high & ~0xF8FFFFFFU) >> 24;
-        }
-
-        return br_inst_is;
-    }
+    bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off);
+    std::uint8_t get_predicate(const std::uint64_t inst);
 
     struct USSEBlock {
         std::uint32_t offset;
@@ -96,15 +84,11 @@ namespace shader::usse {
                     break;
                 }
 
-                std::uint8_t pred = ((inst >> 32)  & ~0xF8FFFFFFU) >> 24;
+                std::uint8_t pred = get_predicate(inst);
                 std::uint32_t br_off = 0;
 
-                if ((inst >> 59) != 0b11111 && (inst >> 59) != 0) {
-                    if (baddr == block->offset) {
-                        block->pred = pred;
-                    }
-                } else {
-                    pred = 0;
+                if (baddr == block->offset) {
+                    block->pred = pred;
                 }
                 
                 if (is_branch(inst, pred, br_off)) {
