@@ -23,6 +23,7 @@
 
 #include <glutil/gl.h>
 #include <host/state.h>
+#include <io/io.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -95,6 +96,21 @@ static void init_style() {
     style->Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 }
 
+static GLuint load_texture(int32_t width, int32_t height, const unsigned char *data, GLenum type = GL_RGBA) {
+    GLuint texture;
+    glGenTextures(1, &texture);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, type, width, height, 0, type, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    return texture;
+}
+
 static void init_font(State &gui) {
     const auto DATA_PATH = "data";
     const auto FONT_PATH = "fonts";
@@ -124,7 +140,7 @@ static void init_font(State &gui) {
 }
 
 static void init_background(State &gui, const std::string &image_path) {
-    if (!std::ifstream(image_path).good()) {
+    if (!fs::exists(image_path)) {
         LOG_INFO("Invalid background file path {}.", image_path);
         return;
     }
@@ -134,21 +150,33 @@ static void init_background(State &gui, const std::string &image_path) {
     stbi_uc *data = stbi_load(image_path.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
-        LOG_INFO("Could not load background from {}.", image_path);
+        LOG_INFO("Could not load image from {}.", image_path);
         return;
     }
 
-    GLuint texture;
-    glGenTextures(1, &texture);
-    gui.background_texture.init(texture, glDeleteTextures);
+    gui.background_texture.init(load_texture(width, height, data), glDeleteTextures);
+    stbi_image_free(data);
+}
 
-    glBindTexture(GL_TEXTURE_2D, gui.background_texture.get());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+static void init_icons(HostState &host) {
+    for (Game &game : host.gui.game_selector.games) {
+        int32_t width = 0;
+        int32_t height = 0;
+        vfs::FileBuffer buffer;
+
+        vfs::read_app_file(buffer, host.pref_path, game.title_id, "sce_sys/icon0.png");
+        if (buffer.empty()) {
+            LOG_INFO("Could not load icon or image for title {}.", game.title_id);
+            continue;
+        }
+        stbi_uc *data = stbi_load_from_memory(&buffer[0], buffer.size(), &width, &height, nullptr, STBI_rgb);
+        if (width != 128 || height != 128) {
+            LOG_INFO("Invalid icon or image for title {}.", game.title_id);
+            continue;
+        }
+        host.gui.game_selector.icons[game.title_id].init(load_texture(width, height, data, GL_RGB), glDeleteTextures);
+        stbi_image_free(data);
+    }
 }
 
 void init(HostState &host) {
@@ -157,6 +185,7 @@ void init(HostState &host) {
 
     init_style();
     init_font(host.gui);
+    init_icons(host);
     if (host.cfg.background_image) {
         init_background(host.gui, host.cfg.background_image.value());
     }

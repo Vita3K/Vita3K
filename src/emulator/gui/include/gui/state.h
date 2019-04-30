@@ -44,6 +44,7 @@ struct Game {
 
 struct GamesSelector {
     std::vector<Game> games;
+    std::map<std::string, GLObject> icons;
     std::string selected_title_id;
     bool is_game_list_sorted{ false };
     SortState title_id_sort_state = NOT_SORTED;
