@@ -137,6 +137,123 @@ bool USSETranslatorVisitor::vmad(
     return true;
 }
 
+bool USSETranslatorVisitor::vmad2(
+    Imm1 dat_fmt,
+    Imm2 pred,
+    Imm1 skipinv,
+    Imm1 src0_swiz_bits2,
+    Imm1 syncstart,
+    Imm1 src0_abs,
+    Imm3 src2_swiz,
+    Imm1 src1_swiz_bit2,
+    Imm1 nosched,
+    Imm4 dest_mask,
+    Imm2 src1_mod,
+    Imm2 src2_mod,
+    Imm1 src0_bank,
+    Imm2 dest_bank,
+    Imm2 src1_bank,
+    Imm2 src2_bank,
+    Imm6 dest_n,
+    Imm2 src1_swiz_bits01,
+    Imm2 src0_swiz_bits01,
+    Imm6 src0_n,
+    Imm6 src1_n,
+    Imm6 src2_n)
+{
+    Instruction inst{};
+    Opcode op = Opcode::VMAD;
+
+    // If dat_fmt equals to 1, the type of instruction is F16
+    if (dat_fmt) {
+        op = Opcode::VF16MAD;
+    }
+
+    const DataType inst_dt = (dat_fmt) ? DataType::F16 : DataType::F32;
+
+    // Decode destination mask
+    dest_mask = decode_write_mask(dest_mask, dat_fmt);
+
+    // Decode mandantory info first
+    inst.opr.dest = decode_dest(dest_n, dest_bank, false, true, 7, m_second_program);
+    inst.opr.src0 = decode_src0(src0_n, src0_bank, false, true, 7, m_second_program);
+    inst.opr.src1 = decode_src12(src1_n, src1_bank, false, true, 7, m_second_program);
+    inst.opr.src2 = decode_src12(src2_n, src2_bank, false, true, 7, m_second_program);
+
+    // Fill in data type
+    inst.opr.dest.type = inst_dt;
+    inst.opr.src0.type = inst_dt;
+    inst.opr.src1.type = inst_dt;
+    inst.opr.src2.type = inst_dt;
+
+    // Decode swizzle
+    const Swizzle4 tb_decode_src0_swiz[] = {
+        SWIZZLE_CHANNEL_4(X, X, X, X),
+        SWIZZLE_CHANNEL_4(Y, Y, Y, Y),
+        SWIZZLE_CHANNEL_4(Z, Z, Z, Z),
+        SWIZZLE_CHANNEL_4(W, W, W, W),
+        SWIZZLE_CHANNEL_4(X, Y, Z, W),
+        SWIZZLE_CHANNEL_4(Y, Z, X, W),
+        SWIZZLE_CHANNEL_4(X, Y, W, W),
+        SWIZZLE_CHANNEL_4(Z, W, X, Y)
+    };
+
+    const Swizzle4 tb_decode_src1_swiz[] = {
+        SWIZZLE_CHANNEL_4(X, X, X, X),
+        SWIZZLE_CHANNEL_4(Y, Y, Y, Y),
+        SWIZZLE_CHANNEL_4(Z, Z, Z, Z),
+        SWIZZLE_CHANNEL_4(W, W, W, W),
+        SWIZZLE_CHANNEL_4(X, Y, Z, W),
+        SWIZZLE_CHANNEL_4(X, Y, Y, Z),
+        SWIZZLE_CHANNEL_4(Y, Y, W, W),
+        SWIZZLE_CHANNEL_4(W, Y, Z, W)
+    };
+
+    const Swizzle4 tb_decode_src2_swiz[] = {
+        SWIZZLE_CHANNEL_4(X, X, X, X),
+        SWIZZLE_CHANNEL_4(Y, Y, Y, Y),
+        SWIZZLE_CHANNEL_4(Z, Z, Z, Z),
+        SWIZZLE_CHANNEL_4(W, W, W, W),
+        SWIZZLE_CHANNEL_4(X, Y, Z, W),
+        SWIZZLE_CHANNEL_4(X, Z, W, W),
+        SWIZZLE_CHANNEL_4(X, X, Y, Z),
+        SWIZZLE_CHANNEL_4(X, Y, Z, Z)
+    };
+
+    inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    inst.opr.src0.swizzle = tb_decode_src0_swiz[(src0_swiz_bits01 << 1 | src0_swiz_bits2)];
+    inst.opr.src1.swizzle = tb_decode_src1_swiz[(src1_swiz_bits01 << 1 | src1_swiz_bit2)];
+    inst.opr.src2.swizzle = tb_decode_src2_swiz[src2_swiz];
+
+    // Decode modifiers
+    if (src0_abs) {
+        inst.opr.src0.flags |= RegisterFlags::Absolute;
+    }
+
+    inst.opr.src1.flags = decode_modifier(src1_mod);
+    inst.opr.src2.flags = decode_modifier(src1_mod);
+
+    // Log the instruction
+    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::e_predicate_str(static_cast<ExtPredicate>(pred)), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, dest_mask),
+        disasm::operand_to_str(inst.opr.src0, dest_mask), disasm::operand_to_str(inst.opr.src1, dest_mask), disasm::operand_to_str(inst.opr.src2, dest_mask));
+
+    // Translate the instruction
+    spv::Id vsrc0 = load(inst.opr.src0, dest_mask, 0);
+    spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
+    spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
+
+    if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+        return false;
+    }
+
+    auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
+    auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+
+    store(inst.opr.dest, add_result, dest_mask, 0);
+
+    return true;
+}
+
 bool USSETranslatorVisitor::vdp(
     ExtPredicate pred,
     Imm1 skipinv,

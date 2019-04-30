@@ -290,6 +290,30 @@ public:
         Imm4 src0_swiz,
         Imm6 src0_n);
 
+    bool vmad2(
+        Imm1 dat_fmt,
+        Imm2 pred,
+        Imm1 skipinv,
+        Imm1 src0_swiz_bits2,
+        Imm1 syncstart,
+        Imm1 src0_abs,
+        Imm3 src2_swiz,
+        Imm1 src1_swiz_bit2,
+        Imm1 nosched,
+        Imm4 dest_mask,
+        Imm2 src1_mod,
+        Imm2 src2_mod,
+        Imm1 src0_bank,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm6 dest_n,
+        Imm2 src1_swiz_bits01,
+        Imm2 src0_swiz_bits01,
+        Imm6 src0_n,
+        Imm6 src1_n,
+        Imm6 src2_n);
+        
     bool vnmad32(
         ExtPredicate pred,
         bool skipinv,
