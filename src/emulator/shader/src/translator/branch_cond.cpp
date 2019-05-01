@@ -197,6 +197,7 @@ bool USSETranslatorVisitor::vtst(
     }
 
     Instruction inst {};
+    inst.opcode = test_op;
 
     const Imm4 tb_decode_load_mask[] = {
         0b0001,
@@ -226,60 +227,68 @@ bool USSETranslatorVisitor::vtst(
     inst.opr.src2.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
     // Load our compares
-    const spv::Id lhs = load(inst.opr.src1, load_mask);
-    const spv::Id rhs = load(inst.opr.src2, load_mask);
+    spv::Id lhs = spv::NoResult;
+    spv::Id rhs = spv::NoResult;
 
     spv::Id pred_result = m_b.makeBoolConstant(true);
     
+    // Zero test number:
+    // 0 - alway pass
+    // 1 - zero
+    // 2 - non-zero
+    const bool compare_include_equal = (zero_test == 1);
+
+    // Sign test number
+    const spv::Op tb_comp_ops[2][4] = {
+        {
+            spv::OpFOrdNotEqual,
+            spv::OpFOrdLessThan,
+            spv::OpFOrdGreaterThan,
+            spv::OpAll
+        },
+        {
+            spv::OpFOrdEqual,
+            spv::OpFOrdLessThanEqual,
+            spv::OpFOrdGreaterThanEqual,
+            spv::OpAll
+        }
+    };
+    
+    const spv::Op used_comp_op = tb_comp_ops[compare_include_equal][sign_test];
+
+    // Optimize this case. Alternative name is CMP.
+    const char *tb_comp_str[2][4] = {
+        {
+            "ne",
+            "lt",
+            "gt",
+            "inv"
+        },
+        {
+            "equal",
+            "le",
+            "ge",
+            "inv"
+        }
+    };
+
+    const char *used_comp_str = tb_comp_str[compare_include_equal][sign_test];
+    
     if (test_op == Opcode::VSUB || test_op == Opcode::VF16SUB) {
-        // Optimize this case. Alternative name is CMP.
-        // Zero test number:
-        // 0 - alway pass
-        // 1 - zero
-        // 2 - non-zero
-        const bool compare_include_equal = (zero_test == 1);
-
-        // Sign test number
-        const spv::Op tb_comp_ops[2][4] = {
-            {
-                spv::OpAny,
-                spv::OpFOrdLessThan,
-                spv::OpFOrdGreaterThan,
-                spv::OpAll
-            },
-            {
-                spv::OpFOrdEqual,
-                spv::OpFOrdLessThanEqual,
-                spv::OpFOrdGreaterThanEqual,
-                spv::OpAll
-            }
-        };
-
-        const char *tb_comp_str[2][4] = {
-            {
-                "alwaystrue",
-                "lt",
-                "gt",
-                "inv"
-            },
-            {
-                "equal",
-                "le",
-                "ge",
-                "inv"
-            }
-        };
-
-        const spv::Op used_comp_op = tb_comp_ops[compare_include_equal][sign_test];
-        const char *used_comp_str = tb_comp_str[compare_include_equal][sign_test];
-
         LOG_DISASM("{:016x}: {}{}.{}.{} p{} {} {}", m_instr, disasm::e_predicate_str(pred), "CMP", used_comp_str, disasm::data_type_str(load_data_type),
             pdst_n, disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
 
-        pred_result = m_b.createOp(used_comp_op, m_b.makeBoolType(), { lhs, rhs });
+        lhs = load(inst.opr.src1, load_mask);
+        rhs = load(inst.opr.src2, load_mask);
     } else {
-        LOG_WARN("Tested instructions other than SUB are not supported, automatically set p{} to true", pdst_n);
+        LOG_DISASM("{:016x}: {}{}.{}zero.{} p{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(test_op), used_comp_str, disasm::data_type_str(load_data_type),
+            pdst_n, disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
+        
+        lhs = do_alu_op(inst, load_mask);
+        rhs = const_f32_v0[m_b.getNumComponents(lhs)];
     }
+
+    pred_result = m_b.createOp(used_comp_op, m_b.makeBoolType(), { lhs, rhs });
 
     set_predicate(pdst_n, pred_result);
     return true;
