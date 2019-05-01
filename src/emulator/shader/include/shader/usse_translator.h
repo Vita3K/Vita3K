@@ -212,6 +212,8 @@ private:
 
     bool m_second_program{ false };
 
+    spv::Id do_alu_op(Instruction &inst, const Imm4 dest_mask);
+
 public:
     void set_secondary_program(const bool is_it) {
         m_second_program = is_it;

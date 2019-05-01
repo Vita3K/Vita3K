@@ -281,7 +281,7 @@ bool USSETranslatorVisitor::vdp(
     Imm3 src0_swiz_x,
     Imm6 src0_n)
 {
-    Instruction inst{};
+    Instruction inst;
 
     // Is this VDP3 or VDP4, op2 = 0 => vec3
     int type = 2;
@@ -294,10 +294,13 @@ bool USSETranslatorVisitor::vdp(
 
     // Double regs always true for src0, dest
     inst.opr.src0 = decode_src12(src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
+    inst.opr.src0.index = 0;
+
     inst.opr.dest = decode_dest(dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
 
     inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
     inst.opr.src1.num = gpi0_n;
+    inst.opr.src1.index = 1;
 
     inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swiz, false, type);
 
@@ -346,6 +349,71 @@ bool USSETranslatorVisitor::vdp(
     END_REPEAT()
 
     return true;
+}
+
+spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask) {
+    inst.opr.src1.index = 1;
+    inst.opr.src2.index = 2;
+    
+    spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
+    spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
+
+    if (vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+        LOG_WARN("Could not find a src register");
+        return spv::NoResult;
+    }
+
+    spv::Id result = spv::NoResult;
+    spv::Id source_type = m_b.getTypeId(vsrc1);
+
+    switch (inst.opcode) {
+    case Opcode::VADD:
+    case Opcode::VF16ADD: {
+        result = m_b.createBinOp(spv::OpFAdd, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::VMUL:
+    case Opcode::VF16MUL: {
+        result = m_b.createBinOp(spv::OpFMul, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::VMIN:
+    case Opcode::VF16MIN: {
+        result = m_b.createBuiltinCall(source_type, std_builtins, GLSLstd450FMin, { vsrc1, vsrc2 });
+        break;
+    }
+
+    case Opcode::VMAX:
+    case Opcode::VF16MAX: {
+        result = m_b.createBuiltinCall(source_type, std_builtins, GLSLstd450FMax, { vsrc1, vsrc2 });
+        break;
+    }
+
+    case Opcode::VFRC:
+    case Opcode::VF16FRC: {
+        // Dest = Source1 - Floor(Source2)
+        // If two source are identical, let's use the fractional function
+        if (inst.opr.src1.is_same(inst.opr.src2, dest_mask)) {
+            result = m_b.createBuiltinCall(source_type, std_builtins, GLSLstd450Fract, { vsrc1 });
+        } else {
+            // We need to floor source 2
+            spv::Id source2_floored = m_b.createBuiltinCall(source_type, std_builtins, GLSLstd450Floor, { vsrc2 });
+            // Then subtract source 1 with the floored source 2. TADA!
+            result = m_b.createBinOp(spv::OpFSub, source_type, vsrc1, source2_floored);
+        }
+
+        break;
+    }
+
+    default: {
+        LOG_ERROR("Unimplemented ALU opcode instruction: {}", disasm::opcode_str(inst.opcode));
+        break;
+    }
+    }
+
+    return result;
 }
 
 bool USSETranslatorVisitor::vnmad32(
@@ -406,8 +474,10 @@ bool USSETranslatorVisitor::vnmad32(
     inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, true, 7, m_second_program);
     inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
     inst.opr.src1.flags = decode_modifier(src1_mod);
+    inst.opr.src1.index = 1;
 
     inst.opr.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
+    inst.opr.src2.index = 2;
 
     if (src2_mod == 1) {
         inst.opr.src2.flags = RegisterFlags::Absolute;
@@ -452,62 +522,8 @@ bool USSETranslatorVisitor::vnmad32(
 
     m_b.setLine(usse::instr_idx);
 
-    spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
-    spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
-
-    if (vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
-        LOG_WARN("Could not find a src register");
-        return false;
-    }
-
-    spv::Id result = spv::NoResult;
-
-    switch (opcode) {
-    case Opcode::VADD:
-    case Opcode::VF16ADD: {
-        result = m_b.createBinOp(spv::OpFAdd, type_f32_v[dest_comp_count], vsrc1, vsrc2);
-        break;
-    }
-
-    case Opcode::VMUL:
-    case Opcode::VF16MUL: {
-        result = m_b.createBinOp(spv::OpFMul, type_f32_v[dest_comp_count], vsrc1, vsrc2);
-        break;
-    }
-
-    case Opcode::VMIN:
-    case Opcode::VF16MIN: {
-        result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMin, { vsrc1, vsrc2 });
-        break;
-    }
-
-    case Opcode::VMAX:
-    case Opcode::VF16MAX: {
-        result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450FMax, { vsrc1, vsrc2 });
-        break;
-    }
-
-    case Opcode::VFRC:
-    case Opcode::VF16FRC: {
-        // Dest = Source1 - Floor(Source2)
-        // If two source are identical, let's use the fractional function
-        if (inst.opr.src1.is_same(inst.opr.src2, dest_mask)) {
-            result = m_b.createBuiltinCall(m_b.getTypeId(vsrc1), std_builtins, GLSLstd450Fract, { vsrc1 });
-        } else {
-            // We need to floor source 2
-            spv::Id source2_floored = m_b.createBuiltinCall(m_b.getTypeId(vsrc2), std_builtins, GLSLstd450Floor, { vsrc2 });
-            // Then subtract source 1 with the floored source 2. TADA!
-            result = m_b.createBinOp(spv::OpFSub, m_b.getTypeId(vsrc1), vsrc1, source2_floored);
-        }
-
-        break;
-    }
-
-    default: {
-        LOG_ERROR("Unimplemented vnmad instruction: {}", disasm::opcode_str(opcode));
-        break;
-    }
-    }
+    inst.opcode = opcode;
+    spv::Id result = do_alu_op(inst, dest_mask);
 
     if (result != spv::NoResult) {
         store(inst.opr.dest, result, dest_mask, 0);
@@ -638,7 +654,15 @@ bool USSETranslatorVisitor::vcomp(
         switch (op) {
         case Opcode::VRCP: {
             // We have to manually divide by 1
-            result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), const_f32[1], result);
+            const int num_comp = m_b.getNumComponents(result);
+            const spv::Id one_const = m_b.makeFloatConstant(1.0f);
+
+            std::vector<spv::Id> ones;
+            ones.insert(ones.begin(), num_comp, one_const);
+
+            spv::Id one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], ones);
+
+            result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), one_v, result);
             break;
         }
 

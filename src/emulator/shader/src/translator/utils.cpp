@@ -271,6 +271,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
     const uint32_t src1_comp_count = m_b.getNumTypeComponents(src1.type_id);
     const uint32_t src2_comp_count = m_b.getNumTypeComponents(src2.type_id);
     const uint32_t total_comp_count = src1_comp_count + src2_comp_count;
+    std::unordered_map<std::uint32_t, bool> already;
 
     for (int i = 0; i < std::min(4, static_cast<int>(total_comp_count)); i++) {
         if (dest_mask & (1 << i)) {
@@ -283,9 +284,14 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
 
                 if (size_comp != 4) {
                     swizz_off = swizz_off / static_cast<std::uint32_t>(size_comp);
+                    
+                    if (!already[swizz_off]) {
+                        ops.push_back(std::min(swizz_off, total_comp_count));
+                        already[swizz_off] = true;
+                    }
+                } else {
+                    ops.push_back(std::min(swizz_off, total_comp_count));
                 }
-
-                ops.push_back(std::min(swizz_off, total_comp_count));
 
                 break;
             }
@@ -452,6 +458,19 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
             dest_comp_count_to_get++;
             already[i * size_comp / 4] = true;
         }
+    }
+
+    // TODO: Properly handle
+    if (op.bank == RegisterBank::IMMEDIATE) {
+        auto t = m_b.makeVectorType(type_f32, static_cast<int>(dest_comp_count_to_get));
+        auto one = m_b.makeFpConstant(type_f32, 1.0);
+
+        std::vector<spv::Id> ops;
+        ops.resize(dest_comp_count_to_get);
+
+        std::fill(ops.begin(), ops.end(), one);
+
+        return m_b.makeCompositeConstant(t, ops);
     }
 
     // Composite a new vector

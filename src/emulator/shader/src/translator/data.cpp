@@ -53,7 +53,7 @@ bool USSETranslatorVisitor::vmov(
     Imm6 src0_n,
     Imm6 src1_n,
     Imm6 src2_n) {
-    Instruction inst{};
+    Instruction inst;
 
     static const Opcode tb_decode_vmov[] = {
         Opcode::VMOV,

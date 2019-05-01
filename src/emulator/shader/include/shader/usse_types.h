@@ -225,6 +225,12 @@ struct Instruction {
     uint32_t flags;
     Imm4 dest_mask;
     RepeatCount repeat_count{ RepeatCount::REPEAT_0 };
+
+    Instruction()
+        : opr()
+        , flags(0)
+        , dest_mask(0) {
+    }
 };
 
 enum class ShaderPhase {
