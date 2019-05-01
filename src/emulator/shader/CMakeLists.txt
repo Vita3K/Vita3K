@@ -37,5 +37,5 @@ add_executable(
 )
 
 target_include_directories(shader-tests PRIVATE include)
-target_link_libraries(shader-tests PRIVATE googletest util)
+target_link_libraries(shader-tests PRIVATE googletest shader util)
 add_test(NAME shader COMMAND shader-tests)
