@@ -19,6 +19,7 @@
 
 #include <gui/state.h>
 #include <host/version.h>
+#include <psp2/system_param.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -98,6 +99,7 @@ bool serialize(Config &cfg) {
     config_file_emit_single(emitter, "show-gui", cfg.show_gui);
     config_file_emit_single(emitter, "icon-size", cfg.icon_size);
     config_file_emit_single(emitter, "archive-log", cfg.archive_log);
+    config_file_emit_single(emitter, "sys-lang", cfg.sys_lang);
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_optional_single(emitter, "log-level", cfg.log_level);
     config_file_emit_optional_single(emitter, "pref-path", cfg.pref_path);
@@ -134,6 +136,7 @@ static bool deserialize(Config &cfg) {
     get_yaml_value(config_node, "show-gui", &cfg.show_gui, false);
     get_yaml_value(config_node, "icon-size", &cfg.icon_size, static_cast<int>(gui::ICON_SIZE_DEFAULT));
     get_yaml_value(config_node, "archive-log", &cfg.archive_log, false);
+    get_yaml_value(config_node, "sys-lang", &cfg.sys_lang, static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US));
     get_yaml_value_optional(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value_optional(config_node, "pref-path", &cfg.pref_path);
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
