@@ -221,8 +221,8 @@ bool USSETranslatorVisitor::vmad2(
     };
 
     inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    inst.opr.src0.swizzle = tb_decode_src0_swiz[(src0_swiz_bits01 << 1 | src0_swiz_bits2)];
-    inst.opr.src1.swizzle = tb_decode_src1_swiz[(src1_swiz_bits01 << 1 | src1_swiz_bit2)];
+    inst.opr.src0.swizzle = tb_decode_src0_swiz[(src0_swiz_bits01 | src0_swiz_bits2 << 1)];
+    inst.opr.src1.swizzle = tb_decode_src1_swiz[(src1_swiz_bits01 | src1_swiz_bit2 << 1)];
     inst.opr.src2.swizzle = tb_decode_src2_swiz[src2_swiz];
 
     // Decode modifiers
