@@ -273,9 +273,13 @@ EXPORT(int, sceAppUtilStoreBrowse) {
 }
 
 EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
+    auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
+    if (sys_lang > SCE_SYSTEM_PARAM_LANG_TURKISH)
+        sys_lang = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
+
     switch (paramId) {
     case SCE_SYSTEM_PARAM_ID_LANG:
-        *value = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
+        *value = sys_lang;
         return 0;
     case SCE_SYSTEM_PARAM_ID_ENTER_BUTTON:
         *value = SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS;
