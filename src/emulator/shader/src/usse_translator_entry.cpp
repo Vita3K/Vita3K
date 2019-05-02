@@ -518,7 +518,7 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
     }
   }
 
-  if ((cur_pc >= count - 1 || (block.offset == 0 && block.size == 0)) && !visitor.is_translating_secondary_program()) {
+  if (block.offset + block.size >= count && !visitor.is_translating_secondary_program()) {
     // We reach the end, for whatever the current block is.
     // Emit non native frag output if neccessary first
     if (program->get_type() == emu::Fragment && !program->is_native_color()) {
