@@ -126,5 +126,8 @@ namespace shader::usse {
                 block = blocks_queue.front();
             }
         }
+
+        // Add dummy block
+        handler_func({ end_offset + 1, 0, 0, - 1 });
     }
 }
