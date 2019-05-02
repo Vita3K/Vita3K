@@ -19,11 +19,11 @@
 #include "config.h"
 #include "screen_render.h"
 
-#include <gdbstub/functions.h>
 #include <gui/functions.h>
 #include <host/state.h>
 #include <host/version.h>
 #include <shader/spirv_recompiler.h>
+#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -32,7 +32,13 @@
 #include <cstdlib>
 
 int main(int argc, char *argv[]) {
-    logging::init();
+    Root root_paths;
+    fs::path base_path{ SDL_GetBasePath() };
+    root_paths.set_base_path(base_path);
+    fs::path pref_path{ SDL_GetPrefPath(org_name, app_name) };
+    root_paths.set_pref_path(pref_path);
+
+    logging::init(root_paths);
 
     Config cfg{};
     const config::InitResult ret = config::init(cfg, argc, argv);
@@ -83,7 +89,7 @@ int main(int argc, char *argv[]) {
     }
 
     HostState host;
-    if (!init(host, std::move(cfg))) {
+    if (!init(host, std::move(cfg), root_paths)) {
         error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }

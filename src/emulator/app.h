@@ -24,6 +24,7 @@ struct HostState;
 struct SDL_Window;
 template <class T>
 class Ptr;
+class Root;
 
 enum ExitCode {
     Success = 0,
@@ -48,7 +49,7 @@ enum class AppRunType {
     Vpk,
 };
 
-bool init(HostState &state, Config cfg);
+bool init(HostState &state, Config cfg, const Root &root_paths);
 void update_viewport(HostState &state);
 bool handle_events(HostState &host);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);

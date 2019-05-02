@@ -18,12 +18,13 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
+#include <util/fs.h>
 
 #include <type_traits>
 
 namespace logging {
 
-void init();
+void init(const Root &root_paths);
 void set_level(spdlog::level::level_enum log_level);
 void add_sink(std::wstring log_path);
 
