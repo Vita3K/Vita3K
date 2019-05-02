@@ -30,6 +30,7 @@ struct Config {
     optional<std::string> run_title_id;
     optional<std::string> recompile_shader_path;
     optional<int> log_level;
+    int sys_button;
     int sys_lang;
     bool log_imports = false;
     bool log_exports = false;
