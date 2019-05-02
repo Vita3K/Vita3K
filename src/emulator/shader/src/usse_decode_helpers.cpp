@@ -268,7 +268,7 @@ static void finalize_register(Operand &reg, bool is_double_regs, uint8_t reg_bit
 
     // In secondary program, data are computed and stored as SA, internal register stay the same.
     // TODO: Constant ?
-    if (reg.bank != RegisterBank::FPINTERNAL && is_second_program)
+    if (reg.bank != RegisterBank::FPINTERNAL && reg.bank != RegisterBank::FPCONSTANT && is_second_program)
         reg.bank = RegisterBank::SECATTR;
 }
 
