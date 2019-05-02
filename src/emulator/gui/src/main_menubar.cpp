@@ -40,31 +40,10 @@ static void draw_debug_menu(DebugMenuState &state) {
     }
 }
 
-static void draw_config_menu(HostState &host) {
+static void draw_config_menu(ConfigurationMenuState &state) {
     if (ImGui::BeginMenu("Configuration")) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-        if (ImGui::BeginMenu("Emulated Console")) {
-            if (ImGui::MenuItem("PS Vita", nullptr, !host.cfg.pstv_mode)) {
-                host.cfg.pstv_mode = false;
-            }
-            if (ImGui::MenuItem("PS TV", nullptr, host.cfg.pstv_mode)) {
-                host.cfg.pstv_mode = true;
-            }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("GUI")) {
-            ImGui::MenuItem("Enable", nullptr, &host.cfg.show_gui);
-            ImGui::EndMenu();
-        }
-        ImGui::PopStyleColor();
-        ImGui::EndMenu();
-    }
-}
-
-static void draw_optimisation_menu(OptimisationMenuState &state) {
-    if (ImGui::BeginMenu("Optimisation")) {
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-        ImGui::MenuItem("Texture Cache", nullptr, &state.texture_cache);
+        ImGui::MenuItem("Settings", nullptr, &state.settings_dialog);
         ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
@@ -85,8 +64,7 @@ void draw_main_menu_bar(HostState &host) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
         draw_debug_menu(host.gui.debug_menu);
-        draw_config_menu(host);
-        draw_optimisation_menu(host.gui.optimisation_menu);
+        draw_config_menu(host.gui.configuration_menu);
         draw_help_menu(host.gui.help_menu);
 
         ImGui::PopStyleColor();

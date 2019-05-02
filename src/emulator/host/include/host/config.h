@@ -41,8 +41,9 @@ struct Config {
     bool show_gui = false;
     optional<std::string> pref_path;
     bool archive_log = false;
+    bool texture_cache = true;
     optional<bool> wait_for_debugger;
     optional<std::string> background_image;
-    optional<float> background_alpha;
+    float background_alpha;
     int icon_size;
 };
