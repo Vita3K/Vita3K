@@ -463,6 +463,21 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         }
     }
 
+    if (lowest_swizzle_bit == 999) {
+        // This is the default value of the lowest swizzle channel, which means that all of the loadable ones
+        // are constant swizzle channel. Iterates through all of them and build a composite constant
+        std::vector<spv::Id> comps;
+
+        for (int i = 0; i < 4; i++) {
+            if (dest_mask & (1 << i)) {
+                comps.push_back(const_f32[(int)op.swizzle[i] - (int)SwizzleChannel::_0]);
+            }
+        }
+
+        // Create a constant composite
+        return m_b.makeCompositeConstant(type_f32_v[comps.size()], comps);
+    }
+
     // TODO: Properly handle
     if (op.bank == RegisterBank::IMMEDIATE) {
         auto t = m_b.makeVectorType(type_f32, static_cast<int>(dest_comp_count_to_get));
@@ -501,10 +516,20 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     //
     // The lowest swizzle channel is Y, so we will expects to get the variable a as the base first.
 
-    if (!get_spirv_reg(op.bank, op.num, offset + lowest_swizzle_bit, reg_left, comp_offset, false)) {
-        LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
-        return spv::NoResult;
-    }
+    int shift_1 = 0;
+
+    do {
+        if (!get_spirv_reg(op.bank, op.num, offset + shift_1, reg_left, comp_offset, false)) {
+            LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
+            return spv::NoResult;
+        }
+
+        if (reg_left.offset + reg_left.size * size_comp / 4 >= offset + lowest_swizzle_bit) {
+            break;
+        }
+
+        shift_1 += (int)(reg_left.size * size_comp / 4);
+    } while (true);
 
     std::uint32_t size_gotten = m_b.getNumTypeComponents(reg_left.type_id) - comp_offset;
 
@@ -533,7 +558,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         SpirvReg another_one{};
         std::uint32_t temp_comp = 0;
 
-        if (!get_spirv_reg(op.bank, op.num, offset + lowest_swizzle_bit + size_gotten, another_one, temp_comp, false)) {
+        if (!get_spirv_reg(op.bank, op.num, offset + shift_1 + size_gotten, another_one, temp_comp, false)) {
             break;
         }
 
