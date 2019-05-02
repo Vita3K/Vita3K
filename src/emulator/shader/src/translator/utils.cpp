@@ -452,11 +452,14 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     // Default load will get word as default component
     std::size_t dest_comp_count_to_get = 0;
     bool already[4] = { false, false, false, false };
+    int lowest_swizzle_bit = 999;
 
     for (int i = 0; i < 4; i++) {
         if (dest_mask & (1 << i) && (already[i * size_comp / 4] == false)) {
             dest_comp_count_to_get++;
             already[i * size_comp / 4] = true;
+            lowest_swizzle_bit = op.swizzle[i] <= SwizzleChannel::_W ? std::min(lowest_swizzle_bit, (int)op.swizzle[i] - (int)SwizzleChannel::_X) : 
+                lowest_swizzle_bit;
         }
     }
 
@@ -477,9 +480,40 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     SpirvReg reg_left{};
     std::uint32_t comp_offset{};
 
-    if (!get_spirv_reg(op.bank, op.num, offset, reg_left, comp_offset, false)) {
+    // We need to get the left register, that will contains the lowest swizzle we needed.
+    // For example: we need sa24.zw, while the register layouts like this:
+    // sa24: float a;
+    // sa25: float b;
+    // sa26: float c;
+    // sa27: float d;
+    //
+    // Four floats, not in the same vector. In order to build the foundation, to forms the expected result: vec2(c, d), we need
+    // the base first, always be. So we need to first, get the register that contains our lowest swizzle channel Z. That is
+    // the variable c.
+    // 
+    // Swizzle like this: sa24.z1w1, constant swizzle channel will be ignored, so swizzle channel Z still be the lowest swizzle.
+    // We will get the base by getting the register 
+    //
+    // Another example: sa27.zwyz
+    // Where
+    // sa27: vec2 a;
+    // sa28: vec3 b;
+    //
+    // The lowest swizzle channel is Y, so we will expects to get the variable a as the base first.
+
+    if (!get_spirv_reg(op.bank, op.num, offset + lowest_swizzle_bit, reg_left, comp_offset, false)) {
         LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
         return spv::NoResult;
+    }
+
+    std::uint32_t size_gotten = m_b.getNumTypeComponents(reg_left.type_id) - comp_offset;
+
+    if ((dest_comp_count == 1) && size_comp == 4 && size_gotten == 1) {
+        // We don't have to do any transformation.
+        // Because:
+        // The data type required is already 32-bit float, which is the data type we normally process.
+        // There is only one channel, one float to get. No swizzling needed.
+        return m_b.isConstant(reg_left.var_id) ? reg_left.var_id : m_b.createLoad(reg_left.var_id);
     }
 
     if (comp_offset == 0 && is_default(op.swizzle, static_cast<Imm4>(dest_comp_count)) && m_b.getNumTypeComponents(reg_left.type_id) == dest_comp_count_to_get) {
@@ -493,15 +527,13 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         }
     }
 
-    std::uint32_t size_gotten = m_b.getNumTypeComponents(reg_left.type_id) - comp_offset;
-
     std::vector<SpirvReg> to_bridge;
 
     while (size_gotten < dest_comp_count_to_get) {
         SpirvReg another_one{};
         std::uint32_t temp_comp = 0;
 
-        if (!get_spirv_reg(op.bank, op.num, offset + size_gotten, another_one, temp_comp, false)) {
+        if (!get_spirv_reg(op.bank, op.num, offset + lowest_swizzle_bit + size_gotten, another_one, temp_comp, false)) {
             break;
         }
 
