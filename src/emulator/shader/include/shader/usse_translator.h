@@ -174,7 +174,7 @@ private:
      * \returns ID to a vec4 contains bridging results, or spv::NoResult if failed
      * 
     */
-    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask, const std::size_t comp_size = 4);
+    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask);
 
     /*
      * \brief Given an operand, load it and returns a SPIR-V vector with total components count equals to total bit set in

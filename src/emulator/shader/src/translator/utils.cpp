@@ -254,8 +254,7 @@ spv::Id USSETranslatorVisitor::unpack(spv::Id target, const DataType type, Swizz
     return last_shuffled;
 }
 
-spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask,
-    const std::size_t size_comp) {
+spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask) {
     // Queue keep track of components to be modified with given constant
     struct constant_queue_member {
         std::uint32_t index;
@@ -271,7 +270,6 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
     const uint32_t src1_comp_count = m_b.getNumTypeComponents(src1.type_id);
     const uint32_t src2_comp_count = m_b.getNumTypeComponents(src2.type_id);
     const uint32_t total_comp_count = src1_comp_count + src2_comp_count;
-    std::unordered_map<std::uint32_t, bool> already;
 
     for (int i = 0; i < std::min(4, static_cast<int>(total_comp_count)); i++) {
         if (dest_mask & (1 << i)) {
@@ -281,17 +279,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
             case usse::SwizzleChannel::_Z:
             case usse::SwizzleChannel::_W: {
                 std::uint32_t swizz_off = (uint32_t)swiz[i] + shift_offset;
-
-                if (size_comp != 4) {
-                    swizz_off = swizz_off / static_cast<std::uint32_t>(size_comp);
-                    
-                    if (!already[swizz_off]) {
-                        ops.push_back(std::min(swizz_off, total_comp_count));
-                        already[swizz_off] = true;
-                    }
-                } else {
-                    ops.push_back(std::min(swizz_off, total_comp_count));
-                }
+                ops.push_back(std::min(swizz_off, total_comp_count));
 
                 break;
             }
@@ -453,17 +441,21 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     std::size_t dest_comp_count_to_get = 0;
     bool already[4] = { false, false, false, false };
     int lowest_swizzle_bit = 999;
+    int highest_swizzle_bit = -1;
 
     for (int i = 0; i < 4; i++) {
-        if (dest_mask & (1 << i) && (already[i * size_comp / 4] == false)) {
+        const int swizzle_bit = (int)op.swizzle[i] - (int)SwizzleChannel::_X;
+
+        if (dest_mask & (1 << i) && swizzle_bit <= 3 && (already[swizzle_bit * size_comp / 4] == false)) {
             dest_comp_count_to_get++;
-            already[i * size_comp / 4] = true;
-            lowest_swizzle_bit = op.swizzle[i] <= SwizzleChannel::_W ? std::min(lowest_swizzle_bit, (int)op.swizzle[i] - (int)SwizzleChannel::_X) : 
-                lowest_swizzle_bit;
+            already[swizzle_bit * size_comp / 4] = true;
+
+            lowest_swizzle_bit = std::min(lowest_swizzle_bit, swizzle_bit);
+            highest_swizzle_bit = std::max(highest_swizzle_bit, swizzle_bit);
         }
     }
 
-    if (lowest_swizzle_bit == 999) {
+    if (lowest_swizzle_bit == 999 || highest_swizzle_bit == -1) {
         // This is the default value of the lowest swizzle channel, which means that all of the loadable ones
         // are constant swizzle channel. Iterates through all of them and build a composite constant
         std::vector<spv::Id> comps;
@@ -576,9 +568,28 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         }
     }
 
+    // For non-F32 type, we need to make a destination mask to extract neccessary components out
+    // For example: sa6.xz with DataType = f16
+    // Would result at least sa6 and sa7 to be extracted out, since sa6 contains f16 x and y, sa7 contains f16 z and w
+    Imm4 extract_mask = dest_mask;
+    Swizzle4 extract_swizz = op.swizzle;
+
+    if (op.type != DataType::F32) {
+        extract_mask = 0;
+
+        for (int i = 0; i <= highest_swizzle_bit * size_comp / 4; i++) {
+            // Build up an extract mask
+            extract_mask |= (1 << i);
+        }
+
+        // Set default swizzle
+        // We only need to extract, the unpack will do the swizzling job later.
+        extract_swizz = SWIZZLE_CHANNEL_4_DEFAULT;
+    }
+    
     // We need to bridge
     spv::Id first_pass = spv::NoResult;
-    first_pass = bridge(reg_left, to_bridge[0], op.swizzle, comp_offset, dest_mask, size_comp);
+    first_pass = bridge(reg_left, to_bridge[0], extract_swizz, comp_offset, extract_mask);
 
     SpirvReg first_pass_wrapper{};
 
@@ -586,7 +597,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         first_pass_wrapper.type_id = m_b.getTypeId(first_pass);
         first_pass_wrapper.var_id = first_pass;
 
-        first_pass = bridge(first_pass_wrapper, to_bridge[i], op.swizzle, comp_offset, dest_mask, size_comp);
+        first_pass = bridge(first_pass_wrapper, to_bridge[i], extract_swizz, comp_offset, extract_mask);
     }
 
     if (size_comp != 4) {
