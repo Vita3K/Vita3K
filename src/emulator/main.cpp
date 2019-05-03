@@ -23,6 +23,7 @@
 #include <host/state.h>
 #include <host/version.h>
 #include <shader/spirv_recompiler.h>
+#include <util/exit_code.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -33,17 +34,19 @@
 
 int main(int argc, char *argv[]) {
     Root root_paths;
-    fs::path base_path{ SDL_GetBasePath() };
-    root_paths.set_base_path(base_path);
-    fs::path pref_path{ SDL_GetPrefPath(org_name, app_name) };
-    root_paths.set_pref_path(pref_path);
+    root_paths.set_base_path(SDL_GetBasePath());
+    root_paths.set_pref_path(SDL_GetPrefPath(org_name, app_name));
 
-    logging::init(root_paths);
+    if (logging::init(root_paths) != Success)
+        return InitConfigFailed;
 
     Config cfg{};
-    const config::InitResult ret = config::init(cfg, argc, argv);
-    if (ret != config::InitResult::OK)
+    if (const auto err = config::init(cfg, argc, argv) != Success) {
+        if (err == QuitRequested) {
+            return Success;
+        }
         return InitConfigFailed;
+    }
 
     LOG_INFO("{}", window_title);
 
@@ -118,10 +121,9 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    if (auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
+    if (const auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
         return err;
-
-    if (auto err = run_app(host, entry_point) != Success)
+    if (const auto err = run_app(host, entry_point) != Success)
         return err;
 
     gl_screen_renderer gl_renderer;

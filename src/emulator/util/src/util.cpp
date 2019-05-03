@@ -35,51 +35,45 @@ static const fs::path &LOG_FILE_NAME = "vita3k.log";
 static const char *LOG_PATTERN = "%^[%H:%M:%S.%e] |%L| [%!]: %v%$";
 std::vector<spdlog::sink_ptr> sinks;
 
-void init(const Root &root_paths) {
-#ifdef _MSC_VER
-    static constexpr bool LOG_MSVC_OUTPUT = true;
-#endif
-
+ExitCode init(const Root &root_paths) {
     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-    fs::path full_log_path{ root_paths.get_base_path_string() / LOG_FILE_NAME };
 
-    try {
-#ifdef WIN32
-        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(full_log_path.generic_path().wstring(), true));
-#else
-        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(full_log_path.generic_path().string(), true));
-#endif
-    } catch (const spdlog::spdlog_ex &ex) {
-        std::cerr << "File log initialization failed: " << ex.what() << std::endl;
-    }
-
-#ifdef _MSC_VER
-    if (LOG_MSVC_OUTPUT)
-        sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
-#endif
-
-    spdlog::set_default_logger(std::make_shared<spdlog::logger>("vita3k logger", begin(sinks), end(sinks)));
+    if (add_sink(root_paths.get_base_path_string() / LOG_FILE_NAME) != Success)
+        return InitConfigFailed;
 
     spdlog::set_error_handler([](const std::string &msg) {
         std::cerr << "spdlog error: " << msg << std::endl;
     });
 
-    spdlog::set_pattern(LOG_PATTERN);
     spdlog::flush_on(spdlog::level::debug);
+    return Success;
 }
 
 void set_level(spdlog::level::level_enum log_level) {
     spdlog::set_level(log_level);
 }
 
-void add_sink(std::wstring log_path) {
-#ifdef _WIN32
-    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path, true));
+ExitCode add_sink(const fs::path &log_path) {
+    try {
+#ifdef WIN32
+        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path.generic_path().wstring(), true));
 #else
-    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(string_utils::wide_to_utf(log_path), true));
+        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path.generic_path().string(), true));
 #endif
+    } catch (const spdlog::spdlog_ex &ex) {
+        std::cerr << "File log initialization failed: " << ex.what() << std::endl;
+        return InitConfigFailed;
+    }
+
+#ifdef _MSC_VER
+    if (sinks.size() == 2) { // spdlog is being initialized
+        sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
+    }
+#endif
+
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("vita3k logger", begin(sinks), end(sinks)));
     spdlog::set_pattern(LOG_PATTERN);
+    return Success;
 }
 
 } // namespace logging

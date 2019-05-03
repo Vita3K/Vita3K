@@ -151,7 +151,7 @@ static bool deserialize(Config &cfg) {
     return true;
 }
 
-InitResult init(Config &cfg, int argc, char **argv) {
+ExitCode init(Config &cfg, int argc, char **argv) {
     deserialize(cfg);
 
     try {
@@ -212,11 +212,11 @@ InitResult init(Config &cfg, int argc, char **argv) {
         // Handle some basic args
         if (var_map.count("help")) {
             std::cout << visible << std::endl;
-            return InitResult::QUIT;
+            return QuitRequested;
         }
         if (var_map.count("version")) {
             std::cout << window_title << std::endl;
-            return InitResult::QUIT;
+            return QuitRequested;
         }
 
         logging::set_level(static_cast<spdlog::level::level_enum>(*cfg.log_level));
@@ -239,15 +239,15 @@ InitResult init(Config &cfg, int argc, char **argv) {
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";
-        return InitResult::INCORRECT_ARGS;
+        return InitConfigFailed;
     } catch (...) {
         std::cerr << "Exception of unknown type!\n";
-        return InitResult::INCORRECT_ARGS;
+        return InitConfigFailed;
     }
 
     // Save any changes made in command-line arguments
     serialize(cfg);
-    return InitResult::OK;
+    return Success;
 }
 
 } // namespace config

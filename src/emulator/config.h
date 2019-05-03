@@ -18,14 +18,9 @@
 #pragma once
 
 #include <host/config.h>
+#include <util/exit_code.h>
 
 namespace config {
-
-enum class InitResult {
-    OK,
-    QUIT,
-    INCORRECT_ARGS,
-};
 
 /*
  * \brief Save emulator config to a YML file.
@@ -38,8 +33,8 @@ bool serialize(Config &cfg);
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
   *        --help, --version, --log-level
   * \param cfg Config options are returned via this parameter.
-  * \return True on success, false on error.
+  * \return Success for completion, QuitRequest if Help or Version is requested, otherwise Error.
   */
-InitResult init(Config &cfg, int argc, char **argv);
+ExitCode init(Config &cfg, int argc, char **argv);
 
 } // namespace config

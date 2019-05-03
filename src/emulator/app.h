@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <util/exit_code.h>
+
 #include <string>
 
 struct Config;
@@ -25,19 +27,6 @@ struct SDL_Window;
 template <class T>
 class Ptr;
 class Root;
-
-enum ExitCode {
-    Success = 0,
-    InitConfigFailed,
-    SDLInitFailed,
-    HostInitFailed,
-    RendererInitFailed,
-    ModuleLoadFailed,
-    InitThreadFailed,
-    RunThreadFailed,
-    InvalidApplicationPath,
-    QuitRequested
-};
 
 /// Describes the state of the application to be run
 enum class AppRunType {

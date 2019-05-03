@@ -19,7 +19,6 @@
 
 #include "sfo.h"
 
-#include <gdbstub/functions.h>
 #include <gui/functions.h>
 #include <gui/imgui_impl_sdl_gl3.h>
 #include <host/functions.h>
@@ -43,8 +42,6 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
-#include <istream>
-#include <iterator>
 #include <sstream>
 
 static const char *EBOOT_PATH = "eboot.bin";
@@ -240,13 +237,13 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     return true;
 }
 
-static bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
+static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, const AppRunType run_type) {
     if (path.empty())
-        return false;
+        return InvalidApplicationPath;
 
     if (run_type == AppRunType::Vpk) {
         if (!install_vpk(entry_point, host, path)) {
-            return false;
+            return FileNotFound;
         }
     } else if (run_type == AppRunType::Extracted) {
         host.io.title_id = string_utils::wide_to_utf(path);
@@ -254,7 +251,7 @@ static bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const s
 
     vfs::FileBuffer params;
     if (!vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
-        return false;
+        return FileNotFound;
     }
 
     load_sfo(host.sfo_handle, params);
@@ -265,28 +262,11 @@ static bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const s
     find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
 
     if (host.cfg.archive_log) {
-        fs::create_directory(std::string(host.base_path) + "/logs");
-        try {
-            std::string game_title = string_utils::remove_special_chars(host.game_title);
-            const auto log_name = fmt::format("{} - [{}].log", game_title, host.io.title_id);
-#ifdef WIN32
-            wchar_t buffer[MAX_PATH];
-            GetModuleFileNameW(NULL, buffer, MAX_PATH);
-            std::string::size_type pos = std::wstring(buffer).find_last_of(L"\\\\");
-            std::wstring path = std::wstring(buffer).substr(0, pos);
-
-            if (!path.empty()) {
-                const auto full_log_path = path + L"\\" + L"\\logs\\" + string_utils::utf_to_wide(log_name);
-                logging::add_sink(full_log_path);
-            } else {
-                std::cerr << "failed to get working directory" << std::endl;
-            }
-#else
-            logging::add_sink(string_utils::utf_to_wide(log_name));
-#endif
-        } catch (const spdlog::spdlog_ex &ex) {
-            std::cerr << "File log initialization failed: " << ex.what() << std::endl;
-        }
+        const fs::path log_directory{ host.base_path + "/logs" };
+        fs::create_directory(log_directory);
+        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.game_title) + " - [" + host.io.title_id + "].log") };
+        if (logging::add_sink(log_name) != Success)
+            return InitConfigFailed;
     }
 
     std::string category;
@@ -317,7 +297,7 @@ static bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const s
                 const auto module_name = module->module_name;
                 LOG_INFO("Pre-load module {} (at \"{}\") loaded", module_name, module_path);
             } else
-                return false;
+                return FileNotFound;
         } else {
             LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
         }
@@ -333,20 +313,20 @@ static bool load_app_impl(Ptr<const void> &entry_point, HostState &host, const s
 
             LOG_INFO("Main executable {} ({}) loaded", module_name, EBOOT_PATH);
         } else
-            return false;
+            return FileNotFound;
     } else
-        return false;
+        return FileNotFound;
 
-    return true;
+    return Success;
 }
 
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type) {
-    if (!load_app_impl(entry_point, host, path, run_type)) {
+ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, const AppRunType run_type) {
+    if (load_app_impl(entry_point, host, path, run_type) != Success) {
         std::string message = "Failed to load \"";
         message += string_utils::wide_to_utf(path);
         message += "\"";
         message += "\nSee console output for details.";
-        error_dialog(message.c_str(), host.window.get());
+        error_dialog(message, host.window.get());
         return ModuleLoadFailed;
     }
 
