@@ -30,6 +30,7 @@ struct Config {
     optional<std::string> run_title_id;
     optional<std::string> recompile_shader_path;
     optional<int> log_level;
+    int sys_button;
     int sys_lang;
     bool log_imports = false;
     bool log_exports = false;
@@ -40,8 +41,9 @@ struct Config {
     bool show_gui = false;
     optional<std::string> pref_path;
     bool archive_log = false;
+    bool texture_cache = true;
     optional<bool> wait_for_debugger;
     optional<std::string> background_image;
-    optional<float> background_alpha;
+    float background_alpha;
     int icon_size;
 };

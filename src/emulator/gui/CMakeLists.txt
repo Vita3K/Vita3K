@@ -15,6 +15,7 @@ src/mutexes_dialog.cpp
 src/private.h
 src/reinstall.cpp
 src/semaphores_dialog.cpp
+src/settings_dialog.cpp
 src/threads_dialog.cpp
 src/controls_dialog.cpp
 src/allocations_dialog.cpp
@@ -22,5 +23,5 @@ src/disassembly_dialog.cpp
 src/about_dialog.cpp
 )
 
-target_include_directories(gui PUBLIC include)
+target_include_directories(gui PUBLIC ${PROJECT_SOURCE_DIR}/src/emulator include)
 target_link_libraries(gui PUBLIC sdl2 stb imgui glutil host kernel cpu util dialog)

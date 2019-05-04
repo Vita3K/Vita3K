@@ -67,8 +67,8 @@ struct DebugMenuState {
     bool disassembly_dialog = false;
 };
 
-struct OptimisationMenuState {
-    bool texture_cache = true;
+struct ConfigurationMenuState {
+    bool settings_dialog = false;
 };
 
 struct HelpMenuState {
@@ -79,7 +79,7 @@ struct HelpMenuState {
 struct State {
     bool renderer_focused = true;
     DebugMenuState debug_menu;
-    OptimisationMenuState optimisation_menu;
+    ConfigurationMenuState configuration_menu;
     HelpMenuState help_menu;
     DialogState common_dialog;
     GamesSelector game_selector;
@@ -101,14 +101,6 @@ struct State {
     ImFont *normal_font{};
     ImFont *monospaced_font{};
     std::vector<char> font_data;
-};
-
-enum IconSize {
-    ICON_SIZE_SMALL,
-    ICON_SIZE_DEFAULT,
-    ICON_SIZE_MEDIUM,
-    ICON_SIZE_LARGE,
-    ICON_SIZE_ORIGINAL,
 };
 
 } // namespace gui

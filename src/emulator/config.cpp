@@ -17,7 +17,6 @@
 
 #include "config.h"
 
-#include <gui/state.h>
 #include <host/version.h>
 #include <psp2/system_param.h>
 #include <util/log.h>
@@ -99,13 +98,15 @@ bool serialize(Config &cfg) {
     config_file_emit_single(emitter, "show-gui", cfg.show_gui);
     config_file_emit_single(emitter, "icon-size", cfg.icon_size);
     config_file_emit_single(emitter, "archive-log", cfg.archive_log);
+    config_file_emit_single(emitter, "texture-cache", cfg.texture_cache);
+    config_file_emit_single(emitter, "sys-button", cfg.sys_button);
     config_file_emit_single(emitter, "sys-lang", cfg.sys_lang);
+    config_file_emit_single(emitter, "background-alpha", cfg.background_alpha);
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_optional_single(emitter, "log-level", cfg.log_level);
     config_file_emit_optional_single(emitter, "pref-path", cfg.pref_path);
     config_file_emit_optional_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
     config_file_emit_optional_single(emitter, "background-image", cfg.background_image);
-    config_file_emit_optional_single(emitter, "background-alpha", cfg.background_alpha);
 
     emitter << YAML::EndMap;
 
@@ -134,14 +135,16 @@ static bool deserialize(Config &cfg) {
     get_yaml_value(config_node, "log-uniforms", &cfg.log_uniforms, false);
     get_yaml_value(config_node, "pstv-mode", &cfg.pstv_mode, false);
     get_yaml_value(config_node, "show-gui", &cfg.show_gui, false);
-    get_yaml_value(config_node, "icon-size", &cfg.icon_size, static_cast<int>(gui::ICON_SIZE_DEFAULT));
+    get_yaml_value(config_node, "icon-size", &cfg.icon_size, static_cast<int>(64));
     get_yaml_value(config_node, "archive-log", &cfg.archive_log, false);
+    get_yaml_value(config_node, "texture-cache", &cfg.texture_cache, true);
+    get_yaml_value(config_node, "sys-button", &cfg.sys_button, static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS));
     get_yaml_value(config_node, "sys-lang", &cfg.sys_lang, static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US));
+    get_yaml_value(config_node, "background-alpha", &cfg.background_alpha, 0.000f);
     get_yaml_value_optional(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value_optional(config_node, "pref-path", &cfg.pref_path);
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
     get_yaml_value_optional(config_node, "background-image", &cfg.background_image);
-    get_yaml_value_optional(config_node, "background-alpha", &cfg.background_alpha);
 
     // lle-modules
     try {

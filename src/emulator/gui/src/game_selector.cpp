@@ -33,8 +33,7 @@ void draw_game_selector(HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiSetCond_Always);
-    if (host.cfg.background_alpha)
-        ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha.value());
+    ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     static ImGuiTextFilter search_bar;
@@ -44,18 +43,7 @@ void draw_game_selector(HostState &host) {
             ImVec2(0, 0), display_size);
     }
 
-    constexpr float default_icon_scale = 64.0f;
-    float icon_scale = default_icon_scale;
-
-    const auto icon_size = static_cast<gui::IconSize>(host.cfg.icon_size);
-    switch (icon_size) {
-    case ICON_SIZE_SMALL: icon_scale = icon_scale / 2; break;
-    case ICON_SIZE_DEFAULT: break;
-    case ICON_SIZE_MEDIUM: icon_scale = icon_scale + 16; break;
-    case ICON_SIZE_LARGE: icon_scale = icon_scale + 32; break;
-    case ICON_SIZE_ORIGINAL: icon_scale = icon_scale * 2; break;
-    default: break;
-    }
+    static int &icon_size = host.cfg.icon_size;
 
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
@@ -63,7 +51,7 @@ void draw_game_selector(HostState &host) {
         ImGui::SetWindowFontScale(1.1f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         ImGui::Button("Icon"); // Button to fit style, does nothing.
-        ImGui::SetColumnWidth(0, icon_scale + /* padding */ 20);
+        ImGui::SetColumnWidth(0, icon_size + /* padding */ 20);
         ImGui::NextColumn();
         std::string title_id_label = "TitleID";
         switch (host.gui.game_selector.title_id_sort_state) {
@@ -181,16 +169,16 @@ void draw_game_selector(HostState &host) {
                 continue;
             if (host.gui.game_selector.icons[game.title_id]) {
                 GLuint texture = host.gui.game_selector.icons[game.title_id].get();
-                if (ImGui::ImageButton(reinterpret_cast<void *>(texture), ImVec2(icon_scale, icon_scale))) {
+                if (ImGui::ImageButton(reinterpret_cast<void *>(texture), ImVec2(icon_size, icon_size))) {
                     selected[0] = true;
                 }
             }
             ImGui::NextColumn();
-            ImGui::Selectable(game.title_id.c_str(), &selected[1], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_scale));
+            ImGui::Selectable(game.title_id.c_str(), &selected[1], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
-            ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_scale));
+            ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
-            ImGui::Selectable(game.title.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_scale));
+            ImGui::Selectable(game.title.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
             if (std::find(std::begin(selected), std::end(selected), true) != std::end(selected)) {
                 host.gui.game_selector.selected_title_id = game.title_id;
