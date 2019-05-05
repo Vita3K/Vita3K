@@ -96,17 +96,18 @@ bool serialize(Config &cfg) {
     config_file_emit_single(emitter, "log-uniforms", cfg.log_uniforms);
     config_file_emit_single(emitter, "pstv-mode", cfg.pstv_mode);
     config_file_emit_single(emitter, "show-gui", cfg.show_gui);
+    config_file_emit_single(emitter, "show-game-background", cfg.show_game_background);
     config_file_emit_single(emitter, "icon-size", cfg.icon_size);
     config_file_emit_single(emitter, "archive-log", cfg.archive_log);
     config_file_emit_single(emitter, "texture-cache", cfg.texture_cache);
     config_file_emit_single(emitter, "sys-button", cfg.sys_button);
     config_file_emit_single(emitter, "sys-lang", cfg.sys_lang);
+    config_file_emit_single(emitter, "background-image", cfg.background_image);
     config_file_emit_single(emitter, "background-alpha", cfg.background_alpha);
+    config_file_emit_single(emitter, "log-level", cfg.log_level);
+    config_file_emit_single(emitter, "pref-path", cfg.pref_path);
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
-    config_file_emit_optional_single(emitter, "log-level", cfg.log_level);
-    config_file_emit_optional_single(emitter, "pref-path", cfg.pref_path);
     config_file_emit_optional_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
-    config_file_emit_optional_single(emitter, "background-image", cfg.background_image);
 
     emitter << YAML::EndMap;
 
@@ -135,16 +136,17 @@ static bool deserialize(Config &cfg) {
     get_yaml_value(config_node, "log-uniforms", &cfg.log_uniforms, false);
     get_yaml_value(config_node, "pstv-mode", &cfg.pstv_mode, false);
     get_yaml_value(config_node, "show-gui", &cfg.show_gui, false);
+    get_yaml_value(config_node, "show-game-background", &cfg.show_game_background, true);
     get_yaml_value(config_node, "icon-size", &cfg.icon_size, static_cast<int>(64));
     get_yaml_value(config_node, "archive-log", &cfg.archive_log, false);
     get_yaml_value(config_node, "texture-cache", &cfg.texture_cache, true);
     get_yaml_value(config_node, "sys-button", &cfg.sys_button, static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS));
     get_yaml_value(config_node, "sys-lang", &cfg.sys_lang, static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US));
+    get_yaml_value(config_node, "background-image", &cfg.background_image, std::string{});
     get_yaml_value(config_node, "background-alpha", &cfg.background_alpha, 0.000f);
-    get_yaml_value_optional(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
-    get_yaml_value_optional(config_node, "pref-path", &cfg.pref_path);
+    get_yaml_value(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
+    get_yaml_value(config_node, "pref-path", &cfg.pref_path, std::string{});
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
-    get_yaml_value_optional(config_node, "background-image", &cfg.background_image);
 
     // lle-modules
     try {
@@ -181,7 +183,7 @@ InitResult init(Config &cfg, int argc, char **argv) {
         config_desc.add_options()
             ("archive-log,A", po::bool_switch(&cfg.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
             ("lle-modules,m", po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
-            ("log-level,l", po::value(&cfg.log_level)->default_value(spdlog::level::trace), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
+            ("log-level,l", po::value(&cfg.log_level), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
             ("log-imports,I", po::bool_switch(&cfg.log_imports), "Log Imports")
             ("log-exports,E", po::bool_switch(&cfg.log_exports), "Log Exports")
             ("log-active-shaders,S", po::bool_switch(&cfg.log_active_shaders), "Log Active Shaders")
@@ -228,7 +230,7 @@ InitResult init(Config &cfg, int argc, char **argv) {
             return InitResult::QUIT;
         }
 
-        logging::set_level(static_cast<spdlog::level::level_enum>(*cfg.log_level));
+        logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
 
         LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
         LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
@@ -240,7 +242,7 @@ InitResult init(Config &cfg, int argc, char **argv) {
             modules.pop_back();
             LOG_INFO("lle-modules: {}", modules);
         }
-        LOG_INFO_IF(cfg.log_level, "log-level: {}", *cfg.log_level);
+        LOG_INFO("log-level: {}", cfg.log_level);
         LOG_INFO("log-imports: {}", cfg.log_imports);
         LOG_INFO("log-exports: {}", cfg.log_exports);
         LOG_INFO("log-active-shaders: {}", cfg.log_active_shaders);

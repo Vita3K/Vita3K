@@ -33,7 +33,8 @@ void draw_game_selector(HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiSetCond_Always);
-    ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
+    if (host.gui.current_background)
+        ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     static ImGuiTextFilter search_bar;
@@ -169,14 +170,16 @@ void draw_game_selector(HostState &host) {
                 continue;
             if (host.gui.game_selector.icons[game.title_id]) {
                 GLuint texture = host.gui.game_selector.icons[game.title_id].get();
-                if (ImGui::ImageButton(reinterpret_cast<void *>(texture), ImVec2(icon_size, icon_size))) {
-                    if (!host.gui.game_backgrounds[game.title_id]) {
-                        load_game_background(host, game.title_id);
+                ImGui::ImageButton(reinterpret_cast<void *>(texture), ImVec2(icon_size, icon_size));
+                if (ImGui::IsItemHovered()) {
+                    if (host.cfg.show_game_background) {
+                        if (!host.gui.game_backgrounds[game.title_id])
+                            load_game_background(host, game.title_id);
+                        else if (host.gui.game_backgrounds[game.title_id])
+                            host.gui.current_background = host.gui.game_backgrounds[game.title_id];
                     }
-                    if (host.gui.game_backgrounds[game.title_id]) {
-                        host.gui.current_background = host.gui.game_backgrounds[game.title_id];
-                    }
-                    //selected[0] = true;
+                    if (ImGui::IsMouseClicked(0))
+                        selected[0] = true;
                 }
             }
             ImGui::NextColumn();
@@ -184,6 +187,14 @@ void draw_game_selector(HostState &host) {
             ImGui::NextColumn();
             ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
+            if (ImGui::IsItemHovered()) {
+                if (host.cfg.show_game_background) {
+                    if (host.gui.user_backgrounds[host.cfg.background_image])
+                        host.gui.current_background = host.gui.user_backgrounds[host.cfg.background_image];
+                    else if (!host.gui.user_backgrounds[host.cfg.background_image])
+                        host.gui.current_background = 0;
+                }
+            }
             ImGui::Selectable(game.title.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
             if (std::find(std::begin(selected), std::end(selected), true) != std::end(selected)) {
