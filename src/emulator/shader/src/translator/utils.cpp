@@ -569,7 +569,44 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         // To bridge is empty. We need a place holder to shuffle the original up
         if (to_bridge.empty()) {
             to_bridge.push_back(reg_left);
+            size_gotten += reg_left.size;
         }
+    }
+
+    SpirvReg dummy;
+    dummy.var_id = const_f32_v0[4];
+    dummy.type_id = type_f32_v[4];
+    dummy.size = 4;
+
+    while (size_gotten < dest_comp_count) {
+        // Add dummy vector. We need to at least make a complete vector with
+        // dest_comp_count component
+        //
+        // Imagine this:
+        // sa6.yxyx
+        // with
+        // sa6 = float a1
+        // sa7 = float a2
+        // sa8 = vec2 a3
+        //
+        // We already get the neccessary components: sa6 and sa7, these twos alone can form
+        // the complete vector.
+        //
+        // But the bridge list is actually only have a2. Since we only get what we want, and bridge
+        // forms a smaller or same size vector with the correct swizzle.
+        //
+        // Bridging these two will only result in a vec2(a1, a2)
+        //
+        // If we actually add a dummy vector (vec4) to bridge list, to fill the gap
+        //
+        // reg_left: a1, bridge_list: a2, dummy
+        //
+        // Then the bridge would result in a nice vec4
+        //
+        // First stage: a1, a2 => vec2(a2, a1)
+        // Second stage: vec2(a2, a1), dummy => vec4(a2, a1, a2, a1)
+        to_bridge.push_back(dummy);
+        size_gotten += 4;
     }
 
     // For non-F32 type, we need to make a destination mask to extract neccessary components out
