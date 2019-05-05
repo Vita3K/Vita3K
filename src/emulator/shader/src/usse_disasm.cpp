@@ -10,6 +10,8 @@ using namespace shader::usse;
 
 namespace shader::usse::disasm {
 
+std::string *disasm_storage = nullptr;
+
 //
 // Disasm helpers
 //

@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <shader/usse_disasm.h>
 #include <shader/spirv_recompiler.h>
 
 #include <gxm/functions.h>
@@ -848,7 +849,7 @@ static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &p
     usse::convert_gxp_usse_to_spirv(b, program, parameters, texture_queries);
 }
 
-static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, bool force_shader_debug) {
+static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
     SpirvCode spirv;
 
     emu::SceGxmProgramType program_type = program.get_type();
@@ -883,6 +884,9 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
         break;
     }
 
+    // Put disasm storage
+    disasm::disasm_storage = disasm_dump;
+
     // Entry point
     spv::Function *spv_func_main = b.makeEntryPoint(entry_point_name.c_str());
 
@@ -906,8 +910,9 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
 
     b.dump(spirv);
 
-    if (LOG_SHADER_CODE || force_shader_debug)
-        spirv_disasm_print(spirv);
+    if (LOG_SHADER_CODE || force_shader_debug) {
+        spirv_disasm_print(spirv, spirv_dump);
+    }
 
     if (DUMP_SPIRV_BINARIES) {
         // TODO: use base path host var
@@ -940,18 +945,23 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary) {
 // * Functions (utility) *
 // ***********************
 
-void spirv_disasm_print(const usse::SpirvCode &spirv_binary) {
+void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump) {
     std::stringstream spirv_disasm;
     spv::Disassemble(spirv_disasm, spirv_binary);
-    LOG_DEBUG("SPIR-V Disassembly:\n{}", spirv_disasm.str());
+
+    if (spirv_dump) {
+        *spirv_dump = spirv_disasm.str();
+    }
+
+    LOG_DEBUG("SPIR-V Disassembly:\n{}", spirv_dump ? *spirv_dump : spirv_disasm.str());
 }
 
 // ***************************
 // * Functions (exposed API) *
 // ***************************
 
-std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, bool force_shader_debug) {
-    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, force_shader_debug);
+std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
+    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, force_shader_debug, spirv_dump, disasm_dump);
 
     const auto source = convert_spirv_to_glsl(spirv_binary);
 
