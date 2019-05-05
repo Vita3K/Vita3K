@@ -105,6 +105,10 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
     const SpirvVarRegBank *spirv_bank = get_reg_bank(bank);
 
+    if (!spirv_bank) {
+        return false;
+    }
+
     auto create_supply_register = [&](SpirvReg base, const std::string &name) -> SpirvReg {
         const spv::Id new_writeable = m_b.createVariable(spv::StorageClassPrivate, type_f32_v[4], name.c_str());
 
