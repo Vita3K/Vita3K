@@ -24,6 +24,19 @@ void uniform_4<GLint>(GLint location, GLsizei count, const GLint *value) {
 }
 
 template <class T>
+static void uniform_2(GLint location, GLsizei count, const T *value);
+
+template <>
+void uniform_2<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
+    glUniform2fv(location, count, value);
+}
+
+template <>
+void uniform_2<GLint>(GLint location, GLsizei count, const GLint *value) {
+    glUniform2iv(location, count, value);
+}
+
+template <class T>
 static void uniform_1(GLint location, GLsizei count, const T *value);
 
 template <>
@@ -77,6 +90,15 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
             break;
         }
         break;
+
+    case 2: {
+        switch (array_size) {
+        case 1:
+            uniform_2<T>(location, array_size, value);
+            break;
+        }
+        break;
+    }
 
     case 4:
         if (is_matrix) {
