@@ -217,8 +217,8 @@ bool USSETranslatorVisitor::vtst(
     const Imm4 load_mask = tb_decode_load_mask[chan_cc];
 
     // Build up source
-    inst.opr.src1 = decode_src12(src1_n, src1_bank, src1_ext, true, 8, m_second_program);
-    inst.opr.src2 = decode_src12(src2_n, src2_bank, src2_ext, true, 8, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, true, 8, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, true, 8, m_second_program);
 
     inst.opr.src1.type = load_data_type;
     inst.opr.src2.type = load_data_type;

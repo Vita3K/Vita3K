@@ -111,24 +111,57 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         return false;
     }
 
-    auto create_supply_register = [&](SpirvReg base, const std::string &name) -> SpirvReg {
+    auto create_supply_register = [&](SpirvReg &dest, const std::string &name) -> SpirvReg {
         const spv::Id new_writeable = m_b.createVariable(spv::StorageClassPrivate, type_f32_v[4], name.c_str());
 
-        SpirvReg org1 = base;
-        SpirvReg org2;
+        std::vector<SpirvReg> bridge_list;
 
         uint32_t temp_comp = 0;
+        std::size_t collected_comp_count = 0;
 
-        if (!spirv_bank->find_reg_at(reg_offset + shift_offset + m_b.getNumTypeComponents(org1.type_id), org2, temp_comp)) {
-            org2 = org1;
+        do {
+            SpirvReg temp_reg;
+
+            if (!spirv_bank->find_reg_at(static_cast<std::uint32_t>(writeable_idx * 4 + collected_comp_count), temp_reg, temp_comp)) {
+                temp_reg.size = 4;
+                temp_reg.type_id = type_f32_v[4];
+                temp_reg.var_id = const_f32_v0[4];
+            }
+            
+            if (m_b.isArrayType(temp_reg.type_id)) {
+                const int size_per_element = temp_reg.size / m_b.getNumTypeComponents(temp_reg.type_id);
+
+                // Need to do a access chain to access the elements
+                temp_reg.var_id = m_b.createOp(spv::OpAccessChain, m_b.makePointer(spv::StorageClassPrivate, m_b.getContainedTypeId(temp_reg.type_id)),
+                    { temp_reg.var_id, m_b.makeIntConstant(temp_comp / size_per_element) });
+                temp_reg.type_id = m_b.getContainedTypeId(temp_reg.type_id);
+                temp_reg.size = size_per_element;
+            }
+            
+            bridge_list.push_back(temp_reg);
+            collected_comp_count += temp_reg.size;
+        } while (collected_comp_count < 4);
+
+        SpirvReg bridge_result;
+        bridge_result.type_id = type_f32_v[4];
+        bridge_result.size = 4;
+
+        if (bridge_list.size() == 1) {
+            bridge_result.var_id = m_b.createLoad(bridge_list[0].var_id);
+        } else {
+            bridge_result.var_id = bridge(bridge_list[0], bridge_list[1], SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111);
+
+            for (std::size_t i = 2; i < bridge_list.size(); i++) {
+                bridge_result.var_id = bridge(bridge_result, bridge_list[i], SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111);
+            }
         }
 
-        m_b.createStore(bridge(org1, org2, SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111), new_writeable);
+        m_b.createStore(bridge_result.var_id, new_writeable);
 
-        base.var_id = new_writeable;
-        base.type_id = type_f32_v[4];
+        dest.var_id = new_writeable;
+        dest.type_id = type_f32_v[4];
 
-        return base;
+        return dest;
     };
 
     bool result = spirv_bank->find_reg_at(reg_offset + shift_offset, reg, out_comp_offset);

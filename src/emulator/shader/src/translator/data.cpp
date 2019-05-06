@@ -75,8 +75,8 @@ bool USSETranslatorVisitor::vmov(
     // Decode operands
     uint8_t reg_bits = is_double_regs ? 7 : 6;
 
-    inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, is_double_regs, reg_bits, m_second_program);
-    inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, is_double_regs, reg_bits, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank_sel, dest_bank_ext, is_double_regs, reg_bits, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank_sel, src1_bank_ext, is_double_regs, reg_bits, m_second_program);
 
     // Velocity uses a vec4 table, non-extended, so i assumes type=vec4, extended=false
     inst.opr.src1.swizzle = decode_vec34_swizzle(src0_swiz, false, 2);
@@ -95,7 +95,7 @@ bool USSETranslatorVisitor::vmov(
         LOG_WARN("Special regs unsupported");
         return false;
     }
-    
+
     // if (is_conditional) {
     //     inst.operands.src0 = decode_src0(src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs);
     //     inst.operands.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, is_double_regs);
@@ -239,8 +239,8 @@ bool USSETranslatorVisitor::vpck(
 
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
 
-    inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, false, 7, m_second_program);
-    inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank_sel, dest_bank_ext, false, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
 
     inst.opr.dest.type = dest_data_type_table[dest_fmt];
     inst.opr.src1.type = src_data_type_table[src_fmt];

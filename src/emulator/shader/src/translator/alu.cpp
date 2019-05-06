@@ -69,8 +69,8 @@ bool USSETranslatorVisitor::vmad(
     }
 
     // Double regs always true for src0, dest
-    inst.opr.src0 = decode_src12(src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
-    inst.opr.dest = decode_dest(dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
+    inst.opr.src0 = decode_src12(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
 
     // GPI0 and GPI1, setup!
     inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
@@ -175,10 +175,10 @@ bool USSETranslatorVisitor::vmad2(
     dest_mask = decode_write_mask(dest_mask, dat_fmt);
 
     // Decode mandantory info first
-    inst.opr.dest = decode_dest(dest_n, dest_bank, false, true, 7, m_second_program);
-    inst.opr.src0 = decode_src0(src0_n, src0_bank, false, true, 7, m_second_program);
-    inst.opr.src1 = decode_src12(src1_n, src1_bank, false, true, 7, m_second_program);
-    inst.opr.src2 = decode_src12(src2_n, src2_bank, false, true, 7, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, false, true, 7, m_second_program);
+    inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, false, true, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, false, true, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, false, true, 7, m_second_program);
 
     // Fill in data type
     inst.opr.dest.type = inst_dt;
@@ -293,10 +293,10 @@ bool USSETranslatorVisitor::vdp(
     }
 
     // Double regs always true for src0, dest
-    inst.opr.src0 = decode_src12(src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
+    inst.opr.src0 = decode_src12(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
     inst.opr.src0.index = 0;
 
-    inst.opr.dest = decode_dest(dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
 
     inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
     inst.opr.src1.num = gpi0_n;
@@ -352,9 +352,6 @@ bool USSETranslatorVisitor::vdp(
 }
 
 spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask) {
-    inst.opr.src1.index = 1;
-    inst.opr.src2.index = 2;
-    
     spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
     spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
 
@@ -471,12 +468,12 @@ bool USSETranslatorVisitor::vnmad32(
     // Decode operands
     // TODO: modifiers
 
-    inst.opr.dest = decode_dest(dest_n, dest_bank_sel, dest_bank_ext, true, 7, m_second_program);
-    inst.opr.src1 = decode_src12(src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank_sel, dest_bank_ext, true, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
     inst.opr.src1.flags = decode_modifier(src1_mod);
     inst.opr.src1.index = 1;
 
-    inst.opr.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
     inst.opr.src2.index = 2;
 
     if (src2_mod == 1) {
@@ -582,8 +579,8 @@ bool USSETranslatorVisitor::vcomp(
     Instruction inst;
 
     // All of them needs to be doubled
-    inst.opr.dest = decode_dest(dest_n, dest_bank, dest_bank_ext, true, 8, m_second_program);
-    inst.opr.src1 = decode_src12(src1_n, src1_bank, src1_bank_ext, true, 8, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_bank_ext, true, 8, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, true, 8, m_second_program);
     inst.opr.src1.flags = decode_modifier(src1_mod);
 
     // The thing is, these instructions are designed to only work with one component
@@ -656,11 +653,16 @@ bool USSETranslatorVisitor::vcomp(
             // We have to manually divide by 1
             const int num_comp = m_b.getNumComponents(result);
             const spv::Id one_const = m_b.makeFloatConstant(1.0f);
+            spv::Id one_v = spv::NoResult;
 
-            std::vector<spv::Id> ones;
-            ones.insert(ones.begin(), num_comp, one_const);
+            if (num_comp == 1) {
+                one_v = one_const;
+            } else {
+                std::vector<spv::Id> ones;
+                ones.insert(ones.begin(), num_comp, one_const);
 
-            spv::Id one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], ones);
+                one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], ones);
+            }
 
             result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), one_v, result);
             break;

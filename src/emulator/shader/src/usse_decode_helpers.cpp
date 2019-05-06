@@ -272,8 +272,7 @@ static void finalize_register(Operand &reg, bool is_double_regs, uint8_t reg_bit
         reg.bank = RegisterBank::SECATTR;
 }
 
-Operand decode_dest(Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
-    Operand dest{};
+Operand &decode_dest(usse::Operand &dest, Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
     dest.num = dest_n;
     dest.bank = decode_dest_bank(dest_bank, bank_ext);
     dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
@@ -285,10 +284,10 @@ Operand decode_dest(Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_r
     return dest;
 }
 
-Operand decode_src12(Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
-    Operand src{};
-    src.num = src_n;
+Operand &decode_src12(usse::Operand &src, Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
     src.bank = decode_src12_bank(src_bank_sel, src_bank_ext);
+    src.num = src_n;
+    src.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
     if (is_double_regs)
         double_reg(src.num, src.bank);
@@ -297,11 +296,11 @@ Operand decode_src12(Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_d
     return src;
 }
 
-usse::Operand decode_src0(usse::Imm6 src_n, usse::Imm1 src_bank_sel, usse::Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits,
+usse::Operand &decode_src0(usse::Operand &src, usse::Imm6 src_n, usse::Imm1 src_bank_sel, usse::Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits,
     bool is_second_program) {
-    Operand src{};
     src.num = src_n;
     src.bank = decode_src0_bank(src_bank_sel, src_bank_ext);
+    src.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
     if (is_double_regs)
         double_reg(src.num, src.bank);

@@ -96,10 +96,10 @@ bool USSETranslatorVisitor::smp(
     inst.opr.dest.type = tb_dest_fmt[fconv_type];
 
     // Decode src0
-    inst.opr.src0 = decode_src0(src0_n, src0_bank, src0_ext, true, 7, m_second_program);
+    inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, src0_ext, true, 7, m_second_program);
     inst.opr.src0.type = (src0_type == 0) ? DataType::F32 : ((src0_type == 1) ? DataType::F16 : DataType::C10);
 
-    inst.opr.src1 = decode_src12(src1_n, src1_bank, src1_ext, true, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, true, 7, m_second_program);
 
     inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     inst.opr.src0.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
