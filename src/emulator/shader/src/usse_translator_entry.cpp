@@ -597,16 +597,18 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
         const auto cur_phase_code = shader_code[(ShaderPhase)phase];
 
-        if (static_cast<ShaderPhase>(phase) == ShaderPhase::SampleRate) {
-            recomp.visitor.set_secondary_program(true);
-        } else {
-            recomp.visitor.set_secondary_program(false);
+        if (cur_phase_code.second != 0) {
+          if (static_cast<ShaderPhase>(phase) == ShaderPhase::SampleRate) {
+              recomp.visitor.set_secondary_program(true);
+          } else {
+              recomp.visitor.set_secondary_program(false);
+          }
+
+          recomp.reset(cur_phase_code.first, cur_phase_code.second);
+
+          // recompile the entry block.
+          recomp.get_or_recompile_block(recomp.avail_blocks[0], b.getBuildPoint());
         }
-
-        recomp.reset(cur_phase_code.first, cur_phase_code.second);
-
-        // recompile the entry block.
-        recomp.get_or_recompile_block(recomp.avail_blocks[0], b.getBuildPoint());
     }
 }
 

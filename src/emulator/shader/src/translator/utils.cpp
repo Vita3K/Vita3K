@@ -87,6 +87,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         decltype(pa_writeable)::iterator pa;
         if ((pa = pa_writeable.find(writeable_idx)) != pa_writeable.end()) {
             reg = pa->second;
+            out_comp_offset = (reg_offset + shift_offset) % 4;
             return true;
         }
     }
@@ -99,6 +100,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
         if (sa_supplies[writeable_idx].var_id != spv::NoResult) {
             reg = sa_supplies[writeable_idx];
+            out_comp_offset = (reg_offset + shift_offset) % 4;
             return true;
         }
     }
@@ -165,6 +167,8 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
             const std::string new_pa_writeable_name = fmt::format("pa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
             reg = create_supply_register(reg, new_pa_writeable_name);
             pa_writeable[writeable_idx] = reg;
+
+            out_comp_offset = (reg_offset + shift_offset) % 4;
         }
     }
 
@@ -173,6 +177,8 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
         reg = create_supply_register(reg, new_sa_supply_name);
         sa_supplies[writeable_idx] = reg;
+
+        out_comp_offset = (reg_offset + shift_offset) % 4;
     }
 
     return true;
@@ -529,7 +535,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
 
     std::uint32_t size_gotten = m_b.getNumTypeComponents(reg_left.type_id) - comp_offset;
 
-    if ((dest_comp_count == 1) && size_comp == 4 && size_gotten == 1) {
+    if ((dest_comp_count == 1) && size_comp == 4 && size_gotten == 1 && comp_offset == 0) {
         // We don't have to do any transformation.
         // Because:
         // The data type required is already 32-bit float, which is the data type we normally process.
@@ -562,21 +568,21 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         size_gotten += another_one.size;
     }
 
+    SpirvReg dummy;
+    dummy.var_id = const_f32_v0[4];
+    dummy.type_id = type_f32_v[4];
+    dummy.size = 4;
+
     if (size_gotten < dest_comp_count_to_get) {
         LOG_ERROR("Can't load register {}, missing registers to bridge", disasm::operand_to_str(op, 0));
         return spv::NoResult;
     } else {
         // To bridge is empty. We need a place holder to shuffle the original up
         if (to_bridge.empty()) {
-            to_bridge.push_back(reg_left);
-            size_gotten += reg_left.size;
+            to_bridge.push_back(dummy);
+            size_gotten += 4;
         }
     }
-
-    SpirvReg dummy;
-    dummy.var_id = const_f32_v0[4];
-    dummy.type_id = type_f32_v[4];
-    dummy.size = 4;
 
     while (size_gotten < dest_comp_count) {
         // Add dummy vector. We need to at least make a complete vector with

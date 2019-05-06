@@ -95,22 +95,22 @@ bool USSETranslatorVisitor::vmov(
         LOG_WARN("Special regs unsupported");
         return false;
     }
-
-    std::string disasm_str = fmt::format("{:016x}: {}{}.{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type),
-        disasm::operand_to_str(inst.opr.dest, dest_mask), disasm::operand_to_str(inst.opr.src1, dest_mask));
-
+    
     // if (is_conditional) {
     //     inst.operands.src0 = decode_src0(src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs);
     //     inst.operands.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, is_double_regs);
     // }
-    
-    LOG_DISASM(disasm_str);
 
     // Recompile
 
     m_b.setLine(usse::instr_idx);
 
     BEGIN_REPEAT(repeat_count, 2)
+    const std::string disasm_str = fmt::format("{:016x}: {}{}.{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type),
+        disasm::operand_to_str(inst.opr.dest, dest_mask, repeat_offset), disasm::operand_to_str(inst.opr.src1, dest_mask, repeat_offset));
+
+    LOG_DISASM(disasm_str);
+
     spv::Id source = load(inst.opr.src1, dest_mask, repeat_offset);
     store(inst.opr.dest, source, dest_mask, repeat_offset);
     END_REPEAT()
