@@ -93,7 +93,9 @@ struct State {
     char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
 
+    GLuint current_background = 0;
     GLObject background_texture;
+    std::map<std::string, GLObject> game_backgrounds;
 
     SceUID thread_watch_index = -1;
 

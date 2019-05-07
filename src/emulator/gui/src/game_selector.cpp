@@ -38,8 +38,8 @@ void draw_game_selector(HostState &host) {
 
     static ImGuiTextFilter search_bar;
 
-    if (host.gui.background_texture) {
-        ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(host.gui.background_texture.get()),
+    if (host.gui.current_background) {
+        ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(host.gui.current_background),
             ImVec2(0, 0), display_size);
     }
 
@@ -170,7 +170,13 @@ void draw_game_selector(HostState &host) {
             if (host.gui.game_selector.icons[game.title_id]) {
                 GLuint texture = host.gui.game_selector.icons[game.title_id].get();
                 if (ImGui::ImageButton(reinterpret_cast<void *>(texture), ImVec2(icon_size, icon_size))) {
-                    selected[0] = true;
+                    if (!host.gui.game_backgrounds[game.title_id]) {
+                        load_game_background(host, game.title_id);
+                    }
+                    if (host.gui.game_backgrounds[game.title_id]) {
+                        host.gui.current_background = host.gui.game_backgrounds[game.title_id];
+                    }
+                    //selected[0] = true;
                 }
             }
             ImGui::NextColumn();

@@ -29,6 +29,7 @@ enum GenericDialogState {
 };
 
 void init(HostState &host);
+void load_game_background(HostState &host, const std::string &title_id);
 void draw_begin(HostState &host);
 void draw_end(SDL_Window *window);
 void draw_ui(HostState &host);

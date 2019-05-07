@@ -158,6 +158,7 @@ static void init_background(State &gui, const std::string &image_path) {
     }
 
     gui.background_texture.init(load_texture(width, height, data), glDeleteTextures);
+    gui.current_background = host.gui.background_texture.get();
     stbi_image_free(data);
 }
 
@@ -180,6 +181,25 @@ static void init_icons(HostState &host) {
         host.gui.game_selector.icons[game.title_id].init(load_texture(width, height, data, GL_RGB), glDeleteTextures);
         stbi_image_free(data);
     }
+}
+
+void load_game_background(HostState &host, const std::string &title_id) {
+    int32_t width = 0;
+    int32_t height = 0;
+    vfs::FileBuffer buffer;
+
+    vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/pic0.png");
+    if (buffer.empty()) {
+        LOG_INFO("Could not load icon or image for title {}.", title_id);
+        return;
+    }
+    stbi_uc *data = stbi_load_from_memory(&buffer[0], buffer.size(), &width, &height, nullptr, STBI_rgb_alpha);
+    if (!data) {
+        LOG_INFO("Invalid icon or image for title {}.", title_id);
+        return;
+    }
+    host.gui.game_backgrounds[title_id].init(load_texture(width, height, data), glDeleteTextures);
+    stbi_image_free(data);
 }
 
 void init(HostState &host) {
