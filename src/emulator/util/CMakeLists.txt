@@ -3,6 +3,7 @@ add_library(
 	STATIC
 	include/util/align.h
 	include/util/exit_code.h
+	include/util/exec.h
 	include/util/find.h
 	include/util/fs.h
 	include/util/lock_and_find.h

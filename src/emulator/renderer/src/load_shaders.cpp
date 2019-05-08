@@ -4,6 +4,7 @@
 #include "profile.h"
 
 #include <gxm/types.h>
+#include <renderer/types.h>
 #include <shader/spirv_recompiler.h>
 #include <util/fs.h>
 #include <util/log.h>
@@ -70,11 +71,11 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
     write_data_with_ext(".spt", spirv, -1);
 }
 
-std::string load_shader(GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id) {
+GLSLCacheEntry load_shader(GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id) {
     const Sha256Hash hash_bytes = sha256(&program, program.size);
     const GLSLCache::const_iterator cached = cache.find(hash_bytes);
     if (cached != cache.end()) {
-        return cached->second;
+        return { cached->first, cached->second };
     }
 
     auto shader_type_to_str = [](emu::SceGxmProgramType type) {
@@ -101,7 +102,7 @@ std::string load_shader(GLSLCache &cache, const SceGxmProgram &program, const ch
 
     cache.emplace(hash_bytes, source);
 
-    return source;
+    return { hash_bytes, source };
 }
 
 } // namespace renderer

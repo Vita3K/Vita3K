@@ -1288,7 +1288,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     fp->program = programId->program;
     fp->renderer_data = std::make_unique<renderer::FragmentProgram>();
 
-    if (!renderer::create(*fp->renderer_data.get(), host.renderer, *programId->program.get(mem), blendInfo, host.base_path.c_str(), host.io.title_id.c_str())) {
+    if (!renderer::create(*fp->renderer_data.get(), host.renderer, *programId->program.get(mem), blendInfo, host.renderer.gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1313,7 +1313,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
     fp->renderer_data = std::make_unique<renderer::FragmentProgram>();
 
-    if (!renderer::create(*fp->renderer_data, host.renderer, *fp->program.get(mem), nullptr, host.base_path.c_str(), host.io.title_id.c_str())) {
+    if (!renderer::create(*fp->renderer_data, host.renderer, *fp->program.get(mem), nullptr, host.renderer.gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1342,7 +1342,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
     vp->renderer_data = std::make_unique<renderer::VertexProgram>();
 
-    if (!renderer::create(*vp->renderer_data.get(), host.renderer, *programId->program.get(mem), host.base_path.c_str(), host.io.title_id.c_str())) {
+    if (!renderer::create(*vp->renderer_data.get(), host.renderer, *programId->program.get(mem), host.renderer.gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 

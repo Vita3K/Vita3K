@@ -154,10 +154,13 @@ bool create(RenderTarget &rt, const SceGxmRenderTargetParams &params) {
     return true;
 }
 
-bool create(FragmentProgram &fp, State &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, const char *base_path, const char *title_id) {
+bool create(FragmentProgram &fp, State &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
-    fp.glsl = load_shader(state.fragment_glsl_cache, program, base_path, title_id);
+    const auto shader_cache_entry = load_shader(state.fragment_glsl_cache, program, base_path, title_id);
+    fp.glsl = shader_cache_entry.second;
+
+    gxp_ptr_map.emplace(shader_cache_entry.first, &program);
 
     // Translate blending.
     if (blend != nullptr) {
@@ -177,10 +180,14 @@ bool create(FragmentProgram &fp, State &state, const SceGxmProgram &program, con
     return true;
 }
 
-bool create(VertexProgram &vp, State &state, const SceGxmProgram &program, const char *base_path, const char *title_id) {
+bool create(VertexProgram &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
-    vp.glsl = load_shader(state.vertex_glsl_cache, program, base_path, title_id);
+    const auto shader_cache_entry = load_shader(state.vertex_glsl_cache, program, base_path, title_id);
+    vp.glsl = shader_cache_entry.second;
+
+    gxp_ptr_map.emplace(shader_cache_entry.first, &program);
+
     vp.attribute_locations = attribute_locations(program);
 
     return true;
