@@ -17,35 +17,26 @@
 
 #pragma once
 
-#include <string>
+#include <vector>
 
-struct HostState;
-struct SDL_Window;
+namespace util {
 
-namespace gui {
-
-enum GenericDialogState {
-    UNK_STATE,
-    CONFIRM_STATE,
-    CANCEL_STATE
-};
-
-void init(HostState &host);
-void init_background(HostState &host, const std::string &image_path);
-void load_game_background(HostState &host, const std::string &title_id);
-void draw_begin(HostState &host);
-void draw_end(SDL_Window *window);
-void draw_ui(HostState &host);
-
-void draw_common_dialog(HostState &host);
-void draw_game_selector(HostState &host);
-void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
-
-} // namespace gui
-
-// Extensions to ImGUi
-namespace ImGui {
-
-bool vector_getter(void *vec, int idx, const char **out_text);
-
+template <size_t MaxOutSize>
+std::string exec(const std::string &cmd) {
+    std::array<char, MaxOutSize> buffer;
+    std::string result;
+#ifdef WIN32
+    std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd.c_str(), "r"), _pclose);
+#else
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+#endif
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    return result;
 }
+
+} // namespace util

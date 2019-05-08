@@ -3,6 +3,7 @@
 #include <crypto/hash.h>
 #include <glutil/object.h>
 #include <gxm/types.h>
+#include <renderer/types.h>
 
 #include <psp2/gxm.h>
 
@@ -16,7 +17,6 @@ struct MemState;
 namespace renderer {
 struct TextureCacheState;
 
-typedef std::map<Sha256Hash, std::string> GLSLCache;
 typedef std::tuple<std::string, std::string> ProgramGLSLs;
 typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 
@@ -29,7 +29,7 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
 SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state, const MemState &mem);
 
 // Shaders.
-std::string load_shader(GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id);
+GLSLCacheEntry load_shader(GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id);
 
 namespace texture {
 
