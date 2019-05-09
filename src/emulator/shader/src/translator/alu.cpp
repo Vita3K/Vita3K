@@ -120,9 +120,11 @@ bool USSETranslatorVisitor::vmad(
     // Write mask is a 4-bit immidiate
     // If a bit is one, a swizzle is active
     BEGIN_REPEAT(repeat_count, 2)
-    spv::Id vsrc0 = load(inst.opr.src0, write_mask, repeat_offset);
-    spv::Id vsrc1 = load(inst.opr.src1, write_mask, repeat_offset);
-    spv::Id vsrc2 = load(inst.opr.src2, write_mask, repeat_offset);
+    GET_REPEAT(inst);
+
+    spv::Id vsrc0 = load(inst.opr.src0, write_mask, src0_repeat_offset);
+    spv::Id vsrc1 = load(inst.opr.src1, write_mask, src1_repeat_offset);
+    spv::Id vsrc2 = load(inst.opr.src2, write_mask, src2_repeat_offset);
 
     if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
         return false;
@@ -131,7 +133,7 @@ bool USSETranslatorVisitor::vmad(
     auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
     auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
-    store(inst.opr.dest, add_result, write_mask, repeat_offset);
+    store(inst.opr.dest, add_result, write_mask, dest_repeat_offset);
     END_REPEAT()
 
     return true;
@@ -337,15 +339,17 @@ bool USSETranslatorVisitor::vdp(
 
     // Decoding done
     BEGIN_REPEAT(repeat_count, 2)
-        LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, repeat_offset),
-            disasm::operand_to_str(inst.opr.src0, src_mask, repeat_offset), disasm::operand_to_str(inst.opr.src1, src_mask, repeat_offset));
+        GET_REPEAT(inst);
+
+        LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
+            disasm::operand_to_str(inst.opr.src0, src_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
             
-        spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, repeat_offset);
-        spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, repeat_offset);
+        spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, src0_repeat_offset);
+        spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
 
         spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
 
-        store(inst.opr.dest, result, write_mask, repeat_offset);
+        store(inst.opr.dest, result, write_mask, dest_repeat_offset);
     END_REPEAT()
 
     return true;
@@ -646,7 +650,8 @@ bool USSETranslatorVisitor::vcomp(
 
     // TODO: Log
     BEGIN_REPEAT(repeat_count, 2)
-        spv::Id result = load(inst.opr.src1, src_mask, repeat_offset);
+        GET_REPEAT(inst);
+        spv::Id result = load(inst.opr.src1, src_mask, src1_repeat_offset);
         
         switch (op) {
         case Opcode::VRCP: {
@@ -690,10 +695,10 @@ bool USSETranslatorVisitor::vcomp(
             break;
         }
 
-        store(inst.opr.dest, result, write_mask, repeat_offset);
+        store(inst.opr.dest, result, write_mask, dest_repeat_offset);
 
-        LOG_DISASM("{:016x}: {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.src1, src_mask, repeat_offset),
-            disasm::operand_to_str(inst.opr.dest, write_mask, repeat_offset));
+        LOG_DISASM("{:016x}: {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset),
+            disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset));
     END_REPEAT()
 
     return true;

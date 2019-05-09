@@ -106,13 +106,15 @@ bool USSETranslatorVisitor::vmov(
     m_b.setLine(usse::instr_idx);
 
     BEGIN_REPEAT(repeat_count, 2)
+    GET_REPEAT(inst);
+
     const std::string disasm_str = fmt::format("{:016x}: {}{}.{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type),
-        disasm::operand_to_str(inst.opr.dest, dest_mask, repeat_offset), disasm::operand_to_str(inst.opr.src1, dest_mask, repeat_offset));
+        disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset), disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset));
 
     LOG_DISASM(disasm_str);
 
-    spv::Id source = load(inst.opr.src1, dest_mask, repeat_offset);
-    store(inst.opr.dest, source, dest_mask, repeat_offset);
+    spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
+    store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
     END_REPEAT()
 
     return true;
@@ -267,8 +269,10 @@ bool USSETranslatorVisitor::vpck(
     m_b.setLine(usse::instr_idx);
 
     BEGIN_REPEAT(repeat_count, 2)
-    spv::Id source = load(inst.opr.src1, dest_mask, repeat_offset);
-    store(inst.opr.dest, source, dest_mask, repeat_offset);
+    GET_REPEAT(inst);
+
+    spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
+    store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
     END_REPEAT()
 
     return true;

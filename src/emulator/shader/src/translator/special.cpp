@@ -46,3 +46,39 @@ bool USSETranslatorVisitor::spec(
     LOG_DISASM("{:016x}: SPEC category: {}, special: {}", m_instr, (uint8_t)category, special);
     return true;
 }
+
+bool USSETranslatorVisitor::smlsi(
+    Imm1 nosched,
+    Imm4 temp_limit,
+    Imm4 pa_limit,
+    Imm4 sa_limit,
+    Imm1 dest_inc_mode,
+    Imm1 src0_inc_mode,
+    Imm1 src1_inc_mode,
+    Imm1 src2_inc_mode,
+    Imm8 dest_inc,
+    Imm8 src0_inc,
+    Imm8 src1_inc,
+    Imm8 src2_inc)
+{
+    auto parse_increment = [&](const int idx, const Imm1 inc_mode, const Imm8 inc_value) {
+        if (inc_mode) {
+            // Parse value as swizzle
+            for (int i = 0; i < 4; i++) {
+                repeat_increase[idx][i] = ((inc_value >> (2 * i)) & 0b11);
+            }
+        } else {
+            // Parse value as immidiate
+            for (int i = 0; i < 4; i++) {
+                repeat_increase[idx][i] = i * inc_value;
+            }
+        }
+    };
+
+    parse_increment(3, dest_inc_mode, dest_inc);
+    parse_increment(0, src0_inc_mode, src0_inc);
+    parse_increment(1, src1_inc_mode, src1_inc);
+    parse_increment(2, src2_inc_mode, src2_inc);
+
+    return true;
+}

@@ -365,6 +365,30 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::smp, "SMP ()", "11100pppsn-ymrceffaaddlltbbggkhhiijjoooooooqqqqqqquuuuuuuvvvvvvv"),
 
+    // SMLSI control instruction
+    /*
+                                11111 = op1
+                                      010 = op2
+                                        -- = don't care
+                                          01 = opcat
+                                            - = don't care
+                                              n = nosched (1 bit)
+                                              -- = don't care
+                                                tttt = temp_limit (4 bits)
+                                                    pppp = pa_limit (4 bits)
+                                                        ssss = sa_limit (4 bits)
+                                                            d = dest_inc_mode (1 bit)
+                                                              r = src0_inc_mode (1 bit)
+                                                              c = src1_inc_mode (1 bit)
+                                                                i = src2_inc_mode (1 bit)
+                                                                eeeeeeee = dest_inc (8 bits)
+                                                                        aaaaaaaa = src0_inc (8 bits)
+                                                                                bbbbbbbb = src1_inc (8 bits)
+                                                                                        ffffffff = src2_inc (8 bits)
+    */
+   
+    INST(&V::smlsi, "SMLSI ()", "11111010--01-n--ttttppppssssdrcieeeeeeeeaaaaaaaabbbbbbbbffffffff"),
+
     // Special
     /*
                                11111 = op1

@@ -56,6 +56,9 @@ public:
 
     spv::Block *main_block;
 
+    // Contains repeat increasement offset
+    int repeat_increase[4][4];
+
     // SPIR-V inputs are read-only, so we need to write to these temporaries instead
     // TODO: Figure out actual PA count limit
     std::unordered_map<uint16_t, SpirvReg> pa_writeable;
@@ -78,6 +81,13 @@ public:
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
         , m_second_program(is_secondary_program) {
+        // Default increase mode
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                repeat_increase[i][j] = j;
+            }
+        }
+
         // Set main block
         main_block = m_b.getBuildPoint();
         
@@ -119,12 +129,22 @@ private:
 // Translation helpers
 //
 
-#define BEGIN_REPEAT(repeat_count, repeat_offset_jump)          \
-    const auto repeat_count_num = (uint8_t)repeat_count + 1;    \
-    for (auto repeat_offset = 0;                                \
-         repeat_offset < repeat_count_num * repeat_offset_jump; \
-         repeat_offset += repeat_offset_jump) {
+#define BEGIN_REPEAT(repeat_count, jump)                                                    \
+    const auto repeat_count_num = (uint8_t)repeat_count + 1;                                \
+    const auto repeat_jump = jump;                                                          \
+    for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
+
 #define END_REPEAT() }
+
+#define GET_REPEAT(inst)                                                                              \
+    const int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump;    \
+    const int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump;    \
+    const int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump;    \
+    const int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump
+
+    const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index) {
+        return repeat_increase[op.index][repeat_index];
+    }
 
     /**
      * \brief Get a SPIR-V variable corresponding to the given bank and register offset.
@@ -531,6 +551,20 @@ public:
         Imm4 alu_op,
         Imm7 src1_n,
         Imm7 src2_n);
+
+    bool smlsi(
+        Imm1 nosched,
+        Imm4 temp_limit,
+        Imm4 pa_limit,
+        Imm4 sa_limit,
+        Imm1 dest_inc_mode,
+        Imm1 src0_inc_mode,
+        Imm1 src1_inc_mode,
+        Imm1 src2_inc_mode,
+        Imm8 dest_inc,
+        Imm8 src0_inc,
+        Imm8 src1_inc,
+        Imm8 src2_inc);
 
     bool nop();
     bool phas();

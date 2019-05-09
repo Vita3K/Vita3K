@@ -216,6 +216,7 @@ struct InstructionOperands {
         src0.index = 0;
         src1.index = 1;
         src2.index = 2;
+        dest.index = 3;
     }
 };
 
