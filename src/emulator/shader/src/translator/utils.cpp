@@ -70,7 +70,7 @@ void shader::usse::USSETranslatorVisitor::make_f16_pack_func() {
     m_b.setBuildPoint(last_build_point);
 }
 
-bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank, std::uint32_t reg_offset, std::uint32_t shift_offset, SpirvReg &reg, std::uint32_t &out_comp_offset, bool get_for_store) {
+bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank, std::uint32_t reg_offset, int shift_offset, SpirvReg &reg, std::uint32_t &out_comp_offset, bool get_for_store) {
     const std::uint32_t original_reg_offset = reg_offset;
 
     if (bank == usse::RegisterBank::FPINTERNAL) {
@@ -165,6 +165,8 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         m_b.createStore(bridge_result.var_id, new_writeable);
         m_b.setBuildPoint(crr_bp);
 
+        dest.size = 4;
+        dest.offset = writeable_idx * 4;
         dest.var_id = new_writeable;
         dest.type_id = type_f32_v[4];
 
@@ -251,7 +253,7 @@ spv::Id USSETranslatorVisitor::pack_one(spv::Id vec, const DataType source_type)
 }
 
 spv::Id USSETranslatorVisitor::unpack(spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
-    const std::uint32_t shift_offset) {
+    const int shift_offset) {
     if (type == DataType::F32) {
         return target;
     }
@@ -304,7 +306,7 @@ spv::Id USSETranslatorVisitor::unpack(spv::Id target, const DataType type, Swizz
     return last_shuffled;
 }
 
-spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask) {
+spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swizzle4 swiz, const int shift_offset, const Imm4 dest_mask) {
     // Queue keep track of components to be modified with given constant
     struct constant_queue_member {
         std::uint32_t index;
@@ -328,7 +330,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
             case usse::SwizzleChannel::_Y:
             case usse::SwizzleChannel::_Z:
             case usse::SwizzleChannel::_W: {
-                std::uint32_t swizz_off = (uint32_t)swiz[i] + shift_offset;
+                std::uint32_t swizz_off = (uint32_t)((int)swiz[i] + shift_offset);
                 ops.push_back(std::min(swizz_off, total_comp_count));
 
                 break;
@@ -390,7 +392,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
     return shuff_result;
 }
 
-spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std::uint8_t offset) {
+spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int offset) {
     /*
     // Optimization: Check for constant swizzle and emit it right away
     for (std::uint8_t i = 0; i < 4; i++) {
@@ -557,21 +559,10 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     // sa28: vec3 b;
     //
     // The lowest swizzle channel is Y, so we will expects to get the variable a as the base first.
-
-    int shift_1 = 0;
-
-    do {
-        if (!get_spirv_reg(op.bank, op.num, offset + shift_1, reg_left, comp_offset, false)) {
-            LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
-            return spv::NoResult;
-        }
-
-        if (reg_left.offset + reg_left.size * size_comp / 4 >= offset + lowest_swizzle_bit) {
-            break;
-        }
-
-        shift_1 += (int)(reg_left.size * size_comp / 4);
-    } while (true);
+    if (!get_spirv_reg(op.bank, op.num, offset + lowest_swizzle_bit, reg_left, comp_offset, false)) {
+        LOG_ERROR("Can't load register {}", disasm::operand_to_str(op, 0));
+        return spv::NoResult;
+    }
 
     std::uint32_t size_gotten = m_b.getNumTypeComponents(reg_left.type_id) - comp_offset;
 
@@ -600,7 +591,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         SpirvReg another_one{};
         std::uint32_t temp_comp = 0;
 
-        if (!get_spirv_reg(op.bank, op.num, offset + shift_1 + size_gotten, another_one, temp_comp, false)) {
+        if (!get_spirv_reg(op.bank, op.num, offset + lowest_swizzle_bit + size_gotten, another_one, temp_comp, false)) {
             break;
         }
 
@@ -676,7 +667,19 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     
     // We need to bridge
     spv::Id first_pass = spv::NoResult;
-    first_pass = bridge(reg_left, to_bridge[0], extract_swizz, comp_offset, extract_mask);
+
+    // In return of the shift (that's lowest swizzle bit) that get us our favor register
+    // Sometimes, things are quirky like this:
+    // sa30.y where
+    // sa27 = vec4(10, 20, 30, 40)
+    // sa31 = vec4(50, 60, 70, 80)
+    //
+    // Of course, we need to shift 1 to get the register sa31, which is what we want. Unfortunately, the
+    // comp offset unexpectedly owns 1 from the unexpected shift.
+    // If we don't return the favor, the comp_offset will be 0, yet the swizzle still be Y, results in 60
+    // By returning the 1 to the unexpected shift, we will get comp_offset = -1, swizzle is X, and results in 50
+    
+    first_pass = bridge(reg_left, to_bridge[0], extract_swizz, (int)comp_offset - lowest_swizzle_bit, extract_mask);
 
     SpirvReg first_pass_wrapper{};
 
@@ -684,7 +687,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
         first_pass_wrapper.type_id = m_b.getTypeId(first_pass);
         first_pass_wrapper.var_id = first_pass;
 
-        first_pass = bridge(first_pass_wrapper, to_bridge[i], extract_swizz, comp_offset, extract_mask);
+        first_pass = bridge(first_pass_wrapper, to_bridge[i], extract_swizz, (int)comp_offset - lowest_swizzle_bit, extract_mask);
     }
 
     if (size_comp != 4) {
@@ -707,7 +710,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const std
     return first_pass;
 }
 
-void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t dest_mask, std::uint8_t off) {
+void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t dest_mask, int off) {
     // Composite a new vector
     SpirvReg dest_reg;
     std::uint32_t dest_comp_offset;
@@ -759,9 +762,9 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
         if (total_comp_source == 1 && dest_comp_count == 1) {
             // Use OpInsertDynamic
             for (int i = 0; i < total_comp_dest; i++) {
-                if (dest_mask & (1 << (dest_comp_offset + i) % 4)) {
+                if (dest_mask & (1 << i)) {
                     result = m_b.createOp(spv::OpVectorInsertDynamic, dest_reg.type_id, { m_b.createLoad(dest_reg.var_id), source, 
-                        m_b.makeIntConstant((i + dest_comp_offset % 4) % 4) });
+                        m_b.makeIntConstant(i + dest_comp_offset % 4) });
 
                     break;
                 }

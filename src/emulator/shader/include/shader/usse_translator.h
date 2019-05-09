@@ -136,7 +136,7 @@ private:
      * 
      * \returns True on success.
     */
-    bool get_spirv_reg(RegisterBank bank, std::uint32_t reg_offset, std::uint32_t shift_offset, SpirvReg &reg,
+    bool get_spirv_reg(RegisterBank bank, std::uint32_t reg_offset, int shift_offset, SpirvReg &reg,
         std::uint32_t &out_comp_offset, bool get_for_store);
 
     /**
@@ -179,7 +179,7 @@ private:
      * \returns ID to a vec4 contains bridging results, or spv::NoResult if failed
      * 
     */
-    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, Swizzle4 swiz, const std::uint32_t shift_offset, const Imm4 dest_mask);
+    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, Swizzle4 swiz, const int shift_offset, const Imm4 dest_mask);
 
     /*
      * \brief Given an operand, load it and returns a SPIR-V vector with total components count equals to total bit set in
@@ -187,7 +187,7 @@ private:
      * 
      * \returns A copy of given operand
     */
-    spv::Id load(Operand &op, const Imm4 dest_mask, const std::uint8_t offset = 0);
+    spv::Id load(Operand &op, const Imm4 dest_mask, const int offset = 0);
 
     /**
      * \brief Unpack a vector/scalar as given component data type.
@@ -198,7 +198,7 @@ private:
      * \returns A new vector with [total_comp_count(target) * 4 / size(type)] components
      */
     spv::Id unpack(spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
-        const std::uint32_t shift_offset = 0);
+        const int shift_offset = 0);
 
     /**
      * \brief Unpack one scalar.
@@ -206,7 +206,7 @@ private:
     spv::Id unpack_one(spv::Id scalar, const DataType type);
     spv::Id pack_one(spv::Id vec, const DataType source_type);
 
-    void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, std::uint8_t off = 0);
+    void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int off = 0);
 
     const SpirvVarRegBank *get_reg_bank(RegisterBank reg_bank) const;
 
