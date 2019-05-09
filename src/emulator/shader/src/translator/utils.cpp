@@ -119,6 +119,12 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         uint32_t temp_comp = 0;
         std::size_t collected_comp_count = 0;
 
+        // Switch to main block. Do initialize there so things don't get complicated (like we already assign original register value
+        // to a block, but another block haven't been initliazed yet).
+
+        spv::Block *crr_bp = m_b.getBuildPoint();
+        m_b.setBuildPoint(main_block);
+
         do {
             SpirvReg temp_reg;
 
@@ -157,6 +163,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         }
 
         m_b.createStore(bridge_result.var_id, new_writeable);
+        m_b.setBuildPoint(crr_bp);
 
         dest.var_id = new_writeable;
         dest.type_id = type_f32_v[4];
@@ -952,7 +959,6 @@ spv::Id USSETranslatorVisitor::load_predicate(const Imm2 idx, const bool neg) {
     if (predicates[idx] == spv::NoResult) {
         const auto pred_name = fmt::format("p{}", idx);
         predicates[idx] = m_b.createVariable(spv::StorageClass::StorageClassPrivate, m_b.makeBoolType(), pred_name.c_str());
-        m_b.createStore(m_b.makeBoolConstant(false), predicates[idx]);
     }
 
     spv::Id result = m_b.createLoad(predicates[idx]);

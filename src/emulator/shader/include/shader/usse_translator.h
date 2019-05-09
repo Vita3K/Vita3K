@@ -54,6 +54,8 @@ public:
     spv::Function *f16_unpack_func;
     spv::Function *f16_pack_func;
 
+    spv::Block *main_block;
+
     // SPIR-V inputs are read-only, so we need to write to these temporaries instead
     // TODO: Figure out actual PA count limit
     std::unordered_map<uint16_t, SpirvReg> pa_writeable;
@@ -76,6 +78,9 @@ public:
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
         , m_second_program(is_secondary_program) {
+        // Set main block
+        main_block = m_b.getBuildPoint();
+        
         // Import GLSL.std.450
         std_builtins = m_b.import("GLSL.std.450");
 
