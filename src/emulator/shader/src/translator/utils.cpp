@@ -331,7 +331,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
             case usse::SwizzleChannel::_Z:
             case usse::SwizzleChannel::_W: {
                 std::uint32_t swizz_off = (uint32_t)((int)swiz[i] + shift_offset);
-                ops.push_back(std::min(swizz_off, total_comp_count));
+                ops.push_back(std::min(swizz_off, total_comp_count - 1));
 
                 break;
             }
@@ -393,17 +393,6 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
 }
 
 spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int offset) {
-    /*
-    // Optimization: Check for constant swizzle and emit it right away
-    for (std::uint8_t i = 0; i < 4; i++) {
-        USSE::SwizzleChannel channel = static_cast<USSE::SwizzleChannel>(
-            static_cast<std::uint32_t>(USSE::SwizzleChannel::_0) + i);
-
-        if (op.swizzle == USSE::Swizzle4{ channel, channel, channel, channel }) {
-            return spv_v4const[i];
-        }
-    }
-    */
     if (op.bank == RegisterBank::FPCONSTANT) {
         std::vector<spv::Id> consts;
 
@@ -521,6 +510,9 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
         // Create a constant composite
         return m_b.makeCompositeConstant(type_f32_v[comps.size()], comps);
     }
+
+    lowest_swizzle_bit = lowest_swizzle_bit * static_cast<int>(size_comp) / 4;
+    highest_swizzle_bit = highest_swizzle_bit * static_cast<int>(size_comp) / 4;
 
     // TODO: Properly handle
     if (op.bank == RegisterBank::IMMEDIATE) {
@@ -655,7 +647,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
     if (op.type != DataType::F32) {
         extract_mask = 0;
 
-        for (int i = 0; i <= highest_swizzle_bit * size_comp / 4; i++) {
+        for (int i = 0; i <= highest_swizzle_bit; i++) {
             // Build up an extract mask
             extract_mask |= (1 << i);
         }
