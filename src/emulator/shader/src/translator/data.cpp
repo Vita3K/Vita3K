@@ -103,7 +103,7 @@ bool USSETranslatorVisitor::vmov(
 
     // Recompile
 
-    m_b.setLine(usse::instr_idx);
+    m_b.setLine(m_recompiler.cur_pc);
 
     BEGIN_REPEAT(repeat_count, 2)
     GET_REPEAT(inst);
@@ -265,8 +265,7 @@ bool USSETranslatorVisitor::vpck(
     LOG_DISASM(disasm_str);
 
     // Recompile
-
-    m_b.setLine(usse::instr_idx);
+    m_b.setLine(m_recompiler.cur_pc);
 
     BEGIN_REPEAT(repeat_count, 2)
     GET_REPEAT(inst);

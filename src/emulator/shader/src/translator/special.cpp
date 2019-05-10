@@ -29,7 +29,6 @@ using namespace shader;
 using namespace usse;
 
 bool USSETranslatorVisitor::phas() {
-    usse::instr_idx--;
     LOG_DISASM("{:016x}: PHAS", m_instr);
     return true;
 }
@@ -42,7 +41,6 @@ bool USSETranslatorVisitor::nop() {
 bool USSETranslatorVisitor::spec(
     bool special,
     SpecialCategory category) {
-    usse::instr_idx--;
     LOG_DISASM("{:016x}: SPEC category: {}, special: {}", m_instr, (uint8_t)category, special);
     return true;
 }
@@ -61,17 +59,26 @@ bool USSETranslatorVisitor::smlsi(
     Imm8 src1_inc,
     Imm8 src2_inc)
 {
+    std::string disasm_str = "smlsi ";
+
     auto parse_increment = [&](const int idx, const Imm1 inc_mode, const Imm8 inc_value) {
         if (inc_mode) {
+            disasm_str += "swizz.("; 
+
             // Parse value as swizzle
             for (int i = 0; i < 4; i++) {
                 repeat_increase[idx][i] = ((inc_value >> (2 * i)) & 0b11);
+                disasm_str += fmt::format("{}", repeat_increase[idx][i]);
             }
+
+            disasm_str += ") ";
         } else {
             // Parse value as immidiate
             for (int i = 0; i < 4; i++) {
                 repeat_increase[idx][i] = i * inc_value;
             }
+
+            disasm_str += fmt::format(" inc.{} ", inc_value);
         }
     };
 
@@ -79,6 +86,8 @@ bool USSETranslatorVisitor::smlsi(
     parse_increment(0, src0_inc_mode, src0_inc);
     parse_increment(1, src1_inc_mode, src1_inc);
     parse_increment(2, src2_inc_mode, src2_inc);
+
+    LOG_DISASM(disasm_str);
 
     return true;
 }

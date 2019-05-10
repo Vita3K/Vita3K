@@ -115,7 +115,8 @@ bool USSETranslatorVisitor::vmad(
     disasm_str += fmt::format(" {} {} {} {}", disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask), disasm::operand_to_str(inst.opr.src1, write_mask), disasm::operand_to_str(inst.opr.src2, write_mask));
 
     LOG_DISASM("{}", disasm_str);
-    m_b.setLine(usse::instr_idx);
+
+    m_b.setLine(m_recompiler.cur_pc);
 
     // Write mask is a 4-bit immidiate
     // If a bit is one, a swizzle is active
@@ -239,6 +240,8 @@ bool USSETranslatorVisitor::vmad2(
     LOG_DISASM("{:016x}: {}{}2 {} {} {} {}", m_instr, disasm::e_predicate_str(static_cast<ExtPredicate>(pred)), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, dest_mask),
         disasm::operand_to_str(inst.opr.src0, dest_mask), disasm::operand_to_str(inst.opr.src1, dest_mask), disasm::operand_to_str(inst.opr.src2, dest_mask));
 
+    m_b.setLine(m_recompiler.cur_pc);
+
     // Translate the instruction
     spv::Id vsrc0 = load(inst.opr.src0, dest_mask, 0);
     spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
@@ -336,6 +339,8 @@ bool USSETranslatorVisitor::vdp(
     if (gpi0_abs) {
         inst.opr.src1.flags |= RegisterFlags::Absolute;
     }
+
+    m_b.setLine(m_recompiler.cur_pc);
 
     // Decoding done
     BEGIN_REPEAT(repeat_count, 2)
@@ -520,8 +525,7 @@ bool USSETranslatorVisitor::vnmad32(
         disasm::operand_to_str(inst.opr.src1, dest_mask), disasm::operand_to_str(inst.opr.src2, dest_mask));
 
     // Recompile
-
-    m_b.setLine(usse::instr_idx);
+    m_b.setLine(m_recompiler.cur_pc);
 
     inst.opcode = opcode;
     spv::Id result = do_alu_op(inst, dest_mask);
@@ -646,7 +650,7 @@ bool USSETranslatorVisitor::vcomp(
     default: break;
     }
 
-    m_b.setLine(usse::instr_idx);
+    m_b.setLine(m_recompiler.cur_pc);
 
     // TODO: Log
     BEGIN_REPEAT(repeat_count, 2)

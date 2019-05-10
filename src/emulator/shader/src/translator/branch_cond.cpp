@@ -274,6 +274,8 @@ bool USSETranslatorVisitor::vtst(
 
     const char *used_comp_str = tb_comp_str[compare_include_equal][sign_test];
     
+    m_b.setLine(m_recompiler.cur_pc);
+
     if (test_op == Opcode::VSUB || test_op == Opcode::VF16SUB) {
         LOG_DISASM("{:016x}: {}{}.{}.{} p{} {} {}", m_instr, disasm::e_predicate_str(pred), "CMP", used_comp_str, disasm::data_type_str(load_data_type),
             pdst_n, disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
@@ -348,6 +350,8 @@ bool USSETranslatorVisitor::br(
     LOG_DISASM("{:016x}: {}{} #{}", m_instr, disasm::e_predicate_str(pred), (br_type == 0) ? "BA" : "BR", br_off + cur_pc);
     spv::Block *br_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[br_off + cur_pc]);
 
+    m_b.setLine(m_recompiler.cur_pc);
+    
     if (pred == ExtPredicate::NONE) {
         m_b.createBranch(br_block);
     } else {
