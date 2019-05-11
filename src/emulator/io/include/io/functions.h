@@ -34,7 +34,7 @@ bool init(IOState &io, const char *pref_path, const char *base_path);
 SceUID open_file(IOState &io, const std::string &path_, int flags, const char *pref_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);
-int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export_name);
+SceOff seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export_name);
 int close_file(IOState &io, SceUID fd, const char *export_name);
 int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, const char *export_name);
 int remove_file(IOState &io, const char *file, const char *pref_path, const char *export_name);
