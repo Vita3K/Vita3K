@@ -143,7 +143,7 @@ static bool deserialize(Config &cfg) {
     get_yaml_value(config_node, "sys-button", &cfg.sys_button, static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS));
     get_yaml_value(config_node, "sys-lang", &cfg.sys_lang, static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US));
     get_yaml_value(config_node, "background-image", &cfg.background_image, std::string{});
-    get_yaml_value(config_node, "background-alpha", &cfg.background_alpha, 0.000f);
+    get_yaml_value(config_node, "background-alpha", &cfg.background_alpha, 0.300f);
     get_yaml_value(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value(config_node, "pref-path", &cfg.pref_path, std::string{});
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
