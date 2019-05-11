@@ -379,7 +379,7 @@ EXPORT(int, sceIoIoctlAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoLseek, SceUID fd, SceOff offset, int whence) {
+EXPORT(SceOff, sceIoLseek, SceUID fd, SceOff offset, int whence) {
     return seek_file(fd, static_cast<int>(offset), whence, host.io, export_name);
 }
 
