@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <string>
+
 struct HostState;
 struct SDL_Window;
 
@@ -29,6 +31,8 @@ enum GenericDialogState {
 };
 
 void init(HostState &host);
+void init_background(HostState &host, const std::string &image_path);
+void load_game_background(HostState &host, const std::string &title_id);
 void draw_begin(HostState &host);
 void draw_end(SDL_Window *window);
 void draw_ui(HostState &host);

@@ -142,9 +142,9 @@ static void init_font(State &gui) {
     gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
-static void init_background(State &gui, const std::string &image_path) {
+void init_background(HostState &host, const std::string &image_path) {
     if (!fs::exists(image_path)) {
-        LOG_INFO("Invalid background file path {}.", image_path);
+        LOG_WARN("Image doesn't exist: {}.", image_path);
         return;
     }
 
@@ -153,11 +153,12 @@ static void init_background(State &gui, const std::string &image_path) {
     stbi_uc *data = stbi_load(image_path.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
-        LOG_INFO("Could not load image from {}.", image_path);
+        LOG_ERROR("Invalid or corrupted image: {}.", image_path);
         return;
     }
 
-    gui.background_texture.init(load_texture(width, height, data), glDeleteTextures);
+    host.gui.user_backgrounds[image_path].init(load_texture(width, height, data), glDeleteTextures);
+    host.gui.current_background = host.gui.user_backgrounds[image_path];
     stbi_image_free(data);
 }
 
@@ -169,17 +170,42 @@ static void init_icons(HostState &host) {
 
         vfs::read_app_file(buffer, host.pref_path, game.title_id, "sce_sys/icon0.png");
         if (buffer.empty()) {
-            LOG_INFO("Could not load icon or image for title {}.", game.title_id);
+            LOG_WARN("Icon not found for title {}, {}.", game.title_id, game.title);
             continue;
         }
         stbi_uc *data = stbi_load_from_memory(&buffer[0], buffer.size(), &width, &height, nullptr, STBI_rgb);
         if (width != 128 || height != 128) {
-            LOG_INFO("Invalid icon or image for title {}.", game.title_id);
+            LOG_ERROR("Invalid icon for title {}, {}.", game.title_id, game.title);
             continue;
         }
         host.gui.game_selector.icons[game.title_id].init(load_texture(width, height, data, GL_RGB), glDeleteTextures);
         stbi_image_free(data);
     }
+}
+
+void load_game_background(HostState &host, const std::string &title_id) {
+    int32_t width = 0;
+    int32_t height = 0;
+    vfs::FileBuffer buffer;
+
+    vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/pic0.png");
+    if (buffer.empty()) {
+        if (vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/template.xml")) {
+            LOG_INFO("Game background found in template for title {}.", title_id);
+            vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg.png");
+            vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg0.png");
+        } else {
+            LOG_WARN("Game background not found for title {}.", title_id);
+            return;
+        }
+    }
+    stbi_uc *data = stbi_load_from_memory(&buffer[0], buffer.size(), &width, &height, nullptr, STBI_rgb_alpha);
+    if (!data) {
+        LOG_ERROR("Invalid game background for title {}.", title_id);
+        return;
+    }
+    host.gui.game_backgrounds[title_id].init(load_texture(width, height, data), glDeleteTextures);
+    stbi_image_free(data);
 }
 
 void init(HostState &host) {
@@ -189,9 +215,8 @@ void init(HostState &host) {
     init_style();
     init_font(host.gui);
     init_icons(host);
-    if (host.cfg.background_image) {
-        init_background(host.gui, host.cfg.background_image.value());
-    }
+    if (!host.cfg.background_image.empty())
+        init_background(host, host.cfg.background_image);
 }
 
 void draw_begin(HostState &host) {

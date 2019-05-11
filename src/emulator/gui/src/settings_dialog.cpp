@@ -17,7 +17,10 @@
 
 #include "private.h"
 #include <config.h>
+#include <gui/functions.h>
+
 #include <host/state.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 namespace gui {
 
@@ -56,6 +59,8 @@ void draw_settings_dialog(HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
+        ImGui::Spacing();
+        ImGui::Combo("Log Level \nSelect your preferred log level.", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
         ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
@@ -63,6 +68,12 @@ void draw_settings_dialog(HostState &host) {
         ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
+        ImGui::Spacing();
+        ImGui::PushItemWidth(400);
+        ImGui::InputTextWithHint("Set emulated system storage folder \n(Reboot after change for apply)", "Write your path folder here", &host.cfg.pref_path);
+        ImGui::PopItemWidth();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Store game data in your personal folder. \nAdd the path to the folder here.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();
@@ -75,12 +86,34 @@ void draw_settings_dialog(HostState &host) {
         ImGui::Checkbox("GUI Visible", &host.cfg.show_gui);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show GUI after booting a game.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Game Background", &host.cfg.show_game_background);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to disable viewing Game background.");
         ImGui::Spacing();
         ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 16, 128);
         ImGui::Spacing();
-        ImGui::SliderFloat("Background Alpha \nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Minimum slider is opaque and maximum is transparent.");
+        ImGui::PushItemWidth(400);
+        ImGui::InputTextWithHint("Set background image", "Add your path to the image here", &host.cfg.background_image);
+        ImGui::PopItemWidth();
+        if (ImGui::Button("Apply Change Image")) {
+            if (!host.gui.user_backgrounds[host.cfg.background_image])
+                init_background(host, host.cfg.background_image);
+            else if (host.gui.user_backgrounds[host.cfg.background_image])
+                host.gui.current_background = host.gui.user_backgrounds[host.cfg.background_image];
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset Background")) {
+            host.cfg.background_image.clear();
+            host.gui.user_backgrounds.clear();
+            host.gui.current_background = 0;
+        }
+        ImGui::Spacing();
+        if (host.gui.current_background) {
+            ImGui::SliderFloat("Background Alpha \nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("The minimum slider is opaque and the maximum is transparent.");
+        }
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();
