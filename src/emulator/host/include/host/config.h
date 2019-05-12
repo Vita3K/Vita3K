@@ -29,9 +29,9 @@ struct Config {
     optional<std::string> vpk_path;
     optional<std::string> run_title_id;
     optional<std::string> recompile_shader_path;
-    int log_level;
-    int sys_button;
-    int sys_lang;
+    int log_level = 0;
+    int sys_button = 1;
+    int sys_lang = 1;
     bool log_imports = false;
     bool log_exports = false;
     bool log_active_shaders = false;
@@ -40,11 +40,11 @@ struct Config {
     bool pstv_mode = false;
     bool show_gui = false;
     bool show_game_background = true;
-    std::string pref_path;
+    std::string pref_path = {};
     bool archive_log = false;
     bool texture_cache = true;
     optional<bool> wait_for_debugger;
-    std::string background_image;
-    float background_alpha;
-    int icon_size;
+    std::string background_image = {};
+    float background_alpha = 0.300f;
+    int icon_size = 64;
 };
