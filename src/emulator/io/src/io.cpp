@@ -382,7 +382,7 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
     return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 }
 
-int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export_name) {
+SceOff seek_file(SceUID fd, SceOff offset, int whence, IOState &io, const char *export_name) {
     assert((whence == SCE_SEEK_SET) || (whence == SCE_SEEK_CUR) || (whence == SCE_SEEK_END));
 
     if (fd < 0) {
@@ -423,10 +423,10 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export
     }
 
     int ret = 0;
-    long pos = 0;
+    SceOff pos = 0;
 
     if (std_file != io.std_files.end()) {
-        ret = fseek(std_file->second.file_handle.get(), offset, base);
+        ret = fseek(std_file->second.file_handle.get(), static_cast<long int>(offset), base);
     }
 
     if (ret != 0) {
@@ -434,7 +434,7 @@ int seek_file(SceUID fd, int offset, int whence, IOState &io, const char *export
     }
 
     if (std_file != io.std_files.end()) {
-        pos = ftell(std_file->second.file_handle.get());
+        pos = static_cast<SceOff>(ftell(std_file->second.file_handle.get()));
     }
     return pos;
 }

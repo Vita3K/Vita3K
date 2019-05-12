@@ -44,6 +44,7 @@ struct Game {
 
 struct GamesSelector {
     std::vector<Game> games;
+    std::map<std::string, GLObject> icons;
     std::string selected_title_id;
     bool is_game_list_sorted{ false };
     SortState title_id_sort_state = NOT_SORTED;
@@ -66,8 +67,8 @@ struct DebugMenuState {
     bool disassembly_dialog = false;
 };
 
-struct OptimisationMenuState {
-    bool texture_cache = true;
+struct ConfigurationMenuState {
+    bool settings_dialog = false;
 };
 
 struct HelpMenuState {
@@ -78,7 +79,7 @@ struct HelpMenuState {
 struct State {
     bool renderer_focused = true;
     DebugMenuState debug_menu;
-    OptimisationMenuState optimisation_menu;
+    ConfigurationMenuState configuration_menu;
     HelpMenuState help_menu;
     DialogState common_dialog;
     GamesSelector game_selector;
@@ -92,7 +93,9 @@ struct State {
     char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
 
-    GLObject background_texture;
+    GLuint current_background = 0;
+    std::map<std::string, GLObject> game_backgrounds;
+    std::map<std::string, GLObject> user_backgrounds;
 
     SceUID thread_watch_index = -1;
 

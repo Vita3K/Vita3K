@@ -33,36 +33,41 @@ void draw_game_selector(HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiSetCond_Always);
-    if (host.cfg.background_alpha)
-        ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha.value());
+    if (host.gui.current_background)
+        ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     static ImGuiTextFilter search_bar;
 
-    if (host.gui.background_texture) {
-        ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(host.gui.background_texture.get()),
+    if (host.gui.current_background) {
+        ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(host.gui.current_background),
             ImVec2(0, 0), display_size);
     }
 
+    static int &icon_size = host.cfg.icon_size;
+
     switch (host.gui.game_selector.state) {
     case SELECT_APP:
-        ImGui::Columns(3);
+        ImGui::Columns(4);
+        ImGui::SetWindowFontScale(1.1f);
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+        ImGui::Button("Icon"); // Button to fit style, does nothing.
+        ImGui::SetColumnWidth(0, icon_size + /* padding */ 20);
+        ImGui::NextColumn();
         std::string title_id_label = "TitleID";
         switch (host.gui.game_selector.title_id_sort_state) {
         case ASCENDANT:
             title_id_label += " >";
-            ImGui::SetColumnWidth(0, 100);
+            ImGui::SetColumnWidth(1, 100);
             break;
         case DESCENDANT:
             title_id_label += " <";
-            ImGui::SetColumnWidth(0, 100);
+            ImGui::SetColumnWidth(1, 100);
             break;
         default:
-            ImGui::SetColumnWidth(0, 80);
+            ImGui::SetColumnWidth(1, 80);
             break;
         }
-        ImGui::SetWindowFontScale(1.1f);
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         if (ImGui::Button(title_id_label.c_str())) {
             host.gui.game_selector.title_id_sort_state = static_cast<gui::SortState>(std::max(1, (host.gui.game_selector.title_id_sort_state + 1) % 3));
             host.gui.game_selector.app_ver_sort_state = NOT_SORTED;
@@ -87,14 +92,14 @@ void draw_game_selector(HostState &host) {
         switch (host.gui.game_selector.app_ver_sort_state) {
         case ASCENDANT:
             app_ver_label += " >";
-            ImGui::SetColumnWidth(1, 90);
+            ImGui::SetColumnWidth(2, 90);
             break;
         case DESCENDANT:
             app_ver_label += " <";
-            ImGui::SetColumnWidth(1, 90);
+            ImGui::SetColumnWidth(2, 90);
             break;
         default:
-            ImGui::SetColumnWidth(1, 70);
+            ImGui::SetColumnWidth(2, 70);
             break;
         }
         if (ImGui::Button(app_ver_label.c_str())) {
@@ -159,19 +164,40 @@ void draw_game_selector(HostState &host) {
         ImGui::Separator();
         ImGui::SetWindowFontScale(1);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-        for (auto game : host.gui.game_selector.games) {
-            bool selected_1 = false;
-            bool selected_2 = false;
-            bool selected_3 = false;
+        for (const auto &game : host.gui.game_selector.games) {
+            bool selected[4] = { false, false, false, false };
             if (!search_bar.PassFilter(game.title.c_str()) && !search_bar.PassFilter(game.title_id.c_str()))
                 continue;
-            ImGui::Selectable(game.title_id.c_str(), &selected_1, ImGuiSelectableFlags_SpanAllColumns);
+            if (host.gui.game_selector.icons[game.title_id]) {
+                GLuint texture = host.gui.game_selector.icons[game.title_id].get();
+                ImGui::ImageButton(reinterpret_cast<void *>(texture), ImVec2(icon_size, icon_size));
+                if (ImGui::IsItemHovered()) {
+                    if (host.cfg.show_game_background) {
+                        if (!host.gui.game_backgrounds[game.title_id])
+                            load_game_background(host, game.title_id);
+                        else if (host.gui.game_backgrounds[game.title_id])
+                            host.gui.current_background = host.gui.game_backgrounds[game.title_id];
+                    }
+                    if (ImGui::IsMouseClicked(0))
+                        selected[0] = true;
+                }
+            }
             ImGui::NextColumn();
-            ImGui::Selectable(game.app_ver.c_str(), &selected_2, ImGuiSelectableFlags_SpanAllColumns);
+            ImGui::Selectable(game.title_id.c_str(), &selected[1], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
-            ImGui::Selectable(game.title.c_str(), &selected_3, ImGuiSelectableFlags_SpanAllColumns);
+            ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
-            if (selected_1 || selected_2 || selected_3) {
+            if (ImGui::IsItemHovered()) {
+                if (host.cfg.show_game_background) {
+                    if (host.gui.user_backgrounds[host.cfg.background_image])
+                        host.gui.current_background = host.gui.user_backgrounds[host.cfg.background_image];
+                    else if (!host.gui.user_backgrounds[host.cfg.background_image])
+                        host.gui.current_background = 0;
+                }
+            }
+            ImGui::Selectable(game.title.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
+            ImGui::NextColumn();
+            if (std::find(std::begin(selected), std::end(selected), true) != std::end(selected)) {
                 host.gui.game_selector.selected_title_id = game.title_id;
             }
         }
