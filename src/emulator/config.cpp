@@ -17,6 +17,7 @@
 
 #include "config.h"
 
+#include <cpu/common.h>
 #include <host/version.h>
 #include <psp2/system_param.h>
 #include <util/log.h>
@@ -147,7 +148,7 @@ static bool deserialize(Config &cfg) {
     get_yaml_value(config_node, "background-alpha", &cfg.background_alpha, 0.300f);
     get_yaml_value(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value(config_node, "pref-path", &cfg.pref_path, std::string{});
-    get_yaml_value(config_node, "cpu-backend", &cfg.cpu_backend, 0);
+    get_yaml_value(config_node, "cpu-backend", &cfg.cpu_backend, static_cast<int>(CPUBackend::Unicorn));
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
 
     // lle-modules
@@ -184,6 +185,7 @@ InitResult init(Config &cfg, int argc, char **argv) {
         po::options_description config_desc("Configuration");
         config_desc.add_options()
             ("archive-log,A", po::bool_switch(&cfg.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
+            ("cpu-backend,b", po::value(&cfg.cpu_backend), "cpu backend:\nUnicorn = 0\nDynarmic = 1")
             ("lle-modules,m", po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
             ("log-level,l", po::value(&cfg.log_level), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
             ("log-imports,I", po::bool_switch(&cfg.log_imports), "Log Imports")
@@ -244,6 +246,7 @@ InitResult init(Config &cfg, int argc, char **argv) {
             modules.pop_back();
             LOG_INFO("lle-modules: {}", modules);
         }
+        LOG_INFO("cpu-backend: {}", cfg.cpu_backend);
         LOG_INFO("log-level: {}", cfg.log_level);
         LOG_INFO("log-imports: {}", cfg.log_imports);
         LOG_INFO("log-exports: {}", cfg.log_exports);

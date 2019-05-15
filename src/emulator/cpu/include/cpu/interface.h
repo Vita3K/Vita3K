@@ -46,4 +46,3 @@ public:
     virtual bool is_thumb_mode() = 0;
     virtual int step() = 0;
 };
-

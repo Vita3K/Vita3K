@@ -30,7 +30,19 @@ void draw_settings_dialog(HostState &host) {
     ImGuiTabBarFlags settings_tab_flags = ImGuiTabBarFlags_None;
     ImGui::BeginTabBar("SettingsTabBar", settings_tab_flags);
 
+    // Core
+    if (ImGui::BeginTabItem("Core")) {
+        ImGui::PopStyleColor();
+        ImGui::Text("CPU Backend \nSelect your Backend.\n(Reboot after change for apply)");
+        ImGui::RadioButton("Unicorn", &host.cfg.cpu_backend, 0);
+        ImGui::RadioButton("Dynarmic", &host.cfg.cpu_backend, 1);
+        ImGui::EndTabItem();
+    } else {
+        ImGui::PopStyleColor();
+    }
+
     // System
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
         static const char *list_sys_lang[] = {

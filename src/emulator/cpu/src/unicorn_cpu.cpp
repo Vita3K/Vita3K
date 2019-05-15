@@ -3,8 +3,8 @@
 #include <mem/ptr.h>
 #include <util/log.h>
 
-#include <disasm/functions.h>
 #include <cassert>
+#include <disasm/functions.h>
 
 bool thumb_mode(uc_engine *uc) {
     size_t mode = 0;

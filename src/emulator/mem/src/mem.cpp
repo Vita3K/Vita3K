@@ -103,7 +103,7 @@ bool init(MemState &state) {
     mprotect(state.memory.get(), state.page_size, PROT_NONE);
 #endif
 
-    state.pages_cpu = std::make_unique < std::array<uint8_t *, 1 << 20> >();
+    state.pages_cpu = std::make_unique<std::array<uint8_t *, 1 << 20>>();
 
     // Build static table for Dynarmic
     (*(state.pages_cpu))[0] = state.memory.get();

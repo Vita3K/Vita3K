@@ -57,7 +57,7 @@ static int do_run(CPUState &state, bool callback, bool is_step) {
     if (err < 0) {
         return err;
     }
-    
+
     uint32_t pc = state.cpu->get_pc();
     bool thumb_mode = state.cpu->is_thumb_mode();
     if (thumb_mode) {
@@ -138,4 +138,3 @@ std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size) {
     const bool thumb = state.cpu->is_thumb_mode();
     return disassemble(state, at, thumb, insn_size);
 }
-

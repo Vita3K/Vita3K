@@ -261,11 +261,11 @@ DynarmicCPU::ThreadContext DynarmicCPU::save_context() {
 void DynarmicCPU::load_context(UnicornCPU::ThreadContext ctx) {
     Dynarmic::A32::Context dctx;
     dctx.Regs() = ctx.cpu_registers;
-    
+
     for (uint8_t i = 0; i < ctx.fpu_registers.size(); i++) {
         dctx.ExtRegs()[i] = ctx.fpu_registers[i];
     }
-    
+
     dctx.SetFpscr(ctx.fpscr);
     dctx.SetCpsr(ctx.cpsr);
 

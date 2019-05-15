@@ -2,16 +2,16 @@
 
 #include <mem/mem.h> // Address.
 
-#include <memory>
 #include <cstdint>
 #include <functional>
+#include <memory>
 
 struct CPUState;
 struct MemState;
 
 enum class CPUBackend {
-    Dynarmic,
-    Unicorn
+    Unicorn,
+    Dynarmic
 };
 
 union DoubleReg {

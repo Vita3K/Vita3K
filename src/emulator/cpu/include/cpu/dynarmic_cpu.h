@@ -30,7 +30,7 @@ public:
 
     int run() override;
     int step() override;
-    
+
     void stop() override;
 
     uint32_t get_reg(uint8_t idx) override;
