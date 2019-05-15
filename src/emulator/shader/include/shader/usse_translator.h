@@ -415,6 +415,31 @@ public:
         Imm4 src2_n,
         Imm1 comp_sel_0_bit0);
 
+    bool vbw(
+        Imm3 op1,
+        ExtPredicate pred,
+        Imm1 skipinv,
+        Imm1 nosched,
+        Imm1 repeat_count,
+        Imm1 sync_start,
+        Imm1 dest_ext,
+        Imm1 end,
+        Imm1 src1_ext,
+        Imm1 src2_ext,
+        Imm4 mask_count,
+        Imm1 src2_invert,
+        Imm5 src2_rot,
+        Imm2 src2_exth,
+        Imm1 op2,
+        Imm1 bitwise_partial,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm7 src2_sel,
+        Imm7 src1_n,
+        Imm7 src2_n);
+
     bool vcomp(
         ExtPredicate pred,
         bool skipinv,
