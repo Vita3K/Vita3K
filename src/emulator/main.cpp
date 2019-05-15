@@ -37,24 +37,26 @@ int main(int argc, char *argv[]) {
     root_paths.set_base_path(SDL_GetBasePath());
     root_paths.set_pref_path(SDL_GetPrefPath(org_name, app_name));
 
+    // Create default preference path for safety
+    if (!fs::exists(root_paths.get_pref_path()))
+        fs::create_directories(root_paths.get_pref_path());
+
     if (logging::init(root_paths) != Success)
         return InitConfigFailed;
 
     Config cfg{};
-    if (const auto err = config::init(cfg, argc, argv) != Success) {
+    if (const auto err = config::init(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
+            if (cfg.recompile_shader_path.is_initialized()) {
+                LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
+                shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
+            }
             return Success;
         }
         return InitConfigFailed;
     }
 
     LOG_INFO("{}", window_title);
-
-    if (cfg.recompile_shader_path) {
-        LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
-        shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
-        return Success;
-    }
 
     std::atexit(SDL_Quit);
     if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC | SDL_INIT_VIDEO) < 0) {
@@ -155,7 +157,8 @@ int main(int argc, char *argv[]) {
 #endif
 
     // There may be changes that made in the GUI, so we should save, again
-    config::serialize(host.cfg);
+    if (host.cfg.overwrite_config)
+        config::serialize(host.cfg, host.cfg.config_path);
 
     return Success;
 }

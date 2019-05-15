@@ -107,15 +107,14 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
     state.base_path = root_paths.get_base_path_string();
 
-    // If configuration already provides preference path
-    if (state.cfg.pref_path.empty()) {
-        state.pref_path = root_paths.get_pref_path_string();
-        state.cfg.pref_path = state.pref_path;
-    } else
-        state.pref_path = state.cfg.pref_path;
+    // If configuration does not provide a preference path, use SDL's default
+    if (state.cfg.pref_path == root_paths.get_pref_path_string() || state.cfg.pref_path.empty())
+        state.pref_path = root_paths.get_pref_path_string() + '/';
+    else
+        state.pref_path = state.cfg.pref_path + '/';
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
-    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str(), state.base_path.c_str())) {
+    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.base_path, state.pref_path)) {
         return false;
     }
 
@@ -149,8 +148,8 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 
     state.kernel.base_tick = { rtc_base_ticks() };
 
-    fs::directory_iterator it{ state.pref_path + "ux0/app" };
-    do {
+    fs::directory_iterator it{ fs::path{ state.pref_path } / "ux0/app" };
+    while (it != fs::directory_iterator{}) {
         if (!it->path().empty() && !it->path().filename_is_dot() && !it->path().filename_is_dot_dot()) {
             vfs::FileBuffer params;
             state.io.title_id = it->path().stem().generic_string();
@@ -165,8 +164,10 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         }
         boost::system::error_code er;
         it.increment(er);
-    } while (it != fs::directory_iterator{});
+    }
 
-    config::serialize(state.cfg);
+    if (state.cfg.overwrite_config)
+        config::serialize(state.cfg, state.cfg.config_path);
+
     return true;
 }

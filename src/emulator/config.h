@@ -19,22 +19,27 @@
 
 #include <host/config.h>
 #include <util/exit_code.h>
+#include <util/fs.h>
+
+class Root;
 
 namespace config {
 
-/*
- * \brief Save emulator config to a YML file.
- *
- * \return True on saving success.
-*/
-bool serialize(Config &cfg);
+/**
+  * \brief Save emulator config to a YML file.
+  * \param cfg Config operations to save.
+  * \param output_path The location to save the configuration file.
+  * \return Success on saving the config file, otherwise Error.
+ */
+ExitCode serialize(Config &cfg, fs::path output_path);
 
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
   *        --help, --version, --log-level
   * \param cfg Config options are returned via this parameter.
+  * \param root_paths Root location used throughout Vita3K.
   * \return Success for completion, QuitRequest if Help or Version is requested, otherwise Error.
   */
-ExitCode init(Config &cfg, int argc, char **argv);
+ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths);
 
 } // namespace config

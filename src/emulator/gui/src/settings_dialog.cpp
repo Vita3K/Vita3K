@@ -143,7 +143,9 @@ void draw_settings_dialog(HostState &host) {
         ImGui::PopStyleColor();
     }
 
-    config::serialize(host.cfg);
+    if (host.cfg.overwrite_config)
+        config::serialize(host.cfg, host.cfg.config_path);
+
     ImGui::EndTabBar();
     ImGui::End();
 }

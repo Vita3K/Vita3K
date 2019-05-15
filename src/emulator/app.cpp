@@ -115,35 +115,30 @@ static const char *miniz_get_error(const ZipPtr &zip) {
     return mz_zip_get_error_string(mz_zip_get_last_error(zip.get()));
 }
 
-static bool read_file_from_zip(vfs::FileBuffer &buf, FILE *&vpk_fp, const char *file, const ZipPtr zip) {
-    const int file_index = mz_zip_reader_locate_file(zip.get(), file, nullptr, 0);
-    if (file_index < 0) {
-        LOG_CRITICAL("Failed to locate {}.", file);
-        return false;
-    }
-
-    if (!mz_zip_reader_extract_file_to_callback(zip.get(), file, &write_to_buffer, &buf, 0)) {
-        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), file);
+static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const ZipPtr &zip) {
+    if (!mz_zip_reader_extract_file_to_callback(zip.get(), file.generic_path().string().c_str(), &write_to_buffer, &buf, 0)) {
+        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), file.generic_path().string());
         return false;
     }
 
     return true;
 }
 
-bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
+bool install_vpk(Ptr<const void> &entry_point, HostState &host, const fs::path &path) {
+    if (!fs::exists(path)) {
+        LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_path().string());
+        return false;
+    }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
     FILE *vpk_fp;
 
 #ifdef WIN32
-    if (_wfopen_s(&vpk_fp, path.c_str(), L"rb")) {
+    _wfopen_s(&vpk_fp, path.generic_path().wstring().c_str(), L"rb");
 #else
-    if (!(vpk_fp = fopen(string_utils::wide_to_utf(path).c_str(), "rb"))) {
+    vpk_fp = fopen(path.generic_path().string().c_str(), "rb");
 #endif
-        LOG_CRITICAL("Failed to open the vpk.");
-        return false;
-    }
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
         LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
@@ -151,26 +146,24 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     }
 
     int num_files = mz_zip_reader_get_num_files(zip.get());
-
-    std::string sfo_path = "sce_sys/param.sfo";
+    fs::path sfo_path = "sce_sys/param.sfo";
 
     for (int i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
         }
-        if (strstr(file_stat.m_filename, "sce_module/steroid.suprx")) {
+        if (fs::path(file_stat.m_filename) == "sce_module/steroid.suprx") {
             LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
             return false;
         }
-        if (strstr(file_stat.m_filename, "sce_sys/param.sfo")) {
-            sfo_path = file_stat.m_filename;
+        if (fs::path(file_stat.m_filename) == sfo_path) {
             break;
         }
     }
 
     vfs::FileBuffer params;
-    if (!read_file_from_zip(params, vpk_fp, sfo_path.c_str(), zip)) {
+    if (!read_file_from_zip(params, sfo_path, zip)) {
         return false;
     }
 
@@ -178,16 +171,9 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
     load_sfo(sfo_handle, params);
     find_data(host.io.title_id, sfo_handle, "TITLE_ID");
 
-    std::string output_base_path = host.pref_path + "ux0/app/";
-    std::string title_base_path = output_base_path;
+    fs::path output_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
-    if (sfo_path.length() < 20) {
-        output_base_path += host.io.title_id;
-    }
-
-    title_base_path += host.io.title_id;
-
-    const bool created = fs::create_directory(title_base_path);
+    const auto created = fs::create_directories(output_path);
     if (!created) {
         gui::GenericDialogState status = gui::UNK_STATE;
         while (handle_events(host) && (status == 0)) {
@@ -213,25 +199,20 @@ bool install_vpk(Ptr<const void> &entry_point, HostState &host, const std::wstri
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
         }
-        std::string output_path = output_base_path;
-        output_path += "/";
-        output_path += file_stat.m_filename;
+
+        const fs::path file_output = { output_path / file_stat.m_filename };
         if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
             fs::create_directories(output_path);
         } else {
-            const size_t slash = output_path.rfind('/');
-            if (std::string::npos != slash) {
-                std::string directory = output_path.substr(0, slash);
-                fs::create_directories(directory);
+            if (!fs::exists(file_output.parent_path())) {
+                fs::create_directories(file_output.parent_path());
             }
 
-            LOG_INFO("Extracting {}", output_path);
-            mz_zip_reader_extract_to_file(zip.get(), i, output_path.c_str(), 0);
+            LOG_INFO("Extracting {}", file_output.generic_path().string());
+            mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_path().string().c_str(), 0);
         }
     }
-
-    std::string savedata_path = host.pref_path + "ux0/user/00/savedata/" + host.io.title_id;
-    fs::create_directory(savedata_path);
+    fs::create_directories(fs::path(host.pref_path) / "ux0/user/00/savedata" / host.io.title_id);
 
     LOG_INFO("{} installed succesfully!", host.io.title_id);
     return true;
