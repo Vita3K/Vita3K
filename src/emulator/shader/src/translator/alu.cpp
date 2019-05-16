@@ -603,17 +603,17 @@ bool USSETranslatorVisitor::vbw(
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, false, 8, m_second_program);
 
     spv::Id src1 = load(inst.opr.src1, 0b0001);
-    spv::Id src2;
+    spv::Id src2 = 0;
 
     bool immediate = src2_ext && inst.opr.src2.bank == RegisterBank::IMMEDIATE;
-    uint32_t value;
+    uint32_t value = 0;
 
     if (src2_rot) {
         LOG_WARN("Bitwise Rotations are unsupported.");
         return false;
     }
     if (immediate) {
-        value = src2_n | ((uint32_t)src2_sel << 7) | ((uint32_t)src2_exth << 14);
+        value = src2_n | (static_cast<uint32_t>(src2_sel) << 7) | (static_cast<uint32_t>(src2_exth) << 14);
         src2 = m_b.makeUintConstant(src2_invert ? ~value : value);
     } else {
         src2 = load(inst.opr.src2, 0b0001);
@@ -631,7 +631,7 @@ bool USSETranslatorVisitor::vbw(
     case Opcode::XOR: operation = spv::Op::OpBitwiseXor; break;
     case Opcode::ROL:
         LOG_WARN("Bitwise Rotate Left operation unsupported.");
-        return false; //TODO: SPIRV doesn't seem to have a rotate left operation!
+        return false; // TODO: SPIRV doesn't seem to have a rotate left operation!
     case Opcode::ASR: operation = spv::Op::OpShiftRightArithmetic; break;
     case Opcode::SHL: operation = spv::Op::OpShiftLeftLogical; break;
     case Opcode::SHR: operation = spv::Op::OpShiftRightLogical; break;

@@ -91,24 +91,24 @@ bool USSETranslatorVisitor::vmov(
         return false;
     }
 
-    spv::Id conditional_result;
-    CompareType compare_type;
+    spv::Id conditional_result = 0;
+    CompareMethod compare_method = CompareMethod::NE_ZERO;
     if (is_conditional) {
-        compare_type = (CompareType)((test_bit_2 << 1) | test_bit_1);
-        inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs, 8, m_second_program);
-        inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, is_double_regs, 8, m_second_program);
+        compare_method = static_cast<CompareMethod>((test_bit_2 << 1) | test_bit_1);
+        inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank_sel, end_or_src0_bank_ext, false, 8, m_second_program);
+        inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, false, 8, m_second_program);
         spv::Id src0 = load(inst.opr.src0, dest_mask);
         spv::Id src2 = load(inst.opr.src2, dest_mask);
 
-        spv::Id compareType = m_b.getTypeId(src0);
-        bool isUInt = m_b.isUintType(compareType);
-        bool isInt = m_b.isIntType(compareType);
-        bool isFloat = m_b.isFloatType(compareType);
+        spv::Id compare_type = m_b.getTypeId(src0);
+        bool isUInt = m_b.isUintType(compare_type);
+        bool isInt = m_b.isIntType(compare_type);
+        bool isFloat = m_b.isFloatType(compare_type);
 
         spv::Op compare_op;
 
-        switch (compare_type) {
-        case CompareType::LT_ZERO:
+        switch (compare_method) {
+        case CompareMethod::LT_ZERO:
             if (isUInt)
                 compare_op = spv::Op::OpULessThan;
             else if (isInt)
@@ -116,7 +116,7 @@ bool USSETranslatorVisitor::vmov(
             else
                 compare_op = spv::Op::OpFOrdLessThan;
             break;
-        case CompareType::LTE_ZERO:
+        case CompareMethod::LTE_ZERO:
             if (isUInt)
                 compare_op = spv::Op::OpULessThanEqual;
             else if (isInt)
@@ -124,13 +124,13 @@ bool USSETranslatorVisitor::vmov(
             else
                 compare_op = spv::Op::OpFOrdLessThanEqual;
             break;
-        case CompareType::NE_ZERO:
+        case CompareMethod::NE_ZERO:
             if (isInt || isUInt)
                 compare_op = spv::Op::OpINotEqual;
             else
                 compare_op = spv::Op::OpFOrdNotEqual;
             break;
-        case CompareType::EQ_ZERO:
+        case CompareMethod::EQ_ZERO:
             if (isInt || isUInt)
                 compare_op = spv::Op::OpIEqual;
             else
@@ -151,17 +151,17 @@ bool USSETranslatorVisitor::vmov(
     std::string conditional_str;
     if (is_conditional) {
         std::string expr;
-        switch (compare_type) {
-        case CompareType::LT_ZERO:
+        switch (compare_method) {
+        case CompareMethod::LT_ZERO:
             expr = "<";
             break;
-        case CompareType::LTE_ZERO:
+        case CompareMethod::LTE_ZERO:
             expr = "<=";
             break;
-        case CompareType::EQ_ZERO:
+        case CompareMethod::EQ_ZERO:
             expr = "==";
             break;
-        case CompareType::NE_ZERO:
+        case CompareMethod::NE_ZERO:
             expr = "!=";
             break;
         }
