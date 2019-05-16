@@ -53,8 +53,12 @@ target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf"
 add_library(elfio INTERFACE)
 target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio")
 
+add_subdirectory(fmt)
+add_library(fmt::fmt ALIAS fmt)
+set (fmt_DIR fmt)
+
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
-target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1 SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1 SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE SPDLOG_FMT_EXTERNAL=1)
 
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
@@ -127,7 +131,8 @@ else()
 	target_link_libraries(unicorn INTERFACE "${UNICORN_LIB}")
 endif()
 
-set(DYNARMIC_TESTS OFF)
+set(DYNARMIC_TESTS OFF CACHE BOOL "")
+set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
 add_subdirectory(dynarmic)
 
 add_library(vita-headers INTERFACE)
