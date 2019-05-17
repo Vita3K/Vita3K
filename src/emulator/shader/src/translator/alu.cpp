@@ -617,6 +617,9 @@ bool USSETranslatorVisitor::vbw(
         src2 = m_b.makeUintConstant(src2_invert ? ~value : value);
     } else {
         src2 = load(inst.opr.src2, 0b0001);
+        if (m_b.isFloatType(m_b.getTypeId(src2))) {
+            src2 = m_b.createUnaryOp(spv::Op::OpBitcast, type_ui32, src2);
+        }
         if (src2_invert) {
             src2 = m_b.createUnaryOp(spv::Op::OpNot, type_ui32, src2);
         }
@@ -639,6 +642,10 @@ bool USSETranslatorVisitor::vbw(
     }
 
     result = m_b.createBinOp(operation, type_ui32, src1, src2);
+    if (m_b.isFloatType(m_b.getTypeId(src2))) {
+        result = m_b.createUnaryOp(spv::Op::OpBitcast, type_f32, src2);
+    }
+
     store(inst.opr.dest, result, 0b0001);
 
     LOG_DISASM("{:016x}: {}{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode),
