@@ -221,6 +221,11 @@ struct SceGxmProgramAttributeDescriptor {
     std::uint32_t component_info; ///< Total components and type
 };
 
+struct SceGxmDependentSampler {
+    std::uint16_t resource_index_layout_offset;     ///< The resource index of the sampler, in range of [index * 4, (index + 1) * 4)
+    std::uint16_t sa_offset;                        ///< The SA offset correspond to the sampler
+};
+
 enum SceGxmFragmentProgramInputs : int {
     _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE = 0,
 
@@ -300,10 +305,10 @@ public:
     std::uint32_t literals_count;
     std::uint32_t literals_offset;
     std::uint32_t unk_78;
-    std::uint32_t maybe_parameters_offset2; //not sure
+    std::uint32_t alternative_parameters_offset;    // Point to the same thing as the upper field.
 
-    std::uint32_t unk_80;
-    std::uint32_t unk_84;
+    std::uint32_t dependent_sampler_count;
+    std::uint32_t dependent_sampler_offset;
     std::uint32_t unk_88;
     std::uint32_t unk_8C;
     std::uint32_t container_count;

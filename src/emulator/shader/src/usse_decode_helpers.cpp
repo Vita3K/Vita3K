@@ -268,12 +268,11 @@ static void finalize_register(Operand &reg, bool is_double_regs, uint8_t reg_bit
 
     // In secondary program, data are computed and stored as SA, internal register stay the same.
     // TODO: Constant ?
-    if (reg.bank != RegisterBank::FPINTERNAL && is_second_program)
+    if (reg.bank != RegisterBank::FPINTERNAL && reg.bank != RegisterBank::FPCONSTANT && is_second_program)
         reg.bank = RegisterBank::SECATTR;
 }
 
-Operand decode_dest(Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
-    Operand dest{};
+Operand &decode_dest(usse::Operand &dest, Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
     dest.num = dest_n;
     dest.bank = decode_dest_bank(dest_bank, bank_ext);
     dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
@@ -285,10 +284,23 @@ Operand decode_dest(Imm6 dest_n, Imm2 dest_bank, bool bank_ext, bool is_double_r
     return dest;
 }
 
-Operand decode_src12(Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
-    Operand src{};
-    src.num = src_n;
+Operand &decode_src12(usse::Operand &src, Imm6 src_n, Imm2 src_bank_sel, Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits, bool is_second_program) {
     src.bank = decode_src12_bank(src_bank_sel, src_bank_ext);
+    src.num = src_n;
+    src.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+
+    if (is_double_regs)
+        double_reg(src.num, src.bank);
+
+    finalize_register(src, is_double_regs, reg_bits, is_second_program);
+    return src;
+}
+
+usse::Operand &decode_src0(usse::Operand &src, usse::Imm6 src_n, usse::Imm1 src_bank_sel, usse::Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits,
+    bool is_second_program) {
+    src.num = src_n;
+    src.bank = decode_src0_bank(src_bank_sel, src_bank_ext);
+    src.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
     if (is_double_regs)
         double_reg(src.num, src.bank);
@@ -312,6 +324,28 @@ usse::Imm4 decode_write_mask(usse::Imm4 write_mask, const bool f16) {
     }
 
     return new_write_mask;
+}
+
+usse::RegisterFlags decode_modifier(usse::Imm2 mod) {
+    switch (mod) {
+    case 1: {
+        return RegisterFlags::Negative;
+    }
+
+    case 2: {
+        return RegisterFlags::Absolute;
+    }
+
+    case 3: {
+        return RegisterFlags::Negative | RegisterFlags::Absolute;
+    }
+
+    default: {
+        break;
+    }
+    }
+
+    return static_cast<usse::RegisterFlags>(0);
 }
 
 } // namespace shader::usse

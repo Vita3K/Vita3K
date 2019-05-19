@@ -15,9 +15,11 @@ class Builder;
 namespace shader {
 
 // Dump generated SPIR-V disassembly up to this point
-void spirv_disasm_print(const usse::SpirvCode &spirv_binary);
+void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
 
-std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_hash, bool force_shader_debug = false);
+std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_hash, bool force_shader_debug = false,
+    std::string *spirv_dump = nullptr, std::string *disasm_dump = nullptr);
+
 void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath);
 
 } // namespace shader
