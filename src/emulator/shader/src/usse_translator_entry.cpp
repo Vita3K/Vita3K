@@ -225,6 +225,36 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::vpck, "VPCK ()", "01000pppsnrydecb-aaaffftttmmmmkkll--gggggggoohiijjqqqqqqu--vvvvw"),
     
+    
+    // Bitwise Instructions
+    /*
+                             01 = op1_cnst
+                               ooo = op1 (3 bits)
+                                  ppp = pred (3 bits)
+                                     s = skipinv (1 bit)
+                                      n = nosched (1 bit)
+                                       r = repeat_count (1 bit)
+                                        y = sync_start (1 bit)
+                                         d = dest_ext (1 bit)
+                                          e = end (1 bit)
+                                           c = src1_ext (1 bit)
+                                            x = src2_ext (1 bit)
+                                             mmmm = mask_count (4 bits)
+                                                 i = src2_invert (1 bit)
+                                                  ttttt = src2_rot (5 bits)
+                                                       hh = src2_exth (2 bits)
+                                                         a = op2 (1 bit)
+                                                          b = bitwise_partial (1 bit)
+                                                           kk = dest_bank (2 bits)
+                                                             ff = src1_bank (2 bits)
+                                                               gg = src2_bank (2 bits)
+                                                                 jjjjjjj = dest_n (7 bits)
+                                                                        lllllll = src2_sel (7 bits)
+                                                                               qqqqqqq = src1_n (7 bits)
+                                                                                    uuuuuuu = src2_n (7 bits)
+    */
+    INST(&V::vbw, "VBW ()", "01ooopppsnrydecxmmmmittttthhabkkffggjjjjjjjlllllllqqqqqqquuuuuuu"),
+
     // Test Instructions
     /*
                               01001 = op1

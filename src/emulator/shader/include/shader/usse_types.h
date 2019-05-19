@@ -110,6 +110,13 @@ enum class MoveType : uint8_t {
     CONDITIONALU8,
 };
 
+enum class CompareMethod : uint8_t {
+    NE_ZERO = 0b00,
+    EQ_ZERO = 0b01,
+    LT_ZERO = 0b10,
+    LTE_ZERO = 0b11,
+};
+
 enum class DataType : uint8_t {
     INT8,
     INT16,

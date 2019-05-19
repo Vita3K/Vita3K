@@ -564,6 +564,98 @@ bool USSETranslatorVisitor::vnmad16(
     return vnmad32(pred, skipinv, src1_swiz_10_11, syncstart, dest_bank_ext, src1_swiz_9, src1_bank_ext, src2_bank_ext, src2_swiz, nosched, dest_mask, src1_mod, src2_mod, src1_swiz_7_8, dest_bank_sel, src1_bank_sel, src2_bank_sel, dest_n, src1_swiz_0_6, op2, src1_n, src2_n);
 }
 
+bool USSETranslatorVisitor::vbw(
+    Imm3 op1,
+    ExtPredicate pred,
+    Imm1 skipinv,
+    Imm1 nosched,
+    Imm1 repeat_count,
+    Imm1 sync_start,
+    Imm1 dest_ext,
+    Imm1 end,
+    Imm1 src1_ext,
+    Imm1 src2_ext,
+    Imm4 mask_count,
+    Imm1 src2_invert,
+    Imm5 src2_rot,
+    Imm2 src2_exth,
+    Imm1 op2,
+    Imm1 bitwise_partial,
+    Imm2 dest_bank,
+    Imm2 src1_bank,
+    Imm2 src2_bank,
+    Imm7 dest_n,
+    Imm7 src2_sel,
+    Imm7 src1_n,
+    Imm7 src2_n) {
+    Instruction inst{};
+
+    switch (op1) {
+    case 0b010: inst.opcode = op2 ? Opcode::OR : Opcode::AND; break;
+    case 0b011: inst.opcode = Opcode::XOR; break;
+    case 0b100: inst.opcode = op2 ? Opcode::ROL : Opcode::SHL; break;
+    case 0b101: inst.opcode = op2 ? Opcode::ASR : Opcode::SHR; break;
+    default: return false;
+    }
+
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, false, 8, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, false, 8, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, false, 8, m_second_program);
+
+    spv::Id src1 = load(inst.opr.src1, 0b0001);
+    spv::Id src2 = 0;
+
+    bool immediate = src2_ext && inst.opr.src2.bank == RegisterBank::IMMEDIATE;
+    uint32_t value = 0;
+
+    if (src2_rot) {
+        LOG_WARN("Bitwise Rotations are unsupported.");
+        return false;
+    }
+    if (immediate) {
+        value = src2_n | (static_cast<uint32_t>(src2_sel) << 7) | (static_cast<uint32_t>(src2_exth) << 14);
+        src2 = m_b.makeUintConstant(src2_invert ? ~value : value);
+    } else {
+        src2 = load(inst.opr.src2, 0b0001);
+        if (m_b.isFloatType(m_b.getTypeId(src2))) {
+            src2 = m_b.createUnaryOp(spv::Op::OpBitcast, type_ui32, src2);
+        }
+        if (src2_invert) {
+            src2 = m_b.createUnaryOp(spv::Op::OpNot, type_ui32, src2);
+        }
+    }
+
+    spv::Id result;
+
+    spv::Op operation;
+    switch (inst.opcode) {
+    case Opcode::OR: operation = spv::Op::OpBitwiseOr; break;
+    case Opcode::AND: operation = spv::Op::OpBitwiseAnd; break;
+    case Opcode::XOR: operation = spv::Op::OpBitwiseXor; break;
+    case Opcode::ROL:
+        LOG_WARN("Bitwise Rotate Left operation unsupported.");
+        return false; // TODO: SPIRV doesn't seem to have a rotate left operation!
+    case Opcode::ASR: operation = spv::Op::OpShiftRightArithmetic; break;
+    case Opcode::SHL: operation = spv::Op::OpShiftLeftLogical; break;
+    case Opcode::SHR: operation = spv::Op::OpShiftRightLogical; break;
+    default: return false;
+    }
+
+    result = m_b.createBinOp(operation, type_ui32, src1, src2);
+    if (m_b.isFloatType(m_b.getTypeId(src2))) {
+        result = m_b.createUnaryOp(spv::Op::OpBitcast, type_f32, src2);
+    }
+
+    store(inst.opr.dest, result, 0b0001);
+
+    LOG_DISASM("{:016x}: {}{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode),
+        disasm::operand_to_str(inst.opr.src1, 0b0001),
+        immediate ? log_hex(value) : disasm::operand_to_str(inst.opr.src2, 0b0001),
+        disasm::operand_to_str(inst.opr.dest, 0b0001));
+
+    return true;
+}
+
 bool USSETranslatorVisitor::vcomp(
     ExtPredicate pred,
     bool skipinv,

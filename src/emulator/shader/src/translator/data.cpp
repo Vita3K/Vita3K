@@ -86,20 +86,60 @@ bool USSETranslatorVisitor::vmov(
 
     // TODO: adjust dest mask if needed
 
-    if (is_conditional) {
-        LOG_WARN("Conditional vmov instructions unsupported");
-        return false;
-    }
-
     if (inst.opr.dest.bank == RegisterBank::SPECIAL || inst.opr.src0.bank == RegisterBank::SPECIAL || inst.opr.src1.bank == RegisterBank::SPECIAL || inst.opr.src2.bank == RegisterBank::SPECIAL) {
         LOG_WARN("Special regs unsupported");
         return false;
     }
 
-    // if (is_conditional) {
-    //     inst.operands.src0 = decode_src0(src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs);
-    //     inst.operands.src2 = decode_src12(src2_n, src2_bank_sel, src2_bank_ext, is_double_regs);
-    // }
+    spv::Id conditional_result = 0;
+    CompareMethod compare_method = CompareMethod::NE_ZERO;
+    if (is_conditional) {
+        compare_method = static_cast<CompareMethod>((test_bit_2 << 1) | test_bit_1);
+        inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank_sel, end_or_src0_bank_ext, false, 8, m_second_program);
+        inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, false, 8, m_second_program);
+        spv::Id src0 = load(inst.opr.src0, dest_mask);
+        spv::Id src2 = load(inst.opr.src2, dest_mask);
+
+        spv::Id compare_type = m_b.getTypeId(src0);
+        bool isUInt = m_b.isUintType(compare_type);
+        bool isInt = m_b.isIntType(compare_type);
+        bool isFloat = m_b.isFloatType(compare_type);
+
+        spv::Op compare_op;
+
+        switch (compare_method) {
+        case CompareMethod::LT_ZERO:
+            if (isUInt)
+                compare_op = spv::Op::OpULessThan;
+            else if (isInt)
+                compare_op = spv::Op::OpSLessThan;
+            else
+                compare_op = spv::Op::OpFOrdLessThan;
+            break;
+        case CompareMethod::LTE_ZERO:
+            if (isUInt)
+                compare_op = spv::Op::OpULessThanEqual;
+            else if (isInt)
+                compare_op = spv::Op::OpSLessThanEqual;
+            else
+                compare_op = spv::Op::OpFOrdLessThanEqual;
+            break;
+        case CompareMethod::NE_ZERO:
+            if (isInt || isUInt)
+                compare_op = spv::Op::OpINotEqual;
+            else
+                compare_op = spv::Op::OpFOrdNotEqual;
+            break;
+        case CompareMethod::EQ_ZERO:
+            if (isInt || isUInt)
+                compare_op = spv::Op::OpIEqual;
+            else
+                compare_op = spv::Op::OpFOrdEqual;
+            break;
+        }
+
+        conditional_result = m_b.createBinOp(compare_op, m_b.getTypeId(src0), src2, src0);
+    }
 
     // Recompile
 
@@ -108,8 +148,28 @@ bool USSETranslatorVisitor::vmov(
     BEGIN_REPEAT(repeat_count, 2)
     GET_REPEAT(inst);
 
-    const std::string disasm_str = fmt::format("{:016x}: {}{}.{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type),
-        disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset), disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset));
+    std::string conditional_str;
+    if (is_conditional) {
+        std::string expr;
+        switch (compare_method) {
+        case CompareMethod::LT_ZERO:
+            expr = "<";
+            break;
+        case CompareMethod::LTE_ZERO:
+            expr = "<=";
+            break;
+        case CompareMethod::EQ_ZERO:
+            expr = "==";
+            break;
+        case CompareMethod::NE_ZERO:
+            expr = "!=";
+            break;
+        }
+        conditional_str = fmt::format("({} {} {})", disasm::operand_to_str(inst.opr.src2, dest_mask), expr, disasm::operand_to_str(inst.opr.src0, dest_mask));
+    }
+
+    const std::string disasm_str = fmt::format("{:016x}: {}{}.{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type),
+        disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset), disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset), conditional_str);
 
     LOG_DISASM(disasm_str);
 
