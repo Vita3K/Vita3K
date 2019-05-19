@@ -16,9 +16,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/usse_translator.h>
 #include <shader/usse_decoder_helpers.h>
 #include <shader/usse_disasm.h>
+#include <shader/usse_translator.h>
 #include <shader/usse_types.h>
 #include <util/log.h>
 
@@ -74,8 +74,7 @@ bool USSETranslatorVisitor::smp(
     Imm7 dest_n,
     Imm7 src0_n,
     Imm7 src1_n,
-    Imm7 src2_n)
-{
+    Imm7 src2_n) {
     // LOD mode: none, bias, replace, gradient
     if (lod_mode != 0 || dim + 1 != 2) {
         LOG_ERROR("Sampler LOD custom mode not implemented!");
@@ -112,7 +111,7 @@ bool USSETranslatorVisitor::smp(
         disasm::operand_to_str(inst.opr.dest, 0b0001), disasm::operand_to_str(inst.opr.src0, 0b0011), disasm::operand_to_str(inst.opr.src1, 0b0000));
 
     m_b.setLine(m_recompiler.cur_pc);
-    
+
     // Generate simple stuff
     // Load the coord
     const spv::Id coord = load(inst.opr.src0, 0b0011);

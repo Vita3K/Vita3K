@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/usse_disasm.h>
 #include <shader/spirv_recompiler.h>
+#include <shader/usse_disasm.h>
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
@@ -717,10 +717,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     if (container) {
         // Create dependent sampler
-        const SceGxmDependentSampler *dependent_samplers = reinterpret_cast<const SceGxmDependentSampler*>(reinterpret_cast<const std::uint8_t *>(&program.dependent_sampler_offset)
+        const SceGxmDependentSampler *dependent_samplers = reinterpret_cast<const SceGxmDependentSampler *>(reinterpret_cast<const std::uint8_t *>(&program.dependent_sampler_offset)
             + program.dependent_sampler_offset);
 
-        for (std::uint32_t i = 0; i < program.dependent_sampler_count; i ++) {
+        for (std::uint32_t i = 0; i < program.dependent_sampler_count; i++) {
             const std::uint32_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;
             spv_params.uniforms.set_next_offset(container->base_sa_offset + dependent_samplers[i].sa_offset);
             spv_params.uniforms.push({ b.getTypeId(samplers[rsc_index]), samplers[rsc_index] }, 1);

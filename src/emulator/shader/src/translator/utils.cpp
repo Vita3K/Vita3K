@@ -133,7 +133,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
                 temp_reg.type_id = type_f32_v[4];
                 temp_reg.var_id = const_f32_v0[4];
             }
-            
+
             if (m_b.isArrayType(temp_reg.type_id)) {
                 const int size_per_element = temp_reg.size / m_b.getNumTypeComponents(temp_reg.type_id);
 
@@ -143,7 +143,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
                 temp_reg.type_id = m_b.getContainedTypeId(temp_reg.type_id);
                 temp_reg.size = size_per_element;
             }
-            
+
             bridge_list.push_back(temp_reg);
             collected_comp_count += temp_reg.size;
         } while (collected_comp_count < 4);
@@ -401,13 +401,11 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
             auto get_f32_from_bank = [&](const int num, const int bank) -> spv::Id {
                 switch (bank) {
                 case 0: {
-                    return m_b.makeFloatConstant(*reinterpret_cast<const float*>(&
-                        usse::f32_constant_table_bank_0_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
+                    return m_b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_0_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
                 }
 
                 case 1: {
-                    return m_b.makeFloatConstant(*reinterpret_cast<const float*>(&
-                        usse::f32_constant_table_bank_1_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
+                    return m_b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_1_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
                 }
 
                 default:
@@ -438,7 +436,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
                     return m_b.makeFloatConstant(
                         usse::f16_constant_table_bank1[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
                 }
-                
+
                 case 2: {
                     return m_b.makeFloatConstant(
                         usse::f16_constant_table_bank2[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
@@ -541,9 +539,9 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
     // Four floats, not in the same vector. In order to build the foundation, to forms the expected result: vec2(c, d), we need
     // the base first, always be. So we need to first, get the register that contains our lowest swizzle channel Z. That is
     // the variable c.
-    // 
+    //
     // Swizzle like this: sa24.z1w1, constant swizzle channel will be ignored, so swizzle channel Z still be the lowest swizzle.
-    // We will get the base by getting the register 
+    // We will get the base by getting the register
     //
     // Another example: sa27.zwyz
     // Where
@@ -656,7 +654,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
         // We only need to extract, the unpack will do the swizzling job later.
         extract_swizz = SWIZZLE_CHANNEL_4_DEFAULT;
     }
-    
+
     // We need to bridge
     spv::Id first_pass = spv::NoResult;
 
@@ -670,7 +668,7 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
     // comp offset unexpectedly owns 1 from the unexpected shift.
     // If we don't return the favor, the comp_offset will be 0, yet the swizzle still be Y, results in 60
     // By returning the 1 to the unexpected shift, we will get comp_offset = -1, swizzle is X, and results in 50
-    
+
     first_pass = bridge(reg_left, to_bridge[0], extract_swizz, (int)comp_offset - lowest_swizzle_bit, extract_mask);
 
     SpirvReg first_pass_wrapper{};
@@ -755,8 +753,7 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
             // Use OpInsertDynamic
             for (int i = 0; i < total_comp_dest; i++) {
                 if (dest_mask & (1 << i)) {
-                    result = m_b.createOp(spv::OpVectorInsertDynamic, dest_reg.type_id, { m_b.createLoad(dest_reg.var_id), source, 
-                        m_b.makeIntConstant(i + dest_comp_offset % 4) });
+                    result = m_b.createOp(spv::OpVectorInsertDynamic, dest_reg.type_id, { m_b.createLoad(dest_reg.var_id), source, m_b.makeIntConstant(i + dest_comp_offset % 4) });
 
                     break;
                 }

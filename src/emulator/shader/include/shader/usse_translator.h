@@ -19,8 +19,8 @@
 
 #include <gxm/types.h>
 #include <shader/spirv_recompiler.h>
-#include <shader/usse_translator_types.h>
 #include <shader/usse_program_analyzer.h>
+#include <shader/usse_translator_types.h>
 
 #include <SPIRV/SpvBuilder.h>
 #include <boost/optional/optional.hpp>
@@ -74,7 +74,7 @@ public:
     spv::Id do_fetch_texture(const spv::Id tex, const spv::Id coord, const DataType dest_type);
 
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries, 
+    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
         bool is_secondary_program = false)
         : m_b(_b)
         , m_recompiler(_recompiler)
@@ -90,7 +90,7 @@ public:
 
         // Set main block
         main_block = m_b.getBuildPoint();
-        
+
         // Import GLSL.std.450
         std_builtins = m_b.import("GLSL.std.450");
 
@@ -125,21 +125,20 @@ public:
     }
 
 private:
-//
-// Translation helpers
-//
+    //
+    // Translation helpers
+    //
 
-#define BEGIN_REPEAT(repeat_count, jump)                                                    \
-    const auto repeat_count_num = (uint8_t)repeat_count + 1;                                \
-    const auto repeat_jump = jump;                                                          \
+#define BEGIN_REPEAT(repeat_count, jump)                     \
+    const auto repeat_count_num = (uint8_t)repeat_count + 1; \
+    const auto repeat_jump = jump;                           \
     for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
-
 #define END_REPEAT() }
 
-#define GET_REPEAT(inst)                                                                              \
-    const int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump;    \
-    const int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump;    \
-    const int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump;    \
+#define GET_REPEAT(inst)                                                                           \
+    const int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump; \
+    const int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump; \
+    const int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump; \
     const int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump
 
     const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index) {
@@ -340,7 +339,7 @@ public:
         Imm6 src0_n,
         Imm6 src1_n,
         Imm6 src2_n);
-        
+
     bool vnmad32(
         ExtPredicate pred,
         bool skipinv,
@@ -614,26 +613,26 @@ private:
     USSERecompiler &m_recompiler;
 };
 
-using BlockCacheMap = std::map<shader::usse::USSEOffset, spv::Block*>;
+using BlockCacheMap = std::map<shader::usse::USSEOffset, spv::Block *>;
 constexpr int sgx543_pc_bits = 20;
 
 struct USSERecompiler final {
-  BlockCacheMap cache;
-  const std::uint64_t *inst;
-  std::size_t count;
-  spv::Builder &b;
-  USSETranslatorVisitor visitor;
-  std::uint64_t cur_instr;
-  usse::USSEOffset cur_pc;
+    BlockCacheMap cache;
+    const std::uint64_t *inst;
+    std::size_t count;
+    spv::Builder &b;
+    USSETranslatorVisitor visitor;
+    std::uint64_t cur_instr;
+    usse::USSEOffset cur_pc;
 
-  const SceGxmProgram *program;
+    const SceGxmProgram *program;
 
-  std::unordered_map<usse::USSEOffset, usse::USSEBlock> avail_blocks;
+    std::unordered_map<usse::USSEOffset, usse::USSEBlock> avail_blocks;
 
-  explicit USSERecompiler(spv::Builder &b, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries);
+    explicit USSERecompiler(spv::Builder &b, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries);
 
-  void reset(const std::uint64_t *inst, const std::size_t count);
-  spv::Block *get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom = nullptr);
+    void reset(const std::uint64_t *inst, const std::size_t count);
+    spv::Block *get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom = nullptr);
 };
 
 } // namespace shader::usse

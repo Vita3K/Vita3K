@@ -118,7 +118,7 @@ std::string operand_to_str(Operand op, Imm4 write_mask, std::uint32_t shift) {
     if (op.flags & RegisterFlags::Negative) {
         opstr = "-" + opstr;
     }
-    
+
     if (op.flags & RegisterFlags::Absolute) {
         opstr = "abs(" + opstr + ")";
     }

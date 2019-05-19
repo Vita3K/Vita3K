@@ -3,8 +3,8 @@
 #include <shader/usse_types.h>
 
 #include <fstream>
-#include <string>
 #include <memory>
+#include <string>
 
 namespace shader {
 namespace usse {
@@ -30,11 +30,10 @@ std::string swizzle_to_str(Swizzle<s> swizz, const Imm4 write_mask, uint32_t shi
 } // namespace shader
 
 // TODO: make LOG_RAW
-#define LOG_DISASM(fmt_str, ...)                                                                \
-    {                                                                                           \
-        auto fmt_disasm = fmt::format(fmt_str, ##__VA_ARGS__);                                  \
-        std::cout << fmt_disasm << std::endl;                                                   \
-        if (shader::usse::disasm::disasm_storage)                                               \
-            *shader::usse::disasm::disasm_storage += fmt_disasm + '\n';                         \
+#define LOG_DISASM(fmt_str, ...)                                        \
+    {                                                                   \
+        auto fmt_disasm = fmt::format(fmt_str, ##__VA_ARGS__);          \
+        std::cout << fmt_disasm << std::endl;                           \
+        if (shader::usse::disasm::disasm_storage)                       \
+            *shader::usse::disasm::disasm_storage += fmt_disasm + '\n'; \
     }
-

@@ -37,7 +37,7 @@ using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 template <typename V>
 boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     static const std::vector<USSEMatcher<V>> table = {
-// clang-format off
+    // clang-format off
     #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
 
     // Vector move
@@ -505,125 +505,126 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 //
 
 USSERecompiler::USSERecompiler(spv::Builder &b, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries)
-  : b(b)
-  , inst(inst)
-  , count(count)
-  , visitor(b, *this, cur_instr, parameters, queries, true) {
+    : b(b)
+    , inst(inst)
+    , count(count)
+    , visitor(b, *this, cur_instr, parameters, queries, true) {
 }
 
 void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count) {
-  inst = _inst;
-  count = _count;
-  cache.clear();
-  avail_blocks.clear();
+    inst = _inst;
+    count = _count;
+    cache.clear();
+    avail_blocks.clear();
 
-  usse::analyze(static_cast<shader::usse::USSEOffset>(_count - 1), [&](usse::USSEOffset off) -> std::uint64_t { return inst[off]; }, 
-      [&](const usse::USSEBlock &sub) -> usse::USSEBlock* { 
-          auto result = avail_blocks.emplace(sub.offset, sub); 
-          if (result.second) {
-              return &(result.first->second);
-          }
+    usse::analyze(
+        static_cast<shader::usse::USSEOffset>(_count - 1), [&](usse::USSEOffset off) -> std::uint64_t { return inst[off]; },
+        [&](const usse::USSEBlock &sub) -> usse::USSEBlock * {
+            auto result = avail_blocks.emplace(sub.offset, sub);
+            if (result.second) {
+                return &(result.first->second);
+            }
 
-          return nullptr;
-      });
+            return nullptr;
+        });
 }
 
 spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom) {
-  if (!custom) {
-    auto result = cache.find(block.offset);
+    if (!custom) {
+        auto result = cache.find(block.offset);
 
-    if (result != cache.end()) {
-      return result->second;
-    }
-  }
-
-  spv::Block *last_build_point = nullptr;
-
-  // We may divide it to smaller one
-  auto begin_new_block = [&]() -> spv::Block* {
-    // Create new block
-    spv::Block &blck = custom ? *custom : b.makeNewBlock();
-    last_build_point = b.getBuildPoint();
-
-    b.setBuildPoint(&blck);
-
-    return &blck;
-  };
-
-  auto end_new_block = [&]() {
-    b.setBuildPoint(last_build_point);
-  };
-
-  spv::Block *new_block = begin_new_block();
-
-  if (block.size > 0) {
-    const usse::USSEOffset pc_end = block.offset + block.size - 1;
-
-    for (usse::USSEOffset pc = block.offset; pc <= pc_end; pc++) {
-      cur_pc = pc;
-      cur_instr = inst[pc];
-
-      // Recompile the instruction, to the current block
-      auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
-      if (decoder)
-          decoder->call(visitor, cur_instr);
-      else
-          LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
-    }
-  }
-
-  if (block.offset + block.size >= count && !visitor.is_translating_secondary_program()) {
-    // We reach the end, for whatever the current block is.
-    // Emit non native frag output if neccessary first
-    if (program->get_type() == emu::Fragment && !program->is_native_color()) {
-        visitor.emit_non_native_frag_output();
+        if (result != cache.end()) {
+            return result->second;
+        }
     }
 
-    // Make a return
-    b.leaveFunction();
-  }
+    spv::Block *last_build_point = nullptr;
 
-  if (block.offset_link != -1) {
-    b.createBranch(get_or_recompile_block(avail_blocks[block.offset_link]));
-  }
+    // We may divide it to smaller one
+    auto begin_new_block = [&]() -> spv::Block * {
+        // Create new block
+        spv::Block &blck = custom ? *custom : b.makeNewBlock();
+        last_build_point = b.getBuildPoint();
 
-  end_new_block();
-  
-  // Generate predicate guards
-  if (block.pred != 0) {
-    spv::Block *trampoline_block = begin_new_block();
-    spv::Id pred_v = spv::NoResult;
+        b.setBuildPoint(&blck);
 
-    const ExtPredicate predicator = static_cast<ExtPredicate>(block.pred);
+        return &blck;
+    };
 
-    if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P1) {
-        int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
-        pred_v = visitor.load_predicate(pred_n);
-    } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
-        int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
-        pred_v = visitor.load_predicate(pred_n, true);
+    auto end_new_block = [&]() {
+        b.setBuildPoint(last_build_point);
+    };
+
+    spv::Block *new_block = begin_new_block();
+
+    if (block.size > 0) {
+        const usse::USSEOffset pc_end = block.offset + block.size - 1;
+
+        for (usse::USSEOffset pc = block.offset; pc <= pc_end; pc++) {
+            cur_pc = pc;
+            cur_instr = inst[pc];
+
+            // Recompile the instruction, to the current block
+            auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
+            if (decoder)
+                decoder->call(visitor, cur_instr);
+            else
+                LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
+        }
     }
 
-    spv::Block *merge_block = get_or_recompile_block(avail_blocks[block.offset + block.size]);
+    if (block.offset + block.size >= count && !visitor.is_translating_secondary_program()) {
+        // We reach the end, for whatever the current block is.
+        // Emit non native frag output if neccessary first
+        if (program->get_type() == emu::Fragment && !program->is_native_color()) {
+            visitor.emit_non_native_frag_output();
+        }
 
-    // Hint the compiler and the GLSL translator.
-    // If the predicated block's condition is not satisfied, we go back to execute normal flow.
-    // TODO: Request the createSelectionMerge to be public, or we just fork and modify the publicity ourselves.
-    spv::Instruction* select_merge = new spv::Instruction(spv::OpSelectionMerge);
-    select_merge->addIdOperand(merge_block->getId());
-    select_merge->addImmediateOperand(spv::SelectionControlMaskNone);
-    trampoline_block->addInstruction(std::unique_ptr<spv::Instruction>(select_merge));
+        // Make a return
+        b.leaveFunction();
+    }
 
-    b.createConditionalBranch(pred_v, new_block, merge_block);
+    if (block.offset_link != -1) {
+        b.createBranch(get_or_recompile_block(avail_blocks[block.offset_link]));
+    }
 
     end_new_block();
 
-    new_block = trampoline_block;
-  }
+    // Generate predicate guards
+    if (block.pred != 0) {
+        spv::Block *trampoline_block = begin_new_block();
+        spv::Id pred_v = spv::NoResult;
 
-  cache.emplace(block.offset, new_block);
+        const ExtPredicate predicator = static_cast<ExtPredicate>(block.pred);
 
-  return new_block;
+        if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P1) {
+            int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
+            pred_v = visitor.load_predicate(pred_n);
+        } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
+            int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
+            pred_v = visitor.load_predicate(pred_n, true);
+        }
+
+        spv::Block *merge_block = get_or_recompile_block(avail_blocks[block.offset + block.size]);
+
+        // Hint the compiler and the GLSL translator.
+        // If the predicated block's condition is not satisfied, we go back to execute normal flow.
+        // TODO: Request the createSelectionMerge to be public, or we just fork and modify the publicity ourselves.
+        spv::Instruction *select_merge = new spv::Instruction(spv::OpSelectionMerge);
+        select_merge->addIdOperand(merge_block->getId());
+        select_merge->addImmediateOperand(spv::SelectionControlMaskNone);
+        trampoline_block->addInstruction(std::unique_ptr<spv::Instruction>(select_merge));
+
+        b.createConditionalBranch(pred_v, new_block, merge_block);
+
+        end_new_block();
+
+        new_block = trampoline_block;
+    }
+
+    cache.emplace(block.offset, new_block);
+
+    return new_block;
 }
 
 void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries) {
@@ -633,7 +634,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     const uint64_t *secondary_program_start = program.secondary_program_start();
     const uint64_t *secondary_program_end = program.secondary_program_end();
 
-    std::map<ShaderPhase, std::pair<const std::uint64_t*, std::uint64_t>> shader_code;
+    std::map<ShaderPhase, std::pair<const std::uint64_t *, std::uint64_t>> shader_code;
 
     // Collect instructions of Pixel (primary) phase
     shader_code[ShaderPhase::Pixel] = std::make_pair(primary_program, primary_program_instr_count);
@@ -652,16 +653,16 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
         const auto cur_phase_code = shader_code[(ShaderPhase)phase];
 
         if (cur_phase_code.second != 0) {
-          if (static_cast<ShaderPhase>(phase) == ShaderPhase::SampleRate) {
-              recomp.visitor.set_secondary_program(true);
-          } else {
-              recomp.visitor.set_secondary_program(false);
-          }
+            if (static_cast<ShaderPhase>(phase) == ShaderPhase::SampleRate) {
+                recomp.visitor.set_secondary_program(true);
+            } else {
+                recomp.visitor.set_secondary_program(false);
+            }
 
-          recomp.reset(cur_phase_code.first, cur_phase_code.second);
+            recomp.reset(cur_phase_code.first, cur_phase_code.second);
 
-          // recompile the entry block.
-          recomp.get_or_recompile_block(recomp.avail_blocks[0], b.getBuildPoint());
+            // recompile the entry block.
+            recomp.get_or_recompile_block(recomp.avail_blocks[0], b.getBuildPoint());
         }
     }
 }

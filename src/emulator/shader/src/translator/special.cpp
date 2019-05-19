@@ -57,13 +57,12 @@ bool USSETranslatorVisitor::smlsi(
     Imm8 dest_inc,
     Imm8 src0_inc,
     Imm8 src1_inc,
-    Imm8 src2_inc)
-{
+    Imm8 src2_inc) {
     std::string disasm_str = "smlsi ";
 
     auto parse_increment = [&](const int idx, const Imm1 inc_mode, const Imm8 inc_value) {
         if (inc_mode) {
-            disasm_str += "swizz.("; 
+            disasm_str += "swizz.(";
 
             // Parse value as swizzle
             for (int i = 0; i < 4; i++) {

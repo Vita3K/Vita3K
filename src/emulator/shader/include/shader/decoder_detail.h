@@ -155,8 +155,8 @@ public:
         constexpr size_t args_count = util::FunctionInfo<FnT>::args_count;
         using Iota = std::make_index_sequence<args_count>;
 
-        const auto[mask, expect] = GetMaskAndExpect(bitstring);
-        const auto[arg_masks, arg_shifts] = GetArgInfo<args_count>(bitstring);
+        const auto [mask, expect] = GetMaskAndExpect(bitstring);
+        const auto [arg_masks, arg_shifts] = GetArgInfo<args_count>(bitstring);
         const auto proxy_fn = VisitorCaller<FnT>::Make(Iota(), fn, arg_masks, arg_shifts);
 
         return MatcherT(name, mask, expect, proxy_fn);

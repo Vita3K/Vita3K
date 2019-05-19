@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/usse_program_analyzer.h>
 #include <gtest/gtest.h>
+#include <shader/usse_program_analyzer.h>
 
 #include <unordered_map>
 
@@ -24,26 +24,27 @@ using namespace shader;
 
 TEST(program_analyzer, simple_branching) {
     const std::uint64_t ops[] = {
-        17870293491888685056,   //     nop
-        18230571566473674760,   // !p0 br #+8
-        17870293491888685056,   //     nop
-        17870293491888685056,   //     nop
-        17870293491888685056,   //     nop
-        17870293491888685056,   //     nop
-        17870293491888685056,   //     nop
-        17870293491888685056,   //     nop
-        17870283596284035074,   //     br #+2
-        17870293491888685056,   //     nop
-        17870293491888685056,   //     nop
-        17870293491888685056,   //     nop
-        17870293491888685056,   //     nop
+        17870293491888685056, //     nop
+        18230571566473674760, // !p0 br #+8
+        17870293491888685056, //     nop
+        17870293491888685056, //     nop
+        17870293491888685056, //     nop
+        17870293491888685056, //     nop
+        17870293491888685056, //     nop
+        17870293491888685056, //     nop
+        17870283596284035074, //     br #+2
+        17870293491888685056, //     nop
+        17870293491888685056, //     nop
+        17870293491888685056, //     nop
+        17870293491888685056, //     nop
     };
 
     std::unordered_map<usse::USSEOffset, usse::USSEBlock> blocks;
 
-    usse::analyze(sizeof(ops) / 8 - 1, [&](usse::USSEOffset off) -> std::uint64_t { return ops[off]; }, 
-        [&](const usse::USSEBlock &sub) -> usse::USSEBlock* { 
-            auto result = blocks.emplace(sub.offset, sub); 
+    usse::analyze(
+        sizeof(ops) / 8 - 1, [&](usse::USSEOffset off) -> std::uint64_t { return ops[off]; },
+        [&](const usse::USSEBlock &sub) -> usse::USSEBlock * {
+            auto result = blocks.emplace(sub.offset, sub);
             if (result.second) {
                 return &(result.first->second);
             }

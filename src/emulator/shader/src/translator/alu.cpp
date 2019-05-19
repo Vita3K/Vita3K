@@ -91,15 +91,15 @@ bool USSETranslatorVisitor::vmad(
     if (src0_abs) {
         inst.opr.src0.flags |= RegisterFlags::Absolute;
     }
-    
+
     if (src0_neg) {
         inst.opr.src0.flags |= RegisterFlags::Negative;
     }
-    
+
     if (gpi0_abs) {
         inst.opr.src1.flags |= RegisterFlags::Absolute;
     }
-    
+
     if (gpi0_neg) {
         inst.opr.src1.flags |= RegisterFlags::Negative;
     }
@@ -107,7 +107,7 @@ bool USSETranslatorVisitor::vmad(
     if (gpi1_abs) {
         inst.opr.src2.flags |= RegisterFlags::Absolute;
     }
-    
+
     if (gpi1_neg) {
         inst.opr.src2.flags |= RegisterFlags::Negative;
     }
@@ -162,8 +162,7 @@ bool USSETranslatorVisitor::vmad2(
     Imm2 src0_swiz_bits01,
     Imm6 src0_n,
     Imm6 src1_n,
-    Imm6 src2_n)
-{
+    Imm6 src2_n) {
     Instruction inst{};
     Opcode op = Opcode::VMAD;
 
@@ -284,8 +283,7 @@ bool USSETranslatorVisitor::vdp(
     Imm3 src0_swiz_z,
     Imm3 src0_swiz_y,
     Imm3 src0_swiz_x,
-    Imm6 src0_n)
-{
+    Imm6 src0_n) {
     Instruction inst;
 
     // Is this VDP3 or VDP4, op2 = 0 => vec3
@@ -344,17 +342,17 @@ bool USSETranslatorVisitor::vdp(
 
     // Decoding done
     BEGIN_REPEAT(repeat_count, 2)
-        GET_REPEAT(inst);
+    GET_REPEAT(inst);
 
-        LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
-            disasm::operand_to_str(inst.opr.src0, src_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
-            
-        spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, src0_repeat_offset);
-        spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
+    LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
+        disasm::operand_to_str(inst.opr.src0, src_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
 
-        spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
+    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, src0_repeat_offset);
+    spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
 
-        store(inst.opr.dest, result, write_mask, dest_repeat_offset);
+    spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
+
+    store(inst.opr.dest, result, write_mask, dest_repeat_offset);
     END_REPEAT()
 
     return true;
@@ -674,8 +672,7 @@ bool USSETranslatorVisitor::vcomp(
     Imm2 src1_bank,
     Imm7 dest_n,
     Imm7 src1_n,
-    Imm4 write_mask)
-{
+    Imm4 write_mask) {
     Instruction inst;
 
     // All of them needs to be doubled
@@ -698,7 +695,7 @@ bool USSETranslatorVisitor::vcomp(
         DataType::C10,
         DataType::UNK
     };
-    
+
     static const DataType tb_decode_dest_type[] = {
         DataType::F32,
         DataType::F16,
@@ -746,55 +743,55 @@ bool USSETranslatorVisitor::vcomp(
 
     // TODO: Log
     BEGIN_REPEAT(repeat_count, 2)
-        GET_REPEAT(inst);
-        spv::Id result = load(inst.opr.src1, src_mask, src1_repeat_offset);
-        
-        switch (op) {
-        case Opcode::VRCP: {
-            // We have to manually divide by 1
-            const int num_comp = m_b.getNumComponents(result);
-            const spv::Id one_const = m_b.makeFloatConstant(1.0f);
-            spv::Id one_v = spv::NoResult;
+    GET_REPEAT(inst);
+    spv::Id result = load(inst.opr.src1, src_mask, src1_repeat_offset);
 
-            if (num_comp == 1) {
-                one_v = one_const;
-            } else {
-                std::vector<spv::Id> ones;
-                ones.insert(ones.begin(), num_comp, one_const);
+    switch (op) {
+    case Opcode::VRCP: {
+        // We have to manually divide by 1
+        const int num_comp = m_b.getNumComponents(result);
+        const spv::Id one_const = m_b.makeFloatConstant(1.0f);
+        spv::Id one_v = spv::NoResult;
 
-                one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], ones);
-            }
+        if (num_comp == 1) {
+            one_v = one_const;
+        } else {
+            std::vector<spv::Id> ones;
+            ones.insert(ones.begin(), num_comp, one_const);
 
-            result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), one_v, result);
-            break;
+            one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], ones);
         }
 
-        case Opcode::VRSQ: {
-            // Inverse squareroot. Call a builtin this case.
-            result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450InverseSqrt, { result });
-            break;
-        }
+        result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), one_v, result);
+        break;
+    }
 
-        case Opcode::VLOG: {
-            // src0 = e^y => return y
-            result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Log, { result });
-            break;
-        }
+    case Opcode::VRSQ: {
+        // Inverse squareroot. Call a builtin this case.
+        result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450InverseSqrt, { result });
+        break;
+    }
 
-        case Opcode::VEXP: {
-            // y = e^src0 => return y
-            result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Exp, { result });
-            break;
-        }
+    case Opcode::VLOG: {
+        // src0 = e^y => return y
+        result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Log, { result });
+        break;
+    }
 
-        default:
-            break;
-        }
+    case Opcode::VEXP: {
+        // y = e^src0 => return y
+        result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Exp, { result });
+        break;
+    }
 
-        store(inst.opr.dest, result, write_mask, dest_repeat_offset);
+    default:
+        break;
+    }
 
-        LOG_DISASM("{:016x}: {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset),
-            disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset));
+    store(inst.opr.dest, result, write_mask, dest_repeat_offset);
+
+    LOG_DISASM("{:016x}: {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset),
+        disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset));
     END_REPEAT()
 
     return true;

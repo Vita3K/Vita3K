@@ -18,35 +18,34 @@
 #include <shader/usse_program_analyzer.h>
 
 namespace shader::usse {
-    bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off) {
-        const std::uint32_t high = (inst >> 32);
-        const std::uint32_t low = static_cast<std::uint32_t>(inst);
+bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off) {
+    const std::uint32_t high = (inst >> 32);
+    const std::uint32_t low = static_cast<std::uint32_t>(inst);
 
-        const bool br_inst_is = ((high & ~0x07FFFFFFU) >> 27 == 0b11111) && (((high & ~0xFFCFFFFFU) >> 20) == 0) && 
-            !(high & 0x00400000) && ((((high & ~0xFFFFFE3FU) >> 6) == 0) || ((high & ~0xFFFFFE3FU) >> 6) == 1);
-            
-        if (br_inst_is) {
-            br_off = (low & ((1 << 20) - 1));
-            pred = (high & ~0xF8FFFFFFU) >> 24;
-        }
+    const bool br_inst_is = ((high & ~0x07FFFFFFU) >> 27 == 0b11111) && (((high & ~0xFFCFFFFFU) >> 20) == 0) && !(high & 0x00400000) && ((((high & ~0xFFFFFE3FU) >> 6) == 0) || ((high & ~0xFFFFFE3FU) >> 6) == 1);
 
-        return br_inst_is;
+    if (br_inst_is) {
+        br_off = (low & ((1 << 20) - 1));
+        pred = (high & ~0xF8FFFFFFU) >> 24;
     }
 
-    std::uint8_t get_predicate(const std::uint64_t inst) {
-        switch (inst >> 59) {
-        // Special instructions, no predicate
-        case 0b11111:
-            return 0;
-
-        // VMAD normal version, predicates only occupied two bits
-        case 0b00000:
-            return ((inst >> 32) & ~0xFCFFFFFF) >> 24;
-
-        default:
-            break;
-        }
-
-        return ((inst >> 32) & ~0xF8FFFFFFU) >> 24;
-    }
+    return br_inst_is;
 }
+
+std::uint8_t get_predicate(const std::uint64_t inst) {
+    switch (inst >> 59) {
+    // Special instructions, no predicate
+    case 0b11111:
+        return 0;
+
+    // VMAD normal version, predicates only occupied two bits
+    case 0b00000:
+        return ((inst >> 32) & ~0xFCFFFFFF) >> 24;
+
+    default:
+        break;
+    }
+
+    return ((inst >> 32) & ~0xF8FFFFFFU) >> 24;
+}
+} // namespace shader::usse
