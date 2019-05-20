@@ -77,6 +77,10 @@ Thanks go out to people who offered advice or otherwise made this project possib
 ## Donations
 If you would like to show your appreciation or even help fund development, the project has a [Patreon](https://www.patreon.com/Vita3K) page.
 
+## Supporters
+Thank you to the following supporters:
+* Mored1984
+
 ## Note
 The purpose of the emulator is not to enable illegal activity.
 
