@@ -170,12 +170,12 @@ void draw_game_selector(HostState &host) {
                 continue;
             if (host.gui.game_selector.icons[game.title_id]) {
                 GLuint texture = host.gui.game_selector.icons[game.title_id].get();
-                ImGui::ImageButton(reinterpret_cast<void *>(texture), ImVec2(icon_size, icon_size));
+                ImGui::Image(reinterpret_cast<void *>(texture), ImVec2(icon_size, icon_size));
                 if (ImGui::IsItemHovered()) {
                     if (host.cfg.show_game_background) {
                         if (!host.gui.game_backgrounds[game.title_id])
                             load_game_background(host, game.title_id);
-                        else if (host.gui.game_backgrounds[game.title_id])
+                        else if (host.gui.current_background != static_cast<std::uint32_t>(host.gui.game_backgrounds[game.title_id]))
                             host.gui.current_background = host.gui.game_backgrounds[game.title_id];
                     }
                     if (ImGui::IsMouseClicked(0))
@@ -189,9 +189,9 @@ void draw_game_selector(HostState &host) {
             ImGui::NextColumn();
             if (ImGui::IsItemHovered()) {
                 if (host.cfg.show_game_background) {
-                    if (host.gui.user_backgrounds[host.cfg.background_image])
+                    if (host.gui.user_backgrounds[host.cfg.background_image] && host.gui.current_background != static_cast<std::uint32_t>(host.gui.user_backgrounds[host.cfg.background_image]))
                         host.gui.current_background = host.gui.user_backgrounds[host.cfg.background_image];
-                    else if (!host.gui.user_backgrounds[host.cfg.background_image])
+                    else if (!host.gui.user_backgrounds[host.cfg.background_image] && host.gui.current_background != 0)
                         host.gui.current_background = 0;
                 }
             }
