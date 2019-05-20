@@ -62,10 +62,14 @@ static void before_callback(const glbinding::FunctionCall &fn) {
 static void after_callback(const glbinding::FunctionCall &fn) {
     MICROPROFILE_LEAVE();
     for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
+#ifdef _DEBUG
         std::stringstream gl_error;
         gl_error << error;
         LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
         assert(false);
+#else
+        LOG_ERROR("OpenGL error: {}", log_hex(static_cast<std::uint32_t>(error)));
+#endif
     }
 }
 
