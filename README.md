@@ -17,12 +17,15 @@ The emulator currently runs some homebrew programs. It is also able to load some
 - [Commerical compatiblity database](https://github.com/Vita3K/compatibility/issues)
 
 [Alone with You](https://www.playstation.com/en-us/games/alone-with-you-psvita/) by **Benjamin Rivers**
+
 ![Alone with You screenshot](https://user-images.githubusercontent.com/20528385/57988943-1e955e80-7a62-11e9-8aa8-e96eacef8e60.png)
 
 [VA-11 HALL-A](https://www.playstation.com/en-us/games/va-11-hall-a-psvita/) by **Sukeban Games**
+
 ![VA-11 HALL-A screenshot](https://user-images.githubusercontent.com/20528385/57989089-fad31800-7a63-11e9-85de-017b29d5cc15.png)
 
 [VitaSnake](https://github.com/Grzybojad/vitaSnake/releases) by **Gryzbojad**
+
 ![VitaSnake screenshot](https://user-images.githubusercontent.com/20528385/58014428-cd6b8600-7ac6-11e9-83ab-a3d2b79417fe.png)
 
 ## Licence
