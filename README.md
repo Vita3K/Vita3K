@@ -24,7 +24,7 @@ The emulator currently runs some homebrew programs. It is also able to load some
 
 ![VA-11 HALL-A screenshot](https://user-images.githubusercontent.com/20528385/57989089-fad31800-7a63-11e9-85de-017b29d5cc15.png)
 
-[VitaSnake](https://github.com/Grzybojad/vitaSnake/releases) by **Gryzbojad**
+[VitaSnake](https://github.com/Grzybojad/vitaSnake/releases) by **Grzybojad**
 
 ![VitaSnake screenshot](https://user-images.githubusercontent.com/20528385/58014428-cd6b8600-7ac6-11e9-83ab-a3d2b79417fe.png)
 
@@ -80,6 +80,8 @@ If you would like to show your appreciation or even help fund development, the p
 ## Supporters
 Thank you to the following supporters:
 * Mored1984
+
+If you support us on Patreon and would like your name added, please get in touch or open a Pull Request.
 
 ## Note
 The purpose of the emulator is not to enable illegal activity.
