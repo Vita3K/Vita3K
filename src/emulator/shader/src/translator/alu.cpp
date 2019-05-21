@@ -361,6 +361,8 @@ bool USSETranslatorVisitor::vdp(
 spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask) {
     spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
     spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
+    std::vector<spv::Id> ids;
+    ids.push_back(vsrc1);
 
     if (vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
         LOG_WARN("Could not find a src register");
@@ -371,6 +373,16 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask
     spv::Id source_type = m_b.getTypeId(vsrc1);
 
     switch (inst.opcode) {
+    case Opcode::VDSX:
+    case Opcode::VF16DSX:
+        result = m_b.createOp(spv::OpDPdx, source_type, ids);
+        break;
+
+    case Opcode::VDSY:
+    case Opcode::VF16DSY:
+        result = m_b.createOp(spv::OpDPdy, source_type, ids);
+        break;
+
     case Opcode::VADD:
     case Opcode::VF16ADD: {
         result = m_b.createBinOp(spv::OpFAdd, source_type, vsrc1, vsrc2);
