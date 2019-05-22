@@ -91,6 +91,42 @@ void update_viewport(HostState &state) {
     }
 }
 
+void get_game_titles(HostState &host) {
+    fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
+    if (!fs::exists(app_path))
+        return;
+
+    fs::directory_iterator it{ app_path };
+    while (it != fs::directory_iterator{}) {
+        if (!it->path().empty() && !it->path().filename_is_dot() && !it->path().filename_is_dot_dot()) {
+            vfs::FileBuffer params;
+            host.io.title_id = it->path().stem().generic_string();
+            if (vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
+                SfoFile sfo_handle;
+                load_sfo(sfo_handle, params);
+                find_data(host.game_version, sfo_handle, "APP_VER");
+                find_data(host.game_title, sfo_handle, "TITLE");
+                std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
+                host.gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io.title_id });
+            }
+        }
+        boost::system::error_code er;
+        it.increment(er);
+    }
+}
+
+bool clear_and_refresh_game_list(HostState &host) {
+    if (host.gui.game_selector.games.empty())
+        return false;
+
+    host.gui.game_selector.games.clear();
+    if (!host.gui.game_selector.games.empty())
+        return false;
+
+    get_game_titles(host);
+    return true;
+}
+
 bool init(HostState &state, Config cfg, const Root &root_paths) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
@@ -148,23 +184,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 
     state.kernel.base_tick = { rtc_base_ticks() };
 
-    fs::directory_iterator it{ fs::path{ state.pref_path } / "ux0/app" };
-    while (it != fs::directory_iterator{}) {
-        if (!it->path().empty() && !it->path().filename_is_dot() && !it->path().filename_is_dot_dot()) {
-            vfs::FileBuffer params;
-            state.io.title_id = it->path().stem().generic_string();
-            if (vfs::read_app_file(params, state.pref_path, state.io.title_id, "sce_sys/param.sfo")) {
-                SfoFile sfo_handle;
-                load_sfo(sfo_handle, params);
-                find_data(state.game_version, sfo_handle, "APP_VER");
-                find_data(state.game_title, sfo_handle, "TITLE");
-                std::replace(state.game_title.begin(), state.game_title.end(), '\n', ' ');
-                state.gui.game_selector.games.push_back({ state.game_version, state.game_title, state.io.title_id });
-            }
-        }
-        boost::system::error_code er;
-        it.increment(er);
-    }
+    get_game_titles(state);
 
     if (state.cfg.overwrite_config)
         config::serialize(state.cfg, state.cfg.config_path);

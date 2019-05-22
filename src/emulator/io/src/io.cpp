@@ -203,7 +203,7 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
     const fs::path ux0_user00{ ux0_user / "00" };
     const fs::path ux0_savedata{ ux0_user00 / "savedata" };
 
-    fs::create_directory(ux0);
+    fs::create_directories(ux0);
     fs::create_directory(ux0_data);
     fs::create_directory(ux0_app);
     fs::create_directory(ux0_user);

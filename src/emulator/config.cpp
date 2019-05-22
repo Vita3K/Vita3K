@@ -167,6 +167,11 @@ static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_p
     get_yaml_value(config_node, "pref-path", &cfg.pref_path, root_pref_path);
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
 
+    if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
+        LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
+        return InvalidApplicationPath;
+    }
+
     // lle-modules
     try {
         auto lle_modules_node = config_node["lle-modules"];
@@ -183,6 +188,10 @@ static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_p
 }
 
 ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths) {
+    // Load base path configuration by default
+    if (fs::exists(check_path(root_paths.get_base_path())))
+        parse(cfg, root_paths.get_base_path(), root_paths.get_base_path_string());
+
     try {
         // Declare all options
         // clang-format off
@@ -200,7 +209,7 @@ ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths) {
         po::options_description config_desc("Configuration");
         config_desc.add_options()
             ("archive-log,A", po::bool_switch(&cfg.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
-            ("config-location,c", po::value<fs::path>(&cfg.config_path)->default_value(root_paths.get_base_path()), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault: <Vita3K folder>/config.yml")
+            ("config-location,c", po::value<fs::path>(&cfg.config_path), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault: <Vita3K folder>/config.yml")
             ("keep-config,w", po::bool_switch(&cfg.overwrite_config)->default_value(true), "Do not modify the configuration file after loading.")
             ("load-config,f", po::bool_switch(&cfg.load_config), "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
             ("lle-modules,m", po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
@@ -245,10 +254,14 @@ ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths) {
             return QuitRequested;
 
         if (cfg.load_config || cfg.config_path != root_paths.get_base_path()) {
-            if (parse(cfg, cfg.config_path, root_paths.get_pref_path_string()) != Success)
-                return InitConfigFailed;
+            if (cfg.config_path.empty()) {
+                cfg.config_path = root_paths.get_base_path();
+            } else {
+                if (parse(cfg, cfg.config_path, root_paths.get_pref_path_string()) != Success)
+                    return InitConfigFailed;
 
-            LOG_INFO("Custom configuration file loaded successfully.");
+                LOG_INFO("Custom configuration file loaded successfully.");
+            }
         }
 
         // Get LLE modules from the command line, otherwise get the modules from the YML file
