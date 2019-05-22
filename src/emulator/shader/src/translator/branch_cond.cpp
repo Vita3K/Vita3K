@@ -148,6 +148,10 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
         }
     }
 
+    if (alu_sel == 3) {
+        filled_dt = DataType::F32;
+    }
+
     return test_ops[alu_sel][alu_op];
 }
 
