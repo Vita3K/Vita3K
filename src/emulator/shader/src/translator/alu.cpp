@@ -373,6 +373,36 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask
     spv::Id source_type = m_b.getTypeId(vsrc1);
 
     switch (inst.opcode) {
+    case Opcode::AND: {
+        result = m_b.createBinOp(spv::OpBitwiseAnd, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::OR: {
+        result = m_b.createBinOp(spv::OpBitwiseOr, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::XOR: {
+        result = m_b.createBinOp(spv::OpBitwiseXor, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::SHL: {
+        result = m_b.createBinOp(spv::OpShiftLeftLogical, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::SHR: {
+        result = m_b.createBinOp(spv::OpShiftRightLogical, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::ASR: {
+        result = m_b.createBinOp(spv::OpShiftRightArithmetic, source_type, vsrc1, vsrc2);
+        break;
+    }
+
     case Opcode::VDSX:
     case Opcode::VF16DSX:
         result = m_b.createOp(spv::OpDPdx, source_type, ids);
@@ -608,9 +638,9 @@ bool USSETranslatorVisitor::vbw(
     default: return false;
     }
 
-    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, false, 8, m_second_program);
-    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, false, 8, m_second_program);
-    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, false, 8, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, false, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, false, 7, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, false, 7, m_second_program);
 
     spv::Id src1 = load(inst.opr.src1, 0b0001);
     spv::Id src2 = 0;

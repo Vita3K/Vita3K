@@ -565,12 +565,12 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
     // TODO: Properly handle
     if (op.bank == RegisterBank::IMMEDIATE) {
         auto t = m_b.makeVectorType(type_f32, static_cast<int>(dest_comp_count_to_get));
-        auto one = m_b.makeFpConstant(type_f32, 1.0);
+        auto value = m_b.makeFpConstant(type_f32, static_cast<float>(op.num));
 
         std::vector<spv::Id> ops;
         ops.resize(dest_comp_count_to_get);
 
-        std::fill(ops.begin(), ops.end(), one);
+        std::fill(ops.begin(), ops.end(), value);
 
         return m_b.makeCompositeConstant(t, ops);
     }
