@@ -59,12 +59,14 @@ public:
     // Contains repeat increasement offset
     int repeat_increase[4][4];
 
+    using RegisterCacheMap = std::unordered_map<uint16_t, SpirvReg>;
+
     // SPIR-V inputs are read-only, so we need to write to these temporaries instead
     // TODO: Figure out actual PA count limit
-    std::unordered_map<uint16_t, SpirvReg> pa_writeable;
+    RegisterCacheMap pa_writeable;
+    RegisterCacheMap r_supplies;
+    RegisterCacheMap sa_supplies;
 
-    // Each SPIR-V reg will contains 4 SA
-    std::array<SpirvReg, max_sa_registers / 4> sa_supplies;
     std::array<spv::Id, 4> predicates;
 
     void make_f16_unpack_func();
