@@ -76,33 +76,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
     if (bank == usse::RegisterBank::FPINTERNAL) {
         // Each GPI register is 128 bits long = 16 bytes long
         // So we need to multiply the reg index with 16 in order to get the right offset
-        reg_offset *= 16;
-    }
-
-    const auto writeable_idx = (reg_offset + shift_offset) / 4;
-
-    // If we are getting a PRIMATTR reg, we need to check whether a writeable one has already been created
-    // If it is, get the writeable one, else proceed
-    if (bank == usse::RegisterBank::PRIMATTR) {
-        decltype(pa_writeable)::iterator pa;
-        if ((pa = pa_writeable.find(writeable_idx)) != pa_writeable.end()) {
-            reg = pa->second;
-            out_comp_offset = (reg_offset + shift_offset) % 4;
-            return true;
-        }
-    }
-
-    // Again, for SECATTR, there are situation where SECATTR registers
-    if (bank == usse::RegisterBank::SECATTR) {
-        if (reg_offset > 128) {
-            return false;
-        }
-
-        if (sa_supplies[writeable_idx].var_id != spv::NoResult) {
-            reg = sa_supplies[writeable_idx];
-            out_comp_offset = (reg_offset + shift_offset) % 4;
-            return true;
-        }
+        reg_offset <<= 4;
     }
 
     const SpirvVarRegBank *spirv_bank = get_reg_bank(bank);
@@ -111,83 +85,161 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         return false;
     }
 
-    auto create_supply_register = [&](SpirvReg &dest, const std::string &name) -> SpirvReg {
-        const spv::Id new_writeable = m_b.createVariable(spv::StorageClassPrivate, type_f32_v[4], name.c_str());
+    const auto writeable_idx = (reg_offset + shift_offset) >> 2;
 
-        std::vector<SpirvReg> bridge_list;
-
-        uint32_t temp_comp = 0;
-        std::size_t collected_comp_count = 0;
-
-        // Switch to main block. Do initialize there so things don't get complicated (like we already assign original register value
-        // to a block, but another block haven't been initliazed yet).
-
-        spv::Block *crr_bp = m_b.getBuildPoint();
-        m_b.setBuildPoint(main_block);
-
-        do {
-            SpirvReg temp_reg;
-
-            if (!spirv_bank->find_reg_at(static_cast<std::uint32_t>(writeable_idx * 4 + collected_comp_count), temp_reg, temp_comp)) {
-                temp_reg.size = 4;
-                temp_reg.type_id = type_f32_v[4];
-                temp_reg.var_id = const_f32_v0[4];
-            }
-
-            if (m_b.isArrayType(temp_reg.type_id)) {
-                const int size_per_element = temp_reg.size / m_b.getNumTypeComponents(temp_reg.type_id);
-
-                // Need to do a access chain to access the elements
-                temp_reg.var_id = m_b.createOp(spv::OpAccessChain, m_b.makePointer(spv::StorageClassPrivate, m_b.getContainedTypeId(temp_reg.type_id)),
-                    { temp_reg.var_id, m_b.makeIntConstant(temp_comp / size_per_element) });
-                temp_reg.type_id = m_b.getContainedTypeId(temp_reg.type_id);
-                temp_reg.size = size_per_element;
-            }
-
-            bridge_list.push_back(temp_reg);
-            collected_comp_count += temp_reg.size;
-        } while (collected_comp_count < 4);
-
-        SpirvReg bridge_result;
-        bridge_result.type_id = type_f32_v[4];
-        bridge_result.size = 4;
-
-        if (bridge_list.size() == 1) {
-            bridge_result.var_id = m_b.createLoad(bridge_list[0].var_id);
-        } else {
-            bridge_result.var_id = bridge(bridge_list[0], bridge_list[1], SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111);
-
-            for (std::size_t i = 2; i < bridge_list.size(); i++) {
-                bridge_result.var_id = bridge(bridge_result, bridge_list[i], SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111);
-            }
+    auto find_cached_reg = [&](RegisterCacheMap &cache, const std::size_t max = 256) -> int {
+        if (reg_offset > max) {
+            return -1;
         }
 
-        m_b.createStore(bridge_result.var_id, new_writeable);
-        m_b.setBuildPoint(crr_bp);
+        RegisterCacheMap::iterator ite;
+
+        if ((ite = cache.find(writeable_idx)) != cache.end()) {
+            reg = ite->second;
+            out_comp_offset = (reg_offset + shift_offset) % 4;
+            return 1;
+        }
+
+        return 0;
+    };
+    
+    auto create_supply_register = [&](SpirvReg &dest, const std::string &name, const bool do_copy) -> SpirvReg {
+        const spv::Id new_writeable = m_b.createVariable(spv::StorageClassPrivate, type_f32_v[4], name.c_str());
+
+        if (do_copy) {
+            std::vector<SpirvReg> bridge_list;
+
+            uint32_t temp_comp = 0;
+            std::size_t collected_comp_count = 0;
+
+            // Switch to main block. Do initialize there so things don't get complicated (like we already assign original register value
+            // to a block, but another block haven't been initliazed yet).
+
+            spv::Block *crr_bp = m_b.getBuildPoint();
+            m_b.setBuildPoint(main_block);
+
+            do {
+                SpirvReg temp_reg;
+
+                if (!spirv_bank->find_reg_at(static_cast<std::uint32_t>(writeable_idx * 4 + collected_comp_count), temp_reg, temp_comp)) {
+                    temp_reg.size = 4;
+                    temp_reg.type_id = type_f32_v[4];
+                    temp_reg.var_id = const_f32_v0[4];
+                }
+
+                if (m_b.isArrayType(temp_reg.type_id)) {
+                    const int size_per_element = temp_reg.size / m_b.getNumTypeComponents(temp_reg.type_id);
+
+                    // Need to do a access chain to access the elements
+                    temp_reg.var_id = m_b.createOp(spv::OpAccessChain, m_b.makePointer(spv::StorageClassPrivate, m_b.getContainedTypeId(temp_reg.type_id)),
+                        { temp_reg.var_id, m_b.makeIntConstant(temp_comp / size_per_element) });
+                    temp_reg.type_id = m_b.getContainedTypeId(temp_reg.type_id);
+                    temp_reg.size = size_per_element;
+                }
+
+                bridge_list.push_back(temp_reg);
+                collected_comp_count += temp_reg.size;
+            } while (collected_comp_count < 4);
+
+            SpirvReg bridge_result;
+            bridge_result.type_id = type_f32_v[4];
+            bridge_result.size = 4;
+
+            if (bridge_list.size() == 1) {
+                bridge_result.var_id = m_b.createLoad(bridge_list[0].var_id);
+            } else {
+                bridge_result.var_id = bridge(bridge_list[0], bridge_list[1], SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111);
+
+                for (std::size_t i = 2; i < bridge_list.size(); i++) {
+                    bridge_result.var_id = bridge(bridge_result, bridge_list[i], SWIZZLE_CHANNEL_4_DEFAULT, shift_offset, 0b1111);
+                }
+            }
+
+            m_b.createStore(bridge_result.var_id, new_writeable);
+            m_b.setBuildPoint(crr_bp);
+        }
 
         dest.size = 4;
-        dest.offset = writeable_idx * 4;
+        dest.offset = writeable_idx << 2;
         dest.var_id = new_writeable;
         dest.type_id = type_f32_v[4];
 
         return dest;
     };
 
+    switch (bank) {
+    // If we are getting a PRIMATTR reg, we need to check whether a writeable one has already been created
+    // If it is, get the writeable one, else proceed
+    case usse::RegisterBank::PRIMATTR: {
+        if (find_cached_reg(pa_writeable)) {
+            return true;
+        }
+
+        break;
+    }
+
+    // Same for SECATTR
+    case usse::RegisterBank::SECATTR: {
+        const int result = find_cached_reg(sa_supplies, max_sa_registers);
+        
+        switch (result) {
+        case 1: {
+            return true;
+        }
+
+        case -1: {
+            return false;
+        }
+
+        default: {
+            break;
+        }
+        }
+
+        break;
+    }
+
+    case usse::RegisterBank::TEMP: {
+        if (find_cached_reg(r_supplies)) {
+            return true;
+        }
+
+        break;
+    }
+
+    default: {
+        break;
+    }
+    }
+    
+    auto create_new_reg_for_store = [&](RegisterCacheMap &cache, const char *prefix, const bool do_copy = true) {
+        std::string new_name = prefix;
+        new_name += std::to_string(writeable_idx << 2);
+
+        reg = create_supply_register(reg, new_name, do_copy);
+        cache[writeable_idx] = reg;
+
+        out_comp_offset = (reg_offset + shift_offset) % 4;
+    };
+
+
     bool result = spirv_bank->find_reg_at(reg_offset + shift_offset, reg, out_comp_offset);
     if (!result) {
         // Either if we get them for store or not, sometimes shader will still use SEC as temporary. Weird but ok.
-        if (bank == usse::RegisterBank::SECATTR) {
-            reg.offset = writeable_idx * 4;
-
-            const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(writeable_idx * 4));
-            reg.type_id = type_f32_v[4];
-            reg.var_id = m_b.createVariable(spv::StorageClassPrivate, reg.type_id, new_sa_supply_name.c_str());
-            reg.size = 4;
-
-            sa_supplies[writeable_idx] = reg;
-            out_comp_offset = (reg_offset + shift_offset) % 4;
-
+        switch (bank) {
+        case usse::RegisterBank::TEMP: {
+            create_new_reg_for_store(r_supplies, "r", false);
             return true;
+        }
+
+        case usse::RegisterBank::SECATTR: {
+            create_new_reg_for_store(sa_supplies, "sa", false);
+            return true;
+        }
+
+        default: {
+            break;
+        }
         }
 
         return false;
@@ -204,23 +256,22 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         out_comp_offset %= size_per_element;
     }
 
-    if (bank == usse::RegisterBank::PRIMATTR && get_for_store) {
-        if (pa_writeable.count(writeable_idx) == 0) {
-            const std::string new_pa_writeable_name = fmt::format("pa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
-            reg = create_supply_register(reg, new_pa_writeable_name);
-            pa_writeable[writeable_idx] = reg;
-
-            out_comp_offset = (reg_offset + shift_offset) % 4;
+    if (get_for_store) {
+        switch (bank) {
+        case usse::RegisterBank::PRIMATTR: {
+            create_new_reg_for_store(pa_writeable, "pa");
+            break;
         }
-    }
 
-    // Either if we get them for store or not, sometimes shader will still use SEC as temporary. Weird but ok.
-    if (bank == usse::RegisterBank::SECATTR && get_for_store) {
-        const std::string new_sa_supply_name = fmt::format("sa{}_temp", std::to_string(((reg_offset + shift_offset) / 4) * 4));
-        reg = create_supply_register(reg, new_sa_supply_name);
-        sa_supplies[writeable_idx] = reg;
+        case usse::RegisterBank::SECATTR: {
+            create_new_reg_for_store(sa_supplies, "sa");
+            break;
+        }
 
-        out_comp_offset = (reg_offset + shift_offset) % 4;
+        default: {
+            break;
+        }
+        }
     }
 
     return true;
