@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 
-using ProgramArgsWide = std::vector<std::wstring>;
-
 namespace string_utils {
 
 std::vector<std::string> split_string(const std::string &str, char delimiter);
@@ -17,5 +15,3 @@ std::string remove_special_chars(std::string str);
 std::string toupper(const std::string &s);
 
 } // namespace string_utils
-
-ProgramArgsWide process_args(int argc, char *argv[]);

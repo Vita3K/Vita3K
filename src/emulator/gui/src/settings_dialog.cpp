@@ -19,10 +19,34 @@
 #include <config.h>
 #include <gui/functions.h>
 
+#include <host/functions.h>
 #include <host/state.h>
 #include <misc/cpp/imgui_stdlib.h>
+#include <util/fs.h>
+#include <util/log.h>
 
 namespace gui {
+
+bool change_pref_location(const std::string &input_path, const std::string &current_path) {
+    if (fs::path(input_path).has_extension())
+        return false;
+
+    if (!fs::exists(input_path))
+        fs::create_directories(input_path);
+
+    try {
+        fs::directory_iterator it{ current_path };
+        while (it != fs::directory_iterator{}) {
+            // TODO: Move Vita directories
+
+            boost::system::error_code err;
+            it.increment(err);
+        }
+    } catch (const std::exception &err) {
+        return false;
+    }
+    return true;
+}
 
 void draw_settings_dialog(HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
@@ -37,11 +61,11 @@ void draw_settings_dialog(HostState &host) {
             "Japanese", "American English", "French", "Spanish", "German", "Italian", "Dutch", "Portugal Portuguese", "Russian", "Korean",
             "Traditional Chinese", "Simplified Chinese", "Finnish", "Swedish", "Danish", "Norwegian", "Polish", "Brazil Portuguese", "British English", "Turkish"
         };
-        ImGui::Combo("Console Languague \nSelect your Languague.", &host.cfg.sys_lang, list_sys_lang, IM_ARRAYSIZE(list_sys_lang), 10);
+        ImGui::Combo("Console Language", &host.cfg.sys_lang, list_sys_lang, IM_ARRAYSIZE(list_sys_lang), 10);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Some games might not have your language.");
+            ImGui::SetTooltip("Select your language. \nNote that some games might not have your language.");
         ImGui::Spacing();
-        ImGui::Text("Enter Button Assignement \nSelect your 'Enter' Button.");
+        ImGui::Text("Enter Button Assignment \nSelect your 'Enter' Button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in game dialogs. \nSome games don't use this and get default confirmation button.");
         ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
@@ -60,20 +84,35 @@ void draw_settings_dialog(HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Combo("Log Level \nSelect your preferred log level.", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
+        ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select your preferred log level.");
         ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
-        ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable Archiving Log.");
+        ImGui::SameLine();
         ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
         ImGui::Spacing();
         ImGui::PushItemWidth(400);
-        ImGui::InputTextWithHint("Set emulated system storage folder \n(Reboot after change for apply)", "Write your path folder here", &host.cfg.pref_path);
+        ImGui::InputTextWithHint("Set emulated system storage folder.", "Write your path folder here", &host.cfg.pref_path);
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Store game data in your personal folder. \nAdd the path to the folder here.");
+            ImGui::SetTooltip("Set the path to the folder here. \nPress \"Apply\" when finished to move to the new folder. \nThis cannot be undone.");
+        if (ImGui::Button("Apply")) {
+            if (!host.cfg.pref_path.empty() && host.cfg.pref_path != host.pref_path) {
+                if (change_pref_location(host.cfg.pref_path, host.pref_path)) {
+                    host.pref_path = host.cfg.pref_path;
+
+                    // Refresh the working paths
+                    config::serialize(host.cfg, host.cfg.config_path);
+                    LOG_INFO_IF(clear_and_refresh_game_list(host), "Successfully moved Vita3K files to: {}", host.pref_path);
+                }
+            }
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("After pressing, restart Vita3K to fully apply changes.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();
@@ -143,7 +182,9 @@ void draw_settings_dialog(HostState &host) {
         ImGui::PopStyleColor();
     }
 
-    config::serialize(host.cfg);
+    if (host.cfg.overwrite_config)
+        config::serialize(host.cfg, host.cfg.config_path);
+
     ImGui::EndTabBar();
     ImGui::End();
 }

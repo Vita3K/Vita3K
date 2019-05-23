@@ -23,10 +23,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set(LINUX TRUE)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 macro(configure_boost)
 	message("configuring boost")
 

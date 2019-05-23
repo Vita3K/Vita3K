@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <util/exit_code.h>
+
 #include <string>
 
 struct Config;
@@ -24,19 +26,7 @@ struct HostState;
 struct SDL_Window;
 template <class T>
 class Ptr;
-
-enum ExitCode {
-    Success = 0,
-    InitConfigFailed,
-    SDLInitFailed,
-    HostInitFailed,
-    RendererInitFailed,
-    ModuleLoadFailed,
-    InitThreadFailed,
-    RunThreadFailed,
-    InvalidApplicationPath,
-    QuitRequested
-};
+class Root;
 
 /// Describes the state of the application to be run
 enum class AppRunType {
@@ -48,7 +38,7 @@ enum class AppRunType {
     Vpk,
 };
 
-bool init(HostState &state, Config cfg);
+bool init(HostState &state, Config cfg, const Root &root_paths);
 void update_viewport(HostState &state);
 bool handle_events(HostState &host);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);

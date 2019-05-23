@@ -25,7 +25,6 @@
 
 #include <io/state.h>
 #include <io/types.h>
-#include <util/fs.h>
 #include <util/log.h>
 #include <util/preprocessor.h>
 
@@ -41,13 +40,10 @@
 #include <unistd.h>
 #endif
 
-#include <algorithm>
 #include <cassert>
-#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <string>
-#include <tuple>
 #include <type_traits>
 
 // ****************************
@@ -175,43 +171,39 @@ to_host_path(const std::string &path, const std::string &pref_path, VitaIoDevice
 // * End of utility functions *
 // ****************************
 
-bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const std::string &vfs_file_path) {
-    const std::string host_file_path = pref_path + get_device_string(device) + "/" + vfs_file_path;
+bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const fs::path &vfs_file_path) {
+    const fs::path host_file_path{ fs::path(pref_path) / get_device_string(device) / vfs_file_path };
 
-    std::ifstream f(host_file_path, std::ifstream::binary);
-    if (f.fail()) {
+    fs::ifstream f(host_file_path, fs::ifstream::binary);
+    if (!f) {
         return false;
     }
     f.unsetf(std::ios::skipws);
-    std::streampos size;
     f.seekg(0, std::ios::end);
-    size = f.tellg();
     f.seekg(0, std::ios::beg);
+    const auto size = f.tellg();
     buf.reserve(size);
     buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
     return true;
 }
 
-bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string title_id, const std::string &vfs_file_path) {
-    std::string game_file_path = "app/" + title_id + "/" + vfs_file_path;
-    return read_file(VitaIoDevice::UX0, buf, pref_path, game_file_path);
+bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string &title_id, const fs::path &vfs_file_path) {
+    return read_file(VitaIoDevice::UX0, buf, pref_path, fs::path("app") / title_id / vfs_file_path);
 }
 
 } // namespace vfs
 
-bool init(IOState &io, const char *pref_path, const char *base_path) {
-    std::string ux0 = pref_path;
-    std::string uma0 = pref_path;
-    ux0 += "ux0";
-    uma0 += "uma0";
-    const std::string ux0_data = ux0 + "/data";
-    const std::string uma0_data = uma0 + "/data";
-    const std::string ux0_app = ux0 + "/app";
-    const std::string ux0_user = ux0 + "/user";
-    const std::string ux0_user00 = ux0_user + "/00";
-    const std::string ux0_savedata = ux0_user00 + "/savedata";
+bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
+    const fs::path ux0{ pref_path / "ux0" };
+    const fs::path uma0{ pref_path / "uma0" };
+    const fs::path ux0_data{ ux0 / "data" };
+    const fs::path uma0_data{ uma0 / "data" };
+    const fs::path ux0_app{ ux0 / "app" };
+    const fs::path ux0_user{ ux0 / "user" };
+    const fs::path ux0_user00{ ux0_user / "00" };
+    const fs::path ux0_savedata{ ux0_user00 / "savedata" };
 
-    fs::create_directory(ux0);
+    fs::create_directories(ux0);
     fs::create_directory(ux0_data);
     fs::create_directory(ux0_app);
     fs::create_directory(ux0_user);
@@ -220,7 +212,7 @@ bool init(IOState &io, const char *pref_path, const char *base_path) {
     fs::create_directory(uma0);
     fs::create_directory(uma0_data);
 
-    fs::create_directory(std::string(base_path) + "/shaderlog");
+    fs::create_directory(base_path / "shaderlog");
 
     return true;
 }

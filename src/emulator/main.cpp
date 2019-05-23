@@ -19,33 +19,48 @@
 #include "config.h"
 #include "screen_render.h"
 
-#include <gdbstub/functions.h>
 #include <gui/functions.h>
 #include <host/state.h>
 #include <host/version.h>
 #include <shader/spirv_recompiler.h>
+#include <util/exit_code.h>
+#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+
+#ifdef USE_GDBSTUB
+#include <gdbstub/functions.h>
+#endif
 
 #include <SDL.h>
 
 #include <cstdlib>
 
 int main(int argc, char *argv[]) {
-    logging::init();
+    Root root_paths;
+    root_paths.set_base_path(SDL_GetBasePath());
+    root_paths.set_pref_path(SDL_GetPrefPath(org_name, app_name));
 
-    Config cfg{};
-    const config::InitResult ret = config::init(cfg, argc, argv);
-    if (ret != config::InitResult::OK)
+    // Create default preference path for safety
+    if (!fs::exists(root_paths.get_pref_path()))
+        fs::create_directories(root_paths.get_pref_path());
+
+    if (logging::init(root_paths) != Success)
         return InitConfigFailed;
 
-    LOG_INFO("{}", window_title);
-
-    if (cfg.recompile_shader_path) {
-        LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
-        shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
-        return Success;
+    Config cfg{};
+    if (const auto err = config::init(cfg, argc, argv, root_paths) != Success) {
+        if (err == QuitRequested) {
+            if (cfg.recompile_shader_path.is_initialized()) {
+                LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
+                shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
+            }
+            return Success;
+        }
+        return InitConfigFailed;
     }
+
+    LOG_INFO("{}", window_title);
 
     std::atexit(SDL_Quit);
     if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC | SDL_INIT_VIDEO) < 0) {
@@ -83,7 +98,7 @@ int main(int argc, char *argv[]) {
     }
 
     HostState host;
-    if (!init(host, std::move(cfg))) {
+    if (!init(host, std::move(cfg), root_paths)) {
         error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }
@@ -112,10 +127,9 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    if (auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
+    if (const auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
         return err;
-
-    if (auto err = run_app(host, entry_point) != Success)
+    if (const auto err = run_app(host, entry_point) != Success)
         return err;
 
     gl_screen_renderer gl_renderer;
@@ -147,7 +161,8 @@ int main(int argc, char *argv[]) {
 #endif
 
     // There may be changes that made in the GUI, so we should save, again
-    config::serialize(host.cfg);
+    if (host.cfg.overwrite_config)
+        config::serialize(host.cfg, host.cfg.config_path);
 
     return Success;
 }

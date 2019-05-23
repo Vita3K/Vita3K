@@ -22,14 +22,12 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>
 #include <boost/program_options.hpp>
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
 #include <exception>
-#include <fstream>
 #include <iostream>
 
 namespace po = boost::program_options;
@@ -86,7 +84,23 @@ void config_file_emit_vector(YAML::Emitter &emitter, const char *name, std::vect
     emitter << YAML::EndSeq;
 }
 
-bool serialize(Config &cfg) {
+fs::path check_path(fs::path output_path) {
+    if (output_path.filename() != "config.yml") {
+        if (!output_path.has_extension()) // assume it is a folder
+            output_path /= "config.yml";
+        else if (output_path.extension() != ".yml")
+            return "";
+    }
+    return output_path;
+}
+
+ExitCode serialize(Config &cfg, fs::path output_path) {
+    output_path = check_path(output_path);
+    if (output_path.empty())
+        return InvalidApplicationPath;
+    if (!fs::exists(output_path.parent_path()))
+        fs::create_directories(output_path.parent_path());
+
     YAML::Emitter emitter;
     emitter << YAML::BeginMap;
 
@@ -111,23 +125,28 @@ bool serialize(Config &cfg) {
 
     emitter << YAML::EndMap;
 
-    std::ofstream fo("config.yml");
+    fs::ofstream fo(output_path);
     if (!fo) {
-        return false;
+        return InvalidApplicationPath;
     }
 
     fo << emitter.c_str();
-    return true;
+    return Success;
 }
 
-static bool deserialize(Config &cfg) {
-    YAML::Node config_node{};
+static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_pref_path) {
+    load_path = check_path(load_path);
+    if (load_path.empty() || !fs::exists(load_path)) {
+        LOG_ERROR("Config file input path invalid (did you make sure to name the extension \".yml\"?)");
+        return FileNotFound;
+    }
 
+    YAML::Node config_node;
     try {
-        config_node = YAML::LoadFile("config.yml");
+        config_node = YAML::LoadFile(load_path.generic_path().string());
     } catch (YAML::Exception &exception) {
         std::cerr << "Config file can't be loaded: Error: " << exception.what() << "\n";
-        return false;
+        return FileNotFound;
     }
 
     get_yaml_value(config_node, "log-imports", &cfg.log_imports, false);
@@ -145,25 +164,33 @@ static bool deserialize(Config &cfg) {
     get_yaml_value(config_node, "background-image", &cfg.background_image, std::string{});
     get_yaml_value(config_node, "background-alpha", &cfg.background_alpha, 0.300f);
     get_yaml_value(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
-    get_yaml_value(config_node, "pref-path", &cfg.pref_path, std::string{});
+    get_yaml_value(config_node, "pref-path", &cfg.pref_path, root_pref_path);
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
+
+    if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
+        LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
+        return InvalidApplicationPath;
+    }
 
     // lle-modules
     try {
-        YAML::Node lle_modules_node = config_node["lle-modules"];
+        auto lle_modules_node = config_node["lle-modules"];
 
-        for (auto lle_module_node : lle_modules_node) {
+        for (const auto &lle_module_node : lle_modules_node) {
             cfg.lle_modules.push_back(lle_module_node.as<std::string>());
         }
     } catch (...) {
         std::cerr << "LLE modules node listed in config file has invalid syntax, please check again!\n";
+        return InvalidApplicationPath;
     }
 
-    return true;
+    return Success;
 }
 
-InitResult init(Config &cfg, int argc, char **argv) {
-    deserialize(cfg);
+ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths) {
+    // Load base path configuration by default
+    if (fs::exists(check_path(root_paths.get_base_path())))
+        parse(cfg, root_paths.get_base_path(), root_paths.get_pref_path_string());
 
     try {
         // Declare all options
@@ -182,6 +209,9 @@ InitResult init(Config &cfg, int argc, char **argv) {
         po::options_description config_desc("Configuration");
         config_desc.add_options()
             ("archive-log,A", po::bool_switch(&cfg.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
+            ("config-location,c", po::value<fs::path>(&cfg.config_path), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault: <Vita3K folder>/config.yml")
+            ("keep-config,w", po::bool_switch(&cfg.overwrite_config)->default_value(true), "Do not modify the configuration file after loading.")
+            ("load-config,f", po::bool_switch(&cfg.load_config), "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
             ("lle-modules,m", po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
             ("log-level,l", po::value(&cfg.log_level), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
             ("log-imports,I", po::bool_switch(&cfg.log_imports), "Log Imports")
@@ -207,27 +237,37 @@ InitResult init(Config &cfg, int argc, char **argv) {
         po::options_description config_file("Config file options");
         config_file.add(config_desc);
 
-        po::variables_map var_map;
-
         // Command-line argument parsing
+        po::variables_map var_map;
         po::store(po::command_line_parser(argc, argv).options(all).positional(positional).run(), var_map);
-
-        if (var_map.count("lle-modules")) {
-            const auto lle_modules = var_map["lle-modules"].as<std::string>();
-            cfg.lle_modules = string_utils::split_string(lle_modules, ',');
-        }
-
-        // TODO: Config file creation/parsing
         po::notify(var_map);
 
-        // Handle some basic args
         if (var_map.count("help")) {
             std::cout << visible << std::endl;
-            return InitResult::QUIT;
+            return QuitRequested;
         }
         if (var_map.count("version")) {
             std::cout << window_title << std::endl;
-            return InitResult::QUIT;
+            return QuitRequested;
+        }
+        if (var_map.count("recompile-shader"))
+            return QuitRequested;
+
+        if (cfg.load_config || cfg.config_path != root_paths.get_base_path()) {
+            if (cfg.config_path.empty()) {
+                cfg.config_path = root_paths.get_base_path();
+            } else {
+                if (parse(cfg, cfg.config_path, root_paths.get_pref_path_string()) != Success)
+                    return InitConfigFailed;
+
+                LOG_INFO("Custom configuration file loaded successfully.");
+            }
+        }
+
+        // Get LLE modules from the command line, otherwise get the modules from the YML file
+        if (var_map.count("lle-modules") && !cfg.load_config) {
+            const auto lle_modules = var_map["lle-modules"].as<std::string>();
+            cfg.lle_modules = string_utils::split_string(lle_modules, ',');
         }
 
         logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
@@ -250,15 +290,19 @@ InitResult init(Config &cfg, int argc, char **argv) {
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";
-        return InitResult::INCORRECT_ARGS;
+        return InitConfigFailed;
     } catch (...) {
         std::cerr << "Exception of unknown type!\n";
-        return InitResult::INCORRECT_ARGS;
+        return InitConfigFailed;
     }
 
     // Save any changes made in command-line arguments
-    serialize(cfg);
-    return InitResult::OK;
+    if (cfg.overwrite_config || !fs::exists(check_path(cfg.config_path))) {
+        if (serialize(cfg, cfg.config_path) != Success)
+            return InitConfigFailed;
+    }
+
+    return Success;
 }
 
 } // namespace config

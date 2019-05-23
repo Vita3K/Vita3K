@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <util/fs.h>
+
 #include <boost/optional.hpp>
 
 #include <string>
@@ -41,6 +43,9 @@ struct Config {
     bool show_gui = false;
     bool show_game_background = true;
     std::string pref_path = {};
+    fs::path config_path = {};
+    bool overwrite_config = true;
+    bool load_config = false;
     bool archive_log = false;
     bool texture_cache = true;
     optional<bool> wait_for_debugger;

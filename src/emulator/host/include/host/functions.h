@@ -26,5 +26,7 @@ struct HostState;
 struct SfoFile;
 
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
+bool clear_and_refresh_game_list(HostState &host);
 void log_import_calls(bool enabled);
 bool get_data(std::string &out_data, SfoFile &file, int id);
+void get_game_titles(HostState &host);

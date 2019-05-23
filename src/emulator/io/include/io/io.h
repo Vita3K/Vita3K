@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <util/fs.h>
+
 #define SCE_ERROR_ERRNO_ENOENT 0x80010002 // Associated file or directory does not exist
 #define SCE_ERROR_ERRNO_EEXIST 0x80010011 // File exists
 #define SCE_ERROR_ERRNO_EMFILE 0x80010018 // Too many files are open
@@ -36,6 +38,6 @@ namespace vfs {
 using FileBuffer = std::vector<uint8_t>;
 
 constexpr const char *get_device_string(VitaIoDevice dev, bool with_colon = false);
-bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const std::string &file_path);
-bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string title_id, const std::string &file_path);
+bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const fs::path &vfs_file_path);
+bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string &title_id, const fs::path &vfs_file_path);
 } // namespace vfs

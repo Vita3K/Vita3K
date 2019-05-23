@@ -26,26 +26,16 @@
 #include <io/functions.h>
 #include <io/io.h> // vfs
 #include <rtc/rtc.h>
+#include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <SDL_filesystem.h>
 #include <SDL_video.h>
 #include <glbinding-aux/types_to_string.h>
 #include <glbinding/Binding.h>
 #include <microprofile.h>
 
 #include <sstream>
-
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <dirent.h>
-#include <util/string_utils.h>
-#else
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
 
 using namespace glbinding;
 
@@ -105,12 +95,45 @@ void update_viewport(HostState &state) {
     }
 }
 
-bool init(HostState &state, Config cfg) {
-    const std::unique_ptr<char, void (&)(void *)> base_path(SDL_GetBasePath(), SDL_free);
-    const std::unique_ptr<char, void (&)(void *)> pref_path(SDL_GetPrefPath(org_name, app_name), SDL_free);
+void get_game_titles(HostState &host) {
+    fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
+    if (!fs::exists(app_path))
+        return;
 
+    fs::directory_iterator it{ app_path };
+    while (it != fs::directory_iterator{}) {
+        if (!it->path().empty() && !it->path().filename_is_dot() && !it->path().filename_is_dot_dot()) {
+            vfs::FileBuffer params;
+            host.io.title_id = it->path().stem().generic_string();
+            if (vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
+                SfoFile sfo_handle;
+                load_sfo(sfo_handle, params);
+                find_data(host.game_version, sfo_handle, "APP_VER");
+                find_data(host.game_title, sfo_handle, "TITLE");
+                std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
+                host.gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io.title_id });
+            }
+        }
+        boost::system::error_code er;
+        it.increment(er);
+    }
+}
+
+bool clear_and_refresh_game_list(HostState &host) {
+    if (host.gui.game_selector.games.empty())
+        return false;
+
+    host.gui.game_selector.games.clear();
+    if (!host.gui.game_selector.games.empty())
+        return false;
+
+    get_game_titles(host);
+    return true;
+}
+
+bool init(HostState &state, Config cfg, const Root &root_paths) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
-        const ThreadStatePtr thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
+        const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         if (thread->to_do == ThreadToDo::wait) {
             thread->to_do = ThreadToDo::run;
@@ -122,17 +145,16 @@ bool init(HostState &state, Config cfg) {
     if (state.cfg.wait_for_debugger) {
         state.kernel.wait_for_debugger = state.cfg.wait_for_debugger.value();
     }
-    state.base_path = base_path.get();
+    state.base_path = root_paths.get_base_path_string();
 
-    // If configuration already provides preference path
-    if (state.cfg.pref_path.empty()) {
-        state.pref_path = pref_path.get();
-        state.cfg.pref_path = state.pref_path;
-    } else
-        state.pref_path = state.cfg.pref_path;
+    // If configuration does not provide a preference path, use SDL's default
+    if (state.cfg.pref_path == root_paths.get_pref_path_string() || state.cfg.pref_path.empty())
+        state.pref_path = root_paths.get_pref_path_string() + '/';
+    else
+        state.pref_path = state.cfg.pref_path + '/';
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
-    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.pref_path.c_str(), state.base_path.c_str())) {
+    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.base_path, state.pref_path)) {
         return false;
     }
 
@@ -166,44 +188,10 @@ bool init(HostState &state, Config cfg) {
 
     state.kernel.base_tick = { rtc_base_ticks() };
 
-    std::string dir_path = state.pref_path + "ux0/app";
-#ifdef WIN32
-    _WDIR *d = _wopendir((string_utils::utf_to_wide(dir_path)).c_str());
-    _wdirent *dp;
-#else
-    DIR *d = opendir(dir_path.c_str());
-    dirent *dp;
-#endif
-    do {
-        std::string d_name_utf8;
-#ifdef WIN32
-        if ((dp = _wreaddir(d)) != NULL) {
-            d_name_utf8 = string_utils::wide_to_utf(dp->d_name);
-#else
-        if ((dp = readdir(d)) != NULL) {
-            d_name_utf8 = dp->d_name;
-#endif
-            if ((strcmp(d_name_utf8.c_str(), ".")) && (strcmp(d_name_utf8.c_str(), ".."))) {
-                vfs::FileBuffer params;
-                state.io.title_id = d_name_utf8;
-                if (vfs::read_app_file(params, state.pref_path, state.io.title_id, "sce_sys/param.sfo")) {
-                    SfoFile sfo_handle;
-                    load_sfo(sfo_handle, params);
-                    find_data(state.game_version, sfo_handle, "APP_VER");
-                    find_data(state.game_title, sfo_handle, "TITLE");
-                    std::replace(state.game_title.begin(), state.game_title.end(), '\n', ' ');
-                    state.gui.game_selector.games.push_back({ state.game_version, state.game_title, state.io.title_id });
-                }
-            }
-        }
-    } while (dp);
+    get_game_titles(state);
 
-#ifdef WIN32
-    _wclosedir(d);
-#else
-    closedir(d);
-#endif
+    if (state.cfg.overwrite_config)
+        config::serialize(state.cfg, state.cfg.config_path);
 
-    config::serialize(state.cfg);
     return true;
 }

@@ -18,14 +18,16 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
+#include <util/exit_code.h>
+#include <util/fs.h>
 
 #include <type_traits>
 
 namespace logging {
 
-void init();
+ExitCode init(const Root &root_paths);
 void set_level(spdlog::level::level_enum log_level);
-void add_sink(std::wstring log_path);
+ExitCode add_sink(const fs::path &log_path);
 
 #define LOG_TRACE SPDLOG_TRACE
 #define LOG_DEBUG SPDLOG_DEBUG

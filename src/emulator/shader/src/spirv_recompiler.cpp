@@ -961,19 +961,19 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
     return source;
 }
 
-void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath_str) {
-    const fs::path shader_filepath{ shader_filepath_str };
-    fs::ifstream gxp_stream(shader_filepath, std::ios::binary);
+void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
+    const fs::path shader_filepath_str{ shader_filepath };
+    fs::ifstream gxp_stream(shader_filepath_str, fs::ifstream::binary);
 
     if (!gxp_stream.is_open())
         return;
 
-    const auto gxp_file_size = fs::file_size(shader_filepath);
-    auto gxp_program = static_cast<SceGxmProgram *>(calloc(gxp_file_size, 1));
+    const auto gxp_file_size = fs::file_size(shader_filepath_str);
+    const auto gxp_program = static_cast<SceGxmProgram *>(calloc(gxp_file_size, 1));
 
     gxp_stream.read(reinterpret_cast<char *>(gxp_program), gxp_file_size);
 
-    convert_gxp_to_glsl(*gxp_program, shader_filepath.filename().string(), true);
+    convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), true);
 
     free(gxp_program);
 }
