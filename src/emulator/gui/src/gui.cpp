@@ -79,9 +79,9 @@ static void init_style() {
     style->Colors[ImGuiCol_Button] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
     style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
     style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-    style->Colors[ImGuiCol_Header] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-    style->Colors[ImGuiCol_HeaderHovered] = ImVec4(0.32f, 0.30f, 0.23f, 1.00f);
-    style->Colors[ImGuiCol_HeaderActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
+    style->Colors[ImGuiCol_Header] = ImVec4(1.00f, 1.00f, 0.00f, 0.50f);
+    style->Colors[ImGuiCol_HeaderHovered] = ImVec4(1.00f, 1.00f, 0.00f, 0.30f);
+    style->Colors[ImGuiCol_HeaderActive] = ImVec4(1.00f, 1.00f, 0.00f, 0.70f);
     style->Colors[ImGuiCol_Column] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
     style->Colors[ImGuiCol_ColumnHovered] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
     style->Colors[ImGuiCol_ColumnActive] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
@@ -167,18 +167,26 @@ static void init_icons(HostState &host) {
         int32_t width = 0;
         int32_t height = 0;
         vfs::FileBuffer buffer;
+        const std::string default_icon = "data/image/icon.png";
 
         vfs::read_app_file(buffer, host.pref_path, game.title_id, "sce_sys/icon0.png");
-        if (buffer.empty()) {
-            LOG_WARN("Icon not found for title {}, {}.", game.title_id, game.title);
+        if (buffer.empty() && fs::exists(default_icon)) {
+            LOG_INFO("Default icon found for title {}, {}.", game.title_id, game.title);
+            std::ifstream image_stream(default_icon, std::ios::binary | std::ios::ate);
+            const std::size_t fsize = image_stream.tellg();
+            buffer.resize(fsize);
+            image_stream.seekg(0, std::ios::beg);
+            image_stream.read(reinterpret_cast<char *>(&buffer[0]), fsize);
+        } else if (buffer.empty()) {
+            LOG_WARN("Default icon not found for title {}, {}.", game.title_id, game.title);
             continue;
         }
-        stbi_uc *data = stbi_load_from_memory(&buffer[0], buffer.size(), &width, &height, nullptr, STBI_rgb);
+        stbi_uc *data = stbi_load_from_memory(&buffer[0], buffer.size(), &width, &height, nullptr, STBI_rgb_alpha);
         if (width != 128 || height != 128) {
             LOG_ERROR("Invalid icon for title {}, {}.", game.title_id, game.title);
             continue;
         }
-        host.gui.game_selector.icons[game.title_id].init(load_texture(width, height, data, GL_RGB), glDeleteTextures);
+        host.gui.game_selector.icons[game.title_id].init(load_texture(width, height, data, GL_RGBA), glDeleteTextures);
         stbi_image_free(data);
     }
 }
@@ -195,6 +203,10 @@ void load_game_background(HostState &host, const std::string &title_id) {
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg.png");
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg0.png");
         } else {
+            if (host.gui.user_backgrounds[host.cfg.background_image] && host.gui.current_background != static_cast<std::uint32_t>(host.gui.user_backgrounds[host.cfg.background_image]))
+                host.gui.current_background = host.gui.user_backgrounds[host.cfg.background_image];
+            else if (!host.gui.user_backgrounds[host.cfg.background_image] && host.gui.current_background != 0)
+                host.gui.current_background = 0;
             LOG_WARN("Game background not found for title {}.", title_id);
             return;
         }

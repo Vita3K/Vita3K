@@ -61,9 +61,9 @@ void draw_settings_dialog(HostState &host) {
             "Japanese", "American English", "French", "Spanish", "German", "Italian", "Dutch", "Portugal Portuguese", "Russian", "Korean",
             "Traditional Chinese", "Simplified Chinese", "Finnish", "Swedish", "Danish", "Norwegian", "Polish", "Brazil Portuguese", "British English", "Turkish"
         };
-        ImGui::Combo("Console Language \nSelect your Language.", &host.cfg.sys_lang, list_sys_lang, IM_ARRAYSIZE(list_sys_lang), 10);
+        ImGui::Combo("Console Language", &host.cfg.sys_lang, list_sys_lang, IM_ARRAYSIZE(list_sys_lang), 10);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Some games might not have your language.");
+            ImGui::SetTooltip("Select your language. \nNote that some games might not have your language.");
         ImGui::Spacing();
         ImGui::Text("Enter Button Assignment \nSelect your 'Enter' Button.");
         if (ImGui::IsItemHovered())
@@ -84,11 +84,13 @@ void draw_settings_dialog(HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Combo("Log Level \nSelect your preferred log level.", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
+        ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select your preferred log level.");
         ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
-        ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable Archiving Log.");
+        ImGui::SameLine();
         ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
@@ -109,6 +111,8 @@ void draw_settings_dialog(HostState &host) {
                 }
             }
         }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("After pressing, restart Vita3K to fully apply changes.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();

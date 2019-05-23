@@ -36,6 +36,10 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#ifdef USE_GDBSTUB
+#include <gdbstub/functions.h>
+#endif
+
 #include <SDL.h>
 #include <glutil/gl.h>
 

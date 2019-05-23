@@ -10,7 +10,7 @@
 [submodule "src/external/glbinding"]
 	path = src/external/glbinding
 	url = https://github.com/cginternals/glbinding.git
-	branch = v3.0
+	branch = v3.1
 [submodule "src/external/yaml-cpp"]
 	path = src/external/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
@@ -64,3 +64,6 @@
 [submodule "src/external/imgui_club"]
 	path = src/external/imgui_club
 	url = https://github.com/ocornut/imgui_club.git
+[submodule "src/external/unicorn-src"]
+	path = src/external/unicorn-src
+	url = https://github.com/unicorn-engine/unicorn.git

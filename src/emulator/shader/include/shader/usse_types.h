@@ -110,6 +110,13 @@ enum class MoveType : uint8_t {
     CONDITIONALU8,
 };
 
+enum class CompareMethod : uint8_t {
+    NE_ZERO = 0b00,
+    EQ_ZERO = 0b01,
+    LT_ZERO = 0b10,
+    LTE_ZERO = 0b11,
+};
+
 enum class DataType : uint8_t {
     INT8,
     INT16,
@@ -120,7 +127,8 @@ enum class DataType : uint8_t {
     UINT8,
     UINT16,
     O8,
-    TOTAL_TYPE
+    TOTAL_TYPE,
+    UNK
 };
 
 enum class SpecialCategory : uint8_t {
@@ -198,6 +206,8 @@ struct Operand {
     Swizzle4 swizzle = SWIZZLE_CHANNEL_4_UNDEFINED;
     DataType type = DataType::F32;
 
+    int index{ 0 };
+
     bool is_same(const Operand &op, const Imm4 mask) {
         return (op.bank == bank) && (is_identical(swizzle, op.swizzle, mask)) && (num == op.num);
     }
@@ -208,6 +218,13 @@ struct InstructionOperands {
     Operand src0;
     Operand src1;
     Operand src2;
+
+    InstructionOperands() {
+        src0.index = 0;
+        src1.index = 1;
+        src2.index = 2;
+        dest.index = 3;
+    }
 };
 
 struct Instruction {
@@ -216,6 +233,12 @@ struct Instruction {
     uint32_t flags;
     Imm4 dest_mask;
     RepeatCount repeat_count{ RepeatCount::REPEAT_0 };
+
+    Instruction()
+        : opr()
+        , flags(0)
+        , dest_mask(0) {
+    }
 };
 
 enum class ShaderPhase {

@@ -25,7 +25,7 @@
 // TODO Move elsewhere.
 static uint64_t timestamp;
 
-static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData) {
+static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData, SceUInt32 count) {
     memset(pData, 0, sizeof(*pData));
     pData->timeStamp = timestamp++; // TODO Use the real time and units.
 
@@ -64,7 +64,11 @@ static int peek_touch(HostState &host, SceUInt32 port, SceTouchData *pData) {
         }
     }
 
-    return 0;
+    for (int i = 1; i < count; i++) {
+        memcpy(&pData[i], &pData[0], sizeof(SceTouchData));
+    }
+
+    return count;
 }
 
 EXPORT(int, sceTouchActivateRegion) {
@@ -172,9 +176,8 @@ EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
     if (pData == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    assert(nBufs == 1);
 
-    return peek_touch(host, port, pData);
+    return peek_touch(host, port, pData, nBufs);
 }
 
 EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -184,9 +187,8 @@ EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
     if (pData == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    assert(nBufs == 1);
 
-    return peek_touch(host, port, pData);
+    return peek_touch(host, port, pData, nBufs);
 }
 
 EXPORT(int, sceTouchPeekRegion) {
@@ -204,9 +206,8 @@ EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
     if (pData == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    assert(nBufs == 1);
 
-    return peek_touch(host, port, pData);
+    return peek_touch(host, port, pData, nBufs);
 }
 
 EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -216,9 +217,8 @@ EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
     if (pData == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    assert(nBufs == 1);
 
-    return peek_touch(host, port, pData);
+    return peek_touch(host, port, pData, nBufs);
 }
 
 EXPORT(int, sceTouchReadRegion) {

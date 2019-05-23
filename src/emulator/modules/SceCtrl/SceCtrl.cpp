@@ -241,7 +241,7 @@ static void add_new_controllers(CtrlState &state) {
     }
 }
 
-static int peek_buffer(HostState &host, int port, SceCtrlData *&pad_data, bool ext, bool negative) {
+static int peek_buffer(HostState &host, int port, SceCtrlData *&pad_data, int count, bool ext, bool negative) {
     if (port == 0) {
         port++;
     }
@@ -280,7 +280,11 @@ static int peek_buffer(HostState &host, int port, SceCtrlData *&pad_data, bool e
         pad_data->buttons = 0xFFFFFFFF - pad_data->buttons;
     }
 
-    return 1;
+    for (int i = 1; i < count; i++) {
+        memcpy(&pad_data[i], &pad_data[0], sizeof(SceCtrlData));
+    }
+
+    return count;
 }
 
 EXPORT(int, sceCtrlClearRapidFire) {
@@ -350,84 +354,84 @@ EXPORT(int, sceCtrlPeekBufferNegative, int port, SceCtrlData *pad_data, int coun
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, false, true);
+    return peek_buffer(host, port, pad_data, count, false, true);
 }
 
 EXPORT(int, sceCtrlPeekBufferNegative2, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, true, true);
+    return peek_buffer(host, port, pad_data, count, true, true);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, false, false);
+    return peek_buffer(host, port, pad_data, count, false, false);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive2, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, true, false);
+    return peek_buffer(host, port, pad_data, count, true, false);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositiveExt, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, false, false);
+    return peek_buffer(host, port, pad_data, count, false, false);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositiveExt2, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, true, false);
+    return peek_buffer(host, port, pad_data, count, true, false);
 }
 
 EXPORT(int, sceCtrlReadBufferNegative, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, false, true);
+    return peek_buffer(host, port, pad_data, count, false, true);
 }
 
 EXPORT(int, sceCtrlReadBufferNegative2, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, true, true);
+    return peek_buffer(host, port, pad_data, count, true, true);
 }
 
 EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, false, false);
+    return peek_buffer(host, port, pad_data, count, false, false);
 }
 
 EXPORT(int, sceCtrlReadBufferPositive2, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, true, false);
+    return peek_buffer(host, port, pad_data, count, true, false);
 }
 
 EXPORT(int, sceCtrlReadBufferPositiveExt, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, false, false);
+    return peek_buffer(host, port, pad_data, count, false, false);
 }
 
 EXPORT(int, sceCtrlReadBufferPositiveExt2, int port, SceCtrlData *pad_data, int count) {
     if (port > 1 && !host.cfg.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_buffer(host, port, pad_data, true, false);
+    return peek_buffer(host, port, pad_data, count, true, false);
 }
 
 EXPORT(int, sceCtrlRegisterBdRMCCallback) {

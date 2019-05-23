@@ -30,7 +30,8 @@ static std::string load_shader(const char *hash, const char *extension, const ch
     return source;
 }
 
-static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source, const char *base_path, const char *title_id) {
+static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source, const char *spirv,
+    const char *disasm, const char *base_path, const char *title_id) {
     const fs::path shader_base_dir{ fs::path("shaderlog") / title_id };
     if (!fs::exists(base_path / shader_base_dir))
         fs::create_directories(base_path / shader_base_dir);
@@ -44,14 +45,29 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
         glsl_file.close();
     }
 
-    // Dump missing shader binary.
-    fs::path gxp_path{ shader_base_path };
-    gxp_path.replace_extension(".gxp");
-    fs::ofstream gxp_file(gxp_path, fs::ofstream::binary);
-    if (gxp_file) {
-        gxp_file.write(reinterpret_cast<const char *>(&program), program.size);
-        gxp_file.close();
-    }
+    const auto write_data_with_ext = [&](const char *ext, const char *data, const std::int64_t size) {
+        // Dump missing shader binary.
+        fs::path out_path{ shader_base_path };
+        out_path.replace_extension(ext);
+
+        if (size == -1) {
+            fs::ofstream of{ out_path };
+            if (!of.fail()) {
+                of << data; // This is a normal string
+                of.close();
+            }
+        } else {
+            fs::ofstream of{ out_path, fs::ofstream::binary };
+            if (!of.fail()) {
+                of.write(data, size);
+                of.close();
+            }
+        }
+    };
+
+    write_data_with_ext(".gxp", reinterpret_cast<const char *>(&program), program.size);
+    write_data_with_ext(".dsm", disasm, -1);
+    write_data_with_ext(".spt", spirv, -1);
 }
 
 std::string load_shader(GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id) {
@@ -74,9 +90,13 @@ std::string load_shader(GLSLCache &cache, const SceGxmProgram &program, const ch
     if (source.empty()) {
         LOG_INFO("Generating {} shader {}", shader_type_str, hash_text.data());
 
-        source = shader::convert_gxp_to_glsl(program, hash_text.data());
+        std::string spirv_dump;
+        std::string disasm_dump;
 
-        dump_missing_shader(hash_text.data(), shader_type_str, program, source.c_str(), base_path, title_id);
+        source = shader::convert_gxp_to_glsl(program, hash_text.data(), false, &spirv_dump, &disasm_dump);
+
+        dump_missing_shader(hash_text.data(), shader_type_str, program, source.c_str(), spirv_dump.c_str(), disasm_dump.c_str(),
+            base_path, title_id);
     }
 
     cache.emplace(hash_bytes, source);

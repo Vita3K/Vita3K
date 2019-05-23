@@ -2,14 +2,15 @@
 
 #include <shader/usse_types.h>
 
+#include <fstream>
+#include <memory>
 #include <string>
-
-// TODO: make LOG_RAW
-#define LOG_DISASM(fmt_str, ...) std::cout << fmt::format(fmt_str, ##__VA_ARGS__) << std::endl
 
 namespace shader {
 namespace usse {
 namespace disasm {
+
+extern std::string *disasm_storage;
 
 //
 // Disasm helpers
@@ -27,3 +28,12 @@ std::string swizzle_to_str(Swizzle<s> swizz, const Imm4 write_mask, uint32_t shi
 } // namespace disasm
 } // namespace usse
 } // namespace shader
+
+// TODO: make LOG_RAW
+#define LOG_DISASM(fmt_str, ...)                                        \
+    {                                                                   \
+        auto fmt_disasm = fmt::format(fmt_str, ##__VA_ARGS__);          \
+        std::cout << fmt_disasm << std::endl;                           \
+        if (shader::usse::disasm::disasm_storage)                       \
+            *shader::usse::disasm::disasm_storage += fmt_disasm + '\n'; \
+    }

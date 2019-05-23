@@ -190,7 +190,7 @@ static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_p
 ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths) {
     // Load base path configuration by default
     if (fs::exists(check_path(root_paths.get_base_path())))
-        parse(cfg, root_paths.get_base_path(), root_paths.get_base_path_string());
+        parse(cfg, root_paths.get_base_path(), root_paths.get_pref_path_string());
 
     try {
         // Declare all options
