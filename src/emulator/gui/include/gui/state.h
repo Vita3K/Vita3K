@@ -93,6 +93,9 @@ struct State {
     char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
 
+    ImGuiTextFilter module_search_bar;
+
+    ImGuiTextFilter game_search_bar;
     GLuint current_background = 0;
     std::map<std::string, GLObject> game_backgrounds;
     std::map<std::string, GLObject> user_backgrounds;

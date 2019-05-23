@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui/functions.h>
+#include <gui/state.h>
 
 #include "private.h"
 
@@ -36,8 +37,6 @@ void draw_game_selector(HostState &host) {
     if (host.gui.current_background)
         ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
-
-    static ImGuiTextFilter search_bar;
 
     if (host.gui.current_background) {
         ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(host.gui.current_background),
@@ -155,10 +154,10 @@ void draw_game_selector(HostState &host) {
         }
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
-        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 300));
-        ImGui::TextColored(GUI_COLOR_TEXT, "Search");
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Game Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 300));
+        ImGui::TextColored(GUI_COLOR_TEXT, "Game Search");
         ImGui::SameLine();
-        search_bar.Draw("", 300);
+        host.gui.game_search_bar.Draw("##game_search_bar", 300);
 
         ImGui::NextColumn();
         ImGui::Separator();
@@ -166,7 +165,7 @@ void draw_game_selector(HostState &host) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         for (const auto &game : host.gui.game_selector.games) {
             bool selected[4] = { false, false, false, false };
-            if (!search_bar.PassFilter(game.title.c_str()) && !search_bar.PassFilter(game.title_id.c_str()))
+            if (!host.gui.game_search_bar.PassFilter(game.title.c_str()))
                 continue;
             if (host.gui.game_selector.icons[game.title_id]) {
                 GLuint texture = host.gui.game_selector.icons[game.title_id].get();
