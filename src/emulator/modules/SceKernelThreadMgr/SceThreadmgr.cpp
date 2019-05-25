@@ -40,7 +40,7 @@ EXPORT(int, sceKernelChangeThreadCpuAffinityMask) {
 EXPORT(int, sceKernelChangeThreadPriority, SceUID thid, int priority) {
     STUBBED("STUB");
 
-    const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
     const std::lock_guard<std::mutex> lock(thread->mutex);
     thread.get()->priority = priority;
 
