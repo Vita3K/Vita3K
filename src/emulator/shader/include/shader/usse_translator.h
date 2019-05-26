@@ -68,6 +68,7 @@ public:
     RegisterCacheMap sa_supplies;
 
     std::array<spv::Id, 4> predicates;
+    std::array<spv::Id, 4> indexes;
 
     void make_f16_unpack_func();
     void make_f16_pack_func();
@@ -118,6 +119,7 @@ public:
         }
 
         std::fill(predicates.begin(), predicates.end(), spv::NoResult);
+        std::fill(indexes.begin(), indexes.end(), spv::NoResult);
 
         // Make utility functions
         make_f16_unpack_func();

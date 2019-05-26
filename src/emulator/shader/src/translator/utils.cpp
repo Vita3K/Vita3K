@@ -520,7 +520,26 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
 
     if (op.bank == RegisterBank::FPINTERNAL) {
         // Automatically F32
-        op.type = DataType::F32;
+        switch (op.type) {
+        case DataType::F16: {
+            op.type = DataType::F32;
+            break;
+        }
+
+        case DataType::INT16:
+        case DataType::INT8: {
+            op.type = DataType::INT32;
+            break;
+        }
+
+        case DataType::UINT16:
+        case DataType::UINT8: {
+            op.type = DataType::UINT32;
+        }
+
+        default:
+            break;
+        }
     }
 
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
@@ -686,13 +705,13 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
         size_gotten += 4;
     }
 
-    // For non-F32 type, we need to make a destination mask to extract neccessary components out
+    // For non-F32 and non-I32 type, we need to make a destination mask to extract neccessary components out
     // For example: sa6.xz with DataType = f16
     // Would result at least sa6 and sa7 to be extracted out, since sa6 contains f16 x and y, sa7 contains f16 z and w
     Imm4 extract_mask = dest_mask;
     Swizzle4 extract_swizz = op.swizzle;
 
-    if (op.type != DataType::F32) {
+    if (size_comp != 4) {
         extract_mask = 0;
 
         for (int i = 0; i <= highest_swizzle_bit; i++) {
@@ -736,15 +755,38 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
         first_pass = unpack(first_pass, op.type, op.swizzle, dest_mask, 0);
     }
 
+    const bool is_unsigned_integer_dtype = is_unsigned_integer_data_type(op.type);
+    const bool is_signed_integer_dtype = is_signed_integer_data_type(op.type);
+
+    const bool is_integral = is_unsigned_integer_dtype || is_signed_integer_dtype;
+
+    std::vector<spv::Id> ops;
+    ops.push_back(first_pass);
+
+    // Bitcast them to integer. Those flags assuming bits stores on those float registers are actually integer
+    if (is_signed_integer_dtype) {
+        first_pass = m_b.createOp(spv::OpBitcast, m_b.makeVectorType(m_b.makeIntType(32), static_cast<int>(dest_comp_count)), ops);
+    } else if (is_unsigned_integer_dtype) {
+        first_pass = m_b.createOp(spv::OpBitcast, m_b.makeVectorType(m_b.makeUintType(32), static_cast<int>(dest_comp_count)), ops);
+    }
+
     // Apply modifier flags
     if (op.flags & RegisterFlags::Negative) {
         // Negate the value
-        first_pass = m_b.createBinOp(spv::OpFSub, type_f32_v[dest_comp_count], const_f32_v0[dest_comp_count], first_pass);
+        if (is_integral) {
+            LOG_ERROR("Support on negative modifier is unavailable for integer!");
+        } else {
+            first_pass = m_b.createBinOp(spv::OpFSub, type_f32_v[dest_comp_count], const_f32_v0[dest_comp_count], first_pass);
+        }
     }
 
     if (op.flags & RegisterFlags::Absolute) {
         // Absolute the result
-        first_pass = m_b.createBuiltinCall(type_f32_v[dest_comp_count], std_builtins, GLSLstd450FAbs, { first_pass });
+        if (is_integral) {
+            LOG_ERROR("Support on abs modifier is unavailable for integer!");
+        } else {
+            first_pass = m_b.createBuiltinCall(type_f32_v[dest_comp_count], std_builtins, GLSLstd450FAbs, { first_pass });
+        }
     }
 
     return first_pass;
@@ -760,6 +802,39 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
         return;
     }
 
+    // Check for INDEX bank. INDEX bank are optimized to store an integer
+    if (dest.bank == RegisterBank::INDEX) {
+        if (m_b.getNumComponents(source) != 1) {
+            LOG_ERROR("Trying to store a vector (number of components != 1) to index register!");
+            return;
+        }
+
+        // Bitcast them to signed if they are not in the form
+        // Reason to cast to signed is because SPIRV-CROSS generate weird code with unsigned
+        spv::Id source_type = m_b.getTypeId(source);
+        std::vector<spv::Id> ops;
+        ops.push_back(source);
+
+        const spv::Id i32t = m_b.makeIntType(32);
+
+        if (!m_b.isIntType(source_type)) {
+            // Even if the type is uint, glslang still does a bitcast.
+            // Hope it doesn't hurt.
+            source = m_b.createOp(spv::OpBitcast, i32t, ops);
+        }
+
+        // Wait, has the index register been created?
+        if (indexes[dest.num - 1] == spv::NoResult) {
+            // Create variable
+            const auto name = fmt::format("idx{}", dest.num);
+            indexes[dest.num - 1] = m_b.createVariable(spv::StorageClassPrivate, i32t, name.c_str());
+        }
+
+        // Store!
+        m_b.createStore(source, indexes[dest.num - 1]);
+        return;
+    }
+
     if (!get_spirv_reg(dest.bank, dest.num, off, dest_reg, dest_comp_offset, true)) {
         LOG_ERROR("Can't find dest register {}", disasm::operand_to_str(dest, 0));
         return;
@@ -772,6 +847,43 @@ void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t de
 
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
     const std::size_t size_comp = get_data_type_size(dest.type);
+
+    // If the source to store, is not in float form, bitcast it to float
+    spv::Id source_elm_type_id = m_b.getTypeId(source);
+    if (m_b.isVectorType(source_elm_type_id)) {
+        source_elm_type_id = m_b.getContainedTypeId(source_elm_type_id);
+    }
+
+    if (m_b.isIntType(source_elm_type_id) || m_b.isUintType(source_elm_type_id)) {
+        std::vector<spv::Id> ops;
+        ops.push_back(source);
+
+        source = m_b.createOp(spv::OpBitcast, type_f32_v[total_comp_source], ops);
+    }
+
+    // Since we have bitcasted non-float type to float, we might as well do type transformation with dest store type
+    switch (dest.type) {
+    case DataType::INT16:
+    case DataType::UINT16: {
+        dest.type = DataType::F16;
+        break;
+    }
+
+    case DataType::INT32:
+    case DataType::UINT32: {
+        dest.type = DataType::F32;
+        break;
+    }
+
+    case DataType::F32:
+    case DataType::F16:
+        break;
+
+    default: {
+        LOG_ERROR("Unsupported source type {}", static_cast<int>(dest.type));
+        return;
+    }
+    }
 
     // Default load will get word as default component
     std::size_t comp_count_to_store = 0;
