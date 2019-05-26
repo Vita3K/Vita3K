@@ -642,6 +642,9 @@ bool USSETranslatorVisitor::vbw(
     inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, false, 7, m_second_program);
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, false, 7, m_second_program);
 
+    inst.opr.src1.type = DataType::UINT32;
+    inst.opr.src2.type = DataType::UINT32;
+
     spv::Id src1 = load(inst.opr.src1, 0b0001);
     spv::Id src2 = 0;
 
@@ -657,9 +660,6 @@ bool USSETranslatorVisitor::vbw(
         src2 = m_b.makeUintConstant(src2_invert ? ~value : value);
     } else {
         src2 = load(inst.opr.src2, 0b0001);
-        if (m_b.isFloatType(m_b.getTypeId(src2))) {
-            src2 = m_b.createUnaryOp(spv::Op::OpBitcast, type_ui32, src2);
-        }
         if (src2_invert) {
             src2 = m_b.createUnaryOp(spv::Op::OpNot, type_ui32, src2);
         }

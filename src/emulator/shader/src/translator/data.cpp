@@ -140,6 +140,11 @@ bool USSETranslatorVisitor::vmov(
 
         conditional_result = m_b.createBinOp(compare_op, m_b.getTypeId(src0), src2, src0);
     }
+    
+    if (inst.opcode == Opcode::VMOVC) {
+        LOG_ERROR("Conditional move not support!");
+        return true;
+    }
 
     // Recompile
 
