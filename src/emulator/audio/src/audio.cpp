@@ -92,7 +92,7 @@ bool init(AudioState &state, ResumeAudioThread resume_thread) {
     desired.freq = 48000;
     desired.format = AUDIO_S16LSB;
     desired.channels = 2;
-    desired.samples = 512;
+    desired.samples = 1024;
     desired.callback = &audio_callback;
     desired.userdata = &state;
 
