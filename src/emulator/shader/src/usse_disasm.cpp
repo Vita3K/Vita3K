@@ -94,6 +94,11 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
         break;
     }
 
+    case RegisterBank::INDEX: {
+        opstr += "idx";
+        break;
+    }
+
     case RegisterBank::IMMEDIATE: {
         break;
     }
