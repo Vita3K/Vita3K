@@ -123,7 +123,7 @@ std::string parameter_struct_name(const SceGxmProgramParameter &parameter) {
         return "";
 }
 
-SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program) {
+SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, SceGxmVertexOutputTexCoordInfos *coord_infos) {
     if (!program.is_vertex())
         return _SCE_GXM_VERTEX_PROGRAM_OUTPUT_INVALID;
 
@@ -149,26 +149,24 @@ SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program) {
 
     if (vo1 & 0x400)
         res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1;
-    if (vo2 & 7)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0;
-    if (vo2 & 0x38)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1;
-    if (vo2 & 0x1C0)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2;
-    if (vo2 & 0xE00)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3;
-    if (vo2 & 0x7000)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4;
-    if (vo2 & 0x38000)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5;
-    if (vo2 & 0x1C0000)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6;
-    if (vo2 & 0xE00000)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7;
-    if (vo2 & 0x7000000)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8;
-    if (vo2 & 0x38000000)
-        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9;
+
+    std::uint32_t coordinfo_mask = 0b111;
+    std::uint32_t to_shift = 0;
+
+    for (std::uint8_t i = 0; i < 10; i++) {
+        if (vo2 & coordinfo_mask) {
+            res |= (SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0 << i);
+
+            if (coord_infos) {
+                std::uint8_t info = static_cast<std::uint8_t>(vo2 >> to_shift);
+                (*coord_infos)[i] = *reinterpret_cast<SceGxmVertexOutputTexCoordInfo*>(&info);
+            }
+        }
+
+        to_shift += 3;
+        coordinfo_mask <<= 3;
+    }
+
     if (vo1 & 0x100)
         res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE;
     if (vo1 & 1)

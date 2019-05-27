@@ -23,6 +23,7 @@
 #include <shader/profile.h>
 #include <shader/usse_translator_entry.h>
 #include <shader/usse_translator_types.h>
+#include <shader/usse_utilities.h>
 #include <util/fs.h>
 #include <util/log.h>
 
@@ -222,67 +223,7 @@ spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     return spv::StorageClassMax;
 }
 
-static spv::Id create_spirv_var_reg(spv::Builder &b, SpirvShaderParameters &parameters, std::string &name, usse::RegisterBank reg_type, uint32_t size, spv::Id type, optional<spv::StorageClass> force_storage = boost::none, boost::optional<std::uint32_t> force_offset = boost::none) {
-    sanitize_variable_name(name);
-
-    const auto storage_class = force_storage ? *force_storage : reg_type_to_spv_storage_class(reg_type);
-    spv::Id var_id = b.createVariable(storage_class, type, name.c_str());
-
-    SpirvVarRegBank *var_group;
-
-    switch (reg_type) {
-    case usse::RegisterBank::SECATTR:
-        var_group = &parameters.uniforms;
-        break;
-    case usse::RegisterBank::PRIMATTR:
-        var_group = &parameters.ins;
-        break;
-    case usse::RegisterBank::OUTPUT:
-        var_group = &parameters.outs;
-        break;
-    case usse::RegisterBank::TEMP:
-        var_group = &parameters.temps;
-        break;
-    case usse::RegisterBank::FPINTERNAL:
-        var_group = &parameters.internals;
-        break;
-    default:
-        LOG_WARN("Unsupported reg_type {}", static_cast<uint32_t>(reg_type));
-        return spv::NoResult;
-    }
-
-    if (force_offset) {
-        var_group->set_next_offset(force_offset.value());
-    }
-
-    var_group->push({ type, var_id }, size);
-
-    return var_id;
-}
-
-static spv::Id create_struct(spv::Builder &b, SpirvShaderParameters &parameters, StructDeclContext &param_struct, emu::SceGxmProgramType program_type) {
-    assert(param_struct.field_ids.size() == param_struct.field_names.size());
-
-    const spv::Id struct_type_id = b.makeStructType(param_struct.field_ids, param_struct.name.c_str());
-
-    // NOTE: This will always be true until we support uniform structs (see comment below)
-    if (param_struct.is_interaface_block)
-        b.addDecoration(struct_type_id, spv::DecorationBlock);
-
-    for (auto field_index = 0; field_index < param_struct.field_ids.size(); ++field_index) {
-        const auto field_name = param_struct.field_names[field_index];
-
-        b.addMemberName(struct_type_id, field_index, field_name.c_str());
-    }
-
-    // TODO: Size doesn't make sense here, so just use 1
-    const spv::Id struct_var_id = create_spirv_var_reg(b, parameters, param_struct.name, param_struct.reg_type, 1, struct_type_id);
-
-    param_struct.clear();
-    return struct_var_id;
-}
-
-static spv::Id create_param_sampler(spv::Builder &b, SpirvShaderParameters &parameters, const SceGxmProgramParameter &parameter) {
+static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParameter &parameter) {
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
     spv::Id sampled_image_type = b.makeSampledImageType(image_type);
@@ -291,56 +232,59 @@ static spv::Id create_param_sampler(spv::Builder &b, SpirvShaderParameters &para
     return b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-static void create_vertex_outputs(spv::Builder &b, SpirvShaderParameters &parameters, const SceGxmProgram &program) {
-    auto set_property = [](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count) {
-        return std::make_pair(vo, VertexProgramOutputProperties(name, component_count));
-    };
+static bool create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank
+    , const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult) {
+    std::uint32_t total_var_comp = (size + 3) >> 2;
+    spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
 
-    // TODO: Verify component counts
-    static const VertexProgramOutputPropertiesMap vertex_properties_map = {
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "v_Position", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG, "v_Fog", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0, "v_Color0", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "v_Color1", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "v_TexCoord0", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "v_TexCoord1", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "v_TexCoord2", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "v_TexCoord3", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "v_TexCoord4", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "v_TexCoord5", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "v_TexCoord6", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "v_TexCoord7", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "v_TexCoord8", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "v_TexCoord9", 2),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "v_Psize", 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "v_Clip0", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "v_Clip1", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "v_Clip2", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "v_Clip3", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "v_Clip4", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "v_Clip5", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "v_Clip6", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "v_Clip7", 4),
-    };
+    Operand dest;
+    dest.bank = bank;
+    dest.num = offset;
+    dest.type = DataType::F32;
+    
+    Imm4 dest_mask = 0b1111;
 
-    const SceGxmVertexProgramOutputs vertex_outputs = gxp::get_vertex_outputs(program);
+    auto get_dest_mask = [&]() {    
+        switch (total_var_comp) {
+        case 1:
+            dest_mask = 0b1;
+            break;
 
-    for (int vo = SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION; vo < _SCE_GXM_VERTEX_PROGRAM_OUTPUT_LAST; vo <<= 1) {
-        if (vertex_outputs & vo) {
-            const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
-            VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
+        case 2:
+            dest_mask = 0b11;
+            break;
 
-            const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), properties.component_count);
-            const spv::Id out_var = create_spirv_var_reg(b, parameters, properties.name, usse::RegisterBank::OUTPUT, properties.component_count, out_type);
+        case 3:
+            dest_mask = 0b111;
+            break;
 
-            // TODO: More decorations needed?
-            if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION)
-                b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);
+        default:
+            break;
         }
+    };
+
+    if (b.isArrayType(b.getContainedTypeId(b.getTypeId(var)))) {
+        spv::Id arr_type = b.getContainedTypeId(b.getTypeId(var));
+        spv::Id comp_type = b.getContainedTypeId(arr_type);
+        total_var_comp = b.getNumTypeComponents(comp_type);
+
+        // Reget the mask
+        get_dest_mask();
+
+        for (auto i = 0; i < b.getNumTypeComponents(arr_type); i++) {
+            spv::Id elm = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, comp_type),
+                { var, b.makeIntConstant(i) });
+            utils::store(b, parameters, utils, dest, b.createLoad(elm), dest_mask, 0 + i * total_var_comp);
+        }
+    } else {
+        utils::store(b, parameters, utils, dest, b.isConstant(var) ? var : b.createLoad(var), dest_mask, 0);
     }
+
+    return true;
 }
 
-static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers, const SceGxmProgram &program) {
+static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
+    const SceGxmProgram &program) {
     static const std::unordered_map<std::uint32_t, std::string> name_map = {
         { 0xD000, "v_Position" },
         { 0xC000, "v_Fog" },
@@ -405,7 +349,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             const auto num_comp = ((descriptor->attribute_info >> 22) & 3) + 1;
             const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), num_comp);
             const auto pa_iter_size = ((descriptor->size >> 4) & 3) + 1;
-            const auto pa_iter_var = create_spirv_var_reg(b, parameters, pa_name, RegisterBank::PRIMATTR, pa_iter_size, pa_iter_type);
+            const auto pa_iter_var = create_input_variable(b, parameters, utils, pa_name.c_str(), RegisterBank::PRIMATTR,
+                pa_offset, pa_iter_type, pa_iter_size * 4);
 
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
@@ -494,11 +439,14 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             // Size of this extra pa occupied
             // Force this to be PRIVATE
-            const optional<spv::StorageClass> texture_query_storage{ spv::StorageClassPrivate };
             const auto size = ((descriptor->size >> 6) & 3) + 1;
-            const auto type = b.makeVectorType(b.makeFloatType(32), num_component * size / 4);
 
-            tex_query_info.dest = create_spirv_var_reg(b, parameters, tex_query_var_name, RegisterBank::PRIMATTR, size, type, texture_query_storage);
+            // Do an access chain, live from the PA bank
+            if (pa_offset % 4 != 0) {
+                assert(false && "PA offset for texture query need to be aligned!");
+            }
+
+            tex_query_info.dest_offset = pa_offset;
 
             if (coords[tex_coord_index] == spv::NoResult) {
                 // Create an 'in' variable
@@ -520,21 +468,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     }
 }
 
-static void create_fragment_output(spv::Builder &b, SpirvShaderParameters &parameters, const SceGxmProgram &program) {
-    // HACKY: We assume output size and format
-
-    std::string frag_color_name = "out_color";
-    const spv::Id frag_color_type = b.makeVectorType(b.makeFloatType(32), 4);
-    const spv::Id frag_color_var = create_spirv_var_reg(b, parameters, frag_color_name, usse::RegisterBank::OUTPUT, 4, frag_color_type);
-
-    b.addDecoration(frag_color_var, spv::DecorationLocation, 0);
-
-    parameters.outs.push({ frag_color_type, frag_color_var }, 4);
-}
-
 static const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program) {
     const SceGxmProgramParameterContainer *containers = reinterpret_cast<const SceGxmProgramParameterContainer *>(reinterpret_cast<const std::uint8_t *>(&program.container_offset) + program.container_offset);
-
     return containers;
 }
 
@@ -599,10 +534,33 @@ static const char *get_container_name(const std::uint16_t idx) {
     return "INVALID ";
 }
 
-static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
+static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
+    emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
-    StructDeclContext param_struct = {};
+    
+    // Make array type. TODO: Make length configurable
+    spv::Id f32_type = b.makeFloatType(32);
+    spv::Id i32_type = b.makeIntType(32);
+    spv::Id b_type = b.makeBoolType();
+
+    spv::Id f32_v4_type = b.makeVectorType(f32_type, 4);
+    spv::Id pa_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(32), 0);
+    spv::Id sa_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(32), 0);
+    spv::Id i_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(3), 0);
+    spv::Id temp_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(20), 0);
+    spv::Id index_arr_type = b.makeArrayType(i32_type, b.makeIntConstant(4), 0);
+    spv::Id pred_arr_type = b.makeArrayType(b_type, b.makeIntConstant(4), 0);
+    spv::Id o_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(5), 0);
+
+    // Create register banks
+    spv_params.ins = b.createVariable(spv::StorageClassPrivate, pa_arr_type, "pa");
+    spv_params.uniforms = b.createVariable(spv::StorageClassPrivate, sa_arr_type, "sa");
+    spv_params.internals = b.createVariable(spv::StorageClassPrivate, i_arr_type, "internals");
+    spv_params.temps = b.createVariable(spv::StorageClassPrivate, temp_arr_type, "r");
+    spv_params.predicates = b.createVariable(spv::StorageClassPrivate, pred_arr_type, "p");
+    spv_params.indexes = b.createVariable(spv::StorageClassPrivate, index_arr_type, "idx");
+    spv_params.outs = b.createVariable(spv::StorageClassPrivate, o_arr_type, "outs");
 
     SamplerMap samplers;
 
@@ -618,13 +576,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         // fallthrough
         case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE: {
-            const std::string struct_name = gxp::parameter_struct_name(parameter);
-            const bool is_struct_field = !struct_name.empty();
-            const bool struct_decl_ended = !is_struct_field && !param_struct.empty() || (is_struct_field && !param_struct.empty() && param_struct.name != struct_name);
-
-            if (struct_decl_ended)
-                create_struct(b, spv_params, param_struct, program_type);
-
             spv::Id param_type = get_param_type(b, parameter);
 
             const bool is_uniform = param_reg_type == usse::RegisterBank::SECATTR;
@@ -632,67 +583,36 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             const bool is_fragment_input = param_reg_type == usse::RegisterBank::PRIMATTR && program_type == emu::SceGxmProgramType::Fragment;
             const bool can_be_interface_block = is_vertex_output || is_fragment_input;
 
-            // TODO: I haven't seen uniforms in 'structs' anywhere and can't test atm, so for now let's
-            //       not try to implement emitting structs or interface blocks (probably the former)
-            //       for them. Look below for current workaround (won't work for all cases).
-            //       Cg most likely supports them so we should support it too at some point.
-            if (is_struct_field && is_uniform)
-                LOG_WARN("Uniform structs not fully supported!");
-            const bool can_be_struct = can_be_interface_block; // || is_uniform
+            std::string var_name = gxp::parameter_name_raw(parameter);
+            std::replace(var_name.begin(), var_name.end(), '.', '_');
 
-            if (is_struct_field && can_be_struct) {
-                const auto param_field_name = gxp::parameter_name(parameter);
+            auto container = get_container_by_index(program, parameter.container_index);
+            std::uint32_t offset = parameter.resource_index;
 
-                param_struct.name = struct_name;
-                param_struct.field_ids.push_back(param_type);
-                param_struct.field_names.push_back(param_field_name);
-                param_struct.reg_type = param_reg_type;
-                param_struct.is_interaface_block = can_be_interface_block;
-            } else {
-                std::string var_name;
-
-                if (is_uniform) {
-                    // TODO: Hacky, ignores struct name/array index, uniforms names could collide if:
-                    //           1) a global uniform is named the same as a struct field uniform
-                    //           2) uniform struct arrays are used
-                    //       It should work for other cases though, since set_uniforms also uses gxp::parameter_name
-                    //       To fix this properly we need to emit structs properly first (see comment above
-                    //       param_struct_t) and change set_uniforms to use gxp::parameter_name_raw.
-                    //       Or we could just flatten everything.
-                    var_name = gxp::parameter_name(parameter);
-                } else {
-                    var_name = gxp::parameter_name_raw(parameter);
-
-                    if (is_struct_field)
-                        // flatten struct
-                        std::replace(var_name.begin(), var_name.end(), '.', '_');
-                }
-
-                auto container = get_container_by_index(program, parameter.container_index);
-                std::uint32_t offset = parameter.resource_index;
-
-                if (container && parameter.resource_index < container->max_resource_index) {
-                    offset = container->base_sa_offset + parameter.resource_index;
-                }
-
-                // Make the type
-                std::string param_log = fmt::format("[{} + {}] {}a{} = {}",
-                    get_container_name(parameter.container_index), parameter.resource_index,
-                    is_uniform ? "s" : "p", offset, var_name);
-
-                if (parameter.array_size > 1) {
-                    param_log += fmt::format("[{}]", parameter.array_size);
-                }
-
-                LOG_DEBUG(param_log);
-
-                // TODO: Size is not accurate.
-                create_spirv_var_reg(b, spv_params, var_name, param_reg_type, parameter.array_size * parameter.component_count, param_type, boost::none, offset);
+            if (container && parameter.resource_index < container->max_resource_index) {
+                offset = container->base_sa_offset + parameter.resource_index;
             }
+
+            // Make the type
+            std::string param_log = fmt::format("[{} + {}] {}a{} = {}",
+                get_container_name(parameter.container_index), parameter.resource_index,
+                is_uniform ? "s" : "p", offset, var_name);
+
+            if (parameter.array_size > 1) {
+                param_log += fmt::format("[{}]", parameter.array_size);
+            }
+
+            LOG_DEBUG(param_log);
+
+            // TODO: Size is not accurate.
+            create_input_variable(b, spv_params, utils, var_name.c_str(), param_reg_type, offset, param_type, 
+                parameter.array_size * parameter.component_count * 4);
+
             break;
         }
+
         case SCE_GXM_PARAMETER_CATEGORY_SAMPLER: {
-            const auto sampler_spv_var = create_param_sampler(b, spv_params, parameter);
+            const auto sampler_spv_var = create_param_sampler(b, parameter);
             samplers.emplace(parameter.resource_index, sampler_spv_var);
             break;
         }
@@ -722,8 +642,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         for (std::uint32_t i = 0; i < program.dependent_sampler_count; i++) {
             const std::uint32_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;
-            spv_params.uniforms.set_next_offset(container->base_sa_offset + dependent_samplers[i].sa_offset);
-            spv_params.uniforms.push({ b.getTypeId(samplers[rsc_index]), samplers[rsc_index] }, 1);
+            spv_params.samplers.emplace(container->base_sa_offset + dependent_samplers[i].sa_offset, samplers[rsc_index]);
         }
     }
 
@@ -768,11 +687,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         auto create_new_literal_pack = [&]() {
             // Create new literal composite
-            spv_params.uniforms.set_next_offset(composite_base);
             spv::Id composite_var = b.makeCompositeConstant(b.makeVectorType(f32_type, static_cast<int>(constituents.size())),
                 constituents);
-
-            spv_params.uniforms.push({ b.getTypeId(composite_var), composite_var }, static_cast<int>(constituents.size()));
+            create_input_variable(b, spv_params, utils, nullptr, RegisterBank::SECATTR, composite_base, spv::NoResult,
+                static_cast<int>(constituents.size() * 4), composite_var);
         };
 
         for (std::uint32_t i = 1; i < program.literals_count; i++) {
@@ -796,47 +714,122 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    // Declarations ended with a struct, so it didn't get handled and we need to do it here
-    if (!param_struct.empty())
-        create_struct(b, spv_params, param_struct, program_type);
-
-    if (program_type == emu::SceGxmProgramType::Vertex)
-        create_vertex_outputs(b, spv_params, program);
-    else if (program_type == emu::SceGxmProgramType::Fragment) {
-        create_fragment_inputs(b, spv_params, texture_queries, samplers, program);
-        create_fragment_output(b, spv_params, program);
-    }
-
-    // Create internal reg vars
-    for (auto i = 0; i < 3; i++) {
-        auto name = fmt::format("i{}", i);
-        // TODO: these are actually 128 bits long
-        auto type = b.makeVectorType(b.makeFloatType(32), 4); // TODO: Figure out correct type
-        create_spirv_var_reg(b, spv_params, name, usse::RegisterBank::FPINTERNAL, 16, type);
-    }
-
-    // If this is a non-native color fragment shader (uses configurable blending, doesn't write to color buffer directly):
-    // Add extra dummy primary attributes that on hw would be patched by the shader patcher depending on blending
-    // Instead, in this case we write to the color buffer directly and emulate configurable blending with OpenGL
-    // TODO: Verify creation logic. Should we just check if there are _no_ PAs ? Or is the current approach correct?
-    if (program_type == emu::Fragment && !program.is_native_color()) {
-        const auto missing_primary_attrs = program.primary_reg_count - spv_params.ins.size();
-
-        if (missing_primary_attrs > 2) {
-            LOG_ERROR("missing primary attributes: {}", missing_primary_attrs);
-        } else if (missing_primary_attrs > 0) {
-            const auto pa_type = b.makeVectorType(b.makeFloatType(32), static_cast<int>(missing_primary_attrs * 2));
-            std::string pa_name = "pa0_blend";
-            create_spirv_var_reg(b, spv_params, pa_name, usse::RegisterBank::PRIMATTR, static_cast<std::uint32_t>(missing_primary_attrs * 2), pa_type); // TODO: * 2 is a hack because we don't yet support f16
-        }
+    if (program_type == emu::SceGxmProgramType::Fragment) {
+        create_fragment_inputs(b, spv_params, utils, texture_queries, samplers, program);
     }
 
     return spv_params;
 }
 
-static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program, const NonDependentTextureQueryCallInfos &texture_queries) {
+static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program,
+    utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &texture_queries) {
     // Do texture queries
-    usse::convert_gxp_usse_to_spirv(b, program, parameters, texture_queries);
+    usse::convert_gxp_usse_to_spirv(b, program, parameters, utils, end_hook_func, texture_queries);
+}
+
+static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters, 
+    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *frag_fin_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Function *frag_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "frag_output_finalize", {}, 
+        decorations, &frag_fin_block);
+
+    Operand color_val_operand;
+    color_val_operand.bank = program.is_native_color() ? RegisterBank::OUTPUT : RegisterBank::PRIMATTR;
+    color_val_operand.num = 0;
+    color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    color_val_operand.type = program.is_native_color() ? DataType::F32 :  DataType::F16;
+
+    spv::Id color = utils::load(b, parameters, utils, color_val_operand, 0xF, 0);
+    spv::Id out = b.createVariable(spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
+    b.addDecoration(out, spv::DecorationLocation, 0);
+
+    b.createStore(color, out);
+
+    b.makeReturn(false);
+    b.setBuildPoint(last_build_point);
+
+    return frag_fin_func;    
+}
+
+static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters, 
+    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *vert_fin_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Function *vert_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "vert_output_finalize", {}, 
+        decorations, &vert_fin_block);
+
+    SceGxmVertexOutputTexCoordInfos coord_infos;
+    SceGxmVertexProgramOutputs vertex_outputs = gxp::get_vertex_outputs(program, &coord_infos);
+
+    auto set_property = [](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count) {
+        return std::make_pair(vo, VertexProgramOutputProperties(name, component_count));
+    };
+
+    // TODO: Verify component counts
+    VertexProgramOutputPropertiesMap vertex_properties_map = {
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "v_Position", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG, "v_Fog", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0, "v_Color0", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "v_Color1", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "v_TexCoord0", coord_infos[0].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "v_TexCoord1", coord_infos[1].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "v_TexCoord2", coord_infos[2].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "v_TexCoord3", coord_infos[3].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "v_TexCoord4", coord_infos[4].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "v_TexCoord5", coord_infos[5].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "v_TexCoord6", coord_infos[6].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "v_TexCoord7", coord_infos[7].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "v_TexCoord8", coord_infos[8].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "v_TexCoord9", coord_infos[9].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "v_Psize", 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "v_Clip0", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "v_Clip1", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "v_Clip2", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "v_Clip3", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "v_Clip4", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "v_Clip5", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "v_Clip6", 4),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "v_Clip7", 4),
+    };
+
+    Operand o_op;
+    o_op.bank = RegisterBank::OUTPUT;
+    o_op.num = 0;
+    o_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+
+    const Imm4 DEST_MASKS[] = { 0, 0b1, 0b11, 0b111, 0b1111 };
+
+    for (int vo = SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION; vo < _SCE_GXM_VERTEX_PROGRAM_OUTPUT_LAST; vo <<= 1) {
+        if (vertex_outputs & vo) {
+            const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
+            VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
+
+            const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), properties.component_count);
+            const spv::Id out_var = b.createVariable(spv::StorageClassOutput, out_type, properties.name.c_str());
+
+            // TODO: More decorations needed?
+            if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION)
+                b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);
+
+            // Do store
+            spv::Id o_val = utils::load(b, parameters, utils, o_op, DEST_MASKS[properties.component_count], 0);
+            b.createStore(o_val, out_var);
+
+            o_op.num += properties.component_count;
+        }
+    }
+
+    b.makeReturn(false);
+    b.setBuildPoint(last_build_point);
+
+    return vert_fin_func;    
 }
 
 static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
@@ -855,7 +848,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     b.addCapability(spv::Capability::CapabilityShader);
 
     NonDependentTextureQueryCallInfos texture_queries;
-    SpirvShaderParameters parameters = create_parameters(b, program, program_type, texture_queries);
+    utils::SpirvUtilFunctions utils;
 
     std::string entry_point_name;
     spv::ExecutionModel execution_model;
@@ -879,8 +872,18 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
 
     // Entry point
     spv::Function *spv_func_main = b.makeEntryPoint(entry_point_name.c_str());
+    spv::Function *end_hook_func = nullptr;
 
-    generate_shader_body(b, parameters, program, texture_queries);
+    // Generate parameters
+    SpirvShaderParameters parameters = create_parameters(b, program, utils, program_type, texture_queries);
+    
+    if (program.is_fragment()) {
+        end_hook_func = make_frag_finalize_function(b, parameters, program, utils);
+    } else {
+        end_hook_func = make_vert_finalize_function(b, parameters, program, utils);
+    }
+
+    generate_shader_body(b, parameters, program, utils, end_hook_func, texture_queries);
 
     // Execution modes
     if (program_type == emu::SceGxmProgramType::Fragment)
@@ -888,12 +891,6 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
 
     // Add entry point to Builder
     auto entry_point = b.addEntryPoint(execution_model, spv_func_main, entry_point_name.c_str());
-
-    for (auto id : parameters.ins.get_vars())
-        entry_point->addIdOperand(id.var_id);
-    for (auto id : parameters.outs.get_vars())
-        entry_point->addIdOperand(id.var_id);
-
     auto spirv_log = spv_logger.getAllMessages();
     if (!spirv_log.empty())
         LOG_ERROR("SPIR-V Error:\n{}", spirv_log);

@@ -278,7 +278,11 @@ bool USSETranslatorVisitor::vtst(
 
     pred_result = m_b.createOp(used_comp_op, m_b.makeBoolType(), { lhs, rhs });
 
-    set_predicate(pdst_n, pred_result);
+    Operand pred_op {};
+    pred_op.bank = RegisterBank::PREDICATE;
+    pred_op.num = pdst_n;
+
+    store(pred_op, pred_result);
     return true;
 }
 
@@ -341,12 +345,23 @@ bool USSETranslatorVisitor::br(
     } else {
         spv::Id pred_v = spv::NoResult;
 
+        Operand pred_opr{};
+        pred_opr.bank = RegisterBank::PREDICATE;
+
+        bool do_neg = false;
+
         if (pred >= ExtPredicate::P0 && pred <= ExtPredicate::P1) {
-            int pred_n = static_cast<int>(pred) - static_cast<int>(ExtPredicate::P0);
-            pred_v = load_predicate(pred_n);
+            pred_opr.num = static_cast<int>(pred) - static_cast<int>(ExtPredicate::P0);
         } else if (pred >= ExtPredicate::NEGP0 && pred <= ExtPredicate::NEGP1) {
-            int pred_n = static_cast<int>(pred) - static_cast<int>(ExtPredicate::NEGP0);
-            pred_v = load_predicate(pred_n, true);
+            pred_opr.num = static_cast<int>(pred) - static_cast<int>(ExtPredicate::NEGP0);
+            do_neg = true;
+        }
+
+        pred_v = load(pred_opr, 0b0001);
+        
+        if (do_neg) {
+            std::vector<spv::Id> ops {pred_v};
+            pred_v = m_b.createOp(spv::OpLogicalNot, m_b.makeBoolType(), ops);
         }
 
         spv::Block *continous_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);

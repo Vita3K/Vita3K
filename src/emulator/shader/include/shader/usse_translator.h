@@ -21,6 +21,7 @@
 #include <shader/spirv_recompiler.h>
 #include <shader/usse_program_analyzer.h>
 #include <shader/usse_translator_types.h>
+#include <shader/usse_utilities.h>
 
 #include <SPIRV/SpvBuilder.h>
 #include <boost/optional/optional.hpp>
@@ -51,45 +52,36 @@ public:
 
     spv::Id const_f32_v0[5];
 
-    spv::Function *f16_unpack_func;
-    spv::Function *f16_pack_func;
+    utils::SpirvUtilFunctions m_util_funcs;
 
     spv::Block *main_block;
+    spv::Id out;
 
     // Contains repeat increasement offset
     int repeat_increase[4][4];
 
-    using RegisterCacheMap = std::unordered_map<uint16_t, SpirvReg>;
-
-    // SPIR-V inputs are read-only, so we need to write to these temporaries instead
-    // TODO: Figure out actual PA count limit
-    RegisterCacheMap pa_writeable;
-    RegisterCacheMap r_supplies;
-    RegisterCacheMap sa_supplies;
-
-    std::array<spv::Id, 4> predicates;
-    std::array<spv::Id, 4> indexes;
-
-    void make_f16_unpack_func();
-    void make_f16_pack_func();
     void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
-
     spv::Id do_fetch_texture(const spv::Id tex, const spv::Id coord, const DataType dest_type);
 
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
+    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, 
+        utils::SpirvUtilFunctions &utils, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
         bool is_secondary_program = false)
         : m_b(_b)
         , m_recompiler(_recompiler)
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
-        , m_second_program(is_secondary_program) {
+        , m_second_program(is_secondary_program)
+        , m_util_funcs(utils)
+        , m_program(program) {
         // Default increase mode
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 repeat_increase[i][j] = j;
             }
         }
+
+        out = spv::NoResult;
 
         // Set main block
         main_block = m_b.getBuildPoint();
@@ -118,15 +110,16 @@ public:
             const_f32_v0[i] = m_b.makeCompositeConstant(type_f32_v[i], consts);
         }
 
-        std::fill(predicates.begin(), predicates.end(), spv::NoResult);
-        std::fill(indexes.begin(), indexes.end(), spv::NoResult);
-
-        // Make utility functions
-        make_f16_unpack_func();
-        make_f16_pack_func();
-
         do_texture_queries(queries);
     }
+
+    /*
+     * \brief Given an operand, load it and returns a SPIR-V vector with total components count equals to total bit set in
+     *        write/dest mask
+     * 
+     * \returns A copy of given operand
+    */
+    spv::Id load(Operand &op, const Imm4 dest_mask, int shift_offset = 0);
 
 private:
     //
@@ -149,90 +142,7 @@ private:
         return repeat_increase[op.index][repeat_index];
     }
 
-    /**
-     * \brief Get a SPIR-V variable corresponding to the given bank and register offset.
-     * 
-     * Beside finding the corresponding SPIR-V register bank and returning the associated SPIR-V variable, this function
-     * does patching for edge cases, like getting a pa0 variable for storage.
-     * 
-     * The translator should use this function instead of getting the raw SPIR-V register bank using get_reg_bank, etc.
-     * 
-     * \returns True on success.
-    */
-    bool get_spirv_reg(RegisterBank bank, std::uint32_t reg_offset, int shift_offset, SpirvReg &reg,
-        std::uint32_t &out_comp_offset, bool get_for_store);
-
-    /**
-     * \brief Create a new vector given two another vector and a shift offset.
-     * 
-     * This uses a method called bridging (connecting). For example, we have two vec4:
-     * vec4 a1(x1, y1, z1, w1) and vec4(x2, y2, z2, w2)
-     * 
-     * When we call:
-     *  bridge(a1, a2, SWIZZLE_CHANNEL_4(Z, X, Y, W), 2, 0b1111)
-     * 
-     * Function will first concats two vector and get components starting from offset 2
-     * If the bit at current offset is set in write mask, this function will take the component at current offset
-     * 
-     *           x1   y1  [ z1   w1   x2   y2 ]  z2   w2
-     *           ^    ^     ^
-     *  Offset   0    1     2
-     * 
-     * Components in brackets are the one that will be taken to form vec4(z1, w1, x2, y2)
-     * 
-     * Then, it uses the swizzle to shuffle components.
-     * 
-     *                       SWIZZLE_CHANNEL4(Z, X, Y, W)
-     * vec4(z1, w1, x2, y2) ==============================> vec4(x2, z1, w1, y2)
-     *       ^   ^  ^   ^                                         ^   ^  ^   ^
-     *       X   Y  Z   W                                         Z   X  Y   W
-     * 
-     * In situation like example:
-     * 
-     *   a1 = vec2(x1, y1), a2 = vec2(x2, y2), and offset = 1 (swizz = SWIZZLE_CHANNEL4(X, Y, Z, W)), write_mask = 0b1111
-     * 
-     * It will returns vec4(y1, x2, y2, y2)
-     * 
-     * \param src1 First vector in bridge operation.
-     * \param src2 Second vector in bridge operation.
-     * \param swiz Swizzle to shuffle components after getting the vec4.
-     * \param shift_offset Offset in concats to get vec4
-     * \param dest_mask Destination/write mask
-     * 
-     * \returns ID to a vec4 contains bridging results, or spv::NoResult if failed
-     * 
-    */
-    spv::Id bridge(SpirvReg &src1, SpirvReg &src2, Swizzle4 swiz, const int shift_offset, const Imm4 dest_mask);
-
-    /*
-     * \brief Given an operand, load it and returns a SPIR-V vector with total components count equals to total bit set in
-     *        write/dest mask
-     * 
-     * \returns A copy of given operand
-    */
-    spv::Id load(Operand &op, const Imm4 dest_mask, const int offset = 0);
-
-    /**
-     * \brief Unpack a vector/scalar as given component data type.
-     * 
-     * \param target Target vector/scalar. Component type must be f32.
-     * \param type   Data type to unpack to. If the data is F32, target will be returned.
-     * 
-     * \returns A new vector with [total_comp_count(target) * 4 / size(type)] components
-     */
-    spv::Id unpack(spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
-        const int shift_offset = 0);
-
-    /**
-     * \brief Unpack one scalar.
-     */
-    spv::Id unpack_one(spv::Id scalar, const DataType type);
-    spv::Id pack_one(spv::Id vec, const DataType source_type);
-
-    void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int off = 0);
-
-    const SpirvVarRegBank *get_reg_bank(RegisterBank reg_bank) const;
-
+    void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int shift_offset = 0);
     spv::Id swizzle_to_spv_comp(spv::Id composite, spv::Id type, SwizzleChannel swizzle);
 
     // TODO: Separate file for translator helpers?
@@ -250,16 +160,6 @@ public:
     bool is_translating_secondary_program() {
         return m_second_program;
     }
-
-    //
-    // Helpers
-    //
-
-    // In non-native frag shaders, GXM's ShaderPatcher API uses some specific PAs as the input color of its blending code
-    // This function imitates that by write pa0 to fragment output color
-    // TODO: Is this and our OpenGL blending code enough?
-    // TOOD: Is pa0 correct or is there a GXP field or some other logic that determines the PA offfset (+size?) to use
-    void emit_non_native_frag_output();
 
     //
     // Instructions
@@ -601,9 +501,6 @@ public:
         bool special,
         SpecialCategory category);
 
-    bool set_predicate(const Imm2 idx, const spv::Id value);
-    spv::Id load_predicate(const Imm2 idx, const bool neg = false);
-
 private:
     // SPIR-V emitter
     spv::Builder &m_b;
@@ -615,6 +512,8 @@ private:
     const SpirvShaderParameters &m_spirv_params;
 
     USSERecompiler &m_recompiler;
+
+    const SceGxmProgram &m_program;
 };
 
 using BlockCacheMap = std::map<shader::usse::USSEOffset, spv::Block *>;
@@ -630,10 +529,12 @@ struct USSERecompiler final {
     usse::USSEOffset cur_pc;
 
     const SceGxmProgram *program;
+    spv::Function *end_hook_func;
 
     std::unordered_map<usse::USSEOffset, usse::USSEBlock> avail_blocks;
 
-    explicit USSERecompiler(spv::Builder &b, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries);
+    explicit USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters,
+        utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries);
 
     void reset(const std::uint64_t *inst, const std::size_t count);
     spv::Block *get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom = nullptr);

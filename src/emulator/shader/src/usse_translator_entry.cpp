@@ -503,11 +503,13 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
-USSERecompiler::USSERecompiler(spv::Builder &b, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries)
+USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, 
+ utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries)
     : b(b)
     , inst(inst)
     , count(count)
-    , visitor(b, *this, cur_instr, parameters, queries, true) {
+    , end_hook_func(end_hook_func)
+    , visitor(b, *this, program, utils, cur_instr, parameters, queries, true) {
 }
 
 void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count) {
@@ -574,10 +576,8 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
 
     if (block.offset + block.size >= count && !visitor.is_translating_secondary_program()) {
         // We reach the end, for whatever the current block is.
-        // Emit non native frag output if neccessary first
-        if (program->get_type() == emu::Fragment && !program->is_native_color()) {
-            visitor.emit_non_native_frag_output();
-        }
+        // Call end hook
+        b.createFunctionCall(end_hook_func, {});
 
         // Make a return
         b.leaveFunction();
@@ -596,12 +596,22 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
 
         const ExtPredicate predicator = static_cast<ExtPredicate>(block.pred);
 
+        Operand pred_opr{};
+        pred_opr.bank = RegisterBank::PREDICATE;
+
+        bool do_neg = false;
+
         if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P1) {
-            int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
-            pred_v = visitor.load_predicate(pred_n);
+            pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
         } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
-            int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
-            pred_v = visitor.load_predicate(pred_n, true);
+            pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
+            do_neg = true;
+        }
+
+        pred_v = visitor.load(pred_opr, 0b0001);
+        if (do_neg) {
+          std::vector<spv::Id> ops {pred_v};
+          pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
         }
 
         spv::Block *merge_block = get_or_recompile_block(avail_blocks[block.offset + block.size]);
@@ -626,7 +636,8 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
     return new_block;
 }
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries) {
+void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
+    spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
 
@@ -643,7 +654,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
 
     // Decode and recompile
     // TODO: Reuse this
-    usse::USSERecompiler recomp(b, parameters, queries);
+    usse::USSERecompiler recomp(b, program, parameters, utils, end_hook_func, queries);
 
     // Set the program
     recomp.program = &program;

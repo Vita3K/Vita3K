@@ -201,6 +201,13 @@ enum SceGxmVertexProgramOutputs : int {
     _SCE_GXM_VERTEX_PROGRAM_OUTPUT_LAST = 1 << 23
 };
 
+union SceGxmVertexOutputTexCoordInfo {
+    bf_t<uint8_t, 0, 2> comp_count;
+    bf_t<uint8_t, 2, 1> unk0; 
+};
+
+using SceGxmVertexOutputTexCoordInfos = std::array<SceGxmVertexOutputTexCoordInfo, 10>;
+
 #pragma pack(push, 1)
 struct SceGxmProgramVertexOutput {
     std::uint8_t unk0[12];

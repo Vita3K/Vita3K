@@ -10,6 +10,7 @@ struct SceGxmProgram;
 
 namespace spv {
 class Builder;
+class Function;
 }
 
 namespace shader {
@@ -17,9 +18,14 @@ namespace usse {
 struct SpirvShaderParameters;
 struct NonDependentTextureQueryCallInfo;
 
+namespace utils {
+struct SpirvUtilFunctions;
+}
+
 using NonDependentTextureQueryCallInfos = std::vector<NonDependentTextureQueryCallInfo>;
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries);
+void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
+    spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries);
 
 } // namespace usse
 } // namespace shader

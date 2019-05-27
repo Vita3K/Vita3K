@@ -120,7 +120,7 @@ std::string operand_to_str(Operand op, Imm4 write_mask, std::uint32_t shift) {
 
     std::string opstr = reg_to_str(op.bank, op.num + shift);
 
-    if (write_mask != 0 && op.bank != RegisterBank::IMMEDIATE) {
+    if (write_mask != 0) {
         opstr += "." + swizzle_to_str<4>(op.swizzle, write_mask, shift);
     }
 
@@ -160,6 +160,14 @@ std::string swizzle_to_str(Swizzle<s> swizz, Imm4 write_mask, uint32_t shift) {
             }
             case SwizzleChannel::_0: {
                 swizzstr += "0";
+                break;
+            }
+            case SwizzleChannel::_1: {
+                swizzstr += "1";
+                break;
+            }
+            case SwizzleChannel::_2: {
+                swizzstr += "2";
                 break;
             }
             case SwizzleChannel::_H: {

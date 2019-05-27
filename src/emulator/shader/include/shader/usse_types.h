@@ -147,6 +147,7 @@ enum class RegisterBank {
     IMMEDIATE,
     INDEX,
     INDEXED,
+    PREDICATE,
 
     MAXIMUM,
     INVALID
