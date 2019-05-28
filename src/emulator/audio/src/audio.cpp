@@ -27,42 +27,31 @@
 
 #define AUDIO_PROFILE(name) MICROPROFILE_SCOPEI("Audio", name, MP_THISTLE)
 
-static const int stream_put_granularity = 512;
-
 static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
     AUDIO_PROFILE(__func__);
 
-    int available_to_get = SDL_AudioStreamAvailable(port.callback.stream.get());
-    assert(available_to_get >= 0);
+    // How much data is available?
+    std::unique_lock<std::mutex> lock(port.shared.mutex);
+    const int bytes_available = SDL_AudioStreamAvailable(port.shared.stream.get());
+    assert(bytes_available >= 0);
 
-    while (available_to_get < len) {
-        std::unique_lock<std::mutex> lock(port.shared.mutex);
-        if (port.shared.outputs.empty()) {
-            lock.unlock();
-            SDL_AudioStreamFlush(port.callback.stream.get());
-            break;
-        } else {
-            AudioOutput &output = port.shared.outputs.front();
-            const int bytes_to_put = std::min(stream_put_granularity, output.len_bytes);
-            const int ret = SDL_AudioStreamPut(port.callback.stream.get(), output.buf, bytes_to_put);
-            assert(ret == 0);
-            output.buf += bytes_to_put;
-            output.len_bytes -= bytes_to_put;
-            if (output.len_bytes <= 0) {
-                const SceUID thread = output.thread;
-                port.shared.outputs.pop();
-                resume_thread(thread);
-            }
+    // Running out of data?
+    // The (len * 2) is just a guess that seems to work.
+    if (bytes_available < (len * 2)) {
+        // Is there a thread waiting for playback to finish?
+        if (port.shared.thread >= 0) {
+            // Wake the thread up.
+            resume_thread(port.shared.thread);
+            port.shared.thread = -1;
         }
-
-        available_to_get = SDL_AudioStreamAvailable(port.callback.stream.get());
-        assert(available_to_get >= 0);
     }
 
-    const int bytes_to_get = std::min(len, available_to_get);
-    const int get_result = SDL_AudioStreamGet(port.callback.stream.get(), temp_buffer, bytes_to_get);
-    if (get_result > 0) {
-        SDL_MixAudio(stream, temp_buffer, bytes_to_get, SDL_MIX_MAXVOLUME);
+    // Mix as much as we need.
+    const int bytes_to_get = std::min(len, bytes_available);
+    const int bytes_got = SDL_AudioStreamGet(port.shared.stream.get(), temp_buffer, bytes_to_get);
+    lock.unlock();
+    if (bytes_got > 0) {
+        SDL_MixAudio(stream, temp_buffer, bytes_got, SDL_MIX_MAXVOLUME);
     }
 }
 
@@ -103,7 +92,7 @@ bool init(AudioState &state, ResumeAudioThread resume_thread) {
     desired.freq = 48000;
     desired.format = AUDIO_S16LSB;
     desired.channels = 2;
-    desired.samples = 512;
+    desired.samples = 1024;
     desired.callback = &audio_callback;
     desired.userdata = &state;
 

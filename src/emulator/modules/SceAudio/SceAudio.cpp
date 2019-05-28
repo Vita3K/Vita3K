@@ -55,7 +55,7 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
 
     const AudioOutPortPtr port = std::make_shared<AudioOutPort>();
     port->ro.len_bytes = len * channels * sizeof(int16_t);
-    port->callback.stream = stream;
+    port->shared.stream = stream;
 
     const std::lock_guard<std::mutex> lock(host.audio.shared.mutex);
     const int port_id = host.audio.shared.next_port_id++;
@@ -75,20 +75,22 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
-    const std::lock_guard<std::mutex> lock(thread->mutex);
-    if (thread->to_do != ThreadToDo::run)
-        return 0;
-    thread->to_do = ThreadToDo::wait;
-    stop(*thread->cpu);
+    // Put audio to the port's stream and see how much is left to play.
+    std::unique_lock<std::mutex> lock(prt->shared.mutex);
+    SDL_AudioStreamPut(prt->shared.stream.get(), buf, prt->ro.len_bytes);
+    const int available = SDL_AudioStreamAvailable(prt->shared.stream.get());
 
-    AudioOutput output;
-    output.buf = static_cast<const uint8_t *>(buf);
-    output.len_bytes = prt->ro.len_bytes;
-    output.thread = thread_id;
+    // If there's lots of audio left to play, stop this thread.
+    // The audio callback will wake it up later when it's running out of data.
+    if (available > host.audio.ro.spec.size) {
+        prt->shared.thread = thread_id;
+        lock.unlock();
 
-    {
-        const std::lock_guard<std::mutex> lock(prt->shared.mutex);
-        prt->shared.outputs.push(output);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
+        if (thread->to_do != ThreadToDo::run)
+            return 0;
+        thread->to_do = ThreadToDo::wait;
+        stop(*thread->cpu);
     }
 
     return 0;
