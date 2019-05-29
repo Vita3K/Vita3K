@@ -102,7 +102,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
         return 0;
     };
-    
+
     auto create_supply_register = [&](SpirvReg &dest, const std::string &name, const bool do_copy) -> SpirvReg {
         const spv::Id new_writeable = m_b.createVariable(spv::StorageClassPrivate, type_f32_v[4], name.c_str());
 
@@ -181,7 +181,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
     // Same for SECATTR
     case usse::RegisterBank::SECATTR: {
         const int result = find_cached_reg(sa_supplies, max_sa_registers);
-        
+
         switch (result) {
         case 1: {
             return true;
@@ -211,7 +211,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         break;
     }
     }
-    
+
     auto create_new_reg_for_store = [&](RegisterCacheMap &cache, const char *prefix, const bool do_copy = true) {
         std::string new_name = prefix;
         new_name += std::to_string(writeable_idx << 2);
@@ -221,7 +221,6 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
         out_comp_offset = (reg_offset + shift_offset) % 4;
     };
-
 
     bool result = spirv_bank->find_reg_at(reg_offset + shift_offset, reg, out_comp_offset);
     if (!result) {
