@@ -114,13 +114,13 @@ static GLuint load_texture(int32_t width, int32_t height, const unsigned char *d
     return texture;
 }
 
-static void init_font(State &gui) {
-    const auto DATA_PATH = "data";
-    const auto FONT_PATH = "fonts";
+static void init_font(HostState &host) {
+    const auto DATA_DIRNAME = "data";
+    const auto FONT_DIRNAME = "fonts";
     const auto FONT_FILENAME = "mplus-1mn-bold.ttf";
 
     // set up font paths
-    fs::path font_dir = fs::path(DATA_PATH) /= FONT_PATH;
+    fs::path font_dir = fs::path(host.base_path) /= fs::path(DATA_DIRNAME) /= FONT_DIRNAME;
     fs::path font_path(fs::absolute(font_dir /= FONT_FILENAME));
 
     // check existence of font file
@@ -131,15 +131,15 @@ static void init_font(State &gui) {
 
     // read font
     const auto font_file_size = fs::file_size(font_path);
-    gui.font_data.resize(font_file_size);
+    host.gui.font_data.resize(font_file_size);
     std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
-    font_stream.read(gui.font_data.data(), font_file_size);
+    font_stream.read(host.gui.font_data.data(), font_file_size);
 
     // add it to imgui
     ImGuiIO &io = ImGui::GetIO();
     ImFontConfig font_config{};
-    gui.monospaced_font = io.Fonts->AddFontDefault();
-    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
+    host.gui.monospaced_font = io.Fonts->AddFontDefault();
+    host.gui.normal_font = io.Fonts->AddFontFromMemoryTTF(host.gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
 void init_background(HostState &host, const std::string &image_path) {
@@ -225,7 +225,7 @@ void init(HostState &host) {
     ImGui_ImplSdlGL3_Init(host.window.get());
 
     init_style();
-    init_font(host.gui);
+    init_font(host);
     init_icons(host);
     if (!host.cfg.background_image.empty())
         init_background(host, host.cfg.background_image);
