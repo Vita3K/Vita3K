@@ -119,7 +119,7 @@ public:
      * 
      * \returns A copy of given operand
     */
-    spv::Id load(Operand &op, const Imm4 dest_mask, int shift_offset = 0);
+    spv::Id load(Operand op, const Imm4 dest_mask, int shift_offset = 0);
 
 private:
     //
@@ -142,7 +142,7 @@ private:
         return repeat_increase[op.index][repeat_index];
     }
 
-    void store(Operand &dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int shift_offset = 0);
+    void store(Operand dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int shift_offset = 0);
     spv::Id swizzle_to_spv_comp(spv::Id composite, spv::Id type, SwizzleChannel swizzle);
 
     // TODO: Separate file for translator helpers?
@@ -168,7 +168,7 @@ public:
         ExtPredicate pred,
         bool skipinv,
         Imm1 test_bit_2,
-        Imm1 src2_bank_sel,
+        Imm1 src0_comp_sel,
         bool syncstart,
         Imm1 dest_bank_ext,
         Imm1 end_or_src0_bank_ext,
@@ -183,7 +183,7 @@ public:
         Imm1 src0_bank_sel,
         Imm2 dest_bank_sel,
         Imm2 src1_bank_sel,
-        Imm2 src0_comp_sel,
+        Imm2 src2_bank_sel,
         Imm4 dest_mask,
         Imm6 dest_n,
         Imm6 src0_n,

@@ -33,11 +33,11 @@
 using namespace shader;
 using namespace usse;
 
-spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int shift_offset) {
+spv::Id USSETranslatorVisitor::load(Operand op, const Imm4 dest_mask, const int shift_offset) {
     return utils::load(m_b, m_spirv_params, m_util_funcs, op, dest_mask, shift_offset);
 }
 
-void USSETranslatorVisitor::store(Operand &dest, spv::Id source, std::uint8_t dest_mask, int shift_offset) {
+void USSETranslatorVisitor::store(Operand dest, spv::Id source, std::uint8_t dest_mask, int shift_offset) {
     return utils::store(m_b, m_spirv_params, m_util_funcs, dest, source, dest_mask, shift_offset);
 }
 
