@@ -154,10 +154,10 @@ void draw_game_selector(HostState &host) {
         }
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
-        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Game Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 300));
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Game Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 220));
         ImGui::TextColored(GUI_COLOR_TEXT, "Game Search");
         ImGui::SameLine();
-        host.gui.game_search_bar.Draw("##game_search_bar", 300);
+        host.gui.game_search_bar.Draw("##game_search_bar", 220);
 
         ImGui::NextColumn();
         ImGui::Separator();
@@ -165,7 +165,7 @@ void draw_game_selector(HostState &host) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         for (const auto &game : host.gui.game_selector.games) {
             bool selected[4] = { false, false, false, false };
-            if (!host.gui.game_search_bar.PassFilter(game.title.c_str()))
+            if (!host.gui.game_search_bar.PassFilter(game.title.c_str()) && !host.gui.game_search_bar.PassFilter(game.title_id.c_str()))
                 continue;
             if (host.gui.game_selector.icons[game.title_id]) {
                 GLuint texture = host.gui.game_selector.icons[game.title_id].get();
