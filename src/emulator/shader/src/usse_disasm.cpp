@@ -99,6 +99,46 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
         break;
     }
 
+    case RegisterBank::INDEXED1:
+    case RegisterBank::INDEXED2: {
+        // Decode the info. Usually the number of bits in a INDEXED number is 7.
+        // TODO: Fix the assumption
+        const Imm2 bank_enc = (reg_num >> 5) & 0b11;
+        const Imm5 add_off = reg_num & 0b11111;
+
+        switch (bank_enc) {
+        case 0: {
+            opstr += "r[";
+            break;
+        }
+
+        case 1: {
+            opstr += "o[";
+            break;
+        }
+
+        case 2: {
+            opstr += "pa[";
+            break;
+        }
+
+        case 3: {
+            opstr += "sa[";
+            break;
+        }
+        
+        default: {
+            opstr += "inv[";
+            break;
+        }
+        }
+
+        opstr += "idx" + std::to_string((int)bank - (int)RegisterBank::INDEXED1 + 1) + " * 2 + " + 
+            std::to_string(add_off) + "]";
+
+        break;
+    }
+
     case RegisterBank::IMMEDIATE: {
         break;
     }
@@ -109,7 +149,10 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
     }
     }
 
-    opstr += std::to_string(reg_num);
+    if (bank != RegisterBank::INDEXED1 && bank != RegisterBank::INDEXED2) {
+        opstr += std::to_string(reg_num);
+    }
+
     return opstr;
 }
 

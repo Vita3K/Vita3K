@@ -211,7 +211,8 @@ spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     case usse::RegisterBank::FPCONSTANT: break;
     case usse::RegisterBank::IMMEDIATE: break;
     case usse::RegisterBank::INDEX: break;
-    case usse::RegisterBank::INDEXED: break;
+    case usse::RegisterBank::INDEXED1: break;
+    case usse::RegisterBank::INDEXED2: break;
 
     case usse::RegisterBank::MAXIMUM:
     case usse::RegisterBank::INVALID:
@@ -440,12 +441,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Size of this extra pa occupied
             // Force this to be PRIVATE
             const auto size = ((descriptor->size >> 6) & 3) + 1;
-
-            // Do an access chain, live from the PA bank
-            if (pa_offset % 4 != 0) {
-                assert(false && "PA offset for texture query need to be aligned!");
-            }
-
             tex_query_info.dest_offset = pa_offset;
 
             if (coords[tex_coord_index] == spv::NoResult) {
@@ -549,7 +544,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv::Id sa_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(32), 0);
     spv::Id i_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(3), 0);
     spv::Id temp_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(20), 0);
-    spv::Id index_arr_type = b.makeArrayType(i32_type, b.makeIntConstant(4), 0);
+    spv::Id index_arr_type = b.makeArrayType(i32_type, b.makeIntConstant(2), 0);
     spv::Id pred_arr_type = b.makeArrayType(b_type, b.makeIntConstant(4), 0);
     spv::Id o_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(5), 0);
 

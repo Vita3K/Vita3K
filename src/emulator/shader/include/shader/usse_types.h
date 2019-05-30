@@ -146,7 +146,8 @@ enum class RegisterBank {
     FPCONSTANT,
     IMMEDIATE,
     INDEX,
-    INDEXED,
+    INDEXED1,
+    INDEXED2,
     PREDICATE,
 
     MAXIMUM,
