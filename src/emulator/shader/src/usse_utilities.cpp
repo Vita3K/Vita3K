@@ -622,23 +622,66 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     }
 
     spv::Id result = spv::NoResult;
+    spv::Id bank_base = *get_reg_bank(params, dest.bank);
+
+    // Element inside an array inside a pointer.
+    spv::Id bank_base_elem_type = b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)));
+    spv::Id comp_type = b.makePointer(spv::StorageClassPrivate, bank_base_elem_type);
+    int insert_offset = dest.num + off;
+    spv::Id elem = spv::NoResult;
+
+    // Check the nearest avail swizzle
+    int nearest_swizz_on = 0;
+
+    for (int i = 0; i < 4; i++) {
+        if (dest_mask & (1 << i)) {
+            nearest_swizz_on = i;
+            break;
+        }
+    }
+
+    // Floor down to nearest size comp
+    nearest_swizz_on = (int)((nearest_swizz_on) / (4 / size_comp) * (4 / size_comp));
+    
     if (dest.type != DataType::F32) {
         std::vector<spv::Id> composites;
 
         // We need to pack source
         for (auto i = 0; i < static_cast<int>(total_comp_source); i += static_cast<int>(4 / size_comp)) {
             // Shuffle to get the type out
-            std::vector<spv::Id> ops { source, source };
+            std::vector<spv::Id> ops;
             for (auto j = 0; j < 4 / size_comp; j++) {
-                ops.push_back(i + j);
+                if (dest_mask & (1 << (nearest_swizz_on + i + j))) {
+                    if (b.isScalar(source)) {
+                        ops.push_back(source);
+                    } else {
+                        ops.push_back(b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { source, 
+                            b.makeIntConstant(std::min(i + j, (int)total_comp_source - 1)) }));
+                    }
+                } else {
+                    if (elem == spv::NoResult) {
+                        // Replace it
+                        elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(
+                            (int)((insert_offset + (i + nearest_swizz_on) / size_comp) >> 2)) });
+                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem), 
+                            b.makeIntConstant((int)((i + nearest_swizz_on) / size_comp)) });
+
+                        // Extract to f16
+                        elem = unpack_one(b, utils, elem, dest.type);
+                    }
+
+                    ops.push_back(b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { elem, 
+                        b.makeIntConstant(j) }));
+                }
             }
 
-            spv::Id shuffled_type = b.makeVectorType(type_f32, static_cast<int>(ops.size() - 2));
+            spv::Id result_type = b.makeVectorType(type_f32, (int)ops.size());
+            spv::Id result = b.createCompositeConstruct(result_type, ops);
+            result = pack_one(b, utils, result, dest.type);
 
-            spv::Id shuffled = b.createOp(spv::OpVectorShuffle, shuffled_type, ops);
-            shuffled = pack_one(b, utils, shuffled, dest.type);
-
-            composites.push_back(shuffled);
+            composites.push_back(result);
+            
+            elem = spv::NoResult;
         }
     
         if (composites.size() == 1) {
@@ -653,25 +696,10 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
             total_comp_source = static_cast<std::uint8_t>(composites.size());
         }
     }
-
-    spv::Id bank_base = *get_reg_bank(params, dest.bank);
-
-    // Element inside an array inside a pointer.
-    spv::Id bank_base_elem_type = b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)));
-    spv::Id comp_type = b.makePointer(spv::StorageClassPrivate, bank_base_elem_type);
-    int insert_offset = dest.num + off;
-    spv::Id elem = spv::NoResult;
     
     // Now we do store!
     if (total_comp_source == 1) {
-        // We can do a single insert dynamic. We first need to get the position where we should insert
-        for (auto i = 0; i < 4; i++) {
-            if (dest_mask & (1 << i)) {
-                insert_offset += i;
-                break;
-            }
-        }
-
+        insert_offset += (int)(nearest_swizz_on / (4 / size_comp));
         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(insert_offset >> 2) });
         spv::Id inserted = b.createOp(spv::OpVectorInsertDynamic, bank_base_elem_type, { b.createLoad(elem), 
             source, b.makeIntConstant(insert_offset % 4) });

@@ -234,14 +234,14 @@ static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParamete
 }
 
 static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank
-    , const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult) {
-    std::uint32_t total_var_comp = (size + 3) >> 2;
+    , const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
+    std::uint32_t total_var_comp = (size + 3) / get_data_type_size(dtype) * 4;
     spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
 
     Operand dest;
     dest.bank = bank;
     dest.num = offset;
-    dest.type = DataType::F32;
+    dest.type = dtype;
     
     Imm4 dest_mask = 0b1111;
 
@@ -546,7 +546,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv::Id temp_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(20), 0);
     spv::Id index_arr_type = b.makeArrayType(i32_type, b.makeIntConstant(2), 0);
     spv::Id pred_arr_type = b.makeArrayType(b_type, b.makeIntConstant(4), 0);
-    spv::Id o_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(5), 0);
+    spv::Id o_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(10), 0);
 
     // Create register banks
     spv_params.ins = b.createVariable(spv::StorageClassPrivate, pa_arr_type, "pa");
