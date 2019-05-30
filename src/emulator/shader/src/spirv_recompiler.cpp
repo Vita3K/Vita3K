@@ -233,7 +233,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParamete
     return b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-static bool create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank
+static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank
     , const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult) {
     std::uint32_t total_var_comp = (size + 3) >> 2;
     spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
@@ -281,7 +281,7 @@ static bool create_input_variable(spv::Builder &b, SpirvShaderParameters &parame
         utils::store(b, parameters, utils, dest, b.isConstant(var) ? var : b.createLoad(var), dest_mask, 0);
     }
 
-    return true;
+    return var;
 }
 
 static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,

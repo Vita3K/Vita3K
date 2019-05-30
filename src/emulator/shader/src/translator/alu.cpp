@@ -752,8 +752,6 @@ bool USSETranslatorVisitor::vcomp(
     inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
     // TODO: Should we do this ?
-    write_mask = decode_write_mask(write_mask, inst.opr.src1.type == DataType::F16);
-
     std::uint32_t src_mask = 0;
 
     // Build the source mask. It should only be one component

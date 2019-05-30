@@ -446,7 +446,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         idx_in_arr_1 = b.makeIntConstant((op.num + shift_offset) >> 2);
     }
 
-    if (!idx_in_arr_2 == spv::NoResult) {
+    if (idx_in_arr_2 == spv::NoResult) {
         idx_in_arr_2 = b.makeIntConstant((op.num + shift_offset + 3) >> 2);
     }
     
