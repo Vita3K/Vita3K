@@ -32,6 +32,10 @@ bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_o
     return br_inst_is;
 }
 
+bool is_cmov(const std::uint64_t inst) {
+    return (((inst >> 59) & 0b11111) == 0b00111) && (((inst & ~0xFFFF3FFFFFFFFFFF) >> 46) > 0);
+}
+
 std::uint8_t get_predicate(const std::uint64_t inst) {
     switch (inst >> 59) {
     // Special instructions, no predicate

@@ -35,6 +35,7 @@ namespace shader::usse {
      * \returns True on instruction being a branch.
      */
 bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off);
+bool is_cmov(const std::uint64_t inst);
 std::uint8_t get_predicate(const std::uint64_t inst);
 
 struct USSEBlock {
@@ -104,6 +105,11 @@ void analyze(USSEOffset end_offset, F read_func, H handler_func) {
                 if (pred != 0) {
                     add_block(baddr + 1);
                 }
+            } else if (is_cmov(inst)) {
+                add_block(baddr + 1);
+                block->size = baddr - block->offset + 1;
+
+                should_stop = true;
             } else {
                 // Predicate exists, stop here
                 if (pred != block->pred) {
