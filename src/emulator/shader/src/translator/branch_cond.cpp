@@ -365,13 +365,7 @@ bool USSETranslatorVisitor::br(
         }
 
         spv::Block *continous_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);
-
-        spv::Instruction *select_merge = new spv::Instruction(spv::OpSelectionMerge);
-        select_merge->addIdOperand(continous_block->getId());
-        select_merge->addImmediateOperand(spv::SelectionControlMaskNone);
-        m_b.getBuildPoint()->addInstruction(std::unique_ptr<spv::Instruction>(select_merge));
-
-        m_b.createConditionalBranch(pred_v, br_block, continous_block);
+        utils::single_cond_branch(m_b, pred_v, br_block, continous_block);
     }
 
     return true;

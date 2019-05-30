@@ -42,31 +42,31 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 
     // Vector move
     /*
-                               00111 = op1
+                              00111 = op1
                                     ppp = pred (3 bits, ExtPredicate)
-                                       s = skipinv (1 bit, bool)
+                                      s = skipinv (1 bit, bool)
                                         t = test_bit_2 (1 bit)
-                                         r = src2_bank_sel (1 bit)
+                                        r = src0_comp_sel (1 bit)
                                           y = syncstart (1 bit, bool)
-                                           d = dest_bank_ext (1 bit)
+                                          d = dest_bank_ext (1 bit)
                                             e = end_or_src0_bank_ext (1 bit)
-                                             c = src1_bank_ext (1 bit)
+                                            c = src1_bank_ext (1 bit)
                                               b = src2_bank_ext (1 bit)
-                                               mm = move_type (2 bits, MoveType)
-                                                 aa = repeat_count (2 bits, RepeatCount)
-                                                   n = nosched (1 bit, bool)
+                                              mm = move_type (2 bits, MoveType)
+                                                aa = repeat_count (2 bits, RepeatCount)
+                                                  n = nosched (1 bit, bool)
                                                     ooo = move_data_type (3 bits, MoveDataType)
-                                                       i = test_bit_1 (1 bit)
+                                                      i = test_bit_1 (1 bit)
                                                         wwww = src0_swiz (4 bits)
                                                             k = src0_bank_sel (1 bit)
-                                                             ll = dest_bank_sel (2 bits)
-                                                               ff = src1_bank_sel (2 bits)
-                                                                 gg = src0_comp_sel (2 bits)
-                                                                   hhhh = dest_mask (4 bits)
-                                                                       jjjjjj = dest_n (6 bits)
-                                                                             qqqqqq = src0_n (6 bits)
-                                                                                   uuuuuu = src1_n (6 bits)
-                                                                                         vvvvvv = src2_n (6 bits)
+                                                            ll = dest_bank_sel (2 bits)
+                                                              ff = src1_bank_sel (2 bits)
+                                                                gg = src2_bank_sel (2 bits)
+                                                                  hhhh = dest_mask (4 bits)
+                                                                      jjjjjj = dest_n (6 bits)
+                                                                            qqqqqq = src0_n (6 bits)
+                                                                                  uuuuuu = src1_n (6 bits)
+                                                                                        vvvvvv = src2_n (6 bits)
     */
     INST(&V::vmov, "VMOV ()", "00111pppstrydecbmmaanoooiwwwwkllffgghhhhjjjjjjqqqqqquuuuuuvvvvvv"),
 
@@ -615,16 +615,7 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
         }
 
         spv::Block *merge_block = get_or_recompile_block(avail_blocks[block.offset + block.size]);
-
-        // Hint the compiler and the GLSL translator.
-        // If the predicated block's condition is not satisfied, we go back to execute normal flow.
-        // TODO: Request the createSelectionMerge to be public, or we just fork and modify the publicity ourselves.
-        spv::Instruction *select_merge = new spv::Instruction(spv::OpSelectionMerge);
-        select_merge->addIdOperand(merge_block->getId());
-        select_merge->addImmediateOperand(spv::SelectionControlMaskNone);
-        trampoline_block->addInstruction(std::unique_ptr<spv::Instruction>(select_merge));
-
-        b.createConditionalBranch(pred_v, new_block, merge_block);
+        utils::single_cond_branch(b, pred_v, new_block, merge_block);
 
         end_new_block();
 

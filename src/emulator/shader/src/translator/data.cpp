@@ -32,7 +32,7 @@ bool USSETranslatorVisitor::vmov(
     ExtPredicate pred,
     bool skipinv,
     Imm1 test_bit_2,
-    Imm1 src2_bank_sel,
+    Imm1 src0_comp_sel,
     bool syncstart,
     Imm1 dest_bank_ext,
     Imm1 end_or_src0_bank_ext,
@@ -47,7 +47,7 @@ bool USSETranslatorVisitor::vmov(
     Imm1 src0_bank_sel,
     Imm2 dest_bank_sel,
     Imm2 src1_bank_sel,
-    Imm2 src0_comp_sel,
+    Imm2 src2_bank_sel,
     Imm4 dest_mask,
     Imm6 dest_n,
     Imm6 src0_n,
@@ -93,19 +93,21 @@ bool USSETranslatorVisitor::vmov(
 
     spv::Id conditional_result = 0;
     CompareMethod compare_method = CompareMethod::NE_ZERO;
+    spv::Op compare_op = spv::OpAny;
+    
     if (is_conditional) {
         compare_method = static_cast<CompareMethod>((test_bit_2 << 1) | test_bit_1);
-        inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank_sel, end_or_src0_bank_ext, false, 8, m_second_program);
-        inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, false, 8, m_second_program);
-        spv::Id src0 = load(inst.opr.src0, dest_mask);
-        spv::Id src2 = load(inst.opr.src2, dest_mask);
+        inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs, 8, m_second_program);
+        inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, is_double_regs, 8, m_second_program);
+        
+        if (src0_comp_sel) {
+            inst.opr.src0.swizzle = inst.opr.src1.swizzle;
+        }
 
-        spv::Id compare_type = m_b.getTypeId(src0);
-        bool isUInt = m_b.isUintType(compare_type);
-        bool isInt = m_b.isIntType(compare_type);
-        bool isFloat = m_b.isFloatType(compare_type);
+        inst.opr.src2.swizzle = inst.opr.src1.swizzle;
 
-        spv::Op compare_op;
+        const bool isUInt = is_unsigned_integer_data_type(inst.opr.src0.type);
+        const bool isInt = is_signed_integer_data_type(inst.opr.src1.type);
 
         switch (compare_method) {
         case CompareMethod::LT_ZERO:
@@ -137,18 +139,17 @@ bool USSETranslatorVisitor::vmov(
                 compare_op = spv::Op::OpFOrdEqual;
             break;
         }
-
-        conditional_result = m_b.createBinOp(compare_op, m_b.getTypeId(src0), src2, src0);
-    }
-    
-    if (inst.opcode == Opcode::VMOVC) {
-        LOG_ERROR("Conditional move not support!");
-        return true;
     }
 
     // Recompile
 
     m_b.setLine(m_recompiler.cur_pc);
+
+    spv::Block *link_block = nullptr;
+    
+    if (is_conditional) {
+        link_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[m_recompiler.cur_pc + 1]);
+    }
 
     BEGIN_REPEAT(repeat_count, 2)
     GET_REPEAT(inst);
@@ -177,9 +178,38 @@ bool USSETranslatorVisitor::vmov(
         disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset), disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset), conditional_str);
 
     LOG_DISASM(disasm_str);
+    
+    spv::Block *mov_block = nullptr;
+    spv::Block *cur_bp = nullptr;
+    if (is_conditional) {
+        mov_block = &m_b.makeNewBlock();
+        cur_bp = m_b.getBuildPoint();
+        m_b.setBuildPoint(mov_block);
+    }
 
     spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
     store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
+
+    if (is_conditional) {
+        utils::end_if(m_b, link_block);
+        m_b.setBuildPoint(cur_bp);
+    }
+
+    if (is_conditional) {
+        spv::Id src0 = load(inst.opr.src0, dest_mask, src0_repeat_offset);
+        spv::Id src2 = load(inst.opr.src2, dest_mask, src2_repeat_offset);
+
+        conditional_result = m_b.createBinOp(compare_op, m_b.makeVectorType(m_b.makeBoolType(), m_b.getNumComponents(src0)),
+            src2, src0);
+
+        if (m_b.getNumComponents(conditional_result) > 1) {
+            // We need to check if all bool is true, using OpAll
+            conditional_result = m_b.createUnaryOp(spv::OpAll, m_b.makeBoolType(), conditional_result);
+        }
+
+        utils::single_cond_branch(m_b, conditional_result, mov_block, link_block);
+    }
+    
     END_REPEAT()
 
     return true;
@@ -301,6 +331,73 @@ bool USSETranslatorVisitor::vpck(
             Opcode::VPCKC10F32,
             Opcode::VPCKC10C10 }
     };
+    
+    const spv::Op repack_opcode[][static_cast<int>(DataType::TOTAL_TYPE)] = {
+        { spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpConvertUToF,
+            spv::OpConvertUToF,
+            spv::OpAll },
+        { spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpConvertSToF,
+            spv::OpConvertSToF,
+            spv::OpAll },
+        { spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll },
+        { spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpConvertUToF,
+            spv::OpConvertUToF,
+            spv::OpAll },
+        { spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpConvertUToF,
+            spv::OpConvertUToF,
+            spv::OpAll },
+        { spv::OpConvertFToU,
+            spv::OpConvertFToS,
+            spv::OpAll,
+            spv::OpConvertFToU,
+            spv::OpConvertFToS,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll },
+        { spv::OpConvertFToU,
+            spv::OpConvertFToS,
+            spv::OpAll,
+            spv::OpConvertFToU,
+            spv::OpConvertFToS,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll },
+        { spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll,
+            spv::OpAll }
+    };
 
     inst.opcode = op_table[dest_fmt][src_fmt];
 
@@ -336,6 +433,22 @@ bool USSETranslatorVisitor::vpck(
     GET_REPEAT(inst);
 
     spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
+
+    if (repack_opcode[dest_fmt][src_fmt] != spv::OpAll) {
+        // Do conversion
+        spv::Id dest_type = type_f32;
+
+        if (is_signed_integer_data_type(inst.opr.dest.type)) {
+            dest_type = m_b.makeIntType(32);
+        } else if (is_unsigned_integer_data_type(inst.opr.dest.type)) {
+            dest_type = type_ui32;
+        }
+
+        std::vector<spv::Id> ops { source };
+        source = m_b.createOp(repack_opcode[dest_fmt][src_fmt], m_b.makeVectorType(dest_type, m_b.getNumComponents(source)),
+            ops);
+    }
+    
     store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
     END_REPEAT()
 
