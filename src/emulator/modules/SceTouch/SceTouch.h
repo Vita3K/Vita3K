@@ -19,6 +19,12 @@
 
 #include <module/module.h>
 
+struct SDL_TouchFingerEvent;
+typedef SDL_TouchFingerEvent SDL_TouchFingerEvent;
+
+int handle_touch_event(SDL_TouchFingerEvent &finger);
+int toggle_touchscreen();
+
 BRIDGE_DECL(sceTouchActivateRegion)
 BRIDGE_DECL(sceTouchClearRegion)
 BRIDGE_DECL(sceTouchDisableTouchForce)
