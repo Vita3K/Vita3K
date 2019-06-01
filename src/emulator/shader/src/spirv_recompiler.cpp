@@ -90,20 +90,6 @@ struct VertexProgramOutputProperties {
 };
 using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
 
-struct FragmentProgramInputProperties {
-    std::string name;
-    std::uint32_t component_count;
-
-    FragmentProgramInputProperties()
-        : name(nullptr)
-        , component_count(0) {}
-
-    FragmentProgramInputProperties(const char *name, std::uint32_t component_count)
-        : name(name)
-        , component_count(component_count) {}
-};
-using FragmentProgramInputPropertiesMap = std::map<SceGxmFragmentProgramInputs, FragmentProgramInputProperties>;
-
 // ******************************
 // * Functions (implementation) *
 // ******************************

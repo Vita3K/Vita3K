@@ -99,7 +99,7 @@ static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::Spi
         return &params.indexes;
     }
 
-    LOG_WARN("Reg bank {} unsupported", static_cast<uint8_t>(reg_bank));
+    // LOG_WARN("Reg bank {} unsupported", static_cast<uint8_t>(reg_bank));
     return nullptr;
 }
 
@@ -352,7 +352,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
             b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(op.num) } ));
     }
     
-    if (op.bank == RegisterBank::IMMEDIATE && !get_reg_bank(params, op.bank)) {
+    if (op.bank == RegisterBank::IMMEDIATE || !get_reg_bank(params, op.bank)) {
         if (op.bank != RegisterBank::INDEXED1 && op.bank != RegisterBank::INDEXED2) {
             if (dest_comp_count == 1) {
                 if ((int)op.swizzle[0] >= (int)SwizzleChannel::_0) {
@@ -791,17 +791,4 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     
     spv::Id shuffled = b.createOp(spv::OpVectorShuffle, b.makeVectorType(type_f32, 4), ops);
     b.createStore(shuffled, elem);
-}
-
-void shader::usse::utils::single_cond_branch(spv::Builder &b, spv::Id cond, spv::Block *cond_satisfy_block, spv::Block *contigous_block) {
-    spv::Instruction *select_merge = new spv::Instruction(spv::OpSelectionMerge);
-    select_merge->addIdOperand(contigous_block->getId());
-    select_merge->addImmediateOperand(spv::SelectionControlMaskNone);
-    b.getBuildPoint()->addInstruction(std::unique_ptr<spv::Instruction>(select_merge));
-
-    b.createConditionalBranch(cond, cond_satisfy_block, contigous_block);
-}
-
-void shader::usse::utils::end_if(spv::Builder &b, spv::Block *merge_block) {
-    b.createBranch(merge_block);
 }
