@@ -36,11 +36,25 @@ bool is_cmov(const std::uint64_t inst) {
     return (((inst >> 59) & 0b11111) == 0b00111) && (((inst & ~0xFFFF3FFFFFFFFFFF) >> 46) > 0);
 }
 
+bool does_write_to_predicate(const std::uint64_t inst, std::uint8_t &pred) {
+    if ((((inst >> 59) & 0b11111) == 0b01001) || (((inst >> 59) & 0b11111) == 0b01111)) {
+        pred = static_cast<std::uint8_t>((inst & ~0xFFFFFFF3FFFFFFFF) >> 34);
+        return true;
+    }
+
+    return false;
+}
+
 std::uint8_t get_predicate(const std::uint64_t inst) {
     switch (inst >> 59) {
     // Special instructions, no predicate
-    case 0b11111:
+    case 0b11111: {
+        if ((((inst >> 32) & ~0xFF8FFFFF) >> 20) == 0) {
+            break;
+        }
+
         return 0;
+    }
 
     // VMAD normal version, predicates only occupied two bits
     case 0b00000:
