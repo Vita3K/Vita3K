@@ -116,25 +116,26 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                             y = syncstart (1 bit)
                                             - = don't care
                                               c = src0_abs (1 bit)
-                                              -- = don't care
+                                              b = src1_bank_ext (1 bit)
+                                                a = src2_bank_ext (1 bit)
                                                 www = src2_swiz (3 bits)
                                                     i = src1_swiz_bit2 (1 bit)
                                                     n = nosched (1 bit)
                                                       eeee = dest_mask (4 bits)
                                                           mm = src1_mod (2 bits)
                                                             oo = src2_mod (2 bits)
-                                                              b = src0_bank (1 bit)
+                                                              k = src0_bank (1 bit)
                                                               tt = dest_bank (2 bits)
-                                                                aa = src1_bank (2 bits)
-                                                                  kk = src2_bank (2 bits)
-                                                                    ffffff = dest_n (6 bits)
+                                                                ff = src1_bank (2 bits)
+                                                                  gg = src2_bank (2 bits)
+                                                                    hhhhhh = dest_n (6 bits)
                                                                           zz = src1_swiz_bits01 (2 bits)
-                                                                            gg = src0_swiz_bits01 (2 bits)
-                                                                              hhhhhh = src0_n (6 bits)
-                                                                                    jjjjjj = src1_n (6 bits)
-                                                                                          llllll = src2_n (6 bits)
+                                                                            jj = src0_swiz_bits01 (2 bits)
+                                                                              llllll = src0_n (6 bits)
+                                                                                    qqqqqq = src1_n (6 bits)
+                                                                                          uuuuuu = src2_n (6 bits)
     */
-    INST(&V::vmad2, "VMAD2 ()", "00000dpps-ry-c--wwwineeeemmoobttaakkffffffzzgghhhhhhjjjjjjllllll"),
+    INST(&V::vmad2, "VMAD2 ()", "00000dpps-ry-cbawwwineeeemmookttffgghhhhhhzzjjllllllqqqqqquuuuuu"),
 
     // Vector operations except for MAD (F32)
     /*
