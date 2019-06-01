@@ -227,6 +227,8 @@ public:
         Imm1 src0_swiz_bits2,
         Imm1 syncstart,
         Imm1 src0_abs,
+        Imm1 src1_bank_ext,
+        Imm1 src2_bank_ext,
         Imm3 src2_swiz,
         Imm1 src1_swiz_bit2,
         Imm1 nosched,

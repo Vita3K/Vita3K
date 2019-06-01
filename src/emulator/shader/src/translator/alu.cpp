@@ -59,7 +59,7 @@ bool USSETranslatorVisitor::vmad(
     Imm6 src0_n) {
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), "VMAD");
 
-    Instruction inst{};
+    Instruction inst;
 
     // Is this VMAD3 or VMAD4, op2 = 0 => vec3
     int type = 2;
@@ -147,6 +147,8 @@ bool USSETranslatorVisitor::vmad2(
     Imm1 src0_swiz_bits2,
     Imm1 syncstart,
     Imm1 src0_abs,
+    Imm1 src1_bank_ext,
+    Imm1 src2_bank_ext,
     Imm3 src2_swiz,
     Imm1 src1_swiz_bit2,
     Imm1 nosched,
@@ -163,7 +165,7 @@ bool USSETranslatorVisitor::vmad2(
     Imm6 src0_n,
     Imm6 src1_n,
     Imm6 src2_n) {
-    Instruction inst{};
+    Instruction inst;
     Opcode op = Opcode::VMAD;
 
     // If dat_fmt equals to 1, the type of instruction is F16
@@ -179,8 +181,8 @@ bool USSETranslatorVisitor::vmad2(
     // Decode mandantory info first
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, false, true, 7, m_second_program);
     inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, false, true, 7, m_second_program);
-    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, false, true, 7, m_second_program);
-    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, false, true, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, true, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, true, 7, m_second_program);
 
     // Fill in data type
     inst.opr.dest.type = inst_dt;
@@ -222,9 +224,12 @@ bool USSETranslatorVisitor::vmad2(
         SWIZZLE_CHANNEL_4(X, Y, Z, Z)
     };
 
+    const std::uint8_t src0_swiz = src0_swiz_bits01 | src0_swiz_bits2 << 2;
+    const std::uint8_t src1_swiz = src1_swiz_bits01 | src1_swiz_bit2 << 2;
+
     inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    inst.opr.src0.swizzle = tb_decode_src0_swiz[(src0_swiz_bits01 | src0_swiz_bits2 << 1)];
-    inst.opr.src1.swizzle = tb_decode_src1_swiz[(src1_swiz_bits01 | src1_swiz_bit2 << 1)];
+    inst.opr.src0.swizzle = tb_decode_src0_swiz[src0_swiz];
+    inst.opr.src1.swizzle = tb_decode_src1_swiz[src1_swiz];
     inst.opr.src2.swizzle = tb_decode_src2_swiz[src2_swiz];
 
     // Decode modifiers
@@ -233,7 +238,7 @@ bool USSETranslatorVisitor::vmad2(
     }
 
     inst.opr.src1.flags = decode_modifier(src1_mod);
-    inst.opr.src2.flags = decode_modifier(src1_mod);
+    inst.opr.src2.flags = decode_modifier(src2_mod);
 
     // Log the instruction
     LOG_DISASM("{:016x}: {}{}2 {} {} {} {}", m_instr, disasm::e_predicate_str(static_cast<ExtPredicate>(pred)), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, dest_mask),
@@ -485,7 +490,7 @@ bool USSETranslatorVisitor::vnmad32(
     Imm3 op2,
     Imm6 src1_n,
     Imm6 src2_n) {
-    Instruction inst{};
+    Instruction inst;
 
     static const Opcode tb_decode_vop_f32[] = {
         Opcode::VMUL,
@@ -628,7 +633,7 @@ bool USSETranslatorVisitor::vbw(
     Imm7 src2_sel,
     Imm7 src1_n,
     Imm7 src2_n) {
-    Instruction inst{};
+    Instruction inst;
 
     switch (op1) {
     case 0b010: inst.opcode = op2 ? Opcode::OR : Opcode::AND; break;
