@@ -145,10 +145,10 @@ bool USSETranslatorVisitor::vmov(
 
     m_b.setLine(m_recompiler.cur_pc);
 
-    spv::Block *link_block = nullptr;
+    spv::Function *link_sub = nullptr;
     
     if (is_conditional) {
-        link_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[m_recompiler.cur_pc + 1]);
+        link_sub = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[m_recompiler.cur_pc + 1]);
     }
 
     BEGIN_REPEAT(repeat_count, 2)
@@ -179,21 +179,7 @@ bool USSETranslatorVisitor::vmov(
 
     LOG_DISASM(disasm_str);
     
-    spv::Block *mov_block = nullptr;
-    spv::Block *cur_bp = nullptr;
-    if (is_conditional) {
-        mov_block = &m_b.makeNewBlock();
-        cur_bp = m_b.getBuildPoint();
-        m_b.setBuildPoint(mov_block);
-    }
-
-    spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
-    store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
-
-    if (is_conditional) {
-        utils::end_if(m_b, link_block);
-        m_b.setBuildPoint(cur_bp);
-    }
+    std::unique_ptr<spv::Builder::If> cond_builder;
 
     if (is_conditional) {
         spv::Id src0 = load(inst.opr.src0, dest_mask, src0_repeat_offset);
@@ -207,7 +193,16 @@ bool USSETranslatorVisitor::vmov(
             conditional_result = m_b.createUnaryOp(spv::OpAll, m_b.makeBoolType(), conditional_result);
         }
 
-        utils::single_cond_branch(m_b, conditional_result, mov_block, link_block);
+        cond_builder = std::make_unique<spv::Builder::If>(conditional_result, spv::SelectionControlMaskNone, m_b);
+    }
+    
+    spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
+    store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
+
+    if (is_conditional) {
+        cond_builder->makeEndIf();
+        // Create call to next subroutine (block)
+        m_b.createFunctionCall(link_sub, {});
     }
     
     END_REPEAT()

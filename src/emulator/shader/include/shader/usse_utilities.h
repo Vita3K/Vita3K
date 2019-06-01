@@ -21,7 +21,4 @@ spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id target, const
 spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id scalar, const DataType type);
 spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id vec, const DataType source_type);
 
-void single_cond_branch(spv::Builder &b, spv::Id cond, spv::Block *cond_satisfy_block, spv::Block *contigous_block);
-void end_if(spv::Builder &b, spv::Block *merge_block);
-
 }

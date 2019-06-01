@@ -161,10 +161,11 @@ bool USSETranslatorVisitor::vtst(
     Imm1 onceonly,
     Imm1 syncstart,
     Imm1 dest_ext,
-    Imm1 test_flag_2,
+    Imm1 src1_neg,
     Imm1 src1_ext,
     Imm1 src2_ext,
     Imm1 prec,
+    Imm1 src2_vscomp,
     RepeatCount rpt_count,
     Imm2 sign_test,
     Imm2 zero_test,
@@ -218,7 +219,11 @@ bool USSETranslatorVisitor::vtst(
     inst.opr.src2.type = load_data_type;
 
     inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    inst.opr.src2.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    inst.opr.src2.swizzle = src2_vscomp ? (Swizzle4 SWIZZLE_CHANNEL_4(X, X, X, X)) : (Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT);
+
+    if (src1_neg) {
+        inst.opr.src1.flags |= RegisterFlags::Negative;
+    }
 
     // Load our compares
     spv::Id lhs = spv::NoResult;
@@ -296,6 +301,7 @@ bool USSETranslatorVisitor::vtstmsk(
     Imm1 src1_ext,
     Imm1 src2_ext,
     Imm1 prec,
+    Imm1 src2_vscomp,
     RepeatCount rpt_count,
     Imm2 sign_test,
     Imm2 zero_test,
@@ -337,12 +343,12 @@ bool USSETranslatorVisitor::br(
     auto cur_pc = m_recompiler.cur_pc;
 
     LOG_DISASM("{:016x}: {}{} #{}", m_instr, disasm::e_predicate_str(pred), (br_type == 0) ? "BA" : "BR", br_off + cur_pc);
-    spv::Block *br_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[br_off + cur_pc]);
+    spv::Function *br_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[br_off + cur_pc]);
 
     m_b.setLine(m_recompiler.cur_pc);
 
     if (pred == ExtPredicate::NONE) {
-        m_b.createBranch(br_block);
+        m_b.createFunctionCall(br_block, {});
     } else {
         spv::Id pred_v = spv::NoResult;
 
@@ -365,8 +371,13 @@ bool USSETranslatorVisitor::br(
             pred_v = m_b.createOp(spv::OpLogicalNot, m_b.makeBoolType(), ops);
         }
 
-        spv::Block *continous_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);
-        utils::single_cond_branch(m_b, pred_v, br_block, continous_block);
+        spv::Function *continous_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);
+        spv::Builder::If cond_builder(pred_v, spv::SelectionControlMaskNone, m_b);
+
+        m_b.createFunctionCall(br_block, {});
+        cond_builder.makeBeginElse();
+        m_b.createFunctionCall(continous_block, {});
+        cond_builder.makeEndIf();
     }
 
     return true;

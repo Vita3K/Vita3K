@@ -235,28 +235,28 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                         o = onceonly (1 bit)
                                           y = syncstart (1 bit)
                                           d = dest_ext (1 bit)
-                                            t = test_flag_2 (1 bit)
-                                            r = src1_ext (1 bit)
-                                              c = src2_ext (1 bit)
-                                              e = prec (1 bit)
-                                                - = don't care
-                                                uu = rpt_count (2 bits, RepeatCount)
+                                            r = src1_neg (1 bit)
+                                            c = src1_ext (1 bit)
+                                              e = src2_ext (1 bit)
+                                              a = prec (1 bit)
+                                                v = src2_vscomp (1 bit)
+                                                tt = rpt_count (2 bits, RepeatCount)
                                                   ii = sign_test (2 bits)
                                                     zz = zero_test (2 bits)
                                                       m = test_crcomb_and (1 bit)
                                                         hhh = chan_cc (3 bits)
                                                           nn = pdst_n (2 bits)
                                                             bb = dest_bank (2 bits)
-                                                              aa = src1_bank (2 bits)
-                                                                kk = src2_bank (2 bits)
-                                                                  fffffff = dest_n (7 bits)
+                                                              kk = src1_bank (2 bits)
+                                                                ff = src2_bank (2 bits)
+                                                                  ggggggg = dest_n (7 bits)
                                                                           w = test_wben (1 bit)
                                                                           ll = alu_sel (2 bits)
-                                                                            gggg = alu_op (4 bits)
+                                                                            uuuu = alu_op (4 bits)
                                                                                 jjjjjjj = src1_n (7 bits)
                                                                                         qqqqqqq = src2_n (7 bits)
     */
-    INST(&V::vtst, "VTST ()", "01001ppps-oydtrce-uuiizzmhhhnnbbaakkfffffffwllggggjjjjjjjqqqqqqq"),
+    INST(&V::vtst, "VTST ()", "01001ppps-oydrceavttiizzmhhhnnbbkkffgggggggwlluuuujjjjjjjqqqqqqq"),
 
     // Test mask Instructions
     /*
@@ -271,7 +271,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                   r = src1_ext (1 bit)
                                                     c = src2_ext (1 bit)
                                                     e = prec (1 bit)
-                                                      - = don't care
+                                                      v = src2_vscomp (1 bit)
                                                       uu = rpt_count (2 bits, RepeatCount)
                                                         ii = sign_test (2 bits)
                                                           zz = zero_test (2 bits)
@@ -289,8 +289,8 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                       hhhhhhh = src1_n (7 bits)
                                                                                               jjjjjjj = src2_n (7 bits)
     */
-    INST(&V::vtstmsk, "VTSTMSK ()", "01111ppps-oydtrce-uuiizzm-aa--bbnnkkfffffffwllgggghhhhhhhjjjjjjj"),
-
+    INST(&V::vtstmsk, "VTSTMSK ()", "01111ppps-oydtrcevuuiizzm-aa--bbnnkkfffffffwllgggghhhhhhhjjjjjjj"),
+    
     // Bitwise Instructions
     /*
                              01 = op1_cnst
@@ -531,70 +531,26 @@ void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count)
         });
 }
 
-spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom) {
-    if (!custom) {
-        auto result = cache.find(block.offset);
+spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block) {
+    auto result = cache.find(block.offset);
 
-        if (result != cache.end()) {
-            return result->second;
-        }
+    if (result != cache.end()) {
+        return result->second;
     }
 
-    spv::Block *last_build_point = nullptr;
+    // Make a new function (subroutine)
+    spv::Block *last_build_point = b.getBuildPoint();
+    spv::Block *new_sub_block = nullptr;
 
-    // We may divide it to smaller one
-    auto begin_new_block = [&]() -> spv::Block * {
-        // Create new block
-        spv::Block &blck = custom ? *custom : b.makeNewBlock();
-        last_build_point = b.getBuildPoint();
+    const auto sub_name = fmt::format("block_{}_{}", visitor.is_translating_secondary_program() ? "sec" : "prim",
+      block.offset);
 
-        b.setBuildPoint(&blck);
+    spv::Function *ret_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {},
+      &new_sub_block);
 
-        return &blck;
-    };
-
-    auto end_new_block = [&]() {
-        b.setBuildPoint(last_build_point);
-    };
-
-    spv::Block *new_block = begin_new_block();
-
-    if (block.size > 0) {
-        const usse::USSEOffset pc_end = block.offset + block.size - 1;
-
-        for (usse::USSEOffset pc = block.offset; pc <= pc_end; pc++) {
-            cur_pc = pc;
-            cur_instr = inst[pc];
-
-            // Recompile the instruction, to the current block
-            auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
-            if (decoder)
-                decoder->call(visitor, cur_instr);
-            else
-                LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
-        }
-    }
-
-    if (block.offset + block.size >= count && !visitor.is_translating_secondary_program()) {
-        // We reach the end, for whatever the current block is.
-        // Call end hook
-        b.createFunctionCall(end_hook_func, {});
-
-        // Make a return
-        b.leaveFunction();
-    }
-
-    if (block.offset_link != -1) {
-        b.createBranch(get_or_recompile_block(avail_blocks[block.offset_link]));
-    }
-
-    end_new_block();
-
-    // Generate predicate guards
+    std::unique_ptr<spv::Builder::If> cond_builder;
     if (block.pred != 0) {
-        spv::Block *trampoline_block = begin_new_block();
         spv::Id pred_v = spv::NoResult;
-
         const ExtPredicate predicator = static_cast<ExtPredicate>(block.pred);
 
         Operand pred_opr{};
@@ -615,17 +571,51 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
           pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
         }
 
-        spv::Block *merge_block = get_or_recompile_block(avail_blocks[block.offset + block.size]);
-        utils::single_cond_branch(b, pred_v, new_block, merge_block);
-
-        end_new_block();
-
-        new_block = trampoline_block;
+        // Construct the IF
+        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
     }
 
-    cache.emplace(block.offset, new_block);
+    const auto last_pc = cur_pc;
 
-    return new_block;
+    if (block.size > 0) {
+        LOG_TRACE("Recompiling block_{}, size = {}, id = {}", block.offset, block.size, ret_func->getId());
+
+        cache.emplace(block.offset, ret_func);
+        const usse::USSEOffset pc_end = block.offset + block.size - 1;
+
+        for (usse::USSEOffset pc = block.offset; pc <= pc_end; pc++) {
+            cur_pc = pc;
+            cur_instr = inst[pc];
+
+            // Recompile the instruction, to the current block
+            auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
+            if (decoder)
+                decoder->call(visitor, cur_instr);
+            else
+                LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
+        }
+    }
+
+    if (block.offset + block.size >= count && !visitor.is_translating_secondary_program()) {
+        // We reach the end, for whatever the current block is.
+        // Call end hook
+        b.createFunctionCall(end_hook_func, {});
+    }
+
+    if (cond_builder) {
+      cond_builder->makeEndIf();
+    }
+
+    if (block.offset_link != -1) {
+        b.createFunctionCall(get_or_recompile_block(avail_blocks[block.offset_link]), {});
+    }
+
+    // Make a return
+    b.leaveFunction();
+    b.setBuildPoint(last_build_point);
+    
+    cur_pc = last_pc;
+    return ret_func;
 }
 
 void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
@@ -662,11 +652,13 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
             }
 
             recomp.reset(cur_phase_code.first, cur_phase_code.second);
+            spv::Function *main_block = recomp.get_or_recompile_block(recomp.avail_blocks[0]);
 
-            // recompile the entry block.
-            recomp.get_or_recompile_block(recomp.avail_blocks[0], b.getBuildPoint());
+            b.createFunctionCall(main_block, {});
         }
     }
+
+    b.leaveFunction();
 }
 
 } // namespace shader::usse
