@@ -33,6 +33,18 @@ struct VitaTimezone {
     int tz_dsttime;
 };
 
+EXPORT(int, _sceKernelExitProcessForUser) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetTimer5Reg) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelRegisterLibkernelAddresses) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceKernelCDialogSessionClose) {
     return UNIMPLEMENTED();
 }
@@ -161,6 +173,9 @@ EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(_sceKernelExitProcessForUser)
+BRIDGE_IMPL(_sceKernelGetTimer5Reg)
+BRIDGE_IMPL(_sceKernelRegisterLibkernelAddresses)
 BRIDGE_IMPL(sceKernelCDialogSessionClose)
 BRIDGE_IMPL(sceKernelCDialogSetLeaseLimit)
 BRIDGE_IMPL(sceKernelCallAbortHandler)

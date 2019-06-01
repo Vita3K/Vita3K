@@ -19,6 +19,7 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(sceRegMgrSystemIsBlueScreen)
 BRIDGE_DECL(sceRegMgrSystemParamGetBin)
 BRIDGE_DECL(sceRegMgrSystemParamGetInt)
 BRIDGE_DECL(sceRegMgrSystemParamGetStr)

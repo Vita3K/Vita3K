@@ -141,6 +141,10 @@ EXPORT(int, sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
     return 0;
 }
 
+EXPORT(int, sceRtcGetCurrentAdNetworkTick) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
     if (tick == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
@@ -151,6 +155,10 @@ EXPORT(int, sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
     return 0;
 }
 
+EXPORT(int, sceRtcGetCurrentDebugNetworkTick) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
     if (tick == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
@@ -159,6 +167,14 @@ EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
     tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
 
     return 0;
+}
+
+EXPORT(int, sceRtcGetCurrentGpsTick) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceRtcGetCurrentRetainedNetworkTick) {
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetDayOfWeek, int year, int month, int day) {
@@ -414,9 +430,13 @@ BRIDGE_IMPL(sceRtcFormatRFC2822)
 BRIDGE_IMPL(sceRtcFormatRFC2822LocalTime)
 BRIDGE_IMPL(sceRtcFormatRFC3339)
 BRIDGE_IMPL(sceRtcFormatRFC3339LocalTime)
+BRIDGE_IMPL(sceRtcGetCurrentAdNetworkTick)
 BRIDGE_IMPL(sceRtcGetCurrentClock)
 BRIDGE_IMPL(sceRtcGetCurrentClockLocalTime)
+BRIDGE_IMPL(sceRtcGetCurrentDebugNetworkTick)
+BRIDGE_IMPL(sceRtcGetCurrentGpsTick)
 BRIDGE_IMPL(sceRtcGetCurrentNetworkTick)
+BRIDGE_IMPL(sceRtcGetCurrentRetainedNetworkTick)
 BRIDGE_IMPL(sceRtcGetCurrentTick)
 BRIDGE_IMPL(sceRtcGetDayOfWeek)
 BRIDGE_IMPL(sceRtcGetDayOfYear)

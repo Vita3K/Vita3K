@@ -20,6 +20,18 @@
 #include <module/module.h>
 
 BRIDGE_DECL(_sceCodecEngineAllocMemoryFromUnmapMemBlock)
+BRIDGE_DECL(_sceCodecEngineChangeNumWorkerCores)
+BRIDGE_DECL(_sceCodecEngineChangeNumWorkerCoresDefault)
+BRIDGE_DECL(_sceCodecEngineChangeNumWorkerCoresMax)
 BRIDGE_DECL(_sceCodecEngineCloseUnmapMemBlock)
 BRIDGE_DECL(_sceCodecEngineFreeMemoryFromUnmapMemBlock)
+BRIDGE_DECL(_sceCodecEngineGetMemoryState)
+BRIDGE_DECL(_sceCodecEngineGetNumRpcCalled)
+BRIDGE_DECL(_sceCodecEngineGetProcessorLoad)
 BRIDGE_DECL(_sceCodecEngineOpenUnmapMemBlock)
+BRIDGE_DECL(_sceCodecEnginePmonGetProcessorLoad)
+BRIDGE_DECL(_sceCodecEnginePmonReset)
+BRIDGE_DECL(_sceCodecEnginePmonStart)
+BRIDGE_DECL(_sceCodecEnginePmonStop)
+BRIDGE_DECL(_sceCodecEngineResetNumRpcCalled)
+BRIDGE_DECL(_sceCodecEngineSetClockFrequency)

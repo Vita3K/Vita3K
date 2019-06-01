@@ -57,6 +57,10 @@ EXPORT(int, sceMotionDevGetDs3CalibData) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceMotionDevGetEvaInfo) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceMotionDevGetFactoryMagnCalibData) {
     return UNIMPLEMENTED();
 }
@@ -151,6 +155,7 @@ BRIDGE_IMPL(sceMotionDevGetCurrentMagnStabilityLevel)
 BRIDGE_IMPL(sceMotionDevGetDeviceInfo)
 BRIDGE_IMPL(sceMotionDevGetDeviceLocation)
 BRIDGE_IMPL(sceMotionDevGetDs3CalibData)
+BRIDGE_IMPL(sceMotionDevGetEvaInfo)
 BRIDGE_IMPL(sceMotionDevGetFactoryMagnCalibData)
 BRIDGE_IMPL(sceMotionDevGetGyroBias)
 BRIDGE_IMPL(sceMotionDevGetGyroBias2)

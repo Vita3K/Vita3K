@@ -12,7 +12,7 @@
 namespace renderer {
 namespace texture {
 
-void bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
+void bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     glBindTexture(GL_TEXTURE_2D, cache.textures[0]);
@@ -20,7 +20,7 @@ void bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, co
     upload_bound_texture(gxm_texture, mem);
 }
 
-void configure_bound_texture(const SceGxmTexture &gxm_texture) {
+void configure_bound_texture(const emu::SceGxmTexture &gxm_texture) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
@@ -46,7 +46,7 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, nullptr);
 }
 
-void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem) {
+void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);

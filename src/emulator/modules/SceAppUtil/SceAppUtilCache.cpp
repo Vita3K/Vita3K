@@ -17,8 +17,18 @@
 
 #include "SceAppUtilCache.h"
 
+EXPORT(int, sceAppUtilCacheGetDevInfo) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceAppUtilCacheMount) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceAppUtilCacheUmount) {
+    return UNIMPLEMENTED();
+}
+
+BRIDGE_IMPL(sceAppUtilCacheGetDevInfo)
 BRIDGE_IMPL(sceAppUtilCacheMount)
+BRIDGE_IMPL(sceAppUtilCacheUmount)

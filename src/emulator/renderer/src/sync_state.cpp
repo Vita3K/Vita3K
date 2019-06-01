@@ -244,7 +244,7 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
             LOG_WARN("Texture unit index ({}) out of range. SCE_GXM_MAX_TEXTURE_UNITS is {}.", texture_unit, SCE_GXM_MAX_TEXTURE_UNITS);
             continue;
         }
-        const SceGxmTexture &texture = state.fragment_textures[texture_unit];
+        const emu::SceGxmTexture &texture = state.fragment_textures[texture_unit];
         if (texture.data_addr == 0) {
             LOG_WARN("Texture has null data.");
             continue;

@@ -20,7 +20,14 @@
 #include <module/module.h>
 
 BRIDGE_DECL(sceAudioInGetAdopt)
+BRIDGE_DECL(sceAudioInGetInput)
+BRIDGE_DECL(sceAudioInGetMicGain)
 BRIDGE_DECL(sceAudioInGetStatus)
 BRIDGE_DECL(sceAudioInInput)
+BRIDGE_DECL(sceAudioInInputWithInputDeviceState)
 BRIDGE_DECL(sceAudioInOpenPort)
+BRIDGE_DECL(sceAudioInOpenPortForDiag)
 BRIDGE_DECL(sceAudioInReleasePort)
+BRIDGE_DECL(sceAudioInSelectInput)
+BRIDGE_DECL(sceAudioInSetMicGain)
+BRIDGE_DECL(sceAudioInSetMute)

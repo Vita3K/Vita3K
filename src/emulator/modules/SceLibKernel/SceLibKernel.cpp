@@ -336,6 +336,10 @@ EXPORT(int, sceIoChstatByFd) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceIoClose2) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceIoCompleteMultiple) {
     return UNIMPLEMENTED();
 }
@@ -344,12 +348,12 @@ EXPORT(int, sceIoDevctl) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoDopen, const char *dir) {
-    return open_dir(host.io, dir, host.pref_path.c_str(), export_name);
-}
-
 EXPORT(int, sceIoDevctlAsync) {
     return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceIoDopen, const char *dir) {
+    return open_dir(host.io, dir, host.pref_path.c_str(), export_name);
 }
 
 EXPORT(int, sceIoDread, SceUID fd, emu::SceIoDirent *dir) {
@@ -383,15 +387,15 @@ EXPORT(SceOff, sceIoLseek, SceUID fd, SceOff offset, int whence) {
     return seek_file(fd, offset, whence, host.io, export_name);
 }
 
+EXPORT(int, sceIoLseekAsync) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
     return create_dir(host.io, dir, mode, host.pref_path.c_str(), export_name);
 }
 
 EXPORT(int, sceIoMkdirAsync) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, sceIoLseekAsync) {
     return UNIMPLEMENTED();
 }
 
@@ -426,6 +430,10 @@ EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offse
 }
 
 EXPORT(int, sceIoPwriteAsync) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceIoRead2) {
     return UNIMPLEMENTED();
 }
 
@@ -464,6 +472,10 @@ EXPORT(int, sceIoSync) {
 }
 
 EXPORT(int, sceIoSyncAsync) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceIoWrite2) {
     return UNIMPLEMENTED();
 }
 
@@ -1012,24 +1024,13 @@ EXPORT(int, sceKernelGetThreadContextForVM) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetThreadCpuAffinityMask) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, sceKernelGetThreadCpuAffinityMask_) {
+EXPORT(int, sceKernelGetThreadCpuAffinityMask2) {
     STUBBED("STUB");
     return 0x01 << 16;
 }
 
 EXPORT(int, sceKernelGetThreadCurrentPriority) {
     return UNIMPLEMENTED();
-}
-
-EXPORT(int, sceKernelGetThreadCurrentPriority_) {
-    STUBBED("STUB");
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    const std::lock_guard<std::mutex> lock(thread->mutex);
-    return thread.get()->priority;
 }
 
 EXPORT(int, sceKernelGetThreadEventInfo) {
@@ -1364,10 +1365,6 @@ EXPORT(int, sceKernelUnlockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int
     return mutex_unlock(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelUnlockLwMutex2, Ptr<emu::SceKernelLwMutexWork> workarea, int unlock_count) {
-    const auto lwmutexid = workarea.get(host.mem)->uid;
-    return mutex_unlock(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
-}
 
 EXPORT(int, sceKernelWaitCond, SceUID cond_id, SceUInt32 *timeout) {
     return condvar_wait(host.kernel, export_name, thread_id, cond_id, timeout, SyncWeight::Heavy);
@@ -1555,6 +1552,7 @@ BRIDGE_IMPL(sceClibVsnprintfChk)
 BRIDGE_IMPL(sceIoChstat)
 BRIDGE_IMPL(sceIoChstatAsync)
 BRIDGE_IMPL(sceIoChstatByFd)
+BRIDGE_IMPL(sceIoClose2)
 BRIDGE_IMPL(sceIoCompleteMultiple)
 BRIDGE_IMPL(sceIoDevctl)
 BRIDGE_IMPL(sceIoDevctlAsync)
@@ -1575,6 +1573,7 @@ BRIDGE_IMPL(sceIoPread)
 BRIDGE_IMPL(sceIoPreadAsync)
 BRIDGE_IMPL(sceIoPwrite)
 BRIDGE_IMPL(sceIoPwriteAsync)
+BRIDGE_IMPL(sceIoRead2)
 BRIDGE_IMPL(sceIoRemove)
 BRIDGE_IMPL(sceIoRemoveAsync)
 BRIDGE_IMPL(sceIoRename)
@@ -1583,6 +1582,7 @@ BRIDGE_IMPL(sceIoRmdir)
 BRIDGE_IMPL(sceIoRmdirAsync)
 BRIDGE_IMPL(sceIoSync)
 BRIDGE_IMPL(sceIoSyncAsync)
+BRIDGE_IMPL(sceIoWrite2)
 BRIDGE_IMPL(sceKernelAtomicAddAndGet16)
 BRIDGE_IMPL(sceKernelAtomicAddAndGet32)
 BRIDGE_IMPL(sceKernelAtomicAddAndGet64)
@@ -1710,10 +1710,8 @@ BRIDGE_IMPL(sceKernelGetSystemInfo)
 BRIDGE_IMPL(sceKernelGetSystemTime)
 BRIDGE_IMPL(sceKernelGetTLSAddr)
 BRIDGE_IMPL(sceKernelGetThreadContextForVM)
-BRIDGE_IMPL(sceKernelGetThreadCpuAffinityMask)
-BRIDGE_IMPL(sceKernelGetThreadCpuAffinityMask_)
+BRIDGE_IMPL(sceKernelGetThreadCpuAffinityMask2)
 BRIDGE_IMPL(sceKernelGetThreadCurrentPriority)
-BRIDGE_IMPL(sceKernelGetThreadCurrentPriority_)
 BRIDGE_IMPL(sceKernelGetThreadEventInfo)
 BRIDGE_IMPL(sceKernelGetThreadExitStatus)
 BRIDGE_IMPL(sceKernelGetThreadId)
@@ -1767,7 +1765,6 @@ BRIDGE_IMPL(sceKernelTrySendMsgPipe)
 BRIDGE_IMPL(sceKernelTrySendMsgPipeVector)
 BRIDGE_IMPL(sceKernelUnloadModule)
 BRIDGE_IMPL(sceKernelUnlockLwMutex)
-BRIDGE_IMPL(sceKernelUnlockLwMutex2)
 BRIDGE_IMPL(sceKernelWaitCond)
 BRIDGE_IMPL(sceKernelWaitCondCB)
 BRIDGE_IMPL(sceKernelWaitEvent)

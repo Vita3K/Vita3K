@@ -248,6 +248,10 @@ EXPORT(int, sceAppMgrGetUserDirPath) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceAppMgrGetUserDirPathById) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceAppMgrGetVs0UserDataDrive) {
     return UNIMPLEMENTED();
 }
@@ -381,7 +385,15 @@ EXPORT(int, sceAppMgrSaveDataDataRemove) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceAppMgrSaveDataDataRemove2) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceAppMgrSaveDataDataSave) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAppMgrSaveDataDataSave2) {
     return UNIMPLEMENTED();
 }
 
@@ -497,6 +509,10 @@ EXPORT(int, sceAppMgrSystemParamGetString) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceAppMgrThemeDataMount) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceAppMgrTrophyMount) {
     return UNIMPLEMENTED();
 }
@@ -580,6 +596,7 @@ BRIDGE_IMPL(sceAppMgrGetStatusById)
 BRIDGE_IMPL(sceAppMgrGetStatusByName)
 BRIDGE_IMPL(sceAppMgrGetSystemDataFilePlayReady)
 BRIDGE_IMPL(sceAppMgrGetUserDirPath)
+BRIDGE_IMPL(sceAppMgrGetUserDirPathById)
 BRIDGE_IMPL(sceAppMgrGetVs0UserDataDrive)
 BRIDGE_IMPL(sceAppMgrGetVs0UserModuleDrive)
 BRIDGE_IMPL(sceAppMgrInitSafeMemoryById)
@@ -613,7 +630,9 @@ BRIDGE_IMPL(sceAppMgrReceiveShellEvent)
 BRIDGE_IMPL(sceAppMgrReceiveSystemEvent)
 BRIDGE_IMPL(sceAppMgrSaveDataAddMount)
 BRIDGE_IMPL(sceAppMgrSaveDataDataRemove)
+BRIDGE_IMPL(sceAppMgrSaveDataDataRemove2)
 BRIDGE_IMPL(sceAppMgrSaveDataDataSave)
+BRIDGE_IMPL(sceAppMgrSaveDataDataSave2)
 BRIDGE_IMPL(sceAppMgrSaveDataGetQuota)
 BRIDGE_IMPL(sceAppMgrSaveDataMount)
 BRIDGE_IMPL(sceAppMgrSaveDataSlotCreate)
@@ -642,6 +661,7 @@ BRIDGE_IMPL(sceAppMgrSetSystemDataFilePlayReady)
 BRIDGE_IMPL(sceAppMgrSystemParamDateTimeGetConf)
 BRIDGE_IMPL(sceAppMgrSystemParamGetInt)
 BRIDGE_IMPL(sceAppMgrSystemParamGetString)
+BRIDGE_IMPL(sceAppMgrThemeDataMount)
 BRIDGE_IMPL(sceAppMgrTrophyMount)
 BRIDGE_IMPL(sceAppMgrTrophyMountById)
 BRIDGE_IMPL(sceAppMgrUmount)

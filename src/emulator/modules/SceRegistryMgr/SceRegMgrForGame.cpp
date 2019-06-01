@@ -17,6 +17,10 @@
 
 #include "SceRegMgrForGame.h"
 
+EXPORT(int, sceRegMgrSystemIsBlueScreen) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceRegMgrSystemParamGetBin) {
     return UNIMPLEMENTED();
 }
@@ -41,6 +45,7 @@ EXPORT(int, sceRegMgrSystemParamSetStr) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(sceRegMgrSystemIsBlueScreen)
 BRIDGE_IMPL(sceRegMgrSystemParamGetBin)
 BRIDGE_IMPL(sceRegMgrSystemParamGetInt)
 BRIDGE_IMPL(sceRegMgrSystemParamGetStr)

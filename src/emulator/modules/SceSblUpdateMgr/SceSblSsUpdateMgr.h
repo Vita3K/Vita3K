@@ -20,4 +20,11 @@
 #include <module/module.h>
 
 BRIDGE_DECL(sceSblSsUpdateMgrGetBootMode)
+BRIDGE_DECL(sceSblSsUpdateMgrGetSpkgInfo)
+BRIDGE_DECL(sceSblSsUpdateMgrSendCommand)
 BRIDGE_DECL(sceSblSsUpdateMgrSetBootMode)
+BRIDGE_DECL(sceSblSsUpdateMgrVerifyPup)
+BRIDGE_DECL(sceSblSsUpdateMgrVerifyPupAdditionalSign)
+BRIDGE_DECL(sceSblSsUpdateMgrVerifyPupHeader)
+BRIDGE_DECL(sceSblSsUpdateMgrVerifyPupSegment)
+BRIDGE_DECL(sceSblSsUpdateMgrVerifyPupWatermark)

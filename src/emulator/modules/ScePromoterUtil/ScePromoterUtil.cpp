@@ -33,6 +33,10 @@ EXPORT(int, scePromoterUtilityGetResult) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, scePromoterUtilityGetSize) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, scePromoterUtilityGetState) {
     return UNIMPLEMENTED();
 }
@@ -41,7 +45,7 @@ EXPORT(int, scePromoterUtilityInit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePromoterUtilityPromoteBackup) {
+EXPORT(int, scePromoterUtilityPromoteImport) {
     return UNIMPLEMENTED();
 }
 
@@ -53,7 +57,15 @@ EXPORT(int, scePromoterUtilityPromotePkgWithRif) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, scePromoterUtilityRemoveSavedata) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, scePromoterUtilityUpdateLiveArea) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, scePromoterUtilityUpdateUpgradableStatus) {
     return UNIMPLEMENTED();
 }
 
@@ -61,9 +73,12 @@ BRIDGE_IMPL(scePromoterUtilityCheckExist)
 BRIDGE_IMPL(scePromoterUtilityDeletePkg)
 BRIDGE_IMPL(scePromoterUtilityExit)
 BRIDGE_IMPL(scePromoterUtilityGetResult)
+BRIDGE_IMPL(scePromoterUtilityGetSize)
 BRIDGE_IMPL(scePromoterUtilityGetState)
 BRIDGE_IMPL(scePromoterUtilityInit)
-BRIDGE_IMPL(scePromoterUtilityPromoteBackup)
+BRIDGE_IMPL(scePromoterUtilityPromoteImport)
 BRIDGE_IMPL(scePromoterUtilityPromotePkg)
 BRIDGE_IMPL(scePromoterUtilityPromotePkgWithRif)
+BRIDGE_IMPL(scePromoterUtilityRemoveSavedata)
 BRIDGE_IMPL(scePromoterUtilityUpdateLiveArea)
+BRIDGE_IMPL(scePromoterUtilityUpdateUpgradableStatus)

@@ -21,9 +21,44 @@ EXPORT(int, sceSblSsUpdateMgrGetBootMode) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceSblSsUpdateMgrGetSpkgInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblSsUpdateMgrSendCommand) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceSblSsUpdateMgrSetBootMode) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceSblSsUpdateMgrVerifyPup) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblSsUpdateMgrVerifyPupAdditionalSign) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblSsUpdateMgrVerifyPupHeader) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblSsUpdateMgrVerifyPupSegment) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblSsUpdateMgrVerifyPupWatermark) {
+    return UNIMPLEMENTED();
+}
+
 BRIDGE_IMPL(sceSblSsUpdateMgrGetBootMode)
+BRIDGE_IMPL(sceSblSsUpdateMgrGetSpkgInfo)
+BRIDGE_IMPL(sceSblSsUpdateMgrSendCommand)
 BRIDGE_IMPL(sceSblSsUpdateMgrSetBootMode)
+BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPup)
+BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPupAdditionalSign)
+BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPupHeader)
+BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPupSegment)
+BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPupWatermark)
