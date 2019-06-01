@@ -80,13 +80,17 @@ inline int find_condvar(CondvarPtr &condvar_out, CondvarPtrs **condvars_out, Ker
     return SCE_KERNEL_OK;
 }
 
+// TODO: Write remaining time to timeout ptr when it's successfully signaled
+
 inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mutex> &thread_lock,
     std::unique_lock<std::mutex> &primitive_lock, SyncPrimitive &primitive,
-    const WaitingThreadData &data, const char *export_name, const SceUInt *const timeout) {
+    const WaitingThreadData &data, const char *export_name, SceUInt *const timeout) {
     if (timeout && *timeout > 0) {
         auto status = thread->something_to_do.wait_for(thread_lock, std::chrono::microseconds{ *timeout });
 
         if (status == std::cv_status::timeout) {
+            *timeout = 0; // Time run out, so remaining time is 0
+
             thread->to_do = ThreadToDo::run;
 
             primitive_lock.lock();
