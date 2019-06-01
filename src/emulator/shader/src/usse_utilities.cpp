@@ -185,6 +185,56 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
     return spv::NoResult;
 }
 
+static spv::Id apply_modifiers(spv::Builder &b, const shader::usse::RegisterFlags flags, spv::Id val) {
+    spv::Id contained_type = b.getTypeId(val);
+
+    if (!b.isScalarType(contained_type)) {
+        contained_type = b.getContainedTypeId(contained_type);
+    }
+
+    const bool is_int = b.isIntType(contained_type);
+    const bool is_uint = b.isUintType(contained_type);
+
+    const int num_comp = b.getNumComponents(val);
+    spv::Id dest_type = b.getTypeId(val);
+
+    spv::Id result = val;
+
+    // Apply modifier flags
+    if (flags & shader::usse::RegisterFlags::Negative) {
+        // Negate the value
+        spv::Id c0 = spv::NoResult;
+        spv::Op sub_op = spv::OpAny;
+
+        if (is_int) {
+            c0 = b.makeIntConstant(0);
+            sub_op = spv::OpISub;
+        } else if (is_uint) {
+            c0 = b.makeUintConstant(0);
+            sub_op = spv::OpISub;
+        } else {
+            c0 = b.makeFloatConstant(0.0f);
+            sub_op = spv::OpFSub;
+        }
+
+        std::vector<spv::Id> ops(num_comp, c0);
+        result = b.createBinOp(sub_op, dest_type, (num_comp == 1) ? c0 : b.makeCompositeConstant(dest_type, ops), result);
+    }
+
+    if (flags & shader::usse::RegisterFlags::Absolute) {
+        // Absolute the result
+        if (is_uint) {
+            // It's already > 0, what do you expect more
+            return result;
+        }
+
+        const int abs_op = is_int ? GLSLstd450SAbs : GLSLstd450FAbs;
+        result = b.createBuiltinCall(dest_type, b.import("GLSL.std.450"), GLSLstd450FAbs, { result });
+    }
+
+    return result;
+}
+
 spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, Operand op, const Imm4 dest_mask, const int shift_offset) {
     spv::Id type_f32 = b.makeFloatType(32);
 
@@ -260,7 +310,8 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
             }
         }
 
-        return b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(consts.size())), consts);
+        spv::Id result = b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(consts.size())), consts);
+        return apply_modifiers(b, op.flags, result);
     }
 
     if (op.bank == RegisterBank::FPINTERNAL) {
@@ -330,7 +381,8 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
             std::vector<spv::Id> ops(dest_comp_count, constant);
             spv::Id pass = b.makeCompositeConstant(b.makeVectorType(b.getTypeId(constant), static_cast<int>(dest_comp_count)), ops);
 
-            return finalize(b, pass, pass, op.swizzle, shift_offset, dest_mask);
+            pass = finalize(b, pass, pass, op.swizzle, shift_offset, dest_mask);
+            return apply_modifiers(b, op.flags, pass);
         }
     }
 
@@ -411,7 +463,8 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         }
 
         // Create a constant composite
-        return b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(comps.size())), comps);
+        return apply_modifiers(b, op.flags, b.makeCompositeConstant(b.makeVectorType(type_f32, 
+            static_cast<int>(comps.size())), comps));
     }
 
     lowest_swizzle_bit = lowest_swizzle_bit * static_cast<int>(size_comp) / 4;
@@ -475,31 +528,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         first_pass = b.createUnaryOp(spv::OpBitcast, b.makeVectorType(b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
     }
 
-    spv::Id dest_type = b.makeVectorType(type_f32, static_cast<int>(dest_comp_count));
-
-    // Apply modifier flags
-    if (op.flags & RegisterFlags::Negative) {
-        // Negate the value
-        if (is_integral) {
-            LOG_ERROR("Support on negative modifier is unavailable for integer!");
-        } else {
-            spv::Id v0 = spv::NoResult;
-            std::vector<spv::Id> ops(dest_comp_count, b.makeFloatConstant(0.0f));
-
-            first_pass = b.createBinOp(spv::OpFSub, dest_type, b.makeCompositeConstant(dest_type, ops), first_pass);
-        }
-    }
-
-    if (op.flags & RegisterFlags::Absolute) {
-        // Absolute the result
-        if (is_integral) {
-            LOG_ERROR("Support on abs modifier is unavailable for integer!");
-        } else {
-            first_pass = b.createBuiltinCall(dest_type, b.import("GLSL.std.450"), GLSLstd450FAbs, { first_pass });
-        }
-    }
-
-    return first_pass;
+    return apply_modifiers(b, op.flags, first_pass);
 }
 
 spv::Id shader::usse::utils::unpack(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
