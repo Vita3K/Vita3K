@@ -99,7 +99,7 @@ bool USSETranslatorVisitor::smp(
     };
 
     // Decode dest
-    Instruction inst{};
+    Instruction inst;
     inst.opr.dest.bank = (dest_use_pa) ? RegisterBank::PRIMATTR : RegisterBank::TEMP;
     inst.opr.dest.num = dest_n;
     inst.opr.dest.type = tb_dest_fmt[fconv_type];
@@ -134,7 +134,7 @@ bool USSETranslatorVisitor::smp(
         return true;
     }
 
-    spv::Id result = do_fetch_texture(sampler, coord, inst.opr.dest.type);
+    spv::Id result = do_fetch_texture(sampler, coord, DataType::F32);
     store(inst.opr.dest, result, 0b1111);
 
     return true;

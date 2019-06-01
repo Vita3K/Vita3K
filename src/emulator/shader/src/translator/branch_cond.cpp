@@ -190,7 +190,7 @@ bool USSETranslatorVisitor::vtst(
         return false;
     }
 
-    Instruction inst{};
+    Instruction inst;
     inst.opcode = test_op;
 
     const Imm4 tb_decode_load_mask[] = {
@@ -310,6 +310,7 @@ bool USSETranslatorVisitor::vtstmsk(
     Imm4 alu_op,
     Imm7 src1_n,
     Imm7 src2_n) {
+    LOG_ERROR("VTSTMASK unimplemented!");
     return true;
 }
 

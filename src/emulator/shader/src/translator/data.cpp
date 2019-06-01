@@ -240,7 +240,7 @@ bool USSETranslatorVisitor::vpck(
     Imm1 comp0_sel_bit1,
     Imm4 src2_n,
     Imm1 comp_sel_0_bit0) {
-    Instruction inst{};
+    Instruction inst;
 
     // TODO: There are some combinations that are invalid.
     const DataType dest_data_type_table[] = {
