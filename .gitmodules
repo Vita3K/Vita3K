@@ -69,3 +69,6 @@
 [submodule "src/external/vita-toolchain"]
 	path = src/external/vita-toolchain
 	url = https://github.com/vita3k/vita-toolchain
+[submodule "src/external/better-enums"]
+	path = src/external/better-enums
+	url = https://github.com/aantron/better-enums.git

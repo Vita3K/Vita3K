@@ -151,7 +151,7 @@ EXPORT(int, sceIoChstatByFdAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoClose, SceUID fd) {
+EXPORT(int, sceIoClose, const SceUID fd) {
     return close_file(host.io, fd, export_name);
 }
 
@@ -163,7 +163,7 @@ EXPORT(int, sceIoComplete) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoDclose, SceUID fd) {
+EXPORT(int, sceIoDclose, const SceUID fd) {
     return close_dir(host.io, fd, export_name);
 }
 
@@ -207,11 +207,11 @@ EXPORT(int, sceIoGetstatByFdAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoLseek32, SceUID fd, int offset, int whence) {
-    return seek_file(fd, offset, whence, host.io, export_name);
+EXPORT(int, sceIoLseek32, const SceUID fd, const SceOff offset, const SceIoSeekMode whence) {
+    return static_cast<int>(seek_file(fd, offset, whence, host.io, export_name));
 }
 
-EXPORT(int, sceIoRead, SceUID fd, void *data, SceSize size) {
+EXPORT(int, sceIoRead, const SceUID fd, void *data, const SceSize size) {
     return read_file(data, host.io, fd, size, export_name);
 }
 
@@ -247,7 +247,7 @@ EXPORT(int, sceIoSyncByFdAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoWrite, SceUID fd, const void *data, SceSize size) {
+EXPORT(int, sceIoWrite, const SceUID fd, const void *data, const SceSize size) {
     return write_file(fd, data, size, host.io, export_name);
 }
 

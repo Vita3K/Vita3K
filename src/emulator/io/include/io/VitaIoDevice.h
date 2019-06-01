@@ -17,8 +17,26 @@
 
 #pragma once
 
-constexpr int SCE_ERROR_ERRNO_ENOENT = 0x80010002; // Associated file or directory does not exist
-constexpr int SCE_ERROR_ERRNO_EEXIST = 0x80010011; // File exists
-constexpr int SCE_ERROR_ERRNO_EMFILE = 0x80010018; // Too many files are open
-constexpr int SCE_ERROR_ERRNO_EBADFD = 0x80010051; // File descriptor is invalid for this operation
-constexpr int SCE_ERROR_ERRNO_EOPNOTSUPP = 0x8001005F; // Operation not supported
+#include <enum.h>
+
+BETTER_ENUM(VitaIoDevice, int,
+    addcont0 = 0,
+    app0,
+    gro0,
+    grw0,
+    os0,
+    pd0,
+    sa0,
+    savedata0,
+    savedata1,
+    sd0,
+    tm0,
+    tty0,
+    tty1,
+    ud0,
+    uma0,
+    ur0,
+    ux0,
+    vd0,
+    vs0,
+    _INVALID = -1)

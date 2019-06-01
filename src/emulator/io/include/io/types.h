@@ -17,12 +17,12 @@
 
 #pragma once
 
-#include <mem/ptr.h>
 #undef st_atime
 #undef st_ctime
 #undef st_mtime
-#include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
+
+#include <mem/ptr.h>
 
 namespace emu {
 

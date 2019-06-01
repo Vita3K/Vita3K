@@ -13,7 +13,7 @@ add_library(
 )
 
 target_include_directories(host PUBLIC include)
-target_link_libraries(host PUBLIC audio config ctrl dialog io kernel net nids np renderer sdl2 touch)
+target_link_libraries(host PUBLIC audio config ctrl dialog io kernel miniz net nids np renderer sdl2 touch)
 if(USE_GDBSTUB)
 	target_link_libraries(host PUBLIC gdbstub)
 endif()

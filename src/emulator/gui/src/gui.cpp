@@ -23,7 +23,7 @@
 #include <gui/imgui_impl_sdl_gl3.h>
 #include <host/functions.h>
 #include <host/state.h>
-#include <io/io.h>
+#include <io/vfs.h>
 #include <util/fs.h>
 #include <util/log.h>
 
