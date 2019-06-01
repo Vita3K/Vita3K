@@ -83,7 +83,7 @@ inline int find_condvar(CondvarPtr &condvar_out, CondvarPtrs **condvars_out, Ker
 inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mutex> &thread_lock,
     std::unique_lock<std::mutex> &primitive_lock, SyncPrimitive &primitive,
     const WaitingThreadData &data, const char *export_name, const SceUInt *const timeout) {
-    if (timeout) {
+    if (timeout && *timeout > 0) {
         auto status = thread->something_to_do.wait_for(thread_lock, std::chrono::microseconds{ *timeout });
 
         if (status == std::cv_status::timeout) {
@@ -143,8 +143,6 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_nam
 }
 
 inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int lock_count, MutexPtr &mutex, SyncWeight weight, SceUInt *timeout, bool only_try) {
-    assert(timeout == nullptr || *timeout > 0);
-
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} lock_count: {} timeout: {} waiting_threads: {}",
             export_name, mutex->uid, thread_id, mutex->name, mutex->attr, mutex->lock_count, timeout ? *timeout : 0,
@@ -341,7 +339,6 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
 int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, SceInt32 signal, SceUInt *timeout) {
     assert(semaid >= 0);
     assert(signal == 1);
-    assert(timeout == nullptr || *timeout > 0);
 
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, kernel.semaphores, kernel.mutex);
@@ -487,7 +484,6 @@ SceUID condvar_create(SceUID *uid_out, KernelState &kernel, const char *export_n
 }
 
 int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, SceUInt *timeout, SyncWeight weight) {
-    assert(timeout == nullptr || *timeout > 0);
     assert(condid >= 0);
 
     CondvarPtr condvar;
@@ -658,7 +654,6 @@ SceUID eventflag_create(KernelState &kernel, const char *export_name, const char
 
 int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, SceUInt *timeout) {
     assert(event_id >= 0);
-    assert(timeout == nullptr || *timeout > 0);
 
     // TODO Don't lock twice.
     const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
