@@ -170,7 +170,6 @@ static spv::Id get_type_array(spv::Builder &b, const SceGxmProgramParameter &par
 }
 
 static spv::Id get_param_type(spv::Builder &b, const SceGxmProgramParameter &parameter) {
-    std::string name = gxp::parameter_name_raw(parameter);
     gxp::GenericParameterType param_type = gxp::parameter_generic_type(parameter);
 
     switch (param_type) {
@@ -183,14 +182,6 @@ static spv::Id get_param_type(spv::Builder &b, const SceGxmProgramParameter &par
     default:
         return get_type_fallback(b);
     }
-}
-
-static void sanitize_variable_name(std::string &var_name) {
-    // Remove consecutive occurences of the character '_'
-    var_name.erase(
-        std::unique(var_name.begin(), var_name.end(),
-            [](char c1, char c2) { return c1 == c2 && c2 == '_'; }),
-        var_name.end());
 }
 
 spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
@@ -228,7 +219,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParamete
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
     spv::Id sampled_image_type = b.makeSampledImageType(image_type);
-    std::string name = gxp::parameter_name_raw(parameter);
+    std::string name = gxp::parameter_name(parameter);
 
     return b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
@@ -385,7 +376,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 const SceGxmProgramParameter &parameter = gxp_parameters[p];
 
                 if (parameter.resource_index == descriptor->resource_index && parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-                    tex_name = gxp::parameter_name_raw(parameter);
+                    tex_name = gxp::parameter_name(parameter);
                     sampler_resource_index = parameter.resource_index;
 
                     // ????
@@ -589,8 +580,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             const bool is_fragment_input = param_reg_type == usse::RegisterBank::PRIMATTR && program_type == emu::SceGxmProgramType::Fragment;
             const bool can_be_interface_block = is_vertex_output || is_fragment_input;
 
-            std::string var_name = gxp::parameter_name_raw(parameter);
-            std::replace(var_name.begin(), var_name.end(), '.', '_');
+            std::string var_name = gxp::parameter_name(parameter);
 
             auto container = get_container_by_index(program, parameter.container_index);
             std::uint32_t offset = parameter.resource_index;

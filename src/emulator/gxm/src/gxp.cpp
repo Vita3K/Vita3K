@@ -103,13 +103,8 @@ std::string parameter_name_raw(const SceGxmProgramParameter &parameter) {
 
 std::string parameter_name(const SceGxmProgramParameter &parameter) {
     auto full_name = gxp::parameter_name_raw(parameter);
-    auto struct_idx = full_name.find('.');
-    bool is_struct_field = struct_idx != std::string::npos;
-
-    if (is_struct_field)
-        return full_name.substr(struct_idx + 1, full_name.length());
-    else
-        return full_name;
+    std::replace(full_name.begin(), full_name.end(), '.', '_');
+    return full_name;
 }
 
 std::string parameter_struct_name(const SceGxmProgramParameter &parameter) {
