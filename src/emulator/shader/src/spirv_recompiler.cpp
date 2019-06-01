@@ -235,7 +235,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParamete
 
 static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank
     , const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
-    std::uint32_t total_var_comp = (size + 3) / get_data_type_size(dtype) * 4;
+    std::uint32_t total_var_comp = static_cast<std::uint32_t>((size + 3) * get_data_type_size(dtype) / 16);
     spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
 
     Operand dest;
@@ -278,7 +278,14 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
             utils::store(b, parameters, utils, dest, b.createLoad(elm), dest_mask, 0 + i * total_var_comp);
         }
     } else {
-        utils::store(b, parameters, utils, dest, b.isConstant(var) ? var : b.createLoad(var), dest_mask, 0);
+        get_dest_mask();
+
+        if (!b.isConstant(var)) {
+            var = b.createLoad(var);
+            var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
+        }
+
+        utils::store(b, parameters, utils, dest, var, dest_mask, 0);
     }
 
     return var;
@@ -348,7 +355,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             // Create PA Iterator SPIR-V variable
             const auto num_comp = ((descriptor->attribute_info >> 22) & 3) + 1;
-            const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), num_comp);
+
+            // Force this to 4. TODO: Don't
+            // Reason is for compability between vertex and fragment. This is like an anti-crash when linking.
+            // Fragment will only copy what it needed.
+            const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
             const auto pa_iter_size = ((descriptor->size >> 4) & 3) + 1;
             const auto pa_iter_var = create_input_variable(b, parameters, utils, pa_name.c_str(), RegisterBank::PRIMATTR,
                 pa_offset, pa_iter_type, pa_iter_size * 4);
@@ -450,7 +461,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 coord_name += std::to_string(tex_coord_index);
 
                 coords[tex_coord_index] = b.createVariable(spv::StorageClassInput,
-                    b.makeVectorType(b.makeFloatType(32), tex_coord_comp_count), coord_name.c_str());
+                    b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ 4), coord_name.c_str());
             }
 
             tex_query_info.coord = coords[tex_coord_index];
@@ -806,7 +817,13 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
             const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
             VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
 
-            const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), properties.component_count);
+            int number_of_comp_vec = properties.component_count;
+
+            if (vo >= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0 && vo <= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9) {
+                number_of_comp_vec = 4;
+            }
+
+            const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), number_of_comp_vec);
             const spv::Id out_var = b.createVariable(spv::StorageClassOutput, out_type, properties.name.c_str());
 
             // TODO: More decorations needed?
@@ -814,7 +831,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                 b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);
 
             // Do store
-            spv::Id o_val = utils::load(b, parameters, utils, o_op, DEST_MASKS[properties.component_count], 0);
+            spv::Id o_val = utils::load(b, parameters, utils, o_op, DEST_MASKS[number_of_comp_vec], 0);
             b.createStore(o_val, out_var);
 
             o_op.num += properties.component_count;
