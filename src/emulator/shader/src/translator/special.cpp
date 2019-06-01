@@ -58,7 +58,7 @@ bool USSETranslatorVisitor::smlsi(
     Imm8 src0_inc,
     Imm8 src1_inc,
     Imm8 src2_inc) {
-    std::string disasm_str = "smlsi ";
+    std::string disasm_str = "{:016x}: SMLSI ";
 
     auto parse_increment = [&](const int idx, const Imm1 inc_mode, const Imm8 inc_value) {
         if (inc_mode) {
@@ -74,10 +74,10 @@ bool USSETranslatorVisitor::smlsi(
         } else {
             // Parse value as immidiate
             for (int i = 0; i < 4; i++) {
-                repeat_increase[idx][i] = i * inc_value;
+                repeat_increase[idx][i] = i * static_cast<std::int8_t>(inc_value);
             }
 
-            disasm_str += fmt::format(" inc.{} ", inc_value);
+            disasm_str += fmt::format(" inc.{} ", static_cast<std::int8_t>(inc_value));
         }
     };
 
@@ -86,7 +86,7 @@ bool USSETranslatorVisitor::smlsi(
     parse_increment(1, src1_inc_mode, src1_inc);
     parse_increment(2, src2_inc_mode, src2_inc);
 
-    LOG_DISASM(disasm_str);
+    LOG_DISASM(disasm_str, m_instr);
 
     return true;
 }
