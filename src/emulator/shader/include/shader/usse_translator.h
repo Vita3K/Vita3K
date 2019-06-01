@@ -437,10 +437,11 @@ public:
         Imm1 onceonly,
         Imm1 syncstart,
         Imm1 dest_ext,
-        Imm1 test_flag_2,
+        Imm1 src1_neg,
         Imm1 src1_ext,
         Imm1 src2_ext,
         Imm1 prec,
+        Imm1 src2_vscomp,
         RepeatCount rpt_count,
         Imm2 sign_test,
         Imm2 zero_test,
@@ -467,6 +468,7 @@ public:
         Imm1 src1_ext,
         Imm1 src2_ext,
         Imm1 prec,
+        Imm1 src2_vscomp,
         RepeatCount rpt_count,
         Imm2 sign_test,
         Imm2 zero_test,
@@ -518,7 +520,7 @@ private:
     const SceGxmProgram &m_program;
 };
 
-using BlockCacheMap = std::map<shader::usse::USSEOffset, spv::Block *>;
+using BlockCacheMap = std::map<shader::usse::USSEOffset, spv::Function *>;
 constexpr int sgx543_pc_bits = 20;
 
 struct USSERecompiler final {
@@ -539,7 +541,7 @@ struct USSERecompiler final {
         utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries);
 
     void reset(const std::uint64_t *inst, const std::size_t count);
-    spv::Block *get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom = nullptr);
+    spv::Function *get_or_recompile_block(const usse::USSEBlock &block);
 };
 
 } // namespace shader::usse
