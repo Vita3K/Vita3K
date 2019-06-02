@@ -300,17 +300,15 @@ bool USSETranslatorVisitor::vdp(
         src_mask = 0b0111;
     }
 
-    // Double regs always true for src0, dest
-    inst.opr.src0 = decode_src12(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
-    inst.opr.src0.index = 0;
-
+    // Double regs always true for src1, dest
+    // src0 is actually src1
+    // src1 is gpi0, which repeat offset can't affect to
+    inst.opr.src1 = decode_src12(inst.opr.src1, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
 
-    inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
-    inst.opr.src1.num = gpi0_n;
-    inst.opr.src1.index = 1;
-
-    inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swiz, false, type);
+    inst.opr.src0.bank = usse::RegisterBank::FPINTERNAL;
+    inst.opr.src0.num = gpi0_n;
+    inst.opr.src0.swizzle = decode_vec34_swizzle(gpi0_swiz, false, type);
 
     // Decode first source swizzle
     const SwizzleChannel tb_swizz_dec[] = {
@@ -325,22 +323,22 @@ bool USSETranslatorVisitor::vdp(
         SwizzleChannel::_UNDEFINED
     };
 
-    inst.opr.src0.swizzle[0] = tb_swizz_dec[src0_swiz_x];
-    inst.opr.src0.swizzle[1] = tb_swizz_dec[src0_swiz_y];
-    inst.opr.src0.swizzle[2] = tb_swizz_dec[src0_swiz_z];
-    inst.opr.src0.swizzle[3] = tb_swizz_dec[src0_swiz_w];
+    inst.opr.src1.swizzle[0] = tb_swizz_dec[src0_swiz_x];
+    inst.opr.src1.swizzle[1] = tb_swizz_dec[src0_swiz_y];
+    inst.opr.src1.swizzle[2] = tb_swizz_dec[src0_swiz_z];
+    inst.opr.src1.swizzle[3] = tb_swizz_dec[src0_swiz_w];
 
     // Set modifiers
     if (src0_neg) {
-        inst.opr.src0.flags |= RegisterFlags::Negative;
+        inst.opr.src1.flags |= RegisterFlags::Negative;
     }
 
     if (src0_abs) {
-        inst.opr.src0.flags |= RegisterFlags::Absolute;
+        inst.opr.src1.flags |= RegisterFlags::Absolute;
     }
 
     if (gpi0_abs) {
-        inst.opr.src1.flags |= RegisterFlags::Absolute;
+        inst.opr.src0.flags |= RegisterFlags::Absolute;
     }
 
     m_b.setLine(m_recompiler.cur_pc);
@@ -350,9 +348,9 @@ bool USSETranslatorVisitor::vdp(
     GET_REPEAT(inst);
 
     LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
-        disasm::operand_to_str(inst.opr.src0, src_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
+        disasm::operand_to_str(inst.opr.src0, src_mask, 0), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
 
-    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, src0_repeat_offset);
+    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, 0);
     spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
 
     spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
