@@ -235,7 +235,7 @@ static spv::Id apply_modifiers(spv::Builder &b, const shader::usse::RegisterFlag
     return result;
 }
 
-spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, Operand op, const Imm4 dest_mask, const int shift_offset) {
+spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, Operand op, const Imm4 dest_mask, int shift_offset) {
     spv::Id type_f32 = b.makeFloatType(32);
 
     if (op.bank == RegisterBank::FPCONSTANT) {
