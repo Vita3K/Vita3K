@@ -557,7 +557,7 @@ spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &blo
 
         bool do_neg = false;
 
-        if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P1) {
+        if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P3) {
             pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
         } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
             pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);

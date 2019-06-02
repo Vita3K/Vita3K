@@ -357,7 +357,7 @@ bool USSETranslatorVisitor::br(
 
         bool do_neg = false;
 
-        if (pred >= ExtPredicate::P0 && pred <= ExtPredicate::P1) {
+        if (pred >= ExtPredicate::P0 && pred <= ExtPredicate::P3) {
             pred_opr.num = static_cast<int>(pred) - static_cast<int>(ExtPredicate::P0);
         } else if (pred >= ExtPredicate::NEGP0 && pred <= ExtPredicate::NEGP1) {
             pred_opr.num = static_cast<int>(pred) - static_cast<int>(ExtPredicate::NEGP0);
