@@ -120,8 +120,7 @@ void analyze(USSEOffset end_offset, F read_func, H handler_func) {
 
                 std::uint8_t predicate_writed_to = 0;
                 if (does_write_to_predicate(inst, predicate_writed_to)) {
-                    is_predicate_invalidated = ((predicate_writed_to + 1) == block->pred) || 
-                        ((predicate_writed_to + 5) == block->pred);
+                    is_predicate_invalidated = ((predicate_writed_to + 1) == block->pred) || ((predicate_writed_to + 5) == block->pred);
                 }
 
                 // Either if the instruction has different predicate with the block,
@@ -136,7 +135,7 @@ void analyze(USSEOffset end_offset, F read_func, H handler_func) {
                     should_stop = true;
                 } else if (is_predicate_invalidated) {
                     add_block(baddr + 1);
-                    
+
                     block->size = baddr - block->offset + 1;
                     block->offset_link = baddr + 1;
 

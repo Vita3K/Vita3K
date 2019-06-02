@@ -210,8 +210,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParamete
     return b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank
-    , const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
+static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
     std::uint32_t total_var_comp = static_cast<std::uint32_t>((size + 3) * get_data_type_size(dtype) / 16);
     spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
 
@@ -219,10 +218,10 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
     dest.bank = bank;
     dest.num = offset;
     dest.type = dtype;
-    
+
     Imm4 dest_mask = 0b1111;
 
-    auto get_dest_mask = [&]() {    
+    auto get_dest_mask = [&]() {
         switch (total_var_comp) {
         case 1:
             dest_mask = 0b1;
@@ -521,7 +520,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
-    
+
     // Make array type. TODO: Make length configurable
     spv::Id f32_type = b.makeFloatType(32);
     spv::Id i32_type = b.makeIntType(32);
@@ -587,7 +586,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             LOG_DEBUG(param_log);
 
             // TODO: Size is not accurate.
-            create_input_variable(b, spv_params, utils, var_name.c_str(), param_reg_type, offset, param_type, 
+            create_input_variable(b, spv_params, utils, var_name.c_str(), param_reg_type, offset, param_type,
                 parameter.array_size * parameter.component_count * 4);
 
             break;
@@ -709,21 +708,21 @@ static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &p
     usse::convert_gxp_usse_to_spirv(b, program, parameters, utils, end_hook_func, texture_queries);
 }
 
-static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters, 
+static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
     const SceGxmProgram &program, utils::SpirvUtilFunctions &utils) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *frag_fin_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *frag_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "frag_output_finalize", {}, 
+    spv::Function *frag_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "frag_output_finalize", {},
         decorations, &frag_fin_block);
 
     Operand color_val_operand;
     color_val_operand.bank = program.is_native_color() ? RegisterBank::OUTPUT : RegisterBank::PRIMATTR;
     color_val_operand.num = 0;
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    color_val_operand.type = program.is_native_color() ? DataType::F32 :  DataType::F16;
+    color_val_operand.type = program.is_native_color() ? DataType::F32 : DataType::F16;
 
     spv::Id color = utils::load(b, parameters, utils, color_val_operand, 0xF, 0);
     spv::Id out = b.createVariable(spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
@@ -734,17 +733,17 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     b.makeReturn(false);
     b.setBuildPoint(last_build_point);
 
-    return frag_fin_func;    
+    return frag_fin_func;
 }
 
-static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters, 
+static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
     const SceGxmProgram &program, utils::SpirvUtilFunctions &utils) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *vert_fin_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *vert_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "vert_output_finalize", {}, 
+    spv::Function *vert_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "vert_output_finalize", {},
         decorations, &vert_fin_block);
 
     SceGxmVertexOutputTexCoordInfos coord_infos;
@@ -817,7 +816,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     b.makeReturn(false);
     b.setBuildPoint(last_build_point);
 
-    return vert_fin_func;    
+    return vert_fin_func;
 }
 
 static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
@@ -864,7 +863,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
 
     // Generate parameters
     SpirvShaderParameters parameters = create_parameters(b, program, utils, program_type, texture_queries);
-    
+
     if (program.is_fragment()) {
         end_hook_func = make_frag_finalize_function(b, parameters, program, utils);
     } else {

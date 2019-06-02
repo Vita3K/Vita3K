@@ -1,5 +1,5 @@
-#include <shader/usse_utilities.h>
 #include <shader/usse_constant_table.h>
+#include <shader/usse_utilities.h>
 #include <util/log.h>
 
 #include <SPIRV/GLSL.std.450.h>
@@ -15,7 +15,7 @@ static spv::Id get_correspond_constant_with_channel(spv::Builder &b, shader::uss
     case shader::usse::SwizzleChannel::_1: {
         return b.makeFloatConstant(1.0f);
     }
-    
+
     case shader::usse::SwizzleChannel::_2: {
         return b.makeFloatConstant(2.0f);
     }
@@ -38,12 +38,12 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
     spv::Id type_f32 = b.makeFloatType(32);
     spv::Id f32_pointer = b.makePointer(spv::StorageClassPrivate, type_f32);
 
-    const auto first_comp_count = b.getNumComponents(first) ;
+    const auto first_comp_count = b.getNumComponents(first);
 
     if ((offset % 4 == 0) && is_default(swizz, 4) && dest_mask == 0b1111 && b.getNumComponents(first) == 4) {
         return first;
     }
-    
+
     // Try to plant a composite construct
     for (auto i = 0; i < 4; i++) {
         if (dest_mask & (1 << i)) {
@@ -115,7 +115,7 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b) {
 
     spv::Function *f16_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v2, "f32_2_2xf16", { type_f32 },
         decorations, &f16_unpack_func_block);
-    
+
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
     extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
@@ -137,9 +137,9 @@ static spv::Function *make_f16_pack_func(spv::Builder &b) {
     spv::Id type_f32 = b.makeFloatType(32);
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
-    spv::Function *f16_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "twoXf16_2_f32", { type_f32_v2 }, 
+    spv::Function *f16_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "twoXf16_2_f32", { type_f32_v2 },
         decorations, &f16_pack_func_block);
-    
+
     spv::Id extracted = f16_pack_func->getParamId(0);
 
     extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackUnorm2x16, { extracted });
@@ -336,7 +336,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         default:
             break;
         }
-        
+
         op.num <<= 2;
     }
 
@@ -348,10 +348,9 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         if (op.bank == RegisterBank::INDEX) {
             op.num -= 1;
         }
-        return b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, 
-            b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(op.num) } ));
+        return b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(op.num) }));
     }
-    
+
     if (op.bank == RegisterBank::IMMEDIATE || !get_reg_bank(params, op.bank)) {
         if (op.bank != RegisterBank::INDEXED1 && op.bank != RegisterBank::INDEXED2) {
             if (dest_comp_count == 1) {
@@ -365,7 +364,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
             spv::Id constant = spv::NoResult;
 
             const int imm = (op.bank == RegisterBank::IMMEDIATE) ? op.num : 0;
-            
+
             if (is_unsigned_integer_data_type(op.type)) {
                 constant = b.makeUintConstant(imm);
             } else if (is_signed_integer_data_type(op.type)) {
@@ -422,17 +421,15 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         spv::Id type_i32 = b.makeIntType(32);
 
         // Calculate the "at" offset.
-        spv::Id idx_reg_val = b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, 
-            type_i32), { params.indexes, b.makeIntConstant(idx_off) } ));
+        spv::Id idx_reg_val = b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, type_i32), { params.indexes, b.makeIntConstant(idx_off) }));
 
-        spv::Id real_idx = b.createBinOp(spv::OpIAdd, type_i32, b.createBinOp(spv::OpIMul, type_i32, idx_reg_val, 
-            b.makeIntConstant(2)), b.makeIntConstant(add_off));
+        spv::Id real_idx = b.createBinOp(spv::OpIAdd, type_i32, b.createBinOp(spv::OpIMul, type_i32, idx_reg_val, b.makeIntConstant(2)), b.makeIntConstant(add_off));
 
         idx_in_arr_1 = b.createBinOp(spv::OpSDiv, type_i32, real_idx, b.makeIntConstant(4));
         idx_in_arr_2 = b.createBinOp(spv::OpSDiv, type_i32, b.createBinOp(spv::OpIAdd, type_i32, real_idx, b.makeIntConstant(3)),
             b.makeIntConstant(4));
     }
-    
+
     // Default load will get word as default component
     std::size_t dest_comp_count_to_get = 0;
     bool already[4] = { false, false, false, false };
@@ -463,8 +460,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         }
 
         // Create a constant composite
-        return apply_modifiers(b, op.flags, b.makeCompositeConstant(b.makeVectorType(type_f32, 
-            static_cast<int>(comps.size())), comps));
+        return apply_modifiers(b, op.flags, b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(comps.size())), comps));
     }
 
     lowest_swizzle_bit = lowest_swizzle_bit * static_cast<int>(size_comp) / 4;
@@ -492,8 +488,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     spv::Id first_pass = spv::NoResult;
     spv::Id connected_friend = spv::NoResult;
     spv::Id bank_base = *get_reg_bank(params, op.bank);
-    spv::Id comp_type = b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(
-        b.getTypeId(bank_base))));
+    spv::Id comp_type = b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base))));
 
     if (idx_in_arr_1 == spv::NoResult) {
         idx_in_arr_1 = b.makeIntConstant((op.num + shift_offset) >> 2);
@@ -502,7 +497,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     if (idx_in_arr_2 == spv::NoResult) {
         idx_in_arr_2 = b.makeIntConstant((op.num + shift_offset + 3) >> 2);
     }
-    
+
     // Do an access chain
     first_pass = b.createOp(spv::OpAccessChain, comp_type, { bank_base, idx_in_arr_1 });
     connected_friend = b.createOp(spv::OpAccessChain, comp_type, { bank_base, idx_in_arr_2 });
@@ -519,7 +514,6 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     const bool is_signed_integer_dtype = is_signed_integer_data_type(op.type);
 
     const bool is_integral = is_unsigned_integer_dtype || is_signed_integer_dtype;
-
 
     // Bitcast them to integer. Those flags assuming bits stores on those float registers are actually integer
     if (is_signed_integer_dtype) {
@@ -583,13 +577,12 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
             dest.num -= 1;
 
             if (!b.isIntType(source)) {
-                std::vector<spv::Id> ops {source};
+                std::vector<spv::Id> ops{ source };
                 source = b.createOp(spv::OpBitcast, b.makeIntType(32), ops);
             }
         }
 
-        spv::Id var = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, 
-            b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(dest.num) });
+        spv::Id var = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(dest.num) });
 
         b.createStore(source, var);
         return;
@@ -602,7 +595,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     // If dest has default swizzle, is full-length (all dest component) and starts at a
     // register boundary, translate it to just a createStore
     auto total_comp_source = static_cast<std::uint8_t>(b.getNumComponents(source));
-    
+
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
     const std::size_t size_comp = get_data_type_size(dest.type);
 
@@ -615,7 +608,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     spv::Id type_f32 = b.makeFloatType(32);
 
     if (b.isIntType(source_elm_type_id) || b.isUintType(source_elm_type_id)) {
-        std::vector<spv::Id> ops {source};
+        std::vector<spv::Id> ops{ source };
         spv::Id bitcast_type = b.makeVectorType(type_f32, total_comp_source);
 
         source = b.createOp(spv::OpBitcast, bitcast_type, ops);
@@ -671,7 +664,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
 
     // Floor down to nearest size comp
     nearest_swizz_on = (int)((nearest_swizz_on) / (4 / size_comp) * (4 / size_comp));
-    
+
     if (dest.type != DataType::F32) {
         std::vector<spv::Id> composites;
 
@@ -684,23 +677,19 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                     if (b.isScalar(source)) {
                         ops.push_back(source);
                     } else {
-                        ops.push_back(b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { source, 
-                            b.makeIntConstant(std::min(i + j, (int)total_comp_source - 1)) }));
+                        ops.push_back(b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { source, b.makeIntConstant(std::min(i + j, (int)total_comp_source - 1)) }));
                     }
                 } else {
                     if (elem == spv::NoResult) {
                         // Replace it
-                        elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(
-                            (int)((insert_offset + (i + nearest_swizz_on) / size_comp) >> 2)) });
-                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem), 
-                            b.makeIntConstant((int)((i + nearest_swizz_on) / size_comp)) });
+                        elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((int)((insert_offset + (i + nearest_swizz_on) / size_comp) >> 2)) });
+                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem), b.makeIntConstant((int)((i + nearest_swizz_on) / size_comp)) });
 
                         // Extract to f16
                         elem = unpack_one(b, utils, elem, dest.type);
                     }
 
-                    ops.push_back(b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { elem, 
-                        b.makeIntConstant(j) }));
+                    ops.push_back(b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { elem, b.makeIntConstant(j) }));
                 }
             }
 
@@ -709,10 +698,10 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
             result = pack_one(b, utils, result, dest.type);
 
             composites.push_back(result);
-            
+
             elem = spv::NoResult;
         }
-    
+
         if (composites.size() == 1) {
             // A single package
             source = composites[0];
@@ -725,13 +714,12 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
             total_comp_source = static_cast<std::uint8_t>(composites.size());
         }
     }
-    
+
     // Now we do store!
     if (total_comp_source == 1) {
         insert_offset += (int)(nearest_swizz_on / (4 / size_comp));
         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(insert_offset >> 2) });
-        spv::Id inserted = b.createOp(spv::OpVectorInsertDynamic, bank_base_elem_type, { b.createLoad(elem), 
-            source, b.makeIntConstant(insert_offset % 4) });
+        spv::Id inserted = b.createOp(spv::OpVectorInsertDynamic, bank_base_elem_type, { b.createLoad(elem), source, b.makeIntConstant(insert_offset % 4) });
 
         b.createStore(inserted, elem);
         return;
@@ -755,7 +743,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         // Do an access chain
         ops.push_back(b.createLoad(elem));
         ops.push_back(source);
-        
+
         for (auto i = 0; i < total_comp_left_to_copy; i++) {
             ops.push_back(4 + copied + i);
         }
@@ -788,7 +776,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     for (auto i = std::min(start_offset_from_vec4 + total_comp_source, 4); i < 4; i++) {
         ops.push_back(i);
     }
-    
+
     spv::Id shuffled = b.createOp(spv::OpVectorShuffle, b.makeVectorType(type_f32, 4), ops);
     b.createStore(shuffled, elem);
 }

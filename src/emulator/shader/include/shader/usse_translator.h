@@ -64,7 +64,7 @@ public:
     spv::Id do_fetch_texture(const spv::Id tex, const spv::Id coord, const DataType dest_type);
 
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, 
+    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program,
         utils::SpirvUtilFunctions &utils, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
         bool is_secondary_program = false)
         : m_b(_b)
@@ -132,15 +132,19 @@ private:
     for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
 #define END_REPEAT() }
 
-#define GET_REPEAT(inst)                                                                           \
-    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump;       \
-    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump;       \
-    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump;       \
-    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump;       \
-    if (inst.opr.dest.bank == RegisterBank::FPINTERNAL) dest_repeat_offset /= repeat_jump;         \
-    if (inst.opr.src0.bank == RegisterBank::FPINTERNAL) src0_repeat_offset /= repeat_jump;         \
-    if (inst.opr.src1.bank == RegisterBank::FPINTERNAL) src1_repeat_offset /= repeat_jump;         \
-    if (inst.opr.src2.bank == RegisterBank::FPINTERNAL) src2_repeat_offset /= repeat_jump;
+#define GET_REPEAT(inst)                                                                     \
+    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump; \
+    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump; \
+    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump; \
+    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump; \
+    if (inst.opr.dest.bank == RegisterBank::FPINTERNAL)                                      \
+        dest_repeat_offset /= repeat_jump;                                                   \
+    if (inst.opr.src0.bank == RegisterBank::FPINTERNAL)                                      \
+        src0_repeat_offset /= repeat_jump;                                                   \
+    if (inst.opr.src1.bank == RegisterBank::FPINTERNAL)                                      \
+        src1_repeat_offset /= repeat_jump;                                                   \
+    if (inst.opr.src2.bank == RegisterBank::FPINTERNAL)                                      \
+        src2_repeat_offset /= repeat_jump;
 
     const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index) {
         return repeat_increase[op.index][repeat_index];
@@ -324,7 +328,7 @@ public:
         Imm1 comp0_sel_bit1,
         Imm6 src2_n,
         Imm1 comp_sel_0_bit0);
-        
+
     bool vbw(
         Imm3 op1,
         ExtPredicate pred,

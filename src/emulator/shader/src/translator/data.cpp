@@ -96,12 +96,12 @@ bool USSETranslatorVisitor::vmov(
     spv::Id conditional_result = 0;
     CompareMethod compare_method = CompareMethod::NE_ZERO;
     spv::Op compare_op = spv::OpAny;
-    
+
     if (is_conditional) {
         compare_method = static_cast<CompareMethod>((test_bit_2 << 1) | test_bit_1);
         inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs, reg_bits, m_second_program);
         inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, is_double_regs, reg_bits, m_second_program);
-        
+
         if (src0_comp_sel) {
             inst.opr.src0.swizzle = inst.opr.src1.swizzle;
         }
@@ -148,7 +148,7 @@ bool USSETranslatorVisitor::vmov(
     m_b.setLine(m_recompiler.cur_pc);
 
     spv::Function *link_sub = nullptr;
-    
+
     if (is_conditional) {
         link_sub = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[m_recompiler.cur_pc + 1]);
     }
@@ -180,7 +180,7 @@ bool USSETranslatorVisitor::vmov(
         disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset), disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset), conditional_str);
 
     LOG_DISASM(disasm_str);
-    
+
     std::unique_ptr<spv::Builder::If> cond_builder;
 
     if (is_conditional) {
@@ -197,7 +197,7 @@ bool USSETranslatorVisitor::vmov(
 
         cond_builder = std::make_unique<spv::Builder::If>(conditional_result, spv::SelectionControlMaskNone, m_b);
     }
-    
+
     spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
     store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
 
@@ -206,7 +206,7 @@ bool USSETranslatorVisitor::vmov(
         // Create call to next subroutine (block)
         m_b.createFunctionCall(link_sub, {});
     }
-    
+
     END_REPEAT()
 
     return true;
@@ -329,7 +329,7 @@ bool USSETranslatorVisitor::vpck(
             Opcode::VPCKC10F32,
             Opcode::VPCKC10C10 }
     };
-    
+
     const spv::Op repack_opcode[][static_cast<int>(DataType::TOTAL_TYPE)] = {
         { spv::OpAll,
             spv::OpAll,
@@ -430,14 +430,13 @@ bool USSETranslatorVisitor::vpck(
     if (inst.opr.src1.type == DataType::F32) {
         // Need another op
         inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
-        
+
         const int src1_comp_handle = (static_cast<int>(dest_mask_to_comp_count(dest_mask) + 1) >> 1);
         const int src2_comp_handle = static_cast<int>(dest_mask_to_comp_count(dest_mask)) - src1_comp_handle;
 
         const bool is_two_source_bank_different = inst.opr.src1.bank != inst.opr.src2.bank;
         const bool src2_needed = src2_comp_handle != 0;
-        const bool is_two_source_contiguous = (inst.opr.src1.num + src1_comp_handle == inst.opr.src2.num) && 
-            !is_two_source_bank_different;
+        const bool is_two_source_contiguous = (inst.opr.src1.num + src1_comp_handle == inst.opr.src2.num) && !is_two_source_bank_different;
 
         int offset_start_masking = 0;
 
@@ -485,7 +484,7 @@ bool USSETranslatorVisitor::vpck(
             disasm::operand_to_str(inst.opr.src1, src1_mask, src1_repeat_offset),
             disasm::operand_to_str(inst.opr.src2, src2_mask, src2_repeat_offset));
     } else {
-         LOG_DISASM("{} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset),
+        LOG_DISASM("{} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset),
             disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset));
     }
 
@@ -510,7 +509,7 @@ bool USSETranslatorVisitor::vpck(
             // Each source currently only contains 1 component. Create a composite construct
             source = m_b.createCompositeConstruct(vector_type, { source, source2 });
         } else {
-            std::vector<spv::Id> merge_ops { source, source2 };
+            std::vector<spv::Id> merge_ops{ source, source2 };
             merge_ops.resize(2 + num_comp);
 
             std::iota(merge_ops.begin() + 2, merge_ops.end(), 0);
@@ -528,11 +527,10 @@ bool USSETranslatorVisitor::vpck(
             dest_type = type_ui32;
         }
 
-        std::vector<spv::Id> ops { source };
-        source = m_b.createOp(repack_opcode[dest_fmt][src_fmt], m_b.makeVectorType(dest_type,
-            m_b.getNumComponents(source)), ops);
+        std::vector<spv::Id> ops{ source };
+        source = m_b.createOp(repack_opcode[dest_fmt][src_fmt], m_b.makeVectorType(dest_type, m_b.getNumComponents(source)), ops);
     }
-    
+
     store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
     END_REPEAT()
 

@@ -11,7 +11,7 @@ struct SceGxmProgram;
 namespace spv {
 class Builder;
 class Function;
-}
+} // namespace spv
 
 namespace shader {
 namespace usse {

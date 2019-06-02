@@ -1,14 +1,14 @@
 #pragma once
 
 #include <SPIRV/SpvBuilder.h>
-#include <shader/usse_types.h>
 #include <shader/usse_translator_types.h>
+#include <shader/usse_types.h>
 
 namespace shader::usse::utils {
 
 struct SpirvUtilFunctions {
-    spv::Function *pack_f16 {nullptr};
-    spv::Function *unpack_f16 {nullptr};
+    spv::Function *pack_f16{ nullptr };
+    spv::Function *unpack_f16{ nullptr };
 };
 
 spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask);
@@ -21,4 +21,4 @@ spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id target, const
 spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id scalar, const DataType type);
 spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id vec, const DataType source_type);
 
-}
+} // namespace shader::usse::utils

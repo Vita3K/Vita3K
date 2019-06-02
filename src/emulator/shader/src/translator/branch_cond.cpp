@@ -283,7 +283,7 @@ bool USSETranslatorVisitor::vtst(
 
     pred_result = m_b.createOp(used_comp_op, m_b.makeBoolType(), { lhs, rhs });
 
-    Operand pred_op {};
+    Operand pred_op{};
     pred_op.bank = RegisterBank::PREDICATE;
     pred_op.num = pdst_n;
 
@@ -365,9 +365,9 @@ bool USSETranslatorVisitor::br(
         }
 
         pred_v = load(pred_opr, 0b0001);
-        
+
         if (do_neg) {
-            std::vector<spv::Id> ops {pred_v};
+            std::vector<spv::Id> ops{ pred_v };
             pred_v = m_b.createOp(spv::OpLogicalNot, m_b.makeBoolType(), ops);
         }
 

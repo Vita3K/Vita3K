@@ -207,7 +207,7 @@ inline bool is_unsigned_integer_data_type(const DataType dtype) {
 
 inline bool is_signed_integer_data_type(const DataType dtype) {
     return (dtype == DataType::INT16) || (dtype == DataType::INT8) || (dtype == DataType::INT32);
-} 
+}
 
 // TODO: Make this a std::set?
 enum InstructionFlags {

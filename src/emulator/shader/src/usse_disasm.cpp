@@ -126,15 +126,14 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
             opstr += "sa[";
             break;
         }
-        
+
         default: {
             opstr += "inv[";
             break;
         }
         }
 
-        opstr += "idx" + std::to_string((int)bank - (int)RegisterBank::INDEXED1 + 1) + " * 2 + " + 
-            std::to_string(add_off) + "]";
+        opstr += "idx" + std::to_string((int)bank - (int)RegisterBank::INDEXED1 + 1) + " * 2 + " + std::to_string(add_off) + "]";
 
         break;
     }

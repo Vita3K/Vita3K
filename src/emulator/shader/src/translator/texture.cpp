@@ -50,12 +50,11 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
     store_op.bank = RegisterBank::PRIMATTR;
     store_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     store_op.type = DataType::F32;
-    
+
     for (auto &texture_query : texture_queries) {
         const Imm4 dest_mask = (texture_query.store_type == (int)DataType::F16) ? 0b11 : 0b1111;
-        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(
-            texture_query.store_type));
-        
+        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(texture_query.store_type));
+
         store_op.num = texture_query.dest_offset;
         store(store_op, fetch_result, dest_mask);
     }

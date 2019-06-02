@@ -203,7 +203,7 @@ enum SceGxmVertexProgramOutputs : int {
 
 union SceGxmVertexOutputTexCoordInfo {
     bf_t<uint8_t, 0, 2> comp_count;
-    bf_t<uint8_t, 2, 1> unk0; 
+    bf_t<uint8_t, 2, 1> unk0;
 };
 
 using SceGxmVertexOutputTexCoordInfos = std::array<SceGxmVertexOutputTexCoordInfo, 10>;

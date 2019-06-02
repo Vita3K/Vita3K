@@ -37,7 +37,7 @@ using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 template <typename V>
 boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     static const std::vector<USSEMatcher<V>> table = {
-    // clang-format off
+// clang-format off
     #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
 
     // Vector move
@@ -503,8 +503,8 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
-USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, 
- utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries)
+USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters,
+    utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries)
     : b(b)
     , inst(inst)
     , count(count)
@@ -542,10 +542,10 @@ spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &blo
     spv::Block *new_sub_block = nullptr;
 
     const auto sub_name = fmt::format("block_{}_{}", visitor.is_translating_secondary_program() ? "sec" : "prim",
-      block.offset);
+        block.offset);
 
     spv::Function *ret_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {},
-      &new_sub_block);
+        &new_sub_block);
 
     std::unique_ptr<spv::Builder::If> cond_builder;
     if (block.pred != 0) {
@@ -566,8 +566,8 @@ spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &blo
 
         pred_v = visitor.load(pred_opr, 0b0001);
         if (do_neg) {
-          std::vector<spv::Id> ops {pred_v};
-          pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
+            std::vector<spv::Id> ops{ pred_v };
+            pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
         }
 
         // Construct the IF
@@ -602,7 +602,7 @@ spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &blo
     }
 
     if (cond_builder) {
-      cond_builder->makeEndIf();
+        cond_builder->makeEndIf();
     }
 
     if (block.offset_link != -1) {
@@ -612,7 +612,7 @@ spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &blo
     // Make a return
     b.leaveFunction();
     b.setBuildPoint(last_build_point);
-    
+
     cur_pc = last_pc;
     return ret_func;
 }
