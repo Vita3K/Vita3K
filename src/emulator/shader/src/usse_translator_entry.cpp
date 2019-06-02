@@ -192,40 +192,39 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                                jjjjjj = src2_n (6 bits)
     */
     INST(&V::vnmad16, "VNMAD16 ()", "00010pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
-
+    
     // Vector pack/unpack
     /*
-                               01000 = op1
+                              01000 = op1
                                     ppp = pred (3 bits, ExtPredicate)
-                                       s = skipinv (1 bit, bool)
+                                      s = skipinv (1 bit, bool)
                                         n = nosched (1 bit, bool)
-                                         r = src2_bank_sel (1 bit)
+                                        u = unknown (1 bit)
                                           y = syncstart (1 bit, bool)
-                                           d = dest_bank_ext (1 bit)
+                                          d = dest_bank_ext (1 bit)
                                             e = end (1 bit)
-                                             c = src1_bank_ext (1 bit)
-                                              b = src2_bank_ext (1 bit)
-                                               - = don't care
+                                            r = src1_bank_ext (1 bit)
+                                              c = src2_bank_ext (1 bit)
+                                              - = don't care
                                                 aaa = repeat_count (3 bits, RepeatCount)
-                                                   fff = src_fmt (3 bits)
+                                                  fff = src_fmt (3 bits)
                                                       ttt = dest_fmt (3 bits)
-                                                         mmmm = dest_mask (4 bits)
-                                                             kk = dest_bank_sel (2 bits)
-                                                               ll = src1_bank_sel (2 bits)
-                                                                 -- = don't care
-                                                                   ggggggg = dest_n (7 bits)
+                                                        mmmm = dest_mask (4 bits)
+                                                            bb = dest_bank_sel (2 bits)
+                                                              kk = src1_bank_sel (2 bits)
+                                                                ll = src2_bank_sel (2 bits)
+                                                                  ggggggg = dest_n (7 bits)
                                                                           oo = comp_sel_3 (2 bits)
                                                                             h = scale (1 bit)
-                                                                             ii = comp_sel_1 (2 bits)
-                                                                               jj = comp_sel_2 (2 bits)
-                                                                                 qqqqqq = src1_n (6 bits)
-                                                                                       u = comp0_sel_bit1 (1 bit)
-                                                                                        -- = don't care
-                                                                                          vvvv = src2_n (4 bits)
-                                                                                              w = comp_sel_0_bit0 (1 bit)
+                                                                            ii = comp_sel_1 (2 bits)
+                                                                              jj = comp_sel_2 (2 bits)
+                                                                                qqqqqq = src1_n (6 bits)
+                                                                                      v = comp0_sel_bit1 (1 bit)
+                                                                                        wwwwww = src2_n (6 bits)
+                                                                                              x = comp_sel_0_bit0 (1 bit)
     */
-    INST(&V::vpck, "VPCK ()", "01000pppsnrydecb-aaaffftttmmmmkkll--gggggggoohiijjqqqqqqu--vvvvw"),
-    
+    INST(&V::vpck, "VPCK ()", "01000pppsnuyderc-aaaffftttmmmmbbkkllgggggggoohiijjqqqqqqvwwwwwwx"),
+
     // Test Instructions
     /*
                               01001 = op1

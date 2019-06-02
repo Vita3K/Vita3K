@@ -133,10 +133,14 @@ private:
 #define END_REPEAT() }
 
 #define GET_REPEAT(inst)                                                                           \
-    const int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump; \
-    const int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump; \
-    const int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump; \
-    const int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump
+    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump;       \
+    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump;       \
+    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump;       \
+    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump;       \
+    if (inst.opr.dest.bank == RegisterBank::FPINTERNAL) dest_repeat_offset /= repeat_jump;         \
+    if (inst.opr.src0.bank == RegisterBank::FPINTERNAL) src0_repeat_offset /= repeat_jump;         \
+    if (inst.opr.src1.bank == RegisterBank::FPINTERNAL) src1_repeat_offset /= repeat_jump;         \
+    if (inst.opr.src2.bank == RegisterBank::FPINTERNAL) src2_repeat_offset /= repeat_jump;
 
     const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index) {
         return repeat_increase[op.index][repeat_index];
@@ -298,7 +302,7 @@ public:
         ExtPredicate pred,
         bool skipinv,
         bool nosched,
-        Imm1 src2_bank_sel,
+        Imm1 unknown,
         bool syncstart,
         Imm1 dest_bank_ext,
         Imm1 end,
@@ -310,6 +314,7 @@ public:
         Imm4 dest_mask,
         Imm2 dest_bank_sel,
         Imm2 src1_bank_sel,
+        Imm2 src2_bank_sel,
         Imm7 dest_n,
         Imm2 comp_sel_3,
         Imm1 scale,
@@ -317,9 +322,9 @@ public:
         Imm2 comp_sel_2,
         Imm6 src1_n,
         Imm1 comp0_sel_bit1,
-        Imm4 src2_n,
+        Imm6 src2_n,
         Imm1 comp_sel_0_bit0);
-
+        
     bool vbw(
         Imm3 op1,
         ExtPredicate pred,
