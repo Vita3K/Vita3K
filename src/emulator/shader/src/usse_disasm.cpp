@@ -157,10 +157,6 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
 }
 
 std::string operand_to_str(Operand op, Imm4 write_mask, std::uint32_t shift) {
-    if (op.bank == RegisterBank::FPINTERNAL) {
-        shift /= 4;
-    }
-
     std::string opstr = reg_to_str(op.bank, op.num + shift);
 
     if (write_mask != 0) {
