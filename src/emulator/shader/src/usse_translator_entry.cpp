@@ -37,36 +37,36 @@ using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 template <typename V>
 boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     static const std::vector<USSEMatcher<V>> table = {
-    // clang-format off
+// clang-format off
     #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
 
     // Vector move
     /*
-                               00111 = op1
+                              00111 = op1
                                     ppp = pred (3 bits, ExtPredicate)
-                                       s = skipinv (1 bit, bool)
+                                      s = skipinv (1 bit, bool)
                                         t = test_bit_2 (1 bit)
-                                         r = src2_bank_sel (1 bit)
+                                        r = src0_comp_sel (1 bit)
                                           y = syncstart (1 bit, bool)
-                                           d = dest_bank_ext (1 bit)
+                                          d = dest_bank_ext (1 bit)
                                             e = end_or_src0_bank_ext (1 bit)
-                                             c = src1_bank_ext (1 bit)
+                                            c = src1_bank_ext (1 bit)
                                               b = src2_bank_ext (1 bit)
-                                               mm = move_type (2 bits, MoveType)
-                                                 aa = repeat_count (2 bits, RepeatCount)
-                                                   n = nosched (1 bit, bool)
+                                              mm = move_type (2 bits, MoveType)
+                                                aa = repeat_count (2 bits, RepeatCount)
+                                                  n = nosched (1 bit, bool)
                                                     ooo = move_data_type (3 bits, MoveDataType)
-                                                       i = test_bit_1 (1 bit)
+                                                      i = test_bit_1 (1 bit)
                                                         wwww = src0_swiz (4 bits)
                                                             k = src0_bank_sel (1 bit)
-                                                             ll = dest_bank_sel (2 bits)
-                                                               ff = src1_bank_sel (2 bits)
-                                                                 gg = src0_comp_sel (2 bits)
-                                                                   hhhh = dest_mask (4 bits)
-                                                                       jjjjjj = dest_n (6 bits)
-                                                                             qqqqqq = src0_n (6 bits)
-                                                                                   uuuuuu = src1_n (6 bits)
-                                                                                         vvvvvv = src2_n (6 bits)
+                                                            ll = dest_bank_sel (2 bits)
+                                                              ff = src1_bank_sel (2 bits)
+                                                                gg = src2_bank_sel (2 bits)
+                                                                  hhhh = dest_mask (4 bits)
+                                                                      jjjjjj = dest_n (6 bits)
+                                                                            qqqqqq = src0_n (6 bits)
+                                                                                  uuuuuu = src1_n (6 bits)
+                                                                                        vvvvvv = src2_n (6 bits)
     */
     INST(&V::vmov, "VMOV ()", "00111pppstrydecbmmaanoooiwwwwkllffgghhhhjjjjjjqqqqqquuuuuuvvvvvv"),
 
@@ -116,25 +116,26 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                             y = syncstart (1 bit)
                                             - = don't care
                                               c = src0_abs (1 bit)
-                                              -- = don't care
+                                              b = src1_bank_ext (1 bit)
+                                                a = src2_bank_ext (1 bit)
                                                 www = src2_swiz (3 bits)
                                                     i = src1_swiz_bit2 (1 bit)
                                                     n = nosched (1 bit)
                                                       eeee = dest_mask (4 bits)
                                                           mm = src1_mod (2 bits)
                                                             oo = src2_mod (2 bits)
-                                                              b = src0_bank (1 bit)
+                                                              k = src0_bank (1 bit)
                                                               tt = dest_bank (2 bits)
-                                                                aa = src1_bank (2 bits)
-                                                                  kk = src2_bank (2 bits)
-                                                                    ffffff = dest_n (6 bits)
+                                                                ff = src1_bank (2 bits)
+                                                                  gg = src2_bank (2 bits)
+                                                                    hhhhhh = dest_n (6 bits)
                                                                           zz = src1_swiz_bits01 (2 bits)
-                                                                            gg = src0_swiz_bits01 (2 bits)
-                                                                              hhhhhh = src0_n (6 bits)
-                                                                                    jjjjjj = src1_n (6 bits)
-                                                                                          llllll = src2_n (6 bits)
+                                                                            jj = src0_swiz_bits01 (2 bits)
+                                                                              llllll = src0_n (6 bits)
+                                                                                    qqqqqq = src1_n (6 bits)
+                                                                                          uuuuuu = src2_n (6 bits)
     */
-    INST(&V::vmad2, "VMAD2 ()", "00000dpps-ry-c--wwwineeeemmoobttaakkffffffzzgghhhhhhjjjjjjllllll"),
+    INST(&V::vmad2, "VMAD2 ()", "00000dpps-ry-cbawwwineeeemmookttffgghhhhhhzzjjllllllqqqqqquuuuuu"),
 
     // Vector operations except for MAD (F32)
     /*
@@ -191,40 +192,39 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                                jjjjjj = src2_n (6 bits)
     */
     INST(&V::vnmad16, "VNMAD16 ()", "00010pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
-
+    
     // Vector pack/unpack
     /*
-                               01000 = op1
+                              01000 = op1
                                     ppp = pred (3 bits, ExtPredicate)
-                                       s = skipinv (1 bit, bool)
+                                      s = skipinv (1 bit, bool)
                                         n = nosched (1 bit, bool)
-                                         r = src2_bank_sel (1 bit)
+                                        u = unknown (1 bit)
                                           y = syncstart (1 bit, bool)
-                                           d = dest_bank_ext (1 bit)
+                                          d = dest_bank_ext (1 bit)
                                             e = end (1 bit)
-                                             c = src1_bank_ext (1 bit)
-                                              b = src2_bank_ext (1 bit)
-                                               - = don't care
+                                            r = src1_bank_ext (1 bit)
+                                              c = src2_bank_ext (1 bit)
+                                              - = don't care
                                                 aaa = repeat_count (3 bits, RepeatCount)
-                                                   fff = src_fmt (3 bits)
+                                                  fff = src_fmt (3 bits)
                                                       ttt = dest_fmt (3 bits)
-                                                         mmmm = dest_mask (4 bits)
-                                                             kk = dest_bank_sel (2 bits)
-                                                               ll = src1_bank_sel (2 bits)
-                                                                 -- = don't care
-                                                                   ggggggg = dest_n (7 bits)
+                                                        mmmm = dest_mask (4 bits)
+                                                            bb = dest_bank_sel (2 bits)
+                                                              kk = src1_bank_sel (2 bits)
+                                                                ll = src2_bank_sel (2 bits)
+                                                                  ggggggg = dest_n (7 bits)
                                                                           oo = comp_sel_3 (2 bits)
                                                                             h = scale (1 bit)
-                                                                             ii = comp_sel_1 (2 bits)
-                                                                               jj = comp_sel_2 (2 bits)
-                                                                                 qqqqqq = src1_n (6 bits)
-                                                                                       u = comp0_sel_bit1 (1 bit)
-                                                                                        -- = don't care
-                                                                                          vvvv = src2_n (4 bits)
-                                                                                              w = comp_sel_0_bit0 (1 bit)
+                                                                            ii = comp_sel_1 (2 bits)
+                                                                              jj = comp_sel_2 (2 bits)
+                                                                                qqqqqq = src1_n (6 bits)
+                                                                                      v = comp0_sel_bit1 (1 bit)
+                                                                                        wwwwww = src2_n (6 bits)
+                                                                                              x = comp_sel_0_bit0 (1 bit)
     */
-    INST(&V::vpck, "VPCK ()", "01000pppsnrydecb-aaaffftttmmmmkkll--gggggggoohiijjqqqqqqu--vvvvw"),
-    
+    INST(&V::vpck, "VPCK ()", "01000pppsnuyderc-aaaffftttmmmmbbkkllgggggggoohiijjqqqqqqvwwwwwwx"),
+
     // Test Instructions
     /*
                               01001 = op1
@@ -234,28 +234,28 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                         o = onceonly (1 bit)
                                           y = syncstart (1 bit)
                                           d = dest_ext (1 bit)
-                                            t = test_flag_2 (1 bit)
-                                            r = src1_ext (1 bit)
-                                              c = src2_ext (1 bit)
-                                              e = prec (1 bit)
-                                                - = don't care
-                                                uu = rpt_count (2 bits, RepeatCount)
+                                            r = src1_neg (1 bit)
+                                            c = src1_ext (1 bit)
+                                              e = src2_ext (1 bit)
+                                              a = prec (1 bit)
+                                                v = src2_vscomp (1 bit)
+                                                tt = rpt_count (2 bits, RepeatCount)
                                                   ii = sign_test (2 bits)
                                                     zz = zero_test (2 bits)
                                                       m = test_crcomb_and (1 bit)
                                                         hhh = chan_cc (3 bits)
                                                           nn = pdst_n (2 bits)
                                                             bb = dest_bank (2 bits)
-                                                              aa = src1_bank (2 bits)
-                                                                kk = src2_bank (2 bits)
-                                                                  fffffff = dest_n (7 bits)
+                                                              kk = src1_bank (2 bits)
+                                                                ff = src2_bank (2 bits)
+                                                                  ggggggg = dest_n (7 bits)
                                                                           w = test_wben (1 bit)
                                                                           ll = alu_sel (2 bits)
-                                                                            gggg = alu_op (4 bits)
+                                                                            uuuu = alu_op (4 bits)
                                                                                 jjjjjjj = src1_n (7 bits)
                                                                                         qqqqqqq = src2_n (7 bits)
     */
-    INST(&V::vtst, "VTST ()", "01001ppps-oydtrce-uuiizzmhhhnnbbaakkfffffffwllggggjjjjjjjqqqqqqq"),
+    INST(&V::vtst, "VTST ()", "01001ppps-oydrceavttiizzmhhhnnbbkkffgggggggwlluuuujjjjjjjqqqqqqq"),
 
     // Test mask Instructions
     /*
@@ -270,7 +270,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                   r = src1_ext (1 bit)
                                                     c = src2_ext (1 bit)
                                                     e = prec (1 bit)
-                                                      - = don't care
+                                                      v = src2_vscomp (1 bit)
                                                       uu = rpt_count (2 bits, RepeatCount)
                                                         ii = sign_test (2 bits)
                                                           zz = zero_test (2 bits)
@@ -288,8 +288,8 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                       hhhhhhh = src1_n (7 bits)
                                                                                               jjjjjjj = src2_n (7 bits)
     */
-    INST(&V::vtstmsk, "VTSTMSK ()", "01111ppps-oydtrce-uuiizzm-aa--bbnnkkfffffffwllgggghhhhhhhjjjjjjj"),
-
+    INST(&V::vtstmsk, "VTSTMSK ()", "01111ppps-oydtrcevuuiizzm-aa--bbnnkkfffffffwllgggghhhhhhhjjjjjjj"),
+    
     // Bitwise Instructions
     /*
                              01 = op1_cnst
@@ -503,11 +503,13 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
-USSERecompiler::USSERecompiler(spv::Builder &b, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries)
+USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters,
+    utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries)
     : b(b)
     , inst(inst)
     , count(count)
-    , visitor(b, *this, cur_instr, parameters, queries, true) {
+    , end_hook_func(end_hook_func)
+    , visitor(b, *this, program, utils, cur_instr, parameters, queries, true) {
 }
 
 void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count) {
@@ -528,35 +530,56 @@ void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count)
         });
 }
 
-spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block, spv::Block *custom) {
-    if (!custom) {
-        auto result = cache.find(block.offset);
+spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block) {
+    auto result = cache.find(block.offset);
 
-        if (result != cache.end()) {
-            return result->second;
-        }
+    if (result != cache.end()) {
+        return result->second;
     }
 
-    spv::Block *last_build_point = nullptr;
+    // Make a new function (subroutine)
+    spv::Block *last_build_point = b.getBuildPoint();
+    spv::Block *new_sub_block = nullptr;
 
-    // We may divide it to smaller one
-    auto begin_new_block = [&]() -> spv::Block * {
-        // Create new block
-        spv::Block &blck = custom ? *custom : b.makeNewBlock();
-        last_build_point = b.getBuildPoint();
+    const auto sub_name = fmt::format("block_{}_{}", visitor.is_translating_secondary_program() ? "sec" : "prim",
+        block.offset);
 
-        b.setBuildPoint(&blck);
+    spv::Function *ret_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {},
+        &new_sub_block);
 
-        return &blck;
-    };
+    std::unique_ptr<spv::Builder::If> cond_builder;
+    if (block.pred != 0) {
+        spv::Id pred_v = spv::NoResult;
+        const ExtPredicate predicator = static_cast<ExtPredicate>(block.pred);
 
-    auto end_new_block = [&]() {
-        b.setBuildPoint(last_build_point);
-    };
+        Operand pred_opr{};
+        pred_opr.bank = RegisterBank::PREDICATE;
 
-    spv::Block *new_block = begin_new_block();
+        bool do_neg = false;
+
+        if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P3) {
+            pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
+        } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
+            pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
+            do_neg = true;
+        }
+
+        pred_v = visitor.load(pred_opr, 0b0001);
+        if (do_neg) {
+            std::vector<spv::Id> ops{ pred_v };
+            pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
+        }
+
+        // Construct the IF
+        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+    }
+
+    const auto last_pc = cur_pc;
 
     if (block.size > 0) {
+        LOG_TRACE("Recompiling block_{}, size = {}, id = {}", block.offset, block.size, ret_func->getId());
+
+        cache.emplace(block.offset, ret_func);
         const usse::USSEOffset pc_end = block.offset + block.size - 1;
 
         for (usse::USSEOffset pc = block.offset; pc <= pc_end; pc++) {
@@ -574,59 +597,28 @@ spv::Block *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block,
 
     if (block.offset + block.size >= count && !visitor.is_translating_secondary_program()) {
         // We reach the end, for whatever the current block is.
-        // Emit non native frag output if neccessary first
-        if (program->get_type() == emu::Fragment && !program->is_native_color()) {
-            visitor.emit_non_native_frag_output();
-        }
+        // Call end hook
+        b.createFunctionCall(end_hook_func, {});
+    }
 
-        // Make a return
-        b.leaveFunction();
+    if (cond_builder) {
+        cond_builder->makeEndIf();
     }
 
     if (block.offset_link != -1) {
-        b.createBranch(get_or_recompile_block(avail_blocks[block.offset_link]));
+        b.createFunctionCall(get_or_recompile_block(avail_blocks[block.offset_link]), {});
     }
 
-    end_new_block();
+    // Make a return
+    b.leaveFunction();
+    b.setBuildPoint(last_build_point);
 
-    // Generate predicate guards
-    if (block.pred != 0) {
-        spv::Block *trampoline_block = begin_new_block();
-        spv::Id pred_v = spv::NoResult;
-
-        const ExtPredicate predicator = static_cast<ExtPredicate>(block.pred);
-
-        if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P1) {
-            int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
-            pred_v = visitor.load_predicate(pred_n);
-        } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
-            int pred_n = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
-            pred_v = visitor.load_predicate(pred_n, true);
-        }
-
-        spv::Block *merge_block = get_or_recompile_block(avail_blocks[block.offset + block.size]);
-
-        // Hint the compiler and the GLSL translator.
-        // If the predicated block's condition is not satisfied, we go back to execute normal flow.
-        // TODO: Request the createSelectionMerge to be public, or we just fork and modify the publicity ourselves.
-        spv::Instruction *select_merge = new spv::Instruction(spv::OpSelectionMerge);
-        select_merge->addIdOperand(merge_block->getId());
-        select_merge->addImmediateOperand(spv::SelectionControlMaskNone);
-        trampoline_block->addInstruction(std::unique_ptr<spv::Instruction>(select_merge));
-
-        b.createConditionalBranch(pred_v, new_block, merge_block);
-
-        end_new_block();
-
-        new_block = trampoline_block;
-    }
-
-    cache.emplace(block.offset, new_block);
-
-    return new_block;
+    cur_pc = last_pc;
+    return ret_func;
 }
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, const NonDependentTextureQueryCallInfos &queries) {
+void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
+    spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
 
@@ -643,7 +635,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
 
     // Decode and recompile
     // TODO: Reuse this
-    usse::USSERecompiler recomp(b, parameters, queries);
+    usse::USSERecompiler recomp(b, program, parameters, utils, end_hook_func, queries);
 
     // Set the program
     recomp.program = &program;
@@ -659,11 +651,13 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
             }
 
             recomp.reset(cur_phase_code.first, cur_phase_code.second);
+            spv::Function *main_block = recomp.get_or_recompile_block(recomp.avail_blocks[0]);
 
-            // recompile the entry block.
-            recomp.get_or_recompile_block(recomp.avail_blocks[0], b.getBuildPoint());
+            b.createFunctionCall(main_block, {});
         }
     }
+
+    b.leaveFunction();
 }
 
 } // namespace shader::usse

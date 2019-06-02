@@ -94,21 +94,68 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
         break;
     }
 
+    case RegisterBank::INDEX: {
+        opstr += "idx";
+        break;
+    }
+
+    case RegisterBank::INDEXED1:
+    case RegisterBank::INDEXED2: {
+        // Decode the info. Usually the number of bits in a INDEXED number is 7.
+        // TODO: Fix the assumption
+        const Imm2 bank_enc = (reg_num >> 5) & 0b11;
+        const Imm5 add_off = reg_num & 0b11111;
+
+        switch (bank_enc) {
+        case 0: {
+            opstr += "r[";
+            break;
+        }
+
+        case 1: {
+            opstr += "o[";
+            break;
+        }
+
+        case 2: {
+            opstr += "pa[";
+            break;
+        }
+
+        case 3: {
+            opstr += "sa[";
+            break;
+        }
+
+        default: {
+            opstr += "inv[";
+            break;
+        }
+        }
+
+        opstr += "idx" + std::to_string((int)bank - (int)RegisterBank::INDEXED1 + 1) + " * 2 + " + std::to_string(add_off) + "]";
+
+        break;
+    }
+
+    case RegisterBank::IMMEDIATE: {
+        break;
+    }
+
     default: {
         opstr += "INVALID";
         break;
     }
     }
 
-    opstr += std::to_string(reg_num);
+    if (bank != RegisterBank::INDEXED1 && bank != RegisterBank::INDEXED2) {
+        opstr += std::to_string(reg_num);
+    }
+
     return opstr;
 }
 
 std::string operand_to_str(Operand op, Imm4 write_mask, std::uint32_t shift) {
-    if (op.bank == RegisterBank::FPINTERNAL) {
-        shift /= 4;
-    }
-
     std::string opstr = reg_to_str(op.bank, op.num + shift);
 
     if (write_mask != 0) {
@@ -151,6 +198,14 @@ std::string swizzle_to_str(Swizzle<s> swizz, Imm4 write_mask, uint32_t shift) {
             }
             case SwizzleChannel::_0: {
                 swizzstr += "0";
+                break;
+            }
+            case SwizzleChannel::_1: {
+                swizzstr += "1";
+                break;
+            }
+            case SwizzleChannel::_2: {
+                swizzstr += "2";
                 break;
             }
             case SwizzleChannel::_H: {

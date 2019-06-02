@@ -59,7 +59,7 @@ bool USSETranslatorVisitor::vmad(
     Imm6 src0_n) {
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), "VMAD");
 
-    Instruction inst{};
+    Instruction inst;
 
     // Is this VMAD3 or VMAD4, op2 = 0 => vec3
     int type = 2;
@@ -147,6 +147,8 @@ bool USSETranslatorVisitor::vmad2(
     Imm1 src0_swiz_bits2,
     Imm1 syncstart,
     Imm1 src0_abs,
+    Imm1 src1_bank_ext,
+    Imm1 src2_bank_ext,
     Imm3 src2_swiz,
     Imm1 src1_swiz_bit2,
     Imm1 nosched,
@@ -163,7 +165,7 @@ bool USSETranslatorVisitor::vmad2(
     Imm6 src0_n,
     Imm6 src1_n,
     Imm6 src2_n) {
-    Instruction inst{};
+    Instruction inst;
     Opcode op = Opcode::VMAD;
 
     // If dat_fmt equals to 1, the type of instruction is F16
@@ -179,8 +181,8 @@ bool USSETranslatorVisitor::vmad2(
     // Decode mandantory info first
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, false, true, 7, m_second_program);
     inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, false, true, 7, m_second_program);
-    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, false, true, 7, m_second_program);
-    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, false, true, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, true, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, true, 7, m_second_program);
 
     // Fill in data type
     inst.opr.dest.type = inst_dt;
@@ -222,9 +224,12 @@ bool USSETranslatorVisitor::vmad2(
         SWIZZLE_CHANNEL_4(X, Y, Z, Z)
     };
 
+    const std::uint8_t src0_swiz = src0_swiz_bits01 | src0_swiz_bits2 << 2;
+    const std::uint8_t src1_swiz = src1_swiz_bits01 | src1_swiz_bit2 << 2;
+
     inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    inst.opr.src0.swizzle = tb_decode_src0_swiz[(src0_swiz_bits01 | src0_swiz_bits2 << 1)];
-    inst.opr.src1.swizzle = tb_decode_src1_swiz[(src1_swiz_bits01 | src1_swiz_bit2 << 1)];
+    inst.opr.src0.swizzle = tb_decode_src0_swiz[src0_swiz];
+    inst.opr.src1.swizzle = tb_decode_src1_swiz[src1_swiz];
     inst.opr.src2.swizzle = tb_decode_src2_swiz[src2_swiz];
 
     // Decode modifiers
@@ -233,7 +238,7 @@ bool USSETranslatorVisitor::vmad2(
     }
 
     inst.opr.src1.flags = decode_modifier(src1_mod);
-    inst.opr.src2.flags = decode_modifier(src1_mod);
+    inst.opr.src2.flags = decode_modifier(src2_mod);
 
     // Log the instruction
     LOG_DISASM("{:016x}: {}{}2 {} {} {} {}", m_instr, disasm::e_predicate_str(static_cast<ExtPredicate>(pred)), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, dest_mask),
@@ -295,17 +300,15 @@ bool USSETranslatorVisitor::vdp(
         src_mask = 0b0111;
     }
 
-    // Double regs always true for src0, dest
-    inst.opr.src0 = decode_src12(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
-    inst.opr.src0.index = 0;
-
+    // Double regs always true for src1, dest
+    // src0 is actually src1
+    // src1 is gpi0, which repeat offset can't affect to
+    inst.opr.src1 = decode_src12(inst.opr.src1, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
 
-    inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
-    inst.opr.src1.num = gpi0_n;
-    inst.opr.src1.index = 1;
-
-    inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swiz, false, type);
+    inst.opr.src0.bank = usse::RegisterBank::FPINTERNAL;
+    inst.opr.src0.num = gpi0_n;
+    inst.opr.src0.swizzle = decode_vec34_swizzle(gpi0_swiz, false, type);
 
     // Decode first source swizzle
     const SwizzleChannel tb_swizz_dec[] = {
@@ -320,22 +323,22 @@ bool USSETranslatorVisitor::vdp(
         SwizzleChannel::_UNDEFINED
     };
 
-    inst.opr.src0.swizzle[0] = tb_swizz_dec[src0_swiz_x];
-    inst.opr.src0.swizzle[1] = tb_swizz_dec[src0_swiz_y];
-    inst.opr.src0.swizzle[2] = tb_swizz_dec[src0_swiz_z];
-    inst.opr.src0.swizzle[3] = tb_swizz_dec[src0_swiz_w];
+    inst.opr.src1.swizzle[0] = tb_swizz_dec[src0_swiz_x];
+    inst.opr.src1.swizzle[1] = tb_swizz_dec[src0_swiz_y];
+    inst.opr.src1.swizzle[2] = tb_swizz_dec[src0_swiz_z];
+    inst.opr.src1.swizzle[3] = tb_swizz_dec[src0_swiz_w];
 
     // Set modifiers
     if (src0_neg) {
-        inst.opr.src0.flags |= RegisterFlags::Negative;
+        inst.opr.src1.flags |= RegisterFlags::Negative;
     }
 
     if (src0_abs) {
-        inst.opr.src0.flags |= RegisterFlags::Absolute;
+        inst.opr.src1.flags |= RegisterFlags::Absolute;
     }
 
     if (gpi0_abs) {
-        inst.opr.src1.flags |= RegisterFlags::Absolute;
+        inst.opr.src0.flags |= RegisterFlags::Absolute;
     }
 
     m_b.setLine(m_recompiler.cur_pc);
@@ -345,9 +348,9 @@ bool USSETranslatorVisitor::vdp(
     GET_REPEAT(inst);
 
     LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
-        disasm::operand_to_str(inst.opr.src0, src_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
+        disasm::operand_to_str(inst.opr.src0, src_mask, 0), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
 
-    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, src0_repeat_offset);
+    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, 0);
     spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
 
     spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
@@ -373,6 +376,36 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask
     spv::Id source_type = m_b.getTypeId(vsrc1);
 
     switch (inst.opcode) {
+    case Opcode::AND: {
+        result = m_b.createBinOp(spv::OpBitwiseAnd, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::OR: {
+        result = m_b.createBinOp(spv::OpBitwiseOr, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::XOR: {
+        result = m_b.createBinOp(spv::OpBitwiseXor, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::SHL: {
+        result = m_b.createBinOp(spv::OpShiftLeftLogical, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::SHR: {
+        result = m_b.createBinOp(spv::OpShiftRightLogical, source_type, vsrc1, vsrc2);
+        break;
+    }
+
+    case Opcode::ASR: {
+        result = m_b.createBinOp(spv::OpShiftRightArithmetic, source_type, vsrc1, vsrc2);
+        break;
+    }
+
     case Opcode::VDSX:
     case Opcode::VF16DSX:
         result = m_b.createOp(spv::OpDPdx, source_type, ids);
@@ -455,7 +488,7 @@ bool USSETranslatorVisitor::vnmad32(
     Imm3 op2,
     Imm6 src1_n,
     Imm6 src2_n) {
-    Instruction inst{};
+    Instruction inst;
 
     static const Opcode tb_decode_vop_f32[] = {
         Opcode::VMUL,
@@ -598,7 +631,7 @@ bool USSETranslatorVisitor::vbw(
     Imm7 src2_sel,
     Imm7 src1_n,
     Imm7 src2_n) {
-    Instruction inst{};
+    Instruction inst;
 
     switch (op1) {
     case 0b010: inst.opcode = op2 ? Opcode::OR : Opcode::AND; break;
@@ -608,9 +641,12 @@ bool USSETranslatorVisitor::vbw(
     default: return false;
     }
 
-    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, false, 8, m_second_program);
-    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, false, 8, m_second_program);
-    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, false, 8, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, false, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, false, 7, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, false, 7, m_second_program);
+
+    inst.opr.src1.type = DataType::UINT32;
+    inst.opr.src2.type = DataType::UINT32;
 
     spv::Id src1 = load(inst.opr.src1, 0b0001);
     spv::Id src2 = 0;
@@ -627,9 +663,6 @@ bool USSETranslatorVisitor::vbw(
         src2 = m_b.makeUintConstant(src2_invert ? ~value : value);
     } else {
         src2 = load(inst.opr.src2, 0b0001);
-        if (m_b.isFloatType(m_b.getTypeId(src2))) {
-            src2 = m_b.createUnaryOp(spv::Op::OpBitcast, type_ui32, src2);
-        }
         if (src2_invert) {
             src2 = m_b.createUnaryOp(spv::Op::OpNot, type_ui32, src2);
         }
@@ -722,8 +755,6 @@ bool USSETranslatorVisitor::vcomp(
     inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
     // TODO: Should we do this ?
-    write_mask = decode_write_mask(write_mask, inst.opr.src1.type == DataType::F16);
-
     std::uint32_t src_mask = 0;
 
     // Build the source mask. It should only be one component

@@ -126,6 +126,7 @@ enum class DataType : uint8_t {
     F32,
     UINT8,
     UINT16,
+    UINT32,
     O8,
     TOTAL_TYPE,
     UNK
@@ -145,7 +146,9 @@ enum class RegisterBank {
     FPCONSTANT,
     IMMEDIATE,
     INDEX,
-    INDEXED,
+    INDEXED1,
+    INDEXED2,
+    PREDICATE,
 
     MAXIMUM,
     INVALID
@@ -176,15 +179,18 @@ inline RegisterFlags &operator&=(RegisterFlags &a, RegisterFlags b) {
 inline std::size_t get_data_type_size(const DataType type) {
     switch (type) {
     case DataType::INT8:
+    case DataType::UINT8:
         return 1;
 
     case DataType::INT16:
-    case DataType::F16: {
+    case DataType::F16:
+    case DataType::UINT16: {
         return 2;
     }
 
     case DataType::INT32:
-    case DataType::F32: {
+    case DataType::F32:
+    case DataType::UINT32: {
         return 4;
     }
 
@@ -193,6 +199,14 @@ inline std::size_t get_data_type_size(const DataType type) {
     }
 
     return 4;
+}
+
+inline bool is_unsigned_integer_data_type(const DataType dtype) {
+    return (dtype == DataType::UINT16) || (dtype == DataType::UINT8) || (dtype == DataType::UINT32);
+}
+
+inline bool is_signed_integer_data_type(const DataType dtype) {
+    return (dtype == DataType::INT16) || (dtype == DataType::INT8) || (dtype == DataType::INT32);
 }
 
 // TODO: Make this a std::set?
