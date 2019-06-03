@@ -186,7 +186,7 @@ static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameControlle
 
 static uint8_t float_to_byte(float f) {
     const float mapped = (f * 0.5f) + 0.5f;
-    const float clamped = std::max(0.0f, std::min(mapped, 1.0f));
+    const float clamped = std::max<float>(0.0f, std::min<float>(mapped, 1.0f));
     assert(clamped >= 0);
     assert(clamped <= 1);
 

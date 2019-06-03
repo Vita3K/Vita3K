@@ -43,7 +43,7 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
             break;
         } else {
             AudioOutput &output = port.shared.outputs.front();
-            const int bytes_to_put = std::min(stream_put_granularity, output.len_bytes);
+            const int bytes_to_put = std::min<int>(stream_put_granularity, output.len_bytes);
             const int ret = SDL_AudioStreamPut(port.callback.stream.get(), output.buf, bytes_to_put);
             assert(ret == 0);
             output.buf += bytes_to_put;
@@ -59,7 +59,7 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
         assert(available_to_get >= 0);
     }
 
-    const int bytes_to_get = std::min(len, available_to_get);
+    const int bytes_to_get = std::min<int>(len, available_to_get);
     const int get_result = SDL_AudioStreamGet(port.callback.stream.get(), temp_buffer, bytes_to_get);
     if (get_result > 0) {
         SDL_MixAudio(stream, temp_buffer, bytes_to_get, SDL_MIX_MAXVOLUME);

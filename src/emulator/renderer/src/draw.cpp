@@ -53,7 +53,7 @@ void draw(Context &context, const GxmContextState &state, SceGxmPrimitiveType ty
         const size_t attribute_size = attribute_format_size(attribute_format) * attribute.componentCount;
         const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
         const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
-        max_data_length[attribute.streamIndex] = std::max(max_data_length[attribute.streamIndex], data_length);
+        max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
     }
 
     // Upload vertex data.

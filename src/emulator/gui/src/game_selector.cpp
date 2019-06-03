@@ -69,7 +69,7 @@ void draw_game_selector(HostState &host) {
             break;
         }
         if (ImGui::Button(title_id_label.c_str())) {
-            host.gui.game_selector.title_id_sort_state = static_cast<gui::SortState>(std::max(1, (host.gui.game_selector.title_id_sort_state + 1) % 3));
+            host.gui.game_selector.title_id_sort_state = static_cast<gui::SortState>(std::max<int>(1, (host.gui.game_selector.title_id_sort_state + 1) % 3));
             host.gui.game_selector.app_ver_sort_state = NOT_SORTED;
             host.gui.game_selector.title_sort_state = NOT_SORTED;
             switch (host.gui.game_selector.title_id_sort_state) {
@@ -104,7 +104,7 @@ void draw_game_selector(HostState &host) {
         }
         if (ImGui::Button(app_ver_label.c_str())) {
             host.gui.game_selector.title_id_sort_state = NOT_SORTED;
-            host.gui.game_selector.app_ver_sort_state = static_cast<gui::SortState>(std::max(1, (host.gui.game_selector.app_ver_sort_state + 1) % 3));
+            host.gui.game_selector.app_ver_sort_state = static_cast<gui::SortState>(std::max<int>(1, (host.gui.game_selector.app_ver_sort_state + 1) % 3));
             host.gui.game_selector.title_sort_state = NOT_SORTED;
             switch (host.gui.game_selector.app_ver_sort_state) {
             case ASCENDANT:
@@ -136,7 +136,7 @@ void draw_game_selector(HostState &host) {
         if (ImGui::Button(title_label.c_str()) || !host.gui.game_selector.is_game_list_sorted) {
             host.gui.game_selector.title_id_sort_state = NOT_SORTED;
             host.gui.game_selector.app_ver_sort_state = NOT_SORTED;
-            host.gui.game_selector.title_sort_state = static_cast<gui::SortState>(std::max(1, (host.gui.game_selector.title_sort_state + 1) % 3));
+            host.gui.game_selector.title_sort_state = static_cast<gui::SortState>(std::max<int>(1, (host.gui.game_selector.title_sort_state + 1) % 3));
             host.gui.game_selector.is_game_list_sorted = true;
             switch (host.gui.game_selector.title_sort_state) {
             case ASCENDANT:

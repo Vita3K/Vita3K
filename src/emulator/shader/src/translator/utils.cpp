@@ -102,7 +102,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
         return 0;
     };
-    
+
     auto create_supply_register = [&](SpirvReg &dest, const std::string &name, const bool do_copy) -> SpirvReg {
         const spv::Id new_writeable = m_b.createVariable(spv::StorageClassPrivate, type_f32_v[4], name.c_str());
 
@@ -181,7 +181,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
     // Same for SECATTR
     case usse::RegisterBank::SECATTR: {
         const int result = find_cached_reg(sa_supplies, max_sa_registers);
-        
+
         switch (result) {
         case 1: {
             return true;
@@ -211,7 +211,7 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
         break;
     }
     }
-    
+
     auto create_new_reg_for_store = [&](RegisterCacheMap &cache, const char *prefix, const bool do_copy = true) {
         std::string new_name = prefix;
         new_name += std::to_string(writeable_idx << 2);
@@ -221,7 +221,6 @@ bool shader::usse::USSETranslatorVisitor::get_spirv_reg(usse::RegisterBank bank,
 
         out_comp_offset = (reg_offset + shift_offset) % 4;
     };
-
 
     bool result = spirv_bank->find_reg_at(reg_offset + shift_offset, reg, out_comp_offset);
     if (!result) {
@@ -374,7 +373,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
     const uint32_t src2_comp_count = m_b.getNumTypeComponents(src2.type_id);
     const uint32_t total_comp_count = src1_comp_count + src2_comp_count;
 
-    for (int i = 0; i < std::min(4, static_cast<int>(total_comp_count)); i++) {
+    for (int i = 0; i < std::min<int>(4, static_cast<int>(total_comp_count)); i++) {
         if (dest_mask & (1 << i)) {
             switch (swiz[i]) {
             case usse::SwizzleChannel::_X:
@@ -382,7 +381,7 @@ spv::Id USSETranslatorVisitor::bridge(SpirvReg &src1, SpirvReg &src2, usse::Swiz
             case usse::SwizzleChannel::_Z:
             case usse::SwizzleChannel::_W: {
                 std::uint32_t swizz_off = (uint32_t)((int)swiz[i] + shift_offset);
-                ops.push_back(std::min(swizz_off, total_comp_count - 1));
+                ops.push_back(std::min<int>(swizz_off, total_comp_count - 1));
 
                 break;
             }
@@ -540,8 +539,8 @@ spv::Id USSETranslatorVisitor::load(Operand &op, const Imm4 dest_mask, const int
             dest_comp_count_to_get++;
             already[swizzle_bit * size_comp / 4] = true;
 
-            lowest_swizzle_bit = std::min(lowest_swizzle_bit, swizzle_bit);
-            highest_swizzle_bit = std::max(highest_swizzle_bit, swizzle_bit);
+            lowest_swizzle_bit = std::min<int>(lowest_swizzle_bit, swizzle_bit);
+            highest_swizzle_bit = std::max<int>(highest_swizzle_bit, swizzle_bit);
         }
     }
 
