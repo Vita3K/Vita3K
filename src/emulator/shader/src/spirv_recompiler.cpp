@@ -139,14 +139,17 @@ static spv::Id get_type_scalar(spv::Builder &b, const SceGxmProgramParameter &pa
 
 static spv::Id get_type_vector(spv::Builder &b, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(b, parameter);
-    param_id = b.makeVectorType(param_id, parameter.component_count);
+    param_id = b.makeVectorType(param_id, gxp::get_num_32_bit_components(static_cast<SceGxmParameterType>(
+        (uint16_t)(parameter.type)), parameter.component_count));
+
     return param_id;
 }
 
 static spv::Id get_type_array(spv::Builder &b, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(b, parameter);
     if (parameter.component_count > 1) {
-        param_id = b.makeVectorType(param_id, parameter.component_count);
+        param_id = b.makeVectorType(param_id, gxp::get_num_32_bit_components(static_cast<SceGxmParameterType>(
+        (uint16_t)(parameter.type)), parameter.component_count));
     }
 
     // TODO: Stride
@@ -258,7 +261,10 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 
         if (!b.isConstant(var)) {
             var = b.createLoad(var);
-            var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
+
+            if (total_var_comp > 1) {
+                var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
+            }
         }
 
         utils::store(b, parameters, utils, dest, var, dest_mask, 0);
@@ -574,20 +580,62 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 offset = container->base_sa_offset + parameter.resource_index;
             }
 
+            auto param_type_name = "float";
+
+            switch (parameter.type) {
+            case SCE_GXM_PARAMETER_TYPE_F16: {
+                param_type_name = "half";
+                break;
+            }
+
+            case SCE_GXM_PARAMETER_TYPE_U16: {
+                param_type_name = "uhalf";
+                break;
+            }
+            
+            case SCE_GXM_PARAMETER_TYPE_S16: {
+                param_type_name = "ihalf";
+                break;
+            }
+
+            case SCE_GXM_PARAMETER_TYPE_U8: {
+                param_type_name = "uchar";
+                break;
+            }
+            
+            case SCE_GXM_PARAMETER_TYPE_S8: {
+                param_type_name = "ichar";
+                break;
+            }
+
+            case SCE_GXM_PARAMETER_TYPE_U32: {
+                param_type_name = "uint";
+                break;
+            }
+            
+            case SCE_GXM_PARAMETER_TYPE_S32: {
+                param_type_name = "int";
+                break;
+            }
+
+            default:
+                break;
+            }
+
             // Make the type
-            std::string param_log = fmt::format("[{} + {}] {}a{} = {}",
+            std::string param_log = fmt::format("[{} + {}] {}a{} = ({}{}) {}",
                 get_container_name(parameter.container_index), parameter.resource_index,
-                is_uniform ? "s" : "p", offset, var_name);
+                is_uniform ? "s" : "p", offset, param_type_name, parameter.component_count, var_name);
 
             if (parameter.array_size > 1) {
                 param_log += fmt::format("[{}]", parameter.array_size);
             }
 
             LOG_DEBUG(param_log);
-
-            // TODO: Size is not accurate.
+            
+            int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
             create_input_variable(b, spv_params, utils, var_name.c_str(), param_reg_type, offset, param_type,
-                parameter.array_size * parameter.component_count * 4);
+                parameter.array_size * parameter.component_count * type_size);
 
             break;
         }
@@ -754,8 +802,8 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     };
 
     auto calculate_copy_comp_count = [](const SceGxmVertexOutputTexCoordInfo &info) {
-        const bool is_f16 = (info.type == 1);
-        return (info.comp_count + 1) >> (is_f16 ? 1 : 0);
+        // info.type == 1 ? F16 : f32
+        return (info.comp_count + 1 + info.type) >> (info.type);
     };
 
     // TODO: Verify component counts

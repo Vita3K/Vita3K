@@ -40,4 +40,8 @@ GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parame
  */
 SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, SceGxmVertexOutputTexCoordInfos *coord_infos = nullptr);
 SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program);
+
+const int get_parameter_type_size(const SceGxmParameterType type);
+const int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num_comp);
+
 } // namespace gxp
