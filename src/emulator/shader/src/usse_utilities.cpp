@@ -683,7 +683,8 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                     if (elem == spv::NoResult) {
                         // Replace it
                         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((int)((insert_offset + (i + nearest_swizz_on) / size_comp) >> 2)) });
-                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem), b.makeIntConstant((int)((i + nearest_swizz_on) / size_comp)) });
+                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem), b.makeIntConstant(insert_offset % 4 + 
+                            (int)((i + nearest_swizz_on) / size_comp)) });
 
                         // Extract to f16
                         elem = unpack_one(b, utils, elem, dest.type);
