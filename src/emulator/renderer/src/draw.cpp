@@ -34,6 +34,7 @@ void draw(Context &context, const GxmContextState &state, SceGxmPrimitiveType ty
     R_PROFILE(__func__);
 
     // Upload index data.
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.element_buffer[0]);
     const GLsizeiptr index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, indices, GL_STREAM_DRAW);
 
@@ -65,6 +66,7 @@ void draw(Context &context, const GxmContextState &state, SceGxmPrimitiveType ty
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    // Draw.
     const GLenum mode = translate_primitive(type);
     const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, static_cast<gl::GLsizei>(count), gl_type, nullptr);
