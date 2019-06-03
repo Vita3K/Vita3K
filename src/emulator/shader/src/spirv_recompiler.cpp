@@ -460,7 +460,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             coords[query_info.coord_index].first = b.createVariable(spv::StorageClassInput,
                 b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ 4), coord_name.c_str());
 
-            coords[query_info.coord_index].second = static_cast<int>(DataType::F32);
+            coords[query_info.coord_index].second = query_info.store_type;
         }
 
         query_info.coord = coords[query_info.coord_index];
