@@ -32,8 +32,13 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     auto coord_id = coord.first;
 
     if (coord.second != static_cast<int>(DataType::F32)) {
-        coord_id = utils::unpack(m_b, m_util_funcs, coord_id, static_cast<DataType>(coord.second), SWIZZLE_CHANNEL_4_DEFAULT,
-            0b11, 0);
+        coord_id = m_b.createOp(spv::OpVectorExtractDynamic, type_f32, { coord_id, m_b.makeIntConstant(0) });
+        coord_id = utils::unpack_one(m_b, m_util_funcs, coord_id, static_cast<DataType>(coord.second));
+        
+        // Shuffle if number of components is larger than 2
+        if (m_b.getNumComponents(coord_id) > 2) {
+            coord_id = m_b.createOp(spv::OpVectorShuffle, m_b.makeVectorType(type_f32, 2), { coord_id, coord_id, 0, 1 });
+        }
     }
 
     auto image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { tex, coord_id });
