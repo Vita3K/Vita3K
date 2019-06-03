@@ -61,7 +61,7 @@ public:
     int repeat_increase[4][4];
 
     void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
-    spv::Id do_fetch_texture(const spv::Id tex, const spv::Id coord, const DataType dest_type);
+    spv::Id do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type);
 
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program,

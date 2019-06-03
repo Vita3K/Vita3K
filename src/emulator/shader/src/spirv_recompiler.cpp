@@ -303,8 +303,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
     // Store the coords
-    std::array<spv::Id, 9> coords;
-    std::fill(coords.begin(), coords.end(), spv::NoResult);
+    std::array<shader::usse::Coord, 9> coords;
 
     // It may actually be total fragments input
     for (size_t i = 0; i < vertex_outputs_ptr->varyings_count; i++, descriptor++) {
@@ -320,19 +319,24 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
 
             std::string pa_type = "uchar";
+            DataType pa_dtype = DataType::UINT8;
 
             uint32_t input_type = (descriptor->attribute_info & 0x30100000);
 
             if (input_type == 0x20000000) {
                 pa_type = "half";
+                pa_dtype = DataType::F16;
             } else if (input_type == 0x10000000) {
                 pa_type = "fixed";
+                // TODO: Supply data type
             } else if (input_type == 0x100000) {
                 if (input_id == 0xA000 || input_id == 0xB000) {
                     pa_type = "float";
+                    pa_dtype = DataType::F32;
                 }
             } else if (input_id != 0xA000 && input_id != 0xB000) {
                 pa_type = "float";
+                pa_dtype = DataType::F32;
             }
 
             // Create PA Iterator SPIR-V variable
@@ -349,7 +353,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
             if (input_id >= 0 && input_id <= 0x9000) {
-                coords[input_id / 0x1000] = pa_iter_var;
+                coords[input_id / 0x1000].first = pa_iter_var;
+                coords[input_id / 0x1000].second = static_cast<int>(pa_dtype);
             }
 
             pa_offset += ((descriptor->size >> 4) & 3) + 1;
@@ -436,23 +441,29 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             const auto size = ((descriptor->size >> 6) & 3) + 1;
             tex_query_info.dest_offset = pa_offset;
 
-            if (coords[tex_coord_index] == spv::NoResult) {
-                // Create an 'in' variable
-                // TODO: this really right?
-                std::string coord_name = "v_TexCoord";
-                coord_name += std::to_string(tex_coord_index);
-
-                coords[tex_coord_index] = b.createVariable(spv::StorageClassInput,
-                    b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ 4), coord_name.c_str());
-            }
-
-            tex_query_info.coord = coords[tex_coord_index];
+            tex_query_info.coord_index = tex_coord_index;
             tex_query_info.sampler = samplers[sampler_resource_index];
 
             tex_query_infos.push_back(tex_query_info);
 
             pa_offset += ((descriptor->size >> 6) & 3) + 1;
         }
+    }
+
+    for (auto &query_info: tex_query_infos) {
+        if (coords[query_info.coord_index].first == spv::NoResult) {
+            // Create an 'in' variable
+            // TODO: this really right?
+            std::string coord_name = "v_TexCoord";
+            coord_name += std::to_string(query_info.coord_index);
+
+            coords[query_info.coord_index].first = b.createVariable(spv::StorageClassInput,
+                b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ 4), coord_name.c_str());
+
+            coords[query_info.coord_index].second = static_cast<int>(DataType::F32);
+        }
+
+        query_info.coord = coords[query_info.coord_index];
     }
 }
 

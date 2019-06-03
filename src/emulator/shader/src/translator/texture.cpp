@@ -28,8 +28,15 @@
 using namespace shader;
 using namespace usse;
 
-spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const spv::Id coord, const DataType dest_type) {
-    auto image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { tex, coord });
+spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type) {
+    auto coord_id = coord.first;
+
+    if (coord.second != static_cast<int>(DataType::F32)) {
+        coord_id = utils::unpack(m_b, m_util_funcs, coord_id, static_cast<DataType>(coord.second), SWIZZLE_CHANNEL_4_DEFAULT,
+            0b11, 0);
+    }
+
+    auto image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { tex, coord_id });
 
     if (dest_type == DataType::F16) {
         // Pack them
@@ -133,7 +140,7 @@ bool USSETranslatorVisitor::smp(
         return true;
     }
 
-    spv::Id result = do_fetch_texture(sampler, coord, DataType::F32);
+    spv::Id result = do_fetch_texture(sampler, { coord, static_cast<int>(DataType::F32) }, DataType::F32);
     store(inst.opr.dest, result, 0b1111);
 
     return true;
