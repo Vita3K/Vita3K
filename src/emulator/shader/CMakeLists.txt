@@ -12,6 +12,7 @@ add_library(
 	include/shader/usse_translator.h
 	include/shader/usse_translator_entry.h
 	include/shader/usse_translator_types.h
+	include/shader/usse_utilities.h
 	include/shader/spirv_recompiler.h
 
 	src/translator/alu.cpp
@@ -24,6 +25,7 @@ add_library(
 	src/usse_program_analyzer.cpp
 	src/usse_decode_helpers.cpp
 	src/usse_translator_entry.cpp
+	src/usse_utilities.cpp
 	src/spirv_recompiler.cpp
 )
 

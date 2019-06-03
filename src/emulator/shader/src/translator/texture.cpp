@@ -34,10 +34,10 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     if (dest_type == DataType::F16) {
         // Pack them
         spv::Id pack1 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { image_sample, image_sample, 0, 1 });
-        pack1 = pack_one(pack1, DataType::F16);
+        pack1 = utils::pack_one(m_b, m_util_funcs, pack1, DataType::F16);
 
         spv::Id pack2 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { image_sample, image_sample, 2, 3 });
-        pack2 = pack_one(pack2, DataType::F16);
+        pack2 = utils::pack_one(m_b, m_util_funcs, pack2, DataType::F16);
 
         image_sample = m_b.createCompositeConstruct(type_f32_v[2], { pack1, pack2 });
     }
@@ -46,8 +46,17 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
 }
 
 void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries) {
+    Operand store_op;
+    store_op.bank = RegisterBank::PRIMATTR;
+    store_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    store_op.type = DataType::F32;
+
     for (auto &texture_query : texture_queries) {
-        m_b.createStore(do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(texture_query.store_type)), texture_query.dest);
+        const Imm4 dest_mask = (texture_query.store_type == (int)DataType::F16) ? 0b11 : 0b1111;
+        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(texture_query.store_type));
+
+        store_op.num = texture_query.dest_offset;
+        store(store_op, fetch_result, dest_mask);
     }
 }
 
@@ -89,7 +98,7 @@ bool USSETranslatorVisitor::smp(
     };
 
     // Decode dest
-    Instruction inst{};
+    Instruction inst;
     inst.opr.dest.bank = (dest_use_pa) ? RegisterBank::PRIMATTR : RegisterBank::TEMP;
     inst.opr.dest.num = dest_n;
     inst.opr.dest.type = tb_dest_fmt[fconv_type];
@@ -116,22 +125,15 @@ bool USSETranslatorVisitor::smp(
     // Load the coord
     const spv::Id coord = load(inst.opr.src0, 0b0011);
 
-    // Try to get the sampler
-    auto sampler_bank = get_reg_bank(inst.opr.src1.bank);
-
-    if (!sampler_bank) {
-        LOG_ERROR("Can't get the sampler (sampler bank doesn't exist!)");
-        return true;
-    }
-
-    usse::SpirvReg sampler;
-    std::uint32_t temp_comp = 0;
-    if (!sampler_bank->find_reg_at(inst.opr.src1.num, sampler, temp_comp) || temp_comp != 0) {
+    spv::Id sampler = spv::NoResult;
+    if (m_spirv_params.samplers.count(inst.opr.src1.num)) {
+        sampler = m_spirv_params.samplers.at(inst.opr.src1.num);
+    } else {
         LOG_ERROR("Can't get the sampler (sampler doesn't exist!)");
         return true;
     }
 
-    spv::Id result = do_fetch_texture(sampler.var_id, coord, inst.opr.dest.type);
+    spv::Id result = do_fetch_texture(sampler, coord, DataType::F32);
     store(inst.opr.dest, result, 0b1111);
 
     return true;

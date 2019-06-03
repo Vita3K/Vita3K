@@ -63,6 +63,7 @@ to get all submodules.
 3. `gen-linux.sh`
 4. `cd build-linux`
 5. `make`, or `make -jN` where "N" is the amount of cores in your system.
+##### Note: If Unicorn can't find Python, use `make UNICORN_QEMU_FLAGS="--python=/usr/bin/python2"` or similar to point it to your installation. `make` works after you do this once.
 
 ## Running
 Specify the path to a .vpk file as the first command line argument, or run `Vita3K --help` from the command-line for a full list of options.

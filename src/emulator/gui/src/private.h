@@ -45,6 +45,7 @@ void draw_condvars_dialog(HostState &host);
 void draw_event_flags_dialog(HostState &host);
 void draw_allocations_dialog(HostState &host);
 void draw_disassembly_dialog(HostState &host);
+void draw_shader_editor_dialog(HostState &host);
 void draw_settings_dialog(HostState &host);
 void draw_controls_dialog(HostState &host);
 void draw_about_dialog(HostState &host);

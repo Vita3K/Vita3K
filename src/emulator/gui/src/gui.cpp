@@ -35,6 +35,7 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 
 namespace gui {
 
@@ -114,13 +115,13 @@ static GLuint load_texture(int32_t width, int32_t height, const unsigned char *d
     return texture;
 }
 
-static void init_font(State &gui) {
-    const auto DATA_PATH = "data";
-    const auto FONT_PATH = "fonts";
+static void init_font(HostState &host) {
+    const auto DATA_DIRNAME = "data";
+    const auto FONT_DIRNAME = "fonts";
     const auto FONT_FILENAME = "mplus-1mn-bold.ttf";
 
     // set up font paths
-    fs::path font_dir = fs::path(DATA_PATH) /= FONT_PATH;
+    fs::path font_dir = fs::path(host.base_path) /= fs::path(DATA_DIRNAME) /= FONT_DIRNAME;
     fs::path font_path(fs::absolute(font_dir /= FONT_FILENAME));
 
     // check existence of font file
@@ -131,15 +132,15 @@ static void init_font(State &gui) {
 
     // read font
     const auto font_file_size = fs::file_size(font_path);
-    gui.font_data.resize(font_file_size);
+    host.gui.font_data.resize(font_file_size);
     std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
-    font_stream.read(gui.font_data.data(), font_file_size);
+    font_stream.read(host.gui.font_data.data(), font_file_size);
 
     // add it to imgui
     ImGuiIO &io = ImGui::GetIO();
     ImFontConfig font_config{};
-    gui.monospaced_font = io.Fonts->AddFontDefault();
-    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
+    host.gui.monospaced_font = io.Fonts->AddFontDefault();
+    host.gui.normal_font = io.Fonts->AddFontFromMemoryTTF(host.gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
 void init_background(HostState &host, const std::string &image_path) {
@@ -225,7 +226,7 @@ void init(HostState &host) {
     ImGui_ImplSdlGL3_Init(host.window.get());
 
     init_style();
-    init_font(host.gui);
+    init_font(host);
     init_icons(host);
     if (!host.cfg.background_image.empty())
         init_background(host, host.cfg.background_image);
@@ -251,46 +252,52 @@ void draw_ui(HostState &host) {
     draw_main_menu_bar(host);
 
     ImGui::PushFont(host.gui.monospaced_font);
-    if (host.gui.debug_menu.threads_dialog) {
+
+    if (host.gui.debug_menu.threads_dialog)
         draw_threads_dialog(host);
-    }
-    if (host.gui.debug_menu.thread_details_dialog) {
+    if (host.gui.debug_menu.thread_details_dialog)
         draw_thread_details_dialog(host);
-    }
-    if (host.gui.debug_menu.semaphores_dialog) {
+    if (host.gui.debug_menu.semaphores_dialog)
         draw_semaphores_dialog(host);
-    }
-    if (host.gui.debug_menu.mutexes_dialog) {
+    if (host.gui.debug_menu.mutexes_dialog)
         draw_mutexes_dialog(host);
-    }
-    if (host.gui.debug_menu.lwmutexes_dialog) {
+    if (host.gui.debug_menu.lwmutexes_dialog)
         draw_lw_mutexes_dialog(host);
-    }
-    if (host.gui.debug_menu.condvars_dialog) {
+    if (host.gui.debug_menu.condvars_dialog)
         draw_condvars_dialog(host);
-    }
-    if (host.gui.debug_menu.lwcondvars_dialog) {
+    if (host.gui.debug_menu.lwcondvars_dialog)
         draw_lw_condvars_dialog(host);
-    }
-    if (host.gui.debug_menu.eventflags_dialog) {
+    if (host.gui.debug_menu.eventflags_dialog)
         draw_event_flags_dialog(host);
-    }
-    if (host.gui.debug_menu.allocations_dialog) {
+    if (host.gui.debug_menu.allocations_dialog)
         draw_allocations_dialog(host);
-    }
-    if (host.gui.debug_menu.disassembly_dialog) {
+    if (host.gui.debug_menu.disassembly_dialog)
         draw_disassembly_dialog(host);
-    }
-    if (host.gui.configuration_menu.settings_dialog) {
+    if (host.gui.debug_menu.shader_editor_dialog)
+        draw_shader_editor_dialog(host);
+
+    if (host.gui.configuration_menu.settings_dialog)
         draw_settings_dialog(host);
-    }
-    if (host.gui.help_menu.controls_dialog) {
+
+    if (host.gui.help_menu.controls_dialog)
         draw_controls_dialog(host);
-    }
-    if (host.gui.help_menu.about_dialog) {
+    if (host.gui.help_menu.about_dialog)
         draw_about_dialog(host);
-    }
+
     ImGui::PopFont();
 }
 
 } // namespace gui
+
+namespace ImGui {
+
+bool vector_getter(void *vec, int idx, const char **out_text) {
+    auto &vector = *static_cast<std::vector<std::string> *>(vec);
+    if (idx < 0 || idx >= static_cast<int>(vector.size())) {
+        return false;
+    }
+    *out_text = vector.at(idx).c_str();
+    return true;
+}
+
+} // namespace ImGui

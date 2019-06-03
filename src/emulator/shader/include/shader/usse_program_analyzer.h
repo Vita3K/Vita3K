@@ -23,18 +23,20 @@
 
 namespace shader::usse {
 /**
-     * \brief Check if an instruction is a branch.
-     * 
-     * If the instruction is a branch, the passed references will be set
-     * with the predicate and branch offset.
-     * 
-     * \param inst   Instruction.
-     * \param pred   Reference to the value which will contains predicate.
-     * \param br_off Reference to the value which will contains branch offset.
-     * 
-     * \returns True on instruction being a branch.
-     */
+ * \brief Check if an instruction is a branch.
+ * 
+ * If the instruction is a branch, the passed references will be set
+ * with the predicate and branch offset.
+ * 
+ * \param inst   Instruction.
+ * \param pred   Reference to the value which will contains predicate.
+ * \param br_off Reference to the value which will contains branch offset.
+ * 
+ * \returns True on instruction being a branch.
+ */
 bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off);
+bool is_cmov(const std::uint64_t inst);
+bool does_write_to_predicate(const std::uint64_t inst, std::uint8_t &pred);
 std::uint8_t get_predicate(const std::uint64_t inst);
 
 struct USSEBlock {
@@ -97,6 +99,10 @@ void analyze(USSEOffset end_offset, F read_func, H handler_func) {
             if (is_branch(inst, pred, br_off)) {
                 add_block(baddr + br_off);
 
+                if (block->offset == baddr) {
+                    block->pred = 0;
+                }
+
                 // No need to specify link offset. The translator will do it for us once it met BR.
                 block->size = baddr - block->offset + 1;
                 should_stop = true;
@@ -104,13 +110,34 @@ void analyze(USSEOffset end_offset, F read_func, H handler_func) {
                 if (pred != 0) {
                     add_block(baddr + 1);
                 }
+            } else if (is_cmov(inst)) {
+                add_block(baddr + 1);
+                block->size = baddr - block->offset + 1;
+
+                should_stop = true;
             } else {
-                // Predicate exists, stop here
+                bool is_predicate_invalidated = false;
+
+                std::uint8_t predicate_writed_to = 0;
+                if (does_write_to_predicate(inst, predicate_writed_to)) {
+                    is_predicate_invalidated = ((predicate_writed_to + 1) == block->pred) || ((predicate_writed_to + 5) == block->pred);
+                }
+
+                // Either if the instruction has different predicate with the block,
+                // or the predicate value is being invalidated (overwritten)
+                // which means continuing is obselete. Stop now
                 if (pred != block->pred) {
                     add_block(baddr);
 
                     block->size = baddr - block->offset;
                     block->offset_link = baddr;
+
+                    should_stop = true;
+                } else if (is_predicate_invalidated) {
+                    add_block(baddr + 1);
+
+                    block->size = baddr - block->offset + 1;
+                    block->offset_link = baddr + 1;
 
                     should_stop = true;
                 }

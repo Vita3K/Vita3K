@@ -68,7 +68,7 @@ static void double_reg(Imm6 &reg, RegisterBank reg_bank) {
 
 static RegisterBank decode_dest_bank(Imm2 dest_bank, bool bank_ext) {
     if (dest_bank == 3)
-        return RegisterBank::INDEXED;
+        return RegisterBank::INDEXED1;
     else
         // TODO: Index stuff
         if (bank_ext)
@@ -76,13 +76,14 @@ static RegisterBank decode_dest_bank(Imm2 dest_bank, bool bank_ext) {
         case 0: return RegisterBank::SECATTR;
         case 1: return RegisterBank::SPECIAL;
         case 2: return RegisterBank::INDEX;
-        case 3: return RegisterBank::FPINTERNAL;
+        case 3: return RegisterBank::INDEXED2;
         }
     else
         switch (dest_bank) {
         case 0: return RegisterBank::TEMP;
         case 1: return RegisterBank::OUTPUT;
         case 2: return RegisterBank::PRIMATTR;
+        case 3: return RegisterBank::INDEXED1;
         }
     LOG_ERROR("Invalid dest_bank");
     return RegisterBank::INVALID;
@@ -107,8 +108,10 @@ static RegisterBank decode_src12_bank(Imm2 src12_bank, Imm1 bank_ext) {
     // TODO: Index stuff
     if (bank_ext)
         switch (src12_bank) {
+        case 0: return RegisterBank::INDEXED1;
         case 1: return RegisterBank::SPECIAL;
         case 2: return RegisterBank::IMMEDIATE;
+        case 3: return RegisterBank::INDEXED2;
         }
     else
         switch (src12_bank) {
@@ -268,7 +271,8 @@ static void finalize_register(Operand &reg, bool is_double_regs, uint8_t reg_bit
 
     // In secondary program, data are computed and stored as SA, internal register stay the same.
     // TODO: Constant ?
-    if (reg.bank != RegisterBank::FPINTERNAL && reg.bank != RegisterBank::FPCONSTANT && is_second_program)
+    if (reg.bank != RegisterBank::FPINTERNAL && reg.bank != RegisterBank::FPCONSTANT
+        && reg.bank != RegisterBank::IMMEDIATE && is_second_program)
         reg.bank = RegisterBank::SECATTR;
 }
 

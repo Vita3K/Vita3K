@@ -65,6 +65,7 @@ struct DebugMenuState {
     bool allocations_dialog = false;
     bool memory_editor_dialog = false;
     bool disassembly_dialog = false;
+    bool shader_editor_dialog = false;
 };
 
 struct ConfigurationMenuState {
@@ -85,6 +86,7 @@ struct State {
     GamesSelector game_selector;
 
     MemoryEditor memory_editor;
+    MemoryEditor gxp_shader_editor;
     size_t memory_editor_start = 0;
     size_t memory_editor_count = 0;
 
@@ -93,6 +95,9 @@ struct State {
     char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
 
+    ImGuiTextFilter module_search_bar;
+
+    ImGuiTextFilter game_search_bar;
     GLuint current_background = 0;
     std::map<std::string, GLObject> game_backgrounds;
     std::map<std::string, GLObject> user_backgrounds;

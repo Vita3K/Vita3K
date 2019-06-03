@@ -148,6 +148,10 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
         }
     }
 
+    if (alu_sel == 3) {
+        filled_dt = DataType::UINT32;
+    }
+
     return test_ops[alu_sel][alu_op];
 }
 
@@ -157,10 +161,11 @@ bool USSETranslatorVisitor::vtst(
     Imm1 onceonly,
     Imm1 syncstart,
     Imm1 dest_ext,
-    Imm1 test_flag_2,
+    Imm1 src1_neg,
     Imm1 src1_ext,
     Imm1 src2_ext,
     Imm1 prec,
+    Imm1 src2_vscomp,
     RepeatCount rpt_count,
     Imm2 sign_test,
     Imm2 zero_test,
@@ -186,7 +191,7 @@ bool USSETranslatorVisitor::vtst(
         return false;
     }
 
-    Instruction inst{};
+    Instruction inst;
     inst.opcode = test_op;
 
     const Imm4 tb_decode_load_mask[] = {
@@ -214,7 +219,11 @@ bool USSETranslatorVisitor::vtst(
     inst.opr.src2.type = load_data_type;
 
     inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    inst.opr.src2.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    inst.opr.src2.swizzle = src2_vscomp ? (Swizzle4 SWIZZLE_CHANNEL_4(X, X, X, X)) : (Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT);
+
+    if (src1_neg) {
+        inst.opr.src1.flags |= RegisterFlags::Negative;
+    }
 
     // Load our compares
     spv::Id lhs = spv::NoResult;
@@ -274,7 +283,11 @@ bool USSETranslatorVisitor::vtst(
 
     pred_result = m_b.createOp(used_comp_op, m_b.makeBoolType(), { lhs, rhs });
 
-    set_predicate(pdst_n, pred_result);
+    Operand pred_op{};
+    pred_op.bank = RegisterBank::PREDICATE;
+    pred_op.num = pdst_n;
+
+    store(pred_op, pred_result);
     return true;
 }
 
@@ -288,6 +301,7 @@ bool USSETranslatorVisitor::vtstmsk(
     Imm1 src1_ext,
     Imm1 src2_ext,
     Imm1 prec,
+    Imm1 src2_vscomp,
     RepeatCount rpt_count,
     Imm2 sign_test,
     Imm2 zero_test,
@@ -302,6 +316,7 @@ bool USSETranslatorVisitor::vtstmsk(
     Imm4 alu_op,
     Imm7 src1_n,
     Imm7 src2_n) {
+    LOG_ERROR("VTSTMASK unimplemented!");
     return true;
 }
 
@@ -328,31 +343,41 @@ bool USSETranslatorVisitor::br(
     auto cur_pc = m_recompiler.cur_pc;
 
     LOG_DISASM("{:016x}: {}{} #{}", m_instr, disasm::e_predicate_str(pred), (br_type == 0) ? "BA" : "BR", br_off + cur_pc);
-    spv::Block *br_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[br_off + cur_pc]);
+    spv::Function *br_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[br_off + cur_pc]);
 
     m_b.setLine(m_recompiler.cur_pc);
 
     if (pred == ExtPredicate::NONE) {
-        m_b.createBranch(br_block);
+        m_b.createFunctionCall(br_block, {});
     } else {
         spv::Id pred_v = spv::NoResult;
 
-        if (pred >= ExtPredicate::P0 && pred <= ExtPredicate::P1) {
-            int pred_n = static_cast<int>(pred) - static_cast<int>(ExtPredicate::P0);
-            pred_v = load_predicate(pred_n);
+        Operand pred_opr{};
+        pred_opr.bank = RegisterBank::PREDICATE;
+
+        bool do_neg = false;
+
+        if (pred >= ExtPredicate::P0 && pred <= ExtPredicate::P3) {
+            pred_opr.num = static_cast<int>(pred) - static_cast<int>(ExtPredicate::P0);
         } else if (pred >= ExtPredicate::NEGP0 && pred <= ExtPredicate::NEGP1) {
-            int pred_n = static_cast<int>(pred) - static_cast<int>(ExtPredicate::NEGP0);
-            pred_v = load_predicate(pred_n, true);
+            pred_opr.num = static_cast<int>(pred) - static_cast<int>(ExtPredicate::NEGP0);
+            do_neg = true;
         }
 
-        spv::Block *continous_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);
+        pred_v = load(pred_opr, 0b0001);
 
-        spv::Instruction *select_merge = new spv::Instruction(spv::OpSelectionMerge);
-        select_merge->addIdOperand(continous_block->getId());
-        select_merge->addImmediateOperand(spv::SelectionControlMaskNone);
-        m_b.getBuildPoint()->addInstruction(std::unique_ptr<spv::Instruction>(select_merge));
+        if (do_neg) {
+            std::vector<spv::Id> ops{ pred_v };
+            pred_v = m_b.createOp(spv::OpLogicalNot, m_b.makeBoolType(), ops);
+        }
 
-        m_b.createConditionalBranch(pred_v, br_block, continous_block);
+        spv::Function *continous_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);
+        spv::Builder::If cond_builder(pred_v, spv::SelectionControlMaskNone, m_b);
+
+        m_b.createFunctionCall(br_block, {});
+        cond_builder.makeBeginElse();
+        m_b.createFunctionCall(continous_block, {});
+        cond_builder.makeEndIf();
     }
 
     return true;

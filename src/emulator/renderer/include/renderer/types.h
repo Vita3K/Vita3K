@@ -2,6 +2,7 @@
 
 #include "texture_cache_state.h"
 
+#include <crypto/hash.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 
@@ -15,12 +16,18 @@
 typedef void *SDL_GLContext;
 
 namespace renderer {
+
 typedef std::map<GLuint, std::string> AttributeLocations;
 typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 typedef std::tuple<std::string, std::string> ProgramGLSLs;
 typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
 typedef std::vector<std::string> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
 typedef std::map<GLuint, GLenum> UniformTypes;
+
+// State types
+typedef std::map<Sha256Hash, std::string> GLSLCache;
+typedef std::pair<Sha256Hash, std::string> GLSLCacheEntry;
+typedef std::map<Sha256Hash, const SceGxmProgram *> GXPPtrMap;
 
 struct Context {
     GLContextPtr gl;
