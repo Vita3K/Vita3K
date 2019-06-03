@@ -16,7 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "private.h"
-#include <config.h>
+
+#include <app/config.h>
 #include <gui/functions.h>
 #include <gui/state.h>
 

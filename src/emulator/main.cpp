@@ -15,10 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "app.h"
-#include "config.h"
-#include "screen_render.h"
-
+#include <app/app.h>
+#include <app/config.h>
+#include <app/screen_render.h>
 #include <gui/functions.h>
 #include <host/state.h>
 #include <host/version.h>

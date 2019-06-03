@@ -49,6 +49,7 @@ if (USE_GDBSTUB)
 	add_definitions(-DUSE_GDBSTUB)
 endif()
 
+add_subdirectory(app)
 add_subdirectory(audio)
 add_subdirectory(cpu)
 add_subdirectory(crypto)
@@ -74,23 +75,9 @@ add_subdirectory(util)
 add_subdirectory(threads)
 add_subdirectory(gui)
 
-add_executable(
-emulator
-MACOSX_BUNDLE
-app.cpp
-app.h
-config.cpp
-config.h
-init.cpp
-main.cpp
-performance.cpp
-screen_render.cpp
-screen_render.h
-sfo.cpp
-sfo.h
-)
+add_executable(emulator MACOSX_BUNDLE main.cpp performance.cpp)
 
-target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio gdbstub glbinding-aux glutil gui host shader imgui modules nids util vita-toolchain yaml-cpp)
+target_link_libraries(emulator PRIVATE app gui host sdl2 shader util)
 if(LINUX)
 	target_link_libraries(emulator PRIVATE stdc++fs)
 endif()
