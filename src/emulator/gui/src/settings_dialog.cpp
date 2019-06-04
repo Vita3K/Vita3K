@@ -260,6 +260,10 @@ void draw_settings_dialog(HostState &host) {
         ImGui::Checkbox("Log Uniforms", &host.cfg.log_uniforms);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shader uniform names and values.");
+        ImGui::Spacing();
+        ImGui::Checkbox("Sync Render", &host.cfg.sync_rendering);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Synchronize host rendering to guest (GXM) rendering.\nUsed for debugging (so that graphics debuggers pick up GXM OpenGL calls)");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();
