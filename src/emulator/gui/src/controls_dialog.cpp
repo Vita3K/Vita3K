@@ -25,7 +25,7 @@ namespace gui {
 
 void draw_controls_dialog(HostState &host) {
     float width = ImGui::GetWindowWidth() / 1.35f;
-    float height = ImGui::GetWindowHeight() / 1.35f;
+    float height = ImGui::GetWindowHeight() / 1.25f;
     ImGui::SetNextWindowSize(ImVec2(width, height));
     ImGui::SetNextWindowPosCenter();
     ImGui::Begin("Controls", &host.gui.help_menu.controls_dialog);
@@ -51,6 +51,7 @@ void draw_controls_dialog(HostState &host) {
     ImGui::Text("%-16s    %-16s", "Triangle button", "V");
     ImGui::Text("%-16s    %-16s", "Start button", "Enter");
     ImGui::Text("%-16s    %-16s", "Select button", "Right shift");
+    ImGui::Text("%-16s    %-16s", "Toggle Touch", "T");
 
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s", "GUI");
     ImGui::Text("%-16s    %-16s", "Toggle GUI visibility", "G");

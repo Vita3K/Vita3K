@@ -31,6 +31,7 @@
 #include <kernel/load_self.h>
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
+#include <modules/SceTouch/SceTouch.h>
 #include <util/find.h>
 #include <util/fs.h>
 #include <util/log.h>
@@ -84,9 +85,24 @@ bool handle_events(HostState &host) {
                 while (!display.imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
                 }
             }
+            if (event.key.keysym.sym == SDLK_t) {
+                toggle_touchscreen();
+            }
 
         case SDL_WINDOWEVENT:
             handle_window_event(host, event.window);
+            break;
+
+        case SDL_FINGERDOWN:
+            handle_touch_event(event.tfinger);
+            break;
+
+        case SDL_FINGERMOTION:
+            handle_touch_event(event.tfinger);
+            break;
+
+        case SDL_FINGERUP:
+            handle_touch_event(event.tfinger);
             break;
         }
     }
