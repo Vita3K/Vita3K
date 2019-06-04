@@ -21,6 +21,19 @@
 
 #include <psp2/display.h>
 
+static int display_wait(HostState &host) {
+    if (!host.cfg.sync_rendering) {
+        std::unique_lock<std::mutex> lock(host.display.mutex);
+        host.display.condvar.wait(lock);
+    } else
+        host.display.condvar.notify_all();
+
+    if (host.display.abort.load())
+        return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
+
+    return SCE_DISPLAY_ERROR_OK;
+}
+
 EXPORT(int, _sceDisplayGetFrameBuf) {
     return UNIMPLEMENTED();
 }
@@ -77,53 +90,49 @@ EXPORT(int, sceDisplayUnregisterVblankStartCallback) {
 EXPORT(int, sceDisplayWaitSetFrameBuf) {
     STUBBED("move after setframebuf");
 
-    if (!host.display.sync_rendering) {
-        std::unique_lock<std::mutex> lock(host.display.mutex);
-        host.display.condvar.wait(lock);
-    } else
-        host.display.condvar.notify_all();
-
-    if (host.display.abort.load())
-        return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
-
-    return SCE_DISPLAY_ERROR_OK;
+    return display_wait(host);
 }
 
 EXPORT(int, sceDisplayWaitSetFrameBufCB) {
-    return UNIMPLEMENTED();
+    STUBBED("move after setframebuf");
+
+    return display_wait(host);
 }
 
 EXPORT(int, sceDisplayWaitSetFrameBufMulti) {
-    return UNIMPLEMENTED();
+    STUBBED("move after setframebuf");
+
+    return display_wait(host);
 }
 
 EXPORT(int, sceDisplayWaitSetFrameBufMultiCB) {
-    return UNIMPLEMENTED();
+    STUBBED("move after setframebuf");
+
+    return display_wait(host);
 }
 
 EXPORT(int, sceDisplayWaitVblankStart) {
-    if (!host.display.sync_rendering) {
-        std::unique_lock<std::mutex> lock(host.display.mutex);
-        host.display.condvar.wait(lock);
-    } else
-        host.display.condvar.notify_all();
+    STUBBED("wait for vblank");
 
-    if (host.display.abort.load())
-        return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
-
-    return SCE_DISPLAY_ERROR_OK;
+    return display_wait(host);
 }
 
 EXPORT(int, sceDisplayWaitVblankStartCB) {
-    return UNIMPLEMENTED();
+    STUBBED("wait for vblank");
+
+    return display_wait(host);
 }
 
 EXPORT(int, sceDisplayWaitVblankStartMulti) {
-    return UNIMPLEMENTED();
+    STUBBED("wait for vblank");
+
+    return display_wait(host);
 }
 
 EXPORT(int, sceDisplayWaitVblankStartMultiCB) {
-    return UNIMPLEMENTED();
+    STUBBED("wait for vblank");
+
+    return display_wait(host);
 }
 
 BRIDGE_IMPL(_sceDisplayGetFrameBuf)
