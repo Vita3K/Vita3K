@@ -29,6 +29,24 @@ void uniform_4<GLuint>(GLint location, GLsizei count, const GLuint *value) {
 }
 
 template <class T>
+static void uniform_3(GLint location, GLsizei count, const T *value);
+
+template <>
+void uniform_3<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
+    glUniform3fv(location, count, value);
+}
+
+template <>
+void uniform_3<GLint>(GLint location, GLsizei count, const GLint *value) {
+    glUniform3iv(location, count, value);
+}
+
+template <>
+void uniform_3<GLuint>(GLint location, GLsizei count, const GLuint *value) {
+    glUniform3uiv(location, count, value);
+}
+
+template <class T>
 static void uniform_2(GLint location, GLsizei count, const T *value);
 
 template <>
@@ -117,6 +135,16 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
             uniform_2<T>(location, array_size, value);
             break;
         }
+        break;
+    }
+
+    case 3: {
+        switch (array_size) {
+        case 1:
+            uniform_3<T>(location, array_size, value);
+            break;
+        }
+
         break;
     }
 
@@ -209,8 +237,6 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             const GLuint *src_u32;
 
             const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
-            int type_size = gxp::get_parameter_type_size(type);
-            int num_comp = gxp::get_num_32_bit_components(type, parameter.component_count);
 
             // The resource index points to SA bank. Each SA register is 4 bytes. Therefore, multiple the index with 4
             // and adding with the base, to get the data.
@@ -219,24 +245,22 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             case SCE_GXM_PARAMETER_TYPE_S16:
             case SCE_GXM_PARAMETER_TYPE_S8:
                 src_s32 = reinterpret_cast<const GLint *>(base + idx * 4);
-                set_uniform<GLint>(location, num_comp, arr_size, src_s32, name,
-                    is_matrix, log_uniforms);
+                set_uniform<GLint>(location, parameter.component_count, arr_size, src_s32, name, is_matrix, log_uniforms);
                 break;
 
             case SCE_GXM_PARAMETER_TYPE_U32:
             case SCE_GXM_PARAMETER_TYPE_U16:
             case SCE_GXM_PARAMETER_TYPE_U8:
                 src_u32 = reinterpret_cast<const GLuint *>(base + idx * 4);
-                set_uniform<GLuint>(location, num_comp, arr_size, src_u32, name, 
-                    is_matrix, log_uniforms);
+                set_uniform<GLuint>(location, parameter.component_count, arr_size, src_u32, name, is_matrix, log_uniforms);
                 break;
 
             case SCE_GXM_PARAMETER_TYPE_F32:
             case SCE_GXM_PARAMETER_TYPE_F16:
                 src_f32 = reinterpret_cast<const GLfloat *>(base + idx * 4);
-                set_uniform<GLfloat>(location, num_comp, arr_size, src_f32, name,
-                    is_matrix, log_uniforms);
+                set_uniform<GLfloat>(location, parameter.component_count, arr_size, src_f32, name, is_matrix, log_uniforms);
                 break;
+            
             default:
                 LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
                 break;

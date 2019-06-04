@@ -111,14 +111,20 @@ static spv::Id get_type_basic(spv::Builder &b, const SceGxmProgramParameter &par
 
     switch (type) {
     // clang-format off
-    case SCE_GXM_PARAMETER_TYPE_F16: return b.makeFloatType(32); // TODO: support f16
-    case SCE_GXM_PARAMETER_TYPE_F32: return b.makeFloatType(32);
-    case SCE_GXM_PARAMETER_TYPE_U8: return b.makeUintType(8);
-    case SCE_GXM_PARAMETER_TYPE_U16: return b.makeUintType(16);
-    case SCE_GXM_PARAMETER_TYPE_U32: return b.makeUintType(32);
-    case SCE_GXM_PARAMETER_TYPE_S8: return b.makeIntType(8);
-    case SCE_GXM_PARAMETER_TYPE_S16: return b.makeIntType(16);
-    case SCE_GXM_PARAMETER_TYPE_S32: return b.makeIntType(32);
+    case SCE_GXM_PARAMETER_TYPE_F16:
+    case SCE_GXM_PARAMETER_TYPE_F32:
+         return b.makeFloatType(32);
+
+    case SCE_GXM_PARAMETER_TYPE_U8:
+    case SCE_GXM_PARAMETER_TYPE_U16:
+    case SCE_GXM_PARAMETER_TYPE_U32:
+        return b.makeUintType(32);
+
+    case SCE_GXM_PARAMETER_TYPE_S8:
+    case SCE_GXM_PARAMETER_TYPE_S16:
+    case SCE_GXM_PARAMETER_TYPE_S32:
+        return b.makeIntType(32);
+
     // clang-format on
     default: {
         LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(type));
@@ -139,8 +145,7 @@ static spv::Id get_type_scalar(spv::Builder &b, const SceGxmProgramParameter &pa
 
 static spv::Id get_type_vector(spv::Builder &b, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(b, parameter);
-    param_id = b.makeVectorType(param_id, gxp::get_num_32_bit_components(static_cast<SceGxmParameterType>(
-        (uint16_t)(parameter.type)), parameter.component_count));
+    param_id = b.makeVectorType(param_id, parameter.component_count);
 
     return param_id;
 }
@@ -148,8 +153,7 @@ static spv::Id get_type_vector(spv::Builder &b, const SceGxmProgramParameter &pa
 static spv::Id get_type_array(spv::Builder &b, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(b, parameter);
     if (parameter.component_count > 1) {
-        param_id = b.makeVectorType(param_id, gxp::get_num_32_bit_components(static_cast<SceGxmParameterType>(
-        (uint16_t)(parameter.type)), parameter.component_count));
+        param_id = b.makeVectorType(param_id, parameter.component_count);
     }
 
     // TODO: Stride
@@ -214,7 +218,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParamete
 }
 
 static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
-    std::uint32_t total_var_comp = static_cast<std::uint32_t>((size + 3) * get_data_type_size(dtype) / 16);
+    std::uint32_t total_var_comp = size / 4;
     spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
 
     Operand dest;
@@ -460,7 +464,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             coords[query_info.coord_index].first = b.createVariable(spv::StorageClassInput,
                 b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ 4), coord_name.c_str());
 
-            coords[query_info.coord_index].second = query_info.store_type;
+            coords[query_info.coord_index].second = static_cast<int>(DataType::F32);
         }
 
         query_info.coord = coords[query_info.coord_index];
@@ -592,40 +596,48 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             }
 
             auto param_type_name = "float";
+            DataType store_type = DataType::F32;
 
             switch (parameter.type) {
             case SCE_GXM_PARAMETER_TYPE_F16: {
                 param_type_name = "half";
+                store_type = DataType::F16;
                 break;
             }
 
             case SCE_GXM_PARAMETER_TYPE_U16: {
-                param_type_name = "uhalf";
+                param_type_name = "ushort";
+                store_type = DataType::UINT16;
                 break;
             }
             
             case SCE_GXM_PARAMETER_TYPE_S16: {
-                param_type_name = "ihalf";
+                param_type_name = "ishort";
+                store_type = DataType::INT16;
                 break;
             }
 
             case SCE_GXM_PARAMETER_TYPE_U8: {
                 param_type_name = "uchar";
+                store_type = DataType::UINT8;
                 break;
             }
             
             case SCE_GXM_PARAMETER_TYPE_S8: {
                 param_type_name = "ichar";
+                store_type = DataType::INT8;
                 break;
             }
 
             case SCE_GXM_PARAMETER_TYPE_U32: {
                 param_type_name = "uint";
+                store_type = DataType::UINT32;
                 break;
             }
             
             case SCE_GXM_PARAMETER_TYPE_S32: {
                 param_type_name = "int";
+                store_type = DataType::INT32;
                 break;
             }
 
@@ -646,7 +658,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             
             int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
             create_input_variable(b, spv_params, utils, var_name.c_str(), param_reg_type, offset, param_type,
-                parameter.array_size * parameter.component_count * type_size);
+                parameter.array_size * parameter.component_count * 4, 0, store_type);
 
             break;
         }
