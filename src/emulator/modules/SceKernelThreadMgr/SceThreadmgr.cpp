@@ -479,32 +479,31 @@ EXPORT(int, sceKernelCreateThreadForUser) {
     return UNIMPLEMENTED();
 }
 
-int delay_thread(SceUInt delay) {
-#ifdef _WIN32
-    Sleep(delay / 1000);
-#else
-    usleep(delay);
-#endif
+int delay_thread(SceUInt delay_us) {
+    if (delay_us == 0)
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+
+    std::this_thread::sleep_for(std::chrono::microseconds(delay_us));
+
     return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelDelayThread, SceUInt delay) {
-    STUBBED("bad accuracy");
     return delay_thread(delay);
 }
 
 EXPORT(int, sceKernelDelayThread200, SceUInt delay) {
-    STUBBED("bad accuracy, untested");
+    STUBBED("untested");
     return delay_thread(delay);
 }
 
 EXPORT(int, sceKernelDelayThreadCB, SceUInt delay) {
-    STUBBED("no CB, bad accuracy");
+    STUBBED("no CB");
     return delay_thread(delay);
 }
 
 EXPORT(int, sceKernelDelayThreadCB200, SceUInt delay) {
-    STUBBED("no CB, bad accuracy, untested");
+    STUBBED("no CB, untested");
     return delay_thread(delay);
 }
 
