@@ -108,7 +108,7 @@ static SysmodulePaths init_sysmodule_paths() {
     p[SCE_SYSMODULE_MUSIC_EXPORT] = { "libSceMusicExport" };
     p[SCE_SYSMODULE_NEAR_DIALOG_UTIL] = { "libSceNearDialogUtil" };
     p[SCE_SYSMODULE_LOCATION_EXTENSION] = { "liblocation_extension" };
-    p[SCE_SYSMODULE_AVPLAYER] = { "libsceavplayer" };
+    p[SCE_SYSMODULE_AVPLAYER] = { "libsceavplayer", "libscemp4" };
     p[SCE_SYSMODULE_MAIL_API] = { "mail_api_for_local_libc" };
     p[SCE_SYSMODULE_TELEPORT_CLIENT] = { "libSceTeleportClient" };
     p[SCE_SYSMODULE_TELEPORT_SERVER] = { "libSceTeleportServer" };
