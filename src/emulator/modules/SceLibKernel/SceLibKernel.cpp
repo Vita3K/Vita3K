@@ -128,8 +128,9 @@ EXPORT(int, sceClibMemsetChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMspaceCalloc) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMspaceCalloc, Ptr<void> space, uint32_t elements, uint32_t size) {
+    void *address = mspace_calloc(space.get(host.mem), elements, size);
+    return Ptr<void>(address, host.mem);
 }
 
 EXPORT(Ptr<void>, sceClibMspaceCreate, Ptr<void> base, uint32_t capacity) {
@@ -137,12 +138,12 @@ EXPORT(Ptr<void>, sceClibMspaceCreate, Ptr<void> base, uint32_t capacity) {
     return Ptr<void>(space, host.mem);
 }
 
-EXPORT(int, sceClibMspaceDestroy) {
-    return UNIMPLEMENTED();
+EXPORT(uint32_t, sceClibMspaceDestroy, Ptr<void> space) {
+    return destroy_mspace(space.get(host.mem));
 }
 
-EXPORT(int, sceClibMspaceFree) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceClibMspaceFree, Ptr<void> space, Ptr<void> address) {
+    mspace_free(space.get(host.mem), address.get(host.mem));
 }
 
 EXPORT(int, sceClibMspaceIsHeapEmpty) {
@@ -166,12 +167,14 @@ EXPORT(int, sceClibMspaceMallocUsableSize) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMspaceMemalign) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMspaceMemalign, Ptr<void> space, uint32_t alignment, uint32_t size) {
+    void *address = mspace_memalign(space.get(host.mem), alignment, size);
+    return Ptr<void>(address, host.mem);
 }
 
-EXPORT(int, sceClibMspaceRealloc) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMspaceRealloc, Ptr<void> space, Ptr<void> address, uint32_t size) {
+    void *new_address = mspace_realloc(space.get(host.mem), address.get(host.mem), size);
+    return Ptr<void>(new_address, host.mem);
 }
 
 EXPORT(int, sceClibMspaceReallocalign) {
