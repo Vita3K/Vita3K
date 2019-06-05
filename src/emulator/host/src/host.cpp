@@ -24,7 +24,8 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-static
+#include <unordered_set>
+
 #ifdef NDEBUG // Leave it as non-constexpr on Debug so that we can enable/disable it at will via set_log_import_calls
     constexpr
 #endif
@@ -64,6 +65,13 @@ static Address resolve_export(KernelState &kernel, uint32_t nid) {
     return export_address->second;
 }
 
+static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist) {
+    if (nid_blacklist.find(nid) == nid_blacklist.end()) {
+        const char *const name = import_name(nid);
+        LOG_TRACE("[{}LE] TID: {:<3} FUNC: {} {}", emulation_level, thread_id, log_hex(nid), name);
+    }
+}
+
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id) {
     Address export_pc = resolve_export(host.kernel, nid);
 
@@ -71,8 +79,13 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         // HLE - call our C++ function
 
         if (LOG_IMPORT_CALLS) {
-            const char *const name = import_name(nid);
-            LOG_TRACE("THREAD_ID {} NID {} ({}) called", thread_id, log_hex(nid), name);
+            const std::unordered_set<uint32_t> hle_nid_blacklist = {
+                0xB295EB61, // sceKernelGetTLSAddr
+                0x46E7BE7B, // sceKernelLockLwMutex
+                0x91FA6614, // sceKernelUnlockLwMutex
+            };
+
+            log_import_call('H', nid, thread_id, hle_nid_blacklist);
         }
         const ImportFn fn = resolve_import(nid);
         if (fn) {
@@ -88,8 +101,9 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         // LLE - directly run ARM code imported from some loaded module
 
         if (LOG_IMPORT_CALLS) {
-            const char *const name = import_name(nid);
-            LOG_TRACE("THREAD_ID {} EXPORTED NID {} at {} ({})) called", thread_id, log_hex(nid), log_hex(export_pc), name);
+            const std::unordered_set<uint32_t> lle_nid_blacklist = {};
+
+            log_import_call('L', nid, thread_id, lle_nid_blacklist);
         }
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
