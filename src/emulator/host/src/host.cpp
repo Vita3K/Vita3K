@@ -24,7 +24,13 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-static bool LOG_IMPORT_CALLS = false;
+static
+#ifdef NDEBUG // Leave it as non-constexpr on Debug so that we can enable/disable it at will via set_log_import_calls
+    constexpr
+#endif
+    bool LOG_IMPORT_CALLS
+    = false;
+
 static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
 #define NID(name, nid) extern const ImportFn import_##name;
@@ -91,6 +97,9 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
     }
 }
 
-void log_import_calls(bool enabled) {
+#ifndef NDEBUG
+// Import logging is really slow and this allows us to enable/disable it from whenever we please, for easy in debugging
+void set_log_import_calls(bool enabled) {
     LOG_IMPORT_CALLS = enabled;
 }
+#endif
