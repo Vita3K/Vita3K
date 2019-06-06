@@ -352,7 +352,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
             const auto pa_iter_size = ((descriptor->size >> 4) & 3) + 1;
             const auto pa_iter_var = create_input_variable(b, parameters, utils, pa_name.c_str(), RegisterBank::PRIMATTR,
-                pa_offset, pa_iter_type, pa_iter_size * 4);
+                pa_offset, pa_iter_type, num_comp * 4, spv::NoResult, pa_dtype);
 
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
