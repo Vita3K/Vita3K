@@ -1368,6 +1368,10 @@ EXPORT(int, sceKernelUnlockLwMutex, Ptr<emu::SceKernelLwMutexWork> workarea, int
     return mutex_unlock(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
 
+EXPORT(int, sceKernelUnlockLwMutex2, Ptr<emu::SceKernelLwMutexWork> workarea, int unlock_count) {
+    const auto lwmutexid = workarea.get(host.mem)->uid;
+    return mutex_unlock(host.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
+}
 
 EXPORT(int, sceKernelWaitCond, SceUID cond_id, SceUInt32 *timeout) {
     return condvar_wait(host.kernel, export_name, thread_id, cond_id, timeout, SyncWeight::Heavy);
@@ -1768,6 +1772,7 @@ BRIDGE_IMPL(sceKernelTrySendMsgPipe)
 BRIDGE_IMPL(sceKernelTrySendMsgPipeVector)
 BRIDGE_IMPL(sceKernelUnloadModule)
 BRIDGE_IMPL(sceKernelUnlockLwMutex)
+BRIDGE_IMPL(sceKernelUnlockLwMutex2)
 BRIDGE_IMPL(sceKernelWaitCond)
 BRIDGE_IMPL(sceKernelWaitCondCB)
 BRIDGE_IMPL(sceKernelWaitEvent)
