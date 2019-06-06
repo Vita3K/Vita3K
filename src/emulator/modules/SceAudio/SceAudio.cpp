@@ -29,7 +29,7 @@ EXPORT(int, sceAudioOutGetConfig) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudioOutGetRestSample) {
+EXPORT(int, sceAudioOutGetPortVolume_forUser) {
     return UNIMPLEMENTED();
 }
 
@@ -96,7 +96,23 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
     return 0;
 }
 
+EXPORT(int, sceAudioOutGetRestSample) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudioOutOpenExtPort) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceAudioOutReleasePort) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudioOutSetAdoptMode) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudioOutSetAdopt_forUser) {
     return UNIMPLEMENTED();
 }
 
@@ -104,7 +120,19 @@ EXPORT(int, sceAudioOutSetAlcMode) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceAudioOutSetCompress) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceAudioOutSetConfig) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudioOutSetEffectType) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudioOutSetPortVolume_forUser) {
     return UNIMPLEMENTED();
 }
 
@@ -114,10 +142,17 @@ EXPORT(int, sceAudioOutSetVolume) {
 
 BRIDGE_IMPL(sceAudioOutGetAdopt)
 BRIDGE_IMPL(sceAudioOutGetConfig)
+BRIDGE_IMPL(sceAudioOutGetPortVolume_forUser)
 BRIDGE_IMPL(sceAudioOutGetRestSample)
+BRIDGE_IMPL(sceAudioOutOpenExtPort)
 BRIDGE_IMPL(sceAudioOutOpenPort)
 BRIDGE_IMPL(sceAudioOutOutput)
 BRIDGE_IMPL(sceAudioOutReleasePort)
+BRIDGE_IMPL(sceAudioOutSetAdoptMode)
+BRIDGE_IMPL(sceAudioOutSetAdopt_forUser)
 BRIDGE_IMPL(sceAudioOutSetAlcMode)
+BRIDGE_IMPL(sceAudioOutSetCompress)
 BRIDGE_IMPL(sceAudioOutSetConfig)
+BRIDGE_IMPL(sceAudioOutSetEffectType)
+BRIDGE_IMPL(sceAudioOutSetPortVolume_forUser)
 BRIDGE_IMPL(sceAudioOutSetVolume)

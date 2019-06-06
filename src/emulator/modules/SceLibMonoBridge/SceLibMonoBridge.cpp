@@ -49,11 +49,11 @@ EXPORT(int, __modsi3) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, __sce_aeabi_idiv0_dupe) {
+EXPORT(int, __sce_aeabi_idiv1) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, __sce_aeabi_ldiv0_dupe) {
+EXPORT(int, __sce_aeabi_ldiv1) {
     return UNIMPLEMENTED();
 }
 
@@ -721,6 +721,10 @@ EXPORT(int, pss_alloc_raw) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, pss_app_exit_liveboard) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, pss_code_mem_alloc) {
     return UNIMPLEMENTED();
 }
@@ -778,6 +782,10 @@ EXPORT(int, pss_delete_semaphore) {
 }
 
 EXPORT(int, pss_disable_ftz) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, pss_errno_loc) {
     return UNIMPLEMENTED();
 }
 
@@ -1201,8 +1209,8 @@ BRIDGE_IMPL(__divsi3)
 BRIDGE_IMPL(__lshrdi3)
 BRIDGE_IMPL(__moddi3)
 BRIDGE_IMPL(__modsi3)
-BRIDGE_IMPL(__sce_aeabi_idiv0_dupe)
-BRIDGE_IMPL(__sce_aeabi_ldiv0_dupe)
+BRIDGE_IMPL(__sce_aeabi_idiv1)
+BRIDGE_IMPL(__sce_aeabi_ldiv1)
 BRIDGE_IMPL(__udivdi3)
 BRIDGE_IMPL(__udivsi3)
 BRIDGE_IMPL(__umoddi3)
@@ -1369,6 +1377,7 @@ BRIDGE_IMPL(monoeg_try_malloc)
 BRIDGE_IMPL(monoeg_try_realloc)
 BRIDGE_IMPL(pss_alloc_mem)
 BRIDGE_IMPL(pss_alloc_raw)
+BRIDGE_IMPL(pss_app_exit_liveboard)
 BRIDGE_IMPL(pss_code_mem_alloc)
 BRIDGE_IMPL(pss_code_mem_flush_icache)
 BRIDGE_IMPL(pss_code_mem_free)
@@ -1384,6 +1393,7 @@ BRIDGE_IMPL(pss_crypto_read)
 BRIDGE_IMPL(pss_delay_thread)
 BRIDGE_IMPL(pss_delete_semaphore)
 BRIDGE_IMPL(pss_disable_ftz)
+BRIDGE_IMPL(pss_errno_loc)
 BRIDGE_IMPL(pss_free_mem)
 BRIDGE_IMPL(pss_free_prng_provider)
 BRIDGE_IMPL(pss_free_raw)

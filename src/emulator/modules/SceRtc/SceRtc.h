@@ -19,4 +19,20 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(_sceRtcConvertLocalTimeToUtc)
+BRIDGE_DECL(_sceRtcConvertUtcToLocalTime)
+BRIDGE_DECL(_sceRtcFormatRFC2822)
+BRIDGE_DECL(_sceRtcFormatRFC2822LocalTime)
+BRIDGE_DECL(_sceRtcFormatRFC3339)
+BRIDGE_DECL(_sceRtcFormatRFC3339LocalTime)
+BRIDGE_DECL(_sceRtcGetCurrentAdNetworkTick)
+BRIDGE_DECL(_sceRtcGetCurrentClock)
+BRIDGE_DECL(_sceRtcGetCurrentClockLocalTime)
+BRIDGE_DECL(_sceRtcGetCurrentDebugNetworkTick)
+BRIDGE_DECL(_sceRtcGetCurrentGpsTick)
+BRIDGE_DECL(_sceRtcGetCurrentNetworkTick)
+BRIDGE_DECL(_sceRtcGetCurrentRetainedNetworkTick)
+BRIDGE_DECL(_sceRtcGetCurrentTick)
+BRIDGE_DECL(_sceRtcGetLastAdjustedTick)
+BRIDGE_DECL(_sceRtcGetLastReincarnatedTick)
 BRIDGE_DECL(sceRtcGetAccumulativeTime)

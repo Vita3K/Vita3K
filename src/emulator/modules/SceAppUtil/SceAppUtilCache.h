@@ -19,4 +19,6 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(sceAppUtilCacheGetDevInfo)
 BRIDGE_DECL(sceAppUtilCacheMount)
+BRIDGE_DECL(sceAppUtilCacheUmount)

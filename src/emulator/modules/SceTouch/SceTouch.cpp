@@ -238,6 +238,10 @@ EXPORT(int, sceTouchGetPixelDensity) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceTouchGetPixelDensity2) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceTouchGetProcessInfo) {
     return UNIMPLEMENTED();
 }
@@ -354,6 +358,7 @@ BRIDGE_IMPL(sceTouchEnableTouchForceExt)
 BRIDGE_IMPL(sceTouchGetDeviceInfo)
 BRIDGE_IMPL(sceTouchGetPanelInfo)
 BRIDGE_IMPL(sceTouchGetPixelDensity)
+BRIDGE_IMPL(sceTouchGetPixelDensity2)
 BRIDGE_IMPL(sceTouchGetProcessInfo)
 BRIDGE_IMPL(sceTouchGetSamplingState)
 BRIDGE_IMPL(sceTouchGetSamplingStateExt)

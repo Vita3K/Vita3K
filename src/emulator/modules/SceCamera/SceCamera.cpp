@@ -65,7 +65,15 @@ EXPORT(int, sceCameraGetISO) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceCameraGetImageQuality) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceCameraGetNightmode) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceCameraGetNoiseReduction) {
     return UNIMPLEMENTED();
 }
 
@@ -78,6 +86,10 @@ EXPORT(int, sceCameraGetSaturation) {
 }
 
 EXPORT(int, sceCameraGetSharpness) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceCameraGetSharpnessOff) {
     return UNIMPLEMENTED();
 }
 
@@ -141,7 +153,15 @@ EXPORT(int, sceCameraSetISO) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceCameraSetImageQuality) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceCameraSetNightmode) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceCameraSetNoiseReduction) {
     return UNIMPLEMENTED();
 }
 
@@ -154,6 +174,10 @@ EXPORT(int, sceCameraSetSaturation) {
 }
 
 EXPORT(int, sceCameraSetSharpness) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceCameraSetSharpnessOff) {
     return UNIMPLEMENTED();
 }
 
@@ -185,10 +209,13 @@ BRIDGE_IMPL(sceCameraGetEffect)
 BRIDGE_IMPL(sceCameraGetExposureCeiling)
 BRIDGE_IMPL(sceCameraGetGain)
 BRIDGE_IMPL(sceCameraGetISO)
+BRIDGE_IMPL(sceCameraGetImageQuality)
 BRIDGE_IMPL(sceCameraGetNightmode)
+BRIDGE_IMPL(sceCameraGetNoiseReduction)
 BRIDGE_IMPL(sceCameraGetReverse)
 BRIDGE_IMPL(sceCameraGetSaturation)
 BRIDGE_IMPL(sceCameraGetSharpness)
+BRIDGE_IMPL(sceCameraGetSharpnessOff)
 BRIDGE_IMPL(sceCameraGetWhiteBalance)
 BRIDGE_IMPL(sceCameraGetZoom)
 BRIDGE_IMPL(sceCameraIsActive)
@@ -204,10 +231,13 @@ BRIDGE_IMPL(sceCameraSetEffect)
 BRIDGE_IMPL(sceCameraSetExposureCeiling)
 BRIDGE_IMPL(sceCameraSetGain)
 BRIDGE_IMPL(sceCameraSetISO)
+BRIDGE_IMPL(sceCameraSetImageQuality)
 BRIDGE_IMPL(sceCameraSetNightmode)
+BRIDGE_IMPL(sceCameraSetNoiseReduction)
 BRIDGE_IMPL(sceCameraSetReverse)
 BRIDGE_IMPL(sceCameraSetSaturation)
 BRIDGE_IMPL(sceCameraSetSharpness)
+BRIDGE_IMPL(sceCameraSetSharpnessOff)
 BRIDGE_IMPL(sceCameraSetWhiteBalance)
 BRIDGE_IMPL(sceCameraSetZoom)
 BRIDGE_IMPL(sceCameraStart)

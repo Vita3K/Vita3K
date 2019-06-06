@@ -25,6 +25,370 @@
 #include <SDL_timer.h>
 #include <psp2/kernel/error.h>
 
+EXPORT(int, __sceKernelCreateLwMutex) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCancelEvent) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCancelEventFlag) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCancelEventWithSetPattern) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCancelMsgPipe) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCancelMutex) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCancelRWLock) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCancelSema) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCancelTimer) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateCond) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateEventFlag) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateLwCond) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateMsgPipeWithLR) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateMutex) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateRWLock) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateSema) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateSema_16XX) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateSimpleEvent) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelCreateTimer) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelDeleteLwCond) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelDeleteLwMutex) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelExitCallback) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetCallbackInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetCondInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetEventFlagInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetEventInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetEventPattern) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetLwCondInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetLwCondInfoById) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetLwMutexInfoById) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetMsgPipeInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetMutexInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetRWLockInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetSemaInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetSystemInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetSystemTime) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetThreadContextForVM) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetThreadCpuAffinityMask) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetThreadEventInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetThreadExitStatus) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetThreadInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetThreadRunStatus) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetTimerBase) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetTimerEventRemainingTime) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetTimerInfo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelGetTimerTime) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelLockLwMutex) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelLockMutex) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelLockMutexCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelLockReadRWLock) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelLockReadRWLockCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelLockWriteRWLock) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelLockWriteRWLockCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelPMonThreadGetCounter) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelPollEvent) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelPollEventFlag) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelPulseEventWithNotifyCallback) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelReceiveMsgPipeVector) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelReceiveMsgPipeVectorCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelRegisterThreadEventHandler) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelSendMsgPipeVector) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelSendMsgPipeVectorCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelSetEventWithNotifyCallback) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelSetThreadContextForVM) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelSetTimerEvent) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelSetTimerTime) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelSignalLwCond) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelSignalLwCondAll) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelSignalLwCondTo) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelStartThread) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelTryReceiveMsgPipeVector) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelTrySendMsgPipeVector) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelUnlockLwMutex) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitCond) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitCondCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitEvent) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitEventCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitEventFlag) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitEventFlagCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitException) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitExceptionCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitLwCond) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitLwCondCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitMultipleEvents) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitMultipleEventsCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitSema) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitSemaCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitSignal) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitSignalCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitThreadEnd) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelWaitThreadEndCB) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceKernelCancelCallback) {
     return UNIMPLEMENTED();
 }
@@ -84,6 +448,10 @@ EXPORT(int, sceKernelCloseMsgPipe) {
 }
 
 EXPORT(int, sceKernelCloseMutex) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelCloseMutex_089) {
     return UNIMPLEMENTED();
 }
 
@@ -233,6 +601,10 @@ EXPORT(int, sceKernelGetSystemTimeWide) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceKernelGetThreadCpuAffinityMask) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceKernelGetThreadStackFreeSize) {
     return UNIMPLEMENTED();
 }
@@ -273,6 +645,10 @@ EXPORT(int, sceKernelOpenMutex) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceKernelOpenMutex_089) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceKernelOpenRWLock) {
     return UNIMPLEMENTED();
 }
@@ -298,6 +674,10 @@ EXPORT(int, sceKernelPulseEvent) {
 }
 
 EXPORT(int, sceKernelRegisterCallbackToEvent) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelResumeThreadForVM) {
     return UNIMPLEMENTED();
 }
 
@@ -344,6 +724,10 @@ EXPORT(int, sceKernelStopTimer) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceKernelSuspendThreadForVM) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceKernelTryLockMutex, SceUID mutexid, int lock_count) {
     return mutex_try_lock(host.kernel, export_name, thread_id, mutexid, lock_count, SyncWeight::Heavy);
 }
@@ -380,6 +764,105 @@ EXPORT(int, sceKernelUnregisterThreadEventHandler) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceKernelWaitThreadEndCB_089) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceKernelWaitThreadEnd_089) {
+    return UNIMPLEMENTED();
+}
+
+BRIDGE_IMPL(__sceKernelCreateLwMutex)
+BRIDGE_IMPL(_sceKernelCancelEvent)
+BRIDGE_IMPL(_sceKernelCancelEventFlag)
+BRIDGE_IMPL(_sceKernelCancelEventWithSetPattern)
+BRIDGE_IMPL(_sceKernelCancelMsgPipe)
+BRIDGE_IMPL(_sceKernelCancelMutex)
+BRIDGE_IMPL(_sceKernelCancelRWLock)
+BRIDGE_IMPL(_sceKernelCancelSema)
+BRIDGE_IMPL(_sceKernelCancelTimer)
+BRIDGE_IMPL(_sceKernelCreateCond)
+BRIDGE_IMPL(_sceKernelCreateEventFlag)
+BRIDGE_IMPL(_sceKernelCreateLwCond)
+BRIDGE_IMPL(_sceKernelCreateMsgPipeWithLR)
+BRIDGE_IMPL(_sceKernelCreateMutex)
+BRIDGE_IMPL(_sceKernelCreateRWLock)
+BRIDGE_IMPL(_sceKernelCreateSema)
+BRIDGE_IMPL(_sceKernelCreateSema_16XX)
+BRIDGE_IMPL(_sceKernelCreateSimpleEvent)
+BRIDGE_IMPL(_sceKernelCreateTimer)
+BRIDGE_IMPL(_sceKernelDeleteLwCond)
+BRIDGE_IMPL(_sceKernelDeleteLwMutex)
+BRIDGE_IMPL(_sceKernelExitCallback)
+BRIDGE_IMPL(_sceKernelGetCallbackInfo)
+BRIDGE_IMPL(_sceKernelGetCondInfo)
+BRIDGE_IMPL(_sceKernelGetEventFlagInfo)
+BRIDGE_IMPL(_sceKernelGetEventInfo)
+BRIDGE_IMPL(_sceKernelGetEventPattern)
+BRIDGE_IMPL(_sceKernelGetLwCondInfo)
+BRIDGE_IMPL(_sceKernelGetLwCondInfoById)
+BRIDGE_IMPL(_sceKernelGetLwMutexInfoById)
+BRIDGE_IMPL(_sceKernelGetMsgPipeInfo)
+BRIDGE_IMPL(_sceKernelGetMutexInfo)
+BRIDGE_IMPL(_sceKernelGetRWLockInfo)
+BRIDGE_IMPL(_sceKernelGetSemaInfo)
+BRIDGE_IMPL(_sceKernelGetSystemInfo)
+BRIDGE_IMPL(_sceKernelGetSystemTime)
+BRIDGE_IMPL(_sceKernelGetThreadContextForVM)
+BRIDGE_IMPL(_sceKernelGetThreadCpuAffinityMask)
+BRIDGE_IMPL(_sceKernelGetThreadEventInfo)
+BRIDGE_IMPL(_sceKernelGetThreadExitStatus)
+BRIDGE_IMPL(_sceKernelGetThreadInfo)
+BRIDGE_IMPL(_sceKernelGetThreadRunStatus)
+BRIDGE_IMPL(_sceKernelGetTimerBase)
+BRIDGE_IMPL(_sceKernelGetTimerEventRemainingTime)
+BRIDGE_IMPL(_sceKernelGetTimerInfo)
+BRIDGE_IMPL(_sceKernelGetTimerTime)
+BRIDGE_IMPL(_sceKernelLockLwMutex)
+BRIDGE_IMPL(_sceKernelLockMutex)
+BRIDGE_IMPL(_sceKernelLockMutexCB)
+BRIDGE_IMPL(_sceKernelLockReadRWLock)
+BRIDGE_IMPL(_sceKernelLockReadRWLockCB)
+BRIDGE_IMPL(_sceKernelLockWriteRWLock)
+BRIDGE_IMPL(_sceKernelLockWriteRWLockCB)
+BRIDGE_IMPL(_sceKernelPMonThreadGetCounter)
+BRIDGE_IMPL(_sceKernelPollEvent)
+BRIDGE_IMPL(_sceKernelPollEventFlag)
+BRIDGE_IMPL(_sceKernelPulseEventWithNotifyCallback)
+BRIDGE_IMPL(_sceKernelReceiveMsgPipeVector)
+BRIDGE_IMPL(_sceKernelReceiveMsgPipeVectorCB)
+BRIDGE_IMPL(_sceKernelRegisterThreadEventHandler)
+BRIDGE_IMPL(_sceKernelSendMsgPipeVector)
+BRIDGE_IMPL(_sceKernelSendMsgPipeVectorCB)
+BRIDGE_IMPL(_sceKernelSetEventWithNotifyCallback)
+BRIDGE_IMPL(_sceKernelSetThreadContextForVM)
+BRIDGE_IMPL(_sceKernelSetTimerEvent)
+BRIDGE_IMPL(_sceKernelSetTimerTime)
+BRIDGE_IMPL(_sceKernelSignalLwCond)
+BRIDGE_IMPL(_sceKernelSignalLwCondAll)
+BRIDGE_IMPL(_sceKernelSignalLwCondTo)
+BRIDGE_IMPL(_sceKernelStartThread)
+BRIDGE_IMPL(_sceKernelTryReceiveMsgPipeVector)
+BRIDGE_IMPL(_sceKernelTrySendMsgPipeVector)
+BRIDGE_IMPL(_sceKernelUnlockLwMutex)
+BRIDGE_IMPL(_sceKernelWaitCond)
+BRIDGE_IMPL(_sceKernelWaitCondCB)
+BRIDGE_IMPL(_sceKernelWaitEvent)
+BRIDGE_IMPL(_sceKernelWaitEventCB)
+BRIDGE_IMPL(_sceKernelWaitEventFlag)
+BRIDGE_IMPL(_sceKernelWaitEventFlagCB)
+BRIDGE_IMPL(_sceKernelWaitException)
+BRIDGE_IMPL(_sceKernelWaitExceptionCB)
+BRIDGE_IMPL(_sceKernelWaitLwCond)
+BRIDGE_IMPL(_sceKernelWaitLwCondCB)
+BRIDGE_IMPL(_sceKernelWaitMultipleEvents)
+BRIDGE_IMPL(_sceKernelWaitMultipleEventsCB)
+BRIDGE_IMPL(_sceKernelWaitSema)
+BRIDGE_IMPL(_sceKernelWaitSemaCB)
+BRIDGE_IMPL(_sceKernelWaitSignal)
+BRIDGE_IMPL(_sceKernelWaitSignalCB)
+BRIDGE_IMPL(_sceKernelWaitThreadEnd)
+BRIDGE_IMPL(_sceKernelWaitThreadEndCB)
 BRIDGE_IMPL(sceKernelCancelCallback)
 BRIDGE_IMPL(sceKernelChangeActiveCpuMask)
 BRIDGE_IMPL(sceKernelChangeThreadCpuAffinityMask)
@@ -394,6 +877,7 @@ BRIDGE_IMPL(sceKernelCloseCond)
 BRIDGE_IMPL(sceKernelCloseEventFlag)
 BRIDGE_IMPL(sceKernelCloseMsgPipe)
 BRIDGE_IMPL(sceKernelCloseMutex)
+BRIDGE_IMPL(sceKernelCloseMutex_089)
 BRIDGE_IMPL(sceKernelCloseRWLock)
 BRIDGE_IMPL(sceKernelCloseSema)
 BRIDGE_IMPL(sceKernelCloseSimpleEvent)
@@ -419,6 +903,7 @@ BRIDGE_IMPL(sceKernelGetCallbackCount)
 BRIDGE_IMPL(sceKernelGetMsgPipeCreatorId)
 BRIDGE_IMPL(sceKernelGetProcessId)
 BRIDGE_IMPL(sceKernelGetSystemTimeWide)
+BRIDGE_IMPL(sceKernelGetThreadCpuAffinityMask)
 BRIDGE_IMPL(sceKernelGetThreadStackFreeSize)
 BRIDGE_IMPL(sceKernelGetThreadTLSAddr)
 BRIDGE_IMPL(sceKernelGetThreadmgrUIDClass)
@@ -429,6 +914,7 @@ BRIDGE_IMPL(sceKernelOpenCond)
 BRIDGE_IMPL(sceKernelOpenEventFlag)
 BRIDGE_IMPL(sceKernelOpenMsgPipe)
 BRIDGE_IMPL(sceKernelOpenMutex)
+BRIDGE_IMPL(sceKernelOpenMutex_089)
 BRIDGE_IMPL(sceKernelOpenRWLock)
 BRIDGE_IMPL(sceKernelOpenSema)
 BRIDGE_IMPL(sceKernelOpenSimpleEvent)
@@ -436,6 +922,7 @@ BRIDGE_IMPL(sceKernelOpenTimer)
 BRIDGE_IMPL(sceKernelPollSema)
 BRIDGE_IMPL(sceKernelPulseEvent)
 BRIDGE_IMPL(sceKernelRegisterCallbackToEvent)
+BRIDGE_IMPL(sceKernelResumeThreadForVM)
 BRIDGE_IMPL(sceKernelSendSignal)
 BRIDGE_IMPL(sceKernelSetEvent)
 BRIDGE_IMPL(sceKernelSetEventFlag)
@@ -446,6 +933,7 @@ BRIDGE_IMPL(sceKernelSignalCondTo)
 BRIDGE_IMPL(sceKernelSignalSema)
 BRIDGE_IMPL(sceKernelStartTimer)
 BRIDGE_IMPL(sceKernelStopTimer)
+BRIDGE_IMPL(sceKernelSuspendThreadForVM)
 BRIDGE_IMPL(sceKernelTryLockMutex)
 BRIDGE_IMPL(sceKernelTryLockReadRWLock)
 BRIDGE_IMPL(sceKernelTryLockWriteRWLock)
@@ -455,3 +943,5 @@ BRIDGE_IMPL(sceKernelUnlockWriteRWLock)
 BRIDGE_IMPL(sceKernelUnregisterCallbackFromEvent)
 BRIDGE_IMPL(sceKernelUnregisterCallbackFromEventAll)
 BRIDGE_IMPL(sceKernelUnregisterThreadEventHandler)
+BRIDGE_IMPL(sceKernelWaitThreadEndCB_089)
+BRIDGE_IMPL(sceKernelWaitThreadEnd_089)

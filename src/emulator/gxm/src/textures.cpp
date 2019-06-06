@@ -1,21 +1,21 @@
 #include <gxm/functions.h>
 
 namespace gxm {
-size_t get_width(const SceGxmTexture *texture) {
+size_t get_width(const emu::SceGxmTexture *texture) {
     if (texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED && texture->type << 29 != SCE_GXM_TEXTURE_TILED) {
         return texture->width + 1;
     }
     return 1ull << (texture->width & 0xF);
 }
 
-size_t get_height(const SceGxmTexture *texture) {
+size_t get_height(const emu::SceGxmTexture *texture) {
     if (texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED && texture->type << 29 != SCE_GXM_TEXTURE_TILED) {
         return texture->height + 1;
     }
     return 1ull << (texture->height & 0xF);
 }
 
-SceGxmTextureFormat get_format(const SceGxmTexture *texture) {
+SceGxmTextureFormat get_format(const emu::SceGxmTexture *texture) {
     return static_cast<SceGxmTextureFormat>(
         texture->base_format << 24 | texture->format0 << 31 | texture->swizzle_format << 12);
 }

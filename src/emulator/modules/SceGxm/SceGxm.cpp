@@ -1045,7 +1045,7 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     context->state.fragment_program = fragmentProgram;
 }
 
-EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const emu::SceGxmTexture *texture) {
     assert(context != nullptr);
     assert(texture != nullptr);
 
@@ -1513,27 +1513,27 @@ EXPORT(int, sceGxmTerminate) {
     return 0;
 }
 
-EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
+EXPORT(Ptr<void>, sceGxmTextureGetData, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return Ptr<void>(texture->data_addr << 2);
 }
 
-EXPORT(SceGxmTextureFormat, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
+EXPORT(SceGxmTextureFormat, sceGxmTextureGetFormat, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return gxm::get_format(texture);
 }
 
-EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetGammaMode, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return (texture->gamma_mode << 27);
 }
 
-EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetHeight, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return static_cast<unsigned int>(gxm::get_height(texture));
 }
 
-EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetLodBias, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
@@ -1541,7 +1541,7 @@ EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
     return texture->lod_bias;
 }
 
-EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetLodMin, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
@@ -1549,12 +1549,12 @@ EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
     return (texture->lod_min0 << 2) | texture->lod_min1;
 }
 
-EXPORT(int, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetMagFilter, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return texture->mag_filter;
 }
 
-EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetMinFilter, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return texture->mag_filter;
@@ -1562,7 +1562,7 @@ EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
     return texture->min_filter;
 }
 
-EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
+EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
@@ -1570,7 +1570,7 @@ EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const SceGxmTexture *t
     return texture->mip_filter ? SCE_GXM_TEXTURE_MIP_FILTER_ENABLED : SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 }
 
-EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
@@ -1578,38 +1578,38 @@ EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) 
     return texture->mip_count + 1;
 }
 
-EXPORT(unsigned int, sceGxmTextureGetMipmapCountUnsafe, const SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetMipmapCountUnsafe, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return texture->mip_count + 1;
 }
 
-EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetNormalizeMode, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return texture->normalize_mode << 31;
 }
 
-EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
+EXPORT(Ptr<void>, sceGxmTextureGetPalette, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     assert(gxm::is_paletted_format(gxm::get_format(texture)));
     return Ptr<void>(texture->palette_addr << 6);
 }
 
-EXPORT(int, sceGxmTextureGetStride, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetStride, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetType, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return (texture->type << 29);
 }
 
-EXPORT(int, sceGxmTextureGetUAddrMode, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetUAddrMode, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return texture->uaddr_mode;
 }
 
-EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetUAddrModeSafe, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
@@ -1617,12 +1617,12 @@ EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
     return texture->uaddr_mode;
 }
 
-EXPORT(int, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetVAddrMode, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return texture->vaddr_mode;
 }
 
-EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureGetVAddrModeSafe, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
@@ -1630,7 +1630,7 @@ EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
     return texture->vaddr_mode;
 }
 
-EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
+EXPORT(unsigned int, sceGxmTextureGetWidth, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
     return static_cast<unsigned int>(gxm::get_width(texture));
 }
@@ -1643,7 +1643,7 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary) {
     return UNIMPLEMENTED();
 }
 
-static int init_texture_base(const char *export_name, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount,
+static int init_texture_base(const char *export_name, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount,
     const SceGxmTextureType &texture_type) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
@@ -1698,7 +1698,7 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     return 0;
 }
 
-EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+EXPORT(int, sceGxmTextureInitLinear, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_LINEAR);
 
     if (result == 0)
@@ -1711,7 +1711,7 @@ EXPORT(int, sceGxmTextureInitLinearStrided) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+EXPORT(int, sceGxmTextureInitSwizzled, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_SWIZZLED);
 
     if (result == 0)
@@ -1724,7 +1724,7 @@ EXPORT(int, sceGxmTextureInitSwizzledArbitrary) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureInitTiled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+EXPORT(int, sceGxmTextureInitTiled, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     } else if (!data) {
@@ -1778,7 +1778,7 @@ EXPORT(int, sceGxmTextureInitTiled, SceGxmTexture *texture, Ptr<const void> data
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) {
+EXPORT(int, sceGxmTextureSetData, emu::SceGxmTexture *texture, Ptr<const void> data) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1787,7 +1787,7 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *texture, SceGxmTextureFormat texFormat) {
+EXPORT(int, sceGxmTextureSetFormat, emu::SceGxmTexture *texture, SceGxmTextureFormat texFormat) {
     STUBBED("FAST");
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -1797,7 +1797,7 @@ EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *texture, SceGxmTextureFormat 
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceGxmTextureSetGammaMode, SceGxmTexture *texture, SceGxmTextureGammaMode gammaMode) {
+EXPORT(int, sceGxmTextureSetGammaMode, emu::SceGxmTexture *texture, SceGxmTextureGammaMode gammaMode) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1805,7 +1805,7 @@ EXPORT(int, sceGxmTextureSetGammaMode, SceGxmTexture *texture, SceGxmTextureGamm
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height) {
+EXPORT(int, sceGxmTextureSetHeight, emu::SceGxmTexture *texture, unsigned int height) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     } else if (height > 4096) {
@@ -1833,7 +1833,7 @@ EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, unsigned int height)
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetLodBias, SceGxmTexture *texture, unsigned int bias) {
+EXPORT(int, sceGxmTextureSetLodBias, emu::SceGxmTexture *texture, unsigned int bias) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1845,7 +1845,7 @@ EXPORT(int, sceGxmTextureSetLodBias, SceGxmTexture *texture, unsigned int bias) 
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureSetLodMin, SceGxmTexture *texture, unsigned int lodMin) {
+EXPORT(int, sceGxmTextureSetLodMin, emu::SceGxmTexture *texture, unsigned int lodMin) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1857,7 +1857,7 @@ EXPORT(int, sceGxmTextureSetLodMin, SceGxmTexture *texture, unsigned int lodMin)
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
+EXPORT(int, sceGxmTextureSetMagFilter, emu::SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1866,7 +1866,7 @@ EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilt
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
+EXPORT(int, sceGxmTextureSetMinFilter, emu::SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1879,7 +1879,7 @@ EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilt
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetMipFilter, SceGxmTexture *texture, SceGxmTextureMipFilter mipFilter) {
+EXPORT(int, sceGxmTextureSetMipFilter, emu::SceGxmTexture *texture, SceGxmTextureMipFilter mipFilter) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1892,7 +1892,7 @@ EXPORT(int, sceGxmTextureSetMipFilter, SceGxmTexture *texture, SceGxmTextureMipF
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetMipmapCount, SceGxmTexture *texture, uint32_t mipCount) {
+EXPORT(int, sceGxmTextureSetMipmapCount, emu::SceGxmTexture *texture, uint32_t mipCount) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1908,7 +1908,7 @@ EXPORT(int, sceGxmTextureSetMipmapCount, SceGxmTexture *texture, uint32_t mipCou
 /**
  * TODO: uncomment code once https://github.com/vitasdk/vita-headers/commit/2995273a998f355a498cc4e9c563974fe5938ac6 is available
  */
-EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture /*, SceGxmTextureNormalizeMode normalizeMode*/) {
+EXPORT(int, sceGxmTextureSetNormalizeMode, emu::SceGxmTexture *texture /*, SceGxmTextureNormalizeMode normalizeMode*/) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1917,7 +1917,7 @@ EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture /*, SceGxmText
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteData) {
+EXPORT(int, sceGxmTextureSetPalette, emu::SceGxmTexture *texture, Ptr<void> paletteData) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     } else if ((uint8_t)paletteData.address() & 0x3F) {
@@ -1928,7 +1928,7 @@ EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteDa
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetStride, SceGxmTexture *texture, uint32_t byteStride) {
+EXPORT(int, sceGxmTextureSetStride, emu::SceGxmTexture *texture, uint32_t byteStride) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1940,7 +1940,7 @@ EXPORT(int, sceGxmTextureSetStride, SceGxmTexture *texture, uint32_t byteStride)
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+EXPORT(int, sceGxmTextureSetUAddrMode, emu::SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1962,7 +1962,7 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetUAddrModeSafe, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+EXPORT(int, sceGxmTextureSetUAddrModeSafe, emu::SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1985,7 +1985,7 @@ EXPORT(int, sceGxmTextureSetUAddrModeSafe, SceGxmTexture *texture, SceGxmTexture
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+EXPORT(int, sceGxmTextureSetVAddrMode, emu::SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2007,7 +2007,7 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetVAddrModeSafe, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+EXPORT(int, sceGxmTextureSetVAddrModeSafe, emu::SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2030,7 +2030,7 @@ EXPORT(int, sceGxmTextureSetVAddrModeSafe, SceGxmTexture *texture, SceGxmTexture
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
+EXPORT(int, sceGxmTextureSetWidth, emu::SceGxmTexture *texture, unsigned int width) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     } else if (width > 4096) {
@@ -2057,7 +2057,7 @@ EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, unsigned int width) {
     return 0;
 }
 
-EXPORT(int, sceGxmTextureValidate, const SceGxmTexture *texture) {
+EXPORT(int, sceGxmTextureValidate, const emu::SceGxmTexture *texture) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }

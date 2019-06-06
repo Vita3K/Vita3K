@@ -19,6 +19,14 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(_sceKernelCloseModule)
+BRIDGE_DECL(_sceKernelLoadModule)
+BRIDGE_DECL(_sceKernelLoadStartModule)
+BRIDGE_DECL(_sceKernelOpenModule)
+BRIDGE_DECL(_sceKernelStartModule)
+BRIDGE_DECL(_sceKernelStopModule)
+BRIDGE_DECL(_sceKernelStopUnloadModule)
+BRIDGE_DECL(_sceKernelUnloadModule)
 BRIDGE_DECL(sceKernelGetAllowedSdkVersionOnSystem)
 BRIDGE_DECL(sceKernelGetLibraryInfoByNID)
 BRIDGE_DECL(sceKernelGetModuleIdByAddr)

@@ -21,6 +21,38 @@
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/modulemgr.h>
 
+EXPORT(int, _sceKernelCloseModule) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelLoadModule) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelLoadStartModule) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelOpenModule) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelStartModule) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelStopModule) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelStopUnloadModule) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceKernelUnloadModule) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceKernelGetAllowedSdkVersionOnSystem) {
     return UNIMPLEMENTED();
 }
@@ -66,6 +98,14 @@ EXPORT(int, sceKernelIsCalledFromSysModule) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(_sceKernelCloseModule)
+BRIDGE_IMPL(_sceKernelLoadModule)
+BRIDGE_IMPL(_sceKernelLoadStartModule)
+BRIDGE_IMPL(_sceKernelOpenModule)
+BRIDGE_IMPL(_sceKernelStartModule)
+BRIDGE_IMPL(_sceKernelStopModule)
+BRIDGE_IMPL(_sceKernelStopUnloadModule)
+BRIDGE_IMPL(_sceKernelUnloadModule)
 BRIDGE_IMPL(sceKernelGetAllowedSdkVersionOnSystem)
 BRIDGE_IMPL(sceKernelGetLibraryInfoByNID)
 BRIDGE_IMPL(sceKernelGetModuleIdByAddr)

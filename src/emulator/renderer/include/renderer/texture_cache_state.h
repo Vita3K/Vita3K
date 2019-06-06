@@ -3,6 +3,7 @@
 #include <glutil/object_array.h>
 
 #include <psp2/gxm.h>
+#include <gxm/types.h>
 
 #include <array>
 
@@ -11,7 +12,7 @@ constexpr size_t TextureCacheSize = 1024;
 typedef uint64_t TextureCacheTimestamp;
 typedef uint32_t TextureCacheHash;
 
-typedef std::array<SceGxmTexture, TextureCacheSize> TextureCacheGxmTextures;
+typedef std::array<emu::SceGxmTexture, TextureCacheSize> TextureCacheGxmTextures;
 typedef std::array<TextureCacheTimestamp, TextureCacheSize> TextureCacheTimestamps;
 typedef std::array<TextureCacheHash, TextureCacheSize> TextureCacheHashes;
 

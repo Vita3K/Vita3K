@@ -21,6 +21,14 @@ EXPORT(int, sceAudioInGetAdopt) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceAudioInGetInput) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudioInGetMicGain) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceAudioInGetStatus) {
     return UNIMPLEMENTED();
 }
@@ -29,7 +37,15 @@ EXPORT(int, sceAudioInInput) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceAudioInInputWithInputDeviceState) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceAudioInOpenPort) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudioInOpenPortForDiag) {
     return UNIMPLEMENTED();
 }
 
@@ -37,8 +53,27 @@ EXPORT(int, sceAudioInReleasePort) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceAudioInSelectInput) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudioInSetMicGain) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudioInSetMute) {
+    return UNIMPLEMENTED();
+}
+
 BRIDGE_IMPL(sceAudioInGetAdopt)
+BRIDGE_IMPL(sceAudioInGetInput)
+BRIDGE_IMPL(sceAudioInGetMicGain)
 BRIDGE_IMPL(sceAudioInGetStatus)
 BRIDGE_IMPL(sceAudioInInput)
+BRIDGE_IMPL(sceAudioInInputWithInputDeviceState)
 BRIDGE_IMPL(sceAudioInOpenPort)
+BRIDGE_IMPL(sceAudioInOpenPortForDiag)
 BRIDGE_IMPL(sceAudioInReleasePort)
+BRIDGE_IMPL(sceAudioInSelectInput)
+BRIDGE_IMPL(sceAudioInSetMicGain)
+BRIDGE_IMPL(sceAudioInSetMute)

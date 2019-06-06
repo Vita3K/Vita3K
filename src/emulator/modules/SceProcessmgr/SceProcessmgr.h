@@ -19,6 +19,9 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(_sceKernelExitProcessForUser)
+BRIDGE_DECL(_sceKernelGetTimer5Reg)
+BRIDGE_DECL(_sceKernelRegisterLibkernelAddresses)
 BRIDGE_DECL(sceKernelCDialogSessionClose)
 BRIDGE_DECL(sceKernelCDialogSetLeaseLimit)
 BRIDGE_DECL(sceKernelCallAbortHandler)

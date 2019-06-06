@@ -14,6 +14,7 @@ add_library(modules STATIC
 	SceAvPlayer/SceAvPlayer.cpp SceAvPlayer/SceAvPlayer.h
 	SceAvcodec/SceAvcodec.cpp SceAvcodec/SceAvcodec.h
 	SceAvcodecUser/SceVideoencUser.cpp SceAvcodecUser/SceVideoencUser.h
+	SceBbmc/SceBbmc.cpp SceBbmc/SceBbmc.h
 	SceBt/SceBt.cpp SceBt/SceBt.h
 	SceCamera/SceCamera.cpp SceCamera/SceCamera.h
 	SceClipboard/SceClipboard.cpp SceClipboard/SceClipboard.h
@@ -31,11 +32,15 @@ add_library(modules STATIC
 	SceDeci4p/SceDeci4pUserp.cpp SceDeci4p/SceDeci4pUserp.h
 	SceDisplay/SceDisplay.cpp SceDisplay/SceDisplay.h
 	SceDisplay/SceDisplayUser.cpp SceDisplay/SceDisplayUser.h
+	SceError/SceError.cpp SceError/SceError.h
 	SceFace/SceFace.cpp SceFace/SceFace.h
 	SceFiber/SceFiber.cpp SceFiber/SceFiber.h
 	SceFios2/SceFios2.cpp SceFios2/SceFios2.h
 	SceFios2/SceFios2User.cpp SceFios2/SceFios2User.h
+	SceFios2Kernel/SceFios2Kernel.cpp SceFios2Kernel/SceFios2Kernel.h
+	SceFios2Kernel/SceFios2Kernel02.cpp SceFios2Kernel/SceFios2Kernel02.h
 	SceGameUpdate/SceGameUpdate.cpp SceGameUpdate/SceGameUpdate.h
+	SceGps/SceGps.cpp SceGps/SceGps.h
 	SceGpuEs4/SceGpuEs4ForUser.cpp SceGpuEs4/SceGpuEs4ForUser.h
 	SceGxm/SceGxm.cpp SceGxm/SceGxm.h
 	SceHandwriting/SceHandwriting.cpp SceHandwriting/SceHandwriting.h
@@ -46,7 +51,9 @@ add_library(modules STATIC
 	SceJpeg/SceJpegUser.cpp SceJpeg/SceJpegUser.h
 	SceJpegEnc/SceJpegEncUser.cpp SceJpegEnc/SceJpegEncUser.h
 	SceKernelDmacMgr/SceDmacmgr.cpp SceKernelDmacMgr/SceDmacmgr.h
+	SceKernelModulemgr/SceBacktrace.cpp SceKernelModulemgr/SceBacktrace.h
 	SceKernelModulemgr/SceModulemgr.cpp SceKernelModulemgr/SceModulemgr.h
+	SceKernelThreadMgr/SceCpu.cpp SceKernelThreadMgr/SceCpu.h
 	SceKernelThreadMgr/SceDebugLed.cpp SceKernelThreadMgr/SceDebugLed.h
 	SceKernelThreadMgr/SceDipsw.cpp SceKernelThreadMgr/SceDipsw.h
 	SceKernelThreadMgr/SceThreadmgr.cpp SceKernelThreadMgr/SceThreadmgr.h
@@ -54,6 +61,7 @@ add_library(modules STATIC
 	SceLibJson/SceLibJson.cpp SceLibJson/SceLibJson.h
 	SceLibKernel/SceLibKernel.cpp SceLibKernel/SceLibKernel.h
 	SceLibKernel/SceLibRng.cpp SceLibKernel/SceLibRng.h
+	SceLibMono/SceLibMono.cpp SceLibMono/SceLibMono.h
 	SceLibMonoBridge/SceLibMonoBridge.cpp SceLibMonoBridge/SceLibMonoBridge.h
 	SceLibMp4Recorder/SceLibMp4Recorder.cpp SceLibMp4Recorder/SceLibMp4Recorder.h
 	SceLibXml/SceLibXml.cpp SceLibXml/SceLibXml.h
@@ -73,13 +81,16 @@ add_library(modules STATIC
 	SceNet/SceNet.cpp SceNet/SceNet.h
 	SceNetAdhocMatching/SceNetAdhocMatching.cpp SceNetAdhocMatching/SceNetAdhocMatching.h
 	SceNetCtl/SceNetCtl.cpp SceNetCtl/SceNetCtl.h
-	SceNgs/SceNgs.cpp SceNgs/SceNgs.h
+	SceNetPs/SceNetPsForSyscalls.cpp SceNetPs/SceNetPsForSyscalls.h
+	SceNgs/SceNgsInternal.cpp SceNgs/SceNgsInternal.h
+	SceNgsUser/SceNgs.cpp SceNgsUser/SceNgs.h
 	SceNpActivity/SceNpActivity.cpp SceNpActivity/SceNpActivity.h
 	SceNpBasic/SceNpBasic.cpp SceNpBasic/SceNpBasic.h
 	SceNpCommerce2/SceNpCommerce2.cpp SceNpCommerce2/SceNpCommerce2.h
 	SceNpCommon/SceNpCommon.cpp SceNpCommon/SceNpCommon.h
 	SceNpDrm/SceNpDrm.cpp SceNpDrm/SceNpDrm.h
 	SceNpDrm/SceNpDrmPackage.cpp SceNpDrm/SceNpDrmPackage.h
+	SceNpDrm/ScePsmDrm.cpp SceNpDrm/ScePsmDrm.h
 	SceNpManager/SceNpManager.cpp SceNpManager/SceNpManager.h
 	SceNpMatching2/SceNpMatching2.cpp SceNpMatching2/SceNpMatching2.h
 	SceNpMessage/SceNpMessage.cpp SceNpMessage/SceNpMessage.h
@@ -92,7 +103,10 @@ add_library(modules STATIC
 	SceNpUtility/SceNpUtility.cpp SceNpUtility/SceNpUtility.h
 	SceNpWebApi/SceNpWebApi.cpp SceNpWebApi/SceNpWebApi.h
 	ScePaf/ScePafMisc.cpp ScePaf/ScePafMisc.h
+	ScePaf/ScePafResource.cpp ScePaf/ScePafResource.h
 	ScePaf/ScePafStdc.cpp ScePaf/ScePafStdc.h
+	ScePaf/ScePafWidget.cpp ScePaf/ScePafWidget.h
+	ScePamgr/ScePamgr.cpp ScePamgr/ScePamgr.h
 	ScePerf/ScePerf.cpp ScePerf/ScePerf.h
 	ScePgf/ScePgf.cpp ScePgf/ScePgf.h
 	ScePhotoExport/ScePhotoExport.cpp ScePhotoExport/ScePhotoExport.h
@@ -112,6 +126,15 @@ add_library(modules STATIC
 	SceRudp/SceLibRudp.cpp SceRudp/SceLibRudp.h
 	SceSas/SceSas.cpp SceSas/SceSas.h
 	SceSblACMgr/SceSblACMgr.cpp SceSblACMgr/SceSblACMgr.h
+	SceSblGcAuthMgr/SceSblGcAuthMgr.cpp SceSblGcAuthMgr/SceSblGcAuthMgr.h
+	SceSblPostSsMgr/SceSblLicMgr.cpp SceSblPostSsMgr/SceSblLicMgr.h
+	SceSblPostSsMgr/SceSblPmMgr.cpp SceSblPostSsMgr/SceSblPmMgr.h
+	SceSblPostSsMgr/SceSblRtcMgr.cpp SceSblPostSsMgr/SceSblRtcMgr.h
+	SceSblPostSsMgr/SceSblUtMgr.cpp SceSblPostSsMgr/SceSblUtMgr.h
+	SceSblSsMgr/SceSblAimgr.cpp SceSblSsMgr/SceSblAimgr.h
+	SceSblSsMgr/SceSblDmac5Mgr.cpp SceSblSsMgr/SceSblDmac5Mgr.h
+	SceSblSsMgr/SceSblQafMgr.cpp SceSblSsMgr/SceSblQafMgr.h
+	SceSblSsMgr/SceSblRng.cpp SceSblSsMgr/SceSblRng.h
 	SceSblUpdateMgr/SceSblSsUpdateMgr.cpp SceSblUpdateMgr/SceSblSsUpdateMgr.h
 	SceScreenShot/SceScreenShot.cpp SceScreenShot/SceScreenShot.h
 	SceShellSvc/SceShellUtil.cpp SceShellSvc/SceShellUtil.h
@@ -128,14 +151,18 @@ add_library(modules STATIC
 	SceTeleportServer/SceTeleportServer.cpp SceTeleportServer/SceTeleportServer.h
 	SceTouch/SceTouch.cpp SceTouch/SceTouch.h
 	SceUdcd/SceUdcd.cpp SceUdcd/SceUdcd.h
+	SceUlobjMgr/SceUlobjMgr.cpp SceUlobjMgr/SceUlobjMgr.h
 	SceUlt/SceUlt.cpp SceUlt/SceUlt.h
 	SceUsbPspcm/SceUsbPspcm.cpp SceUsbPspcm/SceUsbPspcm.h
 	SceUsbSerial/SceUsbSerial.cpp SceUsbSerial/SceUsbSerial.h
+	SceUsbServ/SceUsbServ.cpp SceUsbServ/SceUsbServ.h
 	SceUsbd/SceUsbdForUser.cpp SceUsbd/SceUsbdForUser.h
 	SceUsbstorVStorDriver/SceUsbstorVStor.cpp SceUsbstorVStorDriver/SceUsbstorVStor.h
 	SceVideoExport/SceVideoExport.cpp SceVideoExport/SceVideoExport.h
 	SceVideodec/SceVideodecUser.cpp SceVideodec/SceVideodecUser.h
 	SceVoice/SceVoice.cpp SceVoice/SceVoice.h
 	SceVoiceQoS/SceVoiceQoS.cpp SceVoiceQoS/SceVoiceQoS.h
-	SceVshBridge/SceVshBridge.cpp SceVshBridge/SceVshBridge.h)
+	SceVshBridge/SceDrmBridge.cpp SceVshBridge/SceDrmBridge.h
+	SceVshBridge/SceVshBridge.cpp SceVshBridge/SceVshBridge.h
+	SceWlanBt/SceWlan.cpp SceWlanBt/SceWlan.h)
 target_link_libraries(modules PRIVATE module)

@@ -15,7 +15,7 @@
 #include <execution>
 #endif
 
-static bool operator==(const SceGxmTexture &a, const SceGxmTexture &b) {
+static bool operator==(const emu::SceGxmTexture &a, const emu::SceGxmTexture &b) {
     return memcmp(&a, &b, sizeof(a)) == 0;
 }
 
@@ -33,13 +33,13 @@ static TextureCacheHash hash_data(const void *data, size_t size) {
 #endif
 }
 
-static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t count, const MemState &mem) {
+static TextureCacheHash hash_palette_data(const emu::SceGxmTexture &texture, size_t count, const MemState &mem) {
     const uint32_t *const palette_bytes = get_texture_palette(texture, mem);
     const TextureCacheHash palette_hash = hash_data(palette_bytes, count * sizeof(uint32_t));
     return palette_hash;
 }
 
-static TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
+static TextureCacheHash hash_texture_data(const emu::SceGxmTexture &texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat format = gxm::get_format(&texture);
@@ -83,7 +83,7 @@ bool init(TextureCacheState &cache) {
     return cache.textures.init(&glGenTextures, &glDeleteTextures);
 }
 
-void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
+void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     size_t index = 0;
@@ -94,10 +94,14 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     const TextureCacheHash hash = hash_texture_data(gxm_texture, mem);
 
     // Try to find GXM texture in cache.
-    const TextureCacheGxmTextures::const_iterator gxm_begin = cache.gxm_textures.cbegin();
-    const TextureCacheGxmTextures::const_iterator gxm_end = gxm_begin + cache.used;
-    const TextureCacheGxmTextures::const_iterator cached_gxm_texture = std::find(gxm_begin, gxm_end, gxm_texture);
-    if (cached_gxm_texture == gxm_end) {
+    size_t cached_gxm_texture_index = -1;
+    for (size_t a = 0; a < cache.used; a++) {
+        if (memcmp(&cache.gxm_textures[a], &gxm_texture, sizeof(emu::SceGxmTexture)) == 0) {
+            cached_gxm_texture_index = a;
+            break;
+        }
+    }
+    if (cached_gxm_texture_index == -1) {
         // Texture not found in cache.
         if (cache.used < TextureCacheSize) {
             // Cache is not full. Add texture to cache.
@@ -113,7 +117,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         cache.gxm_textures[index] = gxm_texture;
     } else {
         // Texture is cached.
-        index = cached_gxm_texture - gxm_begin;
+        index = cached_gxm_texture_index;
         configure = false;
         upload = (hash != cache.hashes[index]);
     }
