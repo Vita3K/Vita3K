@@ -25,6 +25,9 @@
 #include <SDL_timer.h>
 #include <psp2/kernel/error.h>
 
+#include <chrono>
+#include <thread>
+
 EXPORT(int, __sceKernelCreateLwMutex) {
     return UNIMPLEMENTED();
 }
