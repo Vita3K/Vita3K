@@ -307,7 +307,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
     // Store the coords
-    std::array<shader::usse::Coord, 9> coords;
+    std::array<shader::usse::Coord, 10> coords;
 
     // It may actually be total fragments input
     for (size_t i = 0; i < vertex_outputs_ptr->varyings_count; i++, descriptor++) {
