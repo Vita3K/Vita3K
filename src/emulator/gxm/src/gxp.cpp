@@ -79,7 +79,7 @@ const int get_parameter_type_size(const SceGxmParameterType type) {
     case SCE_GXM_PARAMETER_TYPE_U32:
     case SCE_GXM_PARAMETER_TYPE_S32:
         return 4;
-    
+
     case SCE_GXM_PARAMETER_TYPE_F16:
     case SCE_GXM_PARAMETER_TYPE_U16:
     case SCE_GXM_PARAMETER_TYPE_S16:

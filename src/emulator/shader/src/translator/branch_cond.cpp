@@ -286,7 +286,7 @@ bool USSETranslatorVisitor::vtst(
         } else if (is_unsigned_integer_data_type(load_data_type)) {
             c0 = m_b.makeUintConstant(0);
         }
-        
+
         std::vector<spv::Id> comps(m_b.getNumComponents(c0), c0);
 
         if (comps.size() > 1) {

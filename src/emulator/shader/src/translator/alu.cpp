@@ -112,7 +112,6 @@ bool USSETranslatorVisitor::vmad(
         inst.opr.src2.flags |= RegisterFlags::Negative;
     }
 
-
     m_b.setLine(m_recompiler.cur_pc);
 
     // Write mask is a 4-bit immidiate

@@ -454,7 +454,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         }
     }
 
-    for (auto &query_info: tex_query_infos) {
+    for (auto &query_info : tex_query_infos) {
         if (coords[query_info.coord_index].first == spv::NoResult) {
             // Create an 'in' variable
             // TODO: this really right?
@@ -610,7 +610,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 store_type = DataType::UINT16;
                 break;
             }
-            
+
             case SCE_GXM_PARAMETER_TYPE_S16: {
                 param_type_name = "ishort";
                 store_type = DataType::INT16;
@@ -622,7 +622,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 store_type = DataType::UINT8;
                 break;
             }
-            
+
             case SCE_GXM_PARAMETER_TYPE_S8: {
                 param_type_name = "ichar";
                 store_type = DataType::INT8;
@@ -634,7 +634,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 store_type = DataType::UINT32;
                 break;
             }
-            
+
             case SCE_GXM_PARAMETER_TYPE_S32: {
                 param_type_name = "int";
                 store_type = DataType::INT32;
@@ -655,7 +655,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             }
 
             LOG_DEBUG(param_log);
-            
+
             int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
             create_input_variable(b, spv_params, utils, var_name.c_str(), param_reg_type, offset, param_type,
                 parameter.array_size * parameter.component_count * 4, 0, store_type);

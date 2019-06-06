@@ -260,7 +260,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
                 src_f32 = reinterpret_cast<const GLfloat *>(base + idx * 4);
                 set_uniform<GLfloat>(location, parameter.component_count, arr_size, src_f32, name, is_matrix, log_uniforms);
                 break;
-            
+
             default:
                 LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
                 break;
