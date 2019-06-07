@@ -32,6 +32,10 @@ static spv::Id get_correspond_constant_with_channel(spv::Builder &b, shader::uss
 }
 
 spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask) {
+    if (first == spv::NoResult || second == spv::NoResult) {
+        return spv::NoResult;
+    }
+
     std::vector<spv::Id> ops;
 
     // Create a f32 pointer type first
@@ -504,6 +508,10 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
     first_pass = finalize(b, b.createLoad(first_pass), b.createLoad(connected_friend), extract_swizz, op.num + shift_offset, extract_mask);
 
+    if (first_pass == spv::NoResult) {
+        return first_pass;
+    }
+    
     if (size_comp != 4) {
         // Second pass: Do unpack
         // We already handle shift offset above, so now let's use 0
@@ -514,6 +522,10 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     const bool is_signed_integer_dtype = is_signed_integer_data_type(op.type);
 
     const bool is_integral = is_unsigned_integer_dtype || is_signed_integer_dtype;
+
+    if (first_pass == spv::NoResult) {
+        return first_pass;
+    }
 
     // Bitcast them to integer. Those flags assuming bits stores on those float registers are actually integer
     if (is_signed_integer_dtype) {
@@ -527,7 +539,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
 spv::Id shader::usse::utils::unpack(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
     const int offset) {
-    if (type == DataType::F32) {
+    if (type == DataType::F32 || target == spv::NoResult) {
         return target;
     }
 
@@ -682,8 +694,9 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                 } else {
                     if (elem == spv::NoResult) {
                         // Replace it
-                        elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((int)((insert_offset + (i + nearest_swizz_on) / size_comp) >> 2)) });
-                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem), b.makeIntConstant((insert_offset % 4 + (int)((i + nearest_swizz_on) / size_comp)) % 4) });
+                        const int actual_offset_start_to_store = (int)(insert_offset + (i + nearest_swizz_on) / size_comp);
+                        elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(actual_offset_start_to_store >> 2) });
+                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem), b.makeIntConstant(actual_offset_start_to_store % 4) });
 
                         // Extract to f16
                         elem = unpack_one(b, utils, elem, dest.type);
