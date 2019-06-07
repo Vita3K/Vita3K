@@ -1324,10 +1324,6 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     MemState &mem = host.mem;
     assert(shaderPatcher != nullptr);
     assert(programId != nullptr);
-    assert(attributes != nullptr);
-    assert(attributeCount > 0);
-    assert(streams != nullptr);
-    assert(streamCount > 0);
     assert(vertexProgram != nullptr);
 
     *vertexProgram = alloc<SceGxmVertexProgram>(mem, __FUNCTION__);
@@ -1338,8 +1334,15 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
     vp->program = programId->program;
-    vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
-    vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
+
+    if (streams && streamCount > 0) {
+        vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
+    }
+
+    if (attributes && attributeCount > 0) {
+        vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
+    }
+
     vp->renderer_data = std::make_unique<renderer::VertexProgram>();
 
     if (!renderer::create(*vp->renderer_data.get(), host.renderer, *programId->program.get(mem), host.renderer.gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {

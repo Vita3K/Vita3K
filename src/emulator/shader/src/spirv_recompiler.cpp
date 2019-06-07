@@ -111,14 +111,20 @@ static spv::Id get_type_basic(spv::Builder &b, const SceGxmProgramParameter &par
 
     switch (type) {
     // clang-format off
-    case SCE_GXM_PARAMETER_TYPE_F16: return b.makeFloatType(32); // TODO: support f16
-    case SCE_GXM_PARAMETER_TYPE_F32: return b.makeFloatType(32);
-    case SCE_GXM_PARAMETER_TYPE_U8: return b.makeUintType(8);
-    case SCE_GXM_PARAMETER_TYPE_U16: return b.makeUintType(16);
-    case SCE_GXM_PARAMETER_TYPE_U32: return b.makeUintType(32);
-    case SCE_GXM_PARAMETER_TYPE_S8: return b.makeIntType(8);
-    case SCE_GXM_PARAMETER_TYPE_S16: return b.makeIntType(16);
-    case SCE_GXM_PARAMETER_TYPE_S32: return b.makeIntType(32);
+    case SCE_GXM_PARAMETER_TYPE_F16:
+    case SCE_GXM_PARAMETER_TYPE_F32:
+         return b.makeFloatType(32);
+
+    case SCE_GXM_PARAMETER_TYPE_U8:
+    case SCE_GXM_PARAMETER_TYPE_U16:
+    case SCE_GXM_PARAMETER_TYPE_U32:
+        return b.makeUintType(32);
+
+    case SCE_GXM_PARAMETER_TYPE_S8:
+    case SCE_GXM_PARAMETER_TYPE_S16:
+    case SCE_GXM_PARAMETER_TYPE_S32:
+        return b.makeIntType(32);
+
     // clang-format on
     default: {
         LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(type));
@@ -140,6 +146,7 @@ static spv::Id get_type_scalar(spv::Builder &b, const SceGxmProgramParameter &pa
 static spv::Id get_type_vector(spv::Builder &b, const SceGxmProgramParameter &parameter) {
     spv::Id param_id = get_type_basic(b, parameter);
     param_id = b.makeVectorType(param_id, parameter.component_count);
+
     return param_id;
 }
 
@@ -211,7 +218,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParamete
 }
 
 static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
-    std::uint32_t total_var_comp = static_cast<std::uint32_t>((size + 3) * get_data_type_size(dtype) / 16);
+    std::uint32_t total_var_comp = size / 4;
     spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
 
     Operand dest;
@@ -258,7 +265,10 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 
         if (!b.isConstant(var)) {
             var = b.createLoad(var);
-            var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
+
+            if (total_var_comp > 1) {
+                var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
+            }
         }
 
         utils::store(b, parameters, utils, dest, var, dest_mask, 0);
@@ -297,8 +307,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
     // Store the coords
-    std::array<spv::Id, 9> coords;
-    std::fill(coords.begin(), coords.end(), spv::NoResult);
+    std::array<shader::usse::Coord, 10> coords;
 
     // It may actually be total fragments input
     for (size_t i = 0; i < vertex_outputs_ptr->varyings_count; i++, descriptor++) {
@@ -314,19 +323,24 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
 
             std::string pa_type = "uchar";
+            DataType pa_dtype = DataType::UINT8;
 
             uint32_t input_type = (descriptor->attribute_info & 0x30100000);
 
             if (input_type == 0x20000000) {
                 pa_type = "half";
+                pa_dtype = DataType::F16;
             } else if (input_type == 0x10000000) {
                 pa_type = "fixed";
+                // TODO: Supply data type
             } else if (input_type == 0x100000) {
                 if (input_id == 0xA000 || input_id == 0xB000) {
                     pa_type = "float";
+                    pa_dtype = DataType::F32;
                 }
             } else if (input_id != 0xA000 && input_id != 0xB000) {
                 pa_type = "float";
+                pa_dtype = DataType::F32;
             }
 
             // Create PA Iterator SPIR-V variable
@@ -336,14 +350,15 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Reason is for compability between vertex and fragment. This is like an anti-crash when linking.
             // Fragment will only copy what it needed.
             const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
-            const auto pa_iter_size = ((descriptor->size >> 4) & 3) + 1;
+            const auto pa_iter_size = num_comp * 4;
             const auto pa_iter_var = create_input_variable(b, parameters, utils, pa_name.c_str(), RegisterBank::PRIMATTR,
-                pa_offset, pa_iter_type, pa_iter_size * 4);
+                pa_offset, pa_iter_type, pa_iter_size, spv::NoResult, pa_dtype);
 
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
             if (input_id >= 0 && input_id <= 0x9000) {
-                coords[input_id / 0x1000] = pa_iter_var;
+                coords[input_id / 0x1000].first = pa_iter_var;
+                coords[input_id / 0x1000].second = static_cast<int>(pa_dtype);
             }
 
             pa_offset += ((descriptor->size >> 4) & 3) + 1;
@@ -430,23 +445,29 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             const auto size = ((descriptor->size >> 6) & 3) + 1;
             tex_query_info.dest_offset = pa_offset;
 
-            if (coords[tex_coord_index] == spv::NoResult) {
-                // Create an 'in' variable
-                // TODO: this really right?
-                std::string coord_name = "v_TexCoord";
-                coord_name += std::to_string(tex_coord_index);
-
-                coords[tex_coord_index] = b.createVariable(spv::StorageClassInput,
-                    b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ 4), coord_name.c_str());
-            }
-
-            tex_query_info.coord = coords[tex_coord_index];
+            tex_query_info.coord_index = tex_coord_index;
             tex_query_info.sampler = samplers[sampler_resource_index];
 
             tex_query_infos.push_back(tex_query_info);
 
             pa_offset += ((descriptor->size >> 6) & 3) + 1;
         }
+    }
+
+    for (auto &query_info : tex_query_infos) {
+        if (coords[query_info.coord_index].first == spv::NoResult) {
+            // Create an 'in' variable
+            // TODO: this really right?
+            std::string coord_name = "v_TexCoord";
+            coord_name += std::to_string(query_info.coord_index);
+
+            coords[query_info.coord_index].first = b.createVariable(spv::StorageClassInput,
+                b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ 4), coord_name.c_str());
+
+            coords[query_info.coord_index].second = static_cast<int>(DataType::F32);
+        }
+
+        query_info.coord = coords[query_info.coord_index];
     }
 }
 
@@ -574,10 +595,60 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 offset = container->base_sa_offset + parameter.resource_index;
             }
 
+            auto param_type_name = "float";
+            DataType store_type = DataType::F32;
+
+            switch (parameter.type) {
+            case SCE_GXM_PARAMETER_TYPE_F16: {
+                param_type_name = "half";
+                store_type = DataType::F16;
+                break;
+            }
+
+            case SCE_GXM_PARAMETER_TYPE_U16: {
+                param_type_name = "ushort";
+                store_type = DataType::UINT16;
+                break;
+            }
+
+            case SCE_GXM_PARAMETER_TYPE_S16: {
+                param_type_name = "ishort";
+                store_type = DataType::INT16;
+                break;
+            }
+
+            case SCE_GXM_PARAMETER_TYPE_U8: {
+                param_type_name = "uchar";
+                store_type = DataType::UINT8;
+                break;
+            }
+
+            case SCE_GXM_PARAMETER_TYPE_S8: {
+                param_type_name = "ichar";
+                store_type = DataType::INT8;
+                break;
+            }
+
+            case SCE_GXM_PARAMETER_TYPE_U32: {
+                param_type_name = "uint";
+                store_type = DataType::UINT32;
+                break;
+            }
+
+            case SCE_GXM_PARAMETER_TYPE_S32: {
+                param_type_name = "int";
+                store_type = DataType::INT32;
+                break;
+            }
+
+            default:
+                break;
+            }
+
             // Make the type
-            std::string param_log = fmt::format("[{} + {}] {}a{} = {}",
+            std::string param_log = fmt::format("[{} + {}] {}a{} = ({}{}) {}",
                 get_container_name(parameter.container_index), parameter.resource_index,
-                is_uniform ? "s" : "p", offset, var_name);
+                is_uniform ? "s" : "p", offset, param_type_name, parameter.component_count, var_name);
 
             if (parameter.array_size > 1) {
                 param_log += fmt::format("[{}]", parameter.array_size);
@@ -585,9 +656,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
             LOG_DEBUG(param_log);
 
-            // TODO: Size is not accurate.
+            int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
             create_input_variable(b, spv_params, utils, var_name.c_str(), param_reg_type, offset, param_type,
-                parameter.array_size * parameter.component_count * 4);
+                parameter.array_size * parameter.component_count * 4, 0, store_type);
 
             break;
         }
@@ -753,22 +824,36 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
         return std::make_pair(vo, VertexProgramOutputProperties(name, component_count));
     };
 
+    static auto calculate_copy_comp_count = [](const SceGxmVertexOutputTexCoordInfo &info) {
+        // This is just an assumption, but the coord info type field tells us how the shader gonna pack the coord,
+        // either in F16 form or F32 form. What only matter here is the actually total F32 components that the coord will
+        // hold. How the fragment will pack or load this data doesn't matter to us here.
+        // TODO: Need confirmation.
+        // Normally, the total components is first 2 bits of the info plus 1. Dependent on if the component type is F16
+        // or F32, we can get the total F32 components.
+        // If bit 3 of the coord info is set, the coord should be packed by shader bytecodes to F16, else it will
+        // be packed to F32.
+        // How coincidental that the bit will tell us how much to shift right, to get the total F32 components that this
+        // coord will consist of.
+        return (info.comp_count + 1 + info.type) >> info.type;
+    };
+
     // TODO: Verify component counts
     VertexProgramOutputPropertiesMap vertex_properties_map = {
         set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "v_Position", 4),
         set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG, "v_Fog", 4),
         set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0, "v_Color0", 4),
         set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "v_Color1", 4),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "v_TexCoord0", coord_infos[0].comp_count + 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "v_TexCoord1", coord_infos[1].comp_count + 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "v_TexCoord2", coord_infos[2].comp_count + 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "v_TexCoord3", coord_infos[3].comp_count + 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "v_TexCoord4", coord_infos[4].comp_count + 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "v_TexCoord5", coord_infos[5].comp_count + 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "v_TexCoord6", coord_infos[6].comp_count + 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "v_TexCoord7", coord_infos[7].comp_count + 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "v_TexCoord8", coord_infos[8].comp_count + 1),
-        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "v_TexCoord9", coord_infos[9].comp_count + 1),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "v_TexCoord0", calculate_copy_comp_count(coord_infos[0])),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "v_TexCoord1", calculate_copy_comp_count(coord_infos[1])),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "v_TexCoord2", calculate_copy_comp_count(coord_infos[2])),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "v_TexCoord3", calculate_copy_comp_count(coord_infos[3])),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "v_TexCoord4", calculate_copy_comp_count(coord_infos[4])),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "v_TexCoord5", calculate_copy_comp_count(coord_infos[5])),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "v_TexCoord6", calculate_copy_comp_count(coord_infos[6])),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "v_TexCoord7", calculate_copy_comp_count(coord_infos[7])),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "v_TexCoord8", calculate_copy_comp_count(coord_infos[8])),
+        set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "v_TexCoord9", calculate_copy_comp_count(coord_infos[9])),
         set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "v_Psize", 1),
         set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "v_Clip0", 4),
         set_property(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "v_Clip1", 4),

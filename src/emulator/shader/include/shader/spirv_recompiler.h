@@ -6,6 +6,7 @@
 #include <shader/usse_types.h>
 
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace spv {

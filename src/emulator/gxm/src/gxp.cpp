@@ -73,6 +73,34 @@ void log_parameter(const SceGxmProgramParameter &parameter) {
         category, parameter_name_raw(parameter), log_parameter_semantic(parameter), parameter.type, uint8_t(parameter.component_count), log_hex(uint8_t(parameter.container_index)));
 }
 
+const int get_parameter_type_size(const SceGxmParameterType type) {
+    switch (type) {
+    case SCE_GXM_PARAMETER_TYPE_F32:
+    case SCE_GXM_PARAMETER_TYPE_U32:
+    case SCE_GXM_PARAMETER_TYPE_S32:
+        return 4;
+
+    case SCE_GXM_PARAMETER_TYPE_F16:
+    case SCE_GXM_PARAMETER_TYPE_U16:
+    case SCE_GXM_PARAMETER_TYPE_S16:
+        return 2;
+
+    case SCE_GXM_PARAMETER_TYPE_U8:
+    case SCE_GXM_PARAMETER_TYPE_S8:
+        return 1;
+
+    default:
+        break;
+    }
+
+    return 4;
+}
+
+const int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num_comp) {
+    const int param_size = get_parameter_type_size(type);
+    return static_cast<int>(num_comp + (4 / param_size - 1)) * param_size / 4;
+}
+
 const SceGxmProgramParameter *program_parameters(const SceGxmProgram &program) {
     return reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program.parameters_offset) + program.parameters_offset);
 }
@@ -83,15 +111,10 @@ SceGxmParameterType parameter_type(const SceGxmProgramParameter &parameter) {
 }
 
 GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parameter) {
-    if (parameter.component_count > 1) {
-        if (parameter.array_size > 1) {
-            // matrix emission disabled
-            // return GenericParameterType::Matrix;
-            //return GenericParameterType::Vector;
-            return GenericParameterType::Array;
-        } else {
-            return GenericParameterType::Vector;
-        }
+    if (parameter.array_size > 1) {
+        return GenericParameterType::Array;
+    } else if (parameter.component_count > 1) {
+        return GenericParameterType::Vector;
     } else {
         return GenericParameterType::Scalar;
     }

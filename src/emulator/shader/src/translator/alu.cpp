@@ -68,13 +68,13 @@ bool USSETranslatorVisitor::vmad(
         type = 1;
     }
 
-    // Double regs always true for src0, dest
-    inst.opr.src0 = decode_src12(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
+    // Double regs always true for src1, dest
+    inst.opr.src1 = decode_src12(inst.opr.src1, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
 
     // GPI0 and GPI1, setup!
-    inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
-    inst.opr.src1.num = gpi0_n;
+    inst.opr.src0.bank = usse::RegisterBank::FPINTERNAL;
+    inst.opr.src0.num = gpi0_n;
 
     inst.opr.src2.bank = usse::RegisterBank::FPINTERNAL;
     inst.opr.src2.num = gpi1_n;
@@ -84,24 +84,24 @@ bool USSETranslatorVisitor::vmad(
         inst.opr.dest.swizzle[3] = usse::SwizzleChannel::_X;
     }
 
-    inst.opr.src0.swizzle = decode_vec34_swizzle(src0_swiz, src0_swiz_ext, type);
-    inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swiz, gpi0_swiz_ext, type);
+    inst.opr.src1.swizzle = decode_vec34_swizzle(src0_swiz, src0_swiz_ext, type);
+    inst.opr.src0.swizzle = decode_vec34_swizzle(gpi0_swiz, gpi0_swiz_ext, type);
     inst.opr.src2.swizzle = decode_vec34_swizzle(gpi1_swiz, gpi1_swiz_ext, type);
 
     if (src0_abs) {
-        inst.opr.src0.flags |= RegisterFlags::Absolute;
-    }
-
-    if (src0_neg) {
-        inst.opr.src0.flags |= RegisterFlags::Negative;
-    }
-
-    if (gpi0_abs) {
         inst.opr.src1.flags |= RegisterFlags::Absolute;
     }
 
-    if (gpi0_neg) {
+    if (src0_neg) {
         inst.opr.src1.flags |= RegisterFlags::Negative;
+    }
+
+    if (gpi0_abs) {
+        inst.opr.src0.flags |= RegisterFlags::Absolute;
+    }
+
+    if (gpi0_neg) {
+        inst.opr.src0.flags |= RegisterFlags::Negative;
     }
 
     if (gpi1_abs) {
@@ -112,10 +112,6 @@ bool USSETranslatorVisitor::vmad(
         inst.opr.src2.flags |= RegisterFlags::Negative;
     }
 
-    disasm_str += fmt::format(" {} {} {} {}", disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask), disasm::operand_to_str(inst.opr.src1, write_mask), disasm::operand_to_str(inst.opr.src2, write_mask));
-
-    LOG_DISASM("{}", disasm_str);
-
     m_b.setLine(m_recompiler.cur_pc);
 
     // Write mask is a 4-bit immidiate
@@ -123,9 +119,12 @@ bool USSETranslatorVisitor::vmad(
     BEGIN_REPEAT(repeat_count, 2)
     GET_REPEAT(inst);
 
-    spv::Id vsrc0 = load(inst.opr.src0, write_mask, src0_repeat_offset);
+    LOG_DISASM("{} {} {} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask), disasm::operand_to_str(inst.opr.src1, write_mask, src1_repeat_offset),
+        disasm::operand_to_str(inst.opr.src2, write_mask));
+
+    spv::Id vsrc0 = load(inst.opr.src0, write_mask, 0);
     spv::Id vsrc1 = load(inst.opr.src1, write_mask, src1_repeat_offset);
-    spv::Id vsrc2 = load(inst.opr.src2, write_mask, src2_repeat_offset);
+    spv::Id vsrc2 = load(inst.opr.src2, write_mask, 0);
 
     if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
         return false;

@@ -46,9 +46,12 @@ struct SpirvShaderParameters {
     std::unordered_map<std::uint32_t, spv::Id> samplers;
 };
 
+using Coord = std::pair<spv::Id, int>;
+
 struct NonDependentTextureQueryCallInfo {
     spv::Id sampler;
-    spv::Id coord;
+    Coord coord;
+    int coord_index;
 
     std::uint32_t dest_offset;
     int store_type; ///< For sampling method later

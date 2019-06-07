@@ -278,7 +278,22 @@ bool USSETranslatorVisitor::vtst(
             pdst_n, disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
 
         lhs = do_alu_op(inst, load_mask);
-        rhs = const_f32_v0[m_b.getNumComponents(lhs)];
+
+        spv::Id c0 = m_b.makeFloatConstant(0.0f);
+
+        if (is_signed_integer_data_type(load_data_type)) {
+            c0 = m_b.makeIntConstant(0);
+        } else if (is_unsigned_integer_data_type(load_data_type)) {
+            c0 = m_b.makeUintConstant(0);
+        }
+
+        std::vector<spv::Id> comps(m_b.getNumComponents(c0), c0);
+
+        if (comps.size() > 1) {
+            rhs = m_b.makeCompositeConstant(m_b.getTypeId(c0), comps);
+        } else {
+            rhs = c0;
+        }
     }
 
     pred_result = m_b.createOp(used_comp_op, m_b.makeBoolType(), { lhs, rhs });

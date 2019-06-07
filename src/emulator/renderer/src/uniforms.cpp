@@ -23,6 +23,29 @@ void uniform_4<GLint>(GLint location, GLsizei count, const GLint *value) {
     glUniform4iv(location, count, value);
 }
 
+template <>
+void uniform_4<GLuint>(GLint location, GLsizei count, const GLuint *value) {
+    glUniform4uiv(location, count, value);
+}
+
+template <class T>
+static void uniform_3(GLint location, GLsizei count, const T *value);
+
+template <>
+void uniform_3<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
+    glUniform3fv(location, count, value);
+}
+
+template <>
+void uniform_3<GLint>(GLint location, GLsizei count, const GLint *value) {
+    glUniform3iv(location, count, value);
+}
+
+template <>
+void uniform_3<GLuint>(GLint location, GLsizei count, const GLuint *value) {
+    glUniform3uiv(location, count, value);
+}
+
 template <class T>
 static void uniform_2(GLint location, GLsizei count, const T *value);
 
@@ -34,6 +57,11 @@ void uniform_2<GLfloat>(GLint location, GLsizei count, const GLfloat *value) {
 template <>
 void uniform_2<GLint>(GLint location, GLsizei count, const GLint *value) {
     glUniform2iv(location, count, value);
+}
+
+template <>
+void uniform_2<GLuint>(GLint location, GLsizei count, const GLuint *value) {
+    glUniform2uiv(location, count, value);
 }
 
 template <class T>
@@ -49,6 +77,11 @@ void uniform_1<GLint>(GLint location, GLsizei count, const GLint *value) {
     glUniform1iv(location, count, value);
 }
 
+template <>
+void uniform_1<GLuint>(GLint location, GLsizei count, const GLuint *value) {
+    glUniform1uiv(location, count, value);
+}
+
 template <class T>
 static void uniform_matrix_4(GLint location, GLsizei count, GLboolean, const T *value);
 
@@ -60,6 +93,11 @@ void uniform_matrix_4<GLfloat>(GLint location, GLsizei count, GLboolean transpos
 template <>
 void uniform_matrix_4<GLint>(GLint location, GLsizei count, GLboolean transpose, const GLint *value) {
     glUniform4iv(location, count, (GLint *)value);
+}
+
+template <>
+void uniform_matrix_4<GLuint>(GLint location, GLsizei count, GLboolean transpose, const GLuint *value) {
+    glUniform4uiv(location, count, (GLuint *)value);
 }
 
 template <class T>
@@ -97,6 +135,16 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
             uniform_2<T>(location, array_size, value);
             break;
         }
+        break;
+    }
+
+    case 3: {
+        switch (array_size) {
+        case 1:
+            uniform_3<T>(location, array_size, value);
+            break;
+        }
+
         break;
     }
 
@@ -186,17 +234,33 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
 
             const GLint *src_s32;
             const GLfloat *src_f32;
+            const GLuint *src_u32;
 
             const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
+
+            // The resource index points to SA bank. Each SA register is 4 bytes. Therefore, multiple the index with 4
+            // and adding with the base, to get the data.
             switch (type) {
             case SCE_GXM_PARAMETER_TYPE_S32:
-                src_s32 = reinterpret_cast<const GLint *>(base + idx * 4); // TODO What offset?
+            case SCE_GXM_PARAMETER_TYPE_S16:
+            case SCE_GXM_PARAMETER_TYPE_S8:
+                src_s32 = reinterpret_cast<const GLint *>(base + idx * 4);
                 set_uniform<GLint>(location, parameter.component_count, arr_size, src_s32, name, is_matrix, log_uniforms);
                 break;
+
+            case SCE_GXM_PARAMETER_TYPE_U32:
+            case SCE_GXM_PARAMETER_TYPE_U16:
+            case SCE_GXM_PARAMETER_TYPE_U8:
+                src_u32 = reinterpret_cast<const GLuint *>(base + idx * 4);
+                set_uniform<GLuint>(location, parameter.component_count, arr_size, src_u32, name, is_matrix, log_uniforms);
+                break;
+
             case SCE_GXM_PARAMETER_TYPE_F32:
-                src_f32 = reinterpret_cast<const GLfloat *>(base + idx * 4); // TODO What offset?
+            case SCE_GXM_PARAMETER_TYPE_F16:
+                src_f32 = reinterpret_cast<const GLfloat *>(base + idx * 4);
                 set_uniform<GLfloat>(location, parameter.component_count, arr_size, src_f32, name, is_matrix, log_uniforms);
                 break;
+
             default:
                 LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
                 break;

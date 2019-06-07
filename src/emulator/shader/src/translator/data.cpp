@@ -450,13 +450,13 @@ bool USSETranslatorVisitor::vpck(
         // We need to explicitly load src2 when we are fall in these situations:
         // - First, src2 must be needed. The only situation we knows it isn't needed is when the dest mask comp count is 1.
         //   In that case, only src1 is used.
-        // - Two sources are not contiguous. We call it contigous when two sources are not in the same bank. Also,
-        //   the total component that src1 handles, when adding with src1 offset, must reached exactly to offset where src2
+        // - Two sources are not contiguous. We call it contigous when two sources are in the same bank. Also,
+        //   the total component that src1 handles, when adding with src1 offset, must reach exactly to offset where src2
         //   resides
         //
         // Case where this doesn't apply (found when testing, need more confirmation)
-        // - src1 bank is FPINTERNAL.
-        if (!is_two_source_contiguous && src2_needed && inst.opr.src1.bank != RegisterBank::FPINTERNAL) {
+        // - src2 bank is immidiate.
+        if (!is_two_source_contiguous && src2_needed && inst.opr.src2.bank != RegisterBank::IMMEDIATE) {
             // Seperate the mask
             src1_mask = ((dest_mask >> offset_start_masking) & SRC1_LOAD_MASKS[src1_comp_handle]) << offset_start_masking;
             src2_mask = (((dest_mask >> offset_start_masking) & SRC2_LOAD_MASKS[src2_comp_handle]) >> src1_comp_handle) << offset_start_masking;
