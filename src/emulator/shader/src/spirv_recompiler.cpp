@@ -350,9 +350,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Reason is for compability between vertex and fragment. This is like an anti-crash when linking.
             // Fragment will only copy what it needed.
             const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
-            const auto pa_iter_size = ((descriptor->size >> 4) & 3) + 1;
+            const auto pa_iter_size = num_comp * 4;
             const auto pa_iter_var = create_input_variable(b, parameters, utils, pa_name.c_str(), RegisterBank::PRIMATTR,
-                pa_offset, pa_iter_type, num_comp * 4, spv::NoResult, pa_dtype);
+                pa_offset, pa_iter_type, pa_iter_size, spv::NoResult, pa_dtype);
 
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
@@ -824,9 +824,18 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
         return std::make_pair(vo, VertexProgramOutputProperties(name, component_count));
     };
 
-    auto calculate_copy_comp_count = [](const SceGxmVertexOutputTexCoordInfo &info) {
-        // info.type == 1 ? F16 : f32
-        return (info.comp_count + 1 + info.type) >> (info.type);
+    static auto calculate_copy_comp_count = [](const SceGxmVertexOutputTexCoordInfo &info) {
+        // This is just an assumption, but the coord info type field tells us how the shader gonna pack the coord,
+        // either in F16 form or F32 form. What only matter here is the actually total F32 components that the coord will
+        // hold. How the fragment will pack or load this data doesn't matter to us here.
+        // TODO: Need confirmation.
+        // Normally, the total components is first 2 bits of the info plus 1. Dependent on if the component type is F16
+        // or F32, we can get the total F32 components.
+        // If bit 3 of the coord info is set, the coord should be packed by shader bytecodes to F16, else it will
+        // be packed to F32.
+        // How coincidental that the bit will tell us how much to shift right, to get the total F32 components that this
+        // coord will consist of.
+        return (info.comp_count + 1 + info.type) >> info.type;
     };
 
     // TODO: Verify component counts
