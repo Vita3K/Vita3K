@@ -20,6 +20,9 @@
 
 #include <audio/functions.h>
 #include <config.h>
+#ifdef NDEBUG
+#include <discord.h>
+#endif
 #include <glutil/gl.h>
 #include <host/state.h>
 #include <host/version.h>
@@ -168,6 +171,12 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         return false;
     }
 
+#ifdef NDEBUG
+    discord::initialize();
+    if (cfg.discord_rich_presence) {
+        discord::update_presence("");
+    }
+#endif
     update_viewport(state);
 
     // Try adaptive vsync first, falling back to regular vsync.

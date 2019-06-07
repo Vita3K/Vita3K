@@ -18,7 +18,10 @@
 #include "app.h"
 
 #include "sfo.h"
-
+#ifdef NDEBUG
+#include <discord.h>
+#endif
+#include <gdbstub/functions.h>
 #include <gui/functions.h>
 #include <gui/imgui_impl_sdl_gl3.h>
 #include <host/functions.h>
@@ -330,7 +333,10 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
         error_dialog(message, host.window.get());
         return ModuleLoadFailed;
     }
-
+#ifdef NDEBUG
+    if (host.cfg.discord_rich_presence)
+        discord::update_presence(host.io.title_id, host.game_title);
+#endif
     if (!host.cfg.show_gui) {
         auto &imgui_render = host.display.imgui_render;
 

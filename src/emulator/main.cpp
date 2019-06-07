@@ -17,8 +17,12 @@
 
 #include "app.h"
 #include "config.h"
+#ifdef NDEBUG
+#include "discord.h"
+#endif
 #include "screen_render.h"
 
+#include <gdbstub/functions.h>
 #include <gui/functions.h>
 #include <host/state.h>
 #include <host/version.h>
@@ -155,6 +159,9 @@ int main(int argc, char *argv[]) {
 
         set_window_title(host);
     }
+#ifdef NDEBUG
+    discord::shutdown();
+#endif
 
 #ifdef USE_GDBSTUB
     server_close(host);

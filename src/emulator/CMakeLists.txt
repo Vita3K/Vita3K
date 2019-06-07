@@ -81,6 +81,8 @@ app.cpp
 app.h
 config.cpp
 config.h
+discord.cpp
+discord.h
 init.cpp
 main.cpp
 performance.cpp
@@ -90,7 +92,7 @@ sfo.cpp
 sfo.h
 )
 
-target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog elfio gdbstub glbinding-aux glutil gui host shader imgui modules nids util vita-toolchain yaml-cpp)
+target_link_libraries(emulator PRIVATE ${Boost_LIBRARIES} cpu dialog discord-rpc elfio gdbstub glbinding-aux glutil gui host shader imgui modules nids util vita-toolchain yaml-cpp)
 if(LINUX)
 	target_link_libraries(emulator PRIVATE stdc++fs)
 endif()
