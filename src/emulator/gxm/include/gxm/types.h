@@ -36,7 +36,7 @@ struct SceGxmTexture {
     uint32_t vaddr_mode : 3;
     uint32_t uaddr_mode : 3;
     uint32_t mip_filter : 1;
-    uint32_t min_filter: 2;
+    uint32_t min_filter : 2;
     uint32_t mag_filter : 2;
     uint32_t unk1 : 3;
     uint32_t mip_count : 4;

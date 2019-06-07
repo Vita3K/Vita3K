@@ -296,6 +296,11 @@ bool USSETranslatorVisitor::vtst(
         }
     }
 
+    if (lhs == spv::NoResult || rhs == spv::NoResult) {
+        LOG_ERROR("Source not loaded (lhs: {}, rhs: {})", lhs, rhs);
+        return false;
+    }
+
     pred_result = m_b.createOp(used_comp_op, m_b.makeBoolType(), { lhs, rhs });
 
     Operand pred_op{};
@@ -380,6 +385,11 @@ bool USSETranslatorVisitor::br(
         }
 
         pred_v = load(pred_opr, 0b0001);
+
+        if (pred_v == spv::NoResult) {
+            LOG_ERROR("Pred not loaded");
+            return false;
+        }
 
         if (do_neg) {
             std::vector<spv::Id> ops{ pred_v };
