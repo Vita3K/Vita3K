@@ -178,11 +178,8 @@ bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_pat
     if (!f) {
         return false;
     }
-    f.unsetf(std::ios::skipws);
-    f.seekg(0, std::ios::end);
-    f.seekg(0, std::ios::beg);
-    const auto size = f.tellg();
-    buf.reserve(size);
+    f.unsetf(fs::ifstream::skipws);
+    buf.reserve(fs::file_size(host_file_path));
     buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
     return true;
 }
