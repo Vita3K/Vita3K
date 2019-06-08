@@ -42,6 +42,7 @@ int remove_file(IOState &io, const char *file, const char *pref_path, const char
 int remove_dir(IOState &io, const char *dir, const char *pref_path, const char *export_name);
 int stat_file(IOState &io, const char *file, SceIoStat *stat, const char *pref_path, uint64_t base_tick, const char *export_name);
 int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const char *pref_path, uint64_t base_tick, const char *export_name);
+SceOff tell_file(IOState &io, SceUID fd, const char *export_name);
 
 int open_dir(IOState &io, const char *path, const char *pref_path, const char *export_name);
 int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *pref_path, uint64_t base_tick, const char *export_name);

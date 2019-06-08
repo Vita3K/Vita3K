@@ -191,7 +191,7 @@ EXPORT(int, sceClibPrintf, const char *format, module::vargs args) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    int result = utils::sprintf(&buffer[0], format, *(thread->cpu), host.mem, args);
+    const int result = utils::sprintf(&buffer[0], format, *(thread->cpu), host.mem, args);
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
@@ -415,10 +415,14 @@ EXPORT(int, sceIoOpenAsync) {
 }
 
 EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
-    if (seek_file(fd, static_cast<int>(offset), SEEK_SET, host.io, export_name) < 0) {
-        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    SceOff pos = tell_file(host.io, fd, export_name);
+    if (pos < 0) {
+        return pos;
     }
-    return read_file(data, host.io, fd, size, export_name);
+    seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, host.io, export_name);
+    const int res = read_file(data, host.io, fd, size, export_name);
+    seek_file(fd, static_cast<int>(pos), SCE_SEEK_SET, host.io, export_name);
+    return res;
 }
 
 EXPORT(int, sceIoPreadAsync) {
@@ -426,10 +430,14 @@ EXPORT(int, sceIoPreadAsync) {
 }
 
 EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
-    if (seek_file(fd, static_cast<int>(offset), SEEK_SET, host.io, export_name) < 0) {
-        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    SceOff pos = tell_file(host.io, fd, export_name);
+    if (pos < 0) {
+        return pos;
     }
-    return write_file(fd, data, size, host.io, export_name);
+    seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, host.io, export_name);
+    const int res = write_file(fd, data, size, host.io, export_name);
+    seek_file(fd, static_cast<int>(pos), SCE_SEEK_SET, host.io, export_name);
+    return res;
 }
 
 EXPORT(int, sceIoPwriteAsync) {
