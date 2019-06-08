@@ -187,6 +187,11 @@ bool USSETranslatorVisitor::vmov(
         spv::Id src0 = load(inst.opr.src0, dest_mask, src0_repeat_offset);
         spv::Id src2 = load(inst.opr.src2, dest_mask, src2_repeat_offset);
 
+        if (src0 == spv::NoResult || src2 == spv::NoResult) {
+            LOG_ERROR("Source not loaded (src0: {}, src2: {})", src0, src2);
+            return false;
+        }
+
         conditional_result = m_b.createBinOp(compare_op, m_b.makeVectorType(m_b.makeBoolType(), m_b.getNumComponents(src0)),
             src2, src0);
 
@@ -199,6 +204,12 @@ bool USSETranslatorVisitor::vmov(
     }
 
     spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
+
+    if (source == spv::NoResult) {
+        LOG_ERROR("Source not Loaded");
+        return false;
+    }
+
     store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
 
     if (is_conditional) {
@@ -490,9 +501,19 @@ bool USSETranslatorVisitor::vpck(
 
     spv::Id source = load(inst.opr.src1, src1_mask, src1_repeat_offset);
 
+    if (source == spv::NoResult) {
+        LOG_ERROR("Source not loaded");
+        return false;
+    }
+
     if (src2_mask != 0) {
         // Need to load this also, then create a merge between these twos
         spv::Id source2 = load(inst.opr.src2, src2_mask, src2_repeat_offset);
+
+        if (source2 == spv::NoResult) {
+            LOG_ERROR("Source 2 not loaded");
+            return false;
+        }
 
         // Merge using op vector shuffle
         const int num_comp = static_cast<int>(dest_mask_to_comp_count(dest_mask));

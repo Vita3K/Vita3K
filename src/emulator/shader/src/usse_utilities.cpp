@@ -511,7 +511,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     if (first_pass == spv::NoResult) {
         return first_pass;
     }
-    
+
     if (size_comp != 4) {
         // Second pass: Do unpack
         // We already handle shift offset above, so now let's use 0

@@ -127,6 +127,7 @@ bool USSETranslatorVisitor::vmad(
     spv::Id vsrc2 = load(inst.opr.src2, write_mask, 0);
 
     if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+        LOG_ERROR("Source not loaded (vsrc0: {}, vsr1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
         return false;
     }
 
@@ -251,6 +252,7 @@ bool USSETranslatorVisitor::vmad2(
     spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
 
     if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+        LOG_ERROR("Source not loaded (vsrc0: {}, vsr1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
         return false;
     }
 
@@ -351,6 +353,11 @@ bool USSETranslatorVisitor::vdp(
 
     spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, 0);
     spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
+
+    if (lhs == spv::NoResult || rhs == spv::NoResult) {
+        LOG_ERROR("Source not loaded (lhs: {}, rhs: {})", lhs, rhs);
+        return false;
+    }
 
     spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
 
@@ -650,6 +657,11 @@ bool USSETranslatorVisitor::vbw(
     spv::Id src1 = load(inst.opr.src1, 0b0001);
     spv::Id src2 = 0;
 
+    if (src1 == spv::NoResult) {
+        LOG_ERROR("Source not loaded");
+        return false;
+    }
+
     bool immediate = src2_ext && inst.opr.src2.bank == RegisterBank::IMMEDIATE;
     uint32_t value = 0;
 
@@ -662,6 +674,12 @@ bool USSETranslatorVisitor::vbw(
         src2 = m_b.makeUintConstant(src2_invert ? ~value : value);
     } else {
         src2 = load(inst.opr.src2, 0b0001);
+
+        if (src2 == spv::NoResult) {
+            LOG_ERROR("Source 2 not loaded");
+            return false;
+        }
+
         if (src2_invert) {
             src2 = m_b.createUnaryOp(spv::Op::OpNot, type_ui32, src2);
         }
@@ -787,6 +805,11 @@ bool USSETranslatorVisitor::vcomp(
     BEGIN_REPEAT(repeat_count, 2)
     GET_REPEAT(inst);
     spv::Id result = load(inst.opr.src1, src_mask, src1_repeat_offset);
+
+    if (result == spv::NoResult) {
+        LOG_ERROR("Result not loaded");
+        return false;
+    }
 
     switch (op) {
     case Opcode::VRCP: {
