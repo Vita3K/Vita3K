@@ -33,6 +33,8 @@ struct VitaTimezone {
     int tz_dsttime;
 };
 
+using vita_time_t = std::uint32_t;
+
 EXPORT(int, _sceKernelExitProcessForUser) {
     return UNIMPLEMENTED();
 }
@@ -143,14 +145,14 @@ EXPORT(int, sceKernelLibcMktime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelLibcTime, uint32_t *time) {
-    const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick) / VITA_CLOCKS_PER_SEC;
+EXPORT(vita_time_t, sceKernelLibcTime, vita_time_t *time) {
+    const auto secs = (rtc_get_ticks(host.kernel.base_tick.tick) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC;
 
     if (time) {
-        *time = static_cast<std::uint32_t>(ticks);
+        *time = static_cast<vita_time_t>(secs);
     }
 
-    return static_cast<int>(ticks);
+    return static_cast<vita_time_t>(secs);
 }
 
 EXPORT(int, sceKernelPowerLock) {
