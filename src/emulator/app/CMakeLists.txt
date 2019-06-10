@@ -1,15 +1,15 @@
 add_library(
 	app
 	STATIC
-	include/app/app.h
-	include/app/config.h
+	include/app/app_config.h
+	include/app/app_functions.h
 	include/app/screen_render.h
+	src/app_config.cpp
+	src/app_init.cpp
+	src/app_private.h
+	src/app_sfo.cpp
 	src/app.cpp
-	src/config.cpp
-	src/init.cpp
 	src/screen_render.cpp
-	src/sfo.cpp
-	src/sfo.h
 )
 
 target_include_directories(app PUBLIC include)

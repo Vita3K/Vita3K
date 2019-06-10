@@ -15,10 +15,10 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "sfo.h"
+#include "app_private.h"
 
-#include <app/app.h>
-#include <app/config.h>
+#include <app/app_config.h>
+#include <app/app_functions.h>
 
 #include <audio/functions.h>
 #include <glutil/gl.h>
