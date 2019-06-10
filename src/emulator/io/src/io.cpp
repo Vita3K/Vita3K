@@ -209,7 +209,9 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
     fs::create_directory(uma0);
     fs::create_directory(uma0_data);
 
+    // TODO: Construct and store these paths in a centralized location like base_path and pref_path
     fs::create_directory(base_path / "shaderlog");
+    fs::create_directory(base_path / "texturelog");
 
     return true;
 }

@@ -25,8 +25,13 @@ bool create(FragmentProgram &fp, State &state, const SceGxmProgram &program, con
 bool create(VertexProgram &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 void begin_scene(const RenderTarget &rt);
 void end_scene(Context &context, SceGxmSyncObject *sync_object, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels);
-bool sync_state(Context &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool log_active_shaders, bool log_uniforms);
+bool sync_state(Context &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool log_active_shaders, bool log_uniforms, bool dump_textures, const std::string &base_path, const std::string &title_id);
 void draw(Context &context, const GxmContextState &state, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, const MemState &mem);
 void finish(Context &context);
 void wait_sync_object(SceGxmSyncObject *sync_object);
+
+namespace texture {
+void dump(const emu::SceGxmTexture &gxm_texture, const MemState &mem, const std::string &base_path, const std::string &title_id);
+}
+
 } // namespace renderer

@@ -109,6 +109,7 @@ ExitCode serialize(Config &cfg, fs::path output_path) {
     config_file_emit_single(emitter, "log-active-shaders", cfg.log_active_shaders);
     config_file_emit_single(emitter, "log-uniforms", cfg.log_uniforms);
     config_file_emit_single(emitter, "sync-rendering", cfg.sync_rendering);
+    config_file_emit_single(emitter, "dump-textures", cfg.dump_textures);
     config_file_emit_single(emitter, "pstv-mode", cfg.pstv_mode);
     config_file_emit_single(emitter, "show-gui", cfg.show_gui);
     config_file_emit_single(emitter, "show-game-background", cfg.show_game_background);
@@ -155,6 +156,7 @@ static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_p
     get_yaml_value(config_node, "log-active-shaders", &cfg.log_active_shaders, false);
     get_yaml_value(config_node, "log-uniforms", &cfg.log_uniforms, false);
     get_yaml_value(config_node, "sync-rendering", &cfg.sync_rendering, false);
+    get_yaml_value(config_node, "dump-textures", &cfg.dump_textures, false);
     get_yaml_value(config_node, "pstv-mode", &cfg.pstv_mode, false);
     get_yaml_value(config_node, "show-gui", &cfg.show_gui, false);
     get_yaml_value(config_node, "show-game-background", &cfg.show_game_background, true);
@@ -220,7 +222,8 @@ ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths) {
             ("log-exports,E", po::bool_switch(&cfg.log_exports), "Log Exports")
             ("log-active-shaders,S", po::bool_switch(&cfg.log_active_shaders), "Log Active Shaders")
             ("log-uniforms,U", po::bool_switch(&cfg.log_uniforms), "Log Uniforms")
-            ("sync-rendering,R", po::bool_switch(&cfg.sync_rendering), "Sync Rendering");
+            ("sync-rendering,R", po::bool_switch(&cfg.sync_rendering), "Sync Rendering")
+            ("dump-textures,D", po::bool_switch(&cfg.dump_textures), "Dump Textures");
         // clang-format on
 
         // Positional args
@@ -291,6 +294,7 @@ ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths) {
         LOG_INFO("log-active-shaders: {}", cfg.log_active_shaders);
         LOG_INFO("log-uniforms: {}", cfg.log_uniforms);
         LOG_INFO("sync-rendering: {}", cfg.sync_rendering);
+        LOG_INFO("dump-textures: {}", cfg.dump_textures);
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";

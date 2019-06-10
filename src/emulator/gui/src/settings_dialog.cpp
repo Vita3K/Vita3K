@@ -264,6 +264,10 @@ void draw_settings_dialog(HostState &host) {
         ImGui::Checkbox("Sync Render", &host.cfg.sync_rendering);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Synchronize host rendering to guest (GXM) rendering.\nUsed for debugging (so that graphics debuggers pick up GXM OpenGL calls)");
+        ImGui::SameLine();
+        ImGui::Checkbox("Dump Textures", &host.cfg.dump_textures);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Save textures to PNG files as they are being used.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();

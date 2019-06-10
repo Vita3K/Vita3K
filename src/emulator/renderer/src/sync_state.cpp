@@ -97,7 +97,7 @@ static void set_stencil_state(GLenum face, const GxmStencilState &state) {
     glStencilMaskSeparate(face, state.write_mask);
 }
 
-bool sync_state(Context &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool log_active_shaders, bool log_uniforms) {
+bool sync_state(Context &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool log_active_shaders, bool log_uniforms, bool dump_textures, const std::string &base_path, const std::string &title_id) {
     R_PROFILE(__func__);
 
     // TODO Use some kind of caching to avoid setting every draw call?
@@ -257,6 +257,9 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         } else {
             texture::bind_texture(context.texture_cache, texture, mem);
         }
+
+        if (dump_textures)
+            texture::dump(texture, mem, base_path, title_id);
     }
     glActiveTexture(GL_TEXTURE0);
 

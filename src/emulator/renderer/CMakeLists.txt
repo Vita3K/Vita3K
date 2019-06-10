@@ -21,5 +21,5 @@ add_library(
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC crypto glutil vita-headers)
+target_link_libraries(renderer PUBLIC stb crypto glutil vita-headers)
 target_link_libraries(renderer PRIVATE shader gxm microprofile sdl2 util)

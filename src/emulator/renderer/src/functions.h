@@ -55,6 +55,7 @@ const uint32_t *get_texture_palette(const emu::SceGxmTexture &texture, const Mem
 // Texture cache.
 bool init(TextureCacheState &cache);
 void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem);
+TextureCacheHash hash_texture_data(const emu::SceGxmTexture &texture, const MemState &mem);
 
 } // namespace texture
 

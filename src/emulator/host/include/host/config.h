@@ -39,6 +39,7 @@ struct Config {
     bool log_active_shaders = false;
     bool log_uniforms = false;
     bool sync_rendering = false;
+    bool dump_textures = false;
     std::vector<std::string> lle_modules;
     bool pstv_mode = false;
     bool show_gui = false;
