@@ -60,3 +60,4 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
     const emu::np::CommunicationID *custom_comm, NpTrophyError *error);
 
 emu::np::trophy::Context *get_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle);
+bool destroy_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle);

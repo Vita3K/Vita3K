@@ -49,6 +49,7 @@ using ContextHandle = std::int32_t;
 static constexpr ContextHandle INVALID_CONTEXT_HANDLE = static_cast<ContextHandle>(-1);
 
 struct Context {
+    bool valid { true };
     TRPFile trophy_file;
     CommunicationID comm_id;
     ContextHandle id;

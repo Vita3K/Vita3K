@@ -37,7 +37,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
 
     // Check if a context has already been created for this communication ID 
     for (std::size_t i = 0; i < np.trophy_state.contexts.size(); i++) {
-        if (np.trophy_state.contexts[i].comm_id == *custom_comm) {
+        if (np.trophy_state.contexts[i].valid && np.trophy_state.contexts[i].comm_id == *custom_comm) {
             TROPHY_RET_ERROR(TROPHY_CONTEXT_EXIST);
         }
     }
@@ -54,6 +54,20 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
     }
     
     // Yesss, we can now go fully creative
+    // Check for free slot first
+    for (auto &context: np.trophy_state.contexts) {
+        if (!context.valid) {
+            context.comm_id = *custom_comm;
+            context.trophy_file_stream = trophy_file;
+            context.valid = true;
+                    
+            context.trophy_file.header_parse();
+
+            return context.id;
+        }
+    }
+
+    // Yikes. Create new one.
     np.trophy_state.contexts.emplace_back(*custom_comm, &io, trophy_file);
     np.trophy_state.contexts.back().id = static_cast<emu::np::trophy::ContextHandle>(np.trophy_state.contexts.size());
 
@@ -66,9 +80,22 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
 }
 
 emu::np::trophy::Context *get_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle) {
-    if (handle > static_cast<std::uint32_t>(state.contexts.size())) {
+    if (handle < 0 || handle > static_cast<std::int32_t>(state.contexts.size())) {
         return nullptr;
     }
 
     return &state.contexts[handle - 1];
+}
+
+bool destroy_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle) {
+    if (handle < 0 || handle > static_cast<std::uint32_t>(state.contexts.size())) {
+        return false;
+    }
+
+    if (!state.contexts[handle - 1].valid) {
+        return false;
+    }
+
+    state.contexts[handle - 1].valid = false;
+    return true;
 }
