@@ -27,7 +27,7 @@
 #include <unordered_set>
 
 #ifdef NDEBUG // Leave it as non-constexpr on Debug so that we can enable/disable it at will via set_log_import_calls
-    constexpr
+constexpr
 #endif
     bool LOG_IMPORT_CALLS
     = false;

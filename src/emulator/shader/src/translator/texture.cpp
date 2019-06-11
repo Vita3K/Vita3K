@@ -137,6 +137,11 @@ bool USSETranslatorVisitor::smp(
     // Load the coord
     const spv::Id coord = load(inst.opr.src0, 0b0011);
 
+    if (coord == spv::NoResult) {
+        LOG_ERROR("Coord not loaded");
+        return false;
+    }
+
     spv::Id sampler = spv::NoResult;
     if (m_spirv_params.samplers.count(inst.opr.src1.num)) {
         sampler = m_spirv_params.samplers.at(inst.opr.src1.num);

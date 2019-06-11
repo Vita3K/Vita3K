@@ -178,11 +178,8 @@ bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_pat
     if (!f) {
         return false;
     }
-    f.unsetf(std::ios::skipws);
-    f.seekg(0, std::ios::end);
-    f.seekg(0, std::ios::beg);
-    const auto size = f.tellg();
-    buf.reserve(size);
+    f.unsetf(fs::ifstream::skipws);
+    buf.reserve(fs::file_size(host_file_path));
     buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
     return true;
 }
@@ -429,6 +426,16 @@ SceOff seek_file(SceUID fd, SceOff offset, int whence, IOState &io, const char *
         pos = static_cast<SceOff>(ftell(std_file->second.file_handle.get()));
     }
     return pos;
+}
+
+SceOff tell_file(IOState &io, SceUID fd, const char *export_name) {
+    if (fd < 0) {
+        return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
+    }
+
+    const StdFiles::const_iterator std_file = io.std_files.find(fd);
+
+    return static_cast<SceOff>(ftell(std_file->second.file_handle.get()));
 }
 
 int close_file(IOState &io, SceUID fd, const char *export_name) {

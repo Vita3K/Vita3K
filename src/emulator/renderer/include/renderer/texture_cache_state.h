@@ -2,8 +2,8 @@
 
 #include <glutil/object_array.h>
 
-#include <psp2/gxm.h>
 #include <gxm/types.h>
+#include <psp2/gxm.h>
 
 #include <array>
 

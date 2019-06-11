@@ -254,16 +254,23 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     }
 
     vfs::FileBuffer params;
-    if (!vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
-        return FileNotFound;
+    bool params_found = vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
+
+    std::string game_category;
+
+    if (params_found) {
+        load_sfo(host.sfo_handle, params);
+
+        find_data(host.game_title, host.sfo_handle, "TITLE");
+        std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' '); // Restrict title to one line
+        find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
+        find_data(host.game_version, host.sfo_handle, "APP_VER");
+        find_data(game_category, host.sfo_handle, "CATEGORY");
+    } else {
+        host.game_title = host.io.title_id; // Use TitleID as Title
+        host.game_version = "N/A";
+        game_category = "N/A";
     }
-
-    load_sfo(host.sfo_handle, params);
-
-    find_data(host.game_version, host.sfo_handle, "APP_VER");
-    find_data(host.game_title, host.sfo_handle, "TITLE");
-    std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
-    find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
 
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
@@ -273,13 +280,10 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
             return InitConfigFailed;
     }
 
-    std::string category;
-    find_data(category, host.sfo_handle, "CATEGORY");
-
     LOG_INFO("Title: {}", host.game_title);
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Version: {}", host.game_version);
-    LOG_INFO("Category: {}", category);
+    LOG_INFO("Category: {}", game_category);
 
     init_device_paths(host.io);
 

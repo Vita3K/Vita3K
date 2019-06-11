@@ -114,8 +114,11 @@ void get_game_titles(HostState &host) {
                 find_data(host.game_version, sfo_handle, "APP_VER");
                 find_data(host.game_title, sfo_handle, "TITLE");
                 std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
-                host.gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io.title_id });
+            } else {
+                host.game_title = host.io.title_id; // Use TitleID as Title
+                host.game_version = "N/A";
             }
+            host.gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io.title_id });
         }
         boost::system::error_code er;
         it.increment(er);
