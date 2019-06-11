@@ -16,63 +16,72 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <np/trophy/trp_parser.h>
+#include <util/bytes.h>
 #include <algorithm>
 
 namespace emu::np::trophy {
-
-TRPFile::TRPFile(std::istream *stream)
-    : stream(stream) {
-}
 
 static constexpr std::uint32_t NP_TRP_HEADER_MAGIC = 0x004DA2DC;
 
 bool TRPFile::header_parse() {
     std::uint32_t magic = 0;
-    if (!stream->read((char*)(&magic), 4) || magic != NP_TRP_HEADER_MAGIC) {
+    if (!read_func(&magic, 4) || magic != NP_TRP_HEADER_MAGIC) {
         // Magic not match.... Return
         return false;
     }
 
     // Seek and read entry count and start of data section
-    stream->seekg(0x10, std::ios::beg);
-    std::uint32_t entry_count = 0;
-    std::uint32_t entry_info_off = 0;
-    if (!stream->read((char*)(&entry_count), 4)) {
+    seek_func(0x10);
+
+    std::int32_t entry_count = 0;
+    std::int32_t entry_info_off = 0;
+    if (!read_func(&entry_count, 4)) {
         return false;
     }
+
+    entry_count = network_to_host_order(entry_count);
 
     // Resize to total of entry
     entries.resize(entry_count);
 
     // Read the data area offset
-    if (!stream->read((char*)&entry_info_off, 4)) {
+    if (!read_func(&entry_info_off, 4)) {
         return false;
     }
 
+    entry_info_off = network_to_host_order(entry_info_off);
+
+    seek_func(entry_info_off);
+
     // Start reading all entry infos
-    for (std::uint32_t i = 0; i < entry_count; i++) {
+    for (std::int32_t i = 0; i < entry_count; i++) {
         // Read null terminated string. That's the filename
         char temp = 0;
 
         do {
-            if (!stream->read(&temp, 1)) {
+            if (!read_func(&temp, 1)) {
                 return false;
             }
 
             entries[i].filename += temp;
         } while (temp != '\0');
 
+        seek_func(entry_info_off + (i * 0x40) + 0x20);
+
         // Read offset from the beginning and size
-        if (!stream->read((char*)&(entries[i].offset), 8)) {
+        if (!read_func((char*)&(entries[i].offset), 8)) {
             return false;
         }
 
-        if (!stream->read((char*)&entries[i].size, 8)) {
+        if (!read_func((char*)&entries[i].size, 8)) {
             return false;
         }
+
+        entries[i].offset = network_to_host_order(entries[i].offset);
+        entries[i].size = network_to_host_order(entries[i].size);
 
         // Other 16 bytes are not known, so ignore
-        if (!stream->seekg(0x10, std::ios::cur)) {
+        if (!seek_func(entry_info_off + (i * 0x40) + 0x20 + 16 + 0x10)) {
             return false;
         }
     }
@@ -81,14 +90,14 @@ bool TRPFile::header_parse() {
     return true;
 }
 
-bool TRPFile::get_entry_data(const std::uint32_t idx, std::ostream *out) {
+bool TRPFile::get_entry_data(const std::uint32_t idx, TRPWriteFunc write_func) {
     // Check if the index is not out of range
     if (idx >= entries.size()) {
         return false;
     }
 
     // Get the target offset
-    if (!stream->seekg(entries[idx].offset)) {
+    if (!seek_func(static_cast<int>(entries[idx].offset))) {
         return false;
     }
 
@@ -103,11 +112,11 @@ bool TRPFile::get_entry_data(const std::uint32_t idx, std::ostream *out) {
         const std::uint32_t copy_size = std::min<std::uint32_t>(static_cast<std::uint32_t>(bytes_left), 
             COPY_CHUNK_SIZE);
 
-        if (!stream->read(&copy_buffer[0], copy_size)) {
+        if (!read_func(&copy_buffer[0], copy_size)) {
             return false;
         }
 
-        if (!out->write(&copy_buffer[0], copy_size)) {
+        if (!write_func(&copy_buffer[0], copy_size)) {
             return false;
         }
     }

@@ -30,14 +30,21 @@ struct TRPEntry {
     std::uint64_t size;
 };
 
+using TRPSeekFunc = std::function<bool(int amount)>;
+using TRPReadFunc = std::function<bool(void *source, std::uint32_t amount)>;
+using TRPWriteFunc = std::function<bool(void *dest, std::uint32_t amount)>;
+
 struct TRPFile {
     std::vector<TRPEntry> entries;
-    std::istream *stream;
+
+    TRPSeekFunc seek_func;
+    TRPReadFunc read_func;
 
     bool header_parse();
-    explicit TRPFile(std::istream *stream);
+    
+    explicit TRPFile() = default;
 
-    bool get_entry_data(const std::uint32_t idx, std::ostream *out);
+    bool get_entry_data(const std::uint32_t idx, TRPWriteFunc write_func);
 };
 
 }
