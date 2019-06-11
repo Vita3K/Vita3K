@@ -36,16 +36,16 @@ EXPORT(int, sceNpTrophyCreateContext, emu::np::trophy::ContextHandle *context, c
         return SCE_NP_TROPHY_ERROR_INVALID_NPCOMMID;
     }
 
-    NpTrophyError err = NpTrophyError::TROPHY_ERROR_NONE;
+    emu::np::NpTrophyError err = emu::np::NpTrophyError::TROPHY_ERROR_NONE;
     *context = create_trophy_context(host.np, host.io, host.pref_path, comm_id, &err);
 
     if (*context == emu::np::trophy::INVALID_CONTEXT_HANDLE) {
         switch (err) {
-        case NpTrophyError::TROPHY_CONTEXT_EXIST: {
+        case emu::np::NpTrophyError::TROPHY_CONTEXT_EXIST: {
             return SCE_NP_TROPHY_ERROR_CONTEXT_ALREADY_EXISTS;
         }
 
-        case NpTrophyError::TROPHY_CONTEXT_FILE_NON_EXIST: {
+        case emu::np::NpTrophyError::TROPHY_CONTEXT_FILE_NON_EXIST: {
             return SCE_NP_TROPHY_ERROR_TRP_FILE_NOT_FOUND;
         }
 
@@ -214,8 +214,100 @@ EXPORT(int, sceNpTrophyTerm) {
     return 0;
 }
 
-EXPORT(int, sceNpTrophyUnlockTrophy) {
-    return UNIMPLEMENTED();
+static void trophy_unlocked(const NpTrophyUnlockCallbackData &callback_data, const SceNpTrophyID trophy_id) {
+    LOG_TRACE("Trophy unlocked: {}, id = {}", callback_data.trophy_name, trophy_id);
+    LOG_TRACE("Detail: {}", callback_data.description);
+}
+
+EXPORT(int, sceNpTrophyUnlockTrophy, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
+    SceNpTrophyID trophy_id, SceNpTrophyID *platinum_id) { 
+    if (!host.np.trophy_state.inited) {
+        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
+    }
+
+    // Trophy should only be in this region
+    if (trophy_id < 0 || trophy_id >= emu::np::trophy::MAX_TROPHIES) {
+        return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
+    }
+
+    // Get context
+    emu::np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
+    if (!context) {
+        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+
+    emu::np::NpTrophyError error;
+    if (!context->unlock_trophy(trophy_id, &error)) {
+        switch (error) {
+        case emu::np::NpTrophyError::TROPHY_PLATINUM_IS_UNBREAKABLE: {
+            return SCE_NP_TROPHY_ERROR_PLATINUM_CANNOT_UNLOCK;
+        }
+
+        case emu::np::NpTrophyError::TROPHY_ALREADY_UNLOCKED: {
+            return SCE_NP_TROPHY_ERROR_TROPHY_ALREADY_UNLOCKED;
+        }
+
+        case emu::np::NpTrophyError::TROPHY_ID_INVALID: {
+            return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
+        }
+
+        default:
+            return SCE_NP_TROPHY_ERROR_ABORT;
+        }
+    }
+
+    *platinum_id = -1;  // SCE_NP_TROPHY_INVALID_TROPHY_ID
+
+    if (context->platinum_trophy_id >= 0 && context->total_trophy_unlocked() == context->trophy_count - 1) {
+        // Force unlock platinum trophy
+        context->unlock_trophy(context->platinum_trophy_id, &error, true);
+        *platinum_id = context->platinum_trophy_id;
+    }
+
+    static auto do_trophy_callback = [](HostState &host, emu::np::trophy::Context *context, SceNpTrophyID trophy_id) -> int {
+        NpTrophyUnlockCallbackData callback_data;
+
+        if (context->trophy_kinds[trophy_id] == emu::np::trophy::TrophyType::INVALID) {
+            // Yes this ID is not present. So return INVALID_ID
+            return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
+        }
+
+        callback_data.trophy_kind = context->trophy_kinds[trophy_id];
+        if (!context->get_trophy_description(trophy_id, callback_data.trophy_name, callback_data.description)) {
+            return SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF;
+        }
+
+        trophy_unlocked(callback_data, trophy_id);
+
+        // Call this async.
+        if (host.np.trophy_state.trophy_unlock_callback) {
+            std::uint32_t buf_size = 0;
+
+            // Make filename
+            const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
+            copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), nullptr, &buf_size);
+
+            callback_data.icon_buf.resize(buf_size);
+            copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
+
+            host.np.trophy_state.trophy_unlock_callback(callback_data);
+        }
+
+        return 0;
+    };
+
+    const int err = do_trophy_callback(host, context, trophy_id);
+
+    if (err < 0) {
+        return err;
+    }
+
+    if (*platinum_id != -1) {
+        // Do trophy callback for platinum too! But this time, ignore the error
+        do_trophy_callback(host, context, context->platinum_trophy_id);
+    }
+
+    return 0;
 }
 
 BRIDGE_IMPL(sceNpTrophyAbortHandle)
