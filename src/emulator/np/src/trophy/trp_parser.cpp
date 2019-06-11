@@ -119,6 +119,8 @@ bool TRPFile::get_entry_data(const std::uint32_t idx, TRPWriteFunc write_func) {
         if (!write_func(&copy_buffer[0], copy_size)) {
             return false;
         }
+
+        bytes_left -= copy_size;
     }
 
     return true;
@@ -126,7 +128,7 @@ bool TRPFile::get_entry_data(const std::uint32_t idx, TRPWriteFunc write_func) {
 
 const std::uint32_t TRPFile::search_file(const char *name) {
     for (std::size_t i = 0; i < entries.size(); i++) {
-        if (entries[i].filename == name) {
+        if (strncmp(entries[i].filename.c_str(), name, strlen(name)) == 0) {
             return static_cast<std::uint32_t>(i);
         }
     }
