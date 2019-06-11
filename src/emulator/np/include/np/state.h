@@ -17,12 +17,15 @@
 
 #pragma once
 
-#include <map>
-
 #include <np/profile/profile_manager.h>
+#include <np/trophy/context.h>
+#include <np/common.h>
+
 #include <mem/mem.h> // Address.
 
+#include <map>
 #include <mutex>
+#include <vector>
 
 namespace emu {
 struct SceNpServiceStateCallback {
@@ -38,11 +41,21 @@ struct NpManagerState {
     std::mutex access_mutex;
 };
 
+struct NpTrophyState {
+    bool inited = false;
+    std::mutex access_mutex;
+
+    std::vector<emu::np::trophy::Context> contexts;
+};
+
 struct NpState {
     bool inited = false;
     np_callbacks cbs;
     int state = -1;
 
     NpManagerState manager_state;
+    NpTrophyState trophy_state;
+
+    emu::np::CommunicationID comm_id;
 };
 

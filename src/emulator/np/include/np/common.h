@@ -15,22 +15,29 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <np/functions.h>
-#include <np/state.h>
+#pragma once
 
-static bool init(NpManagerState &state) {
-    return state.profile_manager.init();
+#include <mem/ptr.h>
+#include <cstdint>
+#include <cstring>
+
+namespace emu::np {
+
+struct CommunicationID {
+    char data[9] = { 'D', 'E', 'A', 'D', 'B', 'E', 'E', 'F', '0' };
+    char term;
+    std::uint8_t num;
+    char dummy;
+};
+
+inline const bool operator == (const CommunicationID &lhs, const CommunicationID &rhs) {
+    return (strncmp(lhs.data, rhs.data, 9) == 0) && (lhs.num == rhs.num);
 }
 
-static bool deinit(NpManagerState &state) {
-    return state.profile_manager.deinit();
-}
+struct CommunicationConfig {
+    Ptr<CommunicationID> comm_id;
+    Ptr<void> unk0;
+    Ptr<void> unk1;
+};
 
-bool init(NpState &state) {
-    state.inited = true;
-    return init(state.manager_state);
-}
-
-bool deinit(NpState &state) {
-    return deinit(state.manager_state);
 }
