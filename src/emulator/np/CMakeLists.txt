@@ -12,4 +12,4 @@ add_library(np
 
 target_include_directories(np PUBLIC include)
 target_link_libraries(np PUBLIC yaml-cpp mem)
-target_link_libraries(np PRIVATE io util)
+target_link_libraries(np PRIVATE io util pugixml)

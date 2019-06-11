@@ -38,6 +38,7 @@
 #include <np/common.h>
 #include <psp2/types.h>
 
+#include <array>
 #include <cstdint>
 
 struct IOState;
@@ -47,6 +48,19 @@ namespace emu::np::trophy {
 using ContextHandle = std::int32_t;
 
 static constexpr ContextHandle INVALID_CONTEXT_HANDLE = static_cast<ContextHandle>(-1);
+static constexpr std::uint32_t MAX_TROPHIES = 128;
+
+// Each bit indicates a trophy unlocked. An uint32_t has total of 32 bits, so divide
+// 128 with 32, or 128 >> 5
+using TrophyFlagArray = std::uint32_t[MAX_TROPHIES >> 5];
+
+enum class TrophyType: std::uint8_t {
+    INVALID = 0,
+    BRONZE = 1,
+    SLIVER = 2,
+    GOLD = 3,
+    PLATINUM = 4
+};
 
 struct Context {
     bool valid { true };
@@ -55,9 +69,26 @@ struct Context {
     ContextHandle id;
 
     SceUID trophy_file_stream;
-    IOState *io;
 
-    explicit Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream);
+    TrophyFlagArray trophy_progress;
+    TrophyFlagArray trophy_availability;     ///< bit 1 set - hidden
+    std::uint32_t trophy_count;
+
+    std::array<std::uint64_t, MAX_TROPHIES> unlock_timestamps;
+    std::array<TrophyType, MAX_TROPHIES> trophy_kinds;
+
+    std::string trophy_progress_output_file_path;
+
+    IOState *io;
+    std::string pref_path;
+
+    void save_trophy_progress_file();
+    bool load_trophy_progress_file(const SceUID &progress_input_file);
+
+    bool init_info_from_trp();
+
+    explicit Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream,
+        const std::string &output_progress_path);
 };
 
 }
