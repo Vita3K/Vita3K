@@ -40,4 +40,13 @@ struct CommunicationConfig {
     Ptr<void> unk1;
 };
 
+enum class NpTrophyError {
+    TROPHY_ERROR_NONE = 0,
+    TROPHY_CONTEXT_EXIST = 1,
+    TROPHY_CONTEXT_FILE_NON_EXIST = 2,
+    TROPHY_ID_INVALID = 3,
+    TROPHY_ALREADY_UNLOCKED = 4,
+    TROPHY_PLATINUM_IS_UNBREAKABLE = 5,     // Platinum is unbreakable
+};
+
 }

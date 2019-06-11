@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <np/common.h>
 #include <cstdint>
 #include <string>
 
@@ -39,12 +40,6 @@ bool deinit(NpState &state);
 bool init(NpTrophyState &state);
 bool deinit(NpTrophyState &state);
 
-enum class NpTrophyError {
-    TROPHY_ERROR_NONE = 0,
-    TROPHY_CONTEXT_EXIST = 1,
-    TROPHY_CONTEXT_FILE_NON_EXIST = 2
-};
-
 /**
  * \brief Create a new trophy context.
  * 
@@ -57,7 +52,7 @@ enum class NpTrophyError {
  * \returns uint32_t(-1) on failure, else the handle to the context.
  */
 emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path, 
-    const emu::np::CommunicationID *custom_comm, NpTrophyError *error);
+    const emu::np::CommunicationID *custom_comm, emu::np::NpTrophyError *error);
 
 emu::np::trophy::Context *get_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle);
 bool destroy_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle);

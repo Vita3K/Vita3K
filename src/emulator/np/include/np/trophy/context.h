@@ -77,7 +77,10 @@ struct Context {
     std::array<std::uint64_t, MAX_TROPHIES> unlock_timestamps;
     std::array<TrophyType, MAX_TROPHIES> trophy_kinds;
 
+    std::int32_t platinum_trophy_id { - 1 };
+
     std::string trophy_progress_output_file_path;
+    std::string trophy_detail_xml;
 
     IOState *io;
     std::string pref_path;
@@ -86,6 +89,10 @@ struct Context {
     bool load_trophy_progress_file(const SceUID &progress_input_file);
 
     bool init_info_from_trp();
+    bool unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const bool force_unlock = false);
+
+    const int total_trophy_unlocked();
+    bool get_trophy_description(const std::int32_t id, std::string &name, std::string &detail);
 
     explicit Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream,
         const std::string &output_progress_path);

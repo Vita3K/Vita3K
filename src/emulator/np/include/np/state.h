@@ -41,11 +41,21 @@ struct NpManagerState {
     std::mutex access_mutex;
 };
 
+struct NpTrophyUnlockCallbackData {
+    std::string trophy_name;
+    std::string description;
+    emu::np::trophy::TrophyType trophy_kind;
+    std::vector<std::uint8_t> icon_buf;
+};
+
+using NpTrophyUnlockCallback = std::function<void(NpTrophyUnlockCallbackData&)>;
+
 struct NpTrophyState {
     bool inited = false;
     std::mutex access_mutex;
 
     std::vector<emu::np::trophy::Context> contexts;
+    NpTrophyUnlockCallback trophy_unlock_callback;
 };
 
 struct NpState {
