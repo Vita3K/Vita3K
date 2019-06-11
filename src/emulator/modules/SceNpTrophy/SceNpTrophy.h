@@ -18,6 +18,9 @@
 #pragma once
 
 #include <module/module.h>
+#include <cstdint>
+
+using SceNpTrophyHandle = std::int32_t;
 
 #define SCE_NP_TROPHY_ERROR_UNKNOWN 0x80551600
 #define SCE_NP_TROPHY_ERROR_NOT_INITIALIZED 0x80551601

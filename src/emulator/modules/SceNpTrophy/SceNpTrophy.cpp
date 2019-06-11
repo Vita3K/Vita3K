@@ -22,7 +22,8 @@
 #include "SceNpTrophy.h"
 
 EXPORT(int, sceNpTrophyAbortHandle) {
-    return UNIMPLEMENTED();
+    STUBBED("Stubbed with SCE_OK");
+    return 0;
 }
 
 EXPORT(int, sceNpTrophyCreateContext, emu::np::trophy::ContextHandle *context, const emu::np::CommunicationID *comm_id,
@@ -59,16 +60,27 @@ EXPORT(int, sceNpTrophyCreateContext, emu::np::trophy::ContextHandle *context, c
     return 0;
 }
 
-EXPORT(int, sceNpTrophyCreateHandle) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyCreateHandle, SceNpTrophyHandle *handle) {
+    // We don't handle "handle" for now. It's just a mechanic for async and its abortion.
+    // Everything emulated here is sync :)
+    STUBBED("Stubbed handle with 1");
+    *handle = 1;
+    return 0;
 }
 
-EXPORT(int, sceNpTrophyDestroyContext) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyDestroyContext, emu::np::trophy::ContextHandle handle) {
+    const bool result = destroy_trophy_context(host.np.trophy_state, handle);
+
+    if (!result) {
+        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+
+    return 0;
 }
 
-EXPORT(int, sceNpTrophyDestroyHandle) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyDestroyHandle, SceNpTrophyHandle handle) {
+    STUBBED("Stubbed with SCE_OK");
+    return 0;
 }
 
 EXPORT(int, sceNpTrophyGetGameIcon) {
