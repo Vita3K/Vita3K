@@ -80,7 +80,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
 }
 
 emu::np::trophy::Context *get_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle) {
-    if (handle < 0 || handle > static_cast<std::int32_t>(state.contexts.size())) {
+    if (handle < 0 || handle > static_cast<emu::np::trophy::ContextHandle>(state.contexts.size())) {
         return nullptr;
     }
 
@@ -88,7 +88,7 @@ emu::np::trophy::Context *get_trophy_context(NpTrophyState &state, const emu::np
 }
 
 bool destroy_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle) {
-    if (handle < 0 || handle > static_cast<std::uint32_t>(state.contexts.size())) {
+    if (handle < 0 || handle > static_cast<emu::np::trophy::ContextHandle>(state.contexts.size())) {
         return false;
     }
 
