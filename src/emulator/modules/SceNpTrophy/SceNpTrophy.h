@@ -21,6 +21,7 @@
 #include <cstdint>
 
 using SceNpTrophyHandle = std::int32_t;
+using SceNpTrophyID = std::int32_t;
 
 #define SCE_NP_TROPHY_ERROR_UNKNOWN 0x80551600
 #define SCE_NP_TROPHY_ERROR_NOT_INITIALIZED 0x80551601
@@ -56,6 +57,8 @@ using SceNpTrophyHandle = std::int32_t;
 #define SCE_NP_TROPHY_ERROR_UNLOCK_DENIED 0x8055161f
 #define SCE_NP_TROPHY_ERROR_INSUFFICIENT_MC_SPACE 0x80551620
 #define SCE_NP_TROPHY_ERROR_DEBUG_FAILURE 0x80551621
+
+static constexpr std::uint32_t NP_MAX_TROPHIES = 128;
 
 BRIDGE_DECL(sceNpTrophyAbortHandle)
 BRIDGE_DECL(sceNpTrophyCreateContext)

@@ -46,7 +46,7 @@ EXPORT(int, sceNpTrophyCreateContext, emu::np::trophy::ContextHandle *context, c
         }
 
         case NpTrophyError::TROPHY_CONTEXT_FILE_NON_EXIST: {
-            return SCE_NP_TROPHY_ERROR_INVALID_NPCOMMID;
+            return SCE_NP_TROPHY_ERROR_TRP_FILE_NOT_FOUND;
         }
 
         default:
@@ -83,8 +83,59 @@ EXPORT(int, sceNpTrophyDestroyHandle, SceNpTrophyHandle handle) {
     return 0;
 }
 
-EXPORT(int, sceNpTrophyGetGameIcon) {
-    return UNIMPLEMENTED();
+static int copy_file_data_from_trophy_file(emu::np::trophy::Context *context, const char *filename, void *buffer,
+    SceSize *size) {
+    // Search for ICON0.PNG in the trophy file
+    const std::uint32_t file_index = context->trophy_file.search_file(filename);
+
+    if (file_index == static_cast<std::uint32_t>(-1)) {
+        return SCE_NP_TROPHY_ERROR_ICON_FILE_NOT_FOUND;
+    }
+
+    if (!buffer) {
+        // Set the needed size for the target buffer
+        *size = static_cast<SceSize>(context->trophy_file.entries[file_index].size);
+        return 0;
+    }
+
+    // Do buffer copy
+    *size = std::min<SceSize>(static_cast<SceSize>(context->trophy_file.entries[file_index].size),
+        *size);
+
+    std::uint32_t size_left = *size;
+
+    context->trophy_file.get_entry_data(file_index, [&](void *source, std::uint32_t source_size) -> bool {
+        if (size_left == 0) {
+            return false;
+        }
+
+        source_size = std::min<std::uint32_t>(size_left, source_size);
+        std::copy(reinterpret_cast<std::uint8_t*>(source), reinterpret_cast<std::uint8_t*>(source) + source_size,
+            reinterpret_cast<std::uint8_t*>(buffer));
+
+        buffer = reinterpret_cast<std::uint8_t*>(buffer) + source_size;
+        return true;
+    });
+
+    return 0;
+}
+
+#define NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)                                              \
+    if (!host.np.trophy_state.inited) {                                                             \
+        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;                                                 \
+    }                                                                                               \
+    if (!size) {                                                                                    \
+        return SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT;                                                \
+    }                                                                                               \
+    emu::np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);   \
+    if (!context) {                                                                                 \
+        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;                                                 \
+    }
+
+EXPORT(int, sceNpTrophyGetGameIcon, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
+    void *buffer, SceSize *size) {
+    NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)
+    return copy_file_data_from_trophy_file(context, "ICON0.PNG", buffer, size);
 }
 
 EXPORT(int, sceNpTrophyGetGameInfo) {
@@ -99,8 +150,18 @@ EXPORT(int, sceNpTrophyGetGroupInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTrophyGetTrophyIcon) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyGetTrophyIcon, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
+    SceNpTrophyID trophy_id, void *buffer, SceSize *size) {
+    NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)
+
+    // Trophy should only be in this region
+    if (trophy_id < 0 || trophy_id >= NP_MAX_TROPHIES) {
+        return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
+    }
+
+    // Make filename
+    const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
+    return copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), buffer, size);
 }
 
 EXPORT(int, sceNpTrophyGetTrophyInfo) {
