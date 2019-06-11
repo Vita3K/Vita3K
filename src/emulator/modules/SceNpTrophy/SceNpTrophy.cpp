@@ -15,14 +15,48 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <np/trophy/context.h>
+#include <np/functions.h>
+#include <util/log.h>
+
 #include "SceNpTrophy.h"
 
 EXPORT(int, sceNpTrophyAbortHandle) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTrophyCreateContext) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyCreateContext, emu::np::trophy::ContextHandle *context, const emu::np::CommunicationID *comm_id,
+    void *comm_sign, const std::uint64_t options) {
+    if (!host.np.trophy_state.inited) {
+        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
+    }
+
+    if (comm_id && comm_id->num > 99) {
+        return SCE_NP_TROPHY_ERROR_INVALID_NPCOMMID;
+    }
+
+    NpTrophyError err = NpTrophyError::TROPHY_ERROR_NONE;
+    *context = create_trophy_context(host.np, host.io, host.pref_path, comm_id, &err);
+
+    if (*context == emu::np::trophy::INVALID_CONTEXT_HANDLE) {
+        switch (err) {
+        case NpTrophyError::TROPHY_CONTEXT_EXIST: {
+            return SCE_NP_TROPHY_ERROR_CONTEXT_ALREADY_EXISTS;
+        }
+
+        case NpTrophyError::TROPHY_CONTEXT_FILE_NON_EXIST: {
+            return SCE_NP_TROPHY_ERROR_INVALID_NPCOMMID;
+        }
+
+        default:
+            break;
+        }
+    }
+
+    emu::np::trophy::Context *ctx_ptr = get_trophy_context(host.np.trophy_state, *context);
+    LOG_TRACE("Trophy context for {}_{:0>2d} create successfuly!", ctx_ptr->comm_id.data, ctx_ptr->comm_id.num);
+
+    return 0;
 }
 
 EXPORT(int, sceNpTrophyCreateHandle) {
@@ -65,12 +99,28 @@ EXPORT(int, sceNpTrophyGetTrophyUnlockState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTrophyInit) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyInit, void *opt) {
+    if (host.np.trophy_state.inited) {
+        return SCE_NP_TROPHY_ERROR_ALREADY_INITIALIZED;
+    }
+
+    if (!init(host.np.trophy_state)) {
+        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceNpTrophyTerm) {
-    return UNIMPLEMENTED();
+    if (!host.np.trophy_state.inited) {
+        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
+    }
+
+    if (!deinit(host.np.trophy_state)) {
+        return SCE_NP_TROPHY_ERROR_ABORT;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceNpTrophyUnlockTrophy) {

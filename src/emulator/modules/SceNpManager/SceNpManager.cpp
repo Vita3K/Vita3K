@@ -71,12 +71,14 @@ EXPORT(int, sceNpGetServiceState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpInit) {
+EXPORT(int, sceNpInit, emu::np::CommunicationConfig *comm_config, void *dontcare) {
     if (host.np.inited) {
         return SCE_NP_ERROR_ALREADY_INITIALIZED;
     }
 
-    if (!init(host.np)) {
+    const emu::np::CommunicationID *comm_id = (comm_config) ? comm_config->comm_id.get(host.mem) : nullptr;
+
+    if (!init(host.np, comm_id)) {
         return SCE_NP_ERROR_NOT_INITIALIZED;
     }
 
