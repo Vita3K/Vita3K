@@ -66,3 +66,6 @@
 [submodule "src/external/SPIRV-Cross"]
 	path = src/external/SPIRV-Cross
 	url = https://github.com/vita3k/SPIRV-Cross
+[submodule "src/external/pugixml"]
+	path = src/external/pugixml
+	url = https://github.com/zeux/pugixml
