@@ -49,6 +49,8 @@
 #include <iostream>
 #include <sstream>
 
+namespace app {
+
 static const char *EBOOT_PATH = "eboot.bin";
 static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
 
@@ -410,3 +412,5 @@ void set_window_title(HostState &host) {
         host.frame_count = 0;
     }
 }
+
+} // namespace app

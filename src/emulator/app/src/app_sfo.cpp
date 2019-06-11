@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <cstring>
 
+namespace app {
+
 bool load_sfo(SfoFile &sfile, const std::vector<uint8_t> &content) {
     if (content.empty()) {
         return false;
@@ -76,3 +78,5 @@ bool find_data(std::string &out_data, SfoFile &file, const std::string &key) {
 
     return true;
 }
+
+} // namespace app

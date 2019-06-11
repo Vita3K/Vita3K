@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
         return InitConfigFailed;
 
     Config cfg{};
-    if (const auto err = config::init(cfg, argc, argv, root_paths) != Success) {
+    if (const auto err = app::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {
                 LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
@@ -63,22 +63,22 @@ int main(int argc, char *argv[]) {
 
     std::atexit(SDL_Quit);
     if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC | SDL_INIT_VIDEO) < 0) {
-        error_dialog("SDL initialisation failed.");
+        app::error_dialog("SDL initialisation failed.");
         return SDLInitFailed;
     }
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    AppRunType run_type;
+    app::AppRunType run_type;
     if (cfg.run_title_id)
-        run_type = AppRunType::Extracted;
+        run_type = app::AppRunType::Extracted;
     else if (cfg.vpk_path)
-        run_type = AppRunType::Vpk;
+        run_type = app::AppRunType::Vpk;
     else
-        run_type = AppRunType::Unknown;
+        run_type = app::AppRunType::Unknown;
 
     std::wstring vpk_path_wide;
-    if (run_type == AppRunType::Vpk) {
+    if (run_type == app::AppRunType::Vpk) {
         vpk_path_wide = string_utils::utf_to_wide(*cfg.vpk_path);
     } else {
         SDL_Event ev;
@@ -92,21 +92,21 @@ int main(int argc, char *argv[]) {
     }
 
     // TODO: Clean this, ie. make load_app overloads called depending on run type
-    if (run_type == AppRunType::Extracted) {
+    if (run_type == app::AppRunType::Extracted) {
         vpk_path_wide = string_utils::utf_to_wide(*cfg.run_title_id);
     }
 
     HostState host;
-    if (!init(host, std::move(cfg), root_paths)) {
-        error_dialog("Host initialisation failed.", host.window.get());
+    if (!app::init(host, std::move(cfg), root_paths)) {
+        app::error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }
 
     gui::init(host);
 
     // Application not provided via argument, show game selector
-    while (run_type == AppRunType::Unknown) {
-        if (handle_events(host)) {
+    while (run_type == app::AppRunType::Unknown) {
+        if (app::handle_events(host)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_begin(host);
 
@@ -121,22 +121,22 @@ int main(int argc, char *argv[]) {
         // TODO: Clean this, ie. make load_app overloads called depending on run type
         if (!host.gui.game_selector.selected_title_id.empty()) {
             vpk_path_wide = string_utils::utf_to_wide(host.gui.game_selector.selected_title_id);
-            run_type = AppRunType::Extracted;
+            run_type = app::AppRunType::Extracted;
         }
     }
 
     Ptr<const void> entry_point;
     if (const auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
         return err;
-    if (const auto err = run_app(host, entry_point) != Success)
+    if (const auto err = app::run_app(host, entry_point) != Success)
         return err;
 
-    gl_screen_renderer gl_renderer;
+    app::gl_screen_renderer gl_renderer;
 
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
 
-    while (handle_events(host)) {
+    while (app::handle_events(host)) {
         gl_renderer.render(host);
         gui::draw_begin(host);
         gui::draw_common_dialog(host);
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
             host.display.condvar.wait(lock);
         }
 
-        set_window_title(host);
+        app::set_window_title(host);
     }
 
 #ifdef USE_GDBSTUB
@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
 
     // There may be changes that made in the GUI, so we should save, again
     if (host.cfg.overwrite_config)
-        config::serialize(host.cfg, host.cfg.config_path);
+        app::serialize_config(host.cfg, host.cfg.config_path);
 
     return Success;
 }

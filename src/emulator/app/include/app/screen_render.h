@@ -21,6 +21,8 @@
 
 struct HostState;
 
+namespace app {
+
 class gl_screen_renderer {
 public:
     gl_screen_renderer() {}
@@ -47,3 +49,5 @@ private:
     SharedGLObject m_render_shader;
     GLuint m_screen_texture{ 0 };
 };
+
+} // namespace app

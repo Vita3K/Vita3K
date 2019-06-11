@@ -22,6 +22,8 @@
 
 #include <SDL_video.h>
 
+namespace app {
+
 bool gl_screen_renderer::init(const std::string &base_path) {
     glGenTextures(1, &m_screen_texture);
 
@@ -119,3 +121,5 @@ void gl_screen_renderer::destroy() {
 gl_screen_renderer::~gl_screen_renderer() {
     destroy();
 }
+
+} // namespace app

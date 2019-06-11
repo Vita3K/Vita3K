@@ -28,6 +28,8 @@ template <class T>
 class Ptr;
 class Root;
 
+namespace app {
+
 /// Describes the state of the application to be run
 enum class AppRunType {
     /// Run type is unknown
@@ -46,3 +48,6 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
 
 void set_window_title(HostState &host);
+bool clear_and_refresh_game_list(HostState &host);
+
+} // namespace app
