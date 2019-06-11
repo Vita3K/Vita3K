@@ -155,7 +155,7 @@ EXPORT(int, sceNpTrophyGetTrophyIcon, emu::np::trophy::ContextHandle context_han
     NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)
 
     // Trophy should only be in this region
-    if (trophy_id < 0 || trophy_id >= NP_MAX_TROPHIES) {
+    if (trophy_id < 0 || trophy_id >= emu::np::trophy::MAX_TROPHIES) {
         return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
     }
 
@@ -168,8 +168,26 @@ EXPORT(int, sceNpTrophyGetTrophyInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTrophyGetTrophyUnlockState) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyGetTrophyUnlockState, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
+    emu::np::trophy::TrophyFlagArray *flag_array, std::uint32_t *count) {
+    if (!host.np.trophy_state.inited) {
+        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
+    }
+
+    if (!flag_array || !count) {
+        return SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Get context
+    emu::np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
+    if (!context) {
+        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+
+    *count = context->trophy_count;
+    std::memcpy(flag_array, context->trophy_progress, sizeof(emu::np::trophy::TrophyFlagArray));
+
+    return 0;
 }
 
 EXPORT(int, sceNpTrophyInit, void *opt) {

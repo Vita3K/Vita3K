@@ -51,6 +51,7 @@ bool Context::init_info_from_trp() {
         return false;
     }
 
+    std::fill(trophy_progress, trophy_progress + (MAX_TROPHIES >> 5), 0);
     std::fill(trophy_availability, trophy_availability + (MAX_TROPHIES >> 5), 0);
     std::fill(trophy_kinds.begin(), trophy_kinds.end(), TrophyType::INVALID);
     std::fill(unlock_timestamps.begin(), unlock_timestamps.end(), 0);
