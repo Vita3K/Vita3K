@@ -68,8 +68,8 @@ bool NPProfileManager::deserialize_info() {
     
     for (auto &profile: profile_file) {
         try {
-            np_profile.online_id = profile["online-id"].as<std::string>();
-            np_profile.index = profile["index"].as<std::uint32_t>();
+            np_profile.online_id = profile.second["online-id"].as<std::string>();
+            np_profile.index = profile.second["index"].as<std::uint32_t>();
 
             profiles.push_back(np_profile);
         } catch (...) {
