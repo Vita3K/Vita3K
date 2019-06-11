@@ -64,24 +64,17 @@ bool NPProfileManager::deserialize_info() {
     // Read infos
     // Read default user
     current_profile_index = profile_file["default-index"].as<std::uint32_t>();
-
+    NPProfile np_profile;
+    
     for (auto &profile: profile_file) {
-<<<<<<< HEAD
-        NPProfile np_profile;
-        np_profile.online_id = profile["online-id"].as<std::string>();
-        np_profile.index = profile["index"].as<std::uint32_t>();
-
-        profiles.push_back(np_profile);
-=======
         try {
-            np_profile.online_id = profile.second["online-id"].as<std::string>();
-            np_profile.index = profile.second["index"].as<std::uint32_t>();
+            np_profile.online_id = profile["online-id"].as<std::string>();
+            np_profile.index = profile["index"].as<std::uint32_t>();
 
             profiles.push_back(np_profile);
         } catch (...) {
             continue;
         }
->>>>>>> 53c2915... a
     }
 
     std::sort(profiles.begin(), profiles.end(), [](const NPProfile &lhs, const NPProfile &rhs) {
@@ -111,18 +104,23 @@ NPProfile *NPProfileManager::create_new_profile(const std::string &online_id, co
         current_profile_index = static_cast<std::uint32_t>(profiles.size() - 1);
     }
 
+    serialize_info();
+
     return &profiles.back();
 }
 
-NPProfileManager::NPProfileManager() {
+bool NPProfileManager::init() {
     // Try to load all users
     if (!deserialize_info()) {
         create_new_profile("dummy");
     }
+
+    return true;
 }
 
-NPProfileManager::~NPProfileManager() {
+bool NPProfileManager::deinit() {
     serialize_info();
+    return true;
 }
 
 }

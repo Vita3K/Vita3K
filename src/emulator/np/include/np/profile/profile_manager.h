@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -39,8 +40,9 @@ class NPProfileManager {
     std::vector<NPProfile> profiles;
     std::uint32_t current_profile_index { 0 };
 
-    explicit NPProfileManager();
-    ~NPProfileManager();
+public:
+    bool init();
+    bool deinit();
 
     bool serialize_info();
     bool deserialize_info();

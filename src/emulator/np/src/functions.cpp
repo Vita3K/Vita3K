@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2019 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,34 +15,22 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <np/functions.h>
+#include <np/state.h>
 
-#include <map>
+static bool init(NpManagerState &state) {
+    return state.profile_manager.init();
+}
 
-#include <np/profile/profile_manager.h>
-#include <mem/mem.h> // Address.
+static bool deinit(NpManagerState &state) {
+    return state.profile_manager.deinit();
+}
 
-#include <mutex>
+bool init(NpState &state) {
+    state.inited = true;
+    return init(state.manager_state);
+}
 
-namespace emu {
-struct SceNpServiceStateCallback {
-    Address pc;
-    Address data;
-};
-} // namespace emu
-
-typedef std::map<int, emu::SceNpServiceStateCallback> np_callbacks;
-
-struct NpManagerState {
-    emu::np::profile::NPProfileManager profile_manager;
-    std::mutex access_mutex;
-};
-
-struct NpState {
-    bool inited = false;
-    np_callbacks cbs;
-    int state = -1;
-
-    NpManagerState manager_state;
-};
-
+bool deinit(NpState &state) {
+    return deinit(state.manager_state);
+}
