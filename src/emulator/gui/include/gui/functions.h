@@ -17,22 +17,12 @@
 
 #pragma once
 
-<<<<<<< HEAD
-#include <host/state.h>
-
-#include <SDL.h>
-
-#include <string>
-
-struct GuiState;
-=======
 #include <vector>
 #include <string>
 
 struct HostState;
 struct SDL_Window;
 struct NpTrophyUnlockCallbackData;
->>>>>>> gui: Add trophy unlock window
 
 namespace gui {
 
@@ -54,19 +44,9 @@ void draw_end(SDL_Window *window);
 void draw_display(GuiState &gui, DisplayState &display, MemState &mem);
 void draw_ui(GuiState &gui, HostState &host);
 
-<<<<<<< HEAD
 void draw_common_dialog(GuiState &gui, HostState &host);
 void draw_game_selector(GuiState &gui, HostState &host);
 void draw_reinstall_dialog(GenericDialogState *status);
-=======
-void draw_common_dialog(HostState &host);
-void draw_game_selector(HostState &host);
-void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
-void draw_trophies_unlocked(HostState &host);
-
-std::uint32_t load_image(HostState &host, const char *data, const std::size_t size);
-void destroy_image(const std::uint32_t obj);
->>>>>>> gui: Add trophy unlock window
 
 } // namespace gui
 
