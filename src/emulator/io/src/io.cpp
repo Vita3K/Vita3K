@@ -474,7 +474,7 @@ int remove_file(IOState &io, const char *file, const char *pref_path, const char
     }
 }
 
-int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, const char *export_name) {
+int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, const char *export_name, const bool recursive) {
     std::string translated_path = dir;
     trim_leading_slash(translated_path);
     VitaIoDevice device = get_device(translated_path);
@@ -489,7 +489,10 @@ int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, co
         std::string dir_path = to_host_path(translated_path, pref_path, device);
         boost::system::error_code error_code;
 
-        fs::create_directory(dir_path, error_code);
+        if (recursive)
+            fs::create_directories(dir_path, error_code);
+        else
+            fs::create_directory(dir_path, error_code);
 
         if (error_code == std::errc::no_such_file_or_directory) {
             return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
