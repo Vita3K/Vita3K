@@ -82,6 +82,8 @@ struct Context {
     std::string trophy_progress_output_file_path;
     std::string trophy_detail_xml;
 
+    std::uint32_t lang { 1 }; 
+
     IOState *io;
     std::string pref_path;
 

@@ -204,6 +204,8 @@ bool Context::unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const 
         *err = emu::np::NpTrophyError::TROPHY_ERROR_NONE;
     }
 
+    save_trophy_progress_file();
+
     return true;
 }
 
@@ -230,10 +232,16 @@ const int Context::total_trophy_unlocked() {
 bool Context::get_trophy_description(const std::int32_t id, std::string &name, std::string &detail) {
     if (id < 0 || id >= MAX_TROPHIES) {
         return false;
-    } 
+    }
 
-    if (trophy_detail_xml.empty() && !read_trophy_entry_to_buffer(trophy_file, "TROP.SFM", trophy_detail_xml)) {
-        return false;
+    if (trophy_detail_xml.empty()) {
+        const std::string fname = fmt::format("TROP_{:0>2d}.SFM", lang);
+
+        if (!read_trophy_entry_to_buffer(trophy_file, fname.c_str(), trophy_detail_xml)) {
+            if (!read_trophy_entry_to_buffer(trophy_file, "TROP.SFM", trophy_detail_xml)) {
+                return false;
+            }
+        }
     }
 
     // Parse it
@@ -258,8 +266,8 @@ bool Context::get_trophy_description(const std::int32_t id, std::string &name, s
 }
 }
 
-emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path, const emu::np::CommunicationID *custom_comm,
-    emu::np::NpTrophyError *error) {
+emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path, 
+    const emu::np::CommunicationID *custom_comm, const std::uint32_t lang, emu::np::NpTrophyError *error) {
     if (!custom_comm) {
         custom_comm = &np.comm_id;
     }
@@ -293,9 +301,13 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
 
     // Try to open the trophy save file. The context will automatically took the default profile to perform trophy
     // operations on.
-    const std::string trophy_progress_save_file = trophy_base_dir + fmt::format("{}_TRP_PROGRESS.DAT", 
-        np.manager_state.profile_manager.get_current_profile()->online_id);
+    std::string trophy_progress_save_file = fmt::format("ux0:/user/{}/{}_{:0>2d}/", 
+        np.manager_state.profile_manager.get_current_profile()->online_id, custom_comm->data,
+        custom_comm->num);
     
+    create_dir(io, trophy_progress_save_file.c_str(), 0, pref_path.c_str(), "create_trophy_context", true);
+    trophy_progress_save_file += "TRP_PROGRESS.DAT";
+
     const SceUID trophy_progress_file_inp = open_file(io, trophy_progress_save_file, SCE_O_RDONLY, pref_path.c_str(), "create_trophy_context");
 
     emu::np::trophy::Context *new_context = nullptr;
@@ -322,6 +334,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
         new_context->pref_path = pref_path;
     }
 
+    new_context->lang = lang;
     new_context->trophy_file.header_parse();
 
     if (trophy_progress_file_inp > 0) {
