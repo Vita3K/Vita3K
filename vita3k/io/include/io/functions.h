@@ -35,6 +35,7 @@ struct IOState;
 inline SceUID invalid_fd = -1;
 
 void init_device_paths(IOState &io);
+bool init_savedata_game_path(IOState &io, const fs::path &pref_path);
 bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path);
 
 SceUID open_file(IOState &io, const char *path, const int flags, const std::string &pref_path, const char *export_name);

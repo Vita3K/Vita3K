@@ -28,6 +28,7 @@ add_library(
 	src/mutexes_dialog.cpp
 	src/perf_overlay.cpp
 	src/private.h
+	src/profiles_manager_dialog.cpp
 	src/reinstall.cpp
 	src/semaphores_dialog.cpp
 	src/settings_dialog.cpp

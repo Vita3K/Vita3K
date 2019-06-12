@@ -35,7 +35,6 @@ struct Config {
     bool log_exports = false;
     bool log_active_shaders = false;
     bool log_uniforms = false;
-    std::vector<std::string> lle_modules;
     bool pstv_mode = false;
     bool show_gui = false;
     bool show_game_background = true;
@@ -53,10 +52,12 @@ struct Config {
     bool load_config = false;
     bool discord_rich_presence = true;
     bool wait_for_debugger = false;
-    std::string online_id = "Vita3K";
     bool color_surface_debug = false;
     bool hardware_flip = false;
     bool performance_overlay = false;
     std::string backend_renderer = "OpenGL";
+    int user_id = 0;
+    std::vector<std::string> online_id = { "Vita3K" };
+    std::vector<std::string> lle_modules = {};
 
 }; // struct Config
