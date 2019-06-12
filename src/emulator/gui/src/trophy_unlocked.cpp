@@ -41,13 +41,16 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.76f, 0.75f, 0.76f, 1.0f));    // Smooth gray
     ImGui::SetNextWindowSize(TROPHY_WINDOW_SIZE);
-    ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+    
     ImGui::SetWindowFontScale(1.3f);
     ImGui::SetCursorPos(ImVec2(10.0f, 10.0f));
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, 80.0f);
     ImGui::Image((ImTextureID)host.gui.trophy_window_icon, ImVec2(60.0f, 60.0f));
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.24f, 0.24f, 0.24f, 1.0f));
+    ImGui::SetColumnWidth(1, ImGui::GetIO().DisplaySize.x - ImGui::GetCursorPosX() - 10.0f);
     ImGui::NextColumn();
 
     std::string trophy_kind_s = "?";
@@ -77,8 +80,10 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
         break;
     }
 
-    ImGui::Text("%s (%s)", callback_data.trophy_name.c_str(), trophy_kind_s.c_str());
-    ImGui::Text("%s", callback_data.description.c_str());
+    ImGui::TextWrapped("%s (%s)", callback_data.trophy_name.c_str(), trophy_kind_s.c_str());
+    
+    ImGui::SetWindowFontScale(1.2f);
+    ImGui::TextWrapped("%s", callback_data.description.c_str());
 
     ImGui::PopStyleColor();
     ImGui::End();
