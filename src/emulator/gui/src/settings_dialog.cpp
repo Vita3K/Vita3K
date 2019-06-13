@@ -16,11 +16,12 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "private.h"
-#include <config.h>
+
+#include <app/app_config.h>
+#include <app/app_functions.h>
 #include <gui/functions.h>
 #include <gui/state.h>
 
-#include <host/functions.h>
 #include <host/state.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <util/fs.h>
@@ -189,8 +190,8 @@ void draw_settings_dialog(HostState &host) {
                     host.pref_path = host.cfg.pref_path;
 
                     // Refresh the working paths
-                    config::serialize(host.cfg, host.cfg.config_path);
-                    LOG_INFO_IF(clear_and_refresh_game_list(host), "Successfully moved Vita3K files to: {}", host.pref_path);
+                    app::serialize_config(host.cfg, host.cfg.config_path);
+                    LOG_INFO_IF(app::clear_and_refresh_game_list(host), "Successfully moved Vita3K files to: {}", host.pref_path);
                 }
             }
         }
@@ -270,7 +271,7 @@ void draw_settings_dialog(HostState &host) {
     }
 
     if (host.cfg.overwrite_config)
-        config::serialize(host.cfg, host.cfg.config_path);
+        app::serialize_config(host.cfg, host.cfg.config_path);
 
     ImGui::EndTabBar();
     ImGui::End();

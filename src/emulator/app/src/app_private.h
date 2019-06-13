@@ -17,33 +17,14 @@
 
 #pragma once
 
-#include <glutil/shader.h>
+#include <string>
+#include <vector>
 
-struct HostState;
+struct SfoFile;
 
-class gl_screen_renderer {
-public:
-    gl_screen_renderer() {}
-    ~gl_screen_renderer();
+namespace app {
 
-    bool init(const std::string &base_path);
-    void render(const HostState &state);
-    void destroy();
+bool load_sfo(SfoFile &file, const std::vector<uint8_t> &data);
+bool find_data(std::string &out_data, SfoFile &file, const std::string &key);
 
-private:
-    struct screen_vertex {
-        GLfloat pos[3];
-        GLfloat uv[2];
-    };
-
-    static constexpr size_t screen_vertex_size = sizeof(screen_vertex);
-    static constexpr uint32_t screen_vertex_count = 4;
-
-    using screen_vertices_t = screen_vertex[screen_vertex_count];
-
-private:
-    GLuint m_vao{ 0 };
-    GLuint m_vbo{ 0 };
-    SharedGLObject m_render_shader;
-    GLuint m_screen_texture{ 0 };
-};
+} // namespace app

@@ -15,9 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "app.h"
+#include "app_private.h"
 
-#include "sfo.h"
+#include <app/app_functions.h>
 
 #include <gui/functions.h>
 #include <gui/imgui_impl_sdl_gl3.h>
@@ -48,6 +48,8 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+
+namespace app {
 
 static const char *EBOOT_PATH = "eboot.bin";
 static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
@@ -144,7 +146,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
     return true;
 }
 
-bool install_vpk(Ptr<const void> &entry_point, HostState &host, const fs::path &path) {
+static bool install_vpk(Ptr<const void> &entry_point, HostState &host, const fs::path &path) {
     if (!fs::exists(path)) {
         LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_path().string());
         return false;
@@ -410,3 +412,5 @@ void set_window_title(HostState &host) {
         host.frame_count = 0;
     }
 }
+
+} // namespace app
