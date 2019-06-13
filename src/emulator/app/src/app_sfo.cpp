@@ -15,12 +15,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "sfo.h"
+#include "app_private.h"
 
 #include <host/sfo.h>
 
 #include <algorithm>
 #include <cstring>
+
+namespace app {
 
 bool load_sfo(SfoFile &sfile, const std::vector<uint8_t> &content) {
     if (content.empty()) {
@@ -76,3 +78,5 @@ bool find_data(std::string &out_data, SfoFile &file, const std::string &key) {
 
     return true;
 }
+
+} // namespace app

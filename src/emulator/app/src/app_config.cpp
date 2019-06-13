@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "config.h"
+#include <app/app_config.h>
 
 #include <host/version.h>
 #include <psp2/system_param.h>
@@ -32,7 +32,7 @@
 
 namespace po = boost::program_options;
 
-namespace config {
+namespace app {
 
 template <typename T, typename Q = T>
 void get_yaml_value(YAML::Node &config_node, const char *key, T *target_val, Q default_val) {
@@ -94,7 +94,7 @@ fs::path check_path(fs::path output_path) {
     return output_path;
 }
 
-ExitCode serialize(Config &cfg, fs::path output_path) {
+ExitCode serialize_config(Config &cfg, fs::path output_path) {
     output_path = check_path(output_path);
     if (output_path.empty())
         return InvalidApplicationPath;
@@ -191,7 +191,7 @@ static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_p
     return Success;
 }
 
-ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths) {
+ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths) {
     // Load base path configuration by default
     if (fs::exists(check_path(root_paths.get_base_path())))
         parse(cfg, root_paths.get_base_path(), root_paths.get_pref_path_string());
@@ -304,11 +304,11 @@ ExitCode init(Config &cfg, int argc, char **argv, const Root &root_paths) {
 
     // Save any changes made in command-line arguments
     if (cfg.overwrite_config || !fs::exists(check_path(cfg.config_path))) {
-        if (serialize(cfg, cfg.config_path) != Success)
+        if (serialize_config(cfg, cfg.config_path) != Success)
             return InitConfigFailed;
     }
 
     return Success;
 }
 
-} // namespace config
+} // namespace app

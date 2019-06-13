@@ -26,3 +26,4 @@ src/shader_editor_dialog.cpp
 
 target_include_directories(gui PUBLIC ${PROJECT_SOURCE_DIR}/src/emulator include)
 target_link_libraries(gui PUBLIC sdl2 stb imgui glutil host kernel cpu util dialog shader)
+target_link_libraries(gui PRIVATE app)

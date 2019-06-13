@@ -15,14 +15,12 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "app.h"
-#include "sfo.h"
+#include "app_private.h"
+
+#include <app/app_config.h>
+#include <app/app_functions.h>
 
 #include <audio/functions.h>
-#include <config.h>
-#ifdef USE_DISCORD_RICH_PRESENCE
-#include <discord.h>
-#endif
 #include <glutil/gl.h>
 #include <host/state.h>
 #include <host/version.h>
@@ -33,12 +31,18 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
+#ifdef USE_DISCORD_RICH_PRESENCE
+#include <discord.h>
+#endif
+
 #include <SDL_video.h>
 #include <glbinding-aux/types_to_string.h>
 #include <glbinding/Binding.h>
 #include <microprofile.h>
 
 #include <sstream>
+
+namespace app {
 
 using namespace glbinding;
 
@@ -98,7 +102,7 @@ void update_viewport(HostState &state) {
     }
 }
 
-void get_game_titles(HostState &host) {
+static void get_game_titles(HostState &host) {
     fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
     if (!fs::exists(app_path))
         return;
@@ -203,7 +207,9 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     get_game_titles(state);
 
     if (state.cfg.overwrite_config)
-        config::serialize(state.cfg, state.cfg.config_path);
+        serialize_config(state.cfg, state.cfg.config_path);
 
     return true;
 }
+
+} // namespace app

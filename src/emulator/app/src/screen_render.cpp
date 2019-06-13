@@ -15,12 +15,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "screen_render.h"
+#include <app/screen_render.h>
 
 #include <host/state.h>
 #include <util/log.h>
 
 #include <SDL_video.h>
+
+namespace app {
 
 bool gl_screen_renderer::init(const std::string &base_path) {
     glGenTextures(1, &m_screen_texture);
@@ -119,3 +121,5 @@ void gl_screen_renderer::destroy() {
 gl_screen_renderer::~gl_screen_renderer() {
     destroy();
 }
+
+} // namespace app
