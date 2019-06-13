@@ -49,6 +49,10 @@ if (USE_GDBSTUB)
 	add_definitions(-DUSE_GDBSTUB)
 endif()
 
+if (USE_DISCORD_RICH_PRESENCE)
+	add_definitions(-DUSE_DISCORD_RICH_PRESENCE)
+endif()
+
 add_subdirectory(audio)
 add_subdirectory(cpu)
 add_subdirectory(crypto)

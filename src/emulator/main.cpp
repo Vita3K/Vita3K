@@ -17,7 +17,7 @@
 
 #include "app.h"
 #include "config.h"
-#ifdef NDEBUG
+#ifdef USE_DISCORD_RICH_PRESENCE
 #include "discord.h"
 #endif
 #include "screen_render.h"
@@ -109,12 +109,17 @@ int main(int argc, char *argv[]) {
 
     gui::init(host);
 
+	auto discord_rich_presence_old = host.cfg.discord_rich_presence;
+
     // Application not provided via argument, show game selector
     while (run_type == AppRunType::Unknown) {
         if (handle_events(host)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_begin(host);
 
+#ifdef USE_DISCORD_RICH_PRESENCE
+            discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
+#endif
             gui::draw_ui(host);
             gui::draw_game_selector(host);
 
@@ -159,7 +164,7 @@ int main(int argc, char *argv[]) {
 
         set_window_title(host);
     }
-#ifdef NDEBUG
+#ifdef USE_DISCORD_RICH_PRESENCE
     discord::shutdown();
 #endif
 

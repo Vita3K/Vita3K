@@ -20,7 +20,7 @@
 
 #include <audio/functions.h>
 #include <config.h>
-#ifdef NDEBUG
+#ifdef USE_DISCORD_RICH_PRESENCE
 #include <discord.h>
 #endif
 #include <glutil/gl.h>
@@ -174,7 +174,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         return false;
     }
 
-#ifdef NDEBUG
+#ifdef USE_DISCORD_RICH_PRESENCE
     discord::initialize();
     if (cfg.discord_rich_presence) {
         discord::update_presence("");

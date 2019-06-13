@@ -47,5 +47,4 @@ void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
 namespace ImGui {
 
 bool vector_getter(void *vec, int idx, const char **out_text);
-
 }

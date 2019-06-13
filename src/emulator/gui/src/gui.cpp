@@ -21,9 +21,6 @@
 
 #include <gui/imgui_impl_sdl_gl3.h>
 
-#ifdef NDEBUG
-#include <discord.h>
-#endif
 #include <glutil/gl.h>
 #include <host/state.h>
 #include <io/io.h>
@@ -281,14 +278,7 @@ void draw_ui(HostState &host) {
 
     if (host.gui.configuration_menu.settings_dialog)
         draw_settings_dialog(host);
-#ifdef NDEBUG
-    if (host.cfg.discord_rich_presence) {
-        discord::initialize();
-        discord::update_presence("", "Idle", false);
-    } else {
-        discord::shutdown();
-    }
-#endif
+
     if (host.gui.help_menu.controls_dialog)
         draw_controls_dialog(host);
     if (host.gui.help_menu.about_dialog)

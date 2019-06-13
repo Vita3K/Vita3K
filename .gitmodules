@@ -67,3 +67,6 @@
 [submodule "src/external/unicorn-src"]
 	path = src/external/unicorn-src
 	url = https://github.com/unicorn-engine/unicorn.git
+[submodule "src/external/discord-rpc"]
+	path = src/external/discord-rpc
+	url = https://github.com/discordapp/discord-rpc

@@ -168,7 +168,7 @@ static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_p
     get_yaml_value(config_node, "background-alpha", &cfg.background_alpha, 0.300f);
     get_yaml_value(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value(config_node, "pref-path", &cfg.pref_path, root_pref_path);
-    get_yaml_value(config_node, "discord-rich-presence", &cfg.discord_rich_presence, false);
+    get_yaml_value(config_node, "discord-rich-presence", &cfg.discord_rich_presence, true);
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
