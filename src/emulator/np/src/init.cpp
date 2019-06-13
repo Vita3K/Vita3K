@@ -19,14 +19,6 @@
 #include <np/common.h>
 #include <np/state.h>
 
-static bool init(NpManagerState &state) {
-    return state.profile_manager.init();
-}
-
-static bool deinit(NpManagerState &state) {
-    return state.profile_manager.deinit();
-}
-
 bool init(NpState &state, const emu::np::CommunicationID *comm_id) {
     state.inited = true;
 
@@ -34,11 +26,12 @@ bool init(NpState &state, const emu::np::CommunicationID *comm_id) {
         state.comm_id = *comm_id;
     }
 
-    return init(state.manager_state);
+    return true;
 }
 
 bool deinit(NpState &state) {
-    return deinit(state.manager_state);
+    // Reserved
+    return true;
 }
 
 bool init(NpTrophyState &state) {

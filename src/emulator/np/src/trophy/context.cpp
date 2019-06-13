@@ -301,12 +301,11 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
 
     // Try to open the trophy save file. The context will automatically took the default profile to perform trophy
     // operations on.
-    std::string trophy_progress_save_file = fmt::format("ux0:/user/{}/{}_{:0>2d}/", 
-        np.manager_state.profile_manager.get_current_profile()->online_id, custom_comm->data,
-        custom_comm->num);
+    std::string trophy_progress_save_file = fmt::format("ux0:/user/00/trophy/data/{}_{:0>2d}/", 
+        custom_comm->data, custom_comm->num);
     
     create_dir(io, trophy_progress_save_file.c_str(), 0, pref_path.c_str(), "create_trophy_context", true);
-    trophy_progress_save_file += "TRP_PROGRESS.DAT";
+    trophy_progress_save_file += "TROPUSR.DAT";
 
     const SceUID trophy_progress_file_inp = open_file(io, trophy_progress_save_file, SCE_O_RDONLY, pref_path.c_str(), "create_trophy_context");
 

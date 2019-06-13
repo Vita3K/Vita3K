@@ -128,6 +128,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value(config_node, "pref-path", &cfg.pref_path, root_pref_path);
     get_yaml_value(config_node, "discord-rich-presence", &cfg.discord_rich_presence, true);
+    get_yaml_value(config_node, "online-id", &cfg.online_id, std::string("Vita3K"));
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
@@ -178,6 +179,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "pref-path", cfg.pref_path);
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_single(emitter, "discord-rich-presence", cfg.discord_rich_presence);
+    config_file_emit_single(emitter, "online-id", cfg.online_id);
     config_file_emit_optional_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
 
     emitter << YAML::EndMap;

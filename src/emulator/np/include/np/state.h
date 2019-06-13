@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <np/profile/profile_manager.h>
 #include <np/trophy/context.h>
 #include <np/common.h>
 
@@ -35,11 +34,6 @@ struct SceNpServiceStateCallback {
 } // namespace emu
 
 typedef std::map<int, emu::SceNpServiceStateCallback> np_callbacks;
-
-struct NpManagerState {
-    emu::np::profile::NPProfileManager profile_manager;
-    std::mutex access_mutex;
-};
 
 struct NpTrophyUnlockCallbackData {
     std::string trophy_name;
@@ -63,9 +57,7 @@ struct NpState {
     np_callbacks cbs;
     int state = -1;
 
-    NpManagerState manager_state;
     NpTrophyState trophy_state;
-
     emu::np::CommunicationID comm_id;
 };
 

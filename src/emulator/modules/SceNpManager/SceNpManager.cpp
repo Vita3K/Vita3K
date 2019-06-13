@@ -106,22 +106,18 @@ EXPORT(int, sceNpManagerGetNpId, SceNpId *id) {
         return SCE_NP_MANAGER_ERROR_NOT_INITIALIZED;
     }
 
-    {
-        const std::lock_guard<std::mutex> guard(host.np.manager_state.access_mutex);
-        emu::np::profile::NPProfile *current_profile = host.np.manager_state.profile_manager.get_current_profile();
-
-        if (!current_profile) {
-            return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
-        }
-
-        std::copy(current_profile->online_id.begin(), current_profile->online_id.end(), id->online_id.name);
-        id->online_id.term = '\0';
-        id->online_id.dummy = 0;
-
-        // Fill the unused stuffs to 0 (prevent some weird things happen)
-        std::fill(id->opt, id->opt + 8, 0);
-        std::fill(id->unk0, id->unk0 + 8, 0);
+    if (host.cfg.online_id.length() > 16) {
+        LOG_ERROR("Your online ID has over 16 characters, try again with shorter name");
+        return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
     }
+
+    std::copy(host.cfg.online_id.begin(), host.cfg.online_id.end(), id->online_id.name);
+    id->online_id.term = '\0';
+    id->online_id.dummy = 0;
+
+    // Fill the unused stuffs to 0 (prevent some weird things happen)
+    std::fill(id->opt, id->opt + 8, 0);
+    std::fill(id->unk0, id->unk0 + 8, 0);
 
     // Everything is totally fine
     return 0;
