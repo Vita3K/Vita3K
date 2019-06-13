@@ -5,20 +5,24 @@
 namespace gui {
 
 static constexpr float TROPHY_MOVE_DELTA = 12.0f;
-static const ImVec2 TROPHY_WINDOW_SIZE = ImVec2(360, 80);
+static constexpr float TROPHY_WINDOW_ICON_SIZE = 60.0f;
+static constexpr float TROPHY_WINDOW_MARGIN_PADDING = 10.0f;
+static const ImVec2 TROPHY_WINDOW_SIZE = ImVec2(360, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING * 2);
 static constexpr int TROPHY_WINDOW_STATIC_FRAME_COUNT = 250;
+static constexpr float TROPHY_WINDOW_Y_POS = 20.0f;
 
 static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &callback_data) {
     if (host.gui.trophy_window_frame_stage == 0 || host.gui.trophy_window_frame_stage == 2) {
         ImVec2 target_window_pos = ImVec2(0.0f, 0.0f);
 
         if (host.gui.trophy_window_frame_stage == 0)
-            target_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x - TROPHY_WINDOW_SIZE.x - 10.0f, 20.0f);
+            target_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x - TROPHY_WINDOW_SIZE.x - TROPHY_WINDOW_MARGIN_PADDING,
+                TROPHY_WINDOW_Y_POS);
         else
-            target_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + 10, 20);
+            target_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_Y_POS);
 
         if (host.gui.trophy_window_frame_stage == 0 && host.gui.trophy_window_frame_count == 0) {
-            host.gui.trophy_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + 10, 20);
+            host.gui.trophy_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_Y_POS);
 
             // Load icon
             host.gui.trophy_window_icon = load_image(host, (const char *)callback_data.icon_buf.data(),
@@ -38,18 +42,18 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
     ImGui::SetNextWindowBgAlpha(0.9f);
     ImGui::SetNextWindowPos(host.gui.trophy_window_pos);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.76f, 0.75f, 0.76f, 1.0f)); // Smooth gray
     ImGui::SetNextWindowSize(TROPHY_WINDOW_SIZE);
     ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
 
     ImGui::SetWindowFontScale(1.3f);
-    ImGui::SetCursorPos(ImVec2(10.0f, 10.0f));
+    ImGui::SetCursorPos(ImVec2(TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_MARGIN_PADDING));
     ImGui::Columns(2, nullptr, false);
-    ImGui::SetColumnWidth(0, 80.0f);
-    ImGui::Image((ImTextureID)host.gui.trophy_window_icon, ImVec2(60.0f, 60.0f));
+    ImGui::SetColumnWidth(0, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING * 2);
+    ImGui::Image((ImTextureID)host.gui.trophy_window_icon, ImVec2(TROPHY_WINDOW_ICON_SIZE, TROPHY_WINDOW_ICON_SIZE));
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.24f, 0.24f, 0.24f, 1.0f));
-    ImGui::SetColumnWidth(1, ImGui::GetIO().DisplaySize.x - ImGui::GetCursorPosX() - 10.0f);
+    ImGui::SetColumnWidth(1, ImGui::GetIO().DisplaySize.x - ImGui::GetCursorPosX() - TROPHY_WINDOW_MARGIN_PADDING);
     ImGui::NextColumn();
 
     std::string trophy_kind_s = "?";
