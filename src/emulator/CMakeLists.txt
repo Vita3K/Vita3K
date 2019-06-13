@@ -81,7 +81,7 @@ add_subdirectory(gui)
 
 add_executable(emulator MACOSX_BUNDLE main.cpp performance.cpp)
 
-target_link_libraries(emulator PRIVATE app gui host sdl2 shader util)
+target_link_libraries(emulator PRIVATE app discord-rpc gui host sdl2 shader util)
 if(LINUX)
 	target_link_libraries(emulator PRIVATE stdc++fs)
 endif()

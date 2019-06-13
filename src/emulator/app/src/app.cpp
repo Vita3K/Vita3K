@@ -42,7 +42,7 @@
 #endif
 
 #ifdef USE_DISCORD_RICH_PRESENCE
-#include <discord.h>
+#include <app/discord.h>
 #endif
 
 #include <SDL.h>

@@ -1,5 +1,5 @@
 #ifdef USE_DISCORD_RICH_PRESENCE
-#include <discord.h>
+#include <app/discord.h>
 #include <discord_register.h>
 #include <discord_rpc.h>
 

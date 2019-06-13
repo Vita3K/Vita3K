@@ -15,8 +15,6 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
-
 #include <app/app_config.h>
 #include <app/app_functions.h>
 #include <app/screen_render.h>
@@ -34,7 +32,7 @@
 #endif
 
 #ifdef USE_DISCORD_RICH_PRESENCE
-#include "discord.h"
+#include <app/discord.h>
 #endif
 
 #include <SDL.h>
@@ -110,7 +108,7 @@ int main(int argc, char *argv[]) {
 
     gui::init(host);
 
-	auto discord_rich_presence_old = host.cfg.discord_rich_presence;
+    auto discord_rich_presence_old = host.cfg.discord_rich_presence;
 
     // Application not provided via argument, show game selector
     while (run_type == app::AppRunType::Unknown) {
