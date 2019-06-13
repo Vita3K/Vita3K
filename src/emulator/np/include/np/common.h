@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include <mem/ptr.h>
 #include <cstdint>
 #include <cstring>
+#include <mem/ptr.h>
 
 namespace emu::np {
 
@@ -30,7 +30,7 @@ struct CommunicationID {
     char dummy;
 };
 
-inline const bool operator == (const CommunicationID &lhs, const CommunicationID &rhs) {
+inline const bool operator==(const CommunicationID &lhs, const CommunicationID &rhs) {
     return (strncmp(lhs.data, rhs.data, 9) == 0) && (lhs.num == rhs.num);
 }
 
@@ -46,7 +46,7 @@ enum class NpTrophyError {
     TROPHY_CONTEXT_FILE_NON_EXIST = 2,
     TROPHY_ID_INVALID = 3,
     TROPHY_ALREADY_UNLOCKED = 4,
-    TROPHY_PLATINUM_IS_UNBREAKABLE = 5,     // Platinum is unbreakable
+    TROPHY_PLATINUM_IS_UNBREAKABLE = 5, // Platinum is unbreakable
 };
 
-}
+} // namespace emu::np

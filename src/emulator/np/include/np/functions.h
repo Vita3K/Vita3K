@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <np/common.h>
 #include <cstdint>
+#include <np/common.h>
 #include <string>
 
 namespace emu::np {
@@ -28,7 +28,7 @@ struct CommunicationID;
 namespace emu::np::trophy {
 using ContextHandle = std::int32_t;
 struct Context;
-}
+} // namespace emu::np::trophy
 
 struct NpState;
 struct NpTrophyState;
@@ -51,7 +51,7 @@ bool deinit(NpTrophyState &state);
  * 
  * \returns uint32_t(-1) on failure, else the handle to the context.
  */
-emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path, 
+emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path,
     const emu::np::CommunicationID *custom_comm, const std::uint32_t lang, emu::np::NpTrophyError *error);
 
 emu::np::trophy::Context *get_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle);

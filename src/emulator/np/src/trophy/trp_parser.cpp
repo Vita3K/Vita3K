@@ -15,9 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <algorithm>
 #include <np/trophy/trp_parser.h>
 #include <util/bytes.h>
-#include <algorithm>
 
 namespace emu::np::trophy {
 
@@ -69,11 +69,11 @@ bool TRPFile::header_parse() {
         seek_func(entry_info_off + (i * 0x40) + 0x20);
 
         // Read offset from the beginning and size
-        if (!read_func((char*)&(entries[i].offset), 8)) {
+        if (!read_func((char *)&(entries[i].offset), 8)) {
             return false;
         }
 
-        if (!read_func((char*)&entries[i].size, 8)) {
+        if (!read_func((char *)&entries[i].size, 8)) {
             return false;
         }
 
@@ -109,7 +109,7 @@ bool TRPFile::get_entry_data(const std::uint32_t idx, TRPWriteFunc write_func) {
     copy_buffer.resize(COPY_CHUNK_SIZE);
 
     while (bytes_left != 0) {
-        const std::uint32_t copy_size = std::min<std::uint32_t>(static_cast<std::uint32_t>(bytes_left), 
+        const std::uint32_t copy_size = std::min<std::uint32_t>(static_cast<std::uint32_t>(bytes_left),
             COPY_CHUNK_SIZE);
 
         if (!read_func(&copy_buffer[0], copy_size)) {
@@ -136,4 +136,4 @@ const std::uint32_t TRPFile::search_file(const char *name) {
     return static_cast<std::uint32_t>(-1);
 }
 
-}
+} // namespace emu::np::trophy

@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <np/trophy/context.h>
 #include <np/functions.h>
+#include <np/trophy/context.h>
 #include <util/log.h>
 
 #include "SceNpTrophy.h"
@@ -111,26 +111,26 @@ static int copy_file_data_from_trophy_file(emu::np::trophy::Context *context, co
         }
 
         source_size = std::min<std::uint32_t>(size_left, source_size);
-        std::copy(reinterpret_cast<std::uint8_t*>(source), reinterpret_cast<std::uint8_t*>(source) + source_size,
-            reinterpret_cast<std::uint8_t*>(buffer));
+        std::copy(reinterpret_cast<std::uint8_t *>(source), reinterpret_cast<std::uint8_t *>(source) + source_size,
+            reinterpret_cast<std::uint8_t *>(buffer));
 
-        buffer = reinterpret_cast<std::uint8_t*>(buffer) + source_size;
+        buffer = reinterpret_cast<std::uint8_t *>(buffer) + source_size;
         return true;
     });
 
     return 0;
 }
 
-#define NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)                                              \
-    if (!host.np.trophy_state.inited) {                                                             \
-        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;                                                 \
-    }                                                                                               \
-    if (!size) {                                                                                    \
-        return SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT;                                                \
-    }                                                                                               \
-    emu::np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);   \
-    if (!context) {                                                                                 \
-        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;                                                 \
+#define NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)                                            \
+    if (!host.np.trophy_state.inited) {                                                           \
+        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;                                               \
+    }                                                                                             \
+    if (!size) {                                                                                  \
+        return SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT;                                              \
+    }                                                                                             \
+    emu::np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle); \
+    if (!context) {                                                                               \
+        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;                                               \
     }
 
 EXPORT(int, sceNpTrophyGetGameIcon, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
@@ -221,7 +221,7 @@ static void trophy_unlocked(const NpTrophyUnlockCallbackData &callback_data, con
 }
 
 EXPORT(int, sceNpTrophyUnlockTrophy, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
-    SceNpTrophyID trophy_id, SceNpTrophyID *platinum_id) { 
+    SceNpTrophyID trophy_id, SceNpTrophyID *platinum_id) {
     if (!host.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
@@ -257,7 +257,7 @@ EXPORT(int, sceNpTrophyUnlockTrophy, emu::np::trophy::ContextHandle context_hand
         }
     }
 
-    *platinum_id = -1;  // SCE_NP_TROPHY_INVALID_TROPHY_ID
+    *platinum_id = -1; // SCE_NP_TROPHY_INVALID_TROPHY_ID
 
     if (context->platinum_trophy_id >= 0 && context->total_trophy_unlocked() == context->trophy_count - 1) {
         // Force unlock platinum trophy

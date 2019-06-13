@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <module/module.h>
 #include <cstdint>
+#include <module/module.h>
 
 using SceNpTrophyHandle = std::int32_t;
 using SceNpTrophyID = std::int32_t;

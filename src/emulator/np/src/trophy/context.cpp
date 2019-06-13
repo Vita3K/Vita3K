@@ -1,15 +1,15 @@
-#include <np/trophy/context.h>
-#include <np/state.h>
-#include <np/functions.h>
-#include <io/state.h>
 #include <io/functions.h>
+#include <io/state.h>
+#include <np/functions.h>
+#include <np/state.h>
+#include <np/trophy/context.h>
 
-#include <spdlog/fmt/fmt.h>
-#include <pugixml.hpp>
 #include <psp2/types.h>
+#include <pugixml.hpp>
+#include <spdlog/fmt/fmt.h>
 
 namespace emu::np::trophy {
-Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream, 
+Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream,
     const std::string &output_progress_path)
     : comm_id(comm_id)
     , io(io)
@@ -35,7 +35,7 @@ static bool read_trophy_entry_to_buffer(emu::np::trophy::TRPFile &trophy_file, c
     }
 
     buffer.resize(trophy_file.entries[eidx].size);
-    
+
     // Read
     std::uint32_t pointee = 0;
     trophy_file.get_entry_data(eidx, [&](void *source, std::uint32_t amount) {
@@ -71,7 +71,7 @@ bool Context::init_info_from_trp() {
     trophy_count = 0;
 
     // Get parental of all
-    for (auto trop: conf_file_doc.child("trophyconf")) {
+    for (auto trop : conf_file_doc.child("trophyconf")) {
         if (strncmp(trop.name(), "trophy", 6) == 0) {
             // Get ID
             const std::uint32_t id = trop.attribute("id").as_uint();
@@ -113,7 +113,7 @@ static constexpr std::uint32_t TROPHY_USR_MAGIC = 0x12D5819A;
 void Context::save_trophy_progress_file() {
     // Open the file
     const SceUID output = open_file(*io, trophy_progress_output_file_path.c_str(), SCE_O_WRONLY, pref_path.c_str(), "save_trophy_progress");
-    
+
     auto write_stuff = [&](const void *data, std::uint32_t amount) -> int {
         return write_file(output, data, amount, *io, "save_trophy_progress_file");
     };
@@ -173,7 +173,7 @@ bool Context::load_trophy_progress_file(const SceUID &progress_input_file) {
     return true;
 }
 
-bool Context::unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const bool force_unlock ) {
+bool Context::unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const bool force_unlock) {
     if (id < 0 || id >= emu::np::trophy::MAX_TROPHIES || trophy_kinds[id] == emu::np::trophy::TrophyType::INVALID) {
         if (err) {
             *err = emu::np::NpTrophyError::TROPHY_ID_INVALID;
@@ -199,7 +199,7 @@ bool Context::unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const 
     }
 
     SET_TROPHY_BIT(trophy_progress, id);
-    
+
     if (err) {
         *err = emu::np::NpTrophyError::TROPHY_ERROR_NONE;
     }
@@ -212,7 +212,7 @@ bool Context::unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const 
 const int Context::total_trophy_unlocked() {
     int total = 0;
 
-    for (int i = 0; i < MAX_TROPHIES >> 5; i++) {
+    for (int i = 0; i<MAX_TROPHIES>> 5; i++) {
         if (trophy_progress[i] != 0) {
             if (trophy_progress[i] == 0xFFFFFFFF) {
                 total += 32;
@@ -253,7 +253,7 @@ bool Context::get_trophy_description(const std::int32_t id, std::string &name, s
     }
 
     // Try to find the description for the id
-    for (auto trop: doc.child("trophyconf")) {
+    for (auto trop : doc.child("trophyconf")) {
         if ((strncmp(trop.name(), "trophy", 6) == 0) && (trop.attribute("id").as_uint() == id)) {
             name = trop.child("name").text().as_string();
             detail = trop.child("detail").text().as_string();
@@ -264,9 +264,9 @@ bool Context::get_trophy_description(const std::int32_t id, std::string &name, s
 
     return false;
 }
-}
+} // namespace emu::np::trophy
 
-emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path, 
+emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path,
     const emu::np::CommunicationID *custom_comm, const std::uint32_t lang, emu::np::NpTrophyError *error) {
     if (!custom_comm) {
         custom_comm = &np.comm_id;
@@ -275,11 +275,12 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
     if (error)
         *error = emu::np::NpTrophyError::TROPHY_ERROR_NONE;
 
-    #define TROPHY_RET_ERROR(err)                                                            \
-        if (error) *error = emu::np::NpTrophyError::err;                                     \
-        return emu::np::trophy::INVALID_CONTEXT_HANDLE
+#define TROPHY_RET_ERROR(err)                 \
+    if (error)                                \
+        *error = emu::np::NpTrophyError::err; \
+    return emu::np::trophy::INVALID_CONTEXT_HANDLE
 
-    // Check if a context has already been created for this communication ID 
+    // Check if a context has already been created for this communication ID
     for (std::size_t i = 0; i < np.trophy_state.contexts.size(); i++) {
         if (np.trophy_state.contexts[i].valid && np.trophy_state.contexts[i].comm_id == *custom_comm) {
             TROPHY_RET_ERROR(TROPHY_CONTEXT_EXIST);
@@ -290,7 +291,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
         custom_comm->num);
 
     // Initialize the stream
-    const std::string trophy_file_path =  trophy_base_dir + "TROPHY.TRP";
+    const std::string trophy_file_path = trophy_base_dir + "TROPHY.TRP";
 
     // Try to open the file
     const SceUID trophy_file = open_file(io, trophy_file_path, SCE_O_RDONLY, pref_path.c_str(), "create_trophy_context");
@@ -301,9 +302,9 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
 
     // Try to open the trophy save file. The context will automatically took the default profile to perform trophy
     // operations on.
-    std::string trophy_progress_save_file = fmt::format("ux0:/user/00/trophy/data/{}_{:0>2d}/", 
+    std::string trophy_progress_save_file = fmt::format("ux0:/user/00/trophy/data/{}_{:0>2d}/",
         custom_comm->data, custom_comm->num);
-    
+
     create_dir(io, trophy_progress_save_file.c_str(), 0, pref_path.c_str(), "create_trophy_context", true);
     trophy_progress_save_file += "TROPUSR.DAT";
 
@@ -313,7 +314,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
 
     // Yesss, we can now go fully creative
     // Check for free slot first
-    for (auto &context: np.trophy_state.contexts) {
+    for (auto &context : np.trophy_state.contexts) {
         if (!context.valid) {
             context.comm_id = *custom_comm;
             context.trophy_file_stream = trophy_file;
@@ -328,7 +329,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
         // Yikes. Create new one.
         np.trophy_state.contexts.emplace_back(*custom_comm, &io, trophy_file, trophy_progress_save_file);
         np.trophy_state.contexts.back().id = static_cast<emu::np::trophy::ContextHandle>(np.trophy_state.contexts.size());
-    
+
         new_context = &np.trophy_state.contexts.back();
         new_context->pref_path = pref_path;
     }
@@ -343,7 +344,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
         new_context->init_info_from_trp();
     }
 
-    #undef TROPHY_RET_ERROR
+#undef TROPHY_RET_ERROR
 
     return new_context->id;
 }
@@ -367,6 +368,6 @@ bool destroy_trophy_context(NpTrophyState &state, const emu::np::trophy::Context
 
     close_file(*state.contexts[handle - 1].io, state.contexts[handle - 1].trophy_file_stream, "destroy_trophy_context");
     state.contexts[handle - 1].valid = false;
-    
+
     return true;
 }

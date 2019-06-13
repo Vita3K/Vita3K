@@ -11,8 +11,8 @@ static constexpr int TROPHY_WINDOW_STATIC_FRAME_COUNT = 250;
 static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &callback_data) {
     if (host.gui.trophy_window_frame_stage == 0 || host.gui.trophy_window_frame_stage == 2) {
         ImVec2 target_window_pos = ImVec2(0.0f, 0.0f);
-        
-        if (host.gui.trophy_window_frame_stage == 0) 
+
+        if (host.gui.trophy_window_frame_stage == 0)
             target_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x - TROPHY_WINDOW_SIZE.x - 10.0f, 20.0f);
         else
             target_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + 10, 20);
@@ -21,7 +21,7 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
             host.gui.trophy_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + 10, 20);
 
             // Load icon
-            host.gui.trophy_window_icon = load_image(host, (const char*)callback_data.icon_buf.data(),
+            host.gui.trophy_window_icon = load_image(host, (const char *)callback_data.icon_buf.data(),
                 static_cast<std::uint32_t>(callback_data.icon_buf.size()));
         } else if (host.gui.trophy_window_frame_stage == 0 && host.gui.trophy_window_pos.x > target_window_pos.x) {
             host.gui.trophy_window_pos.x -= TROPHY_MOVE_DELTA;
@@ -31,7 +31,7 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
             host.gui.trophy_window_frame_stage++;
             host.gui.trophy_window_frame_count = 0;
         }
-    
+
         host.gui.trophy_window_frame_count++;
     }
 
@@ -39,11 +39,10 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
     ImGui::SetNextWindowPos(host.gui.trophy_window_pos);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.76f, 0.75f, 0.76f, 1.0f));    // Smooth gray
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.76f, 0.75f, 0.76f, 1.0f)); // Smooth gray
     ImGui::SetNextWindowSize(TROPHY_WINDOW_SIZE);
-    ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
-    
+    ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+
     ImGui::SetWindowFontScale(1.3f);
     ImGui::SetCursorPos(ImVec2(10.0f, 10.0f));
     ImGui::Columns(2, nullptr, false);
@@ -65,12 +64,12 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
         trophy_kind_s = "B";
         break;
     }
-    
+
     case emu::np::trophy::TrophyType::SLIVER: {
         trophy_kind_s = "S";
         break;
     }
-    
+
     case emu::np::trophy::TrophyType::GOLD: {
         trophy_kind_s = "P";
         break;
@@ -81,7 +80,7 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
     }
 
     ImGui::TextWrapped("%s (%s)", callback_data.trophy_name.c_str(), trophy_kind_s.c_str());
-    
+
     ImGui::SetWindowFontScale(1.2f);
     ImGui::TextWrapped("%s", callback_data.description.c_str());
 
@@ -120,4 +119,4 @@ void draw_trophies_unlocked(HostState &host) {
     }
 }
 
-}
+} // namespace gui

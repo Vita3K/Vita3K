@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <np/functions.h>
 #include <np/common.h>
+#include <np/functions.h>
 #include <np/state.h>
 
 bool init(NpState &state, const emu::np::CommunicationID *comm_id) {

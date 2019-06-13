@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <np/trophy/context.h>
 #include <np/common.h>
+#include <np/trophy/context.h>
 
 #include <mem/mem.h> // Address.
 
@@ -42,7 +42,7 @@ struct NpTrophyUnlockCallbackData {
     std::vector<std::uint8_t> icon_buf;
 };
 
-using NpTrophyUnlockCallback = std::function<void(NpTrophyUnlockCallbackData&)>;
+using NpTrophyUnlockCallback = std::function<void(NpTrophyUnlockCallbackData &)>;
 
 struct NpTrophyState {
     bool inited = false;
@@ -60,4 +60,3 @@ struct NpState {
     NpTrophyState trophy_state;
     emu::np::CommunicationID comm_id;
 };
-

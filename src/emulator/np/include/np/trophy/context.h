@@ -34,8 +34,8 @@
 
 #pragma once
 
-#include <np/trophy/trp_parser.h>
 #include <np/common.h>
+#include <np/trophy/trp_parser.h>
 #include <psp2/types.h>
 
 #include <array>
@@ -54,7 +54,7 @@ static constexpr std::uint32_t MAX_TROPHIES = 128;
 // 128 with 32, or 128 >> 5
 using TrophyFlagArray = std::uint32_t[MAX_TROPHIES >> 5];
 
-enum class TrophyType: std::uint8_t {
+enum class TrophyType : std::uint8_t {
     INVALID = 0,
     BRONZE = 1,
     SLIVER = 2,
@@ -63,7 +63,7 @@ enum class TrophyType: std::uint8_t {
 };
 
 struct Context {
-    bool valid { true };
+    bool valid{ true };
     TRPFile trophy_file;
     CommunicationID comm_id;
     ContextHandle id;
@@ -71,18 +71,18 @@ struct Context {
     SceUID trophy_file_stream;
 
     TrophyFlagArray trophy_progress;
-    TrophyFlagArray trophy_availability;     ///< bit 1 set - hidden
+    TrophyFlagArray trophy_availability; ///< bit 1 set - hidden
     std::uint32_t trophy_count;
 
     std::array<std::uint64_t, MAX_TROPHIES> unlock_timestamps;
     std::array<TrophyType, MAX_TROPHIES> trophy_kinds;
 
-    std::int32_t platinum_trophy_id { - 1 };
+    std::int32_t platinum_trophy_id{ -1 };
 
     std::string trophy_progress_output_file_path;
     std::string trophy_detail_xml;
 
-    std::uint32_t lang { 1 }; 
+    std::uint32_t lang{ 1 };
 
     IOState *io;
     std::string pref_path;
@@ -100,4 +100,4 @@ struct Context {
         const std::string &output_progress_path);
 };
 
-}
+} // namespace emu::np::trophy

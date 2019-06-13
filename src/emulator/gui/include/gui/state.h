@@ -108,9 +108,9 @@ struct GuiState {
 
     SceUID thread_watch_index = -1;
 
-    std::uint32_t trophy_window_frame_count { 0 };
-    std::uint32_t trophy_window_frame_stage { 0 };
-    std::uint32_t trophy_window_icon { 0xFFFFFFFF };
+    std::uint32_t trophy_window_frame_count{ 0 };
+    std::uint32_t trophy_window_frame_stage{ 0 };
+    std::uint32_t trophy_window_icon{ 0xFFFFFFFF };
 
     std::queue<NpTrophyUnlockCallbackData> trophy_unlock_display_requests;
     std::mutex trophy_unlock_display_requests_access_mutex;

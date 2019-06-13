@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
 struct HostState;
 struct SDL_Window;
