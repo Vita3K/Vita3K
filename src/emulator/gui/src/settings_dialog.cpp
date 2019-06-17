@@ -213,6 +213,10 @@ void draw_settings_dialog(HostState &host) {
         ImGui::Checkbox("Game Background", &host.cfg.show_game_background);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable viewing Game background.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Enables Discord Rich Presence to show what game you're playing on discord");
         ImGui::Spacing();
         ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 16, 128);
         ImGui::Spacing();

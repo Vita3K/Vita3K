@@ -41,6 +41,10 @@
 #include <gdbstub/functions.h>
 #endif
 
+#ifdef USE_DISCORD_RICH_PRESENCE
+#include <app/discord.h>
+#endif
+
 #include <SDL.h>
 #include <glutil/gl.h>
 
@@ -336,7 +340,6 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
         error_dialog(message, host.window.get());
         return ModuleLoadFailed;
     }
-
     if (!host.cfg.show_gui) {
         auto &imgui_render = host.display.imgui_render;
 
@@ -347,6 +350,11 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
 
 #ifdef USE_GDBSTUB
     server_open(host);
+#endif
+
+#ifdef USE_DISCORD_RICH_PRESENCE
+    if (host.cfg.discord_rich_presence)
+        discord::update_presence(host.io.title_id, host.game_title);
 #endif
 
     return Success;

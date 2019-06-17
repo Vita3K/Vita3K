@@ -31,6 +31,10 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
+#ifdef USE_DISCORD_RICH_PRESENCE
+#include <app/discord.h>
+#endif
+
 #include <SDL_video.h>
 #include <glbinding-aux/types_to_string.h>
 #include <glbinding/Binding.h>
@@ -174,6 +178,12 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         return false;
     }
 
+#ifdef USE_DISCORD_RICH_PRESENCE
+    discord::init();
+    if (cfg.discord_rich_presence) {
+        discord::update_presence("");
+    }
+#endif
     update_viewport(state);
 
     // Try adaptive vsync first, falling back to regular vsync.

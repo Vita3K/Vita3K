@@ -31,6 +31,10 @@
 #include <gdbstub/functions.h>
 #endif
 
+#ifdef USE_DISCORD_RICH_PRESENCE
+#include <app/discord.h>
+#endif
+
 #include <SDL.h>
 
 #include <cstdlib>
@@ -104,12 +108,17 @@ int main(int argc, char *argv[]) {
 
     gui::init(host);
 
+    auto discord_rich_presence_old = host.cfg.discord_rich_presence;
+
     // Application not provided via argument, show game selector
     while (run_type == app::AppRunType::Unknown) {
         if (app::handle_events(host)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_begin(host);
 
+#ifdef USE_DISCORD_RICH_PRESENCE
+            discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
+#endif
             gui::draw_ui(host);
             gui::draw_game_selector(host);
 
@@ -154,6 +163,9 @@ int main(int argc, char *argv[]) {
 
         app::set_window_title(host);
     }
+#ifdef USE_DISCORD_RICH_PRESENCE
+    discord::shutdown();
+#endif
 
 #ifdef USE_GDBSTUB
     server_close(host);
