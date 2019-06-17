@@ -4,7 +4,7 @@
 #include <time.h>
 
 namespace discord {
-void initialize(const std::string &application_id = "570296795943403530");
+void init(const std::string &application_id = "570296795943403530");
 
 void shutdown();
 

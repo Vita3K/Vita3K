@@ -179,7 +179,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
 
 #ifdef USE_DISCORD_RICH_PRESENCE
-    discord::initialize();
+    discord::init();
     if (cfg.discord_rich_presence) {
         discord::update_presence("");
     }

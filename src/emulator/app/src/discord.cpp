@@ -6,7 +6,7 @@
 // Credits to the RPCS3 Project
 
 namespace discord {
-void initialize(const std::string &application_id) {
+void init(const std::string &application_id) {
     DiscordEventHandlers handlers = {};
     Discord_Initialize(application_id.c_str(), &handlers, 1, NULL);
 }
@@ -18,7 +18,7 @@ void shutdown() {
 void update_init_status(bool discord_rich_presence, bool *discord_rich_presence_old) {
     if (*discord_rich_presence_old != discord_rich_presence) {
         if (discord_rich_presence) {
-            discord::initialize();
+            discord::init();
             discord::update_presence("", "Idle");
         } else {
             discord::shutdown();
