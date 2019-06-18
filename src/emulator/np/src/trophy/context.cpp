@@ -93,7 +93,7 @@ bool Context::init_info_from_trp() {
             }
 
             if (type == "S") {
-                trophy_kinds[id] = emu::np::trophy::TrophyType::SLIVER;
+                trophy_kinds[id] = emu::np::trophy::TrophyType::SILVER;
             }
 
             if (type == "B") {
