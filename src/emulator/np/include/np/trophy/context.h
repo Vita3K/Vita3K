@@ -57,7 +57,7 @@ using TrophyFlagArray = std::uint32_t[MAX_TROPHIES >> 5];
 enum class TrophyType : std::uint8_t {
     INVALID = 0,
     BRONZE = 1,
-    SLIVER = 2,
+    SILVER = 2,
     GOLD = 3,
     PLATINUM = 4
 };
