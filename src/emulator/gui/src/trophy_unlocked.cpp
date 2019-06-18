@@ -70,13 +70,13 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
         break;
     }
 
-    case emu::np::trophy::TrophyType::SLIVER: {
+    case emu::np::trophy::TrophyType::SILVER: {
         trophy_kind_s = "S";
         break;
     }
 
     case emu::np::trophy::TrophyType::GOLD: {
-        trophy_kind_s = "P";
+        trophy_kind_s = "G";
         break;
     }
 
