@@ -79,7 +79,12 @@ struct HelpMenuState {
     bool about_dialog = false;
 };
 
-} // namespace gui
+enum class TrophyAnimationStage {
+    SLIDE_IN = 0,
+    STATIC = 1,
+    SLIDE_OUT = 2,
+    END = 3
+};
 
 struct GuiState {
     bool renderer_focused = true;
@@ -109,7 +114,7 @@ struct GuiState {
     SceUID thread_watch_index = -1;
 
     std::uint32_t trophy_window_frame_count{ 0 };
-    std::uint32_t trophy_window_frame_stage{ 0 };
+    TrophyAnimationStage trophy_window_frame_stage{ TrophyAnimationStage::SLIDE_IN };
     std::uint32_t trophy_window_icon{ 0xFFFFFFFF };
 
     std::queue<NpTrophyUnlockCallbackData> trophy_unlock_display_requests;

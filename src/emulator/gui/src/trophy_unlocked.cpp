@@ -12,27 +12,28 @@ static constexpr int TROPHY_WINDOW_STATIC_FRAME_COUNT = 250;
 static constexpr float TROPHY_WINDOW_Y_POS = 20.0f;
 
 static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &callback_data) {
-    if (host.gui.trophy_window_frame_stage == 0 || host.gui.trophy_window_frame_stage == 2) {
+    if (host.gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN
+         || host.gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_OUT) {
         ImVec2 target_window_pos = ImVec2(0.0f, 0.0f);
 
-        if (host.gui.trophy_window_frame_stage == 0)
+        if (host.gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN)
             target_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x - TROPHY_WINDOW_SIZE.x - TROPHY_WINDOW_MARGIN_PADDING,
                 TROPHY_WINDOW_Y_POS);
         else
             target_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_Y_POS);
 
-        if (host.gui.trophy_window_frame_stage == 0 && host.gui.trophy_window_frame_count == 0) {
+        if (host.gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN && host.gui.trophy_window_frame_count == 0) {
             host.gui.trophy_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_Y_POS);
 
             // Load icon
             host.gui.trophy_window_icon = load_image(host, (const char *)callback_data.icon_buf.data(),
                 static_cast<std::uint32_t>(callback_data.icon_buf.size()));
-        } else if (host.gui.trophy_window_frame_stage == 0 && host.gui.trophy_window_pos.x > target_window_pos.x) {
+        } else if (host.gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN && host.gui.trophy_window_pos.x > target_window_pos.x) {
             host.gui.trophy_window_pos.x -= TROPHY_MOVE_DELTA;
-        } else if (host.gui.trophy_window_frame_stage == 2 && host.gui.trophy_window_pos.x < target_window_pos.x) {
+        } else if (host.gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_OUT && host.gui.trophy_window_pos.x < target_window_pos.x) {
             host.gui.trophy_window_pos.x += TROPHY_MOVE_DELTA;
         } else {
-            host.gui.trophy_window_frame_stage++;
+            host.gui.trophy_window_frame_stage = static_cast<TrophyAnimationStage>(static_cast<int>(host.gui.trophy_window_frame_stage) + 1);
             host.gui.trophy_window_frame_count = 0;
         }
 
@@ -94,11 +95,11 @@ static void draw_trophy_unlocked(HostState &host, NpTrophyUnlockCallbackData &ca
     ImGui::PopStyleVar();
     ImGui::PopStyleVar();
 
-    if (host.gui.trophy_window_frame_stage == 1) {
+    if (host.gui.trophy_window_frame_stage == TrophyAnimationStage::STATIC) {
         host.gui.trophy_window_frame_count++;
 
         if (host.gui.trophy_window_frame_count == TROPHY_WINDOW_STATIC_FRAME_COUNT) {
-            host.gui.trophy_window_frame_stage = 2;
+            host.gui.trophy_window_frame_stage = TrophyAnimationStage::SLIDE_OUT;
             host.gui.trophy_window_frame_count = 0;
         }
     }
@@ -108,14 +109,14 @@ void draw_trophies_unlocked(HostState &host) {
     const std::lock_guard<std::mutex> guard(host.gui.trophy_unlock_display_requests_access_mutex);
 
     if (!host.gui.trophy_unlock_display_requests.empty()) {
-        if (host.gui.trophy_window_frame_stage == 3) {
+        if (host.gui.trophy_window_frame_stage == TrophyAnimationStage::END) {
             host.gui.trophy_unlock_display_requests.pop();
 
             // Destroy the texture
             if (host.gui.trophy_window_frame_count != 0xFFFFFFFF)
                 destroy_image(host.gui.trophy_window_icon);
 
-            host.gui.trophy_window_frame_stage = 0;
+            host.gui.trophy_window_frame_stage = TrophyAnimationStage::SLIDE_IN;
             host.gui.trophy_window_frame_count = 0;
         } else {
             draw_trophy_unlocked(host, host.gui.trophy_unlock_display_requests.back());

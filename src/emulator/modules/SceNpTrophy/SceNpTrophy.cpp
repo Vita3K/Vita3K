@@ -220,6 +220,38 @@ static void trophy_unlocked(const NpTrophyUnlockCallbackData &callback_data, con
     LOG_TRACE("Detail: {}", callback_data.description);
 }
 
+static int do_trophy_callback(HostState &host, emu::np::trophy::Context *context, SceNpTrophyID trophy_id) {
+    NpTrophyUnlockCallbackData callback_data;
+
+    if (context->trophy_kinds[trophy_id] == emu::np::trophy::TrophyType::INVALID) {
+        // Yes this ID is not present. So return INVALID_ID
+        return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
+    }
+
+    callback_data.trophy_kind = context->trophy_kinds[trophy_id];
+    if (!context->get_trophy_description(trophy_id, callback_data.trophy_name, callback_data.description)) {
+        return SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF;
+    }
+
+    trophy_unlocked(callback_data, trophy_id);
+
+    // Call this async.
+    if (host.np.trophy_state.trophy_unlock_callback) {
+        std::uint32_t buf_size = 0;
+
+        // Make filename
+        const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
+        copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), nullptr, &buf_size);
+
+        callback_data.icon_buf.resize(buf_size);
+        copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
+
+        host.np.trophy_state.trophy_unlock_callback(callback_data);
+    }
+
+    return 0;
+}
+
 EXPORT(int, sceNpTrophyUnlockTrophy, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     SceNpTrophyID trophy_id, SceNpTrophyID *platinum_id) {
     if (!host.np.trophy_state.inited) {
@@ -264,38 +296,6 @@ EXPORT(int, sceNpTrophyUnlockTrophy, emu::np::trophy::ContextHandle context_hand
         context->unlock_trophy(context->platinum_trophy_id, &error, true);
         *platinum_id = context->platinum_trophy_id;
     }
-
-    static auto do_trophy_callback = [](HostState &host, emu::np::trophy::Context *context, SceNpTrophyID trophy_id) -> int {
-        NpTrophyUnlockCallbackData callback_data;
-
-        if (context->trophy_kinds[trophy_id] == emu::np::trophy::TrophyType::INVALID) {
-            // Yes this ID is not present. So return INVALID_ID
-            return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
-        }
-
-        callback_data.trophy_kind = context->trophy_kinds[trophy_id];
-        if (!context->get_trophy_description(trophy_id, callback_data.trophy_name, callback_data.description)) {
-            return SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF;
-        }
-
-        trophy_unlocked(callback_data, trophy_id);
-
-        // Call this async.
-        if (host.np.trophy_state.trophy_unlock_callback) {
-            std::uint32_t buf_size = 0;
-
-            // Make filename
-            const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
-            copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), nullptr, &buf_size);
-
-            callback_data.icon_buf.resize(buf_size);
-            copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
-
-            host.np.trophy_state.trophy_unlock_callback(callback_data);
-        }
-
-        return 0;
-    };
 
     const int err = do_trophy_callback(host, context, trophy_id);
 
