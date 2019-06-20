@@ -21,4 +21,6 @@ spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id target, const
 spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id scalar, const DataType type);
 spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id vec, const DataType source_type);
 
+spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val);
+
 } // namespace shader::usse::utils

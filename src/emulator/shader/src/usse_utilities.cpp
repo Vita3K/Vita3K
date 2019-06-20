@@ -793,3 +793,23 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     spv::Id shuffled = b.createOp(spv::OpVectorShuffle, b.makeVectorType(type_f32, 4), ops);
     b.createStore(shuffled, elem);
 }
+
+spv::Id shader::usse::utils::make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val) {
+    const int num_comp = b.getNumTypeComponents(type);
+    spv::Id v0_elem_type = b.getContainedTypeId(type);
+
+    spv::Id c0 = spv::NoResult;
+
+    if (b.isUintType(v0_elem_type)) {
+        c0 = b.makeUintConstant(val);
+    } else if (b.isIntType(v0_elem_type)) {
+        c0 = b.makeInt16Constant(val);
+    } else {
+        c0 = b.makeFloat16Constant(static_cast<float>(val));
+    }
+
+    std::vector<spv::Id> c0_vecs(num_comp, c0);
+    spv::Id v0 = b.makeCompositeConstant(type, c0_vecs);
+
+    return v0;
+}
