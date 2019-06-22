@@ -45,6 +45,27 @@ namespace app {
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
 
+#if MICROPROFILE_ENABLED
+static void before_callback(const char *name, void *funcptr, int len_args, ...) {
+    const MicroProfileToken token = MicroProfileGetToken("OpenGL", name, MP_CYAN, MicroProfileTokenTypeCpu);
+    MICROPROFILE_ENTER_TOKEN(token);
+}
+#endif // MICROPROFILE_ENABLED
+
+static void after_callback(const char *name, void *funcptr, int len_args, ...) {
+    MICROPROFILE_LEAVE();
+    for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
+#ifndef NDEBUG
+        std::stringstream gl_error;
+        gl_error << error;
+        LOG_ERROR("OpenGL: {} set error {}.", name, gl_error.str());
+        assert(false);
+#else
+        LOG_ERROR("OpenGL error: {}", log_hex(static_cast<std::uint32_t>(error)));
+#endif
+    }
+}
+
 void update_viewport(HostState &state) {
     int w = 0;
     int h = 0;
@@ -168,6 +189,10 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
 
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
+#if MICROPROFILE_ENABLED != 0
+    glad_set_pre_callback(before_callback);
+#endif // MICROPROFILE_ENABLED
+    glad_set_post_callback(after_callback);
 
     state.kernel.base_tick = { rtc_base_ticks() };
 
