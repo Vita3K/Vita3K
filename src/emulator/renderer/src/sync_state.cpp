@@ -213,11 +213,11 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
 
     // Point Line Width
 
-    glLineWidth(static_cast<gl::GLfloat>(state.front_point_line_width));
-    glPointSize(static_cast<gl::GLfloat>(state.front_point_line_width));
+    glLineWidth(static_cast<GLfloat>(state.front_point_line_width));
+    glPointSize(static_cast<GLfloat>(state.front_point_line_width));
 
     // Depth Bias
-    glPolygonOffset(static_cast<gl::GLfloat>(state.front_depth_bias_factor), static_cast<gl::GLfloat>(state.front_depth_bias_units));
+    glPolygonOffset(static_cast<GLfloat>(state.front_depth_bias_factor), static_cast<GLfloat>(state.front_depth_bias_units));
 
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);

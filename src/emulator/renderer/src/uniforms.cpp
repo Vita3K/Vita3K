@@ -192,7 +192,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             // This was added for compability with hand-written shaders. GXP shaders don't use matrix, but rather flatten them as array.
             // Hand-written shaders usually convet them to matrix if possible. Until we get rid of hand-written shaders, this will stay here.
             bool is_matrix = false;
-            gl::GLenum utype{};
+            GLenum utype{};
 
             auto uniform_type_ite = shader_program.uniform_types.find(location);
             if (uniform_type_ite == shader_program.uniform_types.end()) {
@@ -202,7 +202,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
                 GLint max_uniform_name_length = 0;
                 glGetProgramiv(gl_program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_uniform_name_length);
 
-                gl::GLint usize = 0;
+                GLint usize = 0;
 
                 std::string uname;
                 uname.resize(max_uniform_name_length);

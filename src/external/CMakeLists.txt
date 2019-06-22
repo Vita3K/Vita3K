@@ -59,10 +59,9 @@ target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_T
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
 
-option(BUILD_SHARED_LIBS "Build shared instead of static libraries." OFF)
-option(OPTION_BUILD_TOOLS "Build tools." OFF)
-option(OPTION_BUILD_EXAMPLES "Build examples." OFF)
-add_subdirectory(glbinding EXCLUDE_FROM_ALL)
+add_library(glad STATIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c")
+target_include_directories(glad PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/include")
+target_link_libraries(glad PRIVATE ${CMAKE_DL_LIBS})
 
 add_library(googletest STATIC googletest/googletest/src/gtest_main.cc googletest/googletest/src/gtest-all.cc)
 target_include_directories(googletest PUBLIC googletest/googletest/include)

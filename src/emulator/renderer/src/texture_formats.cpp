@@ -7,62 +7,62 @@ namespace renderer {
 namespace texture {
 
 // SceGxmTextureSwizzle1Mode
-static const GLenum swizzle_r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ONE };
-static const GLenum swizzle_000r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ZERO };
-static const GLenum swizzle_111r[4] = { GL_RED, GL_ONE, GL_ONE, GL_ONE };
-static const GLenum swizzle_rrrr[4] = { GL_RED, GL_RED, GL_RED, GL_RED };
-static const GLenum swizzle_0rrr[4] = { GL_RED, GL_RED, GL_RED, GL_ZERO };
-static const GLenum swizzle_1rrr[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
-static const GLenum swizzle_r000[4] = { GL_ZERO, GL_ZERO, GL_ZERO, GL_RED };
-static const GLenum swizzle_r111[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+static const GLint swizzle_r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ONE };
+static const GLint swizzle_000r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ZERO };
+static const GLint swizzle_111r[4] = { GL_RED, GL_ONE, GL_ONE, GL_ONE };
+static const GLint swizzle_rrrr[4] = { GL_RED, GL_RED, GL_RED, GL_RED };
+static const GLint swizzle_0rrr[4] = { GL_RED, GL_RED, GL_RED, GL_ZERO };
+static const GLint swizzle_1rrr[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+static const GLint swizzle_r000[4] = { GL_ZERO, GL_ZERO, GL_ZERO, GL_RED };
+static const GLint swizzle_r111[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
 
 // SceGxmTextureSwizzle2Mode
-static const GLenum swizzle_gr[4] = { GL_RED, GL_GREEN, GL_ZERO, GL_ONE };
-static const GLenum swizzle_00gr[4] = { GL_RED, GL_GREEN, GL_ZERO, GL_ZERO };
-static const GLenum swizzle_grrr[4] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
-static const GLenum swizzle_rggg[4] = { GL_GREEN, GL_GREEN, GL_GREEN, GL_RED };
-static const GLenum swizzle_grgr[4] = { GL_RED, GL_GREEN, GL_RED, GL_GREEN };
-static const GLenum swizzle_00rg[4] = { GL_GREEN, GL_RED, GL_ZERO, GL_ZERO };
+static const GLint swizzle_gr[4] = { GL_RED, GL_GREEN, GL_ZERO, GL_ONE };
+static const GLint swizzle_00gr[4] = { GL_RED, GL_GREEN, GL_ZERO, GL_ZERO };
+static const GLint swizzle_grrr[4] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
+static const GLint swizzle_rggg[4] = { GL_GREEN, GL_GREEN, GL_GREEN, GL_RED };
+static const GLint swizzle_grgr[4] = { GL_RED, GL_GREEN, GL_RED, GL_GREEN };
+static const GLint swizzle_00rg[4] = { GL_GREEN, GL_RED, GL_ZERO, GL_ZERO };
 
 // SceGxmTextureSwizzle2ModeAlt
-static const GLenum swizzle_sd[4] = { GL_RED, GL_GREEN, GL_ZERO, GL_ONE };
-static const GLenum swizzle_ds[4] = { GL_GREEN, GL_RED, GL_ZERO, GL_ONE };
+static const GLint swizzle_sd[4] = { GL_RED, GL_GREEN, GL_ZERO, GL_ONE };
+static const GLint swizzle_ds[4] = { GL_GREEN, GL_RED, GL_ZERO, GL_ONE };
 
 // SceGxmTextureSwizzle3Mode
-static const GLenum swizzle_rgb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
-static const GLenum swizzle_bgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ONE };
+static const GLint swizzle_rgb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
+static const GLint swizzle_bgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ONE };
 
 // SceGxmTextureSwizzle4Mode
-static const GLenum swizzle_abgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_argb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ALPHA };
-static const GLenum swizzle_rgba[4] = { GL_ALPHA, GL_BLUE, GL_GREEN, GL_RED };
-static const GLenum swizzle_bgra[4] = { GL_ALPHA, GL_RED, GL_GREEN, GL_BLUE };
-static const GLenum swizzle_1bgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ONE };
-static const GLenum swizzle_1rgb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
-static const GLenum swizzle_rgb1[4] = { GL_ONE, GL_BLUE, GL_GREEN, GL_RED };
-static const GLenum swizzle_bgr1[4] = { GL_ONE, GL_RED, GL_GREEN, GL_BLUE };
+static const GLint swizzle_abgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_argb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ALPHA };
+static const GLint swizzle_rgba[4] = { GL_ALPHA, GL_BLUE, GL_GREEN, GL_RED };
+static const GLint swizzle_bgra[4] = { GL_ALPHA, GL_RED, GL_GREEN, GL_BLUE };
+static const GLint swizzle_1bgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ONE };
+static const GLint swizzle_1rgb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
+static const GLint swizzle_rgb1[4] = { GL_ONE, GL_BLUE, GL_GREEN, GL_RED };
+static const GLint swizzle_bgr1[4] = { GL_ONE, GL_RED, GL_GREEN, GL_BLUE };
 
 // SceGxmTextureSwizzleYUV420Mode
 // TODO I don't know what these should be.
 // NOTE: We'll probably need an intermediate shader pass to translate them to RGB.
-static const GLenum swizzle_yuv_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_yvu_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_yuv_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_yvu_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_yuv_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_yvu_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_yuv_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_yvu_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 
 // SceGxmTextureSwizzleYUV422Mode
 // TODO I don't know what these should be.
 // NOTE: We'll probably need an intermediate shader pass to translate them to RGB.
-static const GLenum swizzle_yuyv_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_yvyu_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_uyvy_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_vyuy_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_yuyv_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_yvyu_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_uyvy_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-static const GLenum swizzle_vyuy_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_yuyv_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_yvyu_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_uyvy_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_vyuy_csc0[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_yuyv_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_yvyu_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_uyvy_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+static const GLint swizzle_vyuy_csc1[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 
-static const GLenum *translate_swizzle(SceGxmTextureSwizzle1Mode mode) {
+static const GLint *translate_swizzle(SceGxmTextureSwizzle1Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE1_R:
         return swizzle_r;
@@ -85,7 +85,7 @@ static const GLenum *translate_swizzle(SceGxmTextureSwizzle1Mode mode) {
     return swizzle_r;
 }
 
-static const GLenum *translate_swizzle(SceGxmTextureSwizzle2Mode mode) {
+static const GLint *translate_swizzle(SceGxmTextureSwizzle2Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE2_GR:
         return swizzle_gr;
@@ -104,7 +104,7 @@ static const GLenum *translate_swizzle(SceGxmTextureSwizzle2Mode mode) {
     return swizzle_gr;
 }
 
-static const GLenum *translate_swizzle(SceGxmTextureSwizzle2ModeAlt mode) {
+static const GLint *translate_swizzle(SceGxmTextureSwizzle2ModeAlt mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE2_SD:
         return swizzle_sd;
@@ -115,7 +115,7 @@ static const GLenum *translate_swizzle(SceGxmTextureSwizzle2ModeAlt mode) {
     return swizzle_sd;
 }
 
-static const GLenum *translate_swizzle(SceGxmTextureSwizzle3Mode mode) {
+static const GLint *translate_swizzle(SceGxmTextureSwizzle3Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE3_BGR:
         return swizzle_bgr;
@@ -126,7 +126,7 @@ static const GLenum *translate_swizzle(SceGxmTextureSwizzle3Mode mode) {
     return swizzle_bgr;
 }
 
-static const GLenum *translate_swizzle(SceGxmTextureSwizzle4Mode mode) {
+static const GLint *translate_swizzle(SceGxmTextureSwizzle4Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE4_ABGR:
         return swizzle_abgr;
@@ -149,7 +149,7 @@ static const GLenum *translate_swizzle(SceGxmTextureSwizzle4Mode mode) {
     return swizzle_abgr;
 }
 
-static const GLenum *translate_swizzle(SceGxmTextureSwizzleYUV420Mode mode) {
+static const GLint *translate_swizzle(SceGxmTextureSwizzleYUV420Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE_YUV_CSC0:
         return swizzle_yuv_csc0;
@@ -164,7 +164,7 @@ static const GLenum *translate_swizzle(SceGxmTextureSwizzleYUV420Mode mode) {
     return swizzle_yuv_csc0;
 }
 
-static const GLenum *translate_swizzle(SceGxmTextureSwizzleYUV422Mode mode) {
+static const GLint *translate_swizzle(SceGxmTextureSwizzleYUV422Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE_YUYV_CSC0:
         return swizzle_yuyv_csc0;
@@ -438,7 +438,7 @@ GLenum translate_type(SceGxmTextureFormat format) {
     return GL_UNSIGNED_BYTE;
 }
 
-const GLenum *translate_swizzle(SceGxmTextureFormat fmt) {
+const GLint *translate_swizzle(SceGxmTextureFormat fmt) {
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
     const uint32_t swizzle = fmt & 0x0000f000;
     switch (base_format) {

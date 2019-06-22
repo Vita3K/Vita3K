@@ -11,11 +11,8 @@
 #include <util/log.h>
 
 #include <SDL_video.h>
-#include <glbinding/Binding.h>
 
 #include <cassert>
-
-using namespace glbinding;
 
 namespace renderer {
 static GLenum translate_blend_func(SceGxmBlendFunc src) {
@@ -112,10 +109,7 @@ bool create(Context &context, SDL_Window *window) {
     context.gl = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
     assert(context.gl != nullptr);
 
-    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
-        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
-    };
-    Binding::initialize(get_proc_address, false);
+    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -206,11 +200,11 @@ void end_scene(Context &context, SceGxmSyncObject *sync_object, size_t width, si
     R_PROFILE(__func__);
 
     if (sync_object != nullptr) {
-        sync_object->value = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, GL_NONE_BIT);
+        sync_object->value = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     }
 
-    glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<gl::GLint>(stride_in_pixels));
-    glReadPixels(0, 0, static_cast<gl::GLsizei>(width), static_cast<gl::GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
+    glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 
     flip_vertically(pixels, width, height, stride_in_pixels);

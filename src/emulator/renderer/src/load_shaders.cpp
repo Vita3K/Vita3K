@@ -11,8 +11,6 @@
 
 #include <utility>
 
-using namespace glbinding;
-
 namespace renderer {
 static std::string load_shader(const char *hash, const char *extension, const char *base_path) {
     const auto shader_path = fs_utils::construct_file_name(base_path, "shaders", hash, extension);

@@ -115,7 +115,7 @@ UniqueGLObject gl::load_shaders(const std::string &vertex_file_path, const std::
     glDeleteShader(fs);
 
     UniqueGLObject program_ptr = std::make_unique<GLObject>();
-    if (!program_ptr->init(program, &glDeleteProgram)) {
+    if (!program_ptr->init(program, glDeleteProgram)) {
         return UniqueGLObject();
     }
 

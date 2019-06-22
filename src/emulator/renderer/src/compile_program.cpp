@@ -35,7 +35,7 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
         LOG_ERROR("{}", log.data());
     }
 
-    GLboolean is_compiled = GL_FALSE;
+    GLint is_compiled = GL_FALSE;
     glGetShaderiv(shader->get(), GL_COMPILE_STATUS, &is_compiled);
     assert(is_compiled != GL_FALSE);
     if (!is_compiled) {
@@ -79,7 +79,7 @@ SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state
     }
 
     const SharedGLObject program = std::make_shared<GLObject>();
-    if (!program->init(glCreateProgram(), &glDeleteProgram)) {
+    if (!program->init(glCreateProgram(), glDeleteProgram)) {
         return SharedGLObject();
     }
 
@@ -101,7 +101,7 @@ SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state
         LOG_ERROR("{}\n", log.data());
     }
 
-    GLboolean is_linked = GL_FALSE;
+    GLint is_linked = GL_FALSE;
     glGetProgramiv(program->get(), GL_LINK_STATUS, &is_linked);
     assert(is_linked != GL_FALSE);
     if (is_linked == GL_FALSE) {

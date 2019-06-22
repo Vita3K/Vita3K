@@ -39,7 +39,7 @@ void configure_bound_texture(const emu::SceGxmTexture &gxm_texture);
 void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState &mem);
 
 // Texture formats.
-const GLenum *translate_swizzle(SceGxmTextureFormat fmt);
+const GLint *translate_swizzle(SceGxmTextureFormat fmt);
 GLenum translate_internal_format(SceGxmTextureFormat src);
 GLenum translate_format(SceGxmTextureFormat src);
 GLenum translate_type(SceGxmTextureFormat format);
