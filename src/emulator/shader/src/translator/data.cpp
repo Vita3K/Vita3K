@@ -96,6 +96,7 @@ bool USSETranslatorVisitor::vmov(
     spv::Id conditional_result = 0;
     CompareMethod compare_method = CompareMethod::NE_ZERO;
     spv::Op compare_op = spv::OpAny;
+    bool is_float_type = true;
 
     if (is_conditional) {
         compare_method = static_cast<CompareMethod>((test_bit_2 << 1) | test_bit_1);
@@ -111,47 +112,43 @@ bool USSETranslatorVisitor::vmov(
         const bool isUInt = is_unsigned_integer_data_type(inst.opr.src0.type);
         const bool isInt = is_signed_integer_data_type(inst.opr.src1.type);
 
-        switch (compare_method) {
-        case CompareMethod::LT_ZERO:
-            if (isUInt)
-                compare_op = spv::Op::OpULessThan;
-            else if (isInt)
-                compare_op = spv::Op::OpSLessThan;
-            else
-                compare_op = spv::Op::OpFOrdLessThan;
-            break;
-        case CompareMethod::LTE_ZERO:
-            if (isUInt)
-                compare_op = spv::Op::OpULessThanEqual;
-            else if (isInt)
-                compare_op = spv::Op::OpSLessThanEqual;
-            else
-                compare_op = spv::Op::OpFOrdLessThanEqual;
-            break;
-        case CompareMethod::NE_ZERO:
-            if (isInt || isUInt)
-                compare_op = spv::Op::OpINotEqual;
-            else
-                compare_op = spv::Op::OpFOrdNotEqual;
-            break;
-        case CompareMethod::EQ_ZERO:
-            if (isInt || isUInt)
-                compare_op = spv::Op::OpIEqual;
-            else
-                compare_op = spv::Op::OpFOrdEqual;
-            break;
+        if (isUInt || isInt) {
+            switch (compare_method) {
+            case CompareMethod::LT_ZERO:
+                if (isUInt)
+                    compare_op = spv::Op::OpULessThan;
+                else if (isInt)
+                    compare_op = spv::Op::OpSLessThan;
+                else
+                    compare_op = spv::Op::OpFOrdLessThan;
+                break;
+            case CompareMethod::LTE_ZERO:
+                if (isUInt)
+                    compare_op = spv::Op::OpULessThanEqual;
+                else if (isInt)
+                    compare_op = spv::Op::OpSLessThanEqual;
+                else
+                    compare_op = spv::Op::OpFOrdLessThanEqual;
+                break;
+            case CompareMethod::NE_ZERO:
+                if (isInt || isUInt)
+                    compare_op = spv::Op::OpINotEqual;
+                else
+                    compare_op = spv::Op::OpFOrdNotEqual;
+                break;
+            case CompareMethod::EQ_ZERO:
+                if (isInt || isUInt)
+                    compare_op = spv::Op::OpIEqual;
+                else
+                    compare_op = spv::Op::OpFOrdEqual;
+                break;
+            }
         }
     }
 
     // Recompile
 
     m_b.setLine(m_recompiler.cur_pc);
-
-    spv::Function *link_sub = nullptr;
-
-    if (is_conditional) {
-        link_sub = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[m_recompiler.cur_pc + 1]);
-    }
 
     BEGIN_REPEAT(repeat_count, 2)
     GET_REPEAT(inst);
@@ -173,50 +170,96 @@ bool USSETranslatorVisitor::vmov(
             expr = "!=";
             break;
         }
-        conditional_str = fmt::format("({} {} {})", disasm::operand_to_str(inst.opr.src2, dest_mask), expr, disasm::operand_to_str(inst.opr.src0, dest_mask));
+        conditional_str = fmt::format(" ({} {} vec(0)) ?", disasm::operand_to_str(inst.opr.src0, dest_mask), expr);
     }
 
-    const std::string disasm_str = fmt::format("{:016x}: {}{}.{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type),
-        disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset), disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset), conditional_str);
+    const std::string disasm_str = fmt::format("{:016x}: {}{}.{} {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), disasm::data_type_str(move_data_type),
+        disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset), conditional_str, disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset),
+        is_conditional ? fmt::format(": {}", disasm::operand_to_str(inst.opr.src2, dest_mask, src2_repeat_offset)) : "");
 
     LOG_DISASM(disasm_str);
 
-    std::unique_ptr<spv::Builder::If> cond_builder;
+    spv::Id source_to_compare_with_0 = spv::NoResult;
+    spv::Id source_1 = load(inst.opr.src1, dest_mask, src1_repeat_offset);
+    spv::Id source_2 = spv::NoResult;
+    spv::Id result = spv::NoResult;
 
-    if (is_conditional) {
-        spv::Id src0 = load(inst.opr.src0, dest_mask, src0_repeat_offset);
-        spv::Id src2 = load(inst.opr.src2, dest_mask, src2_repeat_offset);
-
-        if (src0 == spv::NoResult || src2 == spv::NoResult) {
-            LOG_ERROR("Source not loaded (src0: {}, src2: {})", src0, src2);
-            return false;
-        }
-
-        conditional_result = m_b.createBinOp(compare_op, m_b.makeVectorType(m_b.makeBoolType(), m_b.getNumComponents(src0)),
-            src2, src0);
-
-        if (m_b.getNumComponents(conditional_result) > 1) {
-            // We need to check if all bool is true, using OpAll
-            conditional_result = m_b.createUnaryOp(spv::OpAll, m_b.makeBoolType(), conditional_result);
-        }
-
-        cond_builder = std::make_unique<spv::Builder::If>(conditional_result, spv::SelectionControlMaskNone, m_b);
-    }
-
-    spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
-
-    if (source == spv::NoResult) {
+    if (source_1 == spv::NoResult) {
         LOG_ERROR("Source not Loaded");
         return false;
     }
 
-    store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
-
     if (is_conditional) {
-        cond_builder->makeEndIf();
-        // Create call to next subroutine (block)
-        m_b.createFunctionCall(link_sub, {});
+        source_to_compare_with_0 = load(inst.opr.src0, dest_mask, src0_repeat_offset);
+        source_2 = load(inst.opr.src2, dest_mask, src2_repeat_offset);
+        spv::Id result_type = m_b.getTypeId(source_2);
+        spv::Id v0 = utils::make_uniform_vector_from_type(m_b, result_type, 0);
+
+        bool source_2_first = false;
+
+        if (compare_op != spv::OpAny) {
+            // Merely do what the instruction does
+            // First compare source0 with vector 0
+            spv::Id cond_result = m_b.createOp(compare_op, m_b.makeVectorType(m_b.makeBoolType(), m_b.getNumComponents(source_to_compare_with_0)),
+                { source_to_compare_with_0, v0 });
+
+            // For each component, if the compare result is true, move the equivalent component from source1 to dest,
+            // else the same thing with source2
+            // This behavior matches with OpSelect, so use it. Since IMix doesn't exist (really)
+            result = m_b.createOp(spv::OpSelect, result_type, { cond_result, source_1, source_2 });
+        } else {
+            // We optimize the float case. We can make the GPU use native float instructions without touching bool or integers
+            // Taking advantage of the mix function: if we use absolute 0 and 1 as the lerp, we got the equivalent of:
+            // mix(a, b, c) with c.comp is either 0 or 1 <=> if c.comp == 0 return a else return b.
+            switch (compare_method) {
+            case CompareMethod::LT_ZERO: {
+                // For each component: if source0.comp < 0 return 0 else return 1
+                // That means if we use mix, it should be mix(src1, src2, step_result)
+                result = m_b.createBuiltinCall(result_type, std_builtins, GLSLstd450Step, { v0, source_to_compare_with_0 });
+                source_2_first = false;
+                break;
+            }
+
+            case CompareMethod::LTE_ZERO: {
+                // For each component: if 0 < source0.comp return 0 else return 1
+                // Or, if we turn it around: if source0.comp <= 0 return 1 else return 0
+                // That means if we use mix, it should be mix(src2, src1, step_result)
+                result = m_b.createBuiltinCall(result_type, std_builtins, GLSLstd450Step, { source_to_compare_with_0, v0 });
+                source_2_first = true;
+                break;
+            }
+
+            case CompareMethod::NE_ZERO:
+            case CompareMethod::EQ_ZERO: {
+                // Taking advantage of the sign and absolute instruction
+                // The sign instruction returns 0 if the component equals to 0, else 1 if positive, -1 if negative
+                // That means if we absolute the sign result, we got 0 if component equals to 0, else we got 1.
+                // src2 will be first for Not equal case.
+                result = m_b.createBuiltinCall(result_type, std_builtins, GLSLstd450FSign, { source_to_compare_with_0 });
+                result = m_b.createBuiltinCall(result_type, std_builtins, GLSLstd450FAbs, { result });
+
+                if (compare_method == CompareMethod::NE_ZERO) {
+                    source_2_first = true;
+                }
+
+                break;
+            }
+
+            default: {
+                LOG_ERROR("Unknown compare method: {}", static_cast<int>(compare_method));
+                return false;
+            }
+            }
+
+            // Mixing!! I'm like a little witch!!
+            result = m_b.createBuiltinCall(result_type, std_builtins, GLSLstd450FMix, { source_2_first ? source_2 : source_1, 
+                source_2_first ? source_1 : source_2, result });
+        }
+    } else {
+        result = source_1;
     }
+
+    store(inst.opr.dest, result, dest_mask, dest_repeat_offset);
 
     END_REPEAT()
 
