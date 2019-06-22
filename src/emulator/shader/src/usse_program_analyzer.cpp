@@ -32,10 +32,6 @@ bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_o
     return br_inst_is;
 }
 
-bool is_cmov(const std::uint64_t inst) {
-    return (((inst >> 59) & 0b11111) == 0b00111) && (((inst & ~0xFFFF3FFFFFFFFFFF) >> 46) > 0);
-}
-
 bool does_write_to_predicate(const std::uint64_t inst, std::uint8_t &pred) {
     if ((((inst >> 59) & 0b11111) == 0b01001) || (((inst >> 59) & 0b11111) == 0b01111)) {
         pred = static_cast<std::uint8_t>((inst & ~0xFFFFFFF3FFFFFFFF) >> 34);
