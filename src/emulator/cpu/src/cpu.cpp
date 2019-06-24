@@ -191,6 +191,7 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
 }
 
 int run(CPUState &state, bool callback) {
+    state.did_break = false;
     uint32_t pc = read_pc(state);
     bool thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
@@ -212,7 +213,12 @@ int run(CPUState &state, bool callback) {
         uint32_t lr = read_lr(state);
         LOG_CRITICAL("Unicorn error {} at: start PC: {} error PC {} LR: {}",
             log_hex(err), log_hex(pc), log_hex(error_pc), log_hex(lr));
+#ifdef USE_GDBSTUB
+        trigger_breakpoint(state);
+        return 0;
+#else
         return -1;
+#endif
     }
     pc = read_pc(state);
     thumb_mode = is_thumb_mode(state.uc.get());
@@ -319,7 +325,13 @@ uint32_t read_cpsr(CPUState &state) {
 
 void write_reg(CPUState &state, size_t index, uint32_t value) {
     assert(index >= 0);
-    assert(index <= 1);
+
+    const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_R0 + static_cast<int>(index), &value);
+    assert(err == UC_ERR_OK);
+}
+
+void write_float_reg(CPUState &state, size_t index, float value) {
+    assert(index >= 0);
 
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_R0 + static_cast<int>(index), &value);
     assert(err == UC_ERR_OK);
@@ -340,8 +352,23 @@ void write_lr(CPUState &state, uint32_t value) {
     assert(err == UC_ERR_OK);
 }
 
+void write_fpscr(CPUState &state, uint32_t value) {
+    const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_FPSCR, &value);
+    assert(err == UC_ERR_OK);
+}
+
+void write_cpsr(CPUState &state, uint32_t value) {
+    const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_CPSR, &value);
+    assert(err == UC_ERR_OK);
+}
+
 bool hit_breakpoint(CPUState &state) {
     return state.did_break;
+}
+
+void trigger_breakpoint(CPUState &state) {
+    stop(state);
+    state.did_break = true;
 }
 
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size) {

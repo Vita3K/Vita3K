@@ -28,6 +28,8 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#include <SDL.h>
+
 #ifdef USE_GDBSTUB
 #include <gdbstub/functions.h>
 #endif
@@ -173,21 +175,12 @@ int main(int argc, char *argv[]) {
 
         app::set_window_title(host);
     }
-#ifdef USE_DISCORD_RICH_PRESENCE
-    discord::shutdown();
-#endif
-
-#ifdef USE_GDBSTUB
-    server_close(host);
-#endif
 
 #ifdef WIN32
     CoUninitialize();
 #endif
 
-    // There may be changes that made in the GUI, so we should save, again
-    if (host.cfg.overwrite_config)
-        config::serialize_config(host.cfg, host.cfg.config_path);
+    app::destory(host);
 
     return Success;
 }
