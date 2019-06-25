@@ -92,13 +92,13 @@ using namespace list;
 void draw_settings_dialog(HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     ImGui::Begin("Settings", &host.gui.configuration_menu.settings_dialog, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGuiTabBarFlags settings_tab_flags = ImGuiTabBarFlags_None;
+    const auto settings_tab_flags = ImGuiTabBarFlags_None;
     ImGui::BeginTabBar("SettingsTabBar", settings_tab_flags);
 
     // Core
     if (ImGui::BeginTabItem("Core")) {
         ImGui::PopStyleColor();
-        if (fs::exists(host.pref_path + "vs0/sys/external")) {
+        if (fs::exists(fs::path(host.pref_path) / "vs0/sys/external")) {
             ImGui::Text("Module List");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your desired modules.");
@@ -107,13 +107,13 @@ void draw_settings_dialog(HostState &host) {
             if (ImGui::ListBoxHeader("##modules_list", MODULES_COUNT, 6)) {
                 for (int m = 0; m < MODULES_COUNT; m++) {
                     auto modules = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), LIST_MODULES[m]);
-                    if (modules != host.cfg.lle_modules.end() && module_select[m] == false)
+                    if (modules != host.cfg.lle_modules.end() && !module_select[m])
                         module_select[m] = true;
                     if (!host.gui.module_search_bar.PassFilter(LIST_MODULES[m]))
                         continue;
                     if (ImGui::Selectable(LIST_MODULES[m], &module_select[m]) && modules == host.cfg.lle_modules.end())
                         host.cfg.lle_modules.push_back(LIST_MODULES[m]);
-                    else if (module_select[m] == false && modules != host.cfg.lle_modules.end())
+                    else if (!module_select[m] && modules != host.cfg.lle_modules.end())
                         host.cfg.lle_modules.erase(modules);
                 }
                 ImGui::ListBoxFooter();
@@ -167,7 +167,7 @@ void draw_settings_dialog(HostState &host) {
         ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred log level.");
-        if (ImGui::Button("Apply")) {
+        if (ImGui::Button("Apply Log Level")) {
             logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
         }
         ImGui::Spacing();
@@ -183,8 +183,8 @@ void draw_settings_dialog(HostState &host) {
         ImGui::InputTextWithHint("Set emulated system storage folder.", "Write your path folder here", &host.cfg.pref_path);
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Set the path to the folder here. \nPress \"Apply\" when finished to move to the new folder. \nThis cannot be undone.");
-        if (ImGui::Button("Apply")) {
+            ImGui::SetTooltip("Set the path to the folder here. \nPress \"Apply\" when finished to move to the new folder. \nWARNING: This cannot be undone.");
+        if (ImGui::Button("Apply New Path")) {
             if (!host.cfg.pref_path.empty() && host.cfg.pref_path != host.pref_path) {
                 if (change_pref_location(host.cfg.pref_path, host.pref_path)) {
                     host.pref_path = host.cfg.pref_path;
@@ -197,6 +197,23 @@ void draw_settings_dialog(HostState &host) {
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("After pressing, restart Vita3K to fully apply changes.");
+        ImGui::SameLine();
+        if (ImGui::Button("Reset Configuration")) {
+            app::merge_configs(host.cfg, Config{});
+
+            LOG_INFO("Reset Vita3K configuration and config file to default values.");
+            if (host.cfg.pref_path != host.pref_path) {
+                if (change_pref_location(host.cfg.pref_path, host.pref_path)) {
+                    host.pref_path = host.cfg.pref_path;
+
+                    // Refresh the working paths
+                    app::serialize_config(host.cfg, host.cfg.config_path);
+                    LOG_INFO_IF(app::clear_and_refresh_game_list(host), "Successfully moved Vita3K files to: {}", host.pref_path);
+                }
+            }
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Reset Vita3K's configuration to the default values. \nAfter pressing, restart Vita3K to fully apply. \nWARNING: This cannot be undone.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();

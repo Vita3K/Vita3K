@@ -34,7 +34,7 @@ namespace app {
 ExitCode serialize_config(Config &cfg, fs::path output_path);
 
 /**
-  * \brief Compare and merge two different configurations.
+  * \brief Compare and merge two different configurations. This can also reset the configuration.
   * \param lhs The configuration to be modified.
   * \param rhs The new configuration to be added.
   * \param cur_pref_path Default preference path.
