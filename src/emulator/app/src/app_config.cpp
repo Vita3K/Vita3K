@@ -29,13 +29,14 @@
 
 #include <exception>
 #include <iostream>
+#include <unordered_set>
 
 namespace po = boost::program_options;
 
 namespace app {
 
 template <typename T, typename Q = T>
-void get_yaml_value(YAML::Node &config_node, const char *key, T *target_val, Q default_val) {
+static void get_yaml_value(YAML::Node &config_node, const char *key, T *target_val, Q default_val) {
     try {
         *target_val = config_node[key].as<Q>();
     } catch (...) {
@@ -44,7 +45,7 @@ void get_yaml_value(YAML::Node &config_node, const char *key, T *target_val, Q d
 }
 
 template <typename T>
-void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::optional<T> *target_val, T default_val) {
+static void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::optional<T> *target_val, T default_val) {
     try {
         *target_val = config_node[key].as<T>();
     } catch (...) {
@@ -53,7 +54,7 @@ void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::op
 }
 
 template <typename T>
-void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::optional<T> *target_val) {
+static void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::optional<T> *target_val) {
     try {
         *target_val = config_node[key].as<T>();
     } catch (...) {
@@ -62,19 +63,19 @@ void get_yaml_value_optional(YAML::Node &config_node, const char *key, boost::op
 }
 
 template <typename T>
-void config_file_emit_single(YAML::Emitter &emitter, const char *name, T &val) {
+static void config_file_emit_single(YAML::Emitter &emitter, const char *name, T &val) {
     emitter << YAML::Key << name << YAML::Value << val;
 }
 
 template <typename T>
-void config_file_emit_optional_single(YAML::Emitter &emitter, const char *name, boost::optional<T> &val) {
+static void config_file_emit_optional_single(YAML::Emitter &emitter, const char *name, boost::optional<T> &val) {
     if (val) {
         config_file_emit_single(emitter, name, val.value());
     }
 }
 
 template <typename T>
-void config_file_emit_vector(YAML::Emitter &emitter, const char *name, std::vector<T> &values) {
+static void config_file_emit_vector(YAML::Emitter &emitter, const char *name, std::vector<T> &values) {
     emitter << YAML::Key << name << YAML::BeginSeq;
 
     for (const T &value : values) {
@@ -84,7 +85,20 @@ void config_file_emit_vector(YAML::Emitter &emitter, const char *name, std::vect
     emitter << YAML::EndSeq;
 }
 
-fs::path check_path(fs::path output_path) {
+// Optimal based on: http://stackoverflow.com/a/24477023
+static void merge_lle(std::vector<std::string> &lhs, const std::vector<std::string> &rhs) {
+    if (lhs.empty() || rhs.empty())
+        return;
+
+    lhs.insert(lhs.end(), rhs.begin(), rhs.end());
+    std::unordered_set<std::string> s;
+    for (const auto &i : lhs)
+        s.insert(i);
+    lhs.assign(s.begin(), s.end());
+    std::sort(lhs.begin(), lhs.end());
+}
+
+static fs::path check_path(fs::path output_path) {
     if (output_path.filename() != "config.yml") {
         if (!output_path.has_extension()) // assume it is a folder
             output_path /= "config.yml";
@@ -92,48 +106,6 @@ fs::path check_path(fs::path output_path) {
             return "";
     }
     return output_path;
-}
-
-ExitCode serialize_config(Config &cfg, fs::path output_path) {
-    output_path = check_path(output_path);
-    if (output_path.empty())
-        return InvalidApplicationPath;
-    if (!fs::exists(output_path.parent_path()))
-        fs::create_directories(output_path.parent_path());
-
-    YAML::Emitter emitter;
-    emitter << YAML::BeginMap;
-
-    config_file_emit_single(emitter, "log-imports", cfg.log_imports);
-    config_file_emit_single(emitter, "log-exports", cfg.log_exports);
-    config_file_emit_single(emitter, "log-active-shaders", cfg.log_active_shaders);
-    config_file_emit_single(emitter, "log-uniforms", cfg.log_uniforms);
-    config_file_emit_single(emitter, "sync-rendering", cfg.sync_rendering);
-    config_file_emit_single(emitter, "pstv-mode", cfg.pstv_mode);
-    config_file_emit_single(emitter, "show-gui", cfg.show_gui);
-    config_file_emit_single(emitter, "show-game-background", cfg.show_game_background);
-    config_file_emit_single(emitter, "icon-size", cfg.icon_size);
-    config_file_emit_single(emitter, "archive-log", cfg.archive_log);
-    config_file_emit_single(emitter, "texture-cache", cfg.texture_cache);
-    config_file_emit_single(emitter, "sys-button", cfg.sys_button);
-    config_file_emit_single(emitter, "sys-lang", cfg.sys_lang);
-    config_file_emit_single(emitter, "background-image", cfg.background_image);
-    config_file_emit_single(emitter, "background-alpha", cfg.background_alpha);
-    config_file_emit_single(emitter, "log-level", cfg.log_level);
-    config_file_emit_single(emitter, "pref-path", cfg.pref_path);
-    config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
-    config_file_emit_single(emitter, "discord-rich-presence", cfg.discord_rich_presence);
-    config_file_emit_optional_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
-
-    emitter << YAML::EndMap;
-
-    fs::ofstream fo(output_path);
-    if (!fo) {
-        return InvalidApplicationPath;
-    }
-
-    fo << emitter.c_str();
-    return Success;
 }
 
 static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_pref_path) {
@@ -191,6 +163,108 @@ static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_p
     return Success;
 }
 
+ExitCode serialize_config(Config &cfg, fs::path output_path) {
+    output_path = check_path(output_path);
+    if (output_path.empty())
+        return InvalidApplicationPath;
+    if (!fs::exists(output_path.parent_path()))
+        fs::create_directories(output_path.parent_path());
+
+    YAML::Emitter emitter;
+    emitter << YAML::BeginMap;
+
+    config_file_emit_single(emitter, "log-imports", cfg.log_imports);
+    config_file_emit_single(emitter, "log-exports", cfg.log_exports);
+    config_file_emit_single(emitter, "log-active-shaders", cfg.log_active_shaders);
+    config_file_emit_single(emitter, "log-uniforms", cfg.log_uniforms);
+    config_file_emit_single(emitter, "sync-rendering", cfg.sync_rendering);
+    config_file_emit_single(emitter, "pstv-mode", cfg.pstv_mode);
+    config_file_emit_single(emitter, "show-gui", cfg.show_gui);
+    config_file_emit_single(emitter, "show-game-background", cfg.show_game_background);
+    config_file_emit_single(emitter, "icon-size", cfg.icon_size);
+    config_file_emit_single(emitter, "archive-log", cfg.archive_log);
+    config_file_emit_single(emitter, "texture-cache", cfg.texture_cache);
+    config_file_emit_single(emitter, "sys-button", cfg.sys_button);
+    config_file_emit_single(emitter, "sys-lang", cfg.sys_lang);
+    config_file_emit_single(emitter, "background-image", cfg.background_image);
+    config_file_emit_single(emitter, "background-alpha", cfg.background_alpha);
+    config_file_emit_single(emitter, "log-level", cfg.log_level);
+    config_file_emit_single(emitter, "pref-path", cfg.pref_path);
+    config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
+    config_file_emit_single(emitter, "discord-rich-presence", cfg.discord_rich_presence);
+    config_file_emit_optional_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
+
+    emitter << YAML::EndMap;
+
+    fs::ofstream fo(output_path);
+    if (!fo) {
+        return InvalidApplicationPath;
+    }
+
+    fo << emitter.c_str();
+    return Success;
+}
+
+void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_path, const bool init) {
+    // Stored in config file
+    if (lhs.log_imports != rhs.log_imports && (!init || rhs.log_imports))
+        lhs.log_imports = rhs.log_imports;
+    if (lhs.log_exports != rhs.log_exports && (!init || rhs.log_exports))
+        lhs.log_exports = rhs.log_exports;
+    if (lhs.log_active_shaders != rhs.log_active_shaders && (!init || rhs.log_active_shaders))
+        lhs.log_active_shaders = rhs.log_active_shaders;
+    if (lhs.log_uniforms != rhs.log_uniforms && (!init || rhs.log_uniforms))
+        lhs.log_uniforms = rhs.log_uniforms;
+    if (lhs.sync_rendering != rhs.sync_rendering && (!init || rhs.sync_rendering))
+        lhs.sync_rendering = rhs.sync_rendering;
+    if (lhs.lle_modules != rhs.lle_modules && (!init || !rhs.lle_modules.empty()))
+        merge_lle(lhs.lle_modules, rhs.lle_modules);
+    if (lhs.pstv_mode != rhs.pstv_mode && (!init || rhs.pstv_mode))
+        lhs.pstv_mode = rhs.pstv_mode;
+    if (lhs.show_gui != rhs.show_gui && (!init || rhs.show_gui))
+        lhs.show_gui = rhs.show_gui;
+    if (lhs.show_game_background != rhs.show_game_background && (!init || !rhs.show_game_background))
+        lhs.show_game_background = rhs.show_game_background;
+    if (lhs.icon_size != rhs.icon_size && (!init || rhs.icon_size != static_cast<int>(64)))
+        lhs.icon_size = rhs.icon_size;
+    if (lhs.archive_log != rhs.archive_log && (!init || rhs.archive_log))
+        lhs.archive_log = rhs.archive_log;
+    if (lhs.texture_cache != rhs.texture_cache && (!init || !rhs.texture_cache))
+        lhs.texture_cache = rhs.texture_cache;
+    if (lhs.sys_button != rhs.sys_button && (!init || rhs.sys_button != static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS)))
+        lhs.sys_button = rhs.sys_button;
+    if (lhs.sys_lang != rhs.sys_lang && (!init || rhs.sys_lang != static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US)))
+        lhs.sys_lang = rhs.sys_lang;
+    if (lhs.background_image != rhs.background_image && (!init || !rhs.background_image.empty()))
+        lhs.background_image = rhs.background_image;
+    if (lhs.background_alpha != rhs.background_alpha && (!init || rhs.background_alpha != 0.300f))
+        lhs.background_alpha = rhs.background_alpha;
+    if (lhs.log_level != rhs.log_level && (!init || rhs.log_level != static_cast<int>(spdlog::level::trace)))
+        lhs.log_level = rhs.log_level;
+    if (lhs.pref_path != rhs.pref_path && (init || rhs.pref_path != cur_pref_path)) { // Flags when in init
+        if (rhs.pref_path.empty())
+            lhs.pref_path = cur_pref_path;
+        else
+            lhs.pref_path = rhs.pref_path;
+    }
+    if (lhs.discord_rich_presence != rhs.discord_rich_presence && (!init || rhs.discord_rich_presence))
+        lhs.discord_rich_presence = rhs.discord_rich_presence;
+    if (rhs.wait_for_debugger.is_initialized()) {
+        if (lhs.wait_for_debugger != rhs.wait_for_debugger && (!init || *rhs.wait_for_debugger))
+            lhs.wait_for_debugger = rhs.wait_for_debugger;
+    }
+
+    // Not stored in config file
+    if (init) {
+        if (!rhs.config_path.empty())
+            lhs.config_path = rhs.config_path;
+        if (!rhs.overwrite_config)
+            lhs.overwrite_config = rhs.overwrite_config;
+        if (rhs.load_config)
+            lhs.load_config = rhs.load_config;
+    }
+}
+
 ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths) {
     // Load base path configuration by default
     if (fs::exists(check_path(root_paths.get_base_path())))
@@ -199,6 +273,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     try {
         // Declare all options
         // clang-format off
+        Config command_line{};
         po::options_description generic_desc("Generic");
         generic_desc.add_options()
             ("help,h", "print this usage message")
@@ -206,23 +281,23 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         po::options_description input_desc("Input");
         input_desc.add_options()
-            ("input-vpk-path,i", po::value(&cfg.vpk_path), "path of app in .vpk format to install & run")
-            ("input-installed-id,r", po::value(&cfg.run_title_id), "title ID of installed app to run")
-            ("recompile-shader,s", po::value(&cfg.recompile_shader_path), "Recompile the given PS Vita shader (GXP format) to SPIR-V / GLSL and quit");
+            ("input-vpk-path,i", po::value(&command_line.vpk_path), "path of app in .vpk format to install & run")
+            ("input-installed-id,r", po::value(&command_line.run_title_id), "title ID of installed app to run")
+            ("recompile-shader,s", po::value(&command_line.recompile_shader_path), "Recompile the given PS Vita shader (GXP format) to SPIR-V / GLSL and quit");
 
         po::options_description config_desc("Configuration");
         config_desc.add_options()
-            ("archive-log,A", po::bool_switch(&cfg.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
-            ("config-location,c", po::value<fs::path>(&cfg.config_path), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault: <Vita3K folder>/config.yml")
-            ("keep-config,w", po::bool_switch(&cfg.overwrite_config)->default_value(true), "Do not modify the configuration file after loading.")
-            ("load-config,f", po::bool_switch(&cfg.load_config), "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
+            ("archive-log,A", po::bool_switch(&command_line.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
+            ("config-location,c", po::value<fs::path>(&command_line.config_path), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault: <Vita3K folder>/config.yml")
+            ("keep-config,w", po::bool_switch(&command_line.overwrite_config)->default_value(true), "Do not modify the configuration file after loading.")
+            ("load-config,f", po::bool_switch(&command_line.load_config), "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
             ("lle-modules,m", po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
-            ("log-level,l", po::value(&cfg.log_level), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
-            ("log-imports,I", po::bool_switch(&cfg.log_imports), "Log Imports")
-            ("log-exports,E", po::bool_switch(&cfg.log_exports), "Log Exports")
-            ("log-active-shaders,S", po::bool_switch(&cfg.log_active_shaders), "Log Active Shaders")
-            ("log-uniforms,U", po::bool_switch(&cfg.log_uniforms), "Log Uniforms")
-            ("sync-rendering,R", po::bool_switch(&cfg.sync_rendering), "Sync Rendering");
+            ("log-level,l", po::value(&command_line.log_level), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
+            ("log-imports,I", po::bool_switch(&command_line.log_imports), "Log Imports")
+            ("log-exports,E", po::bool_switch(&command_line.log_exports), "Log Exports")
+            ("log-active-shaders,S", po::bool_switch(&command_line.log_active_shaders), "Log Active Shaders")
+            ("log-uniforms,U", po::bool_switch(&command_line.log_uniforms), "Log Uniforms")
+            ("sync-rendering,R", po::bool_switch(&command_line.sync_rendering), "Sync Rendering");
         // clang-format on
 
         // Positional args
@@ -255,24 +330,36 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             std::cout << window_title << std::endl;
             return QuitRequested;
         }
-        if (var_map.count("recompile-shader"))
+        if (var_map.count("recompile-shader")) {
             return QuitRequested;
-
-        if (cfg.load_config || cfg.config_path != root_paths.get_base_path()) {
-            if (cfg.config_path.empty()) {
-                cfg.config_path = root_paths.get_base_path();
+        }
+        if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
+            if (command_line.config_path.empty()) {
+                command_line.config_path = root_paths.get_base_path();
             } else {
-                if (parse(cfg, cfg.config_path, root_paths.get_pref_path_string()) != Success)
+                if (parse(command_line, command_line.config_path, root_paths.get_pref_path_string()) != Success)
                     return InitConfigFailed;
-
-                LOG_INFO("Custom configuration file loaded successfully.");
             }
         }
 
         // Get LLE modules from the command line, otherwise get the modules from the YML file
-        if (var_map.count("lle-modules") && !cfg.load_config) {
+        if (var_map.count("lle-modules")) {
             const auto lle_modules = var_map["lle-modules"].as<std::string>();
-            cfg.lle_modules = string_utils::split_string(lle_modules, ',');
+            if (command_line.load_config) {
+                const auto command_line_lle = string_utils::split_string(lle_modules, ',');
+                merge_lle(command_line.lle_modules, command_line_lle);
+            } else {
+                command_line.lle_modules = string_utils::split_string(lle_modules, ',');
+            }
+        }
+
+        if (!command_line.load_config) {
+            // Merge command line and base configs
+            merge_configs(cfg, command_line, root_paths.get_base_path_string(), true);
+        } else {
+            // Replace the base config with the parsed config
+            cfg = std::move(command_line);
+            LOG_INFO("Custom configuration file loaded successfully.");
         }
 
         logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));

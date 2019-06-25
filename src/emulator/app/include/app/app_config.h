@@ -30,8 +30,17 @@ namespace app {
   * \param cfg Config operations to save.
   * \param output_path The location to save the configuration file.
   * \return Success on saving the config file, otherwise Error.
- */
+  */
 ExitCode serialize_config(Config &cfg, fs::path output_path);
+
+/**
+  * \brief Compare and merge two different configurations.
+  * \param lhs The configuration to be modified.
+  * \param rhs The new configuration to be added.
+  * \param cur_pref_path Default preference path.
+  * \param init Used when the configuration is being initialized.
+  */
+void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_path = std::string{}, bool init = false);
 
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
