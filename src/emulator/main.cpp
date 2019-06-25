@@ -41,6 +41,7 @@
 #endif
 
 #include <cstdlib>
+#include <chrono>
 
 int main(int argc, char *argv[]) {
     Root root_paths;
@@ -154,6 +155,10 @@ int main(int argc, char *argv[]) {
         return RendererInitFailed;
 
     while (handle_events(host)) {
+        std::chrono::steady_clock::time_point frame_start, frame_end;
+        if (host.cfg.fps_limit){
+            frame_start = std::chrono::steady_clock::now();
+        }
         gl_renderer.render(host);
 
         // Driver acto!
@@ -167,7 +172,22 @@ int main(int argc, char *argv[]) {
         }
         gui::draw_end(host.window.get());
 
-        host.display.condvar.notify_all();
+        if (!host.cfg.sync_rendering) {
+            host.display.condvar.notify_all();
+            if (host.cfg.fps_limit) {
+                const std::chrono::microseconds TARGET_TIME{ static_cast<uint32_t>(1000000.0 / (host.cfg.desired_fps+1)) };
+                
+                frame_end = std::chrono::steady_clock::now();
+                std::chrono::microseconds frame_processing_time = std::chrono::duration_cast<std::chrono::microseconds>(frame_end - frame_start);
+                if (frame_processing_time < TARGET_TIME) {
+			        std::chrono::microseconds frame_idle_time = TARGET_TIME - frame_processing_time;
+			        std::this_thread::sleep_for(frame_idle_time);
+                }
+            }
+        } else {
+            std::unique_lock<std::mutex> lock(host.display.mutex);
+            host.display.condvar.wait(lock);
+        }
 
         app::set_window_title(host);
     }

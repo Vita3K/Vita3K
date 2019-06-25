@@ -211,6 +211,9 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     if (SDL_GL_SetSwapInterval(-1) < 0) {
         SDL_GL_SetSwapInterval(1);
     }
+    if (!cfg.wait_for_vsync) {
+        SDL_GL_SetSwapInterval(0);
+    } 
     LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
 
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);

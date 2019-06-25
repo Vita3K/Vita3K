@@ -128,6 +128,9 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value(config_node, "pref-path", &cfg.pref_path, root_pref_path);
     get_yaml_value(config_node, "discord-rich-presence", &cfg.discord_rich_presence, true);
+    get_yaml_value(config_node, "fps-limit", &cfg.fps_limit, false);
+    get_yaml_value(config_node, "desired-fps", &cfg.desired_fps, static_cast<int>(60));
+    get_yaml_value(config_node, "wait-for-vsync", &cfg.wait_for_vsync, true);
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
@@ -370,6 +373,9 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         LOG_INFO("log-exports: {}", cfg.log_exports);
         LOG_INFO("log-active-shaders: {}", cfg.log_active_shaders);
         LOG_INFO("log-uniforms: {}", cfg.log_uniforms);
+        LOG_INFO("fps-limit-enabled: {}", cfg.fps_limit);
+        LOG_INFO("vsync-enable: {}", cfg.wait_for_vsync);
+        LOG_INFO("sync-rendering: {}", cfg.sync_rendering);
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";

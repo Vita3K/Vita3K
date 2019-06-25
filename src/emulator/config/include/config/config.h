@@ -42,7 +42,7 @@ struct Config {
     int icon_size = 64;
     bool archive_log = false;
     bool texture_cache = true;
-    int sys_button = 1;
+int sys_button = 1;
     int sys_lang = 1;
     std::string background_image = {};
     float background_alpha = 0.300f;
@@ -52,6 +52,9 @@ struct Config {
     bool overwrite_config = true;
     bool load_config = false;
     bool discord_rich_presence = true;
+    bool fps_limit = false;
+    bool wait_for_vsync = true;
+    int desired_fps = 60;
     optional<bool> wait_for_debugger;
 
 }; // struct Config

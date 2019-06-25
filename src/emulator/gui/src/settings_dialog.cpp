@@ -191,6 +191,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Vsync", &host.cfg.wait_for_vsync);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to disable vsync on next startup.");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
         ImGui::InputTextWithHint("Set emulated system storage folder.", "Write your path folder here", &host.cfg.pref_path);
@@ -227,6 +231,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Reset Vita3K's configuration to the default values. \nAfter pressing, restart Vita3K to fully apply. \nWARNING: This cannot be undone.");
+        ImGui::Spacing();
+        ImGui::SliderInt("", &host.cfg.desired_fps, 1, 240);
+        ImGui::SameLine();
+        ImGui::Checkbox("FPS Limit", &host.cfg.fps_limit);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Sets the given FPS limit.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();
