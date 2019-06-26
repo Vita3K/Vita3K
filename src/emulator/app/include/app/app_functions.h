@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <config/config.h>
 #include <util/exit_code.h>
 
 #include <string>

@@ -15,12 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <app/app_config.h>
 #include <app/app_functions.h>
 #include <app/screen_render.h>
+#include <config/config.h>
+#include <config/config_func.h>
+#include <config/version.h>
 #include <gui/functions.h>
 #include <host/state.h>
-#include <host/version.h>
 #include <shader/spirv_recompiler.h>
 #include <util/exit_code.h>
 #include <util/fs.h>

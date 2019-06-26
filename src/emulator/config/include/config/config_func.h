@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <host/config.h>
+#include <config/config.h>
 #include <util/exit_code.h>
 #include <util/fs.h>
 

@@ -15,21 +15,21 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <app/app_config.h>
+#include <config/config.h>
+#include <config/version.h>
 
-#include <host/version.h>
-#include <psp2/system_param.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <util/vector_utils.h>
 
 #include <boost/optional/optional_io.hpp>
 #include <boost/program_options.hpp>
+#include <psp2/system_param.h>
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
 #include <exception>
 #include <iostream>
-#include <unordered_set>
 
 namespace po = boost::program_options;
 
@@ -83,19 +83,6 @@ static void config_file_emit_vector(YAML::Emitter &emitter, const char *name, st
     }
 
     emitter << YAML::EndSeq;
-}
-
-// Optimal based on: http://stackoverflow.com/a/24477023
-static void merge_lle(std::vector<std::string> &lhs, const std::vector<std::string> &rhs) {
-    if (lhs.empty() || rhs.empty())
-        return;
-
-    lhs.insert(lhs.end(), rhs.begin(), rhs.end());
-    std::unordered_set<std::string> s;
-    for (const auto &i : lhs)
-        s.insert(i);
-    lhs.assign(s.begin(), s.end());
-    std::sort(lhs.begin(), lhs.end());
 }
 
 static fs::path check_path(fs::path output_path) {
@@ -347,7 +334,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             const auto lle_modules = var_map["lle-modules"].as<std::string>();
             if (command_line.load_config) {
                 const auto command_line_lle = string_utils::split_string(lle_modules, ',');
-                merge_lle(command_line.lle_modules, command_line_lle);
+                command_line.lle_modules = vector_utils::merge_vectors(command_line.lle_modules, command_line_lle);
             } else {
                 command_line.lle_modules = string_utils::split_string(lle_modules, ',');
             }
@@ -355,7 +342,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         if (!command_line.load_config) {
             // Merge command line and base configs
-            merge_configs(cfg, command_line, root_paths.get_base_path_string(), true);
+            merge_config(cfg, command_line, root_paths.get_base_path_string());
         } else {
             // Replace the base config with the parsed config
             cfg = std::move(command_line);

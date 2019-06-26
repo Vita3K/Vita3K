@@ -55,6 +55,7 @@ endif()
 
 add_subdirectory(app)
 add_subdirectory(audio)
+add_subdirectory(config)
 add_subdirectory(cpu)
 add_subdirectory(crypto)
 add_subdirectory(ctrl)
