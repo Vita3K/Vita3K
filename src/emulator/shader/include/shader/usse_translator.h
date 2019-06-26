@@ -126,25 +126,30 @@ private:
     // Translation helpers
     //
 
-#define BEGIN_REPEAT(repeat_count, jump)                     \
-    const auto repeat_count_num = (uint8_t)repeat_count + 1; \
-    const auto repeat_jump = jump;                           \
+#define BEGIN_REPEAT(repeat_count, jump_all) BEGIN_REPEAT_4(repeat_count, jump_all, jump_all, jump_all, jump_all)
+
+#define BEGIN_REPEAT_4(repeat_count, jump_dest, jump_src0, jump_src1, jump_src2)                  \
+    const auto repeat_count_num = (uint8_t)repeat_count + 1;                                      \
+    const auto repeat_jump_dest = jump_dest;                                                      \
+    const auto repeat_jump_src0 = jump_src0;                                                      \
+    const auto repeat_jump_src1 = jump_src1;                                                      \
+    const auto repeat_jump_src2 = jump_src2;                                                      \
     for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
 #define END_REPEAT() }
 
-#define GET_REPEAT(inst)                                                                     \
-    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump; \
-    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump; \
-    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump; \
-    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump; \
-    if (inst.opr.dest.bank == RegisterBank::FPINTERNAL)                                      \
-        dest_repeat_offset /= repeat_jump;                                                   \
-    if (inst.opr.src0.bank == RegisterBank::FPINTERNAL)                                      \
-        src0_repeat_offset /= repeat_jump;                                                   \
-    if (inst.opr.src1.bank == RegisterBank::FPINTERNAL)                                      \
-        src1_repeat_offset /= repeat_jump;                                                   \
-    if (inst.opr.src2.bank == RegisterBank::FPINTERNAL)                                      \
-        src2_repeat_offset /= repeat_jump;
+#define GET_REPEAT(inst)                                                                          \
+    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump_dest; \
+    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump_src0; \
+    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump_src1; \
+    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump_src2; \
+    if (inst.opr.dest.bank == RegisterBank::FPINTERNAL)                                           \
+        dest_repeat_offset /= repeat_jump_dest;                                                   \
+    if (inst.opr.src0.bank == RegisterBank::FPINTERNAL)                                           \
+        src0_repeat_offset /= repeat_jump_src0;                                                   \
+    if (inst.opr.src1.bank == RegisterBank::FPINTERNAL)                                           \
+        src1_repeat_offset /= repeat_jump_src1;                                                   \
+    if (inst.opr.src2.bank == RegisterBank::FPINTERNAL)                                           \
+        src2_repeat_offset /= repeat_jump_src2;
 
     const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index) {
         return repeat_increase[op.index][repeat_index];
@@ -205,28 +210,28 @@ public:
         Imm1 opcode2,
         Imm1 dest_use_bank_ext,
         Imm1 end,
-        Imm1 src0_bank_ext,
+        Imm1 src1_bank_ext,
         Imm2 increment_mode,
         Imm1 gpi0_abs,
         RepeatCount repeat_count,
         bool nosched,
         Imm4 write_mask,
-        Imm1 src0_neg,
-        Imm1 src0_abs,
+        Imm1 src1_neg,
+        Imm1 src1_abs,
         Imm1 gpi1_neg,
         Imm1 gpi1_abs,
         Imm1 gpi0_swiz_ext,
         Imm2 dest_bank,
-        Imm2 src0_bank,
+        Imm2 src1_bank,
         Imm2 gpi0_n,
         Imm6 dest_n,
         Imm4 gpi0_swiz,
         Imm4 gpi1_swiz,
         Imm2 gpi1_n,
         Imm1 gpi0_neg,
-        Imm1 src0_swiz_ext,
-        Imm4 src0_swiz,
-        Imm6 src0_n);
+        Imm1 src1_swiz_ext,
+        Imm4 src1_swiz,
+        Imm6 src1_n);
 
     bool vmad2(
         Imm1 dat_fmt,
@@ -381,25 +386,25 @@ public:
         Imm1 opcode2,
         Imm1 dest_use_bank_ext,
         Imm1 end,
-        Imm1 src0_bank_ext,
+        Imm1 src1_bank_ext,
         Imm2 increment_mode,
         Imm1 gpi0_abs,
         RepeatCount repeat_count,
         bool nosched,
         Imm4 write_mask,
-        Imm1 src0_neg,
-        Imm1 src0_abs,
+        Imm1 src1_neg,
+        Imm1 src1_abs,
         Imm3 clip_plane_n,
         Imm2 dest_bank,
-        Imm2 src0_bank,
+        Imm2 src1_bank,
         Imm2 gpi0_n,
         Imm6 dest_n,
         Imm4 gpi0_swiz,
-        Imm3 src0_swiz_w,
-        Imm3 src0_swiz_z,
-        Imm3 src0_swiz_y,
-        Imm3 src0_swiz_x,
-        Imm6 src0_n);
+        Imm3 src1_swiz_w,
+        Imm3 src1_swiz_z,
+        Imm3 src1_swiz_y,
+        Imm3 src1_swiz_x,
+        Imm6 src1_n);
 
     bool br(
         ExtPredicate pred,
