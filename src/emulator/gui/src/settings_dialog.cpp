@@ -17,8 +17,9 @@
 
 #include "private.h"
 
-#include <app/app_config.h>
 #include <app/app_functions.h>
+#include <config/config.h>
+#include <config/config_func.h>
 #include <gui/functions.h>
 #include <gui/state.h>
 
@@ -199,7 +200,7 @@ void draw_settings_dialog(HostState &host) {
             ImGui::SetTooltip("After pressing, restart Vita3K to fully apply changes.");
         ImGui::SameLine();
         if (ImGui::Button("Reset Configuration")) {
-            app::merge_configs(host.cfg, Config{});
+            host.cfg = Config{};
 
             LOG_INFO("Reset Vita3K configuration and config file to default values.");
             if (host.cfg.pref_path != host.pref_path) {

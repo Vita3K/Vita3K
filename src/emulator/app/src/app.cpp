@@ -19,11 +19,11 @@
 
 #include <app/app_functions.h>
 
+#include <config/version.h>
 #include <gui/functions.h>
 #include <gui/imgui_impl_sdl_gl3.h>
 #include <host/functions.h>
 #include <host/state.h>
-#include <host/version.h>
 #include <io/functions.h>
 #include <io/io.h>
 #include <io/state.h>

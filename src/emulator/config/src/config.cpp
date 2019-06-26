@@ -15,21 +15,21 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <app/app_config.h>
+#include <config/config.h>
+#include <config/version.h>
 
-#include <host/version.h>
-#include <psp2/system_param.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <util/vector_utils.h>
 
 #include <boost/optional/optional_io.hpp>
 #include <boost/program_options.hpp>
+#include <psp2/system_param.h>
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
 #include <exception>
 #include <iostream>
-#include <unordered_set>
 
 namespace po = boost::program_options;
 
@@ -83,19 +83,6 @@ static void config_file_emit_vector(YAML::Emitter &emitter, const char *name, st
     }
 
     emitter << YAML::EndSeq;
-}
-
-// Optimal based on: http://stackoverflow.com/a/24477023
-static void merge_lle(std::vector<std::string> &lhs, const std::vector<std::string> &rhs) {
-    if (lhs.empty() || rhs.empty())
-        return;
-
-    lhs.insert(lhs.end(), rhs.begin(), rhs.end());
-    std::unordered_set<std::string> s;
-    for (const auto &i : lhs)
-        s.insert(i);
-    lhs.assign(s.begin(), s.end());
-    std::sort(lhs.begin(), lhs.end());
 }
 
 static fs::path check_path(fs::path output_path) {
@@ -205,66 +192,6 @@ ExitCode serialize_config(Config &cfg, fs::path output_path) {
     return Success;
 }
 
-void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_path, const bool init) {
-    // Stored in config file
-    if (lhs.log_imports != rhs.log_imports && (!init || rhs.log_imports))
-        lhs.log_imports = rhs.log_imports;
-    if (lhs.log_exports != rhs.log_exports && (!init || rhs.log_exports))
-        lhs.log_exports = rhs.log_exports;
-    if (lhs.log_active_shaders != rhs.log_active_shaders && (!init || rhs.log_active_shaders))
-        lhs.log_active_shaders = rhs.log_active_shaders;
-    if (lhs.log_uniforms != rhs.log_uniforms && (!init || rhs.log_uniforms))
-        lhs.log_uniforms = rhs.log_uniforms;
-    if (lhs.sync_rendering != rhs.sync_rendering && (!init || rhs.sync_rendering))
-        lhs.sync_rendering = rhs.sync_rendering;
-    if (lhs.lle_modules != rhs.lle_modules && (!init || !rhs.lle_modules.empty()))
-        merge_lle(lhs.lle_modules, rhs.lle_modules);
-    if (lhs.pstv_mode != rhs.pstv_mode && (!init || rhs.pstv_mode))
-        lhs.pstv_mode = rhs.pstv_mode;
-    if (lhs.show_gui != rhs.show_gui && (!init || rhs.show_gui))
-        lhs.show_gui = rhs.show_gui;
-    if (lhs.show_game_background != rhs.show_game_background && (!init || !rhs.show_game_background))
-        lhs.show_game_background = rhs.show_game_background;
-    if (lhs.icon_size != rhs.icon_size && (!init || rhs.icon_size != static_cast<int>(64)))
-        lhs.icon_size = rhs.icon_size;
-    if (lhs.archive_log != rhs.archive_log && (!init || rhs.archive_log))
-        lhs.archive_log = rhs.archive_log;
-    if (lhs.texture_cache != rhs.texture_cache && (!init || !rhs.texture_cache))
-        lhs.texture_cache = rhs.texture_cache;
-    if (lhs.sys_button != rhs.sys_button && (!init || rhs.sys_button != static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS)))
-        lhs.sys_button = rhs.sys_button;
-    if (lhs.sys_lang != rhs.sys_lang && (!init || rhs.sys_lang != static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US)))
-        lhs.sys_lang = rhs.sys_lang;
-    if (lhs.background_image != rhs.background_image && (!init || !rhs.background_image.empty()))
-        lhs.background_image = rhs.background_image;
-    if (lhs.background_alpha != rhs.background_alpha && (!init || rhs.background_alpha != 0.300f))
-        lhs.background_alpha = rhs.background_alpha;
-    if (lhs.log_level != rhs.log_level && (!init || rhs.log_level != static_cast<int>(spdlog::level::trace)))
-        lhs.log_level = rhs.log_level;
-    if (lhs.pref_path != rhs.pref_path && (init || rhs.pref_path != cur_pref_path)) { // Flags when in init
-        if (rhs.pref_path.empty())
-            lhs.pref_path = cur_pref_path;
-        else
-            lhs.pref_path = rhs.pref_path;
-    }
-    if (lhs.discord_rich_presence != rhs.discord_rich_presence && (!init || rhs.discord_rich_presence))
-        lhs.discord_rich_presence = rhs.discord_rich_presence;
-    if (rhs.wait_for_debugger.is_initialized()) {
-        if (lhs.wait_for_debugger != rhs.wait_for_debugger && (!init || *rhs.wait_for_debugger))
-            lhs.wait_for_debugger = rhs.wait_for_debugger;
-    }
-
-    // Not stored in config file
-    if (init) {
-        if (!rhs.config_path.empty())
-            lhs.config_path = rhs.config_path;
-        if (!rhs.overwrite_config)
-            lhs.overwrite_config = rhs.overwrite_config;
-        if (rhs.load_config)
-            lhs.load_config = rhs.load_config;
-    }
-}
-
 ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths) {
     // Load base path configuration by default
     if (fs::exists(check_path(root_paths.get_base_path())))
@@ -347,7 +274,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             const auto lle_modules = var_map["lle-modules"].as<std::string>();
             if (command_line.load_config) {
                 const auto command_line_lle = string_utils::split_string(lle_modules, ',');
-                merge_lle(command_line.lle_modules, command_line_lle);
+                command_line.lle_modules = vector_utils::merge_vectors(command_line.lle_modules, command_line_lle);
             } else {
                 command_line.lle_modules = string_utils::split_string(lle_modules, ',');
             }
@@ -355,7 +282,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         if (!command_line.load_config) {
             // Merge command line and base configs
-            merge_configs(cfg, command_line, root_paths.get_base_path_string(), true);
+            //cfg.merge_config(command_line, root_paths.get_base_path_string());
         } else {
             // Replace the base config with the parsed config
             cfg = std::move(command_line);

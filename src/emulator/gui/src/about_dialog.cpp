@@ -19,8 +19,8 @@
 
 #include "private.h"
 
+#include <config/version.h>
 #include <host/state.h>
-#include <host/version.h>
 
 #include <sstream>
 

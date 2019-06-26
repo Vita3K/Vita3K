@@ -17,13 +17,14 @@
 
 #include "app_private.h"
 
-#include <app/app_config.h>
 #include <app/app_functions.h>
 
 #include <audio/functions.h>
+#include <config/config.h>
+#include <config/config_func.h>
+#include <config/version.h>
 #include <glutil/gl.h>
 #include <host/state.h>
-#include <host/version.h>
 #include <io/functions.h>
 #include <io/io.h> // vfs
 #include <rtc/rtc.h>

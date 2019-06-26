@@ -54,4 +54,10 @@ struct Config {
     bool load_config = false;
     bool discord_rich_presence = true;
     optional<bool> wait_for_debugger;
-};
+
+    // void merge_config(const Config &cfg, const std::string &new_pref_path = {}) const {
+    //     this = std::move(cfg);
+    //     this->pref_path = new_pref_path;
+    // }
+
+}; // struct Config

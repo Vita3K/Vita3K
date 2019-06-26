@@ -18,6 +18,7 @@
 #pragma once
 #include "kernel/state.h"
 #include "psp2/types.h"
+
 struct Config;
 struct MemState;
 template <class T>

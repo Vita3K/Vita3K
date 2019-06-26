@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include "config.h"
 #include <audio/state.h>
+#include <config/config.h>
 #include <ctrl/state.h>
 #include <gui/state.h>
 #include <gxm/state.h>
