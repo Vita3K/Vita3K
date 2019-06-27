@@ -76,6 +76,21 @@ ExitCode add_sink(const fs::path &log_path) {
     return Success;
 }
 
+int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_val) {
+    bool inserted = false;
+
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        inserted = logged.insert(name).second;
+    }
+
+    if (inserted) {
+        LOG_ERROR("{} returned {} ({})", name, error_str, log_hex(error_val));
+    }
+
+    return error_val;
+}
+
 } // namespace logging
 
 namespace string_utils {

@@ -55,7 +55,10 @@ ExitCode add_sink(const fs::path &log_path);
     if (flag)                      \
     LOG_CRITICAL(__VA_ARGS__)
 
+int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_val);
 } // namespace logging
+
+#define RET_ERROR(error) logging::ret_error_impl(export_name, #error, error)
 
 template <typename T>
 std::string log_hex(T val) {

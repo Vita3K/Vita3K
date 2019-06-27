@@ -165,4 +165,4 @@ add_library(modules STATIC
 	SceVshBridge/SceDrmBridge.cpp SceVshBridge/SceDrmBridge.h
 	SceVshBridge/SceVshBridge.cpp SceVshBridge/SceVshBridge.h
 	SceWlanBt/SceWlan.cpp SceWlanBt/SceWlan.h)
-target_link_libraries(modules PRIVATE module)
+target_link_libraries(modules PUBLIC module)

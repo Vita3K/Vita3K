@@ -18,6 +18,7 @@
 #include "SceLibKernel.h"
 #include <v3kprintf.h>
 
+#include <app/load_self.h>
 #include <cpu/functions.h>
 #include <dlmalloc.h>
 #include <host/functions.h>
@@ -31,7 +32,6 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <kernel/load_self.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
 #undef st_atime

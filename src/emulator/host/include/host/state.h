@@ -31,7 +31,9 @@
 #include <renderer/state.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
+#ifdef USE_GDBSTUB
 #include <gdbstub/state.h>
+#endif
 
 #include <psp2/display.h>
 

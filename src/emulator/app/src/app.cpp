@@ -18,6 +18,7 @@
 #include "app_private.h"
 
 #include <app/app_functions.h>
+#include <app/load_self.h>
 
 #include <config/version.h>
 #include <gui/functions.h>
@@ -28,10 +29,9 @@
 #include <io/io.h>
 #include <io/state.h>
 #include <kernel/functions.h>
-#include <kernel/load_self.h>
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
-#include <modules/SceTouch/SceTouch.h>
+#include <touch/touch.h>
 #include <util/find.h>
 #include <util/fs.h>
 #include <util/log.h>

@@ -24,7 +24,6 @@
 #include <cpu/functions.h>
 #include <kernel/state.h>
 #include <kernel/types.h>
-#include <module/module.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -169,47 +168,44 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
             if (is_recursive) {
                 mutex->lock_count += lock_count;
                 return SCE_KERNEL_OK;
-            } else {
-                if (weight == SyncWeight::Light)
-                    return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_RECURSIVE);
-                else
-                    return RET_ERROR(SCE_KERNEL_ERROR_MUTEX_RECURSIVE);
             }
-        } else {
-            // Owned by someone else
+            if (weight == SyncWeight::Light)
+                return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_RECURSIVE);
 
-            // Don't sleep if only_try is set
-            if (only_try) {
-                if (weight == SyncWeight::Light)
-                    return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN);
-                else
-                    return RET_ERROR(SCE_KERNEL_ERROR_MUTEX_FAILED_TO_OWN);
-            }
-
-            // Sleep thread!
-            std::unique_lock<std::mutex> thread_lock(thread->mutex);
-            assert(thread->to_do == ThreadToDo::run);
-            thread->to_do = ThreadToDo::wait;
-
-            WaitingThreadData data;
-            data.thread = thread;
-            data.lock_count = lock_count;
-            data.priority = is_fifo ? 0 : thread->priority;
-
-            mutex->waiting_threads.emplace(data);
-            mutex_lock.unlock();
-
-            stop(*thread->cpu);
-
-            return handle_timeout(thread, thread_lock, mutex_lock, *mutex, data, export_name, timeout);
+            return RET_ERROR(SCE_KERNEL_ERROR_MUTEX_RECURSIVE);
         }
-    } else {
-        // Not owned
-        // Take ownership!
+        // Owned by someone else
 
-        mutex->lock_count += lock_count;
-        mutex->owner = thread;
+        // Don't sleep if only_try is set
+        if (only_try) {
+            if (weight == SyncWeight::Light)
+                return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN);
+
+            return RET_ERROR(SCE_KERNEL_ERROR_MUTEX_FAILED_TO_OWN);
+        }
+
+        // Sleep thread!
+        std::unique_lock<std::mutex> thread_lock(thread->mutex);
+        assert(thread->to_do == ThreadToDo::run);
+        thread->to_do = ThreadToDo::wait;
+
+        WaitingThreadData data;
+        data.thread = thread;
+        data.lock_count = lock_count;
+        data.priority = is_fifo ? 0 : thread->priority;
+
+        mutex->waiting_threads.emplace(data);
+        mutex_lock.unlock();
+
+        stop(*thread->cpu);
+
+        return handle_timeout(thread, thread_lock, mutex_lock, *mutex, data, export_name, timeout);
     }
+    // Not owned
+    // Take ownership!
+
+    mutex->lock_count += lock_count;
+    mutex->owner = thread;
 
     return SCE_KERNEL_OK;
 }

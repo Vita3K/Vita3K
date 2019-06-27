@@ -11,5 +11,4 @@ add_library(
 )
 
 target_include_directories(host PUBLIC include)
-target_link_libraries(host PUBLIC audio config cpu ctrl gxm io kernel mem net nids np renderer rtc util gui gdbstub)
-target_link_libraries(host PRIVATE ${Boost_LIBRARIES} glutil microprofile sdl2)
+target_link_libraries(host PUBLIC audio config ctrl gui gdbstub kernel io net nids np renderer touch)

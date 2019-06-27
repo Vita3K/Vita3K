@@ -17,17 +17,14 @@
 
 #pragma once
 
-#include "bridge.h"
+#include <SDL.h>
 
-#include <cassert>
+#include <gui/state.h>
+#include <ctrl/state.h>
 
-int unimplemented_impl(const char *name);
-#define UNIMPLEMENTED() unimplemented_impl(export_name)
+struct SDL_TouchFingerEvent;
+typedef SDL_TouchFingerEvent SDL_TouchFingerEvent;
 
-int stubbed_impl(const char *name, const char *info);
-#define STUBBED(info) stubbed_impl(export_name, info)
-
-#define BRIDGE_DECL(name) extern const ImportFn import_##name;
-#define BRIDGE_IMPL(name) const ImportFn import_##name = bridge(&export_##name, #name);
-
-#define EXPORT(ret, name, ...) ret export_##name(HostState &host, SceUID thread_id, const char *export_name, ##__VA_ARGS__)
+int handle_touch_event(SDL_TouchFingerEvent &finger);
+int toggle_touchscreen();
+int peek_touch(const SceFVector2 viewport_pos, const SceFVector2 viewport_size, const SceIVector2 drawable_size, const gui::State &gui, const CtrlState &ctrl, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count);

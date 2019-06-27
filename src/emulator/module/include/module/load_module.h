@@ -15,19 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <host/functions.h>
+#include <kernel/thread/thread_functions.h>
 
-#include "bridge.h"
+#include <psp2/sysmodule.h>
 
-#include <cassert>
+#include <vector>
 
-int unimplemented_impl(const char *name);
-#define UNIMPLEMENTED() unimplemented_impl(export_name)
-
-int stubbed_impl(const char *name, const char *info);
-#define STUBBED(info) stubbed_impl(export_name, info)
-
-#define BRIDGE_DECL(name) extern const ImportFn import_##name;
-#define BRIDGE_IMPL(name) const ImportFn import_##name = bridge(&export_##name, #name);
-
-#define EXPORT(ret, name, ...) ret export_##name(HostState &host, SceUID thread_id, const char *export_name, ##__VA_ARGS__)
+bool is_lle_module(SceSysmoduleModuleId module_id, const std::vector<std::string> &lle_modules);
+bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id);
+bool load_module(HostState &host, SceSysmoduleModuleId module_id);
