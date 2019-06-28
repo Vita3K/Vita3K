@@ -15,19 +15,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <gui/functions.h>
-
 #include "private.h"
 
-#include <host/state.h>
 #include <kernel/thread/thread_functions.h>
-#include <kernel/thread/thread_state.h>
-#include <util/resource.h>
 
 namespace gui {
 
-void draw_event_flags_dialog(HostState &host) {
-    ImGui::Begin("Event Flags", &host.gui.debug_menu.eventflags_dialog);
+void draw_event_flags_dialog(HostState &host, GuiState &gui) {
+    ImGui::Begin("Event Flags", &gui.debug_menu.eventflags_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s  %-7s   %-8s   %-16s", "ID", "EventFlag Name", "Flags", "Attributes", "Waiting Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);

@@ -19,7 +19,6 @@
 
 #include <SDL.h>
 
-#include <gui/state.h>
 #include <ctrl/state.h>
 
 struct SDL_TouchFingerEvent;
@@ -27,4 +26,4 @@ typedef SDL_TouchFingerEvent SDL_TouchFingerEvent;
 
 int handle_touch_event(SDL_TouchFingerEvent &finger);
 int toggle_touchscreen();
-int peek_touch(const SceFVector2 viewport_pos, const SceFVector2 viewport_size, const SceIVector2 drawable_size, const gui::State &gui, const CtrlState &ctrl, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count);
+int peek_touch(SceFVector2 viewport_pos, SceFVector2 viewport_size, SceIVector2 drawable_size, bool renderer_focused, const CtrlState &ctrl, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count);

@@ -107,7 +107,8 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    gui::init(host);
+    GuiState gui;
+    gui::init(host, gui);
 
     auto discord_rich_presence_old = host.cfg.discord_rich_presence;
 
@@ -115,13 +116,13 @@ int main(int argc, char *argv[]) {
     while (run_type == app::AppRunType::Unknown) {
         if (app::handle_events(host)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gui::draw_begin(host);
+            gui::draw_begin(host, gui);
 
 #ifdef USE_DISCORD_RICH_PRESENCE
             discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
-            gui::draw_ui(host);
-            gui::draw_game_selector(host);
+            gui::draw_ui(host, gui);
+            gui::draw_game_selector(host, gui);
 
             gui::draw_end(host.window.get());
         } else {
@@ -129,8 +130,8 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
-        if (!host.gui.game_selector.selected_title_id.empty()) {
-            vpk_path_wide = string_utils::utf_to_wide(host.gui.game_selector.selected_title_id);
+        if (!gui.game_selector.selected_title_id.empty()) {
+            vpk_path_wide = string_utils::utf_to_wide(gui.game_selector.selected_title_id);
             run_type = app::AppRunType::Extracted;
         }
     }
@@ -148,10 +149,10 @@ int main(int argc, char *argv[]) {
 
     while (app::handle_events(host)) {
         gl_renderer.render(host);
-        gui::draw_begin(host);
-        gui::draw_common_dialog(host);
+        gui::draw_begin(host, gui);
+        gui::draw_common_dialog(host, gui);
         if (host.display.imgui_render) {
-            gui::draw_ui(host);
+            gui::draw_ui(host, gui);
         }
         gui::draw_end(host.window.get());
 

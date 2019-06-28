@@ -16,7 +16,11 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <module/load_module.h>
+
+#include <app/load_self.h>
+#include <host/state.h>
 #include <io/io.h>
+#include <util/log.h>
 
 static constexpr auto SYSMODULE_COUNT = 0x56;
 

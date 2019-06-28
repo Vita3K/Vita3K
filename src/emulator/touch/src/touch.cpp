@@ -107,14 +107,14 @@ int toggle_touchscreen() {
     return 0;
 }
 
-int peek_touch(const SceFVector2 viewport_pos, const SceFVector2 viewport_size, const SceIVector2 drawable_size, const gui::State &gui, const CtrlState &ctrl, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count) {
+int peek_touch(const SceFVector2 viewport_pos, const SceFVector2 viewport_size, const SceIVector2 drawable_size, const bool renderer_focused, const CtrlState &ctrl, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count) {
     memset(pData, 0, sizeof(*pData));
     pData->timeStamp = timestamp++; // TODO Use the real time and units.
 
     SceIVector2 touch_pos_window = { 0, 0 };
     const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
     const uint32_t mask = (port == SCE_TOUCH_PORT_BACK) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
-    if ((buttons & mask) && gui.renderer_focused) {
+    if ((buttons & mask) && renderer_focused) {
         SceIVector2 SDL_window_size = { 0, 0 };
         SDL_Window *const window = SDL_GetMouseFocus();
         SDL_GetWindowSize(window, &SDL_window_size.x, &SDL_window_size.y);

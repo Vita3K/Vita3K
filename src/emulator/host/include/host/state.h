@@ -43,7 +43,6 @@
 
 struct SDL_Window;
 typedef void *SDL_GLContext;
-typedef std::shared_ptr<SDL_Window> WindowPtr;
 typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 
 struct DisplayState {
@@ -80,7 +79,7 @@ struct HostState {
     NetState net;
     NpState np;
     DisplayState display;
-    gui::State gui;
+    GuiState gui;
     SfoFile sfo_handle;
     NIDSet missing_nids;
 #ifdef USE_GDBSTUB

@@ -6,4 +6,4 @@ add_library(
 )
 
 target_include_directories(touch PUBLIC include)
-target_link_libraries(touch PUBLIC gui ctrl vita-headers)
+target_link_libraries(touch PUBLIC ctrl vita-headers)

@@ -17,10 +17,16 @@
 
 #pragma once
 
+#include <gui/state.h>
+
+#include <host/state.h>
+
 #include <string>
 
+struct Config;
 struct HostState;
-struct SDL_Window;
+struct KernelState;
+struct MemState;
 
 namespace gui {
 
@@ -30,16 +36,17 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-void init(HostState &host);
-void init_background(HostState &host, const std::string &image_path);
-void load_game_background(HostState &host, const std::string &title_id);
-void draw_begin(HostState &host);
-void draw_end(SDL_Window *window);
-void draw_ui(HostState &host);
+void init(HostState &host, GuiState &gui);
+void init_background(GuiState &gui, const std::string &image_path);
+void load_game_background(HostState &host, GuiState &gui, const std::string &title_id);
 
-void draw_common_dialog(HostState &host);
-void draw_game_selector(HostState &host);
-void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
+void draw_begin(HostState &host, GuiState &gui);
+void draw_end(SDL_Window *window);
+void draw_ui(HostState &host, GuiState &gui);
+
+void draw_common_dialog(HostState &host, GuiState &gui);
+void draw_game_selector(HostState &host, GuiState &gui);
+void draw_reinstall_dialog(GenericDialogState *status);
 
 } // namespace gui
 

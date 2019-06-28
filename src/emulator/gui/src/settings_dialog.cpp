@@ -90,9 +90,9 @@ bool change_pref_location(const std::string &input_path, const std::string &curr
 }
 
 using namespace list;
-void draw_settings_dialog(HostState &host) {
+void draw_settings_dialog(HostState &host, GuiState &gui) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-    ImGui::Begin("Settings", &host.gui.configuration_menu.settings_dialog, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Settings", &gui.configuration_menu.settings_dialog, ImGuiWindowFlags_AlwaysAutoResize);
     const auto settings_tab_flags = ImGuiTabBarFlags_None;
     ImGui::BeginTabBar("SettingsTabBar", settings_tab_flags);
 
@@ -110,7 +110,7 @@ void draw_settings_dialog(HostState &host) {
                     auto modules = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), LIST_MODULES[m]);
                     if (modules != host.cfg.lle_modules.end() && !module_select[m])
                         module_select[m] = true;
-                    if (!host.gui.module_search_bar.PassFilter(LIST_MODULES[m]))
+                    if (!gui.module_search_bar.PassFilter(LIST_MODULES[m]))
                         continue;
                     if (ImGui::Selectable(LIST_MODULES[m], &module_select[m]) && modules == host.cfg.lle_modules.end())
                         host.cfg.lle_modules.push_back(LIST_MODULES[m]);
@@ -122,7 +122,7 @@ void draw_settings_dialog(HostState &host) {
             ImGui::PopItemWidth();
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT, "Modules Search");
-            host.gui.module_search_bar.Draw("##module_search_bar", 200);
+            gui.module_search_bar.Draw("##module_search_bar", 200);
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
                 host.cfg.lle_modules.clear();
@@ -242,19 +242,19 @@ void draw_settings_dialog(HostState &host) {
         ImGui::InputTextWithHint("Set background image", "Add your path to the image here", &host.cfg.background_image);
         ImGui::PopItemWidth();
         if (ImGui::Button("Apply Change Image")) {
-            if (!host.gui.user_backgrounds[host.cfg.background_image])
-                init_background(host, host.cfg.background_image);
-            else if (host.gui.user_backgrounds[host.cfg.background_image])
-                host.gui.current_background = host.gui.user_backgrounds[host.cfg.background_image];
+            if (!gui.user_backgrounds[host.cfg.background_image])
+                init_background(gui, host.cfg.background_image);
+            else if (gui.user_backgrounds[host.cfg.background_image])
+                gui.current_background = gui.user_backgrounds[host.cfg.background_image];
         }
         ImGui::SameLine();
         if (ImGui::Button("Reset Background")) {
             host.cfg.background_image.clear();
-            host.gui.user_backgrounds.clear();
-            host.gui.current_background = 0;
+            gui.user_backgrounds.clear();
+            gui.current_background = 0;
         }
         ImGui::Spacing();
-        if (host.gui.current_background) {
+        if (gui.current_background) {
             ImGui::SliderFloat("Background Alpha \nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("The minimum slider is opaque and the maximum is transparent.");

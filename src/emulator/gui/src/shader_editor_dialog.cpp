@@ -45,12 +45,12 @@
 
 namespace gui {
 
-void draw_shader_editor_dialog(HostState &host) {
+void draw_shader_editor_dialog(HostState &host, GuiState &gui) {
     static int selected_vertex_shader = 0;
     static int selected_frag_shader = 0;
     static emu::SceGxmProgramType selected_shader_type = emu::SceGxmProgramType::Vertex;
 
-    ImGui::Begin("Shader Editor", &host.gui.debug_menu.shader_editor_dialog);
+    ImGui::Begin("Shader Editor", &gui.debug_menu.shader_editor_dialog);
 
     std::vector<std::string> vertex_shader_names;
     std::vector<std::pair<Sha256Hash, std::string>> vertex_shader_data;
@@ -108,7 +108,7 @@ void draw_shader_editor_dialog(HostState &host) {
         const auto gxp_program = gxp_map_entry->second;
         shader::convert_gxp_to_glsl(*gxp_program, "", false, &spirv_dump, &disasm_dump);
 
-        host.gui.gxp_shader_editor.DrawWindow("GXP Shader Editor", (void *)gxp_program, gxp_program->size);
+        gui.gxp_shader_editor.DrawWindow("GXP Shader Editor", (void *)gxp_program, gxp_program->size);
 
         ImGui::Begin("Disassembly");
         ImGui::InputTextMultiline("Disassembly", const_cast<char *>(disasm_dump.data()), disasm_dump.size(), ImGui::GetWindowSize());

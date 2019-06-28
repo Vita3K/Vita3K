@@ -25,5 +25,5 @@ add_library(
 )
 
 target_include_directories(gui PUBLIC include)
-target_link_libraries(gui PUBLIC config dialog kernel renderer util sdl2 imgui)
+target_link_libraries(gui PUBLIC host sdl2 imgui)
 target_link_libraries(gui PRIVATE stb)

@@ -19,6 +19,8 @@
 
 #include <imgui.h>
 
+#include <host/state.h>
+
 struct HostState;
 
 namespace gui {
@@ -34,22 +36,22 @@ const ImVec4 GUI_COLOR_SEARCH_BAR_BG = RGBA_TO_FLOAT(42, 42, 42, 255);
 
 #undef RGBA_TO_FLOAT
 
-void draw_main_menu_bar(HostState &host);
-void draw_threads_dialog(HostState &host);
-void draw_thread_details_dialog(HostState &host);
-void draw_semaphores_dialog(HostState &host);
-void draw_mutexes_dialog(HostState &host);
-void draw_lw_mutexes_dialog(HostState &host);
-void draw_lw_condvars_dialog(HostState &host);
-void draw_condvars_dialog(HostState &host);
-void draw_event_flags_dialog(HostState &host);
-void draw_allocations_dialog(HostState &host);
-void draw_disassembly_dialog(HostState &host);
-void draw_shader_editor_dialog(HostState &host);
-void draw_settings_dialog(HostState &host);
-void draw_controls_dialog(HostState &host);
-void draw_about_dialog(HostState &host);
+void draw_main_menu_bar(GuiState &gui);
+void draw_threads_dialog(HostState &host, GuiState &gui);
+void draw_thread_details_dialog(HostState &host, GuiState &gui);
+void draw_semaphores_dialog(HostState &host, GuiState &gui);
+void draw_mutexes_dialog(HostState &host, GuiState &gui);
+void draw_lw_mutexes_dialog(HostState &host, GuiState &gui);
+void draw_lw_condvars_dialog(HostState &host, GuiState &gui);
+void draw_condvars_dialog(HostState &host, GuiState &gui);
+void draw_event_flags_dialog(HostState &host, GuiState &gui);
+void draw_allocations_dialog(HostState &host, GuiState &gui);
+void draw_disassembly_dialog(GuiState &gui);
+void draw_shader_editor_dialog(HostState &host, GuiState &gui);
+void draw_settings_dialog(HostState &host, GuiState &gui);
+void draw_controls_dialog(HostState &host, GuiState &gui);
+void draw_about_dialog(GuiState &gui);
 
-void reevaluate_code(HostState &host);
+void reevaluate_code(HostState &host, GuiState &gui);
 
 } // namespace gui

@@ -15,19 +15,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <gui/functions.h>
-
 #include "private.h"
 
-#include <host/state.h>
 #include <kernel/thread/thread_functions.h>
-#include <kernel/thread/thread_state.h>
-#include <util/resource.h>
 
 namespace gui {
 
-void draw_condvars_dialog(HostState &host) {
-    ImGui::Begin("Condition Variables", &host.gui.debug_menu.condvars_dialog);
+void draw_condvars_dialog(HostState &host, GuiState &gui) {
+    ImGui::Begin("Condition Variables", &gui.debug_menu.condvars_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s %-16s", "ID", "Name", "Attributes", "Waiting Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
@@ -43,8 +38,8 @@ void draw_condvars_dialog(HostState &host) {
     ImGui::End();
 }
 
-void draw_lw_condvars_dialog(HostState &host) {
-    ImGui::Begin("Lightweight Condition Variables", &host.gui.debug_menu.lwcondvars_dialog);
+void draw_lw_condvars_dialog(HostState &host, GuiState &gui) {
+    ImGui::Begin("Lightweight Condition Variables", &gui.debug_menu.lwcondvars_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s %-16s", "ID", "Name", "Attributes", "Waiting Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);

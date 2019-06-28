@@ -115,7 +115,7 @@ static GLuint load_texture(int32_t width, int32_t height, const unsigned char *d
     return texture;
 }
 
-static void init_font(HostState &host) {
+static void init_font(HostState &host, GuiState &gui) {
     const auto DATA_DIRNAME = "data";
     const auto FONT_DIRNAME = "fonts";
     const auto FONT_FILENAME = "mplus-1mn-bold.ttf";
@@ -132,18 +132,18 @@ static void init_font(HostState &host) {
 
     // read font
     const auto font_file_size = fs::file_size(font_path);
-    host.gui.font_data.resize(font_file_size);
+    gui.font_data.resize(font_file_size);
     std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
-    font_stream.read(host.gui.font_data.data(), font_file_size);
+    font_stream.read(gui.font_data.data(), font_file_size);
 
     // add it to imgui
     ImGuiIO &io = ImGui::GetIO();
     ImFontConfig font_config{};
-    host.gui.monospaced_font = io.Fonts->AddFontDefault();
-    host.gui.normal_font = io.Fonts->AddFontFromMemoryTTF(host.gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
+    gui.monospaced_font = io.Fonts->AddFontDefault();
+    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
-void init_background(HostState &host, const std::string &image_path) {
+void init_background(GuiState &gui, const std::string &image_path) {
     if (!fs::exists(image_path)) {
         LOG_WARN("Image doesn't exist: {}.", image_path);
         return;
@@ -158,13 +158,13 @@ void init_background(HostState &host, const std::string &image_path) {
         return;
     }
 
-    host.gui.user_backgrounds[image_path].init(load_texture(width, height, data), glDeleteTextures);
-    host.gui.current_background = host.gui.user_backgrounds[image_path];
+    gui.user_backgrounds[image_path].init(load_texture(width, height, data), glDeleteTextures);
+    gui.current_background = gui.user_backgrounds[image_path];
     stbi_image_free(data);
 }
 
-static void init_icons(HostState &host) {
-    for (Game &game : host.gui.game_selector.games) {
+static void init_icons(HostState &host, GuiState &gui) {
+    for (Game &game : gui.game_selector.games) {
         int32_t width = 0;
         int32_t height = 0;
         vfs::FileBuffer buffer;
@@ -187,12 +187,12 @@ static void init_icons(HostState &host) {
             LOG_ERROR("Invalid icon for title {}, {}.", game.title_id, game.title);
             continue;
         }
-        host.gui.game_selector.icons[game.title_id].init(load_texture(width, height, data, GL_RGBA), glDeleteTextures);
+        gui.game_selector.icons[game.title_id].init(load_texture(width, height, data, GL_RGBA), glDeleteTextures);
         stbi_image_free(data);
     }
 }
 
-void load_game_background(HostState &host, const std::string &title_id) {
+void load_game_background(HostState &host, GuiState &gui, const std::string &title_id) {
     int32_t width = 0;
     int32_t height = 0;
     vfs::FileBuffer buffer;
@@ -204,10 +204,10 @@ void load_game_background(HostState &host, const std::string &title_id) {
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg.png");
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg0.png");
         } else {
-            if (host.gui.user_backgrounds[host.cfg.background_image] && host.gui.current_background != static_cast<std::uint32_t>(host.gui.user_backgrounds[host.cfg.background_image]))
-                host.gui.current_background = host.gui.user_backgrounds[host.cfg.background_image];
-            else if (!host.gui.user_backgrounds[host.cfg.background_image] && host.gui.current_background != 0)
-                host.gui.current_background = 0;
+            if (gui.user_backgrounds[host.cfg.background_image] && gui.current_background != static_cast<std::uint32_t>(gui.user_backgrounds[host.cfg.background_image]))
+                gui.current_background = gui.user_backgrounds[host.cfg.background_image];
+            else if (!gui.user_backgrounds[host.cfg.background_image] && gui.current_background != 0)
+                gui.current_background = 0;
             LOG_WARN("Game background not found for title {}.", title_id);
             return;
         }
@@ -217,26 +217,26 @@ void load_game_background(HostState &host, const std::string &title_id) {
         LOG_ERROR("Invalid game background for title {}.", title_id);
         return;
     }
-    host.gui.game_backgrounds[title_id].init(load_texture(width, height, data), glDeleteTextures);
+    gui.game_backgrounds[title_id].init(load_texture(width, height, data), glDeleteTextures);
     stbi_image_free(data);
 }
 
-void init(HostState &host) {
+void init(HostState &host, GuiState &gui) {
     ImGui::CreateContext();
     ImGui_ImplSdlGL3_Init(host.window.get());
 
     init_style();
-    init_font(host);
-    init_icons(host);
+    init_font(host, gui);
+    init_icons(host, gui);
     if (!host.cfg.background_image.empty())
-        init_background(host, host.cfg.background_image);
+        init_background(gui, host.cfg.background_image);
 }
 
-void draw_begin(HostState &host) {
+void draw_begin(HostState &host, GuiState &gui) {
     ImGui_ImplSdlGL3_NewFrame(host.window.get());
-    host.gui.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
+    gui.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
 
-    ImGui::PushFont(host.gui.normal_font);
+    ImGui::PushFont(gui.normal_font);
 }
 
 void draw_end(SDL_Window *window) {
@@ -248,41 +248,41 @@ void draw_end(SDL_Window *window) {
     SDL_GL_SwapWindow(window);
 }
 
-void draw_ui(HostState &host) {
-    draw_main_menu_bar(host);
+void draw_ui(HostState &host, GuiState &gui) {
+    draw_main_menu_bar(gui);
 
-    ImGui::PushFont(host.gui.monospaced_font);
+    ImGui::PushFont(gui.monospaced_font);
 
-    if (host.gui.debug_menu.threads_dialog)
-        draw_threads_dialog(host);
-    if (host.gui.debug_menu.thread_details_dialog)
-        draw_thread_details_dialog(host);
-    if (host.gui.debug_menu.semaphores_dialog)
-        draw_semaphores_dialog(host);
-    if (host.gui.debug_menu.mutexes_dialog)
-        draw_mutexes_dialog(host);
-    if (host.gui.debug_menu.lwmutexes_dialog)
-        draw_lw_mutexes_dialog(host);
-    if (host.gui.debug_menu.condvars_dialog)
-        draw_condvars_dialog(host);
-    if (host.gui.debug_menu.lwcondvars_dialog)
-        draw_lw_condvars_dialog(host);
-    if (host.gui.debug_menu.eventflags_dialog)
-        draw_event_flags_dialog(host);
-    if (host.gui.debug_menu.allocations_dialog)
-        draw_allocations_dialog(host);
-    if (host.gui.debug_menu.disassembly_dialog)
-        draw_disassembly_dialog(host);
-    if (host.gui.debug_menu.shader_editor_dialog)
-        draw_shader_editor_dialog(host);
+    if (gui.debug_menu.threads_dialog)
+        draw_threads_dialog(host, gui);
+    if (gui.debug_menu.thread_details_dialog)
+        draw_thread_details_dialog(host, gui);
+    if (gui.debug_menu.semaphores_dialog)
+        draw_semaphores_dialog(host, gui);
+    if (gui.debug_menu.mutexes_dialog)
+        draw_mutexes_dialog(host, gui);
+    if (gui.debug_menu.lwmutexes_dialog)
+        draw_lw_mutexes_dialog(host, gui);
+    if (gui.debug_menu.condvars_dialog)
+        draw_condvars_dialog(host, gui);
+    if (gui.debug_menu.lwcondvars_dialog)
+        draw_lw_condvars_dialog(host, gui);
+    if (gui.debug_menu.eventflags_dialog)
+        draw_event_flags_dialog(host, gui);
+    if (gui.debug_menu.allocations_dialog)
+        draw_allocations_dialog(host, gui);
+    if (gui.debug_menu.disassembly_dialog)
+        draw_disassembly_dialog(gui);
+    if (gui.debug_menu.shader_editor_dialog)
+        draw_shader_editor_dialog(host, gui);
 
-    if (host.gui.configuration_menu.settings_dialog)
-        draw_settings_dialog(host);
+    if (gui.configuration_menu.settings_dialog)
+        draw_settings_dialog(host, gui);
 
-    if (host.gui.help_menu.controls_dialog)
-        draw_controls_dialog(host);
-    if (host.gui.help_menu.about_dialog)
-        draw_about_dialog(host);
+    if (gui.help_menu.controls_dialog)
+        draw_controls_dialog(host, gui);
+    if (gui.help_menu.about_dialog)
+        draw_about_dialog(gui);
 
     ImGui::PopFont();
 }

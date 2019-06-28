@@ -203,8 +203,8 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, const fs:
         while (handle_events(host) && (status == 0)) {
             ImGui_ImplSdlGL3_NewFrame(host.window.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gui::draw_ui(host);
-            gui::draw_reinstall_dialog(host, &status);
+            gui::draw_ui(host.gui, host.kernel, host.mem, host.cfg, host.renderer, host.pref_path);
+            gui::draw_reinstall_dialog(host.gui, &status);
             glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
             ImGui::Render();
             ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
