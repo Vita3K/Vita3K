@@ -28,6 +28,64 @@
 using namespace shader;
 using namespace usse;
 
+/**
+ * \brief Handle USSE custom increment mode specified in some instructions.
+ * 
+ * \param mode Repeat mode.
+ * \param current_repeat The current repeat index.
+ * \param shift_offset An array which size is 4, and with layout like follow:
+ *        - element 0: gpi0 repeat offset.
+ *        - element 1: gpi1 repeat offset.
+ *        - element 2: src repeat offset.
+ *        - element 3: dest repeat offset.
+ * 
+ * \returns False if this increment mode should be handled with MOE shift (GPU repeat shift state).
+ */
+static bool handle_increment_mode(const int mode, const int current_repeat, int *shift_offset) {
+    bool should_increase_source_and_dest = false;
+    bool should_increase_gpi = false;
+
+    switch (mode) {
+    case 0: {
+        should_increase_source_and_dest = true;
+        break;
+    }
+
+    case 1: {
+        should_increase_gpi = true;
+        break;
+    }
+
+    case 2: {
+        should_increase_gpi = true;
+        should_increase_source_and_dest = true;
+
+        break;
+    }
+
+    default:
+        return false;
+    }
+
+    if (should_increase_gpi) {
+        shift_offset[0] = 4 * current_repeat;
+        shift_offset[1] = 4 * current_repeat;
+    } else {
+        shift_offset[0] = 0;
+        shift_offset[1] = 0;
+    }
+
+    if (should_increase_source_and_dest) {
+        shift_offset[2] = 4 * current_repeat;
+        shift_offset[3] = 1 * current_repeat;
+    } else {
+        shift_offset[2] = 0;
+        shift_offset[3] = 0;
+    }
+
+    return true;
+}
+
 bool USSETranslatorVisitor::vmad(
     ExtPredicate pred,
     Imm1 skipinv,
@@ -119,12 +177,17 @@ bool USSETranslatorVisitor::vmad(
     BEGIN_REPEAT(repeat_count, 2)
     GET_REPEAT(inst);
 
-    LOG_DISASM("{} {} {} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask), disasm::operand_to_str(inst.opr.src1, write_mask, src1_repeat_offset),
-        disasm::operand_to_str(inst.opr.src2, write_mask));
+    int repeat_offsets[4] = { src0_repeat_offset, src2_repeat_offset, src1_repeat_offset, dest_repeat_offset };
+    handle_increment_mode(increment_mode, current_repeat, repeat_offsets);
 
-    spv::Id vsrc0 = load(inst.opr.src0, write_mask, 0);
-    spv::Id vsrc1 = load(inst.opr.src1, write_mask, src1_repeat_offset);
-    spv::Id vsrc2 = load(inst.opr.src2, write_mask, 0);
+    LOG_DISASM("{} {} {} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, write_mask, repeat_offsets[3]),
+        disasm::operand_to_str(inst.opr.src0, write_mask, repeat_offsets[0]),
+        disasm::operand_to_str(inst.opr.src1, write_mask, repeat_offsets[2]),
+        disasm::operand_to_str(inst.opr.src2, write_mask, repeat_offsets[1]));
+
+    spv::Id vsrc0 = load(inst.opr.src0, write_mask, repeat_offsets[0]);
+    spv::Id vsrc1 = load(inst.opr.src1, write_mask, repeat_offsets[2]);
+    spv::Id vsrc2 = load(inst.opr.src2, write_mask, repeat_offsets[1]);
 
     if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
         LOG_ERROR("Source not loaded (vsrc0: {}, vsr1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
@@ -134,7 +197,7 @@ bool USSETranslatorVisitor::vmad(
     auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
     auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
-    store(inst.opr.dest, add_result, write_mask, dest_repeat_offset);
+    store(inst.opr.dest, add_result, write_mask, repeat_offsets[3]);
     END_REPEAT()
 
     return true;
@@ -344,14 +407,17 @@ bool USSETranslatorVisitor::vdp(
 
     // Decoding done
     // gpi0 is src0. And sorry, but src0 is actually src1.
-    BEGIN_REPEAT_4(repeat_count, 1, 1, 2, 1)
+    BEGIN_REPEAT_4(repeat_count, 1, 0, 2, 0)
     GET_REPEAT(inst);
 
-    LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
-        disasm::operand_to_str(inst.opr.src0, src_mask, 0), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
+    int repeat_offsets[4] = { src0_repeat_offset, src2_repeat_offset, src1_repeat_offset, dest_repeat_offset };
+    handle_increment_mode(increment_mode, current_repeat, repeat_offsets);
 
-    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, 0);
-    spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
+    LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, repeat_offsets[3]),
+        disasm::operand_to_str(inst.opr.src0, src_mask, repeat_offsets[0]), disasm::operand_to_str(inst.opr.src1, src_mask, repeat_offsets[2]));
+
+    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, repeat_offsets[0]);
+    spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, repeat_offsets[2]);
 
     if (lhs == spv::NoResult || rhs == spv::NoResult) {
         LOG_ERROR("Source not loaded (lhs: {}, rhs: {})", lhs, rhs);
@@ -360,7 +426,7 @@ bool USSETranslatorVisitor::vdp(
 
     spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
 
-    store(inst.opr.dest, result, write_mask, dest_repeat_offset);
+    store(inst.opr.dest, result, write_mask, repeat_offsets[3]);
     END_REPEAT()
 
     return true;

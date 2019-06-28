@@ -141,15 +141,7 @@ private:
     int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump_dest; \
     int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump_src0; \
     int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump_src1; \
-    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump_src2; \
-    if (inst.opr.dest.bank == RegisterBank::FPINTERNAL)                                           \
-        dest_repeat_offset /= repeat_jump_dest;                                                   \
-    if (inst.opr.src0.bank == RegisterBank::FPINTERNAL)                                           \
-        src0_repeat_offset /= repeat_jump_src0;                                                   \
-    if (inst.opr.src1.bank == RegisterBank::FPINTERNAL)                                           \
-        src1_repeat_offset /= repeat_jump_src1;                                                   \
-    if (inst.opr.src2.bank == RegisterBank::FPINTERNAL)                                           \
-        src2_repeat_offset /= repeat_jump_src2;
+    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump_src2;
 
     const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index) {
         return repeat_increase[op.index][repeat_index];

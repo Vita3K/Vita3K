@@ -323,7 +323,7 @@ public:
     std::uint32_t primary_program_instr_count;
     std::uint32_t primary_program_offset;
 
-    std::uint32_t unk44;
+    std::uint32_t secondary_program_instr_count;
 
     std::uint32_t secondary_program_offset; // relative to the beginning of this field
     std::uint32_t secondary_program_offset_end; // relative to the beginning of this field
