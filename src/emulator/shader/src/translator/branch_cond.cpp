@@ -267,7 +267,7 @@ bool USSETranslatorVisitor::vtst(
 
     m_b.setLine(m_recompiler.cur_pc);
 
-    if (test_op == Opcode::VSUB || test_op == Opcode::VF16SUB) {
+    if (test_op == Opcode::VSUB || test_op == Opcode::VF16SUB || test_op == Opcode::FPSUB8) {
         LOG_DISASM("{:016x}: {}{}.{}.{} p{} {} {}", m_instr, disasm::e_predicate_str(pred), "CMP", used_comp_str, disasm::data_type_str(load_data_type),
             pdst_n, disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
 

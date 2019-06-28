@@ -569,7 +569,8 @@ bool USSETranslatorVisitor::vnmad32(
 
     auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
 
-    LOG_DISASM("{:016x}: {}{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(opcode), disasm::operand_to_str(inst.opr.dest, dest_mask),
+    LOG_DISASM("{:016x}: {}{}.{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(opcode),
+        disasm::data_type_str(inst.opr.dest.type), disasm::operand_to_str(inst.opr.dest, dest_mask),
         disasm::operand_to_str(inst.opr.src1, dest_mask), disasm::operand_to_str(inst.opr.src2, dest_mask));
 
     // Recompile

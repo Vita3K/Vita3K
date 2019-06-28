@@ -107,59 +107,124 @@ static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::Spi
     return nullptr;
 }
 
-static spv::Function *make_f16_unpack_func(spv::Builder &b) {
+static spv::Function *make_unpack_func(spv::Builder &b, const int target_bits) {
+    int func_call = 0;
+
+    switch (target_bits) {
+    case 8: {
+        func_call = GLSLstd450UnpackUnorm4x8;
+        break;
+    }
+
+    case 16: {
+        func_call = GLSLstd450UnpackUnorm2x16;
+        break;
+    }
+
+    default: {
+        return nullptr;
+    }
+    }
+    
     std::vector<std::vector<spv::Decoration>> decorations;
 
-    spv::Block *f16_unpack_func_block;
+    spv::Block *unpack_func_block;
     spv::Block *last_build_point = b.getBuildPoint();
+
+    const int total_components_extracted = 32 / target_bits;
 
     spv::Id type_ui32 = b.makeUintType(32);
     spv::Id type_f32 = b.makeFloatType(32);
-    spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
+    spv::Id type_f32_v = b.makeVectorType(type_f32, total_components_extracted);
 
-    spv::Function *f16_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v2, "f32_2_2xf16", { type_f32 },
-        decorations, &f16_unpack_func_block);
+    const std::string fn_name = fmt::format("f32_2_{}xf{}", total_components_extracted, target_bits);
 
-    spv::Id extracted = f16_unpack_func->getParamId(0);
+    spv::Function *unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v, fn_name.c_str(), { type_f32 },
+        decorations, &unpack_func_block);
+
+    spv::Id extracted = unpack_func->getParamId(0);
 
     extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
-    extracted = b.createBuiltinCall(type_f32_v2, b.import("GLSL.std.450"), GLSLstd450UnpackUnorm2x16, { extracted });
+    extracted = b.createBuiltinCall(type_f32_v, b.import("GLSL.std.450"), func_call, { extracted });
 
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
 
-    return f16_unpack_func;
+    return unpack_func;
 }
 
-static spv::Function *make_f16_pack_func(spv::Builder &b) {
+static spv::Function *make_pack_func(spv::Builder &b, const int target_bits) {
+    int func_call = 0;
+
+    switch (target_bits) {
+    case 8: {
+        func_call = GLSLstd450PackUnorm4x8;
+        break;
+    }
+
+    case 16: {
+        func_call = GLSLstd450PackUnorm2x16;
+        break;
+    }
+
+    default: {
+        return nullptr;
+    }
+    }
+
     std::vector<std::vector<spv::Decoration>> decorations;
 
-    spv::Block *f16_pack_func_block;
+    spv::Block *pack_func_block;
     spv::Block *last_build_point = b.getBuildPoint();
+
+    const int total_components_to_pack = 32 / target_bits;
 
     spv::Id type_ui32 = b.makeUintType(32);
     spv::Id type_f32 = b.makeFloatType(32);
-    spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
+    spv::Id type_f32_v = b.makeVectorType(type_f32, total_components_to_pack);
 
-    spv::Function *f16_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "twoXf16_2_f32", { type_f32_v2 },
-        decorations, &f16_pack_func_block);
+    const char *num_name = nullptr;
 
-    spv::Id extracted = f16_pack_func->getParamId(0);
+    switch (total_components_to_pack) {
+    case 2: {
+        num_name = "two";
+        break;
+    }
 
-    extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackUnorm2x16, { extracted });
+    case 4: {
+        num_name = "four";
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    if (!num_name) {
+        return nullptr;
+    }
+
+    const std::string fn_name = fmt::format("{}xf{}_2_f32", num_name, target_bits);
+
+    spv::Function *pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, fn_name.c_str(), { type_f32_v },
+        decorations, &pack_func_block);
+
+    spv::Id extracted = pack_func->getParamId(0);
+
+    extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), func_call, { extracted });
     extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
 
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
 
-    return f16_pack_func;
+    return pack_func;
 }
 
 spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, spv::Id scalar, const DataType type) {
     switch (type) {
     case DataType::F16: {
         if (!utils.unpack_f16) {
-            utils.unpack_f16 = make_f16_unpack_func(b);
+            utils.unpack_f16 = make_unpack_func(b, 16);
         }
 
         return b.createFunctionCall(utils.unpack_f16, { scalar });
@@ -176,7 +241,7 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
     switch (source_type) {
     case DataType::F16: {
         if (!utils.pack_f16) {
-            utils.pack_f16 = make_f16_pack_func(b);
+            utils.pack_f16 = make_pack_func(b, 16);
         }
 
         return b.createFunctionCall(utils.pack_f16, { vec });
