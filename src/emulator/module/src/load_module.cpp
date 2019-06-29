@@ -17,12 +17,11 @@
 
 #include <module/load_module.h>
 
-#include <app/load_self.h>
+#include <host/load_self.h>
 #include <host/state.h>
 #include <io/io.h>
+#include <util/find.h>
 #include <util/log.h>
-
-static constexpr auto SYSMODULE_COUNT = 0x56;
 
 using SysmodulePaths = std::array<std::vector<const char *>, SYSMODULE_COUNT>;
 

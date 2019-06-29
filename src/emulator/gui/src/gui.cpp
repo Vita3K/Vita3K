@@ -19,9 +19,11 @@
 
 #include "private.h"
 
-#include <gui/imgui_impl_sdl_gl3.h>
+#include <gui/functions.h>
 
+#include <bridge/imgui_impl_sdl_gl3.h>
 #include <glutil/gl.h>
+#include <host/get_sfo.h>
 #include <host/state.h>
 #include <io/io.h>
 #include <util/fs.h>
@@ -234,9 +236,7 @@ void init(HostState &host, GuiState &gui) {
 
 void draw_begin(HostState &host, GuiState &gui) {
     ImGui_ImplSdlGL3_NewFrame(host.window.get());
-    gui.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
-
-    ImGui::PushFont(gui.normal_font);
+    host.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
 }
 
 void draw_end(SDL_Window *window) {
@@ -246,6 +246,33 @@ void draw_end(SDL_Window *window) {
     ImGui::Render();
     ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
+}
+
+void get_game_titles(HostState &host, GuiState &gui) {
+    fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
+    if (!fs::exists(app_path))
+        return;
+
+    fs::directory_iterator it{ app_path };
+    while (it != fs::directory_iterator{}) {
+        if (!it->path().empty() && !it->path().filename_is_dot() && !it->path().filename_is_dot_dot()) {
+            vfs::FileBuffer params;
+            host.io.title_id = it->path().stem().generic_string();
+            if (vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
+                SfoFile sfo_handle;
+                sfo::load(sfo_handle, params);
+                sfo::find_data(host.game_version, sfo_handle, "APP_VER");
+                sfo::find_data(host.game_title, sfo_handle, "TITLE");
+                std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
+            } else {
+                host.game_title = host.io.title_id; // Use TitleID as Title
+                host.game_version = "N/A";
+            }
+            gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io.title_id });
+        }
+        boost::system::error_code er;
+        it.increment(er);
+    }
 }
 
 void draw_ui(HostState &host, GuiState &gui) {
@@ -272,7 +299,7 @@ void draw_ui(HostState &host, GuiState &gui) {
     if (gui.debug_menu.allocations_dialog)
         draw_allocations_dialog(host, gui);
     if (gui.debug_menu.disassembly_dialog)
-        draw_disassembly_dialog(gui);
+        draw_disassembly_dialog(host, gui);
     if (gui.debug_menu.shader_editor_dialog)
         draw_shader_editor_dialog(host, gui);
 

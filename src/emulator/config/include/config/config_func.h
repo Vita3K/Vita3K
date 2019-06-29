@@ -23,7 +23,7 @@
 
 class Root;
 
-namespace app {
+namespace config {
 
 /**
   * \brief Save emulator config to a YML file.
@@ -51,4 +51,4 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_p
   */
 ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths);
 
-} // namespace app
+} // namespace config

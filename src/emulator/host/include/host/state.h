@@ -18,9 +18,10 @@
 #pragma once
 
 #include <audio/state.h>
+#include <bridge/bridge.h>
 #include <config/config.h>
 #include <ctrl/state.h>
-#include <gui/state.h>
+#include <dialog/state.h>
 #include <gxm/state.h>
 #include <host/sfo.h>
 #include <io/state.h>
@@ -40,10 +41,6 @@
 #include <atomic>
 #include <memory>
 #include <string>
-
-struct SDL_Window;
-typedef void *SDL_GLContext;
-typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -75,11 +72,12 @@ struct HostState {
     AudioState audio;
     GxmState gxm;
     renderer::State renderer;
+    bool renderer_focused;
     IOState io;
     NetState net;
     NpState np;
     DisplayState display;
-    GuiState gui;
+    DialogState common_dialog;
     SfoFile sfo_handle;
     NIDSet missing_nids;
 #ifdef USE_GDBSTUB

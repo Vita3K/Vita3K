@@ -16,7 +16,7 @@ add_library(
 )
 
 target_include_directories(module PUBLIC include)
-target_link_libraries(module PUBLIC app dlmalloc printf)
+target_link_libraries(module PUBLIC host dlmalloc printf)
 
 add_executable(
 	module-tests

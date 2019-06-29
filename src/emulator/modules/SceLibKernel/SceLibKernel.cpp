@@ -18,10 +18,10 @@
 #include "SceLibKernel.h"
 #include <v3kprintf.h>
 
-#include <app/load_self.h>
 #include <cpu/functions.h>
 #include <dlmalloc.h>
 #include <host/functions.h>
+#include <host/load_self.h>
 #include <io/functions.h>
 #include <io/types.h>
 #include <kernel/functions.h>

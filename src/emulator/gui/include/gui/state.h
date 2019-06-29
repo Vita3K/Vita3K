@@ -24,9 +24,6 @@
 
 #include <glutil/object.h>
 
-struct SDL_Window;
-typedef std::shared_ptr<SDL_Window> WindowPtr;
-
 namespace gui {
 
 enum SelectorState {
@@ -87,7 +84,6 @@ struct GuiState {
     gui::DebugMenuState debug_menu;
     gui::ConfigurationMenuState configuration_menu;
     gui::HelpMenuState help_menu;
-    DialogState common_dialog;
     gui::GamesSelector game_selector;
 
     MemoryEditor memory_editor;

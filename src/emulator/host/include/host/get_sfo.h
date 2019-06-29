@@ -22,9 +22,9 @@
 
 struct SfoFile;
 
-namespace app {
+namespace sfo {
 
-bool load_sfo(SfoFile &file, const std::vector<uint8_t> &data);
+bool load(SfoFile &sfile, const std::vector<uint8_t> &data);
 bool find_data(std::string &out_data, SfoFile &file, const std::string &key);
 
-} // namespace app
+} // namespace sfo

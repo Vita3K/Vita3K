@@ -252,8 +252,7 @@ bool USSETranslatorVisitor::vmov(
             }
 
             // Mixing!! I'm like a little witch!!
-            result = m_b.createBuiltinCall(result_type, std_builtins, GLSLstd450FMix, { source_2_first ? source_2 : source_1, 
-                source_2_first ? source_1 : source_2, result });
+            result = m_b.createBuiltinCall(result_type, std_builtins, GLSLstd450FMix, { source_2_first ? source_2 : source_1, source_2_first ? source_1 : source_2, result });
         }
     } else {
         result = source_1;

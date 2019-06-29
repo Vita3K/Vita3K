@@ -33,7 +33,7 @@
 
 namespace po = boost::program_options;
 
-namespace app {
+namespace config {
 
 template <typename T, typename Q = T>
 static void get_yaml_value(YAML::Node &config_node, const char *key, T *target_val, Q default_val) {
@@ -385,4 +385,4 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     return Success;
 }
 
-} // namespace app
+} // namespace config

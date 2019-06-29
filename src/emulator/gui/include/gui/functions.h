@@ -21,12 +21,11 @@
 
 #include <host/state.h>
 
+#include <SDL.h>
+
 #include <string>
 
-struct Config;
 struct HostState;
-struct KernelState;
-struct MemState;
 
 namespace gui {
 
@@ -38,6 +37,7 @@ enum GenericDialogState {
 
 void init(HostState &host, GuiState &gui);
 void init_background(GuiState &gui, const std::string &image_path);
+void get_game_titles(HostState &host, GuiState &gui);
 void load_game_background(HostState &host, GuiState &gui, const std::string &title_id);
 
 void draw_begin(HostState &host, GuiState &gui);

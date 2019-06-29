@@ -42,13 +42,13 @@ enum class AppRunType {
 };
 
 bool init(HostState &state, Config cfg, const Root &root_paths);
+bool handle_events(HostState &host);
 void update_viewport(HostState &state);
 bool handle_events(HostState &host);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type);
-ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
 
 void set_window_title(HostState &host);
 bool clear_and_refresh_game_list(HostState &host);
+ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
 
 } // namespace app

@@ -129,7 +129,7 @@ EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return peek_touch(host.viewport_pos, host.viewport_size, host.drawable_size, host.gui.renderer_focused, host.ctrl, port, pData, nBufs);
+    return peek_touch(host.viewport_pos, host.viewport_size, host.drawable_size, host.renderer_focused, host.ctrl, port, pData, nBufs);
 }
 
 EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -140,7 +140,7 @@ EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return peek_touch(host.viewport_pos, host.viewport_size, host.drawable_size, host.gui.renderer_focused, host.ctrl, port, pData, nBufs);
+    return peek_touch(host.viewport_pos, host.viewport_size, host.drawable_size, host.renderer_focused, host.ctrl, port, pData, nBufs);
 }
 
 EXPORT(int, sceTouchPeekRegion) {
@@ -159,7 +159,7 @@ EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return peek_touch(host.viewport_pos, host.viewport_size, host.drawable_size, host.gui.renderer_focused, host.ctrl, port, pData, nBufs);
+    return peek_touch(host.viewport_pos, host.viewport_size, host.drawable_size, host.renderer_focused, host.ctrl, port, pData, nBufs);
 }
 
 EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -170,7 +170,7 @@ EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return peek_touch(host.viewport_pos, host.viewport_size, host.drawable_size, host.gui.renderer_focused, host.ctrl, port, pData, nBufs);
+    return peek_touch(host.viewport_pos, host.viewport_size, host.drawable_size, host.renderer_focused, host.ctrl, port, pData, nBufs);
 }
 
 EXPORT(int, sceTouchReadRegion) {

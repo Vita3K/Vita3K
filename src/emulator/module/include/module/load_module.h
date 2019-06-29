@@ -22,6 +22,8 @@
 
 #include <vector>
 
+static constexpr auto SYSMODULE_COUNT = 0x56;
+
 bool is_lle_module(SceSysmoduleModuleId module_id, const std::vector<std::string> &lle_modules);
 bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id);
 bool load_module(HostState &host, SceSysmoduleModuleId module_id);

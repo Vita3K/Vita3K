@@ -17,37 +17,9 @@
 
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <utility> // pair
-#include <vector>
+#include <SDL.h>
 
-static const char *EBOOT_PATH = "eboot.bin";
-static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
-
-struct SfoHeader {
-    uint32_t magic;
-    uint32_t version;
-    uint32_t key_table_start;
-    uint32_t data_table_start;
-    uint32_t tables_entries;
-};
-
-struct SfoIndexTableEntry {
-    uint16_t key_offset;
-    uint16_t data_fmt;
-    uint32_t data_len;
-    uint32_t data_max_len;
-    uint32_t data_offset;
-};
-
-struct SfoFile {
-    SfoHeader header;
-
-    struct SfoEntry {
-        SfoIndexTableEntry entry;
-        std::pair<std::string, std::string> data;
-    };
-
-    std::vector<SfoEntry> entries;
-};
+struct SDL_Window;
+typedef std::shared_ptr<SDL_Window> WindowPtr;
+typedef void *SDL_GLContext;
+typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;

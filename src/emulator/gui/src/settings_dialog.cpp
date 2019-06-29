@@ -17,7 +17,8 @@
 
 #include "private.h"
 
-#include <app/app_functions.h>
+#include <gui/functions.h>
+
 #include <config/config.h>
 #include <config/config_func.h>
 #include <gui/functions.h>
@@ -68,7 +69,7 @@ constexpr int SYS_LANG_COUNT = IM_ARRAYSIZE(LIST_SYS_LANG);
 
 } // namespace list
 
-bool change_pref_location(const std::string &input_path, const std::string &current_path) {
+static bool change_pref_location(const std::string &input_path, const std::string &current_path) {
     if (fs::path(input_path).has_extension())
         return false;
 
@@ -86,6 +87,18 @@ bool change_pref_location(const std::string &input_path, const std::string &curr
     } catch (const std::exception &err) {
         return false;
     }
+    return true;
+}
+
+static bool clear_and_refresh_game_list(HostState &host, GuiState &gui) {
+    if (gui.game_selector.games.empty())
+        return false;
+
+    gui.game_selector.games.clear();
+    if (!gui.game_selector.games.empty())
+        return false;
+
+    get_game_titles(host, gui);
     return true;
 }
 
@@ -191,8 +204,8 @@ void draw_settings_dialog(HostState &host, GuiState &gui) {
                     host.pref_path = host.cfg.pref_path;
 
                     // Refresh the working paths
-                    app::serialize_config(host.cfg, host.cfg.config_path);
-                    LOG_INFO_IF(app::clear_and_refresh_game_list(host), "Successfully moved Vita3K files to: {}", host.pref_path);
+                    config::serialize_config(host.cfg, host.cfg.config_path);
+                    LOG_INFO_IF(clear_and_refresh_game_list(host, gui), "Successfully moved Vita3K files to: {}", host.pref_path);
                 }
             }
         }
@@ -202,14 +215,14 @@ void draw_settings_dialog(HostState &host, GuiState &gui) {
         if (ImGui::Button("Reset Configuration")) {
             host.cfg = Config{};
 
-            LOG_INFO("Reset Vita3K configuration and config file to default values.");
+            LOG_INFO("Resetted Vita3K configuration and config file to default values.");
             if (host.cfg.pref_path != host.pref_path) {
                 if (change_pref_location(host.cfg.pref_path, host.pref_path)) {
                     host.pref_path = host.cfg.pref_path;
 
                     // Refresh the working paths
-                    app::serialize_config(host.cfg, host.cfg.config_path);
-                    LOG_INFO_IF(app::clear_and_refresh_game_list(host), "Successfully moved Vita3K files to: {}", host.pref_path);
+                    config::serialize_config(host.cfg, host.cfg.config_path);
+                    LOG_INFO_IF(clear_and_refresh_game_list(host, gui), "Successfully moved Vita3K files to: {}", host.pref_path);
                 }
             }
         }
@@ -293,7 +306,7 @@ void draw_settings_dialog(HostState &host, GuiState &gui) {
     }
 
     if (host.cfg.overwrite_config)
-        app::serialize_config(host.cfg, host.cfg.config_path);
+        config::serialize_config(host.cfg, host.cfg.config_path);
 
     ImGui::EndTabBar();
     ImGui::End();

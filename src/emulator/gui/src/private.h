@@ -17,9 +17,11 @@
 
 #pragma once
 
-#include <imgui.h>
+#include <gui/state.h>
 
 #include <host/state.h>
+
+#include <imgui.h>
 
 struct HostState;
 
@@ -46,7 +48,7 @@ void draw_lw_condvars_dialog(HostState &host, GuiState &gui);
 void draw_condvars_dialog(HostState &host, GuiState &gui);
 void draw_event_flags_dialog(HostState &host, GuiState &gui);
 void draw_allocations_dialog(HostState &host, GuiState &gui);
-void draw_disassembly_dialog(GuiState &gui);
+void draw_disassembly_dialog(HostState &host, GuiState &gui);
 void draw_shader_editor_dialog(HostState &host, GuiState &gui);
 void draw_settings_dialog(HostState &host, GuiState &gui);
 void draw_controls_dialog(HostState &host, GuiState &gui);

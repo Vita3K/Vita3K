@@ -17,37 +17,9 @@
 
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <utility> // pair
-#include <vector>
+#include <app/app_functions.h>
+#include <gui/state.h>
+#include <host/state.h>
+#include <util/exit_code.h>
 
-static const char *EBOOT_PATH = "eboot.bin";
-static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
-
-struct SfoHeader {
-    uint32_t magic;
-    uint32_t version;
-    uint32_t key_table_start;
-    uint32_t data_table_start;
-    uint32_t tables_entries;
-};
-
-struct SfoIndexTableEntry {
-    uint16_t key_offset;
-    uint16_t data_fmt;
-    uint32_t data_len;
-    uint32_t data_max_len;
-    uint32_t data_offset;
-};
-
-struct SfoFile {
-    SfoHeader header;
-
-    struct SfoEntry {
-        SfoIndexTableEntry entry;
-        std::pair<std::string, std::string> data;
-    };
-
-    std::vector<SfoEntry> entries;
-};
+ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, app::AppRunType run_type);
