@@ -298,7 +298,7 @@ static std::string cmd_write_registers(HostState &state, PacketCommand &command)
         return "";
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
-    std::string content = content_string(command).substr(1);
+    const std::string content = content_string(command).substr(1);
 
     for (uint32_t a = 0; a < content.size() / 8; a++) {
         uint32_t value = parse_hex(content.substr(a * 8, 8));
@@ -313,7 +313,7 @@ static std::string cmd_read_register(HostState &state, PacketCommand &command) {
         return "";
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
-    std::string content = content_string(command);
+    const std::string content = content_string(command);
     int32_t reg = parse_hex(content.substr(1, content.size() - 1));
 
     return be_hex(fetch_reg(cpu, static_cast<uint32_t>(reg)));
@@ -324,7 +324,7 @@ static std::string cmd_write_register(HostState &state, PacketCommand &command) 
         return "";
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
-    std::string content = content_string(command);
+    const std::string content = content_string(command);
     uint32_t equal_index = content.find('=');
     int32_t reg = parse_hex(content.substr(1, equal_index - 1));
     uint32_t value = parse_hex(content.substr(equal_index + 1));
@@ -334,15 +334,15 @@ static std::string cmd_write_register(HostState &state, PacketCommand &command) 
 }
 
 static bool check_memory_region(Address address, Address length, MemState &mem) {
-    auto page_first = static_cast<uint32_t>(address / KB(4));
-    auto page_length = static_cast<uint32_t>(length + KB(4)) / KB(4);
+    const auto page_first = static_cast<uint32_t>(address / KB(4));
+    const auto page_length = static_cast<uint32_t>(length + KB(4)) / KB(4);
 
-    auto pages_begin = mem.allocated_pages.begin();
-    auto range_end = pages_begin + page_first + page_length;
+    const auto pages_begin = mem.allocated_pages.begin();
+    const auto range_end = pages_begin + page_first + page_length;
 
-    bool memory_none = std::find(pages_begin + page_first, range_end, 0) != range_end;
-    bool memory_null = std::find(pages_begin + page_first, range_end, 1) != range_end;
-    bool memory_safe = !(memory_none || memory_null);
+    const bool memory_none = std::find(pages_begin + page_first, range_end, 0) != range_end;
+    const bool memory_null = std::find(pages_begin + page_first, range_end, 1) != range_end;
+    const bool memory_safe = !(memory_none || memory_null);
 
     if (!memory_safe)
         LOG_GDB("Accessing unsafe memory page. {} - {}", page_first, page_length);
@@ -351,13 +351,13 @@ static bool check_memory_region(Address address, Address length, MemState &mem) 
 }
 
 static std::string cmd_read_memory(HostState &state, PacketCommand &command) {
-    std::string content = content_string(command);
-    size_t pos = content.find(',');
+    const std::string content = content_string(command);
+    const size_t pos = content.find(',');
 
-    std::string first = content.substr(1, pos - 1);
-    std::string second = content.substr(pos + 1);
-    uint32_t address = parse_hex(first);
-    uint32_t length = parse_hex(second);
+    const std::string first = content.substr(1, pos - 1);
+    const std::string second = content.substr(pos + 1);
+    const uint32_t address = parse_hex(first);
+    const uint32_t length = parse_hex(second);
 
     if (!check_memory_region(address, length, state.mem))
         return "EAA";
@@ -372,15 +372,15 @@ static std::string cmd_read_memory(HostState &state, PacketCommand &command) {
 }
 
 static std::string cmd_write_memory(HostState &state, PacketCommand &command) {
-    std::string content = content_string(command);
-    size_t pos_first = content.find(',');
-    size_t pos_second = content.find(':');
+    const std::string content = content_string(command);
+    const size_t pos_first = content.find(',');
+    const size_t pos_second = content.find(':');
 
-    std::string first = content.substr(1, pos_first - 1);
-    std::string second = content.substr(pos_first + 1, pos_second - pos_first);
-    uint32_t address = parse_hex(first);
-    uint32_t length = parse_hex(second);
-    std::string hex_data = content.substr(pos_second + 1);
+    const std::string first = content.substr(1, pos_first - 1);
+    const std::string second = content.substr(pos_first + 1, pos_second - pos_first);
+    const uint32_t address = parse_hex(first);
+    const uint32_t length = parse_hex(second);
+    const std::string hex_data = content.substr(pos_second + 1);
 
     if (!check_memory_region(address, length, state.mem))
         return "EAA";
@@ -395,13 +395,17 @@ static std::string cmd_write_memory(HostState &state, PacketCommand &command) {
 // server_next() might not be able to tell the difference between the end of the packet ($) and 0x24 ($).
 // Thus, cmd_write_binary is disabled.
 static std::string cmd_write_binary(HostState &state, PacketCommand &command) {
-    std::string content = content_string(command);
-    size_t pos_first = content.find(',');
-    size_t pos_second = content.find(':');
+    const std::string content = content_string(command);
+    const size_t pos_first = content.find(',');
+    const size_t pos_second = content.find(':');
 
+    const
     std::string first = content.substr(1, pos_first - 1);
+    const
     std::string second = content.substr(pos_first + 1, pos_second - pos_first);
+    const
     uint32_t address = parse_hex(first);
+    const
     uint32_t length = parse_hex(second);
     const char *data = command.content_start + pos_second + 1;
 
@@ -418,7 +422,7 @@ static std::string cmd_write_binary(HostState &state, PacketCommand &command) {
 static std::string cmd_detach(HostState &state, PacketCommand &command) { return "OK"; }
 
 static std::string cmd_continue(HostState &state, PacketCommand &command) {
-    std::string content = content_string(command);
+    const std::string content = content_string(command);
 
     uint64_t index = 5;
     uint64_t next = 0;
@@ -426,9 +430,9 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
         next = content.find(';', index + 1);
         std::string text = content.substr(index + 1, next - index - 1);
 
-        uint64_t colon = text.find(':');
+        const uint64_t colon = text.find(':');
 
-        char cmd = text[0];
+        const char cmd = text[0];
         switch (cmd) {
         case 'c':
         case 'C':
@@ -436,7 +440,7 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
         case 'S': {
             bool step = cmd == 's' || cmd == 'S';
             if (colon != std::string::npos) {
-                int32_t point = parse_hex(text.substr(colon + 1));
+                const int32_t point = parse_hex(text.substr(colon + 1));
                 ThreadStatePtr thread = state.kernel.threads[point];
                 if (thread) {
                     thread->to_do = step ? ThreadToDo::step : ThreadToDo::run;
@@ -485,8 +489,8 @@ static std::string cmd_continue_supported(HostState &state, PacketCommand &comma
 }
 
 static std::string cmd_thread_alive(HostState &state, PacketCommand &command) {
-    std::string content = content_string(command);
-    int32_t thread_id = parse_hex(content.substr(1));
+    const std::string content = content_string(command);
+    const int32_t thread_id = parse_hex(content.substr(1));
 
     // Assuming a thread is removed from the map when it closes or is killed.
     for (const auto &pair : state.kernel.threads) {
@@ -533,14 +537,13 @@ static std::string cmd_list_threads(HostState &state, PacketCommand &command) {
 }
 
 static std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) {
-    std::string content = content_string(command);
-    uint32_t type, address, kind;
+    const std::string content = content_string(command);
 
-    uint64_t first = content.find(',');
-    uint64_t second = content.find(',', first + 1);
-    type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
-    address = parse_hex(content.substr(first + 1, second - 1 - first));
-    kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+    const uint64_t first = content.find(',');
+    const uint64_t second = content.find(',', first + 1);
+    const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
+    const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
+    const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     LOG_GDB("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
     add_breakpoint(state, address);
@@ -549,14 +552,13 @@ static std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) 
 }
 
 static std::string cmd_remove_breakpoint(HostState &state, PacketCommand &command) {
-    std::string content = content_string(command);
-    uint32_t type, address, kind;
+    const std::string content = content_string(command);
 
-    uint64_t first = content.find(',');
-    uint64_t second = content.find(',', first + 1);
-    type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
-    address = parse_hex(content.substr(first + 1, second - 1 - first));
-    kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+    const uint64_t first = content.find(',');
+    const uint64_t second = content.find(',', first + 1);
+    const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
+    const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
+    const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     LOG_GDB("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
     remove_breakpoint(state, address);
@@ -654,7 +656,7 @@ static int64_t server_next(HostState &state) {
     if (state.gdb.server_die)
         return -1;
 
-    int64_t length = recv(state.gdb.client_socket, buffer, sizeof(buffer), 0);
+    const int64_t length = recv(state.gdb.client_socket, buffer, sizeof(buffer), 0);
     buffer[length] = '\0';
 
     if (length <= 0) {

@@ -28,6 +28,10 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#ifndef USE_DISCORD
+#include <app/discord.h>
+#endif
+
 #include <SDL.h>
 
 #ifdef USE_GDBSTUB
