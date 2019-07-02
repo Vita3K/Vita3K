@@ -17,6 +17,8 @@
 
 #include "SceSysmodule.h"
 
+#include <modules/module_parent.h>
+
 #include <module/load_module.h>
 
 EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {

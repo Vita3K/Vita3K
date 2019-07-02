@@ -1,4 +1,6 @@
 add_library(modules STATIC
+	module_parent.cpp include/modules/module_parent.h
+
 	SceAVConfig/SceAVConfig.cpp SceAVConfig/SceAVConfig.h
 	SceAppMgr/SceAppMgr.cpp SceAppMgr/SceAppMgr.h
 	SceAppMgr/SceAppMgrUser.cpp SceAppMgr/SceAppMgrUser.h
@@ -164,5 +166,7 @@ add_library(modules STATIC
 	SceVoiceQoS/SceVoiceQoS.cpp SceVoiceQoS/SceVoiceQoS.h
 	SceVshBridge/SceDrmBridge.cpp SceVshBridge/SceDrmBridge.h
 	SceVshBridge/SceVshBridge.cpp SceVshBridge/SceVshBridge.h
-	SceWlanBt/SceWlan.cpp SceWlanBt/SceWlan.h)
+	SceWlanBt/SceWlan.cpp SceWlanBt/SceWlan.h
+)
+target_include_directories(modules PUBLIC include)
 target_link_libraries(modules PUBLIC module)

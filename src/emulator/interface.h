@@ -23,3 +23,4 @@
 #include <util/exit_code.h>
 
 ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, app::AppRunType run_type);
+ExitCode run_app(HostState &host, Ptr<const void> &entry_point);

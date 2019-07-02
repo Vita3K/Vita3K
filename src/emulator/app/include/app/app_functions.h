@@ -18,7 +18,6 @@
 #pragma once
 
 #include <config/config.h>
-#include <util/exit_code.h>
 
 #include <string>
 
@@ -49,6 +48,5 @@ void error_dialog(const std::string &message, SDL_Window *window = nullptr);
 
 void set_window_title(HostState &host);
 bool clear_and_refresh_game_list(HostState &host);
-ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
 
 } // namespace app

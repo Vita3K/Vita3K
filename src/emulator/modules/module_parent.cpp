@@ -15,12 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <host/functions.h>
+#include <modules/module_parent.h>
 
 #include <cpu/functions.h>
 #include <host/import_fn.h>
+#include <host/load_self.h>
 #include <host/state.h>
+#include <io/io.h>
+#include <module/load_module.h>
 #include <nids/functions.h>
+#include <util/find.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -109,6 +113,64 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         const std::lock_guard<std::mutex> lock(thread->mutex);
         write_pc(*thread->cpu, export_pc);
     }
+}
+
+/**
+ * \return False on failure, true on success
+ */
+bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
+    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
+        ::call_import(host, cpu, nid, main_thread_id);
+    };
+
+    LOG_INFO("Loading module ID: {}", log_hex(module_id));
+
+    const auto module_paths = sysmodule_paths[module_id];
+
+    for (std::string module_path : module_paths) {
+        module_path = "sys/external/" + module_path + ".suprx";
+
+        vfs::FileBuffer module_buffer;
+        Ptr<const void> lib_entry_point;
+
+        if (vfs::read_file(VitaIoDevice::VS0, module_buffer, host.pref_path, module_path)) {
+            SceUID loaded_module_uid = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), module_path, host.cfg);
+            const auto module = host.kernel.loaded_modules[loaded_module_uid];
+            const auto module_name = module->module_name;
+
+            if (loaded_module_uid >= 0) {
+                LOG_INFO("Module {} (at \"{}\") loaded", module_name, module_path);
+            } else {
+                LOG_ERROR("Error when loading module at \"{}\"", module_path);
+                return false;
+            }
+
+            if (lib_entry_point) {
+                LOG_DEBUG("Running module_start of module: {}", module_name);
+
+                Ptr<void> argp = Ptr<void>();
+                const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
+                    static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, false);
+                const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
+                const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
+
+                module_thread->to_do = ThreadToDo::exit;
+                module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+
+                const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+                host.kernel.running_threads.erase(module_thread_id);
+                host.kernel.threads.erase(module_thread_id);
+                LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
+            }
+
+        } else {
+            LOG_ERROR("Module at \"{}\" not present", module_path);
+            // ignore and assume it was loaded
+        }
+    }
+
+    host.kernel.loaded_sysmodules.push_back(module_id);
+    return true;
 }
 
 #ifndef NDEBUG

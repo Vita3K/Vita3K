@@ -129,7 +129,7 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    const ThreadStatePtr thread = find(thid, kernel.threads);
+    const ThreadStatePtr thread = util::find(thid, kernel.threads);
     assert(thread);
 
     ThreadParams params;

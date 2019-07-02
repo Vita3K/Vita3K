@@ -9,13 +9,12 @@ add_library(
 	include/host/sfo.h
 	include/host/state.h
 	src/get_sfo.cpp
-	src/host.cpp
 	src/load_self.cpp
 	src/sfo.cpp
 )
 
 target_include_directories(host PUBLIC include)
-target_link_libraries(host PUBLIC audio bridge config ctrl dialog kernel io net nids np renderer touch)
+target_link_libraries(host PUBLIC audio bridge config ctrl dialog kernel io net np renderer touch nids)
 if(USE_GDBSTUB)
 	target_link_libraries(host PUBLIC gdbstub)
 endif()

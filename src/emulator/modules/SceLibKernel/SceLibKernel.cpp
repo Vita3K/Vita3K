@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceLibKernel.h"
+#include <modules/module_parent.h>
 #include <v3kprintf.h>
 
 #include <cpu/functions.h>

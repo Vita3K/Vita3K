@@ -15,29 +15,12 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/load_module.h>
+#pragma once
 
-#include <host/load_self.h>
+#include <cpu/functions.h>
 #include <host/state.h>
-#include <util/log.h>
 
-bool is_lle_module(SceSysmoduleModuleId module_id, const std::vector<std::string> &lle_modules) {
-    const auto paths = sysmodule_paths[module_id];
+#include <psp2/types.h>
 
-    // Do we know the module and its dependencies' paths?
-    const bool have_paths = !paths.empty();
-
-    if (!have_paths)
-        return false;
-
-    if (have_paths)
-        for (auto path : paths)
-            if (std::find(lle_modules.begin(), lle_modules.end(), path) != lle_modules.end())
-                return true;
-
-    return false;
-}
-
-bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id) {
-    return std::find(kernel.loaded_sysmodules.begin(), kernel.loaded_sysmodules.end(), module_id) != kernel.loaded_sysmodules.end();
-}
+void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
+bool load_module(HostState &host, SceSysmoduleModuleId module_id);

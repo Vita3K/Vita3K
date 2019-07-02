@@ -17,9 +17,10 @@
 
 #include "SceGxm.h"
 
+#include <modules/module_parent.h>
+
 #include <gxm/functions.h>
 #include <gxm/types.h>
-#include <host/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <renderer/functions.h>
 #include <renderer/types.h>
@@ -545,7 +546,7 @@ static int SDLCALL thread_function(void *data) {
             if ((!thread) || thread->to_do == ThreadToDo::exit)
                 break;
         }
-        const ThreadStatePtr display_thread = find(params.thid, params.kernel->threads);
+        const ThreadStatePtr display_thread = util::find(params.thid, params.kernel->threads);
         run_callback(*display_thread, display_callback->pc, display_callback->data);
 
         free(*params.mem, display_callback->data);
@@ -559,7 +560,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     host.gxm.params = *params;
     host.gxm.display_queue.displayQueueMaxPendingCount_ = params->displayQueueMaxPendingCount;
 
-    const ThreadStatePtr main_thread = find(thread_id, host.kernel.threads);
+    const ThreadStatePtr main_thread = util::find(thread_id, host.kernel.threads);
 
     const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID thread_id) {
         ::call_import(host, cpu, nid, thread_id);
@@ -573,7 +574,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
-    const ThreadStatePtr display_thread = find(host.gxm.display_queue_thread, host.kernel.threads);
+    const ThreadStatePtr display_thread = util::find(host.gxm.display_queue_thread, host.kernel.threads);
 
     const std::function<void(SDL_Thread *)> delete_thread = [display_thread](SDL_Thread *running_thread) {
         {

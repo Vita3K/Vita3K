@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <time.h>
 
 namespace discord {
 void init(const std::string &application_id = "570296795943403530");

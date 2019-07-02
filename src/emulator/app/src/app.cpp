@@ -19,14 +19,10 @@
 
 #include <bridge/imgui_impl_sdl_gl3.h>
 #include <config/version.h>
-#include <host/functions.h>
-#include <host/sfo.h>
 #include <host/state.h>
 #include <kernel/functions.h>
 #include <kernel/state.h>
-#include <kernel/thread/thread_functions.h>
 #include <touch/touch.h>
-#include <util/find.h>
 #include <util/log.h>
 
 #ifdef USE_DISCORD_RICH_PRESENCE
@@ -103,53 +99,6 @@ void error_dialog(const std::string &message, SDL_Window *window) {
     if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window) < 0) {
         LOG_ERROR("SDL Error: {}", message);
     }
-}
-
-ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
-    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
-        ::call_import(host, cpu, nid, main_thread_id);
-    };
-
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
-        call_import, false);
-
-    if (main_thread_id < 0) {
-        error_dialog("Failed to init main thread.", host.window.get());
-        return InitThreadFailed;
-    }
-
-    const ThreadStatePtr main_thread = find(main_thread_id, host.kernel.threads);
-
-    // Run `module_start` export (entry point) of loaded libraries
-    for (auto &mod : host.kernel.loaded_modules) {
-        const auto module = mod.second;
-        const auto module_start = module->module_start;
-        const auto module_name = module->module_name;
-
-        if (std::string(module->path) == EBOOT_PATH_ABS)
-            continue;
-
-        LOG_DEBUG("Running module_start of library: {}", module_name);
-
-        Ptr<void> argp = Ptr<void>();
-        const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
-            call_import, false);
-        const ThreadStatePtr module_thread = find(module_thread_id, host.kernel.threads);
-        const auto ret = run_on_current(*module_thread, module_start, 0, argp);
-        module_thread->to_do = ThreadToDo::exit;
-        module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
-        host.kernel.running_threads.erase(module_thread_id);
-        host.kernel.threads.erase(module_thread_id);
-
-        LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
-    }
-
-    if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
-        error_dialog("Failed to run main thread.", host.window.get());
-        return RunThreadFailed;
-    }
-
-    return Success;
 }
 
 void set_window_title(HostState &host) {

@@ -87,7 +87,7 @@ endif()
 
 add_executable(emulator MACOSX_BUNDLE main.cpp performance.cpp interface.cpp interface.h)
 
-target_link_libraries(emulator PRIVATE app gui modules)
+target_link_libraries(emulator PRIVATE app gui modules discord-rpc)
 if(LINUX)
 	target_link_libraries(emulator PRIVATE stdc++fs)
 endif()

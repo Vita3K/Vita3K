@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
     Ptr<const void> entry_point;
     if (const auto err = load_app(entry_point, host, gui, vpk_path_wide, run_type) != Success)
         return err;
-    if (const auto err = app::run_app(host, entry_point) != Success)
+    if (const auto err = run_app(host, entry_point) != Success)
         return err;
 
     app::gl_screen_renderer gl_renderer;
