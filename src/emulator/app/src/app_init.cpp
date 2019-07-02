@@ -36,33 +36,29 @@
 #endif
 
 #include <SDL_video.h>
-#include <glbinding-aux/types_to_string.h>
-#include <glbinding/Binding.h>
 #include <microprofile.h>
 
 #include <sstream>
 
 namespace app {
 
-using namespace glbinding;
-
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
 
 #if MICROPROFILE_ENABLED
-static void before_callback(const glbinding::FunctionCall &fn) {
-    const MicroProfileToken token = MicroProfileGetToken("OpenGL", fn.function->name(), MP_CYAN, MicroProfileTokenTypeCpu);
+static void before_callback(const char *name, void *funcptr, int len_args, ...) {
+    const MicroProfileToken token = MicroProfileGetToken("OpenGL", name, MP_CYAN, MicroProfileTokenTypeCpu);
     MICROPROFILE_ENTER_TOKEN(token);
 }
 #endif // MICROPROFILE_ENABLED
 
-static void after_callback(const glbinding::FunctionCall &fn) {
+static void after_callback(const char *name, void *funcptr, int len_args, ...) {
     MICROPROFILE_LEAVE();
-    for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
-#ifdef _DEBUG
+    for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
+#ifndef NDEBUG
         std::stringstream gl_error;
         gl_error << error;
-        LOG_ERROR("OpenGL: {} set error {}.", fn.function->name(), gl_error.str());
+        LOG_ERROR("OpenGL: {} set error {}.", name, gl_error.str());
         assert(false);
 #else
         LOG_ERROR("OpenGL error: {}", log_hex(static_cast<std::uint32_t>(error)));
@@ -192,15 +188,11 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
     LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
 
-    const glbinding::GetProcAddress get_proc_address = [](const char *name) {
-        return reinterpret_cast<ProcAddress>(SDL_GL_GetProcAddress(name));
-    };
-    Binding::initialize(get_proc_address, false);
-    Binding::setCallbackMaskExcept(CallbackMask::Before | CallbackMask::After, { "glGetError" });
+    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #if MICROPROFILE_ENABLED != 0
-    Binding::setBeforeCallback(before_callback);
+    glad_set_pre_callback(before_callback);
 #endif // MICROPROFILE_ENABLED
-    Binding::setAfterCallback(after_callback);
+    glad_set_post_callback(after_callback);
 
     state.kernel.base_tick = { rtc_base_ticks() };
 

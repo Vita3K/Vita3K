@@ -26,7 +26,7 @@ void configure_bound_texture(const emu::SceGxmTexture &gxm_texture) {
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
     const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
-    const GLenum *const swizzle = translate_swizzle(fmt);
+    const GLint *const swizzle = translate_swizzle(fmt);
 
     // TODO Support mip-mapping.
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
@@ -77,7 +77,7 @@ void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState 
     const GLenum format = translate_format(fmt);
     const GLenum type = translate_type(fmt);
 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<gl::GLint>(stride));
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(stride));
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, pixels);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }

@@ -16,4 +16,4 @@ add_library(
 
 target_include_directories(app PUBLIC include)
 target_link_libraries(app PUBLIC glutil host util)
-target_link_libraries(app PRIVATE ${Boost_LIBRARIES} audio discord-rpc glbinding-aux gui io kernel microprofile rtc sdl2 spdlog yaml-cpp)
+target_link_libraries(app PRIVATE ${Boost_LIBRARIES} audio discord-rpc gui io kernel microprofile rtc sdl2 spdlog yaml-cpp)

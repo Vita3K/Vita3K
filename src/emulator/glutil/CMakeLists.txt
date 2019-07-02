@@ -10,4 +10,4 @@ add_library(
 )
 
 target_include_directories(glutil PUBLIC include)
-target_link_libraries(glutil PUBLIC glbinding util)
+target_link_libraries(glutil PUBLIC glad util)

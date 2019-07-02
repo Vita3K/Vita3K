@@ -7,10 +7,6 @@
 [submodule "src/external/vita-headers"]
 	path = src/external/vita-headers
 	url = https://github.com/vitasdk/vita-headers.git
-[submodule "src/external/glbinding"]
-	path = src/external/glbinding
-	url = https://github.com/cginternals/glbinding.git
-	branch = v3.1
 [submodule "src/external/yaml-cpp"]
 	path = src/external/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
