@@ -18,13 +18,30 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
-struct SfoFile;
+struct Config;
+struct HostState;
+struct SDL_Window;
+template <class T>
+class Ptr;
+class Root;
 
-namespace sfo {
+namespace app {
 
-bool load(SfoFile &sfile, const std::vector<uint8_t> &data);
-bool find_data(std::string &out_data, SfoFile &file, const std::string &key);
+/// Describes the state of the application to be run
+enum class AppRunType {
+    /// Run type is unknown
+    Unknown,
+    /// Extracted, files are as they are on console
+    Extracted,
+    /// Zipped in HENKaku-style .vpk file
+    Vpk,
+};
 
-} // namespace sfo
+bool init(HostState &state, Config cfg, const Root &root_paths);
+void update_viewport(HostState &state);
+void error_dialog(const std::string &message, SDL_Window *window = nullptr);
+
+void set_window_title(HostState &host);
+
+} // namespace app

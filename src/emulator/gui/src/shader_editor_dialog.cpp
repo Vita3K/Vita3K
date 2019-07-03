@@ -23,21 +23,13 @@
 #include <host/state.h>
 #include <renderer/state.h>
 #include <shader/spirv_recompiler.h>
-#include <util/exec.h>
 
 #include <imgui_memory_editor.h>
 #include <spdlog/fmt/fmt.h>
 
-#include <string>
-#include <tuple>
-#include <vector>
-
 #include <array>
-#include <cstdio>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <stdexcept>
+#include <string>
+#include <vector>
 
 #define EXTERNAL_DISASM_ENABLE 0
 #define EXTERNAL_DISASM_PATH ""
@@ -45,7 +37,7 @@
 
 namespace gui {
 
-void draw_shader_editor_dialog(HostState &host, GuiState &gui) {
+void draw_shader_editor_dialog(GuiState &gui, HostState &host) {
     static int selected_vertex_shader = 0;
     static int selected_frag_shader = 0;
     static emu::SceGxmProgramType selected_shader_type = emu::SceGxmProgramType::Vertex;

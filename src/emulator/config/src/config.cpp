@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <config/config.h>
+#include <config/functions.h>
 #include <config/version.h>
 
 #include <util/log.h>
@@ -85,26 +86,26 @@ static void config_file_emit_vector(YAML::Emitter &emitter, const char *name, st
     emitter << YAML::EndSeq;
 }
 
-static fs::path check_path(fs::path output_path) {
+static fs::path check_path(const fs::path &output_path) {
     if (output_path.filename() != "config.yml") {
         if (!output_path.has_extension()) // assume it is a folder
-            output_path /= "config.yml";
-        else if (output_path.extension() != ".yml")
+            return output_path / "config.yml";
+        if (output_path.extension() != ".yml")
             return "";
     }
     return output_path;
 }
 
-static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_pref_path) {
-    load_path = check_path(load_path);
-    if (load_path.empty() || !fs::exists(load_path)) {
+static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string &root_pref_path) {
+    const auto loaded_path = check_path(load_path);
+    if (loaded_path.empty() || !fs::exists(loaded_path)) {
         LOG_ERROR("Config file input path invalid (did you make sure to name the extension \".yml\"?)");
         return FileNotFound;
     }
 
     YAML::Node config_node;
     try {
-        config_node = YAML::LoadFile(load_path.generic_path().string());
+        config_node = YAML::LoadFile(loaded_path.generic_path().string());
     } catch (YAML::Exception &exception) {
         std::cerr << "Config file can't be loaded: Error: " << exception.what() << "\n";
         return FileNotFound;
@@ -150,12 +151,12 @@ static ExitCode parse(Config &cfg, fs::path load_path, const std::string &root_p
     return Success;
 }
 
-ExitCode serialize_config(Config &cfg, fs::path output_path) {
-    output_path = check_path(output_path);
-    if (output_path.empty())
+ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
+    const auto output = check_path(output_path);
+    if (output.empty())
         return InvalidApplicationPath;
-    if (!fs::exists(output_path.parent_path()))
-        fs::create_directories(output_path.parent_path());
+    if (!fs::exists(output.parent_path()))
+        fs::create_directories(output.parent_path());
 
     YAML::Emitter emitter;
     emitter << YAML::BeginMap;
@@ -183,7 +184,7 @@ ExitCode serialize_config(Config &cfg, fs::path output_path) {
 
     emitter << YAML::EndMap;
 
-    fs::ofstream fo(output_path);
+    fs::ofstream fo(output);
     if (!fo) {
         return InvalidApplicationPath;
     }
@@ -205,7 +206,7 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_p
     if (lhs.sync_rendering != rhs.sync_rendering && (!init || rhs.sync_rendering))
         lhs.sync_rendering = rhs.sync_rendering;
     if (lhs.lle_modules != rhs.lle_modules && (!init || !rhs.lle_modules.empty()))
-        merge_lle(lhs.lle_modules, rhs.lle_modules);
+        vector_utils::merge_vectors(lhs.lle_modules, rhs.lle_modules);
     if (lhs.pstv_mode != rhs.pstv_mode && (!init || rhs.pstv_mode))
         lhs.pstv_mode = rhs.pstv_mode;
     if (lhs.show_gui != rhs.show_gui && (!init || rhs.show_gui))
@@ -317,9 +318,9 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             std::cout << window_title << std::endl;
             return QuitRequested;
         }
-        if (var_map.count("recompile-shader")) {
+        if (var_map.count("recompile-shader"))
             return QuitRequested;
-        }
+
         if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
             if (command_line.config_path.empty()) {
                 command_line.config_path = root_paths.get_base_path();
@@ -342,7 +343,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         if (!command_line.load_config) {
             // Merge command line and base configs
-            merge_config(cfg, command_line, root_paths.get_base_path_string());
+            merge_configs(cfg, command_line, root_paths.get_pref_path_string(), true);
         } else {
             // Replace the base config with the parsed config
             cfg = std::move(command_line);

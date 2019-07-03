@@ -23,7 +23,7 @@
 
 namespace gui {
 
-void draw_controls_dialog(HostState &host, GuiState &gui) {
+void draw_controls_dialog(GuiState &gui, HostState &host) {
     float width = ImGui::GetWindowWidth() / 1.35f;
     float height = ImGui::GetWindowHeight() / 1.25f;
     ImGui::SetNextWindowSize(ImVec2(width, height));

@@ -26,7 +26,7 @@
 
 namespace gui {
 
-void draw_thread_details_dialog(HostState &host, GuiState &gui) {
+void draw_thread_details_dialog(GuiState &gui, HostState &host) {
     ThreadStatePtr &thread = host.kernel.threads[gui.thread_watch_index];
     CPUState &cpu = *thread->cpu;
 
@@ -56,7 +56,7 @@ void draw_thread_details_dialog(HostState &host, GuiState &gui) {
     ImGui::End();
 }
 
-void draw_threads_dialog(HostState &host, GuiState &gui) {
+void draw_threads_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Threads", &gui.debug_menu.threads_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE,
         "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");

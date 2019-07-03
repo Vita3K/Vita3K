@@ -17,13 +17,14 @@
 
 #pragma once
 
+#include <host/sfo.h>
+#include <host/window.h>
+
 #include <audio/state.h>
-#include <bridge/bridge.h>
 #include <config/config.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
 #include <gxm/state.h>
-#include <host/sfo.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>

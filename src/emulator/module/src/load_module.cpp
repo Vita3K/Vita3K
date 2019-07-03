@@ -19,7 +19,6 @@
 
 #include <host/load_self.h>
 #include <host/state.h>
-#include <util/log.h>
 
 bool is_lle_module(SceSysmoduleModuleId module_id, const std::vector<std::string> &lle_modules) {
     const auto paths = sysmodule_paths[module_id];

@@ -159,12 +159,10 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
     bool is_recursive = (mutex->attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE);
     bool is_fifo = (mutex->attr & SCE_KERNEL_ATTR_TH_FIFO);
 
+    // Already owned
     if (mutex->lock_count > 0) {
-        // Already owned
-
+        // Owned by ourselves
         if (mutex->owner == thread) {
-            // Owned by ourselves
-
             if (is_recursive) {
                 mutex->lock_count += lock_count;
                 return SCE_KERNEL_OK;

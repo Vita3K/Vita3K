@@ -17,10 +17,11 @@
 
 #pragma once
 
-#include <cpu/functions.h>
-#include <host/state.h>
-
+#include <psp2/sysmodule.h>
 #include <psp2/types.h>
+
+struct CPUState;
+struct HostState;
 
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
 bool load_module(HostState &host, SceSysmoduleModuleId module_id);

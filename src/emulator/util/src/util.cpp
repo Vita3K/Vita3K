@@ -26,6 +26,7 @@
 #include <iostream>
 #include <locale> // std::wstring_convert
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -75,6 +76,10 @@ ExitCode add_sink(const fs::path &log_path) {
     spdlog::set_pattern(LOG_PATTERN);
     return Success;
 }
+
+typedef std::set<std::string> NameSet;
+static std::mutex mutex;
+static NameSet logged;
 
 int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_val) {
     bool inserted = false;

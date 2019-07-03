@@ -19,8 +19,7 @@
 
 #include <psp2/touch.h>
 
-#include <SDL_mouse.h>
-#include <SDL_video.h>
+#include <SDL_events.h>
 
 #include <cstring>
 

@@ -44,7 +44,7 @@ endif()
 
 if(WIN32)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-	add_definitions (/D "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS")
+	add_definitions (/D "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" /D "_CRT_SECURE_NO_WARNINGS")
 endif()
 
 add_subdirectory(src/external)

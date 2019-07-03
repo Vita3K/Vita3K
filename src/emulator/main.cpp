@@ -17,14 +17,15 @@
 
 #include "interface.h"
 
-#include <app/app_functions.h>
+#include <app/functions.h>
 #include <app/screen_render.h>
+#include <config/functions.h>
 #include <config/version.h>
-#include <config/config_func.h>
 #include <gui/functions.h>
+#include <gui/state.h>
 #include <shader/spirv_recompiler.h>
-#include <util/string_utils.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #ifdef USE_GDBSTUB
 #include <gdbstub/functions.h>
@@ -104,22 +105,21 @@ int main(int argc, char *argv[]) {
     }
 
     GuiState gui;
-    gui::init(host, gui);
-    gui::get_game_titles(host, gui);
+    gui::init(gui, host);
 
     auto discord_rich_presence_old = host.cfg.discord_rich_presence;
 
     // Application not provided via argument, show game selector
     while (run_type == app::AppRunType::Unknown) {
-        if (app::handle_events(host)) {
+        if (handle_events(host)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gui::draw_begin(host, gui);
+            gui::draw_begin(gui, host);
 
 #ifdef USE_DISCORD_RICH_PRESENCE
             discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
-            gui::draw_ui(host, gui);
-            gui::draw_game_selector(host, gui);
+            gui::draw_ui(gui, host);
+            gui::draw_game_selector(gui, host);
 
             gui::draw_end(host.window.get());
         } else {
@@ -144,12 +144,12 @@ int main(int argc, char *argv[]) {
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
 
-    while (app::handle_events(host)) {
+    while (handle_events(host)) {
         gl_renderer.render(host);
-        gui::draw_begin(host, gui);
-        gui::draw_common_dialog(host, gui);
+        gui::draw_begin(gui, host);
+        gui::draw_common_dialog(gui, host);
         if (host.display.imgui_render) {
-            gui::draw_ui(host, gui);
+            gui::draw_ui(gui, host);
         }
         gui::draw_end(host.window.get());
 

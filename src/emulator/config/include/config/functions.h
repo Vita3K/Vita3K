@@ -31,14 +31,13 @@ namespace config {
   * \param output_path The location to save the configuration file.
   * \return Success on saving the config file, otherwise Error.
   */
-ExitCode serialize_config(Config &cfg, fs::path output_path);
+ExitCode serialize_config(Config &cfg, const fs::path &output_path);
 
 /**
-  * \brief Compare and merge two different configurations. This can also reset the configuration.
-  * \param lhs The configuration to be modified.
-  * \param rhs The new configuration to be added.
-  * \param cur_pref_path Default preference path.
-  * \param init Used when the configuration is being initialized.
+  * \brief Merge two different configurations.
+  * \param lhs Config to be modified.
+  * \param rhs Config to me merged.
+  * \param new_pref_path New preference path to use (optional).
   */
 void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_path = std::string{}, bool init = false);
 

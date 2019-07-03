@@ -21,7 +21,7 @@
 
 namespace gui {
 
-void draw_condvars_dialog(HostState &host, GuiState &gui) {
+void draw_condvars_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Condition Variables", &gui.debug_menu.condvars_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s %-16s", "ID", "Name", "Attributes", "Waiting Threads");
 
@@ -38,7 +38,7 @@ void draw_condvars_dialog(HostState &host, GuiState &gui) {
     ImGui::End();
 }
 
-void draw_lw_condvars_dialog(HostState &host, GuiState &gui) {
+void draw_lw_condvars_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Lightweight Condition Variables", &gui.debug_menu.lwcondvars_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s %-16s", "ID", "Name", "Attributes", "Waiting Threads");
 

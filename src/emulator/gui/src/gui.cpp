@@ -15,20 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <gui/functions.h>
-
 #include "private.h"
 
 #include <gui/functions.h>
 
-#include <bridge/imgui_impl_sdl_gl3.h>
 #include <glutil/gl.h>
-#include <host/get_sfo.h>
+#include <gui/imgui_impl_sdl_gl3.h>
+#include <host/functions.h>
 #include <host/state.h>
 #include <io/io.h>
 #include <util/fs.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <SDL_video.h>
 
@@ -117,7 +114,7 @@ static GLuint load_texture(int32_t width, int32_t height, const unsigned char *d
     return texture;
 }
 
-static void init_font(HostState &host, GuiState &gui) {
+static void init_font(GuiState &gui, HostState &host) {
     const auto DATA_DIRNAME = "data";
     const auto FONT_DIRNAME = "fonts";
     const auto FONT_FILENAME = "mplus-1mn-bold.ttf";
@@ -165,7 +162,7 @@ void init_background(GuiState &gui, const std::string &image_path) {
     stbi_image_free(data);
 }
 
-static void init_icons(HostState &host, GuiState &gui) {
+static void init_icons(GuiState &gui, HostState &host) {
     for (Game &game : gui.game_selector.games) {
         int32_t width = 0;
         int32_t height = 0;
@@ -194,7 +191,7 @@ static void init_icons(HostState &host, GuiState &gui) {
     }
 }
 
-void load_game_background(HostState &host, GuiState &gui, const std::string &title_id) {
+void load_game_background(GuiState &gui, HostState &host, const std::string &title_id) {
     int32_t width = 0;
     int32_t height = 0;
     vfs::FileBuffer buffer;
@@ -223,32 +220,7 @@ void load_game_background(HostState &host, GuiState &gui, const std::string &tit
     stbi_image_free(data);
 }
 
-void init(HostState &host, GuiState &gui) {
-    ImGui::CreateContext();
-    ImGui_ImplSdlGL3_Init(host.window.get());
-
-    init_style();
-    init_font(host, gui);
-    init_icons(host, gui);
-    if (!host.cfg.background_image.empty())
-        init_background(gui, host.cfg.background_image);
-}
-
-void draw_begin(HostState &host, GuiState &gui) {
-    ImGui_ImplSdlGL3_NewFrame(host.window.get());
-    host.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
-}
-
-void draw_end(SDL_Window *window) {
-    ImGui::PopFont();
-
-    glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
-    ImGui::Render();
-    ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-    SDL_GL_SwapWindow(window);
-}
-
-void get_game_titles(HostState &host, GuiState &gui) {
+void get_game_titles(GuiState &gui, HostState &host) {
     fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
     if (!fs::exists(app_path))
         return;
@@ -261,8 +233,8 @@ void get_game_titles(HostState &host, GuiState &gui) {
             if (vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
-                sfo::find_data(host.game_version, sfo_handle, "APP_VER");
-                sfo::find_data(host.game_title, sfo_handle, "TITLE");
+                sfo::get_data_by_key(host.game_version, sfo_handle, "APP_VER");
+                sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
                 std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
             } else {
                 host.game_title = host.io.title_id; // Use TitleID as Title
@@ -275,39 +247,69 @@ void get_game_titles(HostState &host, GuiState &gui) {
     }
 }
 
-void draw_ui(HostState &host, GuiState &gui) {
+void init(GuiState &gui, HostState &host) {
+    ImGui::CreateContext();
+    ImGui_ImplSdlGL3_Init(host.window.get());
+
+    init_style();
+    init_font(gui, host);
+
+    get_game_titles(gui, host);
+    init_icons(gui, host);
+
+    if (!host.cfg.background_image.empty())
+        init_background(gui, host.cfg.background_image);
+}
+
+void draw_begin(GuiState &gui, HostState &host) {
+    ImGui_ImplSdlGL3_NewFrame(host.window.get());
+    host.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
+
+    ImGui::PushFont(gui.normal_font);
+}
+
+void draw_end(SDL_Window *window) {
+    ImGui::PopFont();
+
+    glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
+    ImGui::Render();
+    ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
+    SDL_GL_SwapWindow(window);
+}
+
+void draw_ui(GuiState &gui, HostState &host) {
     draw_main_menu_bar(gui);
 
     ImGui::PushFont(gui.monospaced_font);
 
     if (gui.debug_menu.threads_dialog)
-        draw_threads_dialog(host, gui);
+        draw_threads_dialog(gui, host);
     if (gui.debug_menu.thread_details_dialog)
-        draw_thread_details_dialog(host, gui);
+        draw_thread_details_dialog(gui, host);
     if (gui.debug_menu.semaphores_dialog)
-        draw_semaphores_dialog(host, gui);
+        draw_semaphores_dialog(gui, host);
     if (gui.debug_menu.mutexes_dialog)
-        draw_mutexes_dialog(host, gui);
+        draw_mutexes_dialog(gui, host);
     if (gui.debug_menu.lwmutexes_dialog)
-        draw_lw_mutexes_dialog(host, gui);
+        draw_lw_mutexes_dialog(gui, host);
     if (gui.debug_menu.condvars_dialog)
-        draw_condvars_dialog(host, gui);
+        draw_condvars_dialog(gui, host);
     if (gui.debug_menu.lwcondvars_dialog)
-        draw_lw_condvars_dialog(host, gui);
+        draw_lw_condvars_dialog(gui, host);
     if (gui.debug_menu.eventflags_dialog)
-        draw_event_flags_dialog(host, gui);
+        draw_event_flags_dialog(gui, host);
     if (gui.debug_menu.allocations_dialog)
-        draw_allocations_dialog(host, gui);
+        draw_allocations_dialog(gui, host);
     if (gui.debug_menu.disassembly_dialog)
-        draw_disassembly_dialog(host, gui);
+        draw_disassembly_dialog(gui, host);
     if (gui.debug_menu.shader_editor_dialog)
-        draw_shader_editor_dialog(host, gui);
+        draw_shader_editor_dialog(gui, host);
 
     if (gui.configuration_menu.settings_dialog)
-        draw_settings_dialog(host, gui);
+        draw_settings_dialog(gui, host);
 
     if (gui.help_menu.controls_dialog)
-        draw_controls_dialog(host, gui);
+        draw_controls_dialog(gui, host);
     if (gui.help_menu.about_dialog)
         draw_about_dialog(gui);
 

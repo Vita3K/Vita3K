@@ -20,8 +20,7 @@
 #include <gui/functions.h>
 
 #include <config/config.h>
-#include <config/config_func.h>
-#include <gui/functions.h>
+#include <config/functions.h>
 #include <gui/state.h>
 
 #include <host/state.h>
@@ -98,12 +97,12 @@ static bool clear_and_refresh_game_list(HostState &host, GuiState &gui) {
     if (!gui.game_selector.games.empty())
         return false;
 
-    get_game_titles(host, gui);
+    get_game_titles(gui, host);
     return true;
 }
 
 using namespace list;
-void draw_settings_dialog(HostState &host, GuiState &gui) {
+void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     ImGui::Begin("Settings", &gui.configuration_menu.settings_dialog, ImGuiWindowFlags_AlwaysAutoResize);
     const auto settings_tab_flags = ImGuiTabBarFlags_None;

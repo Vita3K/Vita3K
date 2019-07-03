@@ -19,6 +19,8 @@
 
 #include <mem/ptr.h>
 
+struct MemState;
+
 // By default, do no special conversion.
 template <typename HostType>
 struct BridgeTypes {

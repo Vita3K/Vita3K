@@ -54,4 +54,5 @@ struct Config {
     bool load_config = false;
     bool discord_rich_presence = true;
     optional<bool> wait_for_debugger;
+
 }; // struct Config

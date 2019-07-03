@@ -16,10 +16,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
-#include "kernel/state.h"
-#include "psp2/types.h"
+
+#include <psp2/types.h>
+
+#include <string>
 
 struct Config;
+struct KernelState;
 struct MemState;
 template <class T>
 class Ptr;

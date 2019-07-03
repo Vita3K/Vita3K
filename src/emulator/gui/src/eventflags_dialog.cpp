@@ -21,7 +21,7 @@
 
 namespace gui {
 
-void draw_event_flags_dialog(HostState &host, GuiState &gui) {
+void draw_event_flags_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Event Flags", &gui.debug_menu.eventflags_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s  %-7s   %-8s   %-16s", "ID", "EventFlag Name", "Flags", "Attributes", "Waiting Threads");
 

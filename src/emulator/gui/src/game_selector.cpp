@@ -29,7 +29,7 @@ namespace gui {
 
 static constexpr auto MENUBAR_HEIGHT = 19;
 
-void draw_game_selector(HostState &host, GuiState &gui) {
+void draw_game_selector(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiSetCond_Always);
@@ -173,7 +173,7 @@ void draw_game_selector(HostState &host, GuiState &gui) {
                 if (ImGui::IsItemHovered()) {
                     if (host.cfg.show_game_background) {
                         if (!gui.game_backgrounds[game.title_id])
-                            load_game_background(host, gui, game.title_id);
+                            load_game_background(gui, host, game.title_id);
                         else if (gui.current_background != static_cast<std::uint32_t>(gui.game_backgrounds[game.title_id]))
                             gui.current_background = gui.game_backgrounds[game.title_id];
                     }

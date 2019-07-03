@@ -25,7 +25,7 @@
 
 namespace gui {
 
-static void evaluate_code(HostState &host, GuiState &gui, uint32_t from, uint32_t count, bool thumb) {
+static void evaluate_code(GuiState &gui, HostState &host, uint32_t from, uint32_t count, bool thumb) {
     gui.disassembly.clear();
 
     if (host.kernel.threads.empty()) {
@@ -54,7 +54,7 @@ static void evaluate_code(HostState &host, GuiState &gui, uint32_t from, uint32_
     }
 }
 
-void reevaluate_code(HostState &host, GuiState &gui) {
+void reevaluate_code(GuiState &gui, HostState &host) {
     std::string address_string = std::string(gui.disassembly_address);
     std::string count_string = std::string(gui.disassembly_count);
 
@@ -65,7 +65,7 @@ void reevaluate_code(HostState &host, GuiState &gui) {
         count = static_cast<uint32_t>(std::stol(count_string));
     bool thumb = gui.disassembly_arch == "THUMB";
 
-    evaluate_code(host, gui, address, count, thumb);
+    evaluate_code(gui, host, address, count, thumb);
 }
 
 std::string archs[] = {
@@ -73,7 +73,7 @@ std::string archs[] = {
     "THUMB",
 };
 
-void draw_disassembly_dialog(HostState &host, GuiState &gui) {
+void draw_disassembly_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Disassembly", &gui.debug_menu.disassembly_dialog);
     ImGui::BeginChild("disasm", ImVec2(0, -(ImGui::GetTextLineHeightWithSpacing() + 10)));
     for (const std::string &assembly : gui.disassembly) {
@@ -92,7 +92,7 @@ void draw_disassembly_dialog(HostState &host, GuiState &gui) {
     ImGui::PushItemWidth(10 * 8);
     if (ImGui::InputText("##disasm_addr", gui.disassembly_address, 9,
             ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
-        reevaluate_code(host, gui);
+        reevaluate_code(gui, host);
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
@@ -102,7 +102,7 @@ void draw_disassembly_dialog(HostState &host, GuiState &gui) {
     ImGui::PushItemWidth(10 * 4);
     if (ImGui::InputText("##disasm_count", gui.disassembly_count, 5,
             ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
-        reevaluate_code(host, gui);
+        reevaluate_code(gui, host);
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
@@ -114,7 +114,7 @@ void draw_disassembly_dialog(HostState &host, GuiState &gui) {
             bool is_selected = gui.disassembly_arch == arch;
             if (ImGui::Selectable(arch.c_str(), is_selected)) {
                 gui.disassembly_arch = arch;
-                reevaluate_code(host, gui);
+                reevaluate_code(gui, host);
             }
             if (is_selected) {
                 ImGui::SetItemDefaultFocus();

@@ -23,7 +23,7 @@
 
 namespace gui {
 
-void draw_mutexes_dialog(HostState &host, GuiState &gui) {
+void draw_mutexes_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Mutexes", &gui.debug_menu.mutexes_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
@@ -42,7 +42,7 @@ void draw_mutexes_dialog(HostState &host, GuiState &gui) {
     ImGui::End();
 }
 
-void draw_lw_mutexes_dialog(HostState &host, GuiState &gui) {
+void draw_lw_mutexes_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Lightweight Mutexes", &gui.debug_menu.lwmutexes_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s  %-16s   %-16s", "ID", "LwMutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 

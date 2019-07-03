@@ -17,12 +17,9 @@
 
 #pragma once
 
-#include <SDL.h>
-
 #include <ctrl/state.h>
 
 struct SDL_TouchFingerEvent;
-typedef SDL_TouchFingerEvent SDL_TouchFingerEvent;
 
 int handle_touch_event(SDL_TouchFingerEvent &finger);
 int toggle_touchscreen();

@@ -18,8 +18,12 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 struct SfoFile;
 
-void log_import_calls(bool enabled);
-bool get_data(std::string &out_data, SfoFile &file, int id);
+namespace sfo {
+bool get_data_by_id(std::string &out_data, SfoFile &file, int id);
+bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &key);
+bool load(SfoFile &sfile, const std::vector<uint8_t> &content);
+} // namespace sfo

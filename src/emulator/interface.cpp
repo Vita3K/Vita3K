@@ -17,14 +17,17 @@
 
 #include "interface.h"
 
-#include <bridge/imgui_impl_sdl_gl3.h>
 #include <gui/functions.h>
-#include <host/get_sfo.h>
+#include <gui/imgui_impl_sdl_gl3.h>
+#include <host/functions.h>
 #include <host/load_self.h>
+#include <host/sfo.h>
 #include <io/functions.h>
 #include <io/io.h>
+#include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <modules/module_parent.h>
+#include <touch/touch.h>
 #include <util/find.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -36,12 +39,6 @@
 #ifdef USE_DISCORD_RICH_PRESENCE
 #include <app/discord.h>
 #endif
-
-static void
-delete_zip(mz_zip_archive *zip) {
-    mz_zip_reader_end(zip);
-    delete zip;
-}
 
 static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBuf, size_t n) {
     vfs::FileBuffer *const buffer = static_cast<vfs::FileBuffer *>(pOpaque);
@@ -111,17 +108,17 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState 
 
     SfoFile sfo_handle;
     sfo::load(sfo_handle, params);
-    sfo::find_data(host.io.title_id, sfo_handle, "TITLE_ID");
+    sfo::get_data_by_key(host.io.title_id, sfo_handle, "TITLE_ID");
 
     fs::path output_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
     const auto created = fs::create_directories(output_path);
     if (!created) {
         gui::GenericDialogState status = gui::UNK_STATE;
-        while (app::handle_events(host) && (status == 0)) {
+        while (handle_events(host) && (status == 0)) {
             ImGui_ImplSdlGL3_NewFrame(host.window.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gui::draw_ui(host, gui);
+            gui::draw_ui(gui, host);
             gui::draw_reinstall_dialog(&status);
             glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
             ImGui::Render();
@@ -180,11 +177,11 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     if (params_found) {
         sfo::load(host.sfo_handle, params);
 
-        sfo::find_data(host.game_title, host.sfo_handle, "TITLE");
+        sfo::get_data_by_key(host.game_title, host.sfo_handle, "TITLE");
         std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' '); // Restrict title to one line
-        sfo::find_data(host.io.title_id, host.sfo_handle, "TITLE_ID");
-        sfo::find_data(host.game_version, host.sfo_handle, "APP_VER");
-        sfo::find_data(game_category, host.sfo_handle, "CATEGORY");
+        sfo::get_data_by_key(host.io.title_id, host.sfo_handle, "TITLE_ID");
+        sfo::get_data_by_key(host.game_version, host.sfo_handle, "APP_VER");
+        sfo::get_data_by_key(game_category, host.sfo_handle, "CATEGORY");
     } else {
         host.game_title = host.io.title_id; // Use TitleID as Title
         host.game_version = "N/A";
@@ -245,6 +242,62 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         return FileNotFound;
 
     return Success;
+}
+
+static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
+    switch (static_cast<SDL_WindowEventID>(event.event)) {
+    case SDL_WINDOWEVENT_SIZE_CHANGED:
+        app::update_viewport(state);
+        break;
+    default:
+        break;
+    }
+}
+
+bool handle_events(HostState &host) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        ImGui_ImplSdlGL3_ProcessEvent(&event);
+        switch (event.type) {
+        case SDL_QUIT:
+            stop_all_threads(host.kernel);
+            host.gxm.display_queue.abort();
+            host.display.abort.exchange(true);
+            host.display.condvar.notify_all();
+            return false;
+
+        case SDL_KEYDOWN:
+            if (event.key.keysym.sym == SDLK_g) {
+                auto &display = host.display;
+
+                // toggle gui state
+                bool old_imgui_render = display.imgui_render.load();
+                while (!display.imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
+                }
+            }
+            if (event.key.keysym.sym == SDLK_t) {
+                toggle_touchscreen();
+            }
+
+        case SDL_WINDOWEVENT:
+            handle_window_event(host, event.window);
+            break;
+
+        case SDL_FINGERDOWN:
+            handle_touch_event(event.tfinger);
+            break;
+
+        case SDL_FINGERMOTION:
+            handle_touch_event(event.tfinger);
+            break;
+
+        case SDL_FINGERUP:
+            handle_touch_event(event.tfinger);
+            break;
+        }
+    }
+
+    return true;
 }
 
 ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {

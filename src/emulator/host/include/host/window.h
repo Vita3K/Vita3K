@@ -17,36 +17,11 @@
 
 #pragma once
 
-#include <config/config.h>
+#include <functional>
+#include <memory>
 
-#include <string>
-
-struct Config;
-struct HostState;
 struct SDL_Window;
-template <class T>
-class Ptr;
-class Root;
 
-namespace app {
-
-/// Describes the state of the application to be run
-enum class AppRunType {
-    /// Run type is unknown
-    Unknown,
-    /// Extracted, files are as they are on console
-    Extracted,
-    /// Zipped in HENKaku-style .vpk file
-    Vpk,
-};
-
-bool init(HostState &state, Config cfg, const Root &root_paths);
-bool handle_events(HostState &host);
-void update_viewport(HostState &state);
-bool handle_events(HostState &host);
-void error_dialog(const std::string &message, SDL_Window *window = nullptr);
-
-void set_window_title(HostState &host);
-bool clear_and_refresh_game_list(HostState &host);
-
-} // namespace app
+typedef std::shared_ptr<SDL_Window> WindowPtr;
+typedef void *SDL_GLContext;
+typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
