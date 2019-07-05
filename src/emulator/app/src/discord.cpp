@@ -1,7 +1,9 @@
 #ifdef USE_DISCORD_RICH_PRESENCE
+
 #include <app/discord.h>
-#include <discord_register.h>
 #include <discord_rpc.h>
+
+#include <ctime>
 
 // Credits to the RPCS3 Project
 

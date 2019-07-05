@@ -1,7 +1,8 @@
 #pragma once
 
+#ifdef USE_DISCORD_RICH_PRESENCE
+
 #include <string>
-#include <time.h>
 
 namespace discord {
 void init(const std::string &application_id = "570296795943403530");
@@ -12,3 +13,5 @@ void update_init_status(bool discord_rich_presence, bool *discord_rich_presence_
 
 void update_presence(const std::string &state = "", const std::string &details = "Idle", bool reset_timer = true);
 } // namespace discord
+
+#endif

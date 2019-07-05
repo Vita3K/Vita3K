@@ -18,9 +18,8 @@
 #pragma once
 
 #include <miniz.h>
-#include <psp2/types.h>
 
-#include <io/file.h>
+#include <io/types.h>
 
 #include <cstdio>
 #include <map>

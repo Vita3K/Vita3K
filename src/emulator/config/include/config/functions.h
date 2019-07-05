@@ -17,21 +17,29 @@
 
 #pragma once
 
-#include <host/config.h>
+#include <config/config.h>
 #include <util/exit_code.h>
 #include <util/fs.h>
 
 class Root;
 
-namespace app {
+namespace config {
 
 /**
   * \brief Save emulator config to a YML file.
   * \param cfg Config operations to save.
   * \param output_path The location to save the configuration file.
   * \return Success on saving the config file, otherwise Error.
- */
-ExitCode serialize_config(Config &cfg, fs::path output_path);
+  */
+ExitCode serialize_config(Config &cfg, const fs::path &output_path);
+
+/**
+  * \brief Merge two different configurations.
+  * \param lhs Config to be modified.
+  * \param rhs Config to me merged.
+  * \param new_pref_path New preference path to use (optional).
+  */
+void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_path = std::string{}, bool init = false);
 
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
@@ -42,4 +50,4 @@ ExitCode serialize_config(Config &cfg, fs::path output_path);
   */
 ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths);
 
-} // namespace app
+} // namespace config

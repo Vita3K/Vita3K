@@ -36,4 +36,4 @@ struct SceAppUtilSaveDataRemoveItem {
     int mode;
     uint8_t reserved[36];
 };
-}; // namespace emu
+} // namespace emu

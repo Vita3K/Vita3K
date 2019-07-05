@@ -17,14 +17,10 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
+#include <ctrl/state.h>
 
-struct SfoFile;
+struct SDL_TouchFingerEvent;
 
-namespace app {
-
-bool load_sfo(SfoFile &file, const std::vector<uint8_t> &data);
-bool find_data(std::string &out_data, SfoFile &file, const std::string &key);
-
-} // namespace app
+int handle_touch_event(SDL_TouchFingerEvent &finger);
+int toggle_touchscreen();
+int peek_touch(SceFVector2 viewport_pos, SceFVector2 viewport_size, SceIVector2 drawable_size, bool renderer_focused, const CtrlState &ctrl, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count);

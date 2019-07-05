@@ -20,18 +20,16 @@
 #include "private.h"
 
 #include <cpu/functions.h>
-#include <host/state.h>
 
-#include <imgui_memory_editor.h>
 #include <spdlog/fmt/fmt.h>
 
 namespace gui {
 
-static void evaluate_code(HostState &host, uint32_t from, uint32_t count, bool thumb) {
-    host.gui.disassembly.clear();
+static void evaluate_code(GuiState &gui, HostState &host, uint32_t from, uint32_t count, bool thumb) {
+    gui.disassembly.clear();
 
     if (host.kernel.threads.empty()) {
-        host.gui.disassembly.emplace_back("Nothing to disassemble.");
+        gui.disassembly.emplace_back("Nothing to disassemble.");
         return;
     }
 
@@ -44,30 +42,30 @@ static void evaluate_code(HostState &host, uint32_t from, uint32_t count, bool t
         size_t end_page = (addr + 4) / KB(4);
 
         if (addr_page == 0 || host.mem.allocated_pages[addr_page] == 0 || host.mem.allocated_pages[end_page] == 0) {
-            host.gui.disassembly.emplace_back(fmt::format("Disassembled {} instructions.", a));
+            gui.disassembly.emplace_back(fmt::format("Disassembled {} instructions.", a));
             break;
         }
 
         // Use DisasmState for first thread.
         std::string disasm = fmt::format("{:0>8X}: {}",
             addr, disassemble(*host.kernel.threads.begin()->second->cpu.get(), addr, thumb, &size));
-        host.gui.disassembly.emplace_back(disasm);
+        gui.disassembly.emplace_back(disasm);
         addr += size;
     }
 }
 
-void reevaluate_code(HostState &host) {
-    std::string address_string = std::string(host.gui.disassembly_address);
-    std::string count_string = std::string(host.gui.disassembly_count);
+void reevaluate_code(GuiState &gui, HostState &host) {
+    std::string address_string = std::string(gui.disassembly_address);
+    std::string count_string = std::string(gui.disassembly_count);
 
     uint32_t address = 0, count = 0;
     if (!address_string.empty())
         address = static_cast<uint32_t>(std::stol(address_string, nullptr, 16));
     if (!count_string.empty())
         count = static_cast<uint32_t>(std::stol(count_string));
-    bool thumb = host.gui.disassembly_arch == "THUMB";
+    bool thumb = gui.disassembly_arch == "THUMB";
 
-    evaluate_code(host, address, count, thumb);
+    evaluate_code(gui, host, address, count, thumb);
 }
 
 std::string archs[] = {
@@ -75,10 +73,10 @@ std::string archs[] = {
     "THUMB",
 };
 
-void draw_disassembly_dialog(HostState &host) {
-    ImGui::Begin("Disassembly", &host.gui.debug_menu.disassembly_dialog);
+void draw_disassembly_dialog(GuiState &gui, HostState &host) {
+    ImGui::Begin("Disassembly", &gui.debug_menu.disassembly_dialog);
     ImGui::BeginChild("disasm", ImVec2(0, -(ImGui::GetTextLineHeightWithSpacing() + 10)));
-    for (const std::string &assembly : host.gui.disassembly) {
+    for (const std::string &assembly : gui.disassembly) {
         ImGui::Text("%s", assembly.c_str());
     }
     ImGui::EndChild();
@@ -92,9 +90,9 @@ void draw_disassembly_dialog(HostState &host) {
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 4);
     ImGui::PushItemWidth(10 * 8);
-    if (ImGui::InputText("##disasm_addr", host.gui.disassembly_address, 9,
+    if (ImGui::InputText("##disasm_addr", gui.disassembly_address, 9,
             ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
-        reevaluate_code(host);
+        reevaluate_code(gui, host);
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
@@ -102,21 +100,21 @@ void draw_disassembly_dialog(HostState &host) {
     ImGui::Text("Count");
     ImGui::SameLine();
     ImGui::PushItemWidth(10 * 4);
-    if (ImGui::InputText("##disasm_count", host.gui.disassembly_count, 5,
+    if (ImGui::InputText("##disasm_count", gui.disassembly_count, 5,
             ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
-        reevaluate_code(host);
+        reevaluate_code(gui, host);
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
 
     ImGui::Text("Arch");
     ImGui::SameLine();
-    if (ImGui::BeginCombo("##disasm_arch", host.gui.disassembly_arch.c_str())) {
+    if (ImGui::BeginCombo("##disasm_arch", gui.disassembly_arch.c_str())) {
         for (const std::string &arch : archs) {
-            bool is_selected = host.gui.disassembly_arch == arch;
+            bool is_selected = gui.disassembly_arch == arch;
             if (ImGui::Selectable(arch.c_str(), is_selected)) {
-                host.gui.disassembly_arch = arch;
-                reevaluate_code(host);
+                gui.disassembly_arch = arch;
+                reevaluate_code(gui, host);
             }
             if (is_selected) {
                 ImGui::SetItemDefaultFocus();

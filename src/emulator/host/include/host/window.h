@@ -16,11 +16,12 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
-#include "kernel/state.h"
-#include "psp2/types.h"
-struct Config;
-struct MemState;
-template <class T>
-class Ptr;
 
-SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &path, const Config &cfg);
+#include <functional>
+#include <memory>
+
+struct SDL_Window;
+
+typedef std::shared_ptr<SDL_Window> WindowPtr;
+typedef void *SDL_GLContext;
+typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;

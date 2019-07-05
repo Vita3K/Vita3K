@@ -23,12 +23,12 @@
 
 namespace gui {
 
-void draw_controls_dialog(HostState &host) {
+void draw_controls_dialog(GuiState &gui, HostState &host) {
     float width = ImGui::GetWindowWidth() / 1.35f;
     float height = ImGui::GetWindowHeight() / 1.25f;
     ImGui::SetNextWindowSize(ImVec2(width, height));
     ImGui::SetNextWindowPosCenter();
-    ImGui::Begin("Controls", &host.gui.help_menu.controls_dialog);
+    ImGui::Begin("Controls", &gui.help_menu.controls_dialog);
 
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s    %-16s", "Button", "Mapped button");
     ImGui::Text("%-16s    %-16s", "Left stick", "WASD");

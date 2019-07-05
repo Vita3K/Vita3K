@@ -15,72 +15,68 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <gui/functions.h>
-
 #include "private.h"
 
-#include <host/state.h>
-#include <kernel/thread/thread_functions.h>
-#include <kernel/thread/thread_state.h>
-#include <util/resource.h>
+#include <gui/functions.h>
+
 #include <util/string_utils.h>
 
 #include <SDL.h>
 
 namespace gui {
 
-static void draw_ime_dialog(HostState &host) {
+static void draw_ime_dialog(DialogState &common_dialog) {
     ImGui::SetNextWindowSize(ImVec2(0, 0));
-    ImGui::Begin(host.gui.common_dialog.ime.title.c_str());
-    if (host.gui.common_dialog.ime.multiline) {
+    ImGui::Begin(common_dialog.ime.title.c_str());
+    if (common_dialog.ime.multiline) {
         ImGui::InputTextMultiline(
             "",
-            host.gui.common_dialog.ime.text,
-            host.gui.common_dialog.ime.max_length);
+            common_dialog.ime.text,
+            common_dialog.ime.max_length);
     } else {
         ImGui::InputText(
             "",
-            host.gui.common_dialog.ime.text,
-            host.gui.common_dialog.ime.max_length);
+            common_dialog.ime.text,
+            common_dialog.ime.max_length);
     }
     ImGui::SameLine();
     if (ImGui::Button("Submit")) {
-        host.gui.common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
-        host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        host.gui.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-        std::string result = host.gui.common_dialog.ime.text;
+        common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
+        common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        std::string result = common_dialog.ime.text;
         std::u16string result16 = string_utils::utf8_to_utf16(result);
-        memcpy(host.gui.common_dialog.ime.result, result16.c_str(), result16.size() * sizeof(uint16_t));
+        memcpy(common_dialog.ime.result, result16.c_str(), result16.size() * sizeof(uint16_t));
     }
-    if (host.gui.common_dialog.ime.cancelable) {
+    if (common_dialog.ime.cancelable) {
         ImGui::SameLine();
         if (ImGui::Button("Cancel")) {
-            host.gui.common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_CLOSE;
-            host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-            host.gui.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+            common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_CLOSE;
+            common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
         }
     }
     ImGui::End();
 }
 
-static void draw_message_dialog(HostState &host) {
+static void draw_message_dialog(DialogState &common_dialog) {
     ImGui::SetNextWindowPosCenter();
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("Message Dialog");
-    ImGui::Text("%s", host.gui.common_dialog.msg.message.c_str());
-    for (int i = 0; i < host.gui.common_dialog.msg.btn_num; i++) {
-        if (ImGui::Button(host.gui.common_dialog.msg.btn[i].c_str())) {
-            host.gui.common_dialog.msg.status = host.gui.common_dialog.msg.btn_val[i];
-            host.gui.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-            host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    ImGui::Text("%s", common_dialog.msg.message.c_str());
+    for (int i = 0; i < common_dialog.msg.btn_num; i++) {
+        if (ImGui::Button(common_dialog.msg.btn[i].c_str())) {
+            common_dialog.msg.status = common_dialog.msg.btn_val[i];
+            common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+            common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
         }
         ImGui::SameLine();
     }
     ImGui::End();
 }
 
-static void draw_trophy_setup_dialog(HostState &host) {
-    int timer = (static_cast<int64_t>(host.gui.common_dialog.trophy.tick) - static_cast<int64_t>(SDL_GetTicks())) / 1000;
+static void draw_trophy_setup_dialog(DialogState &common_dialog) {
+    int timer = (static_cast<int64_t>(common_dialog.trophy.tick) - static_cast<int64_t>(SDL_GetTicks())) / 1000;
     if (timer > 0) {
         ImGui::SetNextWindowPos(ImVec2(30, 30));
         ImGui::SetNextWindowSize(ImVec2(0, 0));
@@ -92,22 +88,22 @@ static void draw_trophy_setup_dialog(HostState &host) {
         ImGui::Text("%s", closeup_text.c_str());
         ImGui::End();
     } else {
-        host.gui.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        host.gui.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
     }
 }
 
-void draw_common_dialog(HostState &host) {
-    if (host.gui.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
-        switch (host.gui.common_dialog.type) {
+void draw_common_dialog(GuiState &gui, HostState &host) {
+    if (host.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+        switch (host.common_dialog.type) {
         case IME_DIALOG:
-            draw_ime_dialog(host);
+            draw_ime_dialog(host.common_dialog);
             break;
         case MESSAGE_DIALOG:
-            draw_message_dialog(host);
+            draw_message_dialog(host.common_dialog);
             break;
         case TROPHY_SETUP_DIALOG:
-            draw_trophy_setup_dialog(host);
+            draw_trophy_setup_dialog(host.common_dialog);
             break;
         default:
             break;

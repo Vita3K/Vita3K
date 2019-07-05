@@ -16,11 +16,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceLibKernel.h"
+#include <modules/module_parent.h>
 #include <v3kprintf.h>
 
 #include <cpu/functions.h>
 #include <dlmalloc.h>
 #include <host/functions.h>
+#include <host/load_self.h>
 #include <io/functions.h>
 #include <io/types.h>
 #include <kernel/functions.h>
@@ -31,7 +33,6 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <kernel/load_self.h>
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
 #undef st_atime

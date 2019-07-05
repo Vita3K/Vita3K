@@ -30,8 +30,8 @@ add_library(
 )
 
 target_include_directories(shader PUBLIC include)
-target_link_libraries(shader PUBLIC util spirv-cross-glsl vita-headers)
-target_link_libraries(shader PRIVATE gxm SPIRV microprofile)
+target_link_libraries(shader PUBLIC gxm util microprofile spirv-cross-glsl vita-headers)
+target_link_libraries(shader PRIVATE SPIRV)
 
 add_executable(
 	shader-tests

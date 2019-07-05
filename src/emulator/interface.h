@@ -17,37 +17,18 @@
 
 #pragma once
 
+#include <app/functions.h>
+#include <host/state.h>
 #include <util/exit_code.h>
 
-#include <string>
+struct GuiState;
 
-struct Config;
-struct HostState;
-struct SDL_Window;
-template <class T>
-class Ptr;
-class Root;
+inline void delete_zip(mz_zip_archive *zip) {
+    mz_zip_reader_end(zip);
+    delete zip;
+}
 
-namespace app {
-
-/// Describes the state of the application to be run
-enum class AppRunType {
-    /// Run type is unknown
-    Unknown,
-    /// Extracted, files are as they are on console
-    Extracted,
-    /// Zipped in HENKaku-style .vpk file
-    Vpk,
-};
-
-bool init(HostState &state, Config cfg, const Root &root_paths);
-void update_viewport(HostState &state);
 bool handle_events(HostState &host);
-void error_dialog(const std::string &message, SDL_Window *window = nullptr);
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, AppRunType run_type);
+
+ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, app::AppRunType run_type);
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
-
-void set_window_title(HostState &host);
-bool clear_and_refresh_game_list(HostState &host);
-
-} // namespace app

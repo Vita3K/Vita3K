@@ -17,8 +17,7 @@
 
 #pragma once
 
-#include <psp2/io/fcntl.h>
-#include <psp2/types.h>
+#include <io/types.h>
 
 #include <cassert>
 #include <cstring>

@@ -77,13 +77,14 @@ struct HelpMenuState {
     bool about_dialog = false;
 };
 
-struct State {
+} // namespace gui
+
+struct GuiState {
     bool renderer_focused = true;
-    DebugMenuState debug_menu;
-    ConfigurationMenuState configuration_menu;
-    HelpMenuState help_menu;
-    DialogState common_dialog;
-    GamesSelector game_selector;
+    gui::DebugMenuState debug_menu;
+    gui::ConfigurationMenuState configuration_menu;
+    gui::HelpMenuState help_menu;
+    gui::GamesSelector game_selector;
 
     MemoryEditor memory_editor;
     MemoryEditor gxp_shader_editor;
@@ -109,5 +110,3 @@ struct State {
     ImFont *monospaced_font{};
     std::vector<char> font_data;
 };
-
-} // namespace gui

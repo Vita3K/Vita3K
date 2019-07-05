@@ -19,8 +19,8 @@
 
 #include "private.h"
 
+#include <config/version.h>
 #include <host/state.h>
-#include <host/version.h>
 
 #include <sstream>
 
@@ -34,12 +34,12 @@ static const char OS_PREFIX[] = "open ";
 static const char OS_PREFIX[] = "xdg-open ";
 #endif
 
-void draw_about_dialog(HostState &host) {
+void draw_about_dialog(GuiState &gui) {
     const float width = static_cast<float>(ImGui::GetWindowWidth() / 0.65);
     const float height = static_cast<float>(ImGui::GetWindowHeight() / 1.35);
 
     ImGui::SetNextWindowSize(ImVec2(width, height));
-    ImGui::Begin("About", &host.gui.help_menu.about_dialog);
+    ImGui::Begin("About", &gui.help_menu.about_dialog);
 
     ImGui::Text("%s", window_title);
 

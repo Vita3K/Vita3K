@@ -17,10 +17,13 @@
 
 #pragma once
 
+#include <host/state.h>
+
+#include <SDL.h>
+
 #include <string>
 
-struct HostState;
-struct SDL_Window;
+struct GuiState;
 
 namespace gui {
 
@@ -30,20 +33,22 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-void init(HostState &host);
-void init_background(HostState &host, const std::string &image_path);
-void load_game_background(HostState &host, const std::string &title_id);
-void draw_begin(HostState &host);
-void draw_end(SDL_Window *window);
-void draw_ui(HostState &host);
+void init(GuiState &gui, HostState &host);
+void init_background(GuiState &gui, const std::string &image_path);
+void get_game_titles(GuiState &gui, HostState &host);
+void load_game_background(GuiState &gui, HostState &host, const std::string &title_id);
 
-void draw_common_dialog(HostState &host);
-void draw_game_selector(HostState &host);
-void draw_reinstall_dialog(HostState &host, GenericDialogState *status);
+void draw_begin(GuiState &gui, HostState &host);
+void draw_end(SDL_Window *window);
+void draw_ui(GuiState &gui, HostState &host);
+
+void draw_common_dialog(GuiState &gui, HostState &host);
+void draw_game_selector(GuiState &gui, HostState &host);
+void draw_reinstall_dialog(GenericDialogState *status);
 
 } // namespace gui
 
-// Extensions to ImGUi
+// Extensions to ImGui
 namespace ImGui {
 
 bool vector_getter(void *vec, int idx, const char **out_text);

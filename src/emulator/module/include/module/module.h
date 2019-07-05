@@ -19,16 +19,13 @@
 
 #include "bridge.h"
 
-#include <cassert>
+#include <util/log.h>
 
 int unimplemented_impl(const char *name);
 #define UNIMPLEMENTED() unimplemented_impl(export_name)
 
 int stubbed_impl(const char *name, const char *info);
 #define STUBBED(info) stubbed_impl(export_name, info)
-
-int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_val);
-#define RET_ERROR(error) ret_error_impl(export_name, #error, error)
 
 #define BRIDGE_DECL(name) extern const ImportFn import_##name;
 #define BRIDGE_IMPL(name) const ImportFn import_##name = bridge(&export_##name, #name);

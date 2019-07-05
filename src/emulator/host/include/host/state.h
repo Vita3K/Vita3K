@@ -17,12 +17,14 @@
 
 #pragma once
 
-#include "config.h"
-#include <audio/state.h>
-#include <ctrl/state.h>
-#include <gui/state.h>
-#include <gxm/state.h>
 #include <host/sfo.h>
+#include <host/window.h>
+
+#include <audio/state.h>
+#include <config/config.h>
+#include <ctrl/state.h>
+#include <dialog/state.h>
+#include <gxm/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
@@ -31,18 +33,15 @@
 #include <renderer/state.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
+#ifdef USE_GDBSTUB
 #include <gdbstub/state.h>
+#endif
 
 #include <psp2/display.h>
 
 #include <atomic>
 #include <memory>
 #include <string>
-
-struct SDL_Window;
-typedef void *SDL_GLContext;
-typedef std::shared_ptr<SDL_Window> WindowPtr;
-typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -74,11 +73,12 @@ struct HostState {
     AudioState audio;
     GxmState gxm;
     renderer::State renderer;
+    bool renderer_focused;
     IOState io;
     NetState net;
     NpState np;
     DisplayState display;
-    gui::State gui;
+    DialogState common_dialog;
     SfoFile sfo_handle;
     NIDSet missing_nids;
 #ifdef USE_GDBSTUB

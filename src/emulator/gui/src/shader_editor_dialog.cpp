@@ -23,21 +23,13 @@
 #include <host/state.h>
 #include <renderer/state.h>
 #include <shader/spirv_recompiler.h>
-#include <util/exec.h>
 
 #include <imgui_memory_editor.h>
 #include <spdlog/fmt/fmt.h>
 
-#include <string>
-#include <tuple>
-#include <vector>
-
 #include <array>
-#include <cstdio>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <stdexcept>
+#include <string>
+#include <vector>
 
 #define EXTERNAL_DISASM_ENABLE 0
 #define EXTERNAL_DISASM_PATH ""
@@ -45,12 +37,12 @@
 
 namespace gui {
 
-void draw_shader_editor_dialog(HostState &host) {
+void draw_shader_editor_dialog(GuiState &gui, HostState &host) {
     static int selected_vertex_shader = 0;
     static int selected_frag_shader = 0;
     static emu::SceGxmProgramType selected_shader_type = emu::SceGxmProgramType::Vertex;
 
-    ImGui::Begin("Shader Editor", &host.gui.debug_menu.shader_editor_dialog);
+    ImGui::Begin("Shader Editor", &gui.debug_menu.shader_editor_dialog);
 
     std::vector<std::string> vertex_shader_names;
     std::vector<std::pair<Sha256Hash, std::string>> vertex_shader_data;
@@ -108,7 +100,7 @@ void draw_shader_editor_dialog(HostState &host) {
         const auto gxp_program = gxp_map_entry->second;
         shader::convert_gxp_to_glsl(*gxp_program, "", false, &spirv_dump, &disasm_dump);
 
-        host.gui.gxp_shader_editor.DrawWindow("GXP Shader Editor", (void *)gxp_program, gxp_program->size);
+        gui.gxp_shader_editor.DrawWindow("GXP Shader Editor", (void *)gxp_program, gxp_program->size);
 
         ImGui::Begin("Disassembly");
         ImGui::InputTextMultiline("Disassembly", const_cast<char *>(disasm_dump.data()), disasm_dump.size(), ImGui::GetWindowSize());

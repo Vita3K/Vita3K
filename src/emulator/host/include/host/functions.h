@@ -17,14 +17,13 @@
 
 #pragma once
 
-#include <psp2/types.h>
-
 #include <string>
+#include <vector>
 
-struct CPUState;
-struct HostState;
 struct SfoFile;
 
-void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
-void log_import_calls(bool enabled);
-bool get_data(std::string &out_data, SfoFile &file, int id);
+namespace sfo {
+bool get_data_by_id(std::string &out_data, SfoFile &file, int id);
+bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &key);
+bool load(SfoFile &sfile, const std::vector<uint8_t> &content);
+} // namespace sfo

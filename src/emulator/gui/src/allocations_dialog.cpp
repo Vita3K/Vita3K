@@ -15,12 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <gui/functions.h>
-
 #include "private.h"
 
 #include <cpu/functions.h>
-#include <host/state.h>
 
 #include <imgui_memory_editor.h>
 #include <spdlog/fmt/fmt.h>
@@ -32,8 +29,8 @@ const char *blacklist[] = {
     "export_sceGxmDisplayQueueAddEntry"
 };
 
-void draw_allocations_dialog(HostState &host) {
-    ImGui::Begin("Memory Allocations", &host.gui.debug_menu.allocations_dialog);
+void draw_allocations_dialog(GuiState &gui, HostState &host) {
+    ImGui::Begin("Memory Allocations", &gui.debug_menu.allocations_dialog);
 
     const std::lock_guard<std::mutex> lock(host.mem.generation_mutex);
     for (const auto &pair : host.mem.generation_names) {
@@ -66,27 +63,27 @@ void draw_allocations_dialog(HostState &host) {
                 ImGui::Text("Range %08lx - %08lx.", index * KB(4), (index + count) * KB(4));
                 ImGui::Text("Size: %i KB (%i page[s])", count * 4, count);
                 if (ImGui::Selectable("View/Edit")) {
-                    host.gui.memory_editor_start = index * KB(4);
-                    host.gui.memory_editor_count = count * KB(4);
-                    host.gui.debug_menu.memory_editor_dialog = true;
+                    gui.memory_editor_start = index * KB(4);
+                    gui.memory_editor_count = count * KB(4);
+                    gui.debug_menu.memory_editor_dialog = true;
                 }
                 if (ImGui::Selectable("View Disassembly")) {
-                    sprintf(host.gui.disassembly_address, "%08zx", index * KB(4));
-                    reevaluate_code(host);
-                    host.gui.debug_menu.disassembly_dialog = true;
+                    sprintf(gui.disassembly_address, "%08zx", index * KB(4));
+                    reevaluate_code(gui, host);
+                    gui.debug_menu.disassembly_dialog = true;
                 }
             }
             ImGui::TreePop();
         }
     }
 
-    if (host.gui.debug_menu.memory_editor_dialog) {
-        if (host.gui.memory_editor.Open) {
-            host.gui.memory_editor.DrawWindow("Memory Editor",
-                host.mem.memory.get() + host.gui.memory_editor_start,
-                host.gui.memory_editor_count, host.gui.memory_editor_start);
+    if (gui.debug_menu.memory_editor_dialog) {
+        if (gui.memory_editor.Open) {
+            gui.memory_editor.DrawWindow("Memory Editor",
+                host.mem.memory.get() + gui.memory_editor_start,
+                gui.memory_editor_count, gui.memory_editor_start);
         } else {
-            host.gui.debug_menu.memory_editor_dialog = false;
+            gui.debug_menu.memory_editor_dialog = false;
         }
     }
 

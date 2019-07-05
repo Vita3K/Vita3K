@@ -15,15 +15,15 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <app/app_config.h>
-#include <app/app_functions.h>
+#include "interface.h"
+
+#include <app/functions.h>
 #include <app/screen_render.h>
+#include <config/functions.h>
+#include <config/version.h>
 #include <gui/functions.h>
-#include <host/state.h>
-#include <host/version.h>
+#include <gui/state.h>
 #include <shader/spirv_recompiler.h>
-#include <util/exit_code.h>
-#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -34,8 +34,6 @@
 #ifdef USE_DISCORD_RICH_PRESENCE
 #include <app/discord.h>
 #endif
-
-#include <SDL.h>
 
 #include <cstdlib>
 
@@ -52,7 +50,7 @@ int main(int argc, char *argv[]) {
         return InitConfigFailed;
 
     Config cfg{};
-    if (const auto err = app::init_config(cfg, argc, argv, root_paths) != Success) {
+    if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {
                 LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
@@ -106,21 +104,22 @@ int main(int argc, char *argv[]) {
         return HostInitFailed;
     }
 
-    gui::init(host);
+    GuiState gui;
+    gui::init(gui, host);
 
     auto discord_rich_presence_old = host.cfg.discord_rich_presence;
 
     // Application not provided via argument, show game selector
     while (run_type == app::AppRunType::Unknown) {
-        if (app::handle_events(host)) {
+        if (handle_events(host)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gui::draw_begin(host);
+            gui::draw_begin(gui, host);
 
 #ifdef USE_DISCORD_RICH_PRESENCE
             discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
-            gui::draw_ui(host);
-            gui::draw_game_selector(host);
+            gui::draw_ui(gui, host);
+            gui::draw_game_selector(gui, host);
 
             gui::draw_end(host.window.get());
         } else {
@@ -128,16 +127,16 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
-        if (!host.gui.game_selector.selected_title_id.empty()) {
-            vpk_path_wide = string_utils::utf_to_wide(host.gui.game_selector.selected_title_id);
+        if (!gui.game_selector.selected_title_id.empty()) {
+            vpk_path_wide = string_utils::utf_to_wide(gui.game_selector.selected_title_id);
             run_type = app::AppRunType::Extracted;
         }
     }
 
     Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
+    if (const auto err = load_app(entry_point, host, gui, vpk_path_wide, run_type) != Success)
         return err;
-    if (const auto err = app::run_app(host, entry_point) != Success)
+    if (const auto err = run_app(host, entry_point) != Success)
         return err;
 
     app::gl_screen_renderer gl_renderer;
@@ -145,12 +144,12 @@ int main(int argc, char *argv[]) {
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
 
-    while (app::handle_events(host)) {
+    while (handle_events(host)) {
         gl_renderer.render(host);
-        gui::draw_begin(host);
-        gui::draw_common_dialog(host);
+        gui::draw_begin(gui, host);
+        gui::draw_common_dialog(gui, host);
         if (host.display.imgui_render) {
-            gui::draw_ui(host);
+            gui::draw_ui(gui, host);
         }
         gui::draw_end(host.window.get());
 
@@ -173,7 +172,7 @@ int main(int argc, char *argv[]) {
 
     // There may be changes that made in the GUI, so we should save, again
     if (host.cfg.overwrite_config)
-        app::serialize_config(host.cfg, host.cfg.config_path);
+        config::serialize_config(host.cfg, host.cfg.config_path);
 
     return Success;
 }

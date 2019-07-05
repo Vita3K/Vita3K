@@ -21,7 +21,7 @@
 
 namespace gui {
 
-void draw_reinstall_dialog(HostState &host, GenericDialogState *status) {
+void draw_reinstall_dialog(GenericDialogState *status) {
     ImGui::SetNextWindowPosCenter();
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("Reinstall this application?");

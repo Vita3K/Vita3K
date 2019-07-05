@@ -1,20 +1,20 @@
 add_library(
-host
-STATIC
-include/host/config.h
-include/host/functions.h
-include/host/import_fn.h
-include/host/sfo.h
-include/host/state.h
-include/host/version.h
-include/host/app_util.h
-src/host.cpp
-src/sfo.cpp
-version.cpp
+	host
+	STATIC
+	include/host/app_util.h
+	include/host/functions.h
+	include/host/import_fn.h
+	include/host/load_self.h
+	include/host/sfo.h
+	include/host/state.h
+	include/host/window.h
+	src/load_self.cpp
+	src/sfo.cpp
 )
 
-configure_file(src/version.cpp.in version.cpp)
-
 target_include_directories(host PUBLIC include)
-target_link_libraries(host PUBLIC audio cpu ctrl gxm io kernel mem net nids np renderer rtc util gui gdbstub)
-target_link_libraries(host PRIVATE ${Boost_LIBRARIES} glutil microprofile sdl2)
+target_link_libraries(host PUBLIC audio config ctrl dialog io kernel net nids np renderer sdl2 touch)
+if(USE_GDBSTUB)
+	target_link_libraries(host PUBLIC gdbstub)
+endif()
+target_link_libraries(host PRIVATE elfio vita-toolchain)

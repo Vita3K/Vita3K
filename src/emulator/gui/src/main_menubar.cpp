@@ -19,8 +19,6 @@
 
 #include "private.h"
 
-#include <host/state.h>
-
 namespace gui {
 
 static void draw_debug_menu(DebugMenuState &state) {
@@ -60,13 +58,13 @@ static void draw_help_menu(HelpMenuState &state) {
     }
 }
 
-void draw_main_menu_bar(HostState &host) {
+void draw_main_menu_bar(GuiState &gui) {
     if (ImGui::BeginMainMenuBar()) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
-        draw_debug_menu(host.gui.debug_menu);
-        draw_config_menu(host.gui.configuration_menu);
-        draw_help_menu(host.gui.help_menu);
+        draw_debug_menu(gui.debug_menu);
+        draw_config_menu(gui.configuration_menu);
+        draw_help_menu(gui.help_menu);
 
         ImGui::PopStyleColor();
         ImGui::EndMainMenuBar();
