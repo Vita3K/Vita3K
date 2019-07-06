@@ -39,7 +39,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path);
   * \param rhs Config to me merged.
   * \param new_pref_path New preference path to use (optional).
   */
-void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_path = std::string{}, bool init = false);
+void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_path = std::string{}, bool init = false);
 
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
