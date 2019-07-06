@@ -193,7 +193,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     return Success;
 }
 
-void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_path, const bool init) {
+void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_path, const bool init) {
     // Stored in config file
     if (lhs.log_imports != rhs.log_imports && (!init || rhs.log_imports))
         lhs.log_imports = rhs.log_imports;
@@ -229,10 +229,10 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &cur_pref_p
         lhs.background_alpha = rhs.background_alpha;
     if (lhs.log_level != rhs.log_level && (!init || rhs.log_level != static_cast<int>(spdlog::level::trace)))
         lhs.log_level = rhs.log_level;
-    if (lhs.pref_path != rhs.pref_path && (init || rhs.pref_path != cur_pref_path)) { // Flags when in init
-        if (rhs.pref_path.empty())
-            lhs.pref_path = cur_pref_path;
-        else
+    if (lhs.pref_path != rhs.pref_path && (init || lhs.pref_path != new_pref_path)) { // Flags when in init
+        if (!new_pref_path.empty() && rhs.pref_path != new_pref_path)
+            lhs.pref_path = new_pref_path;
+        else if (!init)
             lhs.pref_path = rhs.pref_path;
     }
     if (lhs.discord_rich_presence != rhs.discord_rich_presence && (!init || rhs.discord_rich_presence))
@@ -343,7 +343,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         if (!command_line.load_config) {
             // Merge command line and base configs
-            merge_configs(cfg, command_line, root_paths.get_pref_path_string(), true);
+            command_line.pref_path = root_paths.get_pref_path_string();
+            merge_configs(cfg, command_line, command_line.pref_path, true);
         } else {
             // Replace the base config with the parsed config
             cfg = std::move(command_line);
