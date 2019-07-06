@@ -79,6 +79,7 @@ static const KeyBinding key_bindings_ext[] = {
 };
 
 static const size_t key_binding_count = sizeof(key_bindings) / sizeof(key_bindings[0]);
+static const size_t key_binding_ext_count = sizeof(key_bindings_ext) / sizeof(key_bindings_ext[0]);
 
 static const ControllerBinding controller_bindings[] = {
     { SDL_CONTROLLER_BUTTON_BACK, SCE_CTRL_SELECT },
@@ -134,7 +135,8 @@ static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode 
 
 static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext) {
     const uint8_t *const keys = SDL_GetKeyboardState(nullptr);
-    for (int i = 0; i < key_binding_count; ++i) {
+    const size_t selected_key_binding_count = ext ? key_binding_ext_count : key_binding_count;
+    for (int i = 0; i < selected_key_binding_count; ++i) {
         const KeyBinding &binding = ext ? key_bindings_ext[i] : key_bindings[i];
         if (keys[binding.scancode]) {
             *buttons |= binding.button;
