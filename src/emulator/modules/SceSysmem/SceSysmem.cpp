@@ -34,7 +34,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
 
     const Ptr<void> address(alloc(mem, size, name));
     if (!address) {
-        return SCE_KERNEL_ERROR_NO_MEMORY;
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }
 
     KernelState *const state = &host.kernel;
@@ -51,7 +51,7 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, int size) {
     
     const Ptr<void> address(alloc(mem, size, name));
     if (!address) {
-        return SCE_KERNEL_ERROR_NO_MEMORY;
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }
     
     KernelState *const state = &host.kernel;
