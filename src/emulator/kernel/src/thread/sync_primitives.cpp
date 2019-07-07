@@ -650,7 +650,7 @@ SceUID eventflag_create(KernelState &kernel, const char *export_name, const char
     return uid;
 }
 
-int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, SceUInt *timeout) {
+int eventflag_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout, bool dowait) {
     assert(event_id >= 0);
 
     // TODO Don't lock twice.
@@ -672,6 +672,8 @@ int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_i
 
     bool is_fifo = (event->attr & SCE_KERNEL_ATTR_TH_FIFO);
 
+    *outBits = event->flags & flags;
+
     bool condition;
     if (wait & SCE_EVENT_WAITOR) {
         condition = event->flags & flags;
@@ -687,7 +689,7 @@ int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_i
         if (wait & SCE_EVENT_WAITCLEAR_PAT) {
             event->flags &= flags;
         }
-    } else {
+    } else if (dowait) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
@@ -707,6 +709,14 @@ int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_i
     }
 
     return SCE_KERNEL_OK;
+}
+
+int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout) {
+    return eventflag_waitorpoll(kernel, export_name, thread_id, event_id, flags, wait, outBits, timeout, true);
+}
+
+int eventflag_poll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits) {
+    return eventflag_waitorpoll(kernel, export_name, thread_id, event_id, flags, wait, outBits, 0, false);
 }
 
 int eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags) {
