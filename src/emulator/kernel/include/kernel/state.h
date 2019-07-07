@@ -175,6 +175,7 @@ using LoadedSysmodules = std::vector<SceSysmoduleModuleId>;
 struct KernelState {
     std::mutex mutex;
     Blocks blocks;
+    Blocks vm_blocks;
     ThreadToSlotToAddress tls;
     SemaphorePtrs semaphores;
     CondvarPtrs condvars;
