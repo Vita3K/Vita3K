@@ -672,7 +672,9 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
 
     bool is_fifo = (event->attr & SCE_KERNEL_ATTR_TH_FIFO);
 
-    *outBits = event->flags & flags;
+    if (outBits) {
+        *outBits = event->flags & flags;
+    }
 
     bool condition;
     if (wait & SCE_EVENT_WAITOR) {
