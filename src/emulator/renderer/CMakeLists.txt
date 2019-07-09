@@ -1,6 +1,7 @@
 add_library(
 	renderer
 	STATIC
+	include/renderer/commands.h
 	include/renderer/functions.h
 	include/renderer/state.h
 	include/renderer/texture_cache_state.h
@@ -8,6 +9,7 @@ add_library(
 	src/attribute_formats.cpp
 	src/compile_program.cpp
 	src/draw.cpp
+	src/driver_thread.cpp
 	src/functions.h
 	src/load_shaders.cpp
 	src/renderer.cpp
@@ -21,5 +23,5 @@ add_library(
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC crypto shader glutil vita-headers)
+target_link_libraries(renderer PUBLIC crypto shader glutil threads vita-headers)
 target_link_libraries(renderer PRIVATE sdl2)
