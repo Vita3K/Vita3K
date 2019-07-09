@@ -48,6 +48,9 @@ private:
     GLuint m_vbo{ 0 };
     SharedGLObject m_render_shader;
     GLuint m_screen_texture{ 0 };
+
+    GLint posAttrib;
+    GLint uvAttrib;
 };
 
 } // namespace app

@@ -1,5 +1,5 @@
 #include "functions.h"
-
+#include "types.h"
 #include "profile.h"
 
 #include <gxm/functions.h>
@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-namespace renderer {
+namespace renderer::gl {
 template <class T>
 static void uniform_4(GLint location, GLsizei count, const T *value);
 
@@ -163,7 +163,7 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
     }
 }
 
-static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem, bool log_uniforms) {
+static void set_uniforms(GLuint gl_program, GLShaderStatics &statics, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem, bool log_uniforms) {
     R_PROFILE(__func__);
 
     const SceGxmProgramParameter *const parameters = gxp::program_parameters(gxm_program);
@@ -175,7 +175,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
         auto name = gxp::parameter_name(parameter);
 
         auto do_supply = [&](const std::string &name, const int arr_size, const int idx) -> bool {
-            auto &excluded_uniforms = shader_program.excluded_uniforms;
+            auto &excluded_uniforms = statics.excluded_uniforms;
 
             if (std::find(excluded_uniforms.begin(), excluded_uniforms.end(), name) != excluded_uniforms.end())
                 return false;
@@ -194,8 +194,8 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
             bool is_matrix = false;
             GLenum utype{};
 
-            auto uniform_type_ite = shader_program.uniform_types.find(location);
-            if (uniform_type_ite == shader_program.uniform_types.end()) {
+            auto uniform_type_ite = statics.uniform_types.find(location);
+            if (uniform_type_ite == statics.uniform_types.end()) {
                 GLint total_uniforms = 0;
                 glGetProgramiv(gl_program, GL_ACTIVE_UNIFORMS, &total_uniforms);
 
@@ -212,7 +212,7 @@ static void set_uniforms(GLuint gl_program, ShaderProgram &shader_program, const
                 for (GLint i = 0; i < total_uniforms; i++) {
                     glGetActiveUniform(gl_program, i, max_uniform_name_length, &written_name_length, &usize, &utype, &uname[0]);
                     if (written_name_length == name.length() && strncmp(name.c_str(), uname.c_str(), written_name_length) == 0) {
-                        shader_program.uniform_types[location] = utype;
+                        statics.uniform_types[location] = utype;
                         break;
                     }
                 }
@@ -284,7 +284,9 @@ void set_uniforms(GLuint program, const GxmContextState &state, const MemState &
     const SceGxmProgram &fragment_program = *fragment_shader.program.get(mem);
     const SceGxmProgram &vertex_program = *vertex_shader.program.get(mem);
 
-    set_uniforms(program, *fragment_shader.renderer_data, state.fragment_uniform_buffers, fragment_program, mem, log_uniforms);
-    set_uniforms(program, *vertex_shader.renderer_data, state.vertex_uniform_buffers, vertex_program, mem, log_uniforms);
+    set_uniforms(program, reinterpret_cast<GLFragmentProgram*>(fragment_shader.renderer_data.get())->statics,
+        state.fragment_uniform_buffers, fragment_program, mem, log_uniforms);
+    set_uniforms(program, reinterpret_cast<GLVertexProgram*>(vertex_shader.renderer_data.get())->statics,
+        state.vertex_uniform_buffers, vertex_program, mem, log_uniforms);
 }
 } // namespace renderer

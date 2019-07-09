@@ -675,7 +675,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
     if (outBits) {
         *outBits = event->flags & flags;
     }
-
+    
     bool condition;
     if (wait & SCE_EVENT_WAITOR) {
         condition = event->flags & flags;

@@ -38,7 +38,7 @@
 namespace gui {
 
 void draw_shader_editor_dialog(GuiState &gui, HostState &host) {
-    static int selected_vertex_shader = 0;
+    /*static int selected_vertex_shader = 0;
     static int selected_frag_shader = 0;
     static emu::SceGxmProgramType selected_shader_type = emu::SceGxmProgramType::Vertex;
 
@@ -46,6 +46,8 @@ void draw_shader_editor_dialog(GuiState &gui, HostState &host) {
 
     std::vector<std::string> vertex_shader_names;
     std::vector<std::pair<Sha256Hash, std::string>> vertex_shader_data;
+
+    
     for (auto s : host.renderer.vertex_glsl_cache) {
         vertex_shader_names.push_back(hex(s.first).data());
         vertex_shader_data.emplace_back(s.first, s.second);
@@ -130,7 +132,7 @@ void draw_shader_editor_dialog(GuiState &gui, HostState &host) {
     }
     ImGui::SameLine();
 
-    ImGui::End();
+    ImGui::End(); */
 }
 
 } // namespace gui

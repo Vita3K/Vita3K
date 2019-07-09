@@ -2,7 +2,7 @@
 
 #include "profile.h"
 
-#include <renderer/texture_cache_state.h>
+#include "texture_cache_state.h"
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>
@@ -19,7 +19,7 @@ static bool operator==(const emu::SceGxmTexture &a, const emu::SceGxmTexture &b)
     return memcmp(&a, &b, sizeof(a)) == 0;
 }
 
-namespace renderer {
+namespace renderer::gl {
 namespace texture {
 
 static TextureCacheHash hash_data(const void *data, size_t size) {

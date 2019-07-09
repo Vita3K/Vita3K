@@ -27,6 +27,7 @@
 #include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <renderer/functions.h>
 
 #ifdef USE_DISCORD_RICH_PRESENCE
 #include <app/discord.h>
@@ -156,6 +157,10 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 
     if (state.cfg.overwrite_config)
         config::serialize_config(state.cfg, state.cfg.config_path);
+
+    if (!renderer::init(state.renderer, renderer::Backend::OpenGL)) {
+        return false;
+    }
 
     return true;
 }

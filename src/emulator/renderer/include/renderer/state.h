@@ -1,18 +1,21 @@
 #pragma once
 
-#include <crypto/hash.h>
 #include <renderer/types.h>
-
-#include <map>
-#include <string>
+#include <renderer/commands.h>
+#include <threads/queue.h>
+#include <mutex>
+#include <condition_variable>
 
 namespace renderer {
 
 struct State {
-    GLSLCache fragment_glsl_cache;
-    GLSLCache vertex_glsl_cache;
-
     GXPPtrMap gxp_ptr_map;
-};
+    Queue<CommandList> command_buffer_queue;
+    std::condition_variable command_finish_one;
+    std::mutex command_finish_one_mutex;
+    Backend current_backend;
 
-} // namespace renderer
+    std::uint32_t scene_processed_since_last_frame = 0;
+    std::uint32_t average_scene_per_frame = 1;
+};
+}

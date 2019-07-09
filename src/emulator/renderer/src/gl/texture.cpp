@@ -3,13 +3,13 @@
 #include "profile.h"
 
 // TODO: Remove dependance on this
-#include <renderer/texture_cache_state.h>
+#include "texture_cache_state.h"
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>
 #include <util/log.h>
 
-namespace renderer {
+namespace renderer::gl {
 namespace texture {
 
 void bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem) {

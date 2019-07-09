@@ -4,8 +4,9 @@
 
 #include <mem/ptr.h>
 #include <util/log.h>
+#include <gxm/types.h>
 
-namespace renderer {
+namespace renderer::gl {
 namespace texture {
 
 void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {

@@ -3,7 +3,7 @@
 #include <gxm/functions.h>
 #include <util/log.h>
 
-namespace renderer {
+namespace renderer::gl {
 namespace texture {
 
 // SceGxmTextureSwizzle1Mode

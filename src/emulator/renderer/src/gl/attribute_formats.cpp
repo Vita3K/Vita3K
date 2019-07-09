@@ -4,7 +4,7 @@
 
 #include <util/log.h>
 
-namespace renderer {
+namespace renderer::gl {
 size_t attribute_format_size(SceGxmAttributeFormat format) {
     R_PROFILE(__func__);
 

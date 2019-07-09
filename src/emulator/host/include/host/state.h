@@ -72,7 +72,7 @@ struct HostState {
     KernelState kernel;
     AudioState audio;
     GxmState gxm;
-    renderer::State renderer;
+    std::unique_ptr<renderer::State> renderer;
     bool renderer_focused;
     IOState io;
     NetState net;

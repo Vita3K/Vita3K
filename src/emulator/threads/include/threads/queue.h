@@ -2,6 +2,7 @@
 #define queue_h
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -10,16 +11,22 @@
 template <typename T>
 class Queue {
 public:
-    unsigned int displayQueueMaxPendingCount_;
+    unsigned int maxPendingCount_;
 
-    std::unique_ptr<T> pop() {
+    std::unique_ptr<T> pop(const int ms = 0) {
         T item{ T() };
         {
             std::unique_lock<std::mutex> mlock(mutex_);
-            while (!aborted && queue_.empty()) {
-                condempty_.wait(mlock);
+            if (ms == 0) {
+                while (!aborted && queue_.empty()) {
+                    condempty_.wait(mlock);
+                }
+            } else {
+                if (queue_.empty()) {
+                    condempty_.wait_for(mlock, std::chrono::microseconds(ms));
+                }
             }
-            if (aborted) {
+            if (aborted || queue_.empty()) {
                 return {};
             }
 
@@ -33,7 +40,7 @@ public:
     void push(const T &item) {
         {
             std::unique_lock<std::mutex> mlock(mutex_);
-            while (!aborted && queue_.size() == displayQueueMaxPendingCount_) {
+            while (!aborted && queue_.size() == maxPendingCount_) {
                 cond_.wait(mlock);
             }
             if (aborted) {

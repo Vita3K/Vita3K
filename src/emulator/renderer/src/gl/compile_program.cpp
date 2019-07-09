@@ -1,5 +1,5 @@
 #include "functions.h"
-
+#include "types.h"
 #include "profile.h"
 
 #include <renderer/types.h>
@@ -9,7 +9,7 @@
 
 #include <vector>
 
-namespace renderer {
+namespace renderer::gl {
 static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     R_PROFILE(__func__);
 
@@ -45,7 +45,7 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     return shader;
 }
 
-static void bind_attribute_locations(GLuint gl_program, const VertexProgram &program) {
+static void bind_attribute_locations(GLuint gl_program, const GLVertexProgram &program) {
     R_PROFILE(__func__);
 
     for (const AttributeLocations::value_type &binding : program.attribute_locations) {
@@ -53,28 +53,59 @@ static void bind_attribute_locations(GLuint gl_program, const VertexProgram &pro
     }
 }
 
-SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state, const MemState &mem) {
+static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const std::string &hash,
+    ShaderCache &cache, const GLenum type, const char *base_path, const char *title_id) {
+    const auto cached = cache.find(hash);
+    if (cached == cache.end()) {
+        // Need to compile new one and add it to cache
+        auto obj = compile_glsl(type, load_shader(*program, base_path, title_id));
+        cache.emplace(hash, obj);
+
+        return obj;
+    }
+
+    return cached->second;
+}
+
+SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_cache, ShaderCache &fragment_cache,
+    const GxmContextState &state, const MemState &mem, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
     assert(state.fragment_program);
     assert(state.vertex_program);
 
-    const FragmentProgram &fragment_program = *state.fragment_program.get(mem)->renderer_data.get();
-    const VertexProgram &vertex_program = *state.vertex_program.get(mem)->renderer_data.get();
-    const ProgramGLSLs glsls(fragment_program.glsl, vertex_program.glsl);
-    const ProgramCache::const_iterator cached = cache.find(glsls);
-    if (cached != cache.end()) {
+    const SceGxmVertexProgram &vertex_program_gxm = *state.vertex_program.get(mem);
+    const SceGxmFragmentProgram &fragment_program_gxm = *state.fragment_program.get(mem);
+
+    const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram*>(
+        fragment_program_gxm.renderer_data.get());
+
+    const GLVertexProgram &vertex_program = *reinterpret_cast<GLVertexProgram*>(
+        vertex_program_gxm.renderer_data.get());
+
+    const ProgramHashes hashes(fragment_program.hash, vertex_program.hash);
+
+    // First pass, trying to find the program, since link is costly
+    const ProgramCache::const_iterator cached = program_cache.find(hashes);
+    if (cached != program_cache.end()) {
         return cached->second;
     }
 
-    const SharedGLObject fragment_shader = compile_glsl(GL_FRAGMENT_SHADER, fragment_program.glsl);
+    // No... It doesn't exist. Now we try to find each object. If it doesn't exist then we can kind
+    // of compile it again.
+    const SharedGLObject fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem),
+        fragment_program.hash, fragment_cache, GL_FRAGMENT_SHADER, base_path, title_id);
+    
     if (!fragment_shader) {
-        LOG_CRITICAL("Error in compiled fragment shader:\n{}", fragment_program.glsl);
+        LOG_CRITICAL("Error in get/compile fragment vertex shader:\n{}", vertex_program.hash);
         return SharedGLObject();
     }
-    const SharedGLObject vertex_shader = compile_glsl(GL_VERTEX_SHADER, vertex_program.glsl);
+
+    const SharedGLObject vertex_shader = get_or_compile_shader(vertex_program_gxm.program.get(mem),
+        vertex_program.hash, vertex_cache, GL_VERTEX_SHADER, base_path, title_id);
+
     if (!vertex_shader) {
-        LOG_CRITICAL("Error in compiled vertex shader:\n{}", vertex_program.glsl);
+        LOG_CRITICAL("Error in get/compiled vertex shader:\n{}", vertex_program.hash);
         return SharedGLObject();
     }
 
@@ -111,7 +142,7 @@ SharedGLObject compile_program(ProgramCache &cache, const GxmContextState &state
     glDetachShader(program->get(), fragment_shader->get());
     glDetachShader(program->get(), vertex_shader->get());
 
-    cache.emplace(glsls, program);
+    program_cache.emplace(hashes, program);
 
     return program;
 }

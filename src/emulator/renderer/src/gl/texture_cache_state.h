@@ -7,7 +7,7 @@
 
 #include <array>
 
-namespace renderer {
+namespace renderer::gl {
 constexpr size_t TextureCacheSize = 1024;
 typedef uint64_t TextureCacheTimestamp;
 typedef uint32_t TextureCacheHash;

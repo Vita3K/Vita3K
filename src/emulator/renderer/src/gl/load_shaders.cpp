@@ -11,7 +11,7 @@
 
 #include <utility>
 
-namespace renderer {
+namespace renderer::gl {
 static std::string load_shader(const char *hash, const char *extension, const char *base_path) {
     const auto shader_path = fs_utils::construct_file_name(base_path, "shaders", hash, extension);
     fs::ifstream is(shader_path, fs::ifstream::binary);
@@ -69,13 +69,8 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
     write_data_with_ext(".spt", spirv, -1);
 }
 
-GLSLCacheEntry load_shader(GLSLCache &cache, const SceGxmProgram &program, const char *base_path, const char *title_id) {
+std::string load_shader(const SceGxmProgram &program, const char *base_path, const char *title_id) {
     const Sha256Hash hash_bytes = sha256(&program, program.size);
-    const GLSLCache::const_iterator cached = cache.find(hash_bytes);
-    if (cached != cache.end()) {
-        return { cached->first, cached->second };
-    }
-
     auto shader_type_to_str = [](emu::SceGxmProgramType type) {
         return type == emu::Vertex ? "vert" : type == emu::Fragment ? "frag" : "unknown";
     };
@@ -98,9 +93,7 @@ GLSLCacheEntry load_shader(GLSLCache &cache, const SceGxmProgram &program, const
             base_path, title_id);
     }
 
-    cache.emplace(hash_bytes, source);
-
-    return { hash_bytes, source };
+    return source;
 }
 
 } // namespace renderer

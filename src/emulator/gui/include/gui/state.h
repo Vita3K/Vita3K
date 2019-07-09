@@ -100,6 +100,7 @@ struct GuiState {
 
     ImGuiTextFilter game_search_bar;
     GLuint current_background = 0;
+    GLuint display = 0;
     std::map<std::string, GLObject> game_backgrounds;
     std::map<std::string, GLObject> user_backgrounds;
 

@@ -162,6 +162,10 @@ void init_background(GuiState &gui, const std::string &image_path) {
     stbi_image_free(data);
 }
 
+void init_display(GuiState &gui) {
+    glGenTextures(1, &gui.display);
+}
+
 static void init_icons(GuiState &gui, HostState &host) {
     for (Game &game : gui.game_selector.games) {
         int32_t width = 0;
@@ -256,6 +260,7 @@ void init(GuiState &gui, HostState &host) {
 
     get_game_titles(gui, host);
     init_icons(gui, host);
+    init_display(gui);
 
     if (!host.cfg.background_image.empty())
         init_background(gui, host.cfg.background_image);
@@ -268,10 +273,27 @@ void draw_begin(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.normal_font);
 }
 
+void draw_display(GuiState &gui, DisplayState &display, MemState &mem) {
+    GLuint last_tex = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&last_tex);
+    glBindTexture(GL_TEXTURE_2D, gui.display);
+    const auto pixels = display.base.cast<void>().get(mem);
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, display.pitch);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.image_size.x, display.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, last_tex);
+
+    ImGui::GetBackgroundDrawList()->AddImage((ImTextureID)gui.display, ImVec2(0, 0), ImGui::GetIO().DisplaySize);
+}
+
 void draw_end(SDL_Window *window) {
     ImGui::PopFont();
 
-    glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
     ImGui::Render();
     ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);

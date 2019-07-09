@@ -19,6 +19,7 @@
 
 #include <modules/module_parent.h>
 
+#include <crypto/hash.h>
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <kernel/thread/thread_functions.h>
@@ -31,11 +32,12 @@
 
 struct SceGxmContext {
     GxmContextState state;
-    renderer::Context renderer;
+    GXMRecordState record;
+    std::unique_ptr<renderer::Context> renderer;
 };
 
 struct SceGxmRenderTarget {
-    renderer::RenderTarget renderer;
+    std::unique_ptr<renderer::RenderTarget> renderer;
 };
 
 struct FragmentProgramCacheKey {
@@ -108,13 +110,18 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
 
     context->state.fragment_sync_object = fragmentSyncObject;
     if (fragmentSyncObject.get(host.mem) != nullptr) {
-        renderer::wait_sync_object(fragmentSyncObject.get(host.mem));
+        SceGxmSyncObject *sync = fragmentSyncObject.get(host.mem);
+        // Wait for both display queue and fragment stage to be done.
+        // If it's offline render, the sync object already has the display queue subject done, so don't worry.
+        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue |
+            renderer::SyncObjectSubject::Fragment));
     }
 
     // TODO This may not be right.
     context->state.fragment_ring_buffer_used = 0;
     context->state.vertex_ring_buffer_used = 0;
 
+    // It's legal to set at client.
     if (colorSurface)
         context->state.color_surface = *colorSurface;
     if (depthStencil)
@@ -122,7 +129,11 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
 
     host.gxm.is_in_scene = true;
 
-    renderer::begin_scene(renderTarget->renderer);
+    // Reset command list and finish status
+    context->renderer->render_finish_status = renderer::CommandErrorCodePending;
+
+    renderer::reset_command_list(context->renderer->command_list);
+    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SetContext, nullptr, renderTarget->renderer.get());
 
     return 0;
 }
@@ -172,7 +183,7 @@ EXPORT(int, sceGxmColorSurfaceInit, emu::SceGxmColorSurface *surface, SceGxmColo
     assert(surface != nullptr);
     assert(colorFormat == SCE_GXM_COLOR_FORMAT_A8B8G8R8);
     assert(surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR);
-    assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
+    //assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
     assert(outputRegisterSize == SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT);
     assert(width > 0);
     assert(height > 0);
@@ -233,7 +244,8 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     SceGxmContext *const ctx = context->get(host.mem);
     ctx->state.params = *params;
 
-    if (!renderer::create(ctx->renderer, host.window.get())) {
+    if (!renderer::send_single_command(*host.renderer, nullptr, nullptr, renderer::CommandOpcode::CreateContext,
+        &ctx->renderer)) {
         free(host.mem, *context);
         context->reset();
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
@@ -256,7 +268,8 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     }
 
     SceGxmRenderTarget *const rt = renderTarget->get(host.mem);
-    if (!renderer::create(rt->renderer, *params)) {
+    if (!renderer::send_single_command(*host.renderer, nullptr, nullptr, renderer::CommandOpcode::CreateRenderTarget,
+        &rt->renderer, params)) {
         free(host.mem, *renderTarget);
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
@@ -361,17 +374,22 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     //assert(oldBuffer != nullptr);
     //assert(newBuffer != nullptr);
     assert(callbackData);
-    DisplayCallback *display_callback = new DisplayCallback();
+    DisplayCallback display_callback ;
 
     const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
     const Ptr<void> ptr(address);
     memcpy(ptr.get(host.mem), callbackData.get(host.mem), host.gxm.params.displayQueueCallbackDataSize);
 
-    display_callback->data = address;
-    display_callback->pc = host.gxm.params.displayQueueCallback.address();
-    display_callback->old_buffer = oldBuffer.address();
-    display_callback->new_buffer = newBuffer.address();
-    host.gxm.display_queue.push(*display_callback);
+    // Block future rendering by setting value2 of sync object
+    SceGxmSyncObject *newBufferSync = Ptr<SceGxmSyncObject>(newBuffer).get(host.mem);
+
+    display_callback.data = address;
+    display_callback.pc = host.gxm.params.displayQueueCallback.address();
+    display_callback.old_buffer = oldBuffer.address();
+    display_callback.new_buffer = newBuffer.address();
+    host.gxm.display_queue.push(display_callback);
+
+    renderer::subject_in_progress(newBufferSync, renderer::SyncObjectSubject::DisplayQueue);
 
     // TODO Return success if/when we call callback not as a tail call.
 }
@@ -388,8 +406,12 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
+    if (!context->record.fragment_program || !context->record.vertex_program) {
+        return RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
+    }
+
     if (context->state.vertex_last_reserve_status == SceGxmLastReserveStatus::Reserved) {
-        const auto vertex_program = context->state.vertex_program.get(host.mem);
+        const auto vertex_program = context->record.vertex_program.get(host.mem);
         const auto program = vertex_program->program.get(host.mem);
 
         const size_t size = program->default_uniform_buffer_count * 4;
@@ -403,7 +425,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         context->state.vertex_last_reserve_status = SceGxmLastReserveStatus::Available;
     }
     if (context->state.fragment_last_reserve_status == SceGxmLastReserveStatus::Reserved) {
-        const auto fragment_program = context->state.fragment_program.get(host.mem);
+        const auto fragment_program = context->record.fragment_program.get(host.mem);
         const auto program = fragment_program->program.get(host.mem);
 
         const size_t size = program->default_uniform_buffer_count * 4;
@@ -417,11 +439,9 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Available;
     }
 
-    if (!renderer::sync_state(context->renderer, context->state, host.mem, host.cfg.texture_cache, host.cfg.log_active_shaders, host.cfg.log_uniforms)) {
-        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
-    }
-
-    renderer::draw(context->renderer, context->state, primType, indexType, indexData, indexCount, host.mem);
+    // Add draw command
+    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::Draw, nullptr, primType, indexType,
+        indexData, indexCount);
 
     return 0;
 }
@@ -454,12 +474,35 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     const Address data = context->state.color_surface.pbeEmitWords[3];
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
 
-    renderer::end_scene(context->renderer, context->state.fragment_sync_object.get(host.mem), width, height, stride_in_pixels, pixels);
+    // Add command to end the scene
+    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::GetSurfaceData, nullptr, width, height,
+        stride_in_pixels, pixels);
+    
+    // Add NOP for SceGxmFinish
+    context->renderer->render_finish_status = renderer::CommandErrorCodePending;
+    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::Nop, &context->renderer->render_finish_status,
+        (int)0);
+
+    if (context->state.fragment_sync_object) {
+        // Add NOP for our sync object
+        SceGxmSyncObject *sync = context->state.fragment_sync_object.get(mem);
+        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalSyncObject,
+            nullptr, context->state.fragment_sync_object);
+
+        renderer::subject_in_progress(sync, renderer::SyncObjectSubject::Fragment);
+    }
+
     if (fragmentNotification) {
         volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
         *fragment_address = fragmentNotification->value;
     }
+
+    // Submit our command list
+    renderer::submit_command_list(*host.renderer, context->renderer.get(), &context->state,
+        context->renderer->command_list);
+
     host.gxm.is_in_scene = false;
+    host.renderer->scene_processed_since_last_frame++;
 
     return 0;
 }
@@ -470,7 +513,10 @@ EXPORT(int, sceGxmExecuteCommandList) {
 
 EXPORT(void, sceGxmFinish, SceGxmContext *context) {
     assert(context != nullptr);
-    renderer::finish(context->renderer);
+
+    // Wait on this context's rendering finish code. There is one for sync object and one specifically
+    // for SceGxmFinish.
+    renderer::finish(*host.renderer, *context->renderer);
 }
 
 EXPORT(int, sceGxmFragmentProgramGetPassType) {
@@ -531,6 +577,7 @@ struct GxmThreadParams {
     MemState *mem = nullptr;
     SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
     GxmState *gxm = nullptr;
+    renderer::State *renderer = nullptr;
     std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
 };
 
@@ -541,6 +588,14 @@ static int SDLCALL thread_function(void *data) {
         auto display_callback = params.gxm->display_queue.pop();
         if (!display_callback)
             break;
+
+        SceGxmSyncObject *oldBuffer = Ptr<SceGxmSyncObject>(display_callback->old_buffer).get(*params.mem);
+        SceGxmSyncObject *newBuffer = Ptr<SceGxmSyncObject>(display_callback->new_buffer).get(*params.mem);
+
+        // Wait for fragment on the new buffer to finish
+        renderer::wishlist(newBuffer, renderer::SyncObjectSubject::Fragment);
+        
+        // Now run callback
         {
             const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
             if ((!thread) || thread->to_do == ThreadToDo::exit)
@@ -550,7 +605,11 @@ static int SDLCALL thread_function(void *data) {
         run_callback(*display_thread, display_callback->pc, display_callback->data);
 
         free(*params.mem, display_callback->data);
+
+        // Should not block anymore.
+        renderer::subject_done(newBuffer, renderer::SyncObjectSubject::DisplayQueue);
     }
+    
     return 0;
 }
 
@@ -558,7 +617,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     assert(params != nullptr);
 
     host.gxm.params = *params;
-    host.gxm.display_queue.displayQueueMaxPendingCount_ = params->displayQueueMaxPendingCount;
+    host.gxm.display_queue.maxPendingCount_ = params->displayQueueMaxPendingCount;
 
     const ThreadStatePtr main_thread = util::find(thread_id, host.kernel.threads);
 
@@ -589,6 +648,7 @@ EXPORT(int, sceGxmInitialize, const emu::SceGxmInitializeParams *params) {
     gxm_params.kernel = &host.kernel;
     gxm_params.thid = host.gxm.display_queue_thread;
     gxm_params.gxm = &host.gxm;
+    gxm_params.renderer = host.renderer.get();
 
     const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), delete_thread);
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
@@ -643,6 +703,11 @@ EXPORT(int, sceGxmNotificationWait) {
 EXPORT(int, sceGxmPadHeartbeat, const emu::SceGxmColorSurface *displaySurface, SceGxmSyncObject *displaySyncObject) {
     assert(displaySurface != nullptr);
     assert(displaySyncObject != nullptr);
+
+    host.renderer->average_scene_per_frame = (host.renderer->average_scene_per_frame + 
+        host.renderer->scene_processed_since_last_frame + 1) >> 1;
+
+    host.renderer->scene_processed_since_last_frame = 0;
 
     return 0;
 }
@@ -935,7 +1000,10 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     *uniformBuffer = context->state.params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
 
     context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Reserved;
-    context->state.fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
+
+    // Pointer to uniform buffer, container in uint16_t form, and true indicates it's fragment
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::UniformBuffer, *uniformBuffer,
+        (uint16_t)SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX, true);
 
     return 0;
 }
@@ -951,7 +1019,10 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     *uniformBuffer = context->state.params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
 
     context->state.vertex_last_reserve_status = SceGxmLastReserveStatus::Reserved;
-    context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
+
+    // Pointer to uniform buffer, container in uint16_t form, and false indicates it's vertex
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::UniformBuffer, *uniformBuffer,
+        (uint16_t)SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX, false);
 
     return 0;
 }
@@ -961,17 +1032,15 @@ EXPORT(int, sceGxmSetAuxiliarySurface) {
 }
 
 EXPORT(void, sceGxmSetBackDepthBias, SceGxmContext *context, int factor, int units) {
-    STUBBED("CHECKS");
-    context->state.back_depth_bias_factor = factor;
-    context->state.back_depth_bias_units = units;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthBias, false, factor, units);
 }
 
 EXPORT(void, sceGxmSetBackDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
-    context->state.back_depth_func = depthFunc;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthFunc, false, depthFunc);
 }
 
 EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
-    context->state.back_depth_write_enable = enable;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthWriteEnable, false, enable);
 }
 
 EXPORT(int, sceGxmSetBackFragmentProgramEnable) {
@@ -983,24 +1052,19 @@ EXPORT(int, sceGxmSetBackLineFillLastPixelEnable) {
 }
 
 EXPORT(void, sceGxmSetBackPointLineWidth, SceGxmContext *context, unsigned int width) {
-    context->state.back_point_line_width = width;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::PointLineWidth, false, width);
 }
 
 EXPORT(void, sceGxmSetBackPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
-    context->state.back_polygon_mode = mode;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::PolygonMode, false, mode);
 }
 
 EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
-    context->state.back_stencil.func = func;
-    context->state.back_stencil.stencil_fail = stencilFail;
-    context->state.back_stencil.depth_fail = depthFail;
-    context->state.back_stencil.depth_pass = depthPass;
-    context->state.back_stencil.compare_mask = compareMask;
-    context->state.back_stencil.write_mask = writeMask;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::StencilFunc, false, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
 }
 
 EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned char sref) {
-    context->state.back_stencil.ref = sref;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::StencilRef, false, sref);
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestEnable) {
@@ -1016,7 +1080,7 @@ EXPORT(int, sceGxmSetBackVisibilityTestOp) {
 }
 
 EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
-    context->state.cull_mode = mode;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::CullMode, true, mode);
 }
 
 EXPORT(int, sceGxmSetDefaultRegionClipAndViewport) {
@@ -1043,15 +1107,17 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     assert(context != nullptr);
     assert(fragmentProgram);
 
-    context->state.fragment_program = fragmentProgram;
+    context->record.fragment_program = fragmentProgram;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Program, fragmentProgram, true);
 }
 
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const emu::SceGxmTexture *texture) {
     assert(context != nullptr);
     assert(texture != nullptr);
 
-    context->state.fragment_textures[textureIndex] = *texture;
-
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::FragmentTexture, textureIndex,
+        *texture);
+    
     return 0;
 }
 
@@ -1060,17 +1126,15 @@ EXPORT(int, sceGxmSetFragmentUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetFrontDepthBias, SceGxmContext *context, int factor, int units) {
-    STUBBED("CHECKS");
-    context->state.front_depth_bias_factor = factor;
-    context->state.front_depth_bias_units = units;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthBias, true, factor, units);
 }
 
 EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
-    context->state.front_depth_func = depthFunc;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthFunc, true, depthFunc);
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
-    context->state.front_depth_write_enable = enable;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthWriteEnable, true, enable);
 }
 
 EXPORT(int, sceGxmSetFrontFragmentProgramEnable) {
@@ -1082,24 +1146,19 @@ EXPORT(int, sceGxmSetFrontLineFillLastPixelEnable) {
 }
 
 EXPORT(void, sceGxmSetFrontPointLineWidth, SceGxmContext *context, unsigned int width) {
-    context->state.front_point_line_width = width;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::PointLineWidth, true, width);
 }
 
 EXPORT(void, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
-    context->state.front_polygon_mode = mode;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::PolygonMode, true, mode);
 }
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
-    context->state.front_stencil.func = func;
-    context->state.front_stencil.stencil_fail = stencilFail;
-    context->state.front_stencil.depth_fail = depthFail;
-    context->state.front_stencil.depth_pass = depthPass;
-    context->state.front_stencil.compare_mask = compareMask;
-    context->state.front_stencil.write_mask = writeMask;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::StencilFunc, true, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
 }
 
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned char sref) {
-    context->state.front_stencil.ref = sref;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::StencilRef, true, sref);
 }
 
 EXPORT(int, sceGxmSetFrontVisibilityTestEnable) {
@@ -1123,15 +1182,11 @@ EXPORT(int, sceGxmSetPrecomputedVertexState) {
 }
 
 EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int yMin, unsigned int xMax, unsigned int yMax) {
-    context->state.region_clip_mode = mode;
-    context->state.region_clip_min.x = static_cast<SceInt>(align(xMin, SCE_GXM_TILE_SIZEX));
-    context->state.region_clip_min.y = static_cast<SceInt>(align(yMin, SCE_GXM_TILE_SIZEY));
-    context->state.region_clip_max.x = static_cast<SceInt>(align(xMax, SCE_GXM_TILE_SIZEX));
-    context->state.region_clip_max.y = static_cast<SceInt>(align(yMax, SCE_GXM_TILE_SIZEY));
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::RegionClip, mode, xMin, xMax, yMin, yMax);
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
-    context->state.two_sided = mode;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::TwoSided, mode);
 }
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
@@ -1163,14 +1218,15 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVer
     assert(context != nullptr);
     assert(vertexProgram);
 
-    context->state.vertex_program = vertexProgram;
+    context->record.vertex_program = vertexProgram;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Program, vertexProgram, false);
 }
 
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, Ptr<const void> streamData) {
     assert(context != nullptr);
     assert(streamData);
 
-    context->state.stream_data[streamIndex] = streamData;
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::VertexStream, streamIndex, streamData);
 
     return 0;
 }
@@ -1184,17 +1240,14 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
-    context->state.viewport.enable = SCE_GXM_VIEWPORT_ENABLED;
-    context->state.viewport.offset.x = xOffset;
-    context->state.viewport.offset.y = yOffset;
-    context->state.viewport.offset.z = zOffset;
-    context->state.viewport.scale.x = xScale;
-    context->state.viewport.scale.y = yScale;
-    context->state.viewport.scale.z = zScale;
+    // Set viewport to enable, enable more offset and scale to set
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Viewport, true, true, xOffset, yOffset, zOffset, xScale,
+        yScale, zScale);
 }
 
 EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
-    context->state.viewport.enable = enable;
+    // Set viewport to enable/disable, no additional offset and scale to set.
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Viewport, enable, false);
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
@@ -1256,7 +1309,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     MemState &mem = host.mem;
     assert(shaderPatcher != nullptr);
     assert(programId != nullptr);
-    assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
+    //assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
     assert(fragmentProgram != nullptr);
 
     static const emu::SceGxmBlendInfo default_blend_info = {
@@ -1287,9 +1340,8 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = programId->program;
-    fp->renderer_data = std::make_unique<renderer::FragmentProgram>();
-
-    if (!renderer::create(*fp->renderer_data.get(), host.renderer, *programId->program.get(mem), blendInfo, host.renderer.gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
+    
+    if (!renderer::create(fp->renderer_data, *host.renderer, *programId->program.get(mem), blendInfo, host.renderer->gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1312,9 +1364,8 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = alloc(mem, size_mask_gxp, __FUNCTION__);
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
-    fp->renderer_data = std::make_unique<renderer::FragmentProgram>();
 
-    if (!renderer::create(*fp->renderer_data, host.renderer, *fp->program.get(mem), nullptr, host.renderer.gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
+    if (!renderer::create(fp->renderer_data, *host.renderer, *fp->program.get(mem), nullptr, host.renderer->gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1344,9 +1395,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
         vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
     }
 
-    vp->renderer_data = std::make_unique<renderer::VertexProgram>();
-
-    if (!renderer::create(*vp->renderer_data.get(), host.renderer, *programId->program.get(mem), host.renderer.gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
+    if (!renderer::create(vp->renderer_data, *host.renderer, *programId->program.get(mem), host.renderer->gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -1477,6 +1526,9 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
     if (!*syncObject) {
         return SCE_GXM_ERROR_OUT_OF_MEMORY;
     }
+
+    // Set all subjects to be done.
+    syncObject->get(host.mem)->done = 0xFFFFFFFF;
 
     return 0;
 }
@@ -2106,8 +2158,8 @@ EXPORT(int, sceGxmVertexFence) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<const SceGxmProgram>, sceGxmVertexProgramGetProgram, Ptr<const SceGxmFragmentProgram> fragment_program) {
-    return fragment_program.get(host.mem)->program;
+EXPORT(Ptr<const SceGxmProgram>, sceGxmVertexProgramGetProgram, Ptr<const SceGxmVertexProgram> vertex_program) {
+    return vertex_program.get(host.mem)->program;
 }
 
 EXPORT(int, sceGxmWaitEvent) {
