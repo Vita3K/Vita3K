@@ -251,7 +251,7 @@ void get_game_titles(GuiState &gui, HostState &host) {
     }
 }
 
-std::uint32_t load_image(HostState &host, const char *data, const std::size_t size) {
+std::uint32_t load_image(GuiState &gui, const char *data, const std::size_t size) {
     int width;
     int height;
 

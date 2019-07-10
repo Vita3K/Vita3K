@@ -79,6 +79,8 @@ struct HelpMenuState {
     bool about_dialog = false;
 };
 
+} // namespace gui
+
 enum class TrophyAnimationStage {
     SLIDE_IN = 0,
     STATIC = 1,
