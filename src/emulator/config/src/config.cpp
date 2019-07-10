@@ -318,9 +318,10 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             std::cout << window_title << std::endl;
             return QuitRequested;
         }
-        if (var_map.count("recompile-shader"))
+        if (var_map.count("recompile-shader")) {
+            cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
             return QuitRequested;
-
+        }
         if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
             if (command_line.config_path.empty()) {
                 command_line.config_path = root_paths.get_base_path();
@@ -345,6 +346,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             // Merge command line and base configs
             command_line.pref_path = root_paths.get_pref_path_string();
             merge_configs(cfg, command_line, command_line.pref_path, true);
+
+            if (command_line.run_title_id.is_initialized())
+                cfg.run_title_id = std::move(command_line.run_title_id);
+            else if (command_line.vpk_path.is_initialized())
+                cfg.vpk_path = std::move(command_line.vpk_path);
         } else {
             // Replace the base config with the parsed config
             cfg = std::move(command_line);
