@@ -66,3 +66,6 @@
 [submodule "src/external/pugixml"]
 	path = src/external/pugixml
 	url = https://github.com/zeux/pugixml
+[submodule "src/external/vita-toolchain"]
+	path = src/external/vita-toolchain
+	url = https://github.com/vita3k/vita-toolchain
