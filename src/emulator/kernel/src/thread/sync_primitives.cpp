@@ -97,6 +97,9 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
 
             return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
         }
+    } else {
+        thread->something_to_do.wait(thread_lock);
+        thread->to_do = ThreadToDo::run;
     }
 
     return SCE_KERNEL_OK;
@@ -194,8 +197,6 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
 
         mutex->waiting_threads.emplace(data);
         mutex_lock.unlock();
-
-        stop(*thread->cpu);
 
         return handle_timeout(thread, thread_lock, mutex_lock, *mutex, data, export_name, timeout);
     }
@@ -369,8 +370,6 @@ int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_i
         semaphore->waiting_threads.emplace(data);
         semaphore_lock.unlock();
 
-        stop(*thread->cpu);
-
         return handle_timeout(thread, thread_lock, semaphore_lock, *semaphore, data, export_name, timeout);
     } else {
         semaphore->val -= signal;
@@ -514,8 +513,6 @@ int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id,
 
     condvar->waiting_threads.emplace(data);
     condition_variable_lock.unlock();
-
-    stop(*thread->cpu);
 
     return handle_timeout(thread, thread_lock, condition_variable_lock, *condvar, data, export_name, timeout);
 }
@@ -704,8 +701,6 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
 
         event->waiting_threads.emplace(data);
         event_lock.unlock();
-
-        stop(*thread->cpu);
 
         return handle_timeout(thread, thread_lock, event_lock, *event, data, export_name, timeout);
     }
