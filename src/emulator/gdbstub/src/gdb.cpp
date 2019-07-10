@@ -281,8 +281,10 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
 }
 
 static std::string cmd_read_registers(HostState &state, PacketCommand &command) {
-    if (state.gdb.current_thread == -1)
-        return "";
+    if (state.gdb.current_thread == -1
+        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        return "E00";
+
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
     std::stringstream stream;
@@ -294,8 +296,10 @@ static std::string cmd_read_registers(HostState &state, PacketCommand &command) 
 }
 
 static std::string cmd_write_registers(HostState &state, PacketCommand &command) {
-    if (state.gdb.current_thread == -1)
-        return "";
+    if (state.gdb.current_thread == -1
+        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        return "E00";
+
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command).substr(1);
@@ -309,8 +313,10 @@ static std::string cmd_write_registers(HostState &state, PacketCommand &command)
 }
 
 static std::string cmd_read_register(HostState &state, PacketCommand &command) {
-    if (state.gdb.current_thread == -1)
-        return "";
+    if (state.gdb.current_thread == -1
+        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        return "E00";
+
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command);
@@ -320,8 +326,10 @@ static std::string cmd_read_register(HostState &state, PacketCommand &command) {
 }
 
 static std::string cmd_write_register(HostState &state, PacketCommand &command) {
-    if (state.gdb.current_thread == -1)
-        return "";
+    if (state.gdb.current_thread == -1
+        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        return "E00";
+
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command);
@@ -334,15 +342,18 @@ static std::string cmd_write_register(HostState &state, PacketCommand &command) 
 }
 
 static bool check_memory_region(Address address, Address length, MemState &mem) {
-    const auto page_first = static_cast<uint32_t>(address / KB(4));
-    const auto page_length = static_cast<uint32_t>(length + KB(4)) / KB(4);
+    const auto first_page = static_cast<uint32_t>(address / mem.page_size);
+    const auto page_length = static_cast<uint32_t>(length / mem.page_size) + 1;
 
-    const auto pages_begin = mem.allocated_pages.begin();
-    const auto range_end = pages_begin + page_first + page_length;
+    const auto pages_start = mem.allocated_pages.begin() + first_page;
+    const auto pages_end = pages_start + page_length;
 
-    const bool memory_none = std::find(pages_begin + page_first, range_end, 0) != range_end;
-    const bool memory_null = std::find(pages_begin + page_first, range_end, 1) != range_end;
-    const bool memory_safe = !(memory_none || memory_null);
+    constexpr size_t empty_page = 0;
+    constexpr size_t null_page = 1;
+
+    const bool memory_empty = std::find(pages_start, pages_end, empty_page) != pages_end;
+    const bool memory_null = std::find(pages_start, pages_end, null_page) != pages_end;
+    const bool memory_safe = !(memory_empty || memory_null);
 
     if (!memory_safe)
         LOG_GDB("Accessing unsafe memory page. {} - {}", page_first, page_length);
@@ -399,14 +410,10 @@ static std::string cmd_write_binary(HostState &state, PacketCommand &command) {
     const size_t pos_first = content.find(',');
     const size_t pos_second = content.find(':');
 
-    const
-    std::string first = content.substr(1, pos_first - 1);
-    const
-    std::string second = content.substr(pos_first + 1, pos_second - pos_first);
-    const
-    uint32_t address = parse_hex(first);
-    const
-    uint32_t length = parse_hex(second);
+    const std::string first = content.substr(1, pos_first - 1);
+    const std::string second = content.substr(pos_first + 1, pos_second - pos_first);
+    const uint32_t address = parse_hex(first);
+    const uint32_t length = parse_hex(second);
     const char *data = command.content_start + pos_second + 1;
 
     if (!check_memory_region(address, length, state.mem))
@@ -440,8 +447,12 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
         case 'S': {
             bool step = cmd == 's' || cmd == 'S';
             if (colon != std::string::npos) {
-                const int32_t point = parse_hex(text.substr(colon + 1));
-                ThreadStatePtr thread = state.kernel.threads[point];
+                const int32_t thread_id = parse_hex(text.substr(colon + 1));
+
+                if (state.kernel.threads.find(thread_id) == state.kernel.threads.end())
+                    return "E00";
+
+                ThreadStatePtr thread = state.kernel.threads[thread_id];
                 if (thread) {
                     thread->to_do = step ? ThreadToDo::step : ThreadToDo::run;
                     thread->something_to_do.notify_one();
@@ -493,11 +504,8 @@ static std::string cmd_thread_alive(HostState &state, PacketCommand &command) {
     const int32_t thread_id = parse_hex(content.substr(1));
 
     // Assuming a thread is removed from the map when it closes or is killed.
-    for (const auto &pair : state.kernel.threads) {
-        if (pair.first == thread_id) {
-            return "OK";
-        }
-    }
+    if (state.kernel.threads.find(thread_id) != state.kernel.threads.end())
+        return "OK";
 
     return "E00";
 }
