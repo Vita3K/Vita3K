@@ -303,7 +303,7 @@ void destory(HostState &host) {
 
     // There may be changes that made in the GUI, so we should save, again
     if (host.cfg.overwrite_config)
-        app::serialize_config(host.cfg, host.cfg.config_path);
+        config::serialize_config(host.cfg, host.cfg.config_path);
 }
 
 } // namespace app

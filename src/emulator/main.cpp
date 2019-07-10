@@ -28,15 +28,7 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#ifndef USE_DISCORD
-#include <app/discord.h>
-#endif
-
 #include <SDL.h>
-
-#ifdef USE_GDBSTUB
-#include <gdbstub/functions.h>
-#endif
 
 #ifdef USE_DISCORD_RICH_PRESENCE
 #include <app/discord.h>
