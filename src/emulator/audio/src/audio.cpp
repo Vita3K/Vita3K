@@ -107,6 +107,8 @@ bool init(AudioState &state, ResumeAudioThread resume_thread) {
     desired.format = AUDIO_S16LSB;
     desired.channels = 1;
     desired.samples = 256;
+	desired.callback = nullptr;
+	desired.userdata = nullptr;
     state.shared.record_dev = SDL_OpenAudioDevice(nullptr, 1, &desired, &received, 0);
 
     state.device = AudioDevicePtr(nullptr, close_audio);
