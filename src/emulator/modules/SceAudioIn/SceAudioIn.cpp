@@ -50,7 +50,7 @@ EXPORT(int, sceAudioInInput, int port, void *destPtr) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PORT_PARAM);
     }
 
-    SDL_DequeueAudio(host.audio.shared.in_port.id, destPtr, host.audio.shared.in_port.len_bytes);
+    while (SDL_DequeueAudio(host.audio.shared.in_port.id, destPtr, host.audio.shared.in_port.len_bytes) > 0){}
     return 0;
 }
 
