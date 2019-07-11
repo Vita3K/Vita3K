@@ -86,11 +86,11 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         prt->shared.thread = thread_id;
         lock.unlock();
 
-        const std::lock_guard<std::mutex> lock(thread->mutex);
+        std::unique_lock<std::mutex> mlock(thread->mutex);
         if (thread->to_do != ThreadToDo::run)
             return 0;
         thread->to_do = ThreadToDo::wait;
-        stop(*thread->cpu);
+        thread->something_to_do.wait(mlock);
     }
 
     return 0;
