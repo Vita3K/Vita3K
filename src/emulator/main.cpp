@@ -35,6 +35,10 @@
 #include <app/discord.h>
 #endif
 
+#ifdef WIN32
+#include <combaseapi.h>
+#endif
+
 #include <cstdlib>
 
 int main(int argc, char *argv[]) {
@@ -62,6 +66,10 @@ int main(int argc, char *argv[]) {
     }
 
     LOG_INFO("{}", window_title);
+
+#ifdef WIN32
+    CoInitializeEx(NULL, COINIT_MULTITHREADED);
+#endif
 
     std::atexit(SDL_Quit);
     if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC | SDL_INIT_VIDEO) < 0) {
@@ -168,6 +176,10 @@ int main(int argc, char *argv[]) {
 
 #ifdef USE_GDBSTUB
     server_close(host);
+#endif
+
+#ifdef WIN32
+    CoUninitialize();
 #endif
 
     // There may be changes that made in the GUI, so we should save, again

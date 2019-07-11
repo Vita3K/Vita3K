@@ -45,6 +45,12 @@ struct AudioOutPort {
     SharedAudioOutPortState shared;
 };
 
+struct AudioInPort {
+    SDL_AudioDeviceID id;
+    bool running = false;
+    int len_bytes = 0;
+};
+
 typedef std::shared_ptr<AudioOutPort> AudioOutPortPtr;
 typedef std::map<int, AudioOutPortPtr> AudioOutPortPtrs;
 typedef std::shared_ptr<void> AudioDevicePtr;
@@ -62,8 +68,7 @@ struct SharedAudioState {
     std::mutex mutex;
     int next_port_id = 0;
     AudioOutPortPtrs out_ports;
-    bool record_port_opened = false;
-    SDL_AudioDeviceID record_dev;
+    AudioInPort in_port;
 };
 
 struct AudioState {

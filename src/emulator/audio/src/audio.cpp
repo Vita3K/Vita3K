@@ -102,15 +102,6 @@ bool init(AudioState &state, ResumeAudioThread resume_thread) {
 
     SDL_PauseAudio(0);
 
-    SDL_AudioSpec received = {};
-    desired.freq = 16000;
-    desired.format = AUDIO_S16LSB;
-    desired.channels = 1;
-    desired.samples = 256;
-	desired.callback = nullptr;
-	desired.userdata = nullptr;
-    state.shared.record_dev = SDL_OpenAudioDevice(nullptr, 1, &desired, &received, 0);
-
     state.device = AudioDevicePtr(nullptr, close_audio);
     state.callback.temp_buffer.resize(state.ro.spec.size);
 
