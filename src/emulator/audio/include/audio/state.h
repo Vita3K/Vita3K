@@ -62,6 +62,8 @@ struct SharedAudioState {
     std::mutex mutex;
     int next_port_id = 0;
     AudioOutPortPtrs out_ports;
+    bool record_port_opened = false;
+    SDL_AudioDeviceID record_dev;
 };
 
 struct AudioState {
