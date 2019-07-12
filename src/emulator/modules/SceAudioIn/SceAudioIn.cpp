@@ -23,8 +23,11 @@
 
 #define PORT_ID 0
 
-EXPORT(int, sceAudioInGetAdopt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAudioInGetAdopt, SceAudioInPortType portType) {
+    if (portType != SCE_AUDIO_IN_PORT_TYPE_VOICE && portType != SCE_AUDIO_IN_PORT_TYPE_RAW) {
+        return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PORT_TYPE);
+    }
+    return 1;
 }
 
 EXPORT(int, sceAudioInGetInput) {
@@ -39,7 +42,7 @@ EXPORT(int, sceAudioInGetStatus, int select) {
     if (select != SCE_AUDIO_IN_GETSTATUS_MUTE) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PARAMETER);
     }
-    return 0;
+    return host.audio.shared.in_port.running ? 0 : 1;
 }
 
 EXPORT(int, sceAudioInInput, int port, void *destPtr) {
