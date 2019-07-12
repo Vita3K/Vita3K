@@ -17,13 +17,14 @@
 
 #include <touch/touch.h>
 
+#include <ctrl/state.h>
+
 #include <psp2/touch.h>
 
 #include <SDL_events.h>
 
 #include <cstring>
 
-static uint64_t timestamp;
 static SDL_TouchFingerEvent finger_buffer[8];
 static uint8_t finger_count = 0;
 static long int finger_id_ref;
@@ -90,11 +91,7 @@ int handle_touch_event(SDL_TouchFingerEvent &finger) {
 }
 
 static bool registered_touch() {
-    if (finger_count > 0) {
-        return true;
-    }
-
-    return false;
+    return finger_count > 0;
 }
 
 int toggle_touchscreen() {
@@ -147,7 +144,7 @@ int peek_touch(const SceFVector2 viewport_pos, const SceFVector2 viewport_size, 
         if (!ctrl.touch_mode[port]) {
             pData->reportNum = 0;
         }
-    } else if (registered_touch() == true && port == touchscreen_port) {
+    } else if (registered_touch() && port == touchscreen_port) {
         pData[0] = recover_touch_events();
     }
 

@@ -17,14 +17,11 @@
 
 #pragma once
 
-#include <psp2/touch.h>
-#include <psp2/types.h>
+constexpr int SCE_CTRL_MODE_UNKNOWN = 3; // missing in vita-headers
 
 struct CtrlState;
-struct SDL_TouchFingerEvent;
 
-static uint64_t timestamp;
+void add_new_controllers(CtrlState &ctrl);
+void remove_disconnected_controllers(CtrlState &ctrl);
 
-int handle_touch_event(SDL_TouchFingerEvent &finger);
-int toggle_touchscreen();
-int peek_touch(SceFVector2 viewport_pos, SceFVector2 viewport_size, SceIVector2 drawable_size, bool renderer_focused, const CtrlState &ctrl, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count);
+int peek_buffer(CtrlState &ctrl, int port, SceCtrlData *&pad_data, int count, bool ext, bool negative);

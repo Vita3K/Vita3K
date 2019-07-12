@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef queue_h
 #define queue_h
 
