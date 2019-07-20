@@ -163,130 +163,95 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
     }
 }
 
-static void set_uniforms(GLuint gl_program, GLShaderStatics &statics, const UniformBuffers &uniform_buffers, const SceGxmProgram &gxm_program, const MemState &mem, bool log_uniforms) {
+bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderStatics &statics, const MemState &mem,
+    const SceGxmProgramParameter *parameter, const void *data, bool log_uniforms) {
     R_PROFILE(__func__);
 
-    const SceGxmProgramParameter *const parameters = gxp::program_parameters(gxm_program);
-    for (size_t i = 0; i < gxm_program.parameter_count; ++i) {
-        const SceGxmProgramParameter &parameter = parameters[i];
-        if (parameter.category != SCE_GXM_PARAMETER_CATEGORY_UNIFORM)
-            continue;
+    auto name = gxp::parameter_name(*parameter);
+    auto &excluded_uniforms = statics.excluded_uniforms;
 
-        auto name = gxp::parameter_name(parameter);
+    if (std::find(excluded_uniforms.begin(), excluded_uniforms.end(), name) != excluded_uniforms.end())
+        return false;
 
-        auto do_supply = [&](const std::string &name, const int arr_size, const int idx) -> bool {
-            auto &excluded_uniforms = statics.excluded_uniforms;
+    const GLint location = glGetUniformLocation(program, name.c_str());
 
-            if (std::find(excluded_uniforms.begin(), excluded_uniforms.end(), name) != excluded_uniforms.end())
-                return false;
-
-            const GLint location = glGetUniformLocation(gl_program, name.c_str());
-
-            if (location < 0) {
-                // NOTE: This can happen because the uniform isn't used in the shader, thus optimized away by the shader compiler.
-                LOG_WARN("Uniform parameter {} not found in current OpenGL program, it will not be set again.", name);
-                excluded_uniforms.push_back(name);
-                return false;
-            }
-
-            // This was added for compability with hand-written shaders. GXP shaders don't use matrix, but rather flatten them as array.
-            // Hand-written shaders usually convet them to matrix if possible. Until we get rid of hand-written shaders, this will stay here.
-            bool is_matrix = false;
-            GLenum utype{};
-
-            auto uniform_type_ite = statics.uniform_types.find(location);
-            if (uniform_type_ite == statics.uniform_types.end()) {
-                GLint total_uniforms = 0;
-                glGetProgramiv(gl_program, GL_ACTIVE_UNIFORMS, &total_uniforms);
-
-                GLint max_uniform_name_length = 0;
-                glGetProgramiv(gl_program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_uniform_name_length);
-
-                GLint usize = 0;
-
-                std::string uname;
-                uname.resize(max_uniform_name_length);
-
-                GLint written_name_length = 0;
-
-                for (GLint i = 0; i < total_uniforms; i++) {
-                    glGetActiveUniform(gl_program, i, max_uniform_name_length, &written_name_length, &usize, &utype, &uname[0]);
-                    if (written_name_length == name.length() && strncmp(name.c_str(), uname.c_str(), written_name_length) == 0) {
-                        statics.uniform_types[location] = utype;
-                        break;
-                    }
-                }
-            } else {
-                utype = uniform_type_ite->second;
-            }
-
-            // TODO: Add more types
-            if (utype == GL_FLOAT_MAT2 || utype == GL_FLOAT_MAT3 || utype == GL_FLOAT_MAT4) {
-                is_matrix = true;
-            }
-
-            const SceGxmParameterType type = static_cast<SceGxmParameterType>(static_cast<uint16_t>(parameter.type));
-            const Ptr<const void> uniform_buffer = uniform_buffers[parameter.container_index];
-            if (!uniform_buffer) {
-                LOG_WARN("Uniform buffer {} not set for parameter {}.", parameter.container_index, name);
-                return false;
-            }
-
-            const GLint *src_s32;
-            const GLfloat *src_f32;
-            const GLuint *src_u32;
-
-            const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
-
-            // The resource index points to SA bank. Each SA register is 4 bytes. Therefore, multiple the index with 4
-            // and adding with the base, to get the data.
-            switch (type) {
-            case SCE_GXM_PARAMETER_TYPE_S32:
-            case SCE_GXM_PARAMETER_TYPE_S16:
-            case SCE_GXM_PARAMETER_TYPE_S8:
-                src_s32 = reinterpret_cast<const GLint *>(base + idx * 4);
-                set_uniform<GLint>(location, parameter.component_count, arr_size, src_s32, name, is_matrix, log_uniforms);
-                break;
-
-            case SCE_GXM_PARAMETER_TYPE_U32:
-            case SCE_GXM_PARAMETER_TYPE_U16:
-            case SCE_GXM_PARAMETER_TYPE_U8:
-                src_u32 = reinterpret_cast<const GLuint *>(base + idx * 4);
-                set_uniform<GLuint>(location, parameter.component_count, arr_size, src_u32, name, is_matrix, log_uniforms);
-                break;
-
-            case SCE_GXM_PARAMETER_TYPE_F32:
-            case SCE_GXM_PARAMETER_TYPE_F16:
-                src_f32 = reinterpret_cast<const GLfloat *>(base + idx * 4);
-                set_uniform<GLfloat>(location, parameter.component_count, arr_size, src_f32, name, is_matrix, log_uniforms);
-                break;
-
-            default:
-                LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
-                break;
-            }
-
-            return true;
-        };
-
-        do_supply(name, parameter.array_size, parameter.resource_index);
+    if (location < 0) {
+        // NOTE: This can happen because the uniform isn't used in the shader, thus optimized away by the shader compiler.
+        LOG_WARN("Uniform parameter {} not found in current OpenGL program, it will not be set again.", name);
+        excluded_uniforms.push_back(name);
+        return false;
     }
-}
 
-void set_uniforms(GLuint program, const GxmContextState &state, const MemState &mem, bool log_uniforms) {
-    R_PROFILE(__func__);
+    // This was added for compability with hand-written shaders. GXP shaders don't use matrix, but rather flatten them as array.
+    // Hand-written shaders usually convet them to matrix if possible. Until we get rid of hand-written shaders, this will stay here.
+    bool is_matrix = false;
+    GLenum utype{};
 
-    assert(state.fragment_program);
-    assert(state.vertex_program);
+    auto uniform_type_ite = statics.uniform_types.find(location);
+    if (uniform_type_ite == statics.uniform_types.end()) {
+        GLint total_uniforms = 0;
+        glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &total_uniforms);
 
-    const SceGxmFragmentProgram &fragment_shader = *state.fragment_program.get(mem);
-    const SceGxmVertexProgram &vertex_shader = *state.vertex_program.get(mem);
-    const SceGxmProgram &fragment_program = *fragment_shader.program.get(mem);
-    const SceGxmProgram &vertex_program = *vertex_shader.program.get(mem);
+        GLint max_uniform_name_length = 0;
+        glGetProgramiv(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_uniform_name_length);
 
-    set_uniforms(program, reinterpret_cast<GLFragmentProgram*>(fragment_shader.renderer_data.get())->statics,
-        state.fragment_uniform_buffers, fragment_program, mem, log_uniforms);
-    set_uniforms(program, reinterpret_cast<GLVertexProgram*>(vertex_shader.renderer_data.get())->statics,
-        state.vertex_uniform_buffers, vertex_program, mem, log_uniforms);
+        GLint usize = 0;
+
+        std::string uname;
+        uname.resize(max_uniform_name_length);
+
+        GLint written_name_length = 0;
+
+        for (GLint i = 0; i < total_uniforms; i++) {
+            glGetActiveUniform(program, i, max_uniform_name_length, &written_name_length, &usize, &utype, &uname[0]);
+            if (written_name_length == name.length() && strncmp(name.c_str(), uname.c_str(), written_name_length) == 0) {
+                statics.uniform_types[location] = utype;
+                break;
+            }
+        }
+    } else {
+        utype = uniform_type_ite->second;
+    }
+
+    // TODO: Add more types
+    if (utype == GL_FLOAT_MAT2 || utype == GL_FLOAT_MAT3 || utype == GL_FLOAT_MAT4) {
+        is_matrix = true;
+    }
+
+    const SceGxmParameterType type = static_cast<SceGxmParameterType>(static_cast<uint16_t>(parameter->type));
+
+    const GLint *src_s32;
+    const GLfloat *src_f32;
+    const GLuint *src_u32;
+
+    // The resource index points to SA bank. Each SA register is 4 bytes. Therefore, multiple the index with 4
+    // and adding with the base, to get the data.
+    switch (type) {
+    case SCE_GXM_PARAMETER_TYPE_S32:
+    case SCE_GXM_PARAMETER_TYPE_S16:
+    case SCE_GXM_PARAMETER_TYPE_S8:
+        src_s32 = reinterpret_cast<const GLint *>(data);
+        set_uniform<GLint>(location, parameter->component_count, parameter->array_size, src_s32, name, is_matrix, log_uniforms);
+        break;
+
+    case SCE_GXM_PARAMETER_TYPE_U32:
+    case SCE_GXM_PARAMETER_TYPE_U16:
+    case SCE_GXM_PARAMETER_TYPE_U8:
+        src_u32 = reinterpret_cast<const GLuint *>(data);
+        set_uniform<GLuint>(location, parameter->component_count, parameter->array_size, src_u32, name, is_matrix, log_uniforms);
+        break;
+
+    case SCE_GXM_PARAMETER_TYPE_F32:
+    case SCE_GXM_PARAMETER_TYPE_F16:
+        src_f32 = reinterpret_cast<const GLfloat *>(data);
+        set_uniform<GLfloat>(location, parameter->component_count, parameter->array_size, src_f32, name, is_matrix, log_uniforms);
+        break;
+
+    default:
+        LOG_WARN("Type {} not handled for uniform parameter {}.", type, name);
+        break;
+    }
+
+    return true;
 }
 } // namespace renderer

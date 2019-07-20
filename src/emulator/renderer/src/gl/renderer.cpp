@@ -145,7 +145,7 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     glBindFramebuffer(GL_FRAMEBUFFER, render_target->framebuffer[0]);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, render_target->renderbuffers[0]);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_target->renderbuffers[1]);
-    glClearColor(0.0625f, 0.125f, 0.25f, 0);
+    glClearColor(0.258824f, 0.258824f, 0.435294f, 1.0f);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return true;
@@ -222,6 +222,17 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     flip_vertically(pixels, width, height, stride_in_pixels);
 
     ++context.texture_cache.timestamp;
+}
+
+void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data) {
+    glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[stream_index]);
+
+    // Orphan the buffer, so we don't have to stall the pipeline, wait for last draw call to finish
+    // See OpenGL Insight at 28.3.2. Intel driver likes glBufferData more, so use glBufferData. 
+    glBufferData(GL_ARRAY_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 } // namespace renderer

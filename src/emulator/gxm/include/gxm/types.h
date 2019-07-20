@@ -90,6 +90,7 @@ struct SceGxmContextParams {
 } // namespace emu
 
 typedef std::array<Ptr<void>, 16> UniformBuffers;
+typedef std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> StreamDatas;
 
 struct GxmViewport {
     SceGxmViewportMode enable = SCE_GXM_VIEWPORT_DISABLED;
@@ -160,7 +161,7 @@ struct GxmContextState {
     SceGxmLastReserveStatus vertex_last_reserve_status = SceGxmLastReserveStatus::Available;
 
     // Vertex streams.
-    std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
+    StreamDatas stream_data;
 
     // Depth.
     SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_ALWAYS;

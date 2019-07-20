@@ -27,7 +27,8 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
 std::string load_shader(const SceGxmProgram &program, const char *base_path, const char *title_id);
 
 // Uniforms.
-void set_uniforms(GLuint program, const GxmContextState &state, const MemState &mem, bool log_uniforms);
+bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderStatics &statics, const MemState &mem,
+    const SceGxmProgramParameter *parameter, const void *data, bool log_uniforms);
 
 bool create(std::unique_ptr<Context> &context);
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params);
@@ -40,6 +41,8 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id, 
     const bool log_active_shaders, const bool log_uniforms);
+
+void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);
 
 // State
 void sync_viewport(const GxmContextState &state);

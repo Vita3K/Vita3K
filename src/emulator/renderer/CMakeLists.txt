@@ -27,6 +27,7 @@ add_library(
 	src/scene.cpp
 	src/state_set.cpp
 	src/sync.cpp
+	src/uniforms.cpp
 )
 
 target_include_directories(renderer PUBLIC include)

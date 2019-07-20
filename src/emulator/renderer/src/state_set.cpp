@@ -70,15 +70,28 @@ namespace renderer {
         }
     }
 
-    COMMAND_SET_STATE(uniform_buffer) {
-        Ptr<void> buffer = helper.pop<Ptr<void>>();
-        const std::uint16_t container = helper.pop<const std::uint16_t>();
-        const bool is_fragment = helper.pop<bool>();
+    COMMAND_SET_STATE(uniform) {
+        const bool is_vertex = helper.pop<bool>();
+        const SceGxmProgramParameter *parameter = helper.pop<SceGxmProgramParameter*>();
+        const void *data = helper.pop<const void*>();
 
-        if (is_fragment) {
-            state->fragment_uniform_buffers[container] = buffer;
-        } else {
-            state->vertex_uniform_buffers[container] = buffer;
+        switch (renderer.current_backend) {
+        case Backend::OpenGL: {
+            gl::UniformSetRequest request { parameter, data };
+            gl::GLContext *gl_context = reinterpret_cast<gl::GLContext*>(render_context);
+
+            if (is_vertex) {
+                gl_context->vertex_set_requests.push_back(std::move(request));
+            } else {
+                gl_context->fragment_set_requests.push_back(std::move(request));
+            }
+
+            break;
+        }
+
+        default:
+            REPORT_MISSING(renderer.current_backend);
+            break;
         }
     }
 
@@ -302,10 +315,24 @@ namespace renderer {
     }
 
     COMMAND_SET_STATE(vertex_stream) {
-        const std::uint32_t stream_index = helper.pop<std::uint32_t>();
-        const Ptr<void> stream_data = helper.pop<Ptr<void>>();
+        const std::size_t stream_index = helper.pop<std::size_t>();
+        const std::size_t stream_data_length = helper.pop<std::size_t>();
+        const void *stream_data = helper.pop<const void*>();
 
-        state->stream_data[stream_index] = stream_data;
+        switch (renderer.current_backend) {
+        case Backend::OpenGL: {
+            gl::upload_vertex_stream(*reinterpret_cast<gl::GLContext*>(render_context), stream_index, stream_data_length,
+                stream_data);
+
+            break;
+        }
+
+        default:
+            REPORT_MISSING(renderer.current_backend);
+            break;
+        }
+
+        delete stream_data;
     }
 
     COMMAND(handle_set_state) {
@@ -328,7 +355,7 @@ namespace renderer {
             { renderer::GXMState::TwoSided, cmd_set_state_two_sided },
             { renderer::GXMState::CullMode, cmd_set_state_cull_mode },
             { renderer::GXMState::VertexStream, cmd_set_state_vertex_stream },
-            { renderer::GXMState::UniformBuffer, cmd_set_state_uniform_buffer }
+            { renderer::GXMState::Uniform, cmd_set_state_uniform }
         };
 
         auto result = handlers.find(gxm_state_to_set);

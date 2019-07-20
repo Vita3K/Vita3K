@@ -3,6 +3,7 @@
 #include <renderer/types.h>
 #include <renderer/commands.h>
 #include <psp2/gxm.h>
+#include <gxm/types.h>
 
 struct GxmContextState;
 struct MemState;
@@ -46,6 +47,23 @@ void submit_command_list(State &state, renderer::Context *context, GxmContextSta
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list, const char *base_path, const char *title_id);
 void take_one_and_process_batch(State &state, MemState &mem, Config &config, const char *base_path, const char *title_id);
 bool init(std::unique_ptr<State> &state, Backend backend);
+
+/**
+ * \brief Copy uniform data and queue it to available command list.
+ * 
+ * Later when the uniform commands are processed, resources will be automatically freed.
+ * 
+ * For backend that support command list/buffer, this will be queued directly to API's command list/buffer.
+ * 
+ * \param state   The renderer state.
+ * \param ctx     The context to queue uniform command in.
+ * \param program Target program to get uniforms from.
+ * \param buffers Set of all uniform buffers.
+ * 
+ */
+void set_uniforms(State &state, Context *ctx, const SceGxmProgram &program, const UniformBuffers &buffers, const MemState &mem);
+
+void set_vertex_data(State &state, Context *ctx, const StreamDatas &datas);
 
 template <typename ...Args>
 bool add_command(Context *ctx, const CommandOpcode opcode, int *status, Args... arguments) {

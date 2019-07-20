@@ -439,6 +439,52 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Available;
     }
 
+    const SceGxmFragmentProgram &gxm_fragment_program = *context->record.fragment_program.get(host.mem);
+    const SceGxmVertexProgram &gxm_vertex_program = *context->record.vertex_program.get(host.mem);
+
+    // Set uniforms
+    const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(host.mem);
+    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(host.mem);
+
+    // Update uniforms from this side. We should pass the pointer to parameter struct, since from there it can
+    // find the name and other things based on the pointer in memory. The pointer should be persists until
+    // the fragment is done, so we are guranteed to be safe.
+    renderer::set_uniforms(*host.renderer, context->renderer.get(), vertex_program_gxp, context->state.vertex_uniform_buffers, host.mem);
+    renderer::set_uniforms(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, host.mem); 
+
+    // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
+    // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
+    size_t max_index = 0;
+    if (indexType == SCE_GXM_INDEX_FORMAT_U16) {
+        const uint16_t *const data = static_cast<const uint16_t *>(indexData);
+        max_index = *std::max_element(&data[0], &data[indexCount]);
+    } else {
+        const uint32_t *const data = static_cast<const uint32_t *>(indexData);
+        max_index = *std::max_element(&data[0], &data[indexCount]);
+    }
+
+    size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
+    for (const emu::SceGxmVertexAttribute &attribute : gxm_vertex_program.attributes) {
+        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
+        const size_t attribute_size = gxm::attribute_format_size(attribute_format) * attribute.componentCount;
+        const SceGxmVertexStream &stream = gxm_vertex_program.streams[attribute.streamIndex];
+        const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
+        max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
+    }
+
+    // Copy and queue upload
+    for (size_t stream_index = 0; stream_index < SCE_GXM_MAX_VERTEX_STREAMS; ++stream_index) {
+        const size_t data_length = max_data_length[stream_index];
+        const std::uint8_t *const data = context->state.stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
+
+        std::uint8_t *a_copy = new std::uint8_t[data_length];
+        std::copy(data, data + data_length, a_copy);
+
+        renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::VertexStream, stream_index,
+            data_length, a_copy);
+    }
+
+    // Fragment texture is copied so no need to set it here.
     // Add draw command
     renderer::add_command(context->renderer.get(), renderer::CommandOpcode::Draw, nullptr, primType, indexType,
         indexData, indexCount);
@@ -998,12 +1044,8 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
         return SCE_GXM_ERROR_INVALID_POINTER;
 
     *uniformBuffer = context->state.params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
-
     context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Reserved;
-
-    // Pointer to uniform buffer, container in uint16_t form, and true indicates it's fragment
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::UniformBuffer, *uniformBuffer,
-        (uint16_t)SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX, true);
+    context->state.fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
     return 0;
 }
@@ -1019,10 +1061,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     *uniformBuffer = context->state.params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
 
     context->state.vertex_last_reserve_status = SceGxmLastReserveStatus::Reserved;
-
-    // Pointer to uniform buffer, container in uint16_t form, and false indicates it's vertex
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::UniformBuffer, *uniformBuffer,
-        (uint16_t)SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX, false);
+    context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
     return 0;
 }
@@ -1225,8 +1264,8 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVer
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, Ptr<const void> streamData) {
     assert(context != nullptr);
     assert(streamData);
-
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::VertexStream, streamIndex, streamData);
+    
+    context->state.stream_data[streamIndex] = streamData;
 
     return 0;
 }

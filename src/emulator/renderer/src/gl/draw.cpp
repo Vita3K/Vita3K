@@ -75,49 +75,39 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, SceGxmP
 
     glUseProgram(program_id);
 
-    // We should set uniforms
-    set_uniforms(program_id, state, mem, log_uniforms);
-
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
+    const SceGxmVertexProgram &gxm_vertex_program = *state.vertex_program.get(mem);
     const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
+
+    // Set uniforms
+    const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(mem);
+    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
+
+    gl::GLShaderStatics &vertex_gl_statics = reinterpret_cast<gl::GLVertexProgram*>(gxm_vertex_program.renderer_data.get())->statics;
+    gl::GLShaderStatics &fragment_gl_statics = reinterpret_cast<gl::GLFragmentProgram*>(gxm_fragment_program.renderer_data.get())->statics;
+
+    for (auto &vertex_uniform: context.vertex_set_requests) {
+        gl::set_uniform(program_id, vertex_program_gxp, vertex_gl_statics, mem, vertex_uniform.parameter, vertex_uniform.data,
+            log_uniforms);
+
+        delete vertex_uniform.data;
+    }
+
+    for (auto &fragment_uniform: context.fragment_set_requests) {
+        gl::set_uniform(program_id, fragment_program_gxp, fragment_gl_statics, mem, fragment_uniform.parameter,
+            fragment_uniform.data, log_uniforms);
+
+        delete fragment_uniform.data;
+    }
+
+    context.vertex_set_requests.clear();
+    context.fragment_set_requests.clear();
 
     // Upload index data.
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.element_buffer[0]);
     const GLsizeiptr index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, indices, GL_STREAM_DRAW);
-
-    // Compute size of vertex data.
-    size_t max_index = 0;
-    if (format == SCE_GXM_INDEX_FORMAT_U16) {
-        const uint16_t *const data = static_cast<const uint16_t *>(indices);
-        max_index = *std::max_element(&data[0], &data[count]);
-    } else {
-        const uint32_t *const data = static_cast<const uint32_t *>(indices);
-        max_index = *std::max_element(&data[0], &data[count]);
-    }
-
-    const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
-    size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
-    for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-        const size_t attribute_size = attribute_format_size(attribute_format) * attribute.componentCount;
-        const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
-        const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
-        max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
-    }
-
-    // Upload vertex data.
-    for (size_t stream_index = 0; stream_index < SCE_GXM_MAX_VERTEX_STREAMS; ++stream_index) {
-        const size_t data_length = max_data_length[stream_index];
-        const void *const data = state.stream_data[stream_index].get(mem);
-        glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[stream_index]);
-
-        // Orphan the buffer, so we don't have to stall the pipeline, wait for last draw call to finish
-        // See OpenGL Insight at 28.3.2. Intel driver likes glBufferData more, so use glBufferData. 
-        glBufferData(GL_ARRAY_BUFFER, data_length, nullptr, GL_STREAM_DRAW);
-        glBufferData(GL_ARRAY_BUFFER, data_length, data, GL_STREAM_DRAW);
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, indices, GL_DYNAMIC_DRAW);
 
     // Draw.
     const GLenum mode = translate_primitive(type);

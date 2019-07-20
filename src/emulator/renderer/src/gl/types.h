@@ -14,6 +14,8 @@
 #include <tuple>
 #include <vector>
 
+struct SceGxmProgramParameter;
+
 namespace renderer::gl {
 
 typedef std::map<GLuint, std::string> AttributeLocations;
@@ -23,12 +25,20 @@ typedef std::map<ProgramHashes, SharedGLObject> ProgramCache;
 typedef std::vector<std::string> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
 typedef std::map<GLuint, GLenum> UniformTypes;
 
+struct UniformSetRequest {
+    const SceGxmProgramParameter *parameter;
+    const void *data;
+};
+
 struct GLContext: public renderer::Context {
     TextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     GLuint last_draw_program { 0 };
+
+    std::vector<UniformSetRequest> vertex_set_requests;
+    std::vector<UniformSetRequest> fragment_set_requests;
 };
 
 struct GLShaderStatics {
