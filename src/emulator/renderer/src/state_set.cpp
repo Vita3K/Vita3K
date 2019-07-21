@@ -122,7 +122,6 @@ namespace renderer {
     }
 
     COMMAND_SET_STATE(depth_bias) {
-        LOG_INFO("Stubbed, todo");
         const bool is_front = helper.pop<bool>();
 
         if (is_front) {
@@ -131,6 +130,22 @@ namespace renderer {
         } else {
             state->back_depth_bias_factor = helper.pop<int>();
             state->back_depth_bias_units = helper.pop<int>();
+        }
+        
+        switch (renderer.current_backend) {
+        case Backend::OpenGL: {
+            if (is_front) {
+                gl::sync_front_depth_bias(*state);
+            } else {
+                // LOG_INFO("AAAA");
+            }
+
+            break;
+        }
+
+        default:
+            REPORT_MISSING(renderer.current_backend);
+            break;
         }
     }
 
@@ -186,7 +201,7 @@ namespace renderer {
     }
     
     COMMAND_SET_STATE(polygon_mode) {
-        const bool is_front = false;
+        const bool is_front = helper.pop<bool>();
         
         if (is_front) {
             state->front_polygon_mode = helper.pop<SceGxmPolygonMode>();
@@ -211,7 +226,7 @@ namespace renderer {
     }
     
     COMMAND_SET_STATE(point_line_width) {
-        const bool is_front = false;
+        const bool is_front = helper.pop<bool>();
         
         if (is_front)
             state->front_point_line_width = helper.pop<std::uint32_t>();
@@ -223,7 +238,7 @@ namespace renderer {
             if (is_front)
                 gl::sync_front_point_line_width(*state);
             else
-                LOG_WARN("Unhandle set back line width for OpenGL backend");
+                //LOG_WARN("Unhandle set back line width for OpenGL backend");
 
             break;
         }
@@ -236,7 +251,7 @@ namespace renderer {
 
     COMMAND_SET_STATE(stencil_func) {
         // Is this the pain that driver guys have to suffer?
-        const bool is_front = false;
+        const bool is_front = helper.pop<bool>();
 
         GxmStencilState &stencil_state = is_front ? state->front_stencil : state->back_stencil;
 
@@ -260,7 +275,7 @@ namespace renderer {
     }
 
     COMMAND_SET_STATE(stencil_ref) {
-        LOG_INFO("Stubbed, todo");
+        REPORT_STUBBED();
 
         const bool is_front = helper.pop<bool>();
         const unsigned char sref = helper.pop<const unsigned char>();
@@ -292,7 +307,7 @@ namespace renderer {
     }
 
     COMMAND_SET_STATE(two_sided) {
-        LOG_INFO("Stubbed, todo");
+        REPORT_STUBBED();
 
         const SceGxmTwoSidedMode two_sided = helper.pop<SceGxmTwoSidedMode>();
         state->two_sided = two_sided;
