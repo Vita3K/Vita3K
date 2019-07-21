@@ -21,7 +21,7 @@ namespace renderer {
 
         static std::map<CommandOpcode, CommandHandlerFunc> handlers = {
             { CommandOpcode::SetContext, cmd_handle_set_context },
-            { CommandOpcode::GetSurfaceData, cmd_handle_get_surface_data },
+            { CommandOpcode::SyncSurfaceData, cmd_handle_sync_surface_data },
             { CommandOpcode::CreateContext, cmd_handle_create_context },
             { CommandOpcode::CreateRenderTarget, cmd_handle_create_render_target },
             { CommandOpcode::Draw, cmd_handle_draw },

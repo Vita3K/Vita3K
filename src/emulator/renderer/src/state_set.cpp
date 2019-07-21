@@ -107,7 +107,7 @@ namespace renderer {
             state->viewport.scale.y = helper.pop<float>();
             state->viewport.scale.z = helper.pop<float>();
         }
-
+        
         // Sync
         switch (renderer.current_backend) {
         case Backend::OpenGL: {

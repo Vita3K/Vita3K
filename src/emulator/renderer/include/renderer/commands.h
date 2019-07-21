@@ -35,7 +35,7 @@ namespace renderer {
         SetState = 4,
 
         SetContext = 5,
-        GetSurfaceData = 6,
+        SyncSurfaceData = 6,
 
         /**
          * Jump to another command pointer, save current command pointer on a stack

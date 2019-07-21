@@ -38,7 +38,7 @@ COMMAND(handle_create_render_target);
 
 // Scene
 COMMAND(handle_set_context);
-COMMAND(handle_get_surface_data);
+COMMAND(handle_sync_surface_data);
 
 COMMAND(handle_draw);
 

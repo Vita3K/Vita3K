@@ -43,16 +43,17 @@ namespace renderer {
         }
     }
 
-    COMMAND(handle_get_surface_data) {
-        const std::size_t width = helper.pop<std::size_t>();
-        const std::size_t height = helper.pop<std::size_t>();
-        const std::size_t stride_in_pixels = helper.pop<std::size_t>();
-        std::uint32_t *data = helper.pop<std::uint32_t*>();
+    COMMAND(handle_sync_surface_data) {
+        const size_t width = state->color_surface.pbeEmitWords[0];
+        const size_t height = state->color_surface.pbeEmitWords[1];
+        const size_t stride_in_pixels = state->color_surface.pbeEmitWords[2];
+        const Address data = state->color_surface.pbeEmitWords[3];
+        uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
 
         switch (renderer.current_backend) {
         case Backend::OpenGL: {
             gl::get_surface_data(*reinterpret_cast<gl::GLContext*>(render_context), width, height, 
-                stride_in_pixels, data);
+                stride_in_pixels, pixels);
             
             break;
         }

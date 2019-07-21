@@ -525,15 +525,8 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
-    const size_t width = context->state.color_surface.pbeEmitWords[0];
-    const size_t height = context->state.color_surface.pbeEmitWords[1];
-    const size_t stride_in_pixels = context->state.color_surface.pbeEmitWords[2];
-    const Address data = context->state.color_surface.pbeEmitWords[3];
-    uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
-
     // Add command to end the scene
-    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::GetSurfaceData, nullptr, width, height,
-        stride_in_pixels, pixels);
+    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SyncSurfaceData, nullptr);
     
     // Add NOP for SceGxmFinish
     context->renderer->render_finish_status = renderer::CommandErrorCodePending;
