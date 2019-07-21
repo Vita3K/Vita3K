@@ -523,7 +523,7 @@ EXPORT(int, sceGxmEndCommandList) {
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotification *vertexNotification, const emu::SceGxmNotification *fragmentNotification) {
     const MemState &mem = host.mem;
     assert(context != nullptr);
-    assert(vertexNotification == nullptr);
+    //assert(vertexNotification == nullptr);
     //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.is_in_scene) {
@@ -1128,7 +1128,7 @@ EXPORT(int, sceGxmSetBackVisibilityTestOp) {
 }
 
 EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::CullMode, true, mode);
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::CullMode, mode);
 }
 
 EXPORT(int, sceGxmSetDefaultRegionClipAndViewport) {
