@@ -68,6 +68,16 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, SceGxmP
         }
     }
 
+    if (log_active_shaders) {
+        const SceGxmProgram &fragment_gxp_program = *state.fragment_program.get(mem)->program.get(mem);
+        const SceGxmProgram &vertex_gxp_program = *state.vertex_program.get(mem)->program.get(mem);
+
+        const std::string hash_text_f = hex_string(state.fragment_program.get(mem)->renderer_data->hash);
+        const std::string hash_text_v = hex_string(state.vertex_program.get(mem)->renderer_data->hash);
+
+        LOG_DEBUG("\nVertex  : {}\nFragment: {}", hash_text_v, hash_text_f);
+    }
+    
     if (!program_id) {
         assert(false && "Should never happen");
         glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint*>(&program_id));
