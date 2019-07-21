@@ -475,24 +475,29 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     }
 
     size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
+    std::uint32_t stream_used = 0;
     for (const emu::SceGxmVertexAttribute &attribute : gxm_vertex_program.attributes) {
         const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
         const size_t attribute_size = gxm::attribute_format_size(attribute_format) * attribute.componentCount;
         const SceGxmVertexStream &stream = gxm_vertex_program.streams[attribute.streamIndex];
         const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
         max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
+        stream_used |= (1 << attribute.streamIndex);
     }
 
     // Copy and queue upload
     for (size_t stream_index = 0; stream_index < SCE_GXM_MAX_VERTEX_STREAMS; ++stream_index) {
-        const size_t data_length = max_data_length[stream_index];
-        const std::uint8_t *const data = context->state.stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
+        // Upload it
+        if (stream_used & (1 << static_cast<std::uint16_t>(stream_index))) {
+            const size_t data_length = max_data_length[stream_index];
+            const std::uint8_t *const data = context->state.stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
 
-        std::uint8_t *a_copy = new std::uint8_t[data_length];
-        std::copy(data, data + data_length, a_copy);
+            std::uint8_t *a_copy = new std::uint8_t[data_length];
+            std::copy(data, data + data_length, a_copy);
 
-        renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::VertexStream, stream_index,
-            data_length, a_copy);
+            renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::VertexStream, stream_index,
+                data_length, a_copy);
+        }
     }
 
     // Fragment texture is copied so no need to set it here.
