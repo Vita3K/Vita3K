@@ -122,18 +122,28 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     context->state.vertex_ring_buffer_used = 0;
 
     // It's legal to set at client.
-    if (colorSurface)
-        context->state.color_surface = *colorSurface;
-    if (depthStencil)
-        context->state.depth_stencil_surface = *depthStencil;
-
     host.gxm.is_in_scene = true;
 
     // Reset command list and finish status
     context->renderer->render_finish_status = renderer::CommandErrorCodePending;
 
     renderer::reset_command_list(context->renderer->command_list);
-    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SetContext, nullptr, renderTarget->renderer.get());
+
+    emu::SceGxmColorSurface *color_surface_copy = nullptr;
+    emu::SceGxmDepthStencilSurface *depth_stencil_surface_copy = nullptr;
+
+    if (colorSurface) {
+        color_surface_copy = new emu::SceGxmColorSurface;
+        *color_surface_copy = *colorSurface;
+    }
+
+    if (depthStencil) {
+        depth_stencil_surface_copy = new emu::SceGxmDepthStencilSurface;
+        *depth_stencil_surface_copy = *depthStencil;
+    }
+
+    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SetContext, nullptr, renderTarget->renderer.get(),
+        color_surface_copy, depth_stencil_surface_copy);
 
     return 0;
 }
@@ -381,6 +391,7 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     memcpy(ptr.get(host.mem), callbackData.get(host.mem), host.gxm.params.displayQueueCallbackDataSize);
 
     // Block future rendering by setting value2 of sync object
+    SceGxmSyncObject *oldBufferSync = Ptr<SceGxmSyncObject>(oldBuffer).get(host.mem);
     SceGxmSyncObject *newBufferSync = Ptr<SceGxmSyncObject>(newBuffer).get(host.mem);
 
     display_callback.data = address;
@@ -1280,8 +1291,8 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
     // Set viewport to enable, enable more offset and scale to set
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Viewport, true, true, xOffset, yOffset, zOffset, xScale,
-        yScale, zScale);
+    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Viewport, SCE_GXM_VIEWPORT_ENABLED, true,
+        xOffset, yOffset, zOffset, xScale, yScale, zScale);
 }
 
 EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
