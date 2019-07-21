@@ -168,17 +168,20 @@ bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderSt
     R_PROFILE(__func__);
 
     auto name = gxp::parameter_name(*parameter);
-    auto &excluded_uniforms = statics.excluded_uniforms;
+    name += '\0';
 
-    if (std::find(excluded_uniforms.begin(), excluded_uniforms.end(), name) != excluded_uniforms.end())
+    auto &excluded_uniforms = statics.excluded_uniforms;
+    ExcludedUniform to_search { name, program };
+
+    if (std::find(excluded_uniforms.begin(), excluded_uniforms.end(), to_search) != excluded_uniforms.end())
         return false;
 
     const GLint location = glGetUniformLocation(program, name.c_str());
 
     if (location < 0) {
         // NOTE: This can happen because the uniform isn't used in the shader, thus optimized away by the shader compiler.
-        LOG_WARN("Uniform parameter {} not found in current OpenGL program, it will not be set again.", name);
-        excluded_uniforms.push_back(name);
+        LOG_WARN("Uniform parameter {} not found in OpenGL program {}, it will not be set again.", name, program);
+        excluded_uniforms.push_back(to_search);
         return false;
     }
 

@@ -17,12 +17,20 @@
 struct SceGxmProgramParameter;
 
 namespace renderer::gl {
+struct ExcludedUniform {
+    std::string name;
+    GLuint program;
+};
+
+inline bool operator == (const ExcludedUniform &lhs, const ExcludedUniform &rhs) {
+    return (lhs.name == rhs.name) && (lhs.program == rhs.program);
+}
 
 typedef std::map<GLuint, std::string> AttributeLocations;
 typedef std::map<std::string, SharedGLObject> ShaderCache;
 typedef std::tuple<std::string, std::string> ProgramHashes;
 typedef std::map<ProgramHashes, SharedGLObject> ProgramCache;
-typedef std::vector<std::string> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
+typedef std::vector<ExcludedUniform> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
 typedef std::map<GLuint, GLenum> UniformTypes;
 
 struct UniformSetRequest {
