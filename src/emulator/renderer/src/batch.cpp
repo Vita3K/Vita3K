@@ -8,16 +8,18 @@
 #include <functional>
 #include <util/log.h>
 
+struct FeatureState;
+
 namespace renderer {
     void complete_command(State &state, CommandHelper &helper, const int code) {
         helper.complete(code);
         state.command_finish_one.notify_all();
     }
 
-    void process_batch(renderer::State &state, MemState &mem, Config &config, CommandList &command_list, const char *base_path,
+    void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list, const char *base_path,
         const char *title_id) {
         using CommandHandlerFunc = std::function<void(renderer::State&, MemState&, Config&, 
-            CommandHelper&, Context*, GxmContextState*, const char *, const char*)>;
+            CommandHelper&, const FeatureState&, Context*, GxmContextState*, const char *, const char*)>;
 
         static std::map<CommandOpcode, CommandHandlerFunc> handlers = {
             { CommandOpcode::SetContext, cmd_handle_set_context },
@@ -43,8 +45,8 @@ namespace renderer {
                 LOG_ERROR("Unimplemented command opcode {}", static_cast<int>(cmd->opcode));
             } else {
                 CommandHelper helper(cmd);
-                handler->second(state, mem, config, helper, command_list.context, command_list.gxm_context, base_path,
-                    title_id);
+                handler->second(state, mem, config, helper, features, command_list.context,
+                    command_list.gxm_context, base_path, title_id);
             }
 
             Command *last_cmd = cmd;
@@ -54,7 +56,7 @@ namespace renderer {
         } while (true);
     }
         
-    void take_one_and_process_batch(renderer::State &state, MemState &mem, Config &config, const char *base_path,
+    void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path,
         const char *title_id) {
         std::uint32_t processed_count = 0;
 
@@ -66,7 +68,7 @@ namespace renderer {
                 return;
             }
 
-            process_batch(state, mem, config, *cmd_list, base_path, title_id);
+            process_batch(state, features, mem, config, *cmd_list, base_path, title_id);
             processed_count++;
         }
     }

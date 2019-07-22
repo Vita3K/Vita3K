@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
         gl_renderer.render(host);
 
         // Driver acto!
-        renderer::take_one_and_process_batch(*host.renderer.get(), host.mem, host.cfg, host.base_path.c_str(),
+        renderer::process_batches(*host.renderer.get(), host.features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
 
         gui::draw_begin(gui, host);

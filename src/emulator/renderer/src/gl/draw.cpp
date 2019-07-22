@@ -34,7 +34,7 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     return GL_TRIANGLES;
 }
 
-void draw(GLState &renderer, GLContext &context, GxmContextState &state, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, const MemState &mem,
+void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, const MemState &mem,
     const char *base_path, const char *title_id, const bool log_active_shaders, const bool log_uniforms) {
     R_PROFILE(__func__);
 
@@ -54,7 +54,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, SceGxmP
 
             // Need to recompile!
             SharedGLObject program = gl::compile_program(renderer.program_cache, renderer.vertex_shader_cache,
-                renderer.fragment_shader_cache, state, mem, base_path, title_id);
+                renderer.fragment_shader_cache, state, features, mem, base_path, title_id);
             
             if (!program) {
                 LOG_ERROR("Fail to get program!");

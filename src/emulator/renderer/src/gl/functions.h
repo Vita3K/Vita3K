@@ -16,15 +16,16 @@
 
 struct GxmContextState;
 struct MemState;
+struct FeatureState;
 
 namespace renderer::gl {
 
 // Compile program.
 SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_cache, ShaderCache &fragment_cache,
-    const GxmContextState &state, const MemState &mem, const char *base_path, const char *title_id) ;
+    const GxmContextState &state, const FeatureState &features, const MemState &mem, const char *base_path, const char *title_id) ;
 
 // Shaders.
-std::string load_shader(const SceGxmProgram &program, const char *base_path, const char *title_id);
+std::string load_shader(const SceGxmProgram &program, const FeatureState &features, const char *base_path, const char *title_id);
 
 // Uniforms.
 bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderStatics &statics, const MemState &mem,
@@ -38,7 +39,7 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
 void sync_rendertarget(const GLRenderTarget &rt);
 void set_context(GLContext &ctx, const GLRenderTarget *rt);
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels);
-void draw(GLState &renderer, GLContext &context, GxmContextState &state, SceGxmPrimitiveType type, SceGxmIndexFormat format,
+void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id, 
     const bool log_active_shaders, const bool log_uniforms);
 
