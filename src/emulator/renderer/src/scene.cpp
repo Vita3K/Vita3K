@@ -24,8 +24,13 @@ namespace renderer {
         if (color_surface) {
             state->color_surface = *color_surface;
             delete color_surface;
+        } else {
+            // Disable writing to this surface.
+            // Data is still in render target though.
+            state->color_surface.pbeEmitWords[3] = 0;
         }
         
+        // Maybe we should disable writing to depth stencil too if it's null
         if (depth_stencil_surface) {
             state->depth_stencil_surface = *depth_stencil_surface;
             delete depth_stencil_surface;
