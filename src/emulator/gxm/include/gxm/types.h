@@ -382,7 +382,7 @@ public:
         return (uint64_t *)((uint8_t *)&secondary_program_offset_end + secondary_program_offset_end);
     }
     bool is_native_color() const {
-        return unk20 & 0b1000000;
+        return ((type >> 6) & 1);
     }
 };
 
