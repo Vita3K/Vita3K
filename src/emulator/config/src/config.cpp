@@ -322,6 +322,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
             return QuitRequested;
         }
+        
         if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
             if (command_line.config_path.empty()) {
                 command_line.config_path = root_paths.get_base_path();
