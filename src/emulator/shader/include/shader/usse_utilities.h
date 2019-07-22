@@ -11,6 +11,8 @@ namespace shader::usse::utils {
 struct SpirvUtilFunctions {
     spv::Function *pack_f16{ nullptr };
     spv::Function *unpack_f16{ nullptr };
+    spv::Function *pack_fx8 { nullptr };
+    spv::Function *unpack_fx8 { nullptr };
 };
 
 spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask);

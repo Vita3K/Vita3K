@@ -108,6 +108,66 @@ static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::Spi
     return nullptr;
 }
 
+// TODO: Not sure if this is right. Based on half float calculation
+// 2^7*(2-2^(-3)) where sign 1 bit, exponent: 4 bit, mantissa: 3 bit
+static constexpr float MAX_FX8 = 240.0f;
+
+static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &features) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *fx8_unpack_func_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
+    spv::Id max_fx8_c = b.makeFloatConstant(MAX_FX8);
+
+    spv::Function *fx8_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v4, "unpack4xF8", { type_f32 },
+        decorations, &fx8_unpack_func_block);
+
+    spv::Id extracted = fx8_unpack_func->getParamId(0);
+
+    // Cast to uint first
+    extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
+    extracted = b.createBuiltinCall(type_f32_v4, b.import("GLSL.std.450"), GLSLstd450UnpackSnorm4x8, { extracted });
+
+    // Multiply them with max fx8
+    extracted = b.createBinOp(spv::OpFMul, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, 
+        { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
+    
+    b.makeReturn(false, extracted);
+    b.setBuildPoint(last_build_point);
+
+    return fx8_unpack_func;
+}
+
+static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &features) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *fx8_pack_func_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
+    spv::Id max_fx8_c = b.makeFloatConstant(MAX_FX8);
+
+    spv::Function *fx8_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "pack4xF8", { type_f32_v4 },
+        decorations, &fx8_pack_func_block);
+
+    spv::Id extracted = fx8_pack_func->getParamId(0);
+
+    extracted = b.createBinOp(spv::OpFDiv, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, 
+        { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
+    extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackSnorm4x8, { extracted });
+    extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
+    b.makeReturn(false, extracted);
+    b.setBuildPoint(last_build_point);
+
+    return fx8_pack_func;
+}
+
 static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
@@ -118,13 +178,13 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &
     spv::Id type_f32 = b.makeFloatType(32);
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
-    spv::Function *f16_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v2, "unpack2xf16", { type_f32 },
+    spv::Function *f16_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 },
         decorations, &f16_unpack_func_block);
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
     if (features.direct_pack_unpack_half) {
- extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
+        extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
         extracted = b.createBuiltinCall(type_f32_v2, b.import("GLSL.std.450"), GLSLstd450UnpackHalf2x16, { extracted });
     } else {
         extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
@@ -147,7 +207,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
     spv::Id type_f32 = b.makeFloatType(32);
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
-    spv::Function *f16_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "pack2xf16", { type_f32_v2 },
+    spv::Function *f16_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 },
         decorations, &f16_pack_func_block);
 
     spv::Id extracted = f16_pack_func->getParamId(0);
@@ -178,6 +238,15 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
         return b.createFunctionCall(utils.unpack_f16, { scalar });
     }
 
+    // TODO: Not really FX8?
+    case DataType::O8: {
+        if (!utils.unpack_fx8) {
+            utils.pack_fx8 = make_fx8_unpack_func(b, features);  
+        }
+
+        return b.createFunctionCall(utils.unpack_fx8, { scalar });
+    }
+
     default:
         break;
     }
@@ -193,6 +262,15 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
         }
 
         return b.createFunctionCall(utils.pack_f16, { vec });
+    }
+
+    // TODO: Not really FX8?
+    case DataType::O8: {
+        if (!utils.pack_fx8) {
+            utils.pack_fx8 = make_fx8_pack_func(b, features);
+        }
+
+        return b.createFunctionCall(utils.pack_fx8, { vec });
     }
 
     default:
@@ -653,8 +731,15 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         break;
     }
 
+    case DataType::INT8:
+    case DataType::UINT8: {
+        dest.type = DataType::O8;
+        break;
+    }
+
     case DataType::F32:
     case DataType::F16:
+    case DataType::O8:
         break;
 
     default: {
