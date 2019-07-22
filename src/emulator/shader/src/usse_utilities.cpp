@@ -241,7 +241,7 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
     // TODO: Not really FX8?
     case DataType::O8: {
         if (!utils.unpack_fx8) {
-            utils.pack_fx8 = make_fx8_unpack_func(b, features);  
+            utils.unpack_fx8 = make_fx8_unpack_func(b, features);  
         }
 
         return b.createFunctionCall(utils.unpack_fx8, { scalar });
