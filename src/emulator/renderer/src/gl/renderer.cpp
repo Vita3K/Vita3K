@@ -215,6 +215,10 @@ void set_context(GLContext &context, const GLRenderTarget *rt) {
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels) {
     R_PROFILE(__func__);
 
+    if (pixels == nullptr) {
+        return;
+    }
+
     glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
     glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
