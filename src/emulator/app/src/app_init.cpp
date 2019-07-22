@@ -123,13 +123,29 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         return false;
     }
 
+    // Recursively create GL version until one accepts
+    // Major 4 is mandantory
+    const int accept_gl_version[] = {
+        5,      // OpenGL 4.5
+        3,      // OpenGL 4.3
+        2,      // OpenGL 4.2
+        1       // OpenGL 4.1
+    };
+        
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    
+    for (int i = 0; i < sizeof(accept_gl_version) / sizeof(int); i++) {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, accept_gl_version[i]);
 
-    state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
+        state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
+        if (state.glcontext) {
+            break;
+        }
+    }
+
     if (!state.glcontext) {
-        error_dialog("Could not create OpenGL context!\nDoes your GPU support OpenGL 4.1?", NULL);
+        error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.1?", NULL);
         return false;
     }
 
@@ -152,6 +168,26 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     glad_set_pre_callback(before_callback);
 #endif // MICROPROFILE_ENABLED
     glad_set_post_callback(after_callback);
+
+    // Detect feature
+    std::string version = reinterpret_cast<const GLchar*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+    LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
+    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
+
+    // Try to parse and get version
+    const std::size_t dot_pos = version.find_first_of('.');
+
+    if (dot_pos != std::string::npos) {
+        const std::string major = version.substr(0, dot_pos);
+        const std::string minor = version.substr(dot_pos + 1);
+
+        if (std::atoi(major.c_str()) >= 4 && minor.length() >= 1 && minor[0] >= '2') {
+            state.features.direct_pack_unpack_half = true;
+        } else {
+            state.features.direct_pack_unpack_half = false;
+        }
+    }
 
     state.kernel.base_tick = { rtc_base_ticks() };
 
