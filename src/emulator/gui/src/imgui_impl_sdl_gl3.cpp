@@ -110,6 +110,8 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImDrawData *draw_data) {
     GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
     GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
