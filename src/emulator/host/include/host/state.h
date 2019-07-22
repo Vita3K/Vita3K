@@ -31,6 +31,7 @@
 #include <nids/types.h>
 #include <np/state.h>
 #include <renderer/state.h>
+#include <features/state.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
 #ifdef USE_GDBSTUB
@@ -81,6 +82,7 @@ struct HostState {
     DialogState common_dialog;
     SfoFile sfo_handle;
     NIDSet missing_nids;
+    FeatureState features;
 #ifdef USE_GDBSTUB
     GDBState gdb;
 #endif
