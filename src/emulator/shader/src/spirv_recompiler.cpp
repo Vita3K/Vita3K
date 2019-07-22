@@ -217,7 +217,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParamete
     return b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
+static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
     std::uint32_t total_var_comp = size / 4;
     spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
 
@@ -258,7 +258,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         for (auto i = 0; i < b.getNumTypeComponents(arr_type); i++) {
             spv::Id elm = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, comp_type),
                 { var, b.makeIntConstant(i) });
-            utils::store(b, parameters, utils, dest, b.createLoad(elm), dest_mask, 0 + i * total_var_comp);
+            utils::store(b, parameters, utils, features, dest, b.createLoad(elm), dest_mask, 0 + i * total_var_comp);
         }
     } else {
         get_dest_mask();
@@ -271,13 +271,13 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
             }
         }
 
-        utils::store(b, parameters, utils, dest, var, dest_mask, 0);
+        utils::store(b, parameters, utils, features, dest, var, dest_mask, 0);
     }
 
     return var;
 }
 
-static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
+static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
     const SceGxmProgram &program) {
     static const std::unordered_map<std::uint32_t, std::string> name_map = {
         { 0xD000, "v_Position" },
@@ -351,7 +351,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Fragment will only copy what it needed.
             const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
             const auto pa_iter_size = num_comp * 4;
-            const auto pa_iter_var = create_input_variable(b, parameters, utils, pa_name.c_str(), RegisterBank::PRIMATTR,
+            const auto pa_iter_var = create_input_variable(b, parameters, utils, features, pa_name.c_str(), RegisterBank::PRIMATTR,
                 pa_offset, pa_iter_type, pa_iter_size, spv::NoResult, pa_dtype);
 
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
@@ -538,7 +538,7 @@ static const char *get_container_name(const std::uint16_t idx) {
 }
 
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
-    emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
+    const FeatureState &features, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
@@ -657,7 +657,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             LOG_DEBUG(param_log);
 
             int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
-            create_input_variable(b, spv_params, utils, var_name.c_str(), param_reg_type, offset, param_type,
+            create_input_variable(b, spv_params, utils, features, var_name.c_str(), param_reg_type, offset, param_type,
                 parameter.array_size * parameter.component_count * 4, 0, store_type);
 
             break;
@@ -741,7 +741,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             // Create new literal composite
             spv::Id composite_var = b.makeCompositeConstant(b.makeVectorType(f32_type, static_cast<int>(constituents.size())),
                 constituents);
-            create_input_variable(b, spv_params, utils, nullptr, RegisterBank::SECATTR, composite_base, spv::NoResult,
+            create_input_variable(b, spv_params, utils, features, nullptr, RegisterBank::SECATTR, composite_base, spv::NoResult,
                 static_cast<int>(constituents.size() * 4), composite_var);
         };
 
@@ -767,20 +767,20 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == emu::SceGxmProgramType::Fragment) {
-        create_fragment_inputs(b, spv_params, utils, texture_queries, samplers, program);
+        create_fragment_inputs(b, spv_params, utils, features, texture_queries, samplers, program);
     }
 
     return spv_params;
 }
 
 static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program,
-    utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &texture_queries) {
+    const FeatureState &features, utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &texture_queries) {
     // Do texture queries
-    usse::convert_gxp_usse_to_spirv(b, program, parameters, utils, end_hook_func, texture_queries);
+    usse::convert_gxp_usse_to_spirv(b, program, features, parameters, utils, end_hook_func, texture_queries);
 }
 
 static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
-    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils) {
+    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *frag_fin_block;
@@ -795,7 +795,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     color_val_operand.type = program.is_native_color() ? DataType::F32 : DataType::F16;
 
-    spv::Id color = utils::load(b, parameters, utils, color_val_operand, 0xF, 0);
+    spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, 0);
     spv::Id out = b.createVariable(spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
     b.addDecoration(out, spv::DecorationLocation, 0);
 
@@ -808,7 +808,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 }
 
 static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
-    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils) {
+    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *vert_fin_block;
@@ -891,7 +891,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                 b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);
 
             // Do store
-            spv::Id o_val = utils::load(b, parameters, utils, o_op, DEST_MASKS[number_of_comp_vec], 0);
+            spv::Id o_val = utils::load(b, parameters, utils, features, o_op, DEST_MASKS[number_of_comp_vec], 0);
             b.createStore(o_val, out_var);
 
             o_op.num += properties.component_count;
@@ -904,7 +904,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     return vert_fin_func;
 }
 
-static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
+static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
     SpirvCode spirv;
 
     emu::SceGxmProgramType program_type = program.get_type();
@@ -947,15 +947,15 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     spv::Function *end_hook_func = nullptr;
 
     // Generate parameters
-    SpirvShaderParameters parameters = create_parameters(b, program, utils, program_type, texture_queries);
+    SpirvShaderParameters parameters = create_parameters(b, program, utils, features, program_type, texture_queries);
 
     if (program.is_fragment()) {
-        end_hook_func = make_frag_finalize_function(b, parameters, program, utils);
+        end_hook_func = make_frag_finalize_function(b, parameters, program, utils, features);
     } else {
-        end_hook_func = make_vert_finalize_function(b, parameters, program, utils);
+        end_hook_func = make_vert_finalize_function(b, parameters, program, utils, features);
     }
 
-    generate_shader_body(b, parameters, program, utils, end_hook_func, texture_queries);
+    generate_shader_body(b, parameters, program, features, utils, end_hook_func, texture_queries);
 
     // Execution modes
     if (program_type == emu::SceGxmProgramType::Fragment)
@@ -983,11 +983,15 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     return spirv;
 }
 
-static std::string convert_spirv_to_glsl(SpirvCode spirv_binary) {
+static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureState &features) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
-    options.version = 410;
+    if (features.direct_pack_unpack_half) {
+        options.version = 420;
+    } else {
+        options.version = 410;
+    }
     options.es = false;
     options.enable_420pack_extension = true;
     // TODO: this might be needed in the future
@@ -1019,10 +1023,10 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 // * Functions (exposed API) *
 // ***************************
 
-std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
-    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, force_shader_debug, spirv_dump, disasm_dump);
+std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
+    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, force_shader_debug, spirv_dump, disasm_dump);
 
-    const auto source = convert_spirv_to_glsl(spirv_binary);
+    const auto source = convert_spirv_to_glsl(spirv_binary, features);
 
     if (LOG_SHADER_CODE || force_shader_debug)
         LOG_DEBUG("Generated GLSL:\n{}", source);
@@ -1042,7 +1046,10 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
 
     gxp_stream.read(reinterpret_cast<char *>(gxp_program), gxp_file_size);
 
-    convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), true);
+    FeatureState features;
+    features.direct_pack_unpack_half = true;
+
+    convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, true);
 
     free(gxp_program);
 }

@@ -30,6 +30,7 @@
 #include <map>
 
 using boost::optional;
+struct FeatureState;
 
 namespace shader::usse {
 
@@ -64,7 +65,7 @@ public:
     spv::Id do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type);
 
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program,
+    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, const FeatureState &features,
         utils::SpirvUtilFunctions &utils, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
         bool is_secondary_program = false)
         : m_b(_b)
@@ -73,7 +74,8 @@ public:
         , m_spirv_params(spirv_params)
         , m_second_program(is_secondary_program)
         , m_util_funcs(utils)
-        , m_program(program) {
+        , m_program(program)
+        , m_features(features) {
         // Default increase mode
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
@@ -527,6 +529,8 @@ private:
     USSERecompiler &m_recompiler;
 
     const SceGxmProgram &m_program;
+
+    const FeatureState &m_features;
 };
 
 using BlockCacheMap = std::map<shader::usse::USSEOffset, spv::Function *>;
@@ -546,8 +550,8 @@ struct USSERecompiler final {
 
     std::unordered_map<usse::USSEOffset, usse::USSEBlock> avail_blocks;
 
-    explicit USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters,
-        utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries);
+    explicit USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features,
+        const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries);
 
     void reset(const std::uint64_t *inst, const std::size_t count);
     spv::Function *get_or_recompile_block(const usse::USSEBlock &block);
