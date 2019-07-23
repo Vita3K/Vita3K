@@ -180,7 +180,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "pref-path", cfg.pref_path);
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_single(emitter, "discord-rich-presence", cfg.discord_rich_presence);
-    config_file_emit_single(emitter, "fps-limit", cfg.fps_limit;
+    config_file_emit_single(emitter, "fps-limit", cfg.fps_limit);
     config_file_emit_single(emitter, "desired-fps", cfg.desired_fps);
     config_file_emit_single(emitter, "wait-for-vsync", cfg.wait_for_debugger);
 
