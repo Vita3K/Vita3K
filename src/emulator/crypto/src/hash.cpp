@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <crypto/hash.h>
+#include <string>
 
 extern "C" {
 #include <sha256.h>
