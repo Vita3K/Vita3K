@@ -690,6 +690,10 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
         }
     }
 
+    std::vector<spv::Id> empty_args;  
+    if (features.support_shader_interlock && !features.direct_fragcolor && program.is_fragment() && program.is_native_color())
+        b.createOp(spv::OpEndInvocationInterlockEXT, spv::OpTypeVoid, empty_args);
+
     b.leaveFunction();
 }
 

@@ -78,6 +78,7 @@ struct StructDeclContext {
 
 struct TranslationState {
     spv::Id last_frag_data_id = spv::NoResult;
+    spv::Id color_attachment_id = spv::NoResult;
     spv::Id frag_coord_id = spv::NoResult;      ///< gl_FragCoord, not built-in in SPIR-V.
 };
 
@@ -516,26 +517,20 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             // Create a global sampler, which is our color attachment
             spv::Id sampled_type = b.makeFloatType(32);
-            spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
-            spv::Id sampled_image_type = b.makeSampledImageType(image_type);
+            spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 2, spv::ImageFormatRgba8);
             
             spv::Id v4 = b.makeVectorType(sampled_type, 4);
 
-            spv::Id color_attachment = b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, "f_colorAttachment");
+            spv::Id color_attachment = b.createVariable(spv::StorageClassUniformConstant, image_type, "f_colorAttachment");
             spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
             translation_state.frag_coord_id = current_coord;
-            current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(b.makeIntegerType(32, true), 4), current_coord);
+            translation_state.color_attachment_id = color_attachment;
 
-            // Lock/unlock and read texel for shader interlock. Texture barrier will have glTextureBarrier() called so we don't
-            // have to worry too much. Texture barrier will not be accurate and may be broken though.
-            if (features.support_shader_interlock)
-                b.createOp(spv::OpBeginInvocationInterlockEXT, spv::OpTypeVoid, empty_args);
+            spv::Id i32 =  b.makeIntegerType(32, true);
+            current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), current_coord);
+            current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
 
-            spv::Id texel = b.createOp(spv::OpImageFetch, v4, { color_attachment, current_coord });
-
-            if (features.support_shader_interlock)
-                b.createOp(spv::OpEndInvocationInterlockEXT, spv::OpTypeVoid, empty_args);
-
+            spv::Id texel = b.createOp(spv::OpImageRead, v4, { color_attachment, current_coord });
             source = texel;
         }
 
@@ -860,7 +855,7 @@ static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &p
 }
 
 static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
-    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const FeatureState &features) {
+    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translate_state) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *frag_fin_block;
@@ -878,10 +873,16 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color_val_operand.type = gxm_parameter_type_to_usse_data_type(param_type);
 
     spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, 0);
-    spv::Id out = b.createVariable(spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
-    b.addDecoration(out, spv::DecorationLocation, 0);
-
-    b.createStore(color, out);
+    if (program.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
+        spv::Id signed_i32 = b.makeIntegerType(32, true);
+        spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), translate_state.frag_coord_id);
+        translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { translated_id, translated_id, 0, 1 });
+        b.createNoResultOp(spv::OpImageWrite, { translate_state.color_attachment_id, translated_id, color });
+    } else {
+        spv::Id out = b.createVariable(spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
+        b.addDecoration(out, spv::DecorationLocation, 0);
+        b.createStore(color, out);
+    }
 
     b.makeReturn(false);
     b.setBuildPoint(last_build_point);
@@ -1028,15 +1029,22 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     spv::Function *spv_func_main = b.makeEntryPoint(entry_point_name.c_str());
     spv::Function *end_hook_func = nullptr;
 
+    std::vector<spv::Id> empty_args;
+
+    // Lock/unlock and read texel for shader interlock. Texture barrier will have glTextureBarrier() called so we don't
+    // have to worry too much. Texture barrier will not be accurate and may be broken though.
+    if (features.support_shader_interlock && !features.direct_fragcolor && program.is_fragment() && program.is_native_color())
+        b.createOp(spv::OpBeginInvocationInterlockEXT, spv::OpTypeVoid, empty_args);
+
     // Generate parameters
     SpirvShaderParameters parameters = create_parameters(b, program, utils, features, translation_state, program_type, texture_queries);
 
     if (program.is_fragment()) {
-        end_hook_func = make_frag_finalize_function(b, parameters, program, utils, features);
+        end_hook_func = make_frag_finalize_function(b, parameters, program, utils, features, translation_state);
     } else {
         end_hook_func = make_vert_finalize_function(b, parameters, program, utils, features);
     }
-
+    
     generate_shader_body(b, parameters, program, features, utils, end_hook_func, texture_queries);
 
     // Execution modes
@@ -1096,7 +1104,8 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureSt
         glsl.set_name(translation_state.last_frag_data_id, "gl_LastFragData");
     }
 
-    if ((features.support_shader_interlock || features.support_texture_barrier) && translation_state.frag_coord_id != spv::NoResult) {
+    if (features.is_programmable_blending_need_to_bind_color_attachment() &&
+        translation_state.frag_coord_id != spv::NoResult) {
         glsl.set_remapped_variable_state(translation_state.frag_coord_id, true);
         glsl.set_name(translation_state.frag_coord_id, "gl_FragCoord");
     }
