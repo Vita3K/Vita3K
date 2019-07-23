@@ -112,8 +112,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         delete fragment_uniform.data;
     }
 
-    if (fragment_gxp_program.is_native_color() && features.support_shader_interlock) {
-        // Look and bind the color attachment slot to 12
+    if (fragment_gxp_program.is_native_color() && features.support_shader_interlock && !features.direct_fragcolor && !features.support_texture_barrier) {
         GLint loc = glGetUniformLocation(program_id, "f_colorAttachment");
 
         // It maybe a hand-written shader. So colorAttachment didn't exist
