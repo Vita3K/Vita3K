@@ -544,7 +544,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             spv::Id texel = spv::NoResult;
 
-            if (features.support_shader_interlock)
+            if (features.should_use_shader_interlock())
                 texel = b.createOp(spv::OpImageRead, v4, { color_attachment, current_coord });
             else
                 texel = b.createOp(spv::OpImageFetch, v4, { color_attachment, current_coord });
