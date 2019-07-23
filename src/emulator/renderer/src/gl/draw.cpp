@@ -112,7 +112,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         delete fragment_uniform.data;
     }
 
-    if (fragment_gxp_program.is_native_color() && features.support_shader_interlock && !features.direct_fragcolor && !features.support_texture_barrier) {
+    if (fragment_gxp_program.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
         GLint loc = glGetUniformLocation(program_id, "f_colorAttachment");
 
         // It maybe a hand-written shader. So colorAttachment didn't exist
@@ -129,6 +129,13 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     const GLsizeiptr index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, nullptr, GL_DYNAMIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, indices, GL_DYNAMIC_DRAW);
+
+    if (fragment_gxp_program.is_native_color()) {
+        if (features.should_use_texture_barrier()) {
+            // Needs texture barrier
+            glTextureBarrier();
+        }
+    }
 
     // Draw.
     const GLenum mode = translate_primitive(type);

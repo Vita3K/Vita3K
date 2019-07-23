@@ -514,11 +514,23 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             translation_state.last_frag_data_id = last_frag_data_arr;
         } else if (features.support_shader_interlock || features.support_texture_barrier) {
             std::vector<spv::Id> empty_args;
+            int sampled = 1;
+            spv::ImageFormat img_format = spv::ImageFormatUnknown;
+
+            if (features.should_use_shader_interlock()) {
+                sampled = 2;
+                img_format = spv::ImageFormatRgba8;
+            }
 
             // Create a global sampler, which is our color attachment
             spv::Id sampled_type = b.makeFloatType(32);
-            spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 2, spv::ImageFormatRgba8);
+            spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
             
+            if (features.should_use_texture_barrier()) {
+                // Make it a sampler
+                image_type = b.makeSampledImageType(image_type);
+            }
+
             spv::Id v4 = b.makeVectorType(sampled_type, 4);
 
             spv::Id color_attachment = b.createVariable(spv::StorageClassUniformConstant, image_type, "f_colorAttachment");
@@ -530,7 +542,13 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), current_coord);
             current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
 
-            spv::Id texel = b.createOp(spv::OpImageRead, v4, { color_attachment, current_coord });
+            spv::Id texel = spv::NoResult;
+
+            if (features.support_shader_interlock)
+                texel = b.createOp(spv::OpImageRead, v4, { color_attachment, current_coord });
+            else
+                texel = b.createOp(spv::OpImageFetch, v4, { color_attachment, current_coord });
+                
             source = texel;
         }
 
@@ -873,7 +891,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color_val_operand.type = gxm_parameter_type_to_usse_data_type(param_type);
 
     spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, 0);
-    if (program.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
+    if (program.is_native_color() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntegerType(32, true);
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), translate_state.frag_coord_id);
         translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { translated_id, translated_id, 0, 1 });
@@ -1033,7 +1051,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
 
     // Lock/unlock and read texel for shader interlock. Texture barrier will have glTextureBarrier() called so we don't
     // have to worry too much. Texture barrier will not be accurate and may be broken though.
-    if (features.support_shader_interlock && !features.direct_fragcolor && program.is_fragment() && program.is_native_color())
+    if (features.should_use_shader_interlock() && program.is_fragment() && program.is_native_color())
         b.createOp(spv::OpBeginInvocationInterlockEXT, spv::OpTypeVoid, empty_args);
 
     // Generate parameters
@@ -1051,7 +1069,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     if (program_type == emu::SceGxmProgramType::Fragment) {
         b.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);
     
-        if (program.is_native_color() && !features.direct_fragcolor && features.support_shader_interlock) {
+        if (program.is_native_color() && features.should_use_shader_interlock()) {
             // Add execution mode
             b.addExecutionMode(spv_func_main, spv::ExecutionModePixelInterlockOrderedEXT);
         }

@@ -13,4 +13,12 @@ struct FeatureState {
     bool is_programmable_blending_need_to_bind_color_attachment() const {
         return (support_texture_barrier || support_shader_interlock) && !direct_fragcolor;
     }
+
+    bool should_use_shader_interlock() const {
+        return support_shader_interlock && !direct_fragcolor;
+    }
+
+    bool should_use_texture_barrier() const {
+        return support_texture_barrier && !support_shader_interlock && !direct_fragcolor;
+    }
 };

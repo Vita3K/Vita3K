@@ -234,7 +234,11 @@ void set_context(GLContext &context, const GLRenderTarget *rt, const FeatureStat
         // Hopefully no one will use slot 12
         // TODO: Move color attachment futher or try to preserve it
         glActiveTexture(GL_TEXTURE0 + COLOR_ATTACHMENT_TEXTURE_SLOT);// Look and bind the color attachment slot to 12
-        glBindImageTexture(0, rt->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+
+        if (features.should_use_shader_interlock())
+            glBindImageTexture(0, rt->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+        else
+            glBindTexture(GL_TEXTURE_2D, rt->color_attachment[0]);
     }
     
     // TODO This is just for debugging.
