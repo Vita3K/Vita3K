@@ -76,6 +76,10 @@ struct StructDeclContext {
     void clear() { *this = {}; }
 };
 
+struct TranslationState {
+    spv::Id last_frag_data_id = spv::NoResult;
+};
+
 struct VertexProgramOutputProperties {
     std::string name;
     std::uint32_t component_count;
@@ -277,7 +281,28 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
     return var;
 }
 
-static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
+static DataType gxm_parameter_type_to_usse_data_type(const SceGxmParameterType param_type) {
+    switch (param_type) {
+    case SCE_GXM_PARAMETER_TYPE_F16:
+        return DataType::F16;
+
+    case SCE_GXM_PARAMETER_TYPE_F32:
+        return DataType::F32;
+        break;
+
+    case SCE_GXM_PARAMETER_TYPE_U8:
+    case SCE_GXM_PARAMETER_TYPE_S8:
+        return DataType::C10;
+
+    default:
+        LOG_WARN("Unsupported output register format {}, default to F16", (int)param_type);
+        break;
+    }
+
+    return DataType::F16;
+}
+
+static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
     const SceGxmProgram &program) {
     static const std::unordered_map<std::uint32_t, std::string> name_map = {
         { 0xD000, "v_Position" },
@@ -469,6 +494,30 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
         query_info.coord = coords[query_info.coord_index];
     }
+
+    if (program.is_native_color()) {
+        // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data.
+        if (features.direct_fragcolor) {
+            // The GPU supports gl_LastFragData. It's only OpenGL though
+            // TODO: Make this not emit with OpenGL
+            spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
+            spv::Id v4_a = b.makeArrayType(v4, b.makeIntConstant(1), 0);
+            spv::Id last_frag_data_arr = b.createVariable(spv::StorageClassInput, v4_a, "LastFragData");
+            spv::Id last_frag_data = b.createOp(spv::OpAccessChain, v4, { last_frag_data_arr, b.makeIntConstant(0) });
+            
+            // Copy outs into. The output data from last stage should has the same format as our
+            Operand target_to_store;
+            target_to_store.bank = RegisterBank::OUTPUT;
+            target_to_store.num = 0;
+            target_to_store.type = gxm_parameter_type_to_usse_data_type(program.get_fragment_output_type());
+            
+            utils::store(b, parameters, utils, features, target_to_store, last_frag_data, 0b1111, 0);
+
+            translation_state.last_frag_data_id = last_frag_data_arr;
+        } else if (features.support_shader_interlock) {
+            // Lock/unlock and read texel
+        }
+    }
 }
 
 static const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program) {
@@ -538,7 +587,7 @@ static const char *get_container_name(const std::uint16_t idx) {
 }
 
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
-    const FeatureState &features, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
+    const FeatureState &features, TranslationState &translation_state, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
@@ -767,7 +816,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == emu::SceGxmProgramType::Fragment) {
-        create_fragment_inputs(b, spv_params, utils, features, texture_queries, samplers, program);
+        create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
     }
 
     return spv_params;
@@ -795,26 +844,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color_val_operand.bank = program.is_native_color() ? RegisterBank::OUTPUT : RegisterBank::PRIMATTR;
     color_val_operand.num = 0;
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-
-    switch (param_type) {
-    case SCE_GXM_PARAMETER_TYPE_F16:
-        color_val_operand.type = DataType::F16;
-        break;
-
-    case SCE_GXM_PARAMETER_TYPE_F32:
-        color_val_operand.type = DataType::F32;
-        break;
-
-    case SCE_GXM_PARAMETER_TYPE_U8:
-    case SCE_GXM_PARAMETER_TYPE_S8:
-        color_val_operand.type = DataType::C10;
-        break;
-
-    default:
-        LOG_WARN("Unsupported output register format {}, default to F16", (int)param_type);
-        color_val_operand.type = DataType::F16;
-        break;
-    }
+    color_val_operand.type = gxm_parameter_type_to_usse_data_type(param_type);
 
     spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, 0);
     spv::Id out = b.createVariable(spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
@@ -925,7 +955,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     return vert_fin_func;
 }
 
-static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
+static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
     SpirvCode spirv;
 
     emu::SceGxmProgramType program_type = program.get_type();
@@ -968,7 +998,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     spv::Function *end_hook_func = nullptr;
 
     // Generate parameters
-    SpirvShaderParameters parameters = create_parameters(b, program, utils, features, program_type, texture_queries);
+    SpirvShaderParameters parameters = create_parameters(b, program, utils, features, translation_state, program_type, texture_queries);
 
     if (program.is_fragment()) {
         end_hook_func = make_frag_finalize_function(b, parameters, program, utils, features);
@@ -1004,7 +1034,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     return spirv;
 }
 
-static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureState &features) {
+static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
@@ -1015,10 +1045,19 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureSt
     }
     options.es = false;
     options.enable_420pack_extension = true;
+
     // TODO: this might be needed in the future
     //options.vertex.flip_vert_y = true;
 
     glsl.set_common_options(options);
+
+    if (features.direct_fragcolor && translation_state.last_frag_data_id != spv::NoResult) {
+        glsl.require_extension("GL_EXT_shader_framebuffer_fetch");
+
+        // Do not generate declaration for gl_LastFragData
+        glsl.set_remapped_variable_state(translation_state.last_frag_data_id, true);
+        glsl.set_name(translation_state.last_frag_data_id, "gl_LastFragData");
+    }
 
     // Compile to GLSL, ready to give to GL driver.
     std::string source = glsl.compile();
@@ -1045,9 +1084,10 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 // ***************************
 
 std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
-    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, force_shader_debug, spirv_dump, disasm_dump);
+    TranslationState translation_state;
+    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, translation_state, force_shader_debug, spirv_dump, disasm_dump);
 
-    const auto source = convert_spirv_to_glsl(spirv_binary, features);
+    const auto source = convert_spirv_to_glsl(spirv_binary, features, translation_state);
 
     if (LOG_SHADER_CODE || force_shader_debug)
         LOG_DEBUG("Generated GLSL:\n{}", source);
@@ -1069,6 +1109,8 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
 
     FeatureState features;
     features.direct_pack_unpack_half = true;
+    features.direct_fragcolor = true;
+    features.support_shader_interlock = true;
 
     convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, true);
 
