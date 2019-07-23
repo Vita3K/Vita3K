@@ -55,5 +55,6 @@ struct Config {
     bool fps_limit = false;
     int desired_fps = 60;
     bool wait_for_vsync = true;
+    optional<bool> wait_for_debugger;
 
 }; // struct Config
