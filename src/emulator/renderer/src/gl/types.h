@@ -17,6 +17,8 @@
 struct SceGxmProgramParameter;
 
 namespace renderer::gl {
+static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT = 12;          ///< The slot that has our color attachment (for programmable blending).
+
 struct ExcludedUniform {
     std::string name;
     GLuint program;
@@ -77,5 +79,6 @@ struct GLVertexProgram : public renderer::VertexProgram {
 struct GLRenderTarget: public renderer::RenderTarget {
     GLObjectArray<2> renderbuffers;
     GLObjectArray<1> framebuffer;
+    GLObjectArray<1> color_attachment;
 };
 } // namespace renderer

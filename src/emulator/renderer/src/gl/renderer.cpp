@@ -14,6 +14,7 @@
 #include <SDL_video.h>
 
 #include <cassert>
+#include <features/state.h>
 
 namespace renderer::gl {
 static GLenum translate_blend_func(SceGxmBlendFunc src) {
@@ -125,7 +126,7 @@ bool create(std::unique_ptr<Context> &context) {
     return true;
 }
 
-bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params) {
+bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {
     R_PROFILE(__func__);
 
     rt = std::make_unique<GLRenderTarget>();
@@ -136,15 +137,35 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
         return false;
     }
 
-    glBindRenderbuffer(GL_RENDERBUFFER, render_target->renderbuffers[0]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, params.width, params.height);
-    glBindRenderbuffer(GL_RENDERBUFFER, render_target->renderbuffers[1]);
+    int depth_fb_index = 1;
+
+    if (features.is_programmable_blending_need_to_bind_color_attachment()) {
+        depth_fb_index = 0;
+        render_target->color_attachment.init(glGenTextures, glDeleteTextures);
+
+        glBindTexture(GL_TEXTURE_2D, render_target->color_attachment[0]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, params.width, params.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else {
+        glBindRenderbuffer(GL_RENDERBUFFER, render_target->renderbuffers[0]);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, params.width, params.height);
+    }
+
+    glBindRenderbuffer(GL_RENDERBUFFER, render_target->renderbuffers[depth_fb_index]);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, params.width, params.height);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, render_target->framebuffer[0]);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, render_target->renderbuffers[0]);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_target->renderbuffers[1]);
+    if (features.is_programmable_blending_need_to_bind_color_attachment()) {
+        // Attach it to the framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, render_target->framebuffer[0]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_target->color_attachment[0], 0);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, render_target->framebuffer[0]);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, render_target->renderbuffers[0]);
+    }
+
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_target->renderbuffers[depth_fb_index]);
     glClearColor(0.258824f, 0.258824f, 0.435294f, 1.0f);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -197,7 +218,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
     return true;
 }
 
-void set_context(GLContext &context, const GLRenderTarget *rt) {
+void set_context(GLContext &context, const GLRenderTarget *rt, const FeatureState &features) {
     R_PROFILE(__func__);
     
     bind_fundamental(context);
@@ -206,6 +227,14 @@ void set_context(GLContext &context, const GLRenderTarget *rt) {
         sync_rendertarget(*rt);
     } else {
         sync_rendertarget(*reinterpret_cast<const GLRenderTarget*>(context.current_render_target));
+    }
+
+    // Bind it for programmable blending
+    if (features.is_programmable_blending_need_to_bind_color_attachment()) {
+        // Hopefully no one will use slot 12
+        // TODO: Move color attachment futher or try to preserve it
+        glActiveTexture(GL_TEXTURE0 + COLOR_ATTACHMENT_TEXTURE_SLOT);
+        glBindTexture(GL_TEXTURE_2D, rt->color_attachment[0]);
     }
     
     // TODO This is just for debugging.

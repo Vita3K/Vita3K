@@ -11,6 +11,7 @@
 #include <util/log.h>
 
 #include <gxm/functions.h>
+#include <features/state.h>
 
 namespace renderer::gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {
@@ -68,8 +69,9 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         }
     }
 
+    const SceGxmProgram &fragment_gxp_program = *state.fragment_program.get(mem)->program.get(mem);
+    
     if (log_active_shaders) {
-        const SceGxmProgram &fragment_gxp_program = *state.fragment_program.get(mem)->program.get(mem);
         const SceGxmProgram &vertex_gxp_program = *state.vertex_program.get(mem)->program.get(mem);
 
         const std::string hash_text_f = hex_string(state.fragment_program.get(mem)->renderer_data->hash);
@@ -77,7 +79,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 
         LOG_DEBUG("\nVertex  : {}\nFragment: {}", hash_text_v, hash_text_f);
     }
-    
+
     if (!program_id) {
         assert(false && "Should never happen");
         glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint*>(&program_id));
@@ -110,6 +112,16 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         delete fragment_uniform.data;
     }
 
+    if (fragment_gxp_program.is_native_color() && features.support_shader_interlock) {
+        // Look and bind the color attachment slot to 12
+        GLint loc = glGetUniformLocation(program_id, "f_colorAttachment");
+
+        // It maybe a hand-written shader. So colorAttachment didn't exist
+        if (loc != -1) {
+            glUniform1i(loc, COLOR_ATTACHMENT_TEXTURE_SLOT);
+        }
+    }
+    
     context.vertex_set_requests.clear();
     context.fragment_set_requests.clear();
 

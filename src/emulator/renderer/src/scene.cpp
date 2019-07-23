@@ -38,7 +38,7 @@ namespace renderer {
         
         switch (renderer.current_backend) {
         case Backend::OpenGL: {
-            gl::set_context(*reinterpret_cast<gl::GLContext*>(render_context), reinterpret_cast<const gl::GLRenderTarget*>(rt));
+            gl::set_context(*reinterpret_cast<gl::GLContext*>(render_context), reinterpret_cast<const gl::GLRenderTarget*>(rt), features);
             break;
         }
 

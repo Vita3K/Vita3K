@@ -38,7 +38,7 @@ namespace renderer {
 
         switch (renderer.current_backend) {
         case Backend::OpenGL: {
-            result = gl::create(*render_target, *params);
+            result = gl::create(*render_target, *params, features);
             break;
         }
 
