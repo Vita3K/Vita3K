@@ -225,6 +225,39 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::vpck, "VPCK ()", "01000pppsnuyderc-aaaffftttmmmmbbkkllgggggggoohiijjqqqqqqvwwwwwwx"),
 
+    // Sum of Products
+    /*
+                              10000 = op1
+                                    pp = pred (2 bits)
+                                      c = cmod1 (1 bit)
+                                      s = skipinv (1 bit)
+                                        n = nosched (1 bit)
+                                        aa = asel1 (2 bits)
+                                          d = dest_bank_ext (1 bit)
+                                            e = end (1 bit)
+                                            r = src1_bank_ext (1 bit)
+                                              b = src2_bank_ext (1 bit)
+                                              m = cmod2 (1 bit)
+                                                ooo = count (3 bits)
+                                                  f = amod1 (1 bit)
+                                                    ll = asel2 (2 bits)
+                                                      ggg = csel1 (3 bits)
+                                                        hhh = csel2 (3 bits)
+                                                            i = amod2 (1 bit)
+                                                            tt = dest_bank (2 bits)
+                                                              kk = src1_bank (2 bits)
+                                                                jj = src2_bank (2 bits)
+                                                                  qqqqqqq = dest_n (7 bits)
+                                                                          u = src1_mod (1 bit)
+                                                                          vv = cop (2 bits)
+                                                                            ww = aop (2 bits)
+                                                                              x = asrc1_mod (1 bit)
+                                                                                y = dest_mod (1 bit)
+                                                                                zzzzzzz = src1_n (7 bits)
+                                                                                        AAAAAAA = src2_n (7 bits)
+    */
+    INST(&V::sop2, "SOP2 ()", "10000ppcsnaaderbmooofllggghhhittkkjjqqqqqqquvvwwxyzzzzzzzAAAAAAA"),
+    
     // Test Instructions
     /*
                               01001 = op1

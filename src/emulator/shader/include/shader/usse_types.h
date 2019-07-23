@@ -180,7 +180,9 @@ inline std::size_t get_data_type_size(const DataType type) {
     switch (type) {
     case DataType::INT8:
     case DataType::UINT8:
+    // These two down are not sure
     case DataType::O8:
+    case DataType::C10:
         return 1;
 
     case DataType::INT16:

@@ -807,7 +807,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 
     case SCE_GXM_PARAMETER_TYPE_U8:
     case SCE_GXM_PARAMETER_TYPE_S8:
-        color_val_operand.type = DataType::O8;
+        color_val_operand.type = DataType::C10;
         break;
 
     default:

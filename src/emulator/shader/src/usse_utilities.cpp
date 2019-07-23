@@ -110,7 +110,7 @@ static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::Spi
 
 // TODO: Not sure if this is right. Based on half float calculation
 // 2^7*(2-2^(-3)) where sign 1 bit, exponent: 4 bit, mantissa: 3 bit
-static constexpr float MAX_FX8 = 240.0f;
+static constexpr float MAX_FX8 = 127.0f;
 
 static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
@@ -239,7 +239,7 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
     }
 
     // TODO: Not really FX8?
-    case DataType::O8: {
+    case DataType::C10: {
         if (!utils.unpack_fx8) {
             utils.unpack_fx8 = make_fx8_unpack_func(b, features);  
         }
@@ -265,7 +265,7 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
     }
 
     // TODO: Not really FX8?
-    case DataType::O8: {
+    case DataType::C10: {
         if (!utils.pack_fx8) {
             utils.pack_fx8 = make_fx8_pack_func(b, features);
         }
@@ -733,13 +733,13 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
 
     case DataType::INT8:
     case DataType::UINT8: {
-        dest.type = DataType::O8;
+        dest.type = DataType::C10;
         break;
     }
 
     case DataType::F32:
     case DataType::F16:
-    case DataType::O8:
+    case DataType::C10:
         break;
 
     default: {
@@ -805,7 +805,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
             }
 
             spv::Id result_type = b.makeVectorType(type_f32, (int)ops.size());
-            spv::Id result = b.createCompositeConstruct(result_type, ops);
+            spv::Id result = ops.size() == 1 ? ops[0] : b.createCompositeConstruct(result_type, ops);
             result = pack_one(b, utils, features, result, dest.type);
 
             composites.push_back(result);

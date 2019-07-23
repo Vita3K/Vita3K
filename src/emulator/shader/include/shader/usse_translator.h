@@ -304,6 +304,35 @@ public:
         Imm6 src1_n,
         Imm6 src2_n);
 
+    bool sop2(
+        Imm2 pred,
+        Imm1 cmod1,
+        Imm1 skipinv,
+        Imm1 nosched,
+        Imm2 asel1,
+        Imm1 dest_bank_ext,
+        Imm1 end,
+        Imm1 src1_bank_ext,
+        Imm1 src2_bank_ext,
+        Imm1 cmod2,
+        Imm3 count,
+        Imm1 amod1,
+        Imm2 asel2,
+        Imm3 csel1,
+        Imm3 csel2,
+        Imm1 amod2,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm1 src1_mod,
+        Imm2 cop,
+        Imm2 aop,
+        Imm1 asrc1_mod,
+        Imm1 dest_mod,
+        Imm7 src1_n,
+        Imm7 src2_n);
+
     bool vpck(
         ExtPredicate pred,
         bool skipinv,
