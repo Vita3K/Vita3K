@@ -789,11 +789,32 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     spv::Function *frag_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "frag_output_finalize", {},
         decorations, &frag_fin_block);
 
+    const SceGxmParameterType param_type = program.get_fragment_output_type();
+
     Operand color_val_operand;
     color_val_operand.bank = program.is_native_color() ? RegisterBank::OUTPUT : RegisterBank::PRIMATTR;
     color_val_operand.num = 0;
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    color_val_operand.type = program.is_native_color() ? DataType::F32 : DataType::F16;
+
+    switch (param_type) {
+    case SCE_GXM_PARAMETER_TYPE_F16:
+        color_val_operand.type = DataType::F16;
+        break;
+
+    case SCE_GXM_PARAMETER_TYPE_F32:
+        color_val_operand.type = DataType::F32;
+        break;
+
+    case SCE_GXM_PARAMETER_TYPE_U8:
+    case SCE_GXM_PARAMETER_TYPE_S8:
+        color_val_operand.type = DataType::O8;
+        break;
+
+    default:
+        LOG_WARN("Unsupported output register format {}, default to F16", (int)param_type);
+        color_val_operand.type = DataType::F16;
+        break;
+    }
 
     spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, 0);
     spv::Id out = b.createVariable(spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
