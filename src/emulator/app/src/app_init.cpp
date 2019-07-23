@@ -189,6 +189,37 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         }
     }
 
+    int total_extensions = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
+
+    std::unordered_map<std::string, bool*> check_extensions = {
+        { "GL_ARB_fragment_shader_interlock", &state.features.support_shader_interlock },
+        { "GL_ARB_texture_barrier", &state.features.support_texture_barrier },
+        { "GL_EXT_shader_framebuffer_fetch", &state.features.direct_fragcolor }
+    };
+
+    for (int i = 0; i < total_extensions; i++) {
+        const std::string extension = reinterpret_cast<const GLchar*>(glGetStringi(GL_EXTENSIONS, i));
+        auto find_result = check_extensions.find(extension);
+
+        if (find_result != check_extensions.end()) {
+            *find_result->second = true;
+            check_extensions.erase(find_result);
+        }
+    }
+
+    if (state.features.direct_fragcolor) {
+        LOG_INFO("Your GPU support direct access to last fragment color. Your performance with programmable blending game will be optimized.");
+    } else if (state.features.support_shader_interlock) {
+        LOG_INFO("Your GPU supports shader interlock, some games use programmable blending will have better performance.");
+    } else if (state.features.support_texture_barrier) {
+        LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
+        LOG_INFO("Consider updating to GPU that has shader interlock.");
+    } else {
+        LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
+        LOG_INFO("Consider updating your GPU.");
+    }
+
     state.kernel.base_tick = { rtc_base_ticks() };
 
     if (state.cfg.overwrite_config)
