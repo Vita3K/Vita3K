@@ -117,7 +117,10 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 
         // It maybe a hand-written shader. So colorAttachment didn't exist
         if (loc != -1) {
-            glUniform1i(loc, COLOR_ATTACHMENT_TEXTURE_SLOT);
+            if (features.should_use_shader_interlock())
+                glUniform1i(loc, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
+            else
+                glUniform1i(loc, COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
         }
     }
     

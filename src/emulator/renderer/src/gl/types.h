@@ -17,7 +17,8 @@
 struct SceGxmProgramParameter;
 
 namespace renderer::gl {
-static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT = 12;          ///< The slot that has our color attachment (for programmable blending).
+static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0;          ///< The slot that has our color attachment (for programmable blending) - image2D.
+static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER = 12;       ///< The slot that has our color attachment (for programmable blending) - sampler2D.
 
 struct ExcludedUniform {
     std::string name;
