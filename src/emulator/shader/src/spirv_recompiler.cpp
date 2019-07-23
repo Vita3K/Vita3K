@@ -78,6 +78,7 @@ struct StructDeclContext {
 
 struct TranslationState {
     spv::Id last_frag_data_id = spv::NoResult;
+    spv::Id frag_coord_id = spv::NoResult;      ///< gl_FragCoord, not built-in in SPIR-V.
 };
 
 struct VertexProgramOutputProperties {
@@ -496,26 +497,56 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     }
 
     if (program.is_native_color()) {
-        // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data.
+        // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data
+        spv::Id source = spv::NoResult;
+        
         if (features.direct_fragcolor) {
             // The GPU supports gl_LastFragData. It's only OpenGL though
             // TODO: Make this not emit with OpenGL
             spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
             spv::Id v4_a = b.makeArrayType(v4, b.makeIntConstant(1), 0);
-            spv::Id last_frag_data_arr = b.createVariable(spv::StorageClassInput, v4_a, "LastFragData");
+            spv::Id last_frag_data_arr = b.createVariable(spv::StorageClassInput, v4_a, "gl_LastFragData");
             spv::Id last_frag_data = b.createOp(spv::OpAccessChain, v4, { last_frag_data_arr, b.makeIntConstant(0) });
             
             // Copy outs into. The output data from last stage should has the same format as our
+            source = last_frag_data;
+            translation_state.last_frag_data_id = last_frag_data_arr;
+        } else if (features.support_shader_interlock || features.support_texture_barrier) {
+            std::vector<spv::Id> empty_args;
+
+            // Create a global sampler, which is our color attachment
+            spv::Id sampled_type = b.makeFloatType(32);
+            spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
+            spv::Id sampled_image_type = b.makeSampledImageType(image_type);
+            
+            spv::Id v4 = b.makeVectorType(sampled_type, 4);
+
+            spv::Id color_attachment = b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, "f_colorAttachment");
+            spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
+            translation_state.frag_coord_id = current_coord;
+            current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(b.makeIntegerType(32, true), 4), current_coord);
+
+            // Lock/unlock and read texel for shader interlock. Texture barrier will have glTextureBarrier() called so we don't
+            // have to worry too much. Texture barrier will not be accurate and may be broken though.
+            if (features.support_shader_interlock)
+                b.createOp(spv::OpBeginInvocationInterlockEXT, spv::OpTypeVoid, empty_args);
+
+            spv::Id texel = b.createOp(spv::OpImageFetch, v4, { color_attachment, current_coord });
+
+            if (features.support_shader_interlock)
+                b.createOp(spv::OpEndInvocationInterlockEXT, spv::OpTypeVoid, empty_args);
+
+            source = texel;
+        }
+
+        if (source != spv::NoResult) {
             Operand target_to_store;
+
             target_to_store.bank = RegisterBank::OUTPUT;
             target_to_store.num = 0;
             target_to_store.type = gxm_parameter_type_to_usse_data_type(program.get_fragment_output_type());
-            
-            utils::store(b, parameters, utils, features, target_to_store, last_frag_data, 0b1111, 0);
 
-            translation_state.last_frag_data_id = last_frag_data_arr;
-        } else if (features.support_shader_interlock) {
-            // Lock/unlock and read texel
+            utils::store(b, parameters, utils, features, target_to_store, source, 0b1111, 0);
         }
     }
 }
@@ -1009,8 +1040,14 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     generate_shader_body(b, parameters, program, features, utils, end_hook_func, texture_queries);
 
     // Execution modes
-    if (program_type == emu::SceGxmProgramType::Fragment)
+    if (program_type == emu::SceGxmProgramType::Fragment) {
         b.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);
+    
+        if (program.is_native_color() && !features.direct_fragcolor && features.support_shader_interlock) {
+            // Add execution mode
+            b.addExecutionMode(spv_func_main, spv::ExecutionModePixelInterlockOrderedEXT);
+        }
+    }
 
     // Add entry point to Builder
     auto entry_point = b.addEntryPoint(execution_model, spv_func_main, entry_point_name.c_str());
@@ -1057,6 +1094,11 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureSt
         // Do not generate declaration for gl_LastFragData
         glsl.set_remapped_variable_state(translation_state.last_frag_data_id, true);
         glsl.set_name(translation_state.last_frag_data_id, "gl_LastFragData");
+    }
+
+    if ((features.support_shader_interlock || features.support_texture_barrier) && translation_state.frag_coord_id != spv::NoResult) {
+        glsl.set_remapped_variable_state(translation_state.frag_coord_id, true);
+        glsl.set_name(translation_state.frag_coord_id, "gl_FragCoord");
     }
 
     // Compile to GLSL, ready to give to GL driver.
@@ -1109,7 +1151,7 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
 
     FeatureState features;
     features.direct_pack_unpack_half = true;
-    features.direct_fragcolor = true;
+    features.direct_fragcolor = false;
     features.support_shader_interlock = true;
 
     convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, true);
