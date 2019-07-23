@@ -108,9 +108,10 @@ static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::Spi
     return nullptr;
 }
 
-// TODO: Not sure if this is right. Based on half float calculation
-// 2^7*(2-2^(-3)) where sign 1 bit, exponent: 4 bit, mantissa: 3 bit
-static constexpr float MAX_FX8 = 127.0f;
+// TODO: Not sure if this is right. Based on this article
+// https://www.johndcook.com/blog/2018/04/15/eight-bit-floating-point/
+// > Eight-bit IEEE-like float: The largest value would be 01011111 and have value: 4(1 – 2-5) = 31/8 = 3.3875.
+static constexpr float MAX_FX8 = 3.3875f;
 
 static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
