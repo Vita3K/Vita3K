@@ -1781,6 +1781,7 @@ static int init_texture_base(const char *export_name, emu::SceGxmTexture *textur
             switch (texFormat) {
             case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
             case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:
+            case SCE_GXM_TEXTURE_FORMAT_P4_ABGR:
                 break;
             default:
                 LOG_WARN("Initialized texture with untested paletted texture format: {}", log_hex(texFormat));
