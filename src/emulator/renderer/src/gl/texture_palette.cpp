@@ -11,7 +11,6 @@ namespace texture {
 
 void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette) {
     R_PROFILE(__func__);
-    LOG_WARN("4-bit palettes are not yet tested.");
 
     const size_t stride = ((width + 7) & ~7) / 2; // NOTE: This is correct only with linear textures.
     for (size_t y = 0; y < height; ++y) {
