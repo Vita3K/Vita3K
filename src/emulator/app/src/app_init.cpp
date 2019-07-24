@@ -235,7 +235,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         state.features.direct_pack_unpack_half = false;
 
         if (std::atoi(major.c_str()) >= 4 && minor.length() >= 1) {
-            if (minor[0] >= 2) {
+            if (minor[0] >= '2') {
                 state.features.direct_pack_unpack_half = true;
             }
         }
