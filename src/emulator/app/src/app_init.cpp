@@ -64,6 +64,53 @@ static void after_callback(const char *name, void *funcptr, int len_args, ...) {
     }
 }
 
+static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+    const GLchar *message, const void *userParam) {
+    const char *type_str = nullptr;
+
+    switch (type){
+    case GL_DEBUG_TYPE_ERROR:
+        type_str = "ERROR";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        type_str = "DEPRECATED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        type_str = "UNDEFINED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        type_str = "PORTABILITY";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        type_str = "PERFORMANCE";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+        type_str = "OTHER";
+        break;
+    default:
+        type_str = "UNKTYPE";
+        break;
+    }
+
+    const char *severity_fmt = nullptr;
+    switch (severity) {
+    case GL_DEBUG_SEVERITY_LOW:
+        severity_fmt = "LOW";
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severity_fmt = "MEDIUM";
+        break;
+    case GL_DEBUG_SEVERITY_HIGH:
+        severity_fmt = "HIGH";
+        break;
+    default:
+        severity_fmt = "UNKSERV";
+        break;
+    }
+
+    LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
+}
+
 void update_viewport(HostState &state) {
     int w = 0;
     int h = 0;
@@ -135,11 +182,14 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     
+    int choosen_minor_version = 0;
+
     for (int i = 0; i < sizeof(accept_gl_version) / sizeof(int); i++) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, accept_gl_version[i]);
 
         state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
         if (state.glcontext) {
+            choosen_minor_version = accept_gl_version[i];
             break;
         }
     }
@@ -182,11 +232,17 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         const std::string major = version.substr(0, dot_pos);
         const std::string minor = version.substr(dot_pos + 1);
 
-        if (std::atoi(major.c_str()) >= 4 && minor.length() >= 1 && minor[0] >= '2') {
-            state.features.direct_pack_unpack_half = true;
-        } else {
-            state.features.direct_pack_unpack_half = false;
+        state.features.direct_pack_unpack_half = false;
+
+        if (std::atoi(major.c_str()) >= 4 && minor.length() >= 1) {
+            if (minor[0] >= 2) {
+                state.features.direct_pack_unpack_half = true;
+            }
         }
+    }
+
+    if (choosen_minor_version >= 3) {
+        glDebugMessageCallback(debug_output_callback, nullptr);
     }
 
     int total_extensions = 0;
