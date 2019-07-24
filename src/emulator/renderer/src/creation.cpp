@@ -9,6 +9,7 @@
 
 #include <util/log.h>
 #include <renderer/functions.h>
+#include <gxm/types.h>
 
 namespace renderer {
     COMMAND(handle_create_context) {
@@ -49,6 +50,13 @@ namespace renderer {
         }
 
         complete_command(renderer, helper, result);
+    }
+
+    COMMAND(handle_destroy_render_target) {
+        std::unique_ptr<RenderTarget> *render_target = helper.pop<std::unique_ptr<RenderTarget>*>();
+        render_target->reset();
+        
+        complete_command(renderer, helper, 0);
     }
 
     // Client

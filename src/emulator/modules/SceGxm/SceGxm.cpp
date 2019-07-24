@@ -375,8 +375,12 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
     MemState &mem = host.mem;
     assert(renderTarget);
 
-    free(mem, renderTarget);
+    // Send and wait.
+    renderer::send_single_command(*host.renderer, nullptr, nullptr, renderer::CommandOpcode::DestroyRenderTarget,
+        &renderTarget.get(mem)->renderer);
 
+    free(mem, renderTarget);
+    
     return 0;
 }
 

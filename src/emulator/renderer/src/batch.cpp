@@ -29,7 +29,8 @@ namespace renderer {
             { CommandOpcode::Draw, cmd_handle_draw },
             { CommandOpcode::Nop, cmd_handle_nop },
             { CommandOpcode::SetState, cmd_handle_set_state },
-            { CommandOpcode::SignalSyncObject, cmd_handle_signal_sync_object }
+            { CommandOpcode::SignalSyncObject, cmd_handle_signal_sync_object },
+            { CommandOpcode::DestroyRenderTarget, cmd_handle_destroy_render_target }
         };
         
         Command *cmd = command_list.first;

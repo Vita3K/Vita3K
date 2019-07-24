@@ -51,7 +51,9 @@ namespace renderer {
         /**
          * Signal sync object that fragment has been done.
          */
-        SignalSyncObject = 9
+        SignalSyncObject = 9,
+
+        DestroyRenderTarget = 10
     };
 
     enum CommandErrorCode {

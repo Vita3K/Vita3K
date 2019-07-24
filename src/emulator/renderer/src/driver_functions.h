@@ -35,6 +35,7 @@ COMMAND(handle_set_state);
 // Creation
 COMMAND(handle_create_context);
 COMMAND(handle_create_render_target);
+COMMAND(handle_destroy_render_target);
 
 // Scene
 COMMAND(handle_set_context);
