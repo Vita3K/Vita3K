@@ -195,7 +195,8 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     std::unordered_map<std::string, bool*> check_extensions = {
         { "GL_ARB_fragment_shader_interlock", &state.features.support_shader_interlock },
         { "GL_ARB_texture_barrier", &state.features.support_texture_barrier },
-        { "GL_EXT_shader_framebuffer_fetch", &state.features.direct_fragcolor }
+        { "GL_EXT_shader_framebuffer_fetch", &state.features.direct_fragcolor },
+        { "GL_ARB_shading_language_packing", &state.features.pack_unpack_half_through_ext }
     };
 
     for (int i = 0; i < total_extensions; i++) {
