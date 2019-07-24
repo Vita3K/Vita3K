@@ -168,7 +168,6 @@ bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderSt
     R_PROFILE(__func__);
 
     auto name = gxp::parameter_name(*parameter);
-    name += '\0';
 
     auto &excluded_uniforms = statics.excluded_uniforms;
     ExcludedUniform to_search { name, program };
@@ -207,7 +206,7 @@ bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderSt
 
         for (GLint i = 0; i < total_uniforms; i++) {
             glGetActiveUniform(program, i, max_uniform_name_length, &written_name_length, &usize, &utype, &uname[0]);
-            if (written_name_length == name.length() && strncmp(name.c_str(), uname.c_str(), written_name_length) == 0) {
+            if (strncmp(name.c_str(), uname.c_str(), written_name_length) == 0) {
                 statics.uniform_types[location] = utype;
                 break;
             }
