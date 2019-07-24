@@ -184,34 +184,8 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
-    if (features.direct_pack_unpack_half) {
-        extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
-        extracted = b.createBuiltinCall(type_f32_v2, b.import("GLSL.std.450"), GLSLstd450UnpackHalf2x16, { extracted });
-    } else {
-        spv::Id signed_max = b.makeFloatConstant(32767.0f);
-        spv::Id type_i32 = b.makeIntType(32);
-        
-        extracted = b.createUnaryOp(spv::OpBitcast, type_i32, extracted);
-        spv::Id x = b.createBinOp(spv::OpShiftRightLogical, type_i32, extracted, b.makeIntConstant(16));
-        x = b.createUnaryOp(spv::OpConvertSToF, type_f32, x);
-        x = b.createBinOp(spv::OpFDiv, type_f32, x, signed_max);
-        
-        spv::Id min = b.makeFloatConstant(-1.0f);
-        spv::Id max = b.makeFloatConstant(1.0f);
-
-        x = b.createBuiltinCall(type_f32, b.import("GLSL.std.450"), GLSLstd450FClamp, { x, min, max });
-        
-        spv::Id y = b.createBinOp(spv::OpBitwiseAnd, type_i32, extracted, b.makeUintConstant(0x0000FFFF));
-        y = b.createUnaryOp(spv::OpConvertSToF, type_f32, y);
-        y = b.createBinOp(spv::OpFDiv, type_f32, y, signed_max);
-        y = b.createBuiltinCall(type_f32, b.import("GLSL.std.450"), GLSLstd450FClamp, { y, min, max });
-
-        spv::Id max_f16 = b.makeFloatConstant(65504.0f);
-        spv::Id final = b.createCompositeConstruct(type_f32_v2, { x, y });
-        final = b.createBinOp(spv::OpFMul, type_f32_v2, final, b.makeCompositeConstant(type_f32_v2, { max_f16, max_f16 }));
-
-        extracted = final;
-    }
+    extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
+    extracted = b.createBuiltinCall(type_f32_v2, b.import("GLSL.std.450"), GLSLstd450UnpackHalf2x16, { extracted });
 
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
@@ -234,38 +208,9 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
 
     spv::Id extracted = f16_pack_func->getParamId(0);
 
-    if (features.direct_pack_unpack_half) {
-        // use packHalf2x16
-        extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackHalf2x16, { extracted });
-        extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
-    } else {
-        spv::Id max_f16 = b.makeFloatConstant(65504.0f);
-        spv::Id type_i32 = b.makeIntType(32);
-
-        extracted = b.createBinOp(spv::OpFDiv, type_f32_v2, extracted, b.makeCompositeConstant(type_f32_v2, { max_f16, max_f16 }));
-        spv::Id x = b.createBinOp(spv::OpVectorExtractDynamic, type_f32, extracted, b.makeIntConstant(0));
-        spv::Id y = b.createBinOp(spv::OpVectorExtractDynamic, type_f32, extracted, b.makeIntConstant(1));
-        spv::Id min = b.makeFloatConstant(-1.0f);
-        spv::Id max = b.makeFloatConstant(1.0f);
-
-        spv::Id clamp_1 = b.createBuiltinCall(type_f32, b.import("GLSL.std.450"), GLSLstd450FClamp, { x, min, max });
-        spv::Id clamp_2 = b.createBuiltinCall(type_f32, b.import("GLSL.std.450"), GLSLstd450FClamp, { y, min, max });
-
-        spv::Id signed_max = b.makeFloatConstant(32767.0f);
-
-        clamp_1 = b.createBinOp(spv::OpFMul, type_f32, clamp_1, signed_max);
-        clamp_2 = b.createBinOp(spv::OpFMul, type_f32, clamp_2, signed_max);
-        
-        clamp_1 = b.createBuiltinCall(type_f32, b.import("GLSL.std.450"), GLSLstd450Round, { clamp_1 });
-        clamp_2 = b.createBuiltinCall(type_f32, b.import("GLSL.std.450"), GLSLstd450Round, { clamp_2 });
-
-        clamp_1 = b.createUnaryOp(spv::OpConvertFToS, type_i32, clamp_1);
-        clamp_2 = b.createUnaryOp(spv::OpConvertFToS, type_i32, clamp_2);
-
-        spv::Id final = b.createBinOp(spv::OpShiftLeftLogical, type_i32, clamp_1, b.makeUintConstant(16));
-        final = b.createBinOp(spv::OpBitwiseOr, type_i32, final, clamp_2);
-        extracted = b.createUnaryOp(spv::OpBitcast, type_f32, final);
-    }
+     // use packHalf2x16
+    extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackHalf2x16, { extracted });
+    extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
 
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
