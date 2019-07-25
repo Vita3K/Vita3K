@@ -551,6 +551,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 texel = b.createOp(spv::OpImageFetch, v4, { color_attachment, current_coord });
                 
             source = texel;
+        } else {
+            // Try to initialize outs[0] to some nice value. In case the GPU has garbage data for our shader
+            spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
+            spv::Id rezero = b.makeFloatConstant(0.0f);
+            source = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
         }
 
         if (source != spv::NoResult) {
