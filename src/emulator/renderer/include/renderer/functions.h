@@ -1,9 +1,9 @@
 #pragma once
 
-#include <renderer/types.h>
-#include <renderer/commands.h>
-#include <psp2/gxm.h>
 #include <gxm/types.h>
+#include <psp2/gxm.h>
+#include <renderer/commands.h>
+#include <renderer/types.h>
 
 struct GxmContextState;
 struct MemState;
@@ -90,7 +90,7 @@ bool create_context(State &state, std::unique_ptr<Context> &context);
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params);
 void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt);
 
-template <typename ...Args>
+template <typename... Args>
 bool add_command(Context *ctx, const CommandOpcode opcode, int *status, Args... arguments) {
     auto cmd_maked = make_command(opcode, status, arguments...);
 
@@ -105,20 +105,20 @@ bool add_command(Context *ctx, const CommandOpcode opcode, int *status, Args... 
         ctx->command_list.last->next = cmd_maked;
         ctx->command_list.last = cmd_maked;
     }
-    
+
     return true;
 }
 
-template <typename ...Args>
+template <typename... Args>
 bool add_state_set_command(Context *ctx, const GXMState state, Args... arguments) {
     return add_command(ctx, CommandOpcode::SetState, nullptr, state, arguments...);
 }
 
-template <typename ...Args>
-int send_single_command(State &state, Context *ctx, GxmContextState *gxm_state, const CommandOpcode opcode, 
+template <typename... Args>
+int send_single_command(State &state, Context *ctx, GxmContextState *gxm_state, const CommandOpcode opcode,
     Args... arguments) {
     // Make a temporary command list
-    int status = CommandErrorCodePending;    // Pending.
+    int status = CommandErrorCodePending; // Pending.
     auto cmd = make_command(opcode, &status, arguments...);
 
     if (!cmd) {
@@ -128,7 +128,7 @@ int send_single_command(State &state, Context *ctx, GxmContextState *gxm_state, 
     CommandList list;
     list.first = cmd;
     list.last = cmd;
-    
+
     // Submit it
     submit_command_list(state, ctx, gxm_state, list);
     return wait_for_status(state, &status);
@@ -148,6 +148,6 @@ const uint32_t *get_texture_palette(const emu::SceGxmTexture &texture, const Mem
 void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 
-}
+} // namespace texture
 
 } // namespace renderer

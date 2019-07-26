@@ -31,7 +31,7 @@ enum class Backend {
     Vulkan
 };
 
-enum class GXMState: std::uint16_t {
+enum class GXMState : std::uint16_t {
     RegionClip = 0,
     Program = 1,
     Viewport = 2,
@@ -50,7 +50,7 @@ enum class GXMState: std::uint16_t {
     TotalState
 };
 
-enum SyncObjectSubject: std::uint32_t {
+enum SyncObjectSubject : std::uint32_t {
     None = 0,
     Fragment = 1 << 0,
     DisplayQueue = 1 << 1

@@ -1,9 +1,9 @@
 #include <renderer/functions.h>
 #include <renderer/profile.h>
 
+#include <gxm/types.h>
 #include <mem/ptr.h>
 #include <util/log.h>
-#include <gxm/types.h>
 
 namespace renderer {
 namespace texture {

@@ -1,10 +1,10 @@
 #pragma once
 
+#include <features/state.h>
 #include <gxm/types.h>
 #include <psp2/gxm.h>
 #include <shader/usse_translator_types.h>
 #include <shader/usse_types.h>
-#include <features/state.h>
 
 #include <string>
 #include <utility>

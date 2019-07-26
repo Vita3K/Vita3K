@@ -23,9 +23,9 @@
 #include <config/version.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
-#include <renderer/functions.h>
 #include <util/string_utils.h>
 
 #ifdef USE_GDBSTUB
@@ -160,13 +160,13 @@ int main(int argc, char *argv[]) {
         }
         gui::draw_end(host.window.get());
 
-        if (!host.cfg.sync_rendering)        
+        if (!host.cfg.sync_rendering)
             host.display.condvar.notify_all();
         else {
             std::unique_lock<std::mutex> lock(host.display.mutex);
             host.display.condvar.wait(lock);
         }
-        
+
         app::set_window_title(host);
     }
 #ifdef USE_DISCORD_RICH_PRESENCE

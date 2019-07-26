@@ -1,8 +1,8 @@
 #include <renderer/functions.h>
 #include <renderer/profile.h>
 
-#include "types.h"
 #include "functions.h"
+#include "types.h"
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>
@@ -82,4 +82,4 @@ void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState 
 }
 
 } // namespace texture
-} // namespace renderer
+} // namespace renderer::gl

@@ -1,8 +1,8 @@
 #include "functions.h"
 #include "types.h"
 
-#include <renderer/types.h>
 #include <renderer/profile.h>
+#include <renderer/types.h>
 
 #include <gxm/types.h>
 #include <util/log.h>
@@ -77,10 +77,10 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     const SceGxmVertexProgram &vertex_program_gxm = *state.vertex_program.get(mem);
     const SceGxmFragmentProgram &fragment_program_gxm = *state.fragment_program.get(mem);
 
-    const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram*>(
+    const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
         fragment_program_gxm.renderer_data.get());
 
-    const GLVertexProgram &vertex_program = *reinterpret_cast<GLVertexProgram*>(
+    const GLVertexProgram &vertex_program = *reinterpret_cast<GLVertexProgram *>(
         vertex_program_gxm.renderer_data.get());
 
     const ProgramHashes hashes(fragment_program.hash, vertex_program.hash);
@@ -95,7 +95,7 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     // of compile it again.
     const SharedGLObject fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem),
         features, fragment_program.hash, fragment_cache, GL_FRAGMENT_SHADER, base_path, title_id);
-    
+
     if (!fragment_shader) {
         LOG_CRITICAL("Error in get/compile fragment vertex shader:\n{}", vertex_program.hash);
         return SharedGLObject();
@@ -146,4 +146,4 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
 
     return program;
 }
-} // namespace renderer
+} // namespace renderer::gl

@@ -92,7 +92,7 @@ void gl_screen_renderer::render(const HostState &host) {
     glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
     GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
- 
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -148,12 +148,12 @@ void gl_screen_renderer::render(const HostState &host) {
         glEnable(GL_BLEND);
     else
         glDisable(GL_BLEND);
-    
+
     if (last_enable_scissor_test)
         glEnable(GL_SCISSOR_TEST);
     else
         glDisable(GL_SCISSOR_TEST);
-        
+
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 

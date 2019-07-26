@@ -2,8 +2,8 @@
 #include <renderer/profile.h>
 
 #include "functions.h"
-#include "types.h"
 #include "state.h"
+#include "types.h"
 
 #include <renderer/types.h>
 
@@ -175,14 +175,13 @@ bool sync_depth_data(const GxmContextState &state) {
         glEnable(GL_DEPTH_TEST);
         return true;
     }
-    
+
     glDisable(GL_DEPTH_TEST);
     return false;
 }
 
 void sync_stencil_func(const GxmContextState &state, const bool is_back_stencil) {
-    set_stencil_state(is_back_stencil ? GL_BACK : GL_FRONT, is_back_stencil ? state.back_stencil : 
-        state.front_stencil);
+    set_stencil_state(is_back_stencil ? GL_BACK : GL_FRONT, is_back_stencil ? state.back_stencil : state.front_stencil);
 }
 
 bool sync_stencil_data(const GxmContextState &state) {
@@ -229,7 +228,7 @@ void sync_front_depth_bias(const GxmContextState &state) {
 void sync_texture(GLContext &context, const GxmContextState &state, const MemState &mem, std::size_t index,
     bool enable_texture_cache) {
     const emu::SceGxmTexture &texture = state.fragment_textures[index];
-        
+
     if (texture.data_addr == 0) {
         LOG_WARN("Texture has null data.");
         return;
@@ -249,7 +248,7 @@ void sync_texture(GLContext &context, const GxmContextState &state, const MemSta
 void sync_blending(const GxmContextState &state, const MemState &mem) {
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
-    const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram*>(
+    const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
         gxm_fragment_program.renderer_data.get());
 
     glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
@@ -289,7 +288,7 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
     sync_viewport(state);
     sync_clipping(state);
     sync_cull(state);
-    
+
     if (sync_depth_data(state)) {
         sync_front_depth_func(state);
         sync_front_depth_write_enable(state);
@@ -328,4 +327,4 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
 
     return true;
 }
-} // namespace renderer
+} // namespace renderer::gl

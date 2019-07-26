@@ -1,9 +1,9 @@
 #pragma once
 
 #include <crypto/hash.h>
-#include <renderer/types.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
+#include <renderer/types.h>
 
 #include <psp2/gxm.h>
 
@@ -17,15 +17,15 @@
 struct SceGxmProgramParameter;
 
 namespace renderer::gl {
-static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0;          ///< The slot that has our color attachment (for programmable blending) - image2D.
-static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER = 12;       ///< The slot that has our color attachment (for programmable blending) - sampler2D.
+static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0; ///< The slot that has our color attachment (for programmable blending) - image2D.
+static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER = 12; ///< The slot that has our color attachment (for programmable blending) - sampler2D.
 
 struct ExcludedUniform {
     std::string name;
     GLuint program;
 };
 
-inline bool operator == (const ExcludedUniform &lhs, const ExcludedUniform &rhs) {
+inline bool operator==(const ExcludedUniform &lhs, const ExcludedUniform &rhs) {
     return (lhs.name == rhs.name) && (lhs.program == rhs.program);
 }
 
@@ -41,16 +41,16 @@ struct UniformSetRequest {
     const void *data;
 };
 
-struct GLTextureCacheState: public renderer::TextureCacheState {
+struct GLTextureCacheState : public renderer::TextureCacheState {
     GLObjectArray<TextureCacheSize> textures;
 };
 
-struct GLContext: public renderer::Context {
+struct GLContext : public renderer::Context {
     GLTextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
-    GLuint last_draw_program { 0 };
+    GLuint last_draw_program{ 0 };
 
     std::vector<UniformSetRequest> vertex_set_requests;
     std::vector<UniformSetRequest> fragment_set_requests;
@@ -81,9 +81,9 @@ struct GLVertexProgram : public renderer::VertexProgram {
     AttributeLocations attribute_locations;
 };
 
-struct GLRenderTarget: public renderer::RenderTarget {
+struct GLRenderTarget : public renderer::RenderTarget {
     GLObjectArray<2> renderbuffers;
     GLObjectArray<1> framebuffer;
     GLObjectArray<1> color_attachment;
 };
-} // namespace renderer
+} // namespace renderer::gl

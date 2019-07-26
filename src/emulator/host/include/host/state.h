@@ -24,6 +24,7 @@
 #include <config/config.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
+#include <features/state.h>
 #include <gxm/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
@@ -31,7 +32,6 @@
 #include <nids/types.h>
 #include <np/state.h>
 #include <renderer/state.h>
-#include <features/state.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
 #ifdef USE_GDBSTUB

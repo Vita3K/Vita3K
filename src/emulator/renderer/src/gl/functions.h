@@ -4,8 +4,8 @@
 #include <glutil/object.h>
 #include <gxm/types.h>
 
-#include "types.h"
 #include "state.h"
+#include "types.h"
 
 #include <psp2/gxm.h>
 
@@ -22,7 +22,7 @@ namespace renderer::gl {
 
 // Compile program.
 SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_cache, ShaderCache &fragment_cache,
-    const GxmContextState &state, const FeatureState &features, const MemState &mem, const char *base_path, const char *title_id) ;
+    const GxmContextState &state, const FeatureState &features, const MemState &mem, const char *base_path, const char *title_id);
 
 // Shaders.
 std::string load_shader(const SceGxmProgram &program, const FeatureState &features, const char *base_path, const char *title_id);
@@ -40,7 +40,7 @@ void sync_rendertarget(const GLRenderTarget &rt);
 void set_context(GLContext &ctx, const GLRenderTarget *rt, const FeatureState &features);
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels);
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
-    const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id, 
+    const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id,
     const bool log_active_shaders, const bool log_uniforms);
 
 void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);
@@ -92,4 +92,4 @@ bool init(GLTextureCacheState &cache);
 
 } // namespace texture
 
-}
+} // namespace renderer::gl

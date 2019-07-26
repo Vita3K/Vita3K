@@ -46,4 +46,4 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format) {
         return GL_FALSE;
     }
 }
-} // namespace renderer
+} // namespace renderer::gl

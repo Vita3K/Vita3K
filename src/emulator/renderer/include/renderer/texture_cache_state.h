@@ -5,8 +5,8 @@
 #include <gxm/types.h>
 #include <psp2/gxm.h>
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 #include <functional>
 
 struct MemState;
@@ -20,8 +20,8 @@ typedef std::array<emu::SceGxmTexture, TextureCacheSize> TextureCacheGxmTextures
 typedef std::array<TextureCacheTimestamp, TextureCacheSize> TextureCacheTimestamps;
 typedef std::array<TextureCacheHash, TextureCacheSize> TextureCacheHashes;
 typedef std::function<void(std::size_t)> TextureCacheStateSelectCallback;
-typedef std::function<void(std::size_t, const void*)> TextureCacheStateConfigureTextureCallback;
-typedef std::function<void(std::size_t, const void*, const MemState&)> TextureCacheStateUploadTextureCallback;
+typedef std::function<void(std::size_t, const void *)> TextureCacheStateConfigureTextureCallback;
+typedef std::function<void(std::size_t, const void *, const MemState &)> TextureCacheStateUploadTextureCallback;
 
 struct TextureCacheState {
     size_t used = 0;

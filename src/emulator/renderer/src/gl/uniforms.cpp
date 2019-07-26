@@ -3,8 +3,8 @@
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
-#include <renderer/types.h>
 #include <renderer/profile.h>
+#include <renderer/types.h>
 #include <util/log.h>
 
 #include <algorithm>
@@ -170,7 +170,7 @@ bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderSt
     auto name = gxp::parameter_name(*parameter);
 
     auto &excluded_uniforms = statics.excluded_uniforms;
-    ExcludedUniform to_search { name, program };
+    ExcludedUniform to_search{ name, program };
 
     if (std::find(excluded_uniforms.begin(), excluded_uniforms.end(), to_search) != excluded_uniforms.end())
         return false;
@@ -256,4 +256,4 @@ bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderSt
 
     return true;
 }
-} // namespace renderer
+} // namespace renderer::gl

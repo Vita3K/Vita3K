@@ -1,6 +1,6 @@
 // Vita3K emulator project
 // Copyright (C) 2018 Vita3K team
-// Copyright (c) 2002-2011 The ANGLE Project Authors. 
+// Copyright (c) 2002-2011 The ANGLE Project Authors.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ struct StructDeclContext {
 struct TranslationState {
     spv::Id last_frag_data_id = spv::NoResult;
     spv::Id color_attachment_id = spv::NoResult;
-    spv::Id frag_coord_id = spv::NoResult;      ///< gl_FragCoord, not built-in in SPIR-V.
+    spv::Id frag_coord_id = spv::NoResult; ///< gl_FragCoord, not built-in in SPIR-V.
 };
 
 struct VertexProgramOutputProperties {
@@ -501,7 +501,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     if (program.is_native_color()) {
         // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data
         spv::Id source = spv::NoResult;
-        
+
         if (features.direct_fragcolor) {
             // The GPU supports gl_LastFragData. It's only OpenGL though
             // TODO: Make this not emit with OpenGL
@@ -509,7 +509,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             spv::Id v4_a = b.makeArrayType(v4, b.makeIntConstant(1), 0);
             spv::Id last_frag_data_arr = b.createVariable(spv::StorageClassInput, v4_a, "gl_LastFragData");
             spv::Id last_frag_data = b.createOp(spv::OpAccessChain, v4, { last_frag_data_arr, b.makeIntConstant(0) });
-            
+
             // Copy outs into. The output data from last stage should has the same format as our
             source = last_frag_data;
             translation_state.last_frag_data_id = last_frag_data_arr;
@@ -526,7 +526,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Create a global sampler, which is our color attachment
             spv::Id sampled_type = b.makeFloatType(32);
             spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
-            
+
             if (features.should_use_texture_barrier()) {
                 // Make it a sampler
                 image_type = b.makeSampledImageType(image_type);
@@ -539,7 +539,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             translation_state.frag_coord_id = current_coord;
             translation_state.color_attachment_id = color_attachment;
 
-            spv::Id i32 =  b.makeIntegerType(32, true);
+            spv::Id i32 = b.makeIntegerType(32, true);
             current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), current_coord);
             current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
 
@@ -549,7 +549,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 texel = b.createOp(spv::OpImageRead, v4, { color_attachment, current_coord });
             else
                 texel = b.createOp(spv::OpImageFetch, v4, { color_attachment, current_coord });
-                
+
             source = texel;
         } else {
             // Try to initialize outs[0] to some nice value. In case the GPU has garbage data for our shader
@@ -756,8 +756,12 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             LOG_DEBUG(param_log);
 
             int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
-            create_input_variable(b, spv_params, utils, features, var_name.c_str(), param_reg_type, offset, param_type,
+            spv::Id var = create_input_variable(b, spv_params, utils, features, var_name.c_str(), param_reg_type, offset, param_type,
                 parameter.array_size * parameter.component_count * 4, 0, store_type);
+
+            if (is_uniform) {
+                // Need to add an binding number to it. We can use resource index
+            }
 
             break;
         }
@@ -1068,13 +1072,13 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     } else {
         end_hook_func = make_vert_finalize_function(b, parameters, program, utils, features);
     }
-    
+
     generate_shader_body(b, parameters, program, features, utils, end_hook_func, texture_queries);
 
     // Execution modes
     if (program_type == emu::SceGxmProgramType::Fragment) {
         b.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);
-    
+
         if (program.is_native_color() && features.should_use_shader_interlock()) {
             // Add execution mode
             b.addExecutionMode(spv_func_main, spv::ExecutionModePixelInterlockOrderedEXT);
@@ -1168,8 +1172,7 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureSt
                 "     uint x = f32tof16(v.x);\n"
                 "     uint y = f32tof16(v.y);\n"
                 "     return (y << 16) | x;\n"
-                "}\n"
-            );
+                "}\n");
 
             glsl.add_header_line(
                 "float f16tof32(uint val)\n"
@@ -1221,8 +1224,7 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureSt
                 "    uint y = (u >> 16);\n"
                 "    uint x = u & 0xFFFFu;\n"
                 "    return vec2(f16tof32(x), f16tof32(y));\n"
-                "}\n"
-                );
+                "}\n");
         }
     }
 
@@ -1234,8 +1236,7 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureSt
         glsl.set_name(translation_state.last_frag_data_id, "gl_LastFragData");
     }
 
-    if (features.is_programmable_blending_need_to_bind_color_attachment() &&
-        translation_state.frag_coord_id != spv::NoResult) {
+    if (features.is_programmable_blending_need_to_bind_color_attachment() && translation_state.frag_coord_id != spv::NoResult) {
         glsl.set_remapped_variable_state(translation_state.frag_coord_id, true);
         glsl.set_name(translation_state.frag_coord_id, "gl_FragCoord");
     }

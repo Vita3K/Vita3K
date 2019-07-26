@@ -367,10 +367,6 @@ bool USSETranslatorVisitor::vdp(
     return true;
 }
 
-static spv::Id do_alu_op(spv::Builder &b, spv::Id lhs, spv::Id rhs, const Imm4 dest_mask) {
-
-}
-
 spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask) {
     spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
     spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
@@ -893,25 +889,24 @@ bool USSETranslatorVisitor::sop2(
     Imm1 asrc1_mod,
     Imm1 dest_mod,
     Imm7 src1_n,
-    Imm7 src2_n)
-{
+    Imm7 src2_n) {
     static auto selector_zero = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-        const spv::Id src2_alpha) {
+                                    const spv::Id src2_alpha) {
         return utils::make_uniform_vector_from_type(b, type, 0);
     };
 
     static auto selector_src1_color = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-        const spv::Id src2_alpha) {
+                                          const spv::Id src2_alpha) {
         return src1_color;
     };
-    
+
     static auto selector_src2_color = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-        const spv::Id src2_alpha) {
+                                          const spv::Id src2_alpha) {
         return src2_color;
     };
-    
+
     static auto selector_src1_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-        const spv::Id src2_alpha) {
+                                          const spv::Id src2_alpha) {
         if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
             // We must do a composite construct
             return b.createCompositeConstruct(type, { src1_alpha, src1_alpha, src1_alpha });
@@ -919,9 +914,9 @@ bool USSETranslatorVisitor::sop2(
 
         return src1_alpha;
     };
-    
+
     static auto selector_src2_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-        const spv::Id src2_alpha) {
+                                          const spv::Id src2_alpha) {
         if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
             // We must do a composite construct
             return b.createCompositeConstruct(type, { src2_alpha, src2_alpha, src2_alpha });
@@ -938,7 +933,7 @@ bool USSETranslatorVisitor::sop2(
         Opcode::FMAX
     };
 
-    using SelectorFunc = std::function<spv::Id(spv::Builder&, const spv::Id, const spv::Id, const spv::Id, 
+    using SelectorFunc = std::function<spv::Id(spv::Builder &, const spv::Id, const spv::Id, const spv::Id,
         const spv::Id, const spv::Id)>;
 
     static SelectorFunc color_selector_1[] = {
@@ -947,8 +942,8 @@ bool USSETranslatorVisitor::sop2(
         selector_src2_color,
         selector_src1_alpha,
         selector_src2_alpha,
-        nullptr,                // source alpha saturated.
-        nullptr                 // source alpha scale
+        nullptr, // source alpha saturated.
+        nullptr // source alpha scale
     };
 
     static SelectorFunc color_selector_2[] = {
@@ -957,22 +952,22 @@ bool USSETranslatorVisitor::sop2(
         selector_src2_color,
         selector_src1_alpha,
         selector_src2_alpha,
-        nullptr,                // source alpha saturated.
-        nullptr                 // zero source 2 minus half.
+        nullptr, // source alpha saturated.
+        nullptr // zero source 2 minus half.
     };
 
     static SelectorFunc alpha_selector_1[] = {
         selector_zero,
         selector_src1_alpha,
         selector_src2_alpha,
-        nullptr                 // source 2 scale.
+        nullptr // source 2 scale.
     };
-    
+
     static SelectorFunc alpha_selector_2[] = {
         selector_zero,
         selector_src1_alpha,
         selector_src2_alpha,
-        nullptr                 // zero source 2 minus half.
+        nullptr // zero source 2 minus half.
     };
 
     Instruction inst;
@@ -1001,10 +996,7 @@ bool USSETranslatorVisitor::sop2(
     Opcode color_op = operations[cop];
     Opcode alpha_op = operations[aop];
 
-    if (csel1 >= sizeof(color_selector_1) / sizeof(SelectorFunc) ||
-        csel2 >= sizeof(color_selector_2) / sizeof(SelectorFunc) ||
-        asel1 >= sizeof(alpha_selector_1) / sizeof(SelectorFunc) ||
-        asel2 >= sizeof(alpha_selector_2) / sizeof(SelectorFunc)) {
+    if (csel1 >= sizeof(color_selector_1) / sizeof(SelectorFunc) || csel2 >= sizeof(color_selector_2) / sizeof(SelectorFunc) || asel1 >= sizeof(alpha_selector_1) / sizeof(SelectorFunc) || asel2 >= sizeof(alpha_selector_2) / sizeof(SelectorFunc)) {
         LOG_ERROR("Unknown color/alpha selector (csel1: {}, csel2: {}, asel1: {}, asel2: {}", csel1, csel2,
             asel1, asel2);
         return true;
@@ -1060,62 +1052,56 @@ bool USSETranslatorVisitor::sop2(
             } else {
                 if (!uniform_1_alpha)
                     uniform_1_alpha = m_b.makeFloatConstant(1.0f);
-                    
+
                 target = m_b.createBinOp(spv::OpFSub, type, uniform_1_alpha, target);
             }
         }
     };
-    
+
     // TODO: Not sure about the jump
     BEGIN_REPEAT(count, 2)
-        GET_REPEAT(inst)
+    GET_REPEAT(inst)
 
-        spv::Id src1_color = load(inst.opr.src1, 0b0111, src1_repeat_offset);
-        spv::Id src2_color = load(inst.opr.src2, 0b0111, src2_repeat_offset);
-        spv::Id src1_alpha = load(inst.opr.src1, 0b1000, src1_repeat_offset);
-        spv::Id src2_alpha = load(inst.opr.src2, 0b1000, src2_repeat_offset);
+    spv::Id src1_color = load(inst.opr.src1, 0b0111, src1_repeat_offset);
+    spv::Id src2_color = load(inst.opr.src2, 0b0111, src2_repeat_offset);
+    spv::Id src1_alpha = load(inst.opr.src1, 0b1000, src1_repeat_offset);
+    spv::Id src2_alpha = load(inst.opr.src2, 0b1000, src2_repeat_offset);
 
-        spv::Id uniform_1_color = spv::NoResult;
+    spv::Id uniform_1_color = spv::NoResult;
 
-        spv::Id src_color_type = m_b.getTypeId(src1_color);
-        spv::Id src_alpha_type = m_b.getTypeId(src1_alpha);
+    spv::Id src_color_type = m_b.getTypeId(src1_color);
+    spv::Id src_alpha_type = m_b.getTypeId(src1_alpha);
 
+    // Apply source flag.
+    // Complement is the vector that when added with source creates a nice vec4(1.0).
+    // Since the whole opcode is around stencil and blending.
+    apply_complement_modifiers(src1_color, src1_mod, src_color_type, true);
+    apply_complement_modifiers(src1_alpha, src1_mod, src_alpha_type, false);
 
-        // Apply source flag.
-        // Complement is the vector that when added with source creates a nice vec4(1.0).
-        // Since the whole opcode is around stencil and blending.
-        apply_complement_modifiers(src1_color, src1_mod, src_color_type, true);
-        apply_complement_modifiers(src1_alpha, src1_mod, src_alpha_type, false);
+    // Apply color selector
+    spv::Id factored_rgb_lhs = color_selector_1_func(m_b, src_color_type, src1_color, src2_color, src1_alpha, src2_alpha);
+    spv::Id factored_rgb_rhs = color_selector_2_func(m_b, src_color_type, src1_color, src2_color, src1_alpha, src2_alpha);
 
-        // Apply color selector
-        spv::Id factored_rgb_lhs = color_selector_1_func(m_b, src_color_type, src1_color, src2_color, src1_alpha, src2_alpha);
-        spv::Id factored_rgb_rhs = color_selector_2_func(m_b, src_color_type, src1_color, src2_color, src1_alpha, src2_alpha);
+    spv::Id factored_a_lhs = alpha_selector_1_func(m_b, src_alpha_type, src1_color, src2_color, src1_alpha, src2_alpha);
+    spv::Id factored_a_rhs = alpha_selector_2_func(m_b, src_alpha_type, src1_color, src2_color, src1_alpha, src2_alpha);
 
-        spv::Id factored_a_lhs = alpha_selector_1_func(m_b, src_alpha_type, src1_color, src2_color, src1_alpha, src2_alpha);
-        spv::Id factored_a_rhs = alpha_selector_2_func(m_b, src_alpha_type, src1_color, src2_color, src1_alpha, src2_alpha);
+    // Apply modifiers
+    // BREAKDOWN BREAKDOWN
+    apply_complement_modifiers(factored_rgb_lhs, cmod1, src_color_type, true);
+    apply_complement_modifiers(factored_rgb_rhs, cmod2, src_color_type, true);
+    apply_complement_modifiers(factored_a_lhs, amod1, src_alpha_type, false);
+    apply_complement_modifiers(factored_a_rhs, amod2, src_alpha_type, false);
 
-        // Apply modifiers
-        // BREAKDOWN BREAKDOWN
-        apply_complement_modifiers(factored_rgb_lhs, cmod1, src_color_type, true);
-        apply_complement_modifiers(factored_rgb_rhs, cmod2, src_color_type, true);
-        apply_complement_modifiers(factored_a_lhs, amod1, src_alpha_type, false);
-        apply_complement_modifiers(factored_a_rhs, amod2, src_alpha_type, false);
+    // Factor them with source
+    factored_rgb_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
+    factored_rgb_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
 
-        // Factor them with source
-        factored_rgb_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
-        factored_rgb_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
+    factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_a_lhs, src1_alpha);
+    factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_a_rhs, src2_alpha);
 
-        factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_a_lhs, src1_alpha);
-        factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_a_rhs, src2_alpha);
-
-        // Final result. Do binary operation and then store
-        store(inst.opr.dest, apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs), 0b0111, dest_repeat_offset);
-        store(inst.opr.dest, apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs), 0b1000, dest_repeat_offset);
-
-        // Case 1: LastFragData is available. We use it directly.
-
-        // Case 2: Shader interlock is available. The color attachment should be binded at reserved texture location 12
-        // Hope no game use more then 11 textures.
+    // Final result. Do binary operation and then store
+    store(inst.opr.dest, apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs), 0b0111, dest_repeat_offset);
+    store(inst.opr.dest, apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs), 0b1000, dest_repeat_offset);
     END_REPEAT()
 
     return true;

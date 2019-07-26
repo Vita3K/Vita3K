@@ -134,9 +134,8 @@ static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &
     extracted = b.createBuiltinCall(type_f32_v4, b.import("GLSL.std.450"), GLSLstd450UnpackSnorm4x8, { extracted });
 
     // Multiply them with max fx8
-    extracted = b.createBinOp(spv::OpFMul, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, 
-        { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
-    
+    extracted = b.createBinOp(spv::OpFMul, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
+
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
 
@@ -159,8 +158,7 @@ static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &fe
 
     spv::Id extracted = fx8_pack_func->getParamId(0);
 
-    extracted = b.createBinOp(spv::OpFDiv, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, 
-        { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
+    extracted = b.createBinOp(spv::OpFDiv, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
     extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackSnorm4x8, { extracted });
     extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
     b.makeReturn(false, extracted);
@@ -208,7 +206,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
 
     spv::Id extracted = f16_pack_func->getParamId(0);
 
-     // use packHalf2x16
+    // use packHalf2x16
     extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackHalf2x16, { extracted });
     extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
 
@@ -231,7 +229,7 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
     // TODO: Not really FX8?
     case DataType::C10: {
         if (!utils.unpack_fx8) {
-            utils.unpack_fx8 = make_fx8_unpack_func(b, features);  
+            utils.unpack_fx8 = make_fx8_unpack_func(b, features);
         }
 
         return b.createFunctionCall(utils.unpack_fx8, { scalar });

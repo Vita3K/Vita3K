@@ -275,7 +275,7 @@ void draw_begin(GuiState &gui, HostState &host) {
 
 void draw_display(GuiState &gui, DisplayState &display, MemState &mem) {
     GLuint last_tex = 0;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&last_tex);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint *)&last_tex);
     glBindTexture(GL_TEXTURE_2D, gui.display);
     const auto pixels = display.base.cast<void>().get(mem);
 

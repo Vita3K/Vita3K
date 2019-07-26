@@ -22,4 +22,4 @@ size_t attribute_format_size(SceGxmAttributeFormat format) {
         return 4;
     }
 }
-}
+} // namespace gxm

@@ -549,4 +549,4 @@ GLenum translate_minmag_filter(SceGxmTextureFilter src) {
 }
 
 } // namespace texture
-} // namespace renderer
+} // namespace renderer::gl

@@ -1,8 +1,8 @@
 #include <renderer/functions.h>
 
 #include "functions.h"
-#include <renderer/profile.h>
 #include "types.h"
+#include <renderer/profile.h>
 
 #include <renderer/state.h>
 #include <renderer/types.h>
@@ -23,16 +23,16 @@ bool init(GLTextureCacheState &cache) {
     };
 
     cache.configure_texture_callback = [](const std::size_t index, const void *texture) {
-        configure_bound_texture(*reinterpret_cast<const emu::SceGxmTexture*>(texture));
+        configure_bound_texture(*reinterpret_cast<const emu::SceGxmTexture *>(texture));
     };
 
     cache.upload_texture_callback = [](const std::size_t index, const void *texture, const MemState &mem) {
-        upload_bound_texture(*reinterpret_cast<const emu::SceGxmTexture*>(texture), mem);
+        upload_bound_texture(*reinterpret_cast<const emu::SceGxmTexture *>(texture), mem);
     };
-    
+
     return cache.textures.init(glGenTextures, glDeleteTextures);
 }
-}
+} // namespace texture
 
 static GLenum translate_blend_func(SceGxmBlendFunc src) {
     R_PROFILE(__func__);
@@ -131,12 +131,9 @@ bool create(std::unique_ptr<Context> &context) {
     R_PROFILE(__func__);
 
     context = std::make_unique<GLContext>();
-    GLContext *gl_context = reinterpret_cast<GLContext*>(context.get());
+    GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    if (!texture::init(gl_context->texture_cache) || 
-        !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) ||
-        !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) ||
-        !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
+    if (!texture::init(gl_context->texture_cache) || !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) || !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
         return false;
     }
 
@@ -147,10 +144,9 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     R_PROFILE(__func__);
 
     rt = std::make_unique<GLRenderTarget>();
-    GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget*>(rt.get());
+    GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
 
-    if (!render_target->renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) ||
-        !render_target->framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
+    if (!render_target->renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) || !render_target->framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
         return false;
     }
 
@@ -193,7 +189,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
     R_PROFILE(__func__);
 
     fp = std::make_unique<GLFragmentProgram>();
-    GLFragmentProgram *frag_program_gl = reinterpret_cast<GLFragmentProgram*>(fp.get());
+    GLFragmentProgram *frag_program_gl = reinterpret_cast<GLFragmentProgram *>(fp.get());
 
     // Try to hash this shader
     const Sha256Hash hash_bytes_f = sha256(&program, program.size);
@@ -223,7 +219,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
     R_PROFILE(__func__);
 
     vp = std::make_unique<GLVertexProgram>();
-    GLVertexProgram *vert_program_gl = reinterpret_cast<GLVertexProgram*>(vp.get());
+    GLVertexProgram *vert_program_gl = reinterpret_cast<GLVertexProgram *>(vp.get());
 
     // Try to hash this shader
     const Sha256Hash hash_bytes_v = sha256(&program, program.size);
@@ -237,13 +233,13 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
 
 void set_context(GLContext &context, const GLRenderTarget *rt, const FeatureState &features) {
     R_PROFILE(__func__);
-    
+
     bind_fundamental(context);
 
     if (rt) {
         sync_rendertarget(*rt);
     } else {
-        sync_rendertarget(*reinterpret_cast<const GLRenderTarget*>(context.current_render_target));
+        sync_rendertarget(*reinterpret_cast<const GLRenderTarget *>(context.current_render_target));
     }
 
     // Bind it for programmable blending
@@ -257,7 +253,7 @@ void set_context(GLContext &context, const GLRenderTarget *rt, const FeatureStat
             glBindTexture(GL_TEXTURE_2D, rt->color_attachment[0]);
         }
     }
-    
+
     // TODO This is just for debugging.
     // glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -282,11 +278,11 @@ void upload_vertex_stream(GLContext &context, const std::size_t stream_index, co
     glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[stream_index]);
 
     // Orphan the buffer, so we don't have to stall the pipeline, wait for last draw call to finish
-    // See OpenGL Insight at 28.3.2. Intel driver likes glBufferData more, so use glBufferData. 
+    // See OpenGL Insight at 28.3.2. Intel driver likes glBufferData more, so use glBufferData.
     glBufferData(GL_ARRAY_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);
     glBufferData(GL_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);
-    
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-} // namespace renderer
+} // namespace renderer::gl

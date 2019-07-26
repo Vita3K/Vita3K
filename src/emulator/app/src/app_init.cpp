@@ -23,11 +23,11 @@
 #include <glutil/gl.h>
 #include <host/state.h>
 #include <io/functions.h>
+#include <renderer/functions.h>
 #include <rtc/rtc.h>
 #include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
-#include <renderer/functions.h>
 
 #ifdef USE_DISCORD_RICH_PRESENCE
 #include <app/discord.h>
@@ -68,7 +68,7 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
     const GLchar *message, const void *userParam) {
     const char *type_str = nullptr;
 
-    switch (type){
+    switch (type) {
     case GL_DEBUG_TYPE_ERROR:
         type_str = "ERROR";
         break;
@@ -173,15 +173,15 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     // Recursively create GL version until one accepts
     // Major 4 is mandantory
     const int accept_gl_version[] = {
-        5,      // OpenGL 4.5
-        3,      // OpenGL 4.3
-        2,      // OpenGL 4.2
-        1       // OpenGL 4.1
+        5, // OpenGL 4.5
+        3, // OpenGL 4.3
+        2, // OpenGL 4.2
+        1 // OpenGL 4.1
     };
-        
+
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    
+
     int choosen_minor_version = 0;
 
     for (int i = 0; i < sizeof(accept_gl_version) / sizeof(int); i++) {
@@ -220,7 +220,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     glad_set_post_callback(after_callback);
 
     // Detect feature
-    std::string version = reinterpret_cast<const GLchar*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+    std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
@@ -248,7 +248,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     int total_extensions = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
 
-    std::unordered_map<std::string, bool*> check_extensions = {
+    std::unordered_map<std::string, bool *> check_extensions = {
         { "GL_ARB_fragment_shader_interlock", &state.features.support_shader_interlock },
         { "GL_ARB_texture_barrier", &state.features.support_texture_barrier },
         { "GL_EXT_shader_framebuffer_fetch", &state.features.direct_fragcolor },
@@ -256,7 +256,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     };
 
     for (int i = 0; i < total_extensions; i++) {
-        const std::string extension = reinterpret_cast<const GLchar*>(glGetStringi(GL_EXTENSIONS, i));
+        const std::string extension = reinterpret_cast<const GLchar *>(glGetStringi(GL_EXTENSIONS, i));
         auto find_result = check_extensions.find(extension);
 
         if (find_result != check_extensions.end()) {

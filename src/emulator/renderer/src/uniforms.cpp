@@ -19,9 +19,9 @@ void set_uniforms(State &state, Context *ctx, const SceGxmProgram &program, cons
             LOG_WARN("Uniform buffer {} not set for parameter {}.", parameter.container_index, name);
             continue;
         }
-        
+
         const uint8_t *const base = static_cast<const uint8_t *>(uniform_buffer.get(mem));
-        
+
         // TODO: Not hardcoded by 4 in backup case.
         const std::size_t uniform_raw_size = parameter.component_count * parameter.array_size * sizeof(std::uint32_t);
         const std::size_t offset = parameter.resource_index * sizeof(std::uint32_t);
@@ -36,4 +36,4 @@ void set_uniforms(State &state, Context *ctx, const SceGxmProgram &program, cons
         renderer::set_uniform(state, ctx, !program.is_fragment(), &parameter, data);
     }
 }
-}
+} // namespace renderer

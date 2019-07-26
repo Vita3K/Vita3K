@@ -96,4 +96,4 @@ std::string load_shader(const SceGxmProgram &program, const FeatureState &featur
     return source;
 }
 
-} // namespace renderer
+} // namespace renderer::gl

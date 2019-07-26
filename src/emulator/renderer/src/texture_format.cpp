@@ -1,7 +1,7 @@
 #include <psp2/gxm.h>
 
 namespace renderer::texture {
-    
+
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
@@ -69,4 +69,4 @@ size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
 
     return 0;
 }
-}
+} // namespace renderer::texture

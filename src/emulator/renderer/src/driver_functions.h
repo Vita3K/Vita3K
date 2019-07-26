@@ -10,13 +10,13 @@ namespace renderer {
 struct State;
 struct Command;
 
-#define COMMAND(name)                                                                                       \
-    void cmd_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper,        \
-    const FeatureState &features, Context *render_context, GxmContextState *state, const char *base_path, const char *title_id)
+#define COMMAND(name)                                                                                \
+    void cmd_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \
+        const FeatureState &features, Context *render_context, GxmContextState *state, const char *base_path, const char *title_id)
 
-#define COMMAND_SET_STATE(name)                                                                                       \
-    void cmd_set_state_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper,        \
-    Context *render_context, GxmContextState *state)
+#define COMMAND_SET_STATE(name)                                                                                \
+    void cmd_set_state_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \
+        Context *render_context, GxmContextState *state)
 
 COMMAND_SET_STATE(region_clip);
 COMMAND_SET_STATE(program);
@@ -47,4 +47,4 @@ COMMAND(handle_draw);
 COMMAND(handle_nop);
 COMMAND(handle_signal_sync_object);
 
-}
+} // namespace renderer

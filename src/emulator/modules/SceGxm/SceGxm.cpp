@@ -113,8 +113,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         SceGxmSyncObject *sync = fragmentSyncObject.get(host.mem);
         // Wait for both display queue and fragment stage to be done.
         // If it's offline render, the sync object already has the display queue subject done, so don't worry.
-        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue |
-            renderer::SyncObjectSubject::Fragment));
+        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue | renderer::SyncObjectSubject::Fragment));
     }
 
     // TODO This may not be right.
@@ -376,7 +375,7 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
     renderer::destroy_render_target(*host.renderer, renderTarget.get(mem)->renderer);
 
     free(mem, renderTarget);
-    
+
     return 0;
 }
 
@@ -384,7 +383,7 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     //assert(oldBuffer != nullptr);
     //assert(newBuffer != nullptr);
     assert(callbackData);
-    DisplayCallback display_callback ;
+    DisplayCallback display_callback;
 
     const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
     const Ptr<void> ptr(address);
@@ -461,7 +460,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     // find the name and other things based on the pointer in memory. The pointer should be persists until
     // the fragment is done, so we are guranteed to be safe.
     renderer::set_uniforms(*host.renderer, context->renderer.get(), vertex_program_gxp, context->state.vertex_uniform_buffers, host.mem);
-    renderer::set_uniforms(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, host.mem); 
+    renderer::set_uniforms(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, host.mem);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
@@ -531,7 +530,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
 
     // Add command to end the scene
     renderer::sync_surface_data(*host.renderer, context->renderer.get(), &context->state);
-    
+
     // Add NOP for SceGxmFinish
     context->renderer->render_finish_status = renderer::CommandErrorCodePending;
     renderer::add_command(context->renderer.get(), renderer::CommandOpcode::Nop, &context->renderer->render_finish_status,
@@ -648,7 +647,7 @@ static int SDLCALL thread_function(void *data) {
 
         // Wait for fragment on the new buffer to finish
         renderer::wishlist(newBuffer, renderer::SyncObjectSubject::Fragment);
-        
+
         // Now run callback
         {
             const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
@@ -663,7 +662,7 @@ static int SDLCALL thread_function(void *data) {
         // Should not block anymore.
         renderer::subject_done(newBuffer, renderer::SyncObjectSubject::DisplayQueue);
     }
-    
+
     return 0;
 }
 
@@ -758,8 +757,7 @@ EXPORT(int, sceGxmPadHeartbeat, const emu::SceGxmColorSurface *displaySurface, S
     assert(displaySurface != nullptr);
     assert(displaySyncObject != nullptr);
 
-    host.renderer->average_scene_per_frame = (host.renderer->average_scene_per_frame + 
-        host.renderer->scene_processed_since_last_frame + 1) >> 1;
+    host.renderer->average_scene_per_frame = (host.renderer->average_scene_per_frame + host.renderer->scene_processed_since_last_frame + 1) >> 1;
 
     host.renderer->scene_processed_since_last_frame = 0;
 
@@ -1163,7 +1161,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     assert(texture != nullptr);
 
     renderer::set_fragment_texture(*host.renderer, context->renderer.get(), &context->state, textureIndex, *texture);
-    
+
     return 0;
 }
 
@@ -1200,7 +1198,7 @@ EXPORT(void, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMod
 }
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
-     renderer::set_stencil_func(*host.renderer, context->renderer.get(), &context->state, true, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
+    renderer::set_stencil_func(*host.renderer, context->renderer.get(), &context->state, true, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
 }
 
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned char sref) {
@@ -1271,7 +1269,7 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVer
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, Ptr<const void> streamData) {
     assert(context != nullptr);
     assert(streamData);
-    
+
     context->state.stream_data[streamIndex] = streamData;
 
     return 0;
@@ -1385,7 +1383,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->program = programId->program;
-    
+
     if (!renderer::create(fp->renderer_data, *host.renderer, *programId->program.get(mem), blendInfo, host.renderer->gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }

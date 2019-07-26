@@ -48,17 +48,17 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, int size) {
     MemState &mem = host.mem;
     assert(name != nullptr);
     assert(size != 0);
-    
+
     const Ptr<void> address(alloc(mem, size, name));
     if (!address) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }
-    
+
     KernelState *const state = &host.kernel;
     const SceUID uid = state->get_next_uid();
     state->blocks.insert(Blocks::value_type(uid, address));
     state->vm_blocks.insert(Blocks::value_type(uid, address));
-    
+
     return uid;
 }
 
@@ -97,15 +97,15 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
 
 EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     assert(uid >= 0);
-    
+
     KernelState *const state = &host.kernel;
     const Blocks::const_iterator block = state->vm_blocks.find(uid);
     assert(block != state->vm_blocks.end());
-    
+
     free(host.mem, block->second.address());
     state->blocks.erase(block);
     state->vm_blocks.erase(block);
-    
+
     return SCE_KERNEL_OK;
 }
 
