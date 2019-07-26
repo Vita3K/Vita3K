@@ -24,6 +24,7 @@ add_library(
 	src/creation.cpp
 	src/batch.cpp
 	src/driver_functions.h
+	src/renderer.cpp
 	src/scene.cpp
 	src/state_set.cpp
 	src/sync.cpp
