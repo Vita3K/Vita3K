@@ -63,6 +63,7 @@ void sync_texture(GLContext &context, const GxmContextState &state, const MemSta
 void sync_vertex_attributes(GLContext &context, const GxmContextState &state, const MemState &mem);
 void bind_fundamental(GLContext &context);
 
+struct GLTextureCacheState;
 struct TextureCacheState;
 
 // Attribute formats.
@@ -73,7 +74,7 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
 namespace texture {
 
 // Textures.
-void bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem);
+void bind_texture(GLTextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem);
 void configure_bound_texture(const emu::SceGxmTexture &gxm_texture);
 void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState &mem);
 
@@ -86,14 +87,8 @@ GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
 GLenum translate_minmag_filter(SceGxmTextureFilter src);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 
-// Paletted textures.
-void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
-void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
-const uint32_t *get_texture_palette(const emu::SceGxmTexture &texture, const MemState &mem);
-
 // Texture cache.
-bool init(TextureCacheState &cache);
-void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem);
+bool init(GLTextureCacheState &cache);
 
 } // namespace texture
 

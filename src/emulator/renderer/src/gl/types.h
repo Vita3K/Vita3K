@@ -7,7 +7,7 @@
 
 #include <psp2/gxm.h>
 
-#include "texture_cache_state.h"
+#include <renderer/texture_cache_state.h>
 
 #include <map>
 #include <memory>
@@ -41,8 +41,12 @@ struct UniformSetRequest {
     const void *data;
 };
 
+struct GLTextureCacheState: public renderer::TextureCacheState {
+    GLObjectArray<TextureCacheSize> textures;
+};
+
 struct GLContext: public renderer::Context {
-    TextureCacheState texture_cache;
+    GLTextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;

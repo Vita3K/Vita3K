@@ -1,9 +1,8 @@
+#include <renderer/functions.h>
+#include <renderer/profile.h>
+
+#include "types.h"
 #include "functions.h"
-
-#include "profile.h"
-
-// TODO: Remove dependance on this
-#include "texture_cache_state.h"
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>
@@ -12,7 +11,7 @@
 namespace renderer::gl {
 namespace texture {
 
-void bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem) {
+void bind_texture(GLTextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     glBindTexture(GL_TEXTURE_2D, cache.textures[0]);
@@ -60,12 +59,12 @@ void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState 
     size_t stride = 0;
     if (gxm::is_paletted_format(fmt)) {
         const auto base_format = gxm::get_base_format(fmt);
-        const uint32_t *const palette_bytes = get_texture_palette(gxm_texture, mem);
+        const uint32_t *const palette_bytes = renderer::texture::get_texture_palette(gxm_texture, mem);
         palette_texture_pixels.resize(width * height);
         if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
-            palette_texture_to_rgba_8(palette_texture_pixels.data(), texture_data, width, height, palette_bytes);
+            renderer::texture::palette_texture_to_rgba_8(palette_texture_pixels.data(), texture_data, width, height, palette_bytes);
         } else {
-            palette_texture_to_rgba_4(palette_texture_pixels.data(), texture_data, width, height, palette_bytes);
+            renderer::texture::palette_texture_to_rgba_4(palette_texture_pixels.data(), texture_data, width, height, palette_bytes);
         }
         pixels = palette_texture_pixels.data();
         stride = width;

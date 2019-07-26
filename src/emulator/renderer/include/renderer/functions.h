@@ -135,4 +135,18 @@ int send_single_command(State &state, Context *ctx, GxmContextState *gxm_state, 
 
 bool sync_state(State &state, Context &context, const MemState &mem);
 
+struct TextureCacheState;
+
+namespace texture {
+
+// Paletted textures.
+void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
+void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
+const uint32_t *get_texture_palette(const emu::SceGxmTexture &texture, const MemState &mem);
+
+void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem);
+size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
+
+}
+
 } // namespace renderer

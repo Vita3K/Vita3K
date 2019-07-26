@@ -1,7 +1,7 @@
 #include <renderer/functions.h>
+#include <renderer/profile.h>
 
 #include "functions.h"
-#include "profile.h"
 #include "types.h"
 #include "state.h"
 
@@ -238,7 +238,7 @@ void sync_texture(GLContext &context, const GxmContextState &state, const MemSta
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
 
     if (enable_texture_cache) {
-        texture::cache_and_bind_texture(context.texture_cache, texture, mem);
+        renderer::texture::cache_and_bind_texture(context.texture_cache, texture, mem);
     } else {
         texture::bind_texture(context.texture_cache, texture, mem);
     }

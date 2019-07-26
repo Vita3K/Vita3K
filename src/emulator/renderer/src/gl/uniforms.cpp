@@ -1,10 +1,10 @@
 #include "functions.h"
 #include "types.h"
-#include "profile.h"
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/types.h>
+#include <renderer/profile.h>
 #include <util/log.h>
 
 #include <algorithm>

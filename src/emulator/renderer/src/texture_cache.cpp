@@ -1,8 +1,6 @@
-#include "functions.h"
-
-#include "profile.h"
-
-#include "texture_cache_state.h"
+#include <renderer/functions.h>
+#include <renderer/profile.h>
+#include <renderer/texture_cache_state.h>
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>
@@ -19,7 +17,7 @@ static bool operator==(const emu::SceGxmTexture &a, const emu::SceGxmTexture &b)
     return memcmp(&a, &b, sizeof(a)) == 0;
 }
 
-namespace renderer::gl {
+namespace renderer {
 namespace texture {
 
 static TextureCacheHash hash_data(const void *data, size_t size) {
@@ -79,10 +77,6 @@ static size_t find_lru(const TextureCacheTimestamps &timestamps, TextureCacheTim
     return oldest_index;
 }
 
-bool init(TextureCacheState &cache) {
-    return cache.textures.init(glGenTextures, glDeleteTextures);
-}
-
 void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
 
@@ -122,14 +116,13 @@ void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &
         upload = (hash != cache.hashes[index]);
     }
 
-    const GLuint gl_texture = cache.textures[index];
-    glBindTexture(GL_TEXTURE_2D, gl_texture);
+    cache.select_callback(index);
 
     if (configure) {
-        configure_bound_texture(gxm_texture);
+        cache.configure_texture_callback(index, &gxm_texture);
     }
     if (upload) {
-        upload_bound_texture(gxm_texture, mem);
+        cache.upload_texture_callback(index, &gxm_texture, mem);
         cache.hashes[index] = hash;
     }
 

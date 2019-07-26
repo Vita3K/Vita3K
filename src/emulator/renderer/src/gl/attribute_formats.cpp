@@ -1,6 +1,5 @@
 #include "functions.h"
-
-#include "profile.h"
+#include <renderer/profile.h>
 
 #include <util/log.h>
 

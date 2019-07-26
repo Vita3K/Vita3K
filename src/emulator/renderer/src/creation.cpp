@@ -2,9 +2,9 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 #include <renderer/commands.h>
+#include <renderer/texture_cache_state.h>
 
 #include "gl/functions.h"
-#include "gl/texture_cache_state.h"
 #include "driver_functions.h"
 
 #include <util/log.h>

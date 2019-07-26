@@ -1,7 +1,7 @@
 #include <renderer/functions.h>
 
 #include "functions.h"
-#include "profile.h"
+#include <renderer/profile.h>
 #include "types.h"
 
 #include <renderer/state.h>
@@ -11,12 +11,29 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <SDL_video.h>
-
 #include <cassert>
 #include <features/state.h>
 
 namespace renderer::gl {
+namespace texture {
+bool init(GLTextureCacheState &cache) {
+    cache.select_callback = [&](const std::size_t index) {
+        const GLuint gl_texture = cache.textures[index];
+        glBindTexture(GL_TEXTURE_2D, gl_texture);
+    };
+
+    cache.configure_texture_callback = [](const std::size_t index, const void *texture) {
+        configure_bound_texture(*reinterpret_cast<const emu::SceGxmTexture*>(texture));
+    };
+
+    cache.upload_texture_callback = [](const std::size_t index, const void *texture, const MemState &mem) {
+        upload_bound_texture(*reinterpret_cast<const emu::SceGxmTexture*>(texture), mem);
+    };
+    
+    return cache.textures.init(glGenTextures, glDeleteTextures);
+}
+}
+
 static GLenum translate_blend_func(SceGxmBlendFunc src) {
     R_PROFILE(__func__);
 
@@ -166,7 +183,7 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     }
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_target->renderbuffers[depth_fb_index]);
-    glClearColor(0.258824f, 0.258824f, 0.435294f, 1.0f);
+    glClearColor(0.392156899f, 0.584313750f, 0.929411829f, 1.0f);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return true;

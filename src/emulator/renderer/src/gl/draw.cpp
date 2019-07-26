@@ -1,7 +1,7 @@
 #include <renderer/functions.h>
+#include <renderer/profile.h>
 
 #include "functions.h"
-#include "profile.h"
 #include "state.h"
 
 #include <renderer/types.h>

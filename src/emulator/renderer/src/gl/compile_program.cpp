@@ -1,8 +1,8 @@
 #include "functions.h"
 #include "types.h"
-#include "profile.h"
 
 #include <renderer/types.h>
+#include <renderer/profile.h>
 
 #include <gxm/types.h>
 #include <util/log.h>
