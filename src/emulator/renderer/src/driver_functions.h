@@ -4,11 +4,13 @@ struct MemState;
 struct Context;
 struct GxmContextState;
 struct Config;
+struct FeatureState;
 
 namespace renderer {
 
 struct State;
 struct Command;
+struct CommandHelper;
 
 #define COMMAND(name)                                                                                \
     void cmd_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \
