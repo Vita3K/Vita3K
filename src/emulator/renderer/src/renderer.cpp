@@ -176,4 +176,12 @@ namespace renderer {
             break;
         }
     }
+        
+    void set_uniform(State &state, Context *ctx, const bool is_vertex_uniform, const SceGxmProgramParameter *parameter, const void *data) {
+        switch (state.current_backend) {
+        default:
+            renderer::add_state_set_command(ctx, renderer::GXMState::Uniform, is_vertex_uniform, parameter, data);
+            break;
+        }
+    }
 }

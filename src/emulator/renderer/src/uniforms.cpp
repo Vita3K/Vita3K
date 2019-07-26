@@ -33,7 +33,7 @@ void set_uniforms(State &state, Context *ctx, const SceGxmProgram &program, cons
         std::copy(base + offset, base + offset + uniform_raw_size, data);
 
         // Submit. First argument specify the shader type.
-        renderer::add_state_set_command(ctx, renderer::GXMState::Uniform, !program.is_fragment(), &parameter, data);
+        renderer::set_uniform(state, ctx, !program.is_fragment(), &parameter, data);
     }
 }
 }
