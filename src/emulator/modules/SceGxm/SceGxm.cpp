@@ -142,7 +142,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         *depth_stencil_surface_copy = *depthStencil;
     }
 
-    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SetContext, nullptr, renderTarget->renderer.get(),
+    renderer::set_context(*host.renderer, context->renderer.get(), &context->state, renderTarget->renderer.get(),
         color_surface_copy, depth_stencil_surface_copy);
 
     return 0;
@@ -254,8 +254,7 @@ EXPORT(int, sceGxmCreateContext, const emu::SceGxmContextParams *params, Ptr<Sce
     SceGxmContext *const ctx = context->get(host.mem);
     ctx->state.params = *params;
 
-    if (!renderer::send_single_command(*host.renderer, nullptr, nullptr, renderer::CommandOpcode::CreateContext,
-        &ctx->renderer)) {
+    if (!renderer::create_context(*host.renderer, ctx->renderer)) {
         free(host.mem, *context);
         context->reset();
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
@@ -278,8 +277,7 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     }
 
     SceGxmRenderTarget *const rt = renderTarget->get(host.mem);
-    if (!renderer::send_single_command(*host.renderer, nullptr, nullptr, renderer::CommandOpcode::CreateRenderTarget,
-        &rt->renderer, params)) {
+    if (!renderer::create_render_target(*host.renderer, rt->renderer, params)) {
         free(host.mem, *renderTarget);
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
@@ -375,9 +373,7 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
     MemState &mem = host.mem;
     assert(renderTarget);
 
-    // Send and wait.
-    renderer::send_single_command(*host.renderer, nullptr, nullptr, renderer::CommandOpcode::DestroyRenderTarget,
-        &renderTarget.get(mem)->renderer);
+    renderer::destroy_render_target(*host.renderer, renderTarget.get(mem)->renderer);
 
     free(mem, renderTarget);
     
@@ -499,15 +495,14 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
             std::uint8_t *a_copy = new std::uint8_t[data_length];
             std::copy(data, data + data_length, a_copy);
 
-            renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::VertexStream, stream_index,
+            renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
                 data_length, a_copy);
         }
     }
 
     // Fragment texture is copied so no need to set it here.
     // Add draw command
-    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::Draw, nullptr, primType, indexType,
-        indexData, indexCount);
+    renderer::draw(*host.renderer, context->renderer.get(), &context->state, primType, indexType, indexData, indexCount);
 
     return 0;
 }
@@ -535,7 +530,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
     }
 
     // Add command to end the scene
-    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SyncSurfaceData, nullptr);
+    renderer::sync_surface_data(*host.renderer, context->renderer.get(), &context->state);
     
     // Add NOP for SceGxmFinish
     context->renderer->render_finish_status = renderer::CommandErrorCodePending;
@@ -1084,15 +1079,15 @@ EXPORT(int, sceGxmSetAuxiliarySurface) {
 }
 
 EXPORT(void, sceGxmSetBackDepthBias, SceGxmContext *context, int factor, int units) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthBias, false, factor, units);
+    renderer::set_depth_bias(*host.renderer, context->renderer.get(), &context->state, false, factor, units);
 }
 
 EXPORT(void, sceGxmSetBackDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthFunc, false, depthFunc);
+    renderer::set_depth_func(*host.renderer, context->renderer.get(), &context->state, false, depthFunc);
 }
 
 EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthWriteEnable, false, enable);
+    renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), &context->state, false, enable);
 }
 
 EXPORT(int, sceGxmSetBackFragmentProgramEnable) {
@@ -1104,19 +1099,19 @@ EXPORT(int, sceGxmSetBackLineFillLastPixelEnable) {
 }
 
 EXPORT(void, sceGxmSetBackPointLineWidth, SceGxmContext *context, unsigned int width) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::PointLineWidth, false, width);
+    renderer::set_point_line_width(*host.renderer, context->renderer.get(), &context->state, false, width);
 }
 
 EXPORT(void, sceGxmSetBackPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::PolygonMode, false, mode);
+    renderer::set_polygon_mode(*host.renderer, context->renderer.get(), &context->state, false, mode);
 }
 
 EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::StencilFunc, false, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
+    renderer::set_stencil_func(*host.renderer, context->renderer.get(), &context->state, false, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
 }
 
 EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, unsigned char sref) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::StencilRef, false, sref);
+    renderer::set_stencil_ref(*host.renderer, context->renderer.get(), &context->state, false, sref);
 }
 
 EXPORT(int, sceGxmSetBackVisibilityTestEnable) {
@@ -1132,7 +1127,7 @@ EXPORT(int, sceGxmSetBackVisibilityTestOp) {
 }
 
 EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::CullMode, mode);
+    renderer::set_cull_mode(*host.renderer, context->renderer.get(), &context->state, mode);
 }
 
 EXPORT(int, sceGxmSetDefaultRegionClipAndViewport) {
@@ -1160,15 +1155,14 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     assert(fragmentProgram);
 
     context->record.fragment_program = fragmentProgram;
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Program, fragmentProgram, true);
+    renderer::set_program(*host.renderer, context->renderer.get(), &context->state, fragmentProgram, true);
 }
 
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textureIndex, const emu::SceGxmTexture *texture) {
     assert(context != nullptr);
     assert(texture != nullptr);
 
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::FragmentTexture, textureIndex,
-        *texture);
+    renderer::set_fragment_texture(*host.renderer, context->renderer.get(), &context->state, textureIndex, *texture);
     
     return 0;
 }
@@ -1178,15 +1172,15 @@ EXPORT(int, sceGxmSetFragmentUniformBuffer) {
 }
 
 EXPORT(void, sceGxmSetFrontDepthBias, SceGxmContext *context, int factor, int units) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthBias, true, factor, units);
+    renderer::set_depth_bias(*host.renderer, context->renderer.get(), &context->state, true, factor, units);
 }
 
 EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthFunc, true, depthFunc);
+    renderer::set_depth_func(*host.renderer, context->renderer.get(), &context->state, true, depthFunc);
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::DepthWriteEnable, true, enable);
+    renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), &context->state, true, enable);
 }
 
 EXPORT(int, sceGxmSetFrontFragmentProgramEnable) {
@@ -1198,19 +1192,19 @@ EXPORT(int, sceGxmSetFrontLineFillLastPixelEnable) {
 }
 
 EXPORT(void, sceGxmSetFrontPointLineWidth, SceGxmContext *context, unsigned int width) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::PointLineWidth, true, width);
+    renderer::set_point_line_width(*host.renderer, context->renderer.get(), &context->state, true, width);
 }
 
 EXPORT(void, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::PolygonMode, true, mode);
+    renderer::set_polygon_mode(*host.renderer, context->renderer.get(), &context->state, true, mode);
 }
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::StencilFunc, true, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
+     renderer::set_stencil_func(*host.renderer, context->renderer.get(), &context->state, true, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
 }
 
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, unsigned char sref) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::StencilRef, true, sref);
+    renderer::set_stencil_ref(*host.renderer, context->renderer.get(), &context->state, true, sref);
 }
 
 EXPORT(int, sceGxmSetFrontVisibilityTestEnable) {
@@ -1234,11 +1228,11 @@ EXPORT(int, sceGxmSetPrecomputedVertexState) {
 }
 
 EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int yMin, unsigned int xMax, unsigned int yMax) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::RegionClip, mode, xMin, xMax, yMin, yMax);
+    renderer::set_region_clip(*host.renderer, context->renderer.get(), &context->state, mode, xMin, xMax, yMin, yMax);
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::TwoSided, mode);
+    renderer::set_two_sided_enable(*host.renderer, context->renderer.get(), &context->state, mode);
 }
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
@@ -1271,7 +1265,7 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVer
     assert(vertexProgram);
 
     context->record.vertex_program = vertexProgram;
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Program, vertexProgram, false);
+    renderer::set_program(*host.renderer, context->renderer.get(), &context->state, vertexProgram, false);
 }
 
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIndex, Ptr<const void> streamData) {
@@ -1293,13 +1287,12 @@ EXPORT(int, sceGxmSetVertexUniformBuffer) {
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
     // Set viewport to enable, enable more offset and scale to set
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Viewport, SCE_GXM_VIEWPORT_ENABLED, true,
-        xOffset, yOffset, zOffset, xScale, yScale, zScale);
+    renderer::set_viewport(*host.renderer, context->renderer.get(), &context->state, xOffset, yOffset, zOffset, xScale, yScale, zScale);
 }
 
 EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
     // Set viewport to enable/disable, no additional offset and scale to set.
-    renderer::add_state_set_command(context->renderer.get(), renderer::GXMState::Viewport, enable, false);
+    renderer::set_viewport_enable(*host.renderer, context->renderer.get(), &context->state, enable);
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer) {
