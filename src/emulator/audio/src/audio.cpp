@@ -100,10 +100,10 @@ bool init(AudioState &state, ResumeAudioThread resume_thread) {
         return false;
     }
 
-    SDL_PauseAudio(0);
-
     state.device = AudioDevicePtr(nullptr, close_audio);
     state.callback.temp_buffer.resize(state.ro.spec.size);
+
+    SDL_PauseAudio(0);
 
     return true;
 }
