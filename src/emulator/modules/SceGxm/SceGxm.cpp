@@ -1239,7 +1239,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(parameter->container_index == SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX);
     assert(componentCount > 0);
     assert(sourceData != nullptr);
-
+    
     size_t size = componentCount * sizeof(float);
     size_t offset = (parameter->resource_index + componentOffset) * sizeof(float);
     memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, sourceData, size);
@@ -1785,8 +1785,26 @@ static int init_texture_base(const char *export_name, emu::SceGxmTexture *textur
     texture->format0 = (texFormat & 0x80000000) >> 31;
     texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
     texture->lod_bias = 31;
-    texture->height = height - 1;
-    texture->width = width - 1;
+
+    if (texture_type == SCE_GXM_TEXTURE_SWIZZLED || texture_type == SCE_GXM_TEXTURE_TILED) {
+        // Find highest set bit of width and height. It's also the 2^? for width and height
+        static auto highest_set_bit = [](const int num) -> std::uint32_t {
+            for (std::uint32_t i = 12; i >= 0; i--) {
+                if (num & (1 << i)) {
+                    return i;
+                }
+            }
+
+            return 0;
+        };
+
+        texture->height = highest_set_bit(height);
+        texture->width = highest_set_bit(width);
+    } else {
+        texture->height = height - 1;
+        texture->width = width - 1;
+    }
+
     texture->base_format = (texFormat & 0x1F000000) >> 24;
     texture->type = texture_type >> 29;
     texture->data_addr = data.address() >> 2;
@@ -1825,57 +1843,12 @@ EXPORT(int, sceGxmTextureInitSwizzledArbitrary) {
 }
 
 EXPORT(int, sceGxmTextureInitTiled, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
-    if (width > 4096 || height > 4096 || mipCount > 13) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    } else if (!data) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
-    } else if (!texture) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
+     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_TILED);
 
-    // Add supported formats here
+    if (result == 0)
+        return 0;
 
-    switch (texFormat) {
-    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
-    case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
-    case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
-    case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-    case SCE_GXM_TEXTURE_FORMAT_U8_R111:
-    case SCE_GXM_TEXTURE_FORMAT_U8_111R:
-    case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
-        break;
-
-    default:
-        if (gxm::is_paletted_format(texFormat)) {
-            switch (texFormat) {
-            case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-            case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:
-                break;
-            default:
-                LOG_WARN("Initialized texture with untested paletted texture format: {}", log_hex(texFormat));
-            }
-        } else
-            LOG_ERROR("Initialized texture with unsupported texture format: {}", log_hex(texFormat));
-    }
-
-    texture->mip_count = mipCount - 1;
-    texture->format0 = (texFormat & 0x80000000) >> 31;
-    texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-    texture->lod_bias = 31;
-    texture->height = height - 1;
-    texture->width = width - 1;
-    texture->base_format = (texFormat & 0x1F000000) >> 24;
-    texture->type = SCE_GXM_TEXTURE_TILED >> 29;
-    texture->data_addr = data.address() >> 2;
-    texture->swizzle_format = (texFormat & 0x7000) >> 12;
-    texture->normalize_mode = 1;
-    texture->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-    texture->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-
-    return 0;
+    return result;
 }
 
 EXPORT(int, sceGxmTextureSetData, emu::SceGxmTexture *texture, Ptr<const void> data) {
