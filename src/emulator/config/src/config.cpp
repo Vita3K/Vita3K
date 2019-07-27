@@ -243,7 +243,7 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.fps_limit = rhs.fps_limit;
     if (lhs.desired_fps != rhs.desired_fps && (!init || rhs.desired_fps != static_cast<int>(60)))
         lhs.desired_fps = rhs.desired_fps;
-    if (lhs.wait_for_vsync != rhs.wait_for_vsync && (!init || rhs.wait_for_vsync))
+    if (lhs.wait_for_vsync != rhs.wait_for_vsync && (!init || !rhs.wait_for_vsync))
         lhs.wait_for_vsync = rhs.wait_for_vsync;
     if (rhs.wait_for_debugger.is_initialized()) {
         if (lhs.wait_for_debugger != rhs.wait_for_debugger && (!init || *rhs.wait_for_debugger))
