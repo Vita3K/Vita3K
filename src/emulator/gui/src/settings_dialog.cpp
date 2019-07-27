@@ -232,7 +232,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Reset Vita3K's configuration to the default values. \nAfter pressing, restart Vita3K to fully apply. \nWARNING: This cannot be undone.");
         ImGui::Spacing();
-        ImGui::SliderInt("", &host.cfg.desired_fps, 1, 240);
+        ImGui::SliderInt("##Desired FPS", &host.cfg.desired_fps, 1, 240);
         ImGui::SameLine();
         ImGui::Checkbox("FPS Limit", &host.cfg.fps_limit);
         if (ImGui::IsItemHovered())
