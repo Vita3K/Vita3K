@@ -45,7 +45,7 @@ struct TRPFile {
     explicit TRPFile() = default;
 
     bool get_entry_data(const std::uint32_t idx, TRPWriteFunc write_func);
-    const std::uint32_t search_file(const char *name);
+    const std::int32_t search_file(const char *name);
 };
 
 } // namespace emu::np::trophy

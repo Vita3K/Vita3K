@@ -87,9 +87,9 @@ EXPORT(int, sceNpTrophyDestroyHandle, SceNpTrophyHandle handle) {
 static int copy_file_data_from_trophy_file(emu::np::trophy::Context *context, const char *filename, void *buffer,
     SceSize *size) {
     // Search for ICON0.PNG in the trophy file
-    const std::uint32_t file_index = context->trophy_file.search_file(filename);
+    const std::int32_t file_index = context->trophy_file.search_file(filename);
 
-    if (file_index == static_cast<std::uint32_t>(-1)) {
+    if (file_index == -1) {
         return SCE_NP_TROPHY_ERROR_ICON_FILE_NOT_FOUND;
     }
 
@@ -105,7 +105,7 @@ static int copy_file_data_from_trophy_file(emu::np::trophy::Context *context, co
 
     std::uint32_t size_left = *size;
 
-    context->trophy_file.get_entry_data(file_index, [&](void *source, std::uint32_t source_size) -> bool {
+    context->trophy_file.get_entry_data(static_cast<std::uint32_t>(file_index), [&](void *source, std::uint32_t source_size) -> bool {
         if (size_left == 0) {
             return false;
         }

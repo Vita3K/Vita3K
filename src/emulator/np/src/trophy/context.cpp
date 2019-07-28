@@ -28,9 +28,9 @@ Context::Context(const CommunicationID &comm_id, IOState &io, const SceUID troph
 
 static bool read_trophy_entry_to_buffer(emu::np::trophy::TRPFile &trophy_file, const char *fname, std::string &buffer) {
     // Read the trophy config
-    const std::uint32_t eidx = trophy_file.search_file(fname);
+    const std::int32_t eidx = trophy_file.search_file(fname);
 
-    if (eidx == static_cast<std::uint32_t>(-1)) {
+    if (eidx == -1) {
         return false;
     }
 
@@ -38,7 +38,7 @@ static bool read_trophy_entry_to_buffer(emu::np::trophy::TRPFile &trophy_file, c
 
     // Read
     std::uint32_t pointee = 0;
-    trophy_file.get_entry_data(eidx, [&](void *source, std::uint32_t amount) {
+    trophy_file.get_entry_data(static_cast<std::uint32_t>(eidx), [&](void *source, std::uint32_t amount) {
         std::memcpy(&buffer[pointee], source, amount);
         pointee += amount;
 
