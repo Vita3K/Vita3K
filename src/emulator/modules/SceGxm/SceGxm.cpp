@@ -192,7 +192,7 @@ EXPORT(int, sceGxmColorSurfaceInit, emu::SceGxmColorSurface *surface, SceGxmColo
     assert(surface != nullptr);
     assert(colorFormat == SCE_GXM_COLOR_FORMAT_A8B8G8R8);
     assert(surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR);
-    //assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
+    assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
     assert(outputRegisterSize == SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT);
     assert(width > 0);
     assert(height > 0);
@@ -521,7 +521,7 @@ EXPORT(int, sceGxmEndCommandList) {
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotification *vertexNotification, const emu::SceGxmNotification *fragmentNotification) {
     const MemState &mem = host.mem;
     assert(context != nullptr);
-    //assert(vertexNotification == nullptr);
+    assert(vertexNotification == nullptr);
     //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.is_in_scene) {
