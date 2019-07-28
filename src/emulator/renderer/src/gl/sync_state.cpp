@@ -1,7 +1,9 @@
 #include <renderer/functions.h>
+#include <renderer/profile.h>
 
 #include "functions.h"
-#include "profile.h"
+#include "state.h"
+#include "types.h"
 
 #include <renderer/types.h>
 
@@ -11,7 +13,7 @@
 
 #include <cmath>
 
-namespace renderer {
+namespace renderer::gl {
 
 static GLenum translate_depth_func(SceGxmDepthFunc depth_func) {
     R_PROFILE(__func__);
@@ -97,29 +99,7 @@ static void set_stencil_state(GLenum face, const GxmStencilState &state) {
     glStencilMaskSeparate(face, state.write_mask);
 }
 
-bool sync_state(Context &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool log_active_shaders, bool log_uniforms) {
-    R_PROFILE(__func__);
-
-    // TODO Use some kind of caching to avoid setting every draw call?
-    const SharedGLObject program = compile_program(context.program_cache, state, mem);
-    if (!program) {
-        return false;
-    }
-    glUseProgram(program->get());
-
-    if (log_active_shaders) {
-        const SceGxmProgram &fragment_gxp_program = *state.fragment_program.get(mem)->program.get(mem);
-        const SceGxmProgram &vertex_gxp_program = *state.vertex_program.get(mem)->program.get(mem);
-
-        const Sha256Hash hash_bytes_f = sha256(&fragment_gxp_program, fragment_gxp_program.size);
-        const Sha256HashText hash_text_f = hex(hash_bytes_f);
-
-        const Sha256Hash hash_bytes_v = sha256(&vertex_gxp_program, vertex_gxp_program.size);
-        const Sha256HashText hash_text_v = hex(hash_bytes_v);
-
-        LOG_DEBUG("\nVertex  : {}\nFragment: {}", (const char *)&hash_text_v, (const char *)&hash_text_f);
-    }
-
+void sync_viewport(const GxmContextState &state) {
     // Viewport.
     const GLsizei display_w = state.color_surface.pbeEmitWords[0];
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
@@ -135,9 +115,11 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         glViewport(0, 0, display_w, display_h);
         glDepthRange(0, 1);
     }
+}
 
-    // Clipping.
-    // TODO: There was some math here to round the scissor rect, but it looked potentially incorrect.
+void sync_clipping(const GxmContextState &state) {
+    const GLsizei display_w = state.color_surface.pbeEmitWords[0];
+    const GLsizei display_h = state.color_surface.pbeEmitWords[1];
     const GLsizei scissor_x = state.region_clip_min.x;
     const GLsizei scissor_y = display_h - state.region_clip_max.y - 1;
     const GLsizei scissor_w = state.region_clip_max.x - state.region_clip_min.x + 1;
@@ -160,7 +142,9 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         LOG_WARN("Unimplemented region clip mode used: SCE_GXM_REGION_CLIP_INSIDE");
         break;
     }
+}
 
+void sync_cull(const GxmContextState &state) {
     // Culling.
     switch (state.cull_mode) {
     case SCE_GXM_CULL_CCW:
@@ -175,25 +159,43 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         glDisable(GL_CULL_FACE);
         break;
     }
+}
 
+void sync_front_depth_func(const GxmContextState &state) {
+    glDepthFunc(translate_depth_func(state.front_depth_func));
+}
+
+void sync_front_depth_write_enable(const GxmContextState &state) {
+    glDepthMask(state.front_depth_write_enable == SCE_GXM_DEPTH_WRITE_ENABLED ? GL_TRUE : GL_FALSE);
+}
+
+bool sync_depth_data(const GxmContextState &state) {
     // Depth test.
     if (state.depth_stencil_surface.depthData) {
         glEnable(GL_DEPTH_TEST);
-        glDepthFunc(translate_depth_func(state.front_depth_func));
-        glDepthMask(state.front_depth_write_enable == SCE_GXM_DEPTH_WRITE_ENABLED ? GL_TRUE : GL_FALSE);
-    } else {
-        glDisable(GL_DEPTH_TEST);
+        return true;
     }
 
+    glDisable(GL_DEPTH_TEST);
+    return false;
+}
+
+void sync_stencil_func(const GxmContextState &state, const bool is_back_stencil) {
+    set_stencil_state(is_back_stencil ? GL_BACK : GL_FRONT, is_back_stencil ? state.back_stencil : state.front_stencil);
+}
+
+bool sync_stencil_data(const GxmContextState &state) {
     // Stencil.
     if (state.depth_stencil_surface.stencilData) {
         glEnable(GL_STENCIL_TEST);
-        set_stencil_state(GL_FRONT, state.front_stencil);
-        set_stencil_state(GL_BACK, state.back_stencil);
-    } else {
-        glDisable(GL_STENCIL_TEST);
+        return true;
     }
 
+    glDisable(GL_STENCIL_TEST);
+    return false;
+}
+
+void sync_front_polygon_mode(const GxmContextState &state) {
     // Polygon Mode.
     switch (state.front_polygon_mode) {
     case SCE_GXM_POLYGON_MODE_POINT_10UV:
@@ -210,18 +212,45 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         break;
     }
+}
 
+void sync_front_point_line_width(const GxmContextState &state) {
     // Point Line Width
-
     glLineWidth(static_cast<GLfloat>(state.front_point_line_width));
     glPointSize(static_cast<GLfloat>(state.front_point_line_width));
+}
 
+void sync_front_depth_bias(const GxmContextState &state) {
     // Depth Bias
     glPolygonOffset(static_cast<GLfloat>(state.front_depth_bias_factor), static_cast<GLfloat>(state.front_depth_bias_units));
+}
 
+void sync_texture(GLContext &context, const GxmContextState &state, const MemState &mem, std::size_t index,
+    bool enable_texture_cache) {
+    const emu::SceGxmTexture &texture = state.fragment_textures[index];
+
+    if (texture.data_addr == 0) {
+        LOG_WARN("Texture has null data.");
+        return;
+    }
+
+    glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
+
+    if (enable_texture_cache) {
+        renderer::texture::cache_and_bind_texture(context.texture_cache, texture, mem);
+    } else {
+        texture::bind_texture(context.texture_cache, texture, mem);
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void sync_blending(const GxmContextState &state, const MemState &mem) {
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
-    const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
+    const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
+        gxm_fragment_program.renderer_data.get());
+
     glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
     if (fragment_program.blend_enabled) {
         glEnable(GL_BLEND);
@@ -230,39 +259,9 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
     } else {
         glDisable(GL_BLEND);
     }
+}
 
-    // Textures.
-    const SceGxmProgram &fragment_gxp = *gxm_fragment_program.program.get(mem);
-    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_gxp);
-    for (size_t i = 0; i < fragment_gxp.parameter_count; ++i) {
-        const SceGxmProgramParameter &param = fragment_params[i];
-        if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-            continue;
-        }
-        const size_t texture_unit = param.resource_index;
-        if (texture_unit >= SCE_GXM_MAX_TEXTURE_UNITS) {
-            LOG_WARN("Texture unit index ({}) out of range. SCE_GXM_MAX_TEXTURE_UNITS is {}.", texture_unit, SCE_GXM_MAX_TEXTURE_UNITS);
-            continue;
-        }
-        const emu::SceGxmTexture &texture = state.fragment_textures[texture_unit];
-        if (texture.data_addr == 0) {
-            LOG_WARN("Texture has null data.");
-            continue;
-        }
-
-        glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + texture_unit));
-
-        if (enable_texture_cache) {
-            texture::cache_and_bind_texture(context.texture_cache, texture, mem);
-        } else {
-            texture::bind_texture(context.texture_cache, texture, mem);
-        }
-    }
-    glActiveTexture(GL_TEXTURE0);
-
-    // Uniforms.
-    set_uniforms(program->get(), state, mem, log_uniforms);
-
+void sync_vertex_attributes(GLContext &context, const GxmContextState &state, const MemState &mem) {
     // Vertex attributes.
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
@@ -277,7 +276,55 @@ bool sync_state(Context &context, const GxmContextState &state, const MemState &
         glEnableVertexAttribArray(attrib_location);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void sync_rendertarget(const GLRenderTarget &rt) {
+    glBindFramebuffer(GL_FRAMEBUFFER, rt.framebuffer[0]);
+}
+
+bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache) {
+    R_PROFILE(__func__);
+
+    sync_viewport(state);
+    sync_clipping(state);
+    sync_cull(state);
+
+    if (sync_depth_data(state)) {
+        sync_front_depth_func(state);
+        sync_front_depth_write_enable(state);
+    }
+
+    if (sync_stencil_data(state)) {
+        set_stencil_state(GL_BACK, state.back_stencil);
+        set_stencil_state(GL_FRONT, state.front_stencil);
+    }
+
+    sync_front_polygon_mode(state);
+    sync_front_depth_bias(state);
+    sync_blending(state, mem);
+
+    // Textures.
+    const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
+    const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
+    const SceGxmProgram &fragment_gxp = *gxm_fragment_program.program.get(mem);
+    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_gxp);
+    for (size_t i = 0; i < fragment_gxp.parameter_count; ++i) {
+        const SceGxmProgramParameter &param = fragment_params[i];
+        if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+            continue;
+        }
+        const size_t texture_unit = param.resource_index;
+        if (texture_unit >= SCE_GXM_MAX_TEXTURE_UNITS) {
+            LOG_WARN("Texture unit index ({}) out of range. SCE_GXM_MAX_TEXTURE_UNITS is {}.", texture_unit, SCE_GXM_MAX_TEXTURE_UNITS);
+            continue;
+        }
+        sync_texture(context, state, mem, texture_unit, enable_texture_cache);
+    }
+    glActiveTexture(GL_TEXTURE0);
+
+    // Uniforms.
+    sync_vertex_attributes(context, state, mem);
 
     return true;
 }
-} // namespace renderer
+} // namespace renderer::gl

@@ -1,10 +1,9 @@
 #pragma once
 
-#include "texture_cache_state.h"
-
 #include <crypto/hash.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
+#include <renderer/commands.h>
 
 #include <psp2/gxm.h>
 
@@ -13,57 +12,70 @@
 #include <tuple>
 #include <vector>
 
-typedef void *SDL_GLContext;
-
 namespace renderer {
 
 typedef std::map<GLuint, std::string> AttributeLocations;
-typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
-typedef std::tuple<std::string, std::string> ProgramGLSLs;
-typedef std::map<ProgramGLSLs, SharedGLObject> ProgramCache;
+typedef std::map<std::string, SharedGLObject> ShaderCache;
+typedef std::tuple<std::string, std::string> ProgramHashes;
+typedef std::map<ProgramHashes, SharedGLObject> ProgramCache;
 typedef std::vector<std::string> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
 typedef std::map<GLuint, GLenum> UniformTypes;
 
 // State types
-typedef std::map<Sha256Hash, std::string> GLSLCache;
-typedef std::pair<Sha256Hash, std::string> GLSLCacheEntry;
 typedef std::map<Sha256Hash, const SceGxmProgram *> GXPPtrMap;
 
+struct CommandBuffer;
+
+enum class Backend {
+    OpenGL,
+    Vulkan
+};
+
+enum class GXMState : std::uint16_t {
+    RegionClip = 0,
+    Program = 1,
+    Viewport = 2,
+    DepthBias = 3,
+    DepthFunc = 4,
+    DepthWriteEnable = 5,
+    PolygonMode = 6,
+    PointLineWidth = 7,
+    StencilFunc = 8,
+    FragmentTexture = 9,
+    StencilRef = 10,
+    VertexStream = 11,
+    TwoSided = 12,
+    CullMode = 13,
+    Uniform = 14,
+    TotalState
+};
+
+enum SyncObjectSubject : std::uint32_t {
+    None = 0,
+    Fragment = 1 << 0,
+    DisplayQueue = 1 << 1
+};
+
+struct RenderTarget;
+
 struct Context {
-    GLContextPtr gl;
-    ProgramCache program_cache;
-    TextureCacheState texture_cache;
-    GLObjectArray<1> vertex_array;
-    GLObjectArray<1> element_buffer;
-    GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
+    const RenderTarget *current_render_target;
+    CommandList command_list;
+    int render_finish_status;
 };
 
 struct ShaderProgram {
-    std::string glsl;
-    ExcludedUniforms excluded_uniforms;
-    UniformTypes uniform_types;
+    std::string hash;
 };
 
 struct FragmentProgram : ShaderProgram {
-    GLboolean color_mask_red = GL_TRUE;
-    GLboolean color_mask_green = GL_TRUE;
-    GLboolean color_mask_blue = GL_TRUE;
-    GLboolean color_mask_alpha = GL_TRUE;
-    bool blend_enabled = false;
-    GLenum color_func = GL_FUNC_ADD;
-    GLenum alpha_func = GL_FUNC_ADD;
-    GLenum color_src = GL_ONE;
-    GLenum color_dst = GL_ZERO;
-    GLenum alpha_src = GL_ONE;
-    GLenum alpha_dst = GL_ZERO;
 };
 
 struct VertexProgram : ShaderProgram {
-    AttributeLocations attribute_locations;
 };
 
 struct RenderTarget {
-    GLObjectArray<2> renderbuffers;
-    GLObjectArray<1> framebuffer;
+    int holder;
 };
+
 } // namespace renderer

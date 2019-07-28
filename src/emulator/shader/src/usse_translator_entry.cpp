@@ -37,7 +37,7 @@ using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 template <typename V>
 boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     static const std::vector<USSEMatcher<V>> table = {
-    // clang-format off
+// clang-format off
     #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
 
     // Vector move
@@ -225,6 +225,39 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::vpck, "VPCK ()", "01000pppsnuyderc-aaaffftttmmmmbbkkllgggggggoohiijjqqqqqqvwwwwwwx"),
 
+    // Sum of Products
+    /*
+                              10000 = op1
+                                    pp = pred (2 bits)
+                                      c = cmod1 (1 bit)
+                                      s = skipinv (1 bit)
+                                        n = nosched (1 bit)
+                                        aa = asel1 (2 bits)
+                                          d = dest_bank_ext (1 bit)
+                                            e = end (1 bit)
+                                            r = src1_bank_ext (1 bit)
+                                              b = src2_bank_ext (1 bit)
+                                              m = cmod2 (1 bit)
+                                                ooo = count (3 bits)
+                                                  f = amod1 (1 bit)
+                                                    ll = asel2 (2 bits)
+                                                      ggg = csel1 (3 bits)
+                                                        hhh = csel2 (3 bits)
+                                                            i = amod2 (1 bit)
+                                                            tt = dest_bank (2 bits)
+                                                              kk = src1_bank (2 bits)
+                                                                jj = src2_bank (2 bits)
+                                                                  qqqqqqq = dest_n (7 bits)
+                                                                          u = src1_mod (1 bit)
+                                                                          vv = cop (2 bits)
+                                                                            ww = aop (2 bits)
+                                                                              x = asrc1_mod (1 bit)
+                                                                                y = dest_mod (1 bit)
+                                                                                zzzzzzz = src1_n (7 bits)
+                                                                                        AAAAAAA = src2_n (7 bits)
+    */
+    INST(&V::sop2, "SOP2 ()", "10000ppcsnaaderbmooofllggghhhittkkjjqqqqqqquvvwwxyzzzzzzzAAAAAAA"),
+    
     // Test Instructions
     /*
                               01001 = op1
@@ -503,13 +536,13 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
-USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters,
+USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters,
     utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries)
     : b(b)
     , inst(inst)
     , count(count)
     , end_hook_func(end_hook_func)
-    , visitor(b, *this, program, utils, cur_instr, parameters, queries, true) {
+    , visitor(b, *this, program, features, utils, cur_instr, parameters, queries, true) {
 }
 
 void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count) {
@@ -617,7 +650,7 @@ spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &blo
     return ret_func;
 }
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
+void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
     spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
@@ -635,7 +668,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
 
     // Decode and recompile
     // TODO: Reuse this
-    usse::USSERecompiler recomp(b, program, parameters, utils, end_hook_func, queries);
+    usse::USSERecompiler recomp(b, program, features, parameters, utils, end_hook_func, queries);
 
     // Set the program
     recomp.program = &program;
@@ -656,6 +689,10 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
             b.createFunctionCall(main_block, {});
         }
     }
+
+    std::vector<spv::Id> empty_args;
+    if (features.should_use_shader_interlock() && program.is_fragment() && program.is_native_color())
+        b.createOp(spv::OpEndInvocationInterlockEXT, spv::OpTypeVoid, empty_args);
 
     b.leaveFunction();
 }

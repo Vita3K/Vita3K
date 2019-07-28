@@ -65,7 +65,6 @@ struct DebugMenuState {
     bool allocations_dialog = false;
     bool memory_editor_dialog = false;
     bool disassembly_dialog = false;
-    bool shader_editor_dialog = false;
 };
 
 struct ConfigurationMenuState {
@@ -100,6 +99,7 @@ struct GuiState {
 
     ImGuiTextFilter game_search_bar;
     GLuint current_background = 0;
+    GLuint display = 0;
     std::map<std::string, GLObject> game_backgrounds;
     std::map<std::string, GLObject> user_backgrounds;
 

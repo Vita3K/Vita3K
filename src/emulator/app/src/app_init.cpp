@@ -23,6 +23,7 @@
 #include <glutil/gl.h>
 #include <host/state.h>
 #include <io/functions.h>
+#include <renderer/functions.h>
 #include <rtc/rtc.h>
 #include <util/fs.h>
 #include <util/lock_and_find.h>
@@ -61,6 +62,53 @@ static void after_callback(const char *name, void *funcptr, int len_args, ...) {
         LOG_ERROR("OpenGL error: {}", log_hex(static_cast<std::uint32_t>(error)));
 #endif
     }
+}
+
+static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+    const GLchar *message, const void *userParam) {
+    const char *type_str = nullptr;
+
+    switch (type) {
+    case GL_DEBUG_TYPE_ERROR:
+        type_str = "ERROR";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        type_str = "DEPRECATED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        type_str = "UNDEFINED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        type_str = "PORTABILITY";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        type_str = "PERFORMANCE";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+        type_str = "OTHER";
+        break;
+    default:
+        type_str = "UNKTYPE";
+        break;
+    }
+
+    const char *severity_fmt = nullptr;
+    switch (severity) {
+    case GL_DEBUG_SEVERITY_LOW:
+        severity_fmt = "LOW";
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severity_fmt = "MEDIUM";
+        break;
+    case GL_DEBUG_SEVERITY_HIGH:
+        severity_fmt = "HIGH";
+        break;
+    default:
+        severity_fmt = "UNKSERV";
+        break;
+    }
+
+    LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
 }
 
 void update_viewport(HostState &state) {
@@ -122,13 +170,32 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         return false;
     }
 
+    // Recursively create GL version until one accepts
+    // Major 4 is mandantory
+    const int accept_gl_version[] = {
+        5, // OpenGL 4.5
+        3, // OpenGL 4.3
+        2, // OpenGL 4.2
+        1 // OpenGL 4.1
+    };
+
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
+    int choosen_minor_version = 0;
+
+    for (int i = 0; i < sizeof(accept_gl_version) / sizeof(int); i++) {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, accept_gl_version[i]);
+
+        state.glcontext = GLContextPtr(SDL_GL_CreateContext(state.window.get()), SDL_GL_DeleteContext);
+        if (state.glcontext) {
+            choosen_minor_version = accept_gl_version[i];
+            break;
+        }
+    }
+
     if (!state.glcontext) {
-        error_dialog("Could not create OpenGL context!\nDoes your GPU support OpenGL 4.1?", NULL);
+        error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.1?", NULL);
         return false;
     }
 
@@ -152,10 +219,72 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 #endif // MICROPROFILE_ENABLED
     glad_set_post_callback(after_callback);
 
+    // Detect feature
+    std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+    LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
+    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
+
+    // Try to parse and get version
+    const std::size_t dot_pos = version.find_first_of('.');
+
+    if (dot_pos != std::string::npos) {
+        const std::string major = version.substr(0, dot_pos);
+        const std::string minor = version.substr(dot_pos + 1);
+
+        state.features.direct_pack_unpack_half = false;
+
+        if (std::atoi(major.c_str()) >= 4 && minor.length() >= 1) {
+            if (minor[0] >= '2') {
+                state.features.direct_pack_unpack_half = true;
+            }
+        }
+    }
+
+    if (choosen_minor_version >= 3) {
+        glDebugMessageCallback(debug_output_callback, nullptr);
+    }
+
+    int total_extensions = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
+
+    std::unordered_map<std::string, bool *> check_extensions = {
+        { "GL_ARB_fragment_shader_interlock", &state.features.support_shader_interlock },
+        { "GL_ARB_texture_barrier", &state.features.support_texture_barrier },
+        { "GL_EXT_shader_framebuffer_fetch", &state.features.direct_fragcolor },
+        { "GL_ARB_shading_language_packing", &state.features.pack_unpack_half_through_ext }
+    };
+
+    for (int i = 0; i < total_extensions; i++) {
+        const std::string extension = reinterpret_cast<const GLchar *>(glGetStringi(GL_EXTENSIONS, i));
+        auto find_result = check_extensions.find(extension);
+
+        if (find_result != check_extensions.end()) {
+            *find_result->second = true;
+            check_extensions.erase(find_result);
+        }
+    }
+
+    if (state.features.direct_fragcolor) {
+        LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
+    } else if (state.features.support_shader_interlock) {
+        LOG_INFO("Your GPU supports shader interlock, some games that use programmable blending will have better performance.");
+    } else if (state.features.support_texture_barrier) {
+        LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
+        LOG_WARN("Consider updating to GPU that has shader interlock.");
+    } else {
+        LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
+        LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
+    }
+
     state.kernel.base_tick = { rtc_base_ticks() };
 
     if (state.cfg.overwrite_config)
         config::serialize_config(state.cfg, state.cfg.config_path);
+
+    if (!renderer::init(state.renderer, renderer::Backend::OpenGL)) {
+        return false;
+    }
 
     return true;
 }

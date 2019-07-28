@@ -23,6 +23,7 @@
 #include <config/version.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -154,6 +155,11 @@ int main(int argc, char *argv[]) {
 
     while (handle_events(host)) {
         gl_renderer.render(host);
+
+        // Driver acto!
+        renderer::process_batches(*host.renderer.get(), host.features, host.mem, host.cfg, host.base_path.c_str(),
+            host.io.title_id.c_str());
+
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
         if (host.display.imgui_render) {
@@ -161,12 +167,7 @@ int main(int argc, char *argv[]) {
         }
         gui::draw_end(host.window.get());
 
-        if (!host.cfg.sync_rendering)
-            host.display.condvar.notify_all();
-        else {
-            std::unique_lock<std::mutex> lock(host.display.mutex);
-            host.display.condvar.wait(lock);
-        }
+        host.display.condvar.notify_all();
 
         app::set_window_title(host);
     }

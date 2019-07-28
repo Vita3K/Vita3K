@@ -24,6 +24,7 @@
 #include <config/config.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
+#include <features/state.h>
 #include <gxm/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
@@ -72,7 +73,7 @@ struct HostState {
     KernelState kernel;
     AudioState audio;
     GxmState gxm;
-    renderer::State renderer;
+    std::unique_ptr<renderer::State> renderer;
     bool renderer_focused;
     IOState io;
     NetState net;
@@ -81,6 +82,7 @@ struct HostState {
     DialogState common_dialog;
     SfoFile sfo_handle;
     NIDSet missing_nids;
+    FeatureState features;
 #ifdef USE_GDBSTUB
     GDBState gdb;
 #endif

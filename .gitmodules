@@ -45,9 +45,6 @@
 [submodule "src/external/glslang"]
 	path = src/external/glslang
 	url = https://github.com/KhronosGroup/glslang.git
-[submodule "src/external/SPIRV-Cross"]
-	path = src/external/SPIRV-Cross
-	url = https://github.com/KhronosGroup/SPIRV-Cross.git
 [submodule "src/external/boost"]
 	path = src/external/boost
 	url = https://github.com/Vita3K/ext-boost.git
@@ -66,3 +63,6 @@
 [submodule "src/external/discord-rpc"]
 	path = src/external/discord-rpc
 	url = https://github.com/discordapp/discord-rpc
+[submodule "src/external/SPIRV-Cross"]
+	path = src/external/SPIRV-Cross
+	url = https://github.com/vita3k/SPIRV-Cross

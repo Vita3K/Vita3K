@@ -30,6 +30,7 @@ namespace shader::usse {
  * \brief Changes TEMP registers to FPINTERNAL if certain conditions are met
  */
 static void check_reg_internal(Operand &inout_reg, bool is_double_regs, uint8_t reg_bits) {
+    // TODO: Check top bit if neccessary! Sometimes it may contains type info.
     const auto temps = is_double_regs ? 8 : 4;
     const auto max_reg_num = 1 << reg_bits;
     const auto temp_reg_limit = max_reg_num - temps;

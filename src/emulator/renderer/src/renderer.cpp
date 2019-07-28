@@ -1,226 +1,187 @@
 #include <renderer/functions.h>
-
-#include "functions.h"
-#include "profile.h"
-
 #include <renderer/state.h>
 #include <renderer/types.h>
 
-#include <gxm/functions.h>
-#include <gxm/types.h>
-#include <util/log.h>
-
-#include <SDL_video.h>
-
-#include <cassert>
-
 namespace renderer {
-static GLenum translate_blend_func(SceGxmBlendFunc src) {
-    R_PROFILE(__func__);
+/**
+     * NOTE: If your backend doesn't use command queue, you can directly call it by adding a switch case and call that
+     * function.
+     * 
+     * The switch is reserved for backend like Vulkan, when building a command buffer directly is possible.
+     */
 
-    switch (src) {
-    case SCE_GXM_BLEND_FUNC_NONE:
-        return GL_FUNC_ADD; // TODO Disable blending? Warn?
-    case SCE_GXM_BLEND_FUNC_ADD:
-        return GL_FUNC_ADD;
-    case SCE_GXM_BLEND_FUNC_SUBTRACT:
-        return GL_FUNC_SUBTRACT;
-    case SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT:
-        return GL_FUNC_REVERSE_SUBTRACT;
-    case SCE_GXM_BLEND_FUNC_MIN:
-        return GL_MIN;
-    case SCE_GXM_BLEND_FUNC_MAX:
-        return GL_MAX;
-    }
-
-    return GL_FUNC_ADD;
-}
-
-static GLenum translate_blend_factor(SceGxmBlendFactor src) {
-    R_PROFILE(__func__);
-
-    switch (src) {
-    case SCE_GXM_BLEND_FACTOR_ZERO:
-        return GL_ZERO;
-    case SCE_GXM_BLEND_FACTOR_ONE:
-        return GL_ONE;
-    case SCE_GXM_BLEND_FACTOR_SRC_COLOR:
-        return GL_SRC_COLOR;
-    case SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR:
-        return GL_ONE_MINUS_SRC_COLOR;
-    case SCE_GXM_BLEND_FACTOR_SRC_ALPHA:
-        return GL_SRC_ALPHA;
-    case SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:
-        return GL_ONE_MINUS_SRC_ALPHA;
-    case SCE_GXM_BLEND_FACTOR_DST_COLOR:
-        return GL_DST_COLOR;
-    case SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR:
-        return GL_ONE_MINUS_DST_COLOR;
-    case SCE_GXM_BLEND_FACTOR_DST_ALPHA:
-        return GL_DST_ALPHA;
-    case SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
-        return GL_ONE_MINUS_DST_ALPHA;
-    case SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE:
-        return GL_SRC_ALPHA_SATURATE;
-    case SCE_GXM_BLEND_FACTOR_DST_ALPHA_SATURATE:
-        return GL_DST_ALPHA; // TODO Not supported.
-    }
-
-    return GL_ONE;
-}
-
-static AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
-    R_PROFILE(__func__);
-    AttributeLocations locations;
-
-    const SceGxmProgramParameter *const parameters = gxp::program_parameters(vertex_program);
-    for (uint32_t i = 0; i < vertex_program.parameter_count; ++i) {
-        const SceGxmProgramParameter &parameter = parameters[i];
-        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            std::string name = gxp::parameter_name_raw(parameter);
-            const auto struct_idx = name.find('.');
-            const bool is_struct_field = struct_idx != std::string::npos;
-            if (is_struct_field)
-                name.replace(struct_idx, 1, "_"); // GLSL vertex inputs can't be structs, replace them here and in shader translator
-            locations.emplace(parameter.resource_index, name);
-        }
-    }
-
-    return locations;
-}
-
-static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
-    R_PROFILE(__func__);
-
-    uint32_t *row1 = &pixels[0];
-    uint32_t *row2 = &pixels[(height - 1) * stride_in_pixels];
-
-    while (row1 < row2) {
-        std::swap_ranges(&row1[0], &row1[width], &row2[0]);
-        row1 += stride_in_pixels;
-        row2 -= stride_in_pixels;
+void set_depth_bias(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, int factor, int units) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::DepthBias, is_front, factor, units);
+        break;
     }
 }
 
-bool create(Context &context, SDL_Window *window) {
-    R_PROFILE(__func__);
-
-    assert(SDL_GL_GetCurrentContext() == nullptr);
-    context.gl = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
-    assert(context.gl != nullptr);
-
-    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
-
-    LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
-    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-    // TODO This is just for debugging.
-    glClearColor(0.0625f, 0.125f, 0.25f, 0);
-
-    if (!texture::init(context.texture_cache) || !context.vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !context.element_buffer.init(glGenBuffers, glDeleteBuffers) || !context.stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
-        return false;
+void set_depth_func(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmDepthFunc depth_func) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::DepthFunc, is_front, depth_func);
+        break;
     }
-
-    glBindVertexArray(context.vertex_array[0]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.element_buffer[0]);
-
-    return true;
 }
 
-bool create(RenderTarget &rt, const SceGxmRenderTargetParams &params) {
-    R_PROFILE(__func__);
-
-    if (!rt.renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) || !rt.framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
-        return false;
+void set_depth_write_enable_mode(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmDepthWriteMode enable) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::DepthWriteEnable, is_front, enable);
+        break;
     }
-
-    glBindRenderbuffer(GL_RENDERBUFFER, rt.renderbuffers[0]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, params.width, params.height);
-    glBindRenderbuffer(GL_RENDERBUFFER, rt.renderbuffers[1]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, params.width, params.height);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, rt.framebuffer[0]);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rt.renderbuffers[0]);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rt.renderbuffers[1]);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    return true;
 }
 
-bool create(FragmentProgram &fp, State &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
-    R_PROFILE(__func__);
-
-    const auto shader_cache_entry = load_shader(state.fragment_glsl_cache, program, base_path, title_id);
-    fp.glsl = shader_cache_entry.second;
-
-    gxp_ptr_map.emplace(shader_cache_entry.first, &program);
-
-    // Translate blending.
-    if (blend != nullptr) {
-        fp.color_mask_red = ((blend->colorMask & SCE_GXM_COLOR_MASK_R) != 0) ? GL_TRUE : GL_FALSE;
-        fp.color_mask_green = ((blend->colorMask & SCE_GXM_COLOR_MASK_G) != 0) ? GL_TRUE : GL_FALSE;
-        fp.color_mask_blue = ((blend->colorMask & SCE_GXM_COLOR_MASK_B) != 0) ? GL_TRUE : GL_FALSE;
-        fp.color_mask_alpha = ((blend->colorMask & SCE_GXM_COLOR_MASK_A) != 0) ? GL_TRUE : GL_FALSE;
-        fp.blend_enabled = true;
-        fp.color_func = translate_blend_func(blend->colorFunc);
-        fp.alpha_func = translate_blend_func(blend->alphaFunc);
-        fp.color_src = translate_blend_factor(blend->colorSrc);
-        fp.color_dst = translate_blend_factor(blend->colorDst);
-        fp.alpha_src = translate_blend_factor(blend->alphaSrc);
-        fp.alpha_dst = translate_blend_factor(blend->alphaDst);
+void set_point_line_width(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, unsigned int width) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::PointLineWidth, is_front, width);
+        break;
     }
-
-    return true;
 }
 
-bool create(VertexProgram &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
-    R_PROFILE(__func__);
-
-    const auto shader_cache_entry = load_shader(state.vertex_glsl_cache, program, base_path, title_id);
-    vp.glsl = shader_cache_entry.second;
-
-    gxp_ptr_map.emplace(shader_cache_entry.first, &program);
-
-    vp.attribute_locations = attribute_locations(program);
-
-    return true;
-}
-
-void begin_scene(const RenderTarget &rt) {
-    R_PROFILE(__func__);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, rt.framebuffer[0]);
-
-    // TODO This is just for debugging.
-    glClear(GL_COLOR_BUFFER_BIT);
-}
-
-void end_scene(Context &context, SceGxmSyncObject *sync_object, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels) {
-    R_PROFILE(__func__);
-
-    if (sync_object != nullptr) {
-        sync_object->value = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+void set_polygon_mode(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmPolygonMode mode) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::PolygonMode, is_front, mode);
     }
-
-    glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
-    glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-
-    flip_vertically(pixels, width, height, stride_in_pixels);
-
-    ++context.texture_cache.timestamp;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void finish(Context &context) {
-    glFinish();
+void set_stencil_func(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::StencilFunc, is_front, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
+        break;
+    }
 }
 
-void wait_sync_object(SceGxmSyncObject *sync_object) {
-    if (sync_object->value)
-        glClientWaitSync(reinterpret_cast<GLsync>(sync_object->value), GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
+void set_stencil_ref(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, unsigned char sref) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::StencilRef, is_front, sref);
+        break;
+    }
 }
 
+void set_program(State &state, Context *ctx, GxmContextState *gxm_context, Ptr<const void> program, const bool is_fragment) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::Program, program, is_fragment);
+        break;
+    }
+}
+
+void set_cull_mode(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmCullMode cull) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::CullMode, cull);
+        break;
+    }
+}
+
+void set_fragment_texture(State &state, Context *ctx, GxmContextState *gxm_context, const std::uint32_t tex_index, const emu::SceGxmTexture tex) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::FragmentTexture, tex_index, tex);
+        break;
+    }
+}
+
+void set_viewport(State &state, Context *ctx, GxmContextState *gxm_context, float xOffset, float yOffset, float zOffset, float xScale, float yScale, float zScale) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::Viewport, SCE_GXM_VIEWPORT_ENABLED, true, xOffset, yOffset,
+            zOffset, xScale, yScale, zScale);
+
+        break;
+    }
+}
+
+void set_viewport_enable(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmViewportMode enable) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::Viewport, enable, false);
+        break;
+    }
+}
+
+void set_region_clip(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::RegionClip, mode, xMin, xMax, yMin, yMax);
+        break;
+    }
+}
+
+void set_two_sided_enable(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmTwoSidedMode mode) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::TwoSided, mode);
+        break;
+    }
+}
+
+void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, emu::SceGxmColorSurface *color_surface, emu::SceGxmDepthStencilSurface *depth_stencil_surface) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_command(ctx, renderer::CommandOpcode::SetContext, nullptr, target, color_surface, depth_stencil_surface);
+        break;
+    }
+}
+
+void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len, const void *data) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::VertexStream, index, data_len, data);
+        break;
+    }
+}
+
+void draw(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_command(ctx, renderer::CommandOpcode::Draw, nullptr, prim_type, index_type, index_data, index_count);
+        break;
+    }
+}
+
+void sync_surface_data(State &state, Context *ctx, GxmContextState *gxm_context) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_command(ctx, renderer::CommandOpcode::SyncSurfaceData, nullptr);
+        break;
+    }
+}
+
+bool create_context(State &state, std::unique_ptr<Context> &context) {
+    switch (state.current_backend) {
+    default:
+        return renderer::send_single_command(state, nullptr, nullptr, renderer::CommandOpcode::CreateContext, &context);
+    }
+}
+
+bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params) {
+    switch (state.current_backend) {
+    default:
+        return renderer::send_single_command(state, nullptr, nullptr, renderer::CommandOpcode::CreateRenderTarget, &rt, params);
+    }
+}
+
+void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt) {
+    switch (state.current_backend) {
+    default:
+        renderer::send_single_command(state, nullptr, nullptr, renderer::CommandOpcode::DestroyRenderTarget, &rt);
+        break;
+    }
+}
+
+void set_uniform(State &state, Context *ctx, const bool is_vertex_uniform, const SceGxmProgramParameter *parameter, const void *data) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::Uniform, is_vertex_uniform, parameter, data);
+        break;
+    }
+}
 } // namespace renderer

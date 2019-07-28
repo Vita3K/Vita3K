@@ -115,7 +115,6 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "log-exports", &cfg.log_exports, false);
     get_yaml_value(config_node, "log-active-shaders", &cfg.log_active_shaders, false);
     get_yaml_value(config_node, "log-uniforms", &cfg.log_uniforms, false);
-    get_yaml_value(config_node, "sync-rendering", &cfg.sync_rendering, false);
     get_yaml_value(config_node, "pstv-mode", &cfg.pstv_mode, false);
     get_yaml_value(config_node, "show-gui", &cfg.show_gui, false);
     get_yaml_value(config_node, "show-game-background", &cfg.show_game_background, true);
@@ -165,7 +164,6 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "log-exports", cfg.log_exports);
     config_file_emit_single(emitter, "log-active-shaders", cfg.log_active_shaders);
     config_file_emit_single(emitter, "log-uniforms", cfg.log_uniforms);
-    config_file_emit_single(emitter, "sync-rendering", cfg.sync_rendering);
     config_file_emit_single(emitter, "pstv-mode", cfg.pstv_mode);
     config_file_emit_single(emitter, "show-gui", cfg.show_gui);
     config_file_emit_single(emitter, "show-game-background", cfg.show_game_background);
@@ -203,8 +201,6 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.log_active_shaders = rhs.log_active_shaders;
     if (lhs.log_uniforms != rhs.log_uniforms && (!init || rhs.log_uniforms))
         lhs.log_uniforms = rhs.log_uniforms;
-    if (lhs.sync_rendering != rhs.sync_rendering && (!init || rhs.sync_rendering))
-        lhs.sync_rendering = rhs.sync_rendering;
     if (lhs.lle_modules != rhs.lle_modules && (!init || !rhs.lle_modules.empty()))
         vector_utils::merge_vectors(lhs.lle_modules, rhs.lle_modules);
     if (lhs.pstv_mode != rhs.pstv_mode && (!init || rhs.pstv_mode))
@@ -284,8 +280,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             ("log-imports,I", po::bool_switch(&command_line.log_imports), "Log Imports")
             ("log-exports,E", po::bool_switch(&command_line.log_exports), "Log Exports")
             ("log-active-shaders,S", po::bool_switch(&command_line.log_active_shaders), "Log Active Shaders")
-            ("log-uniforms,U", po::bool_switch(&command_line.log_uniforms), "Log Uniforms")
-            ("sync-rendering,R", po::bool_switch(&command_line.sync_rendering), "Sync Rendering");
+            ("log-uniforms,U", po::bool_switch(&command_line.log_uniforms), "Log Uniforms");
         // clang-format on
 
         // Positional args
@@ -322,6 +317,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
             return QuitRequested;
         }
+
         if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
             if (command_line.config_path.empty()) {
                 command_line.config_path = root_paths.get_base_path();
@@ -374,7 +370,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         LOG_INFO("log-exports: {}", cfg.log_exports);
         LOG_INFO("log-active-shaders: {}", cfg.log_active_shaders);
         LOG_INFO("log-uniforms: {}", cfg.log_uniforms);
-        LOG_INFO("sync-rendering: {}", cfg.sync_rendering);
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";

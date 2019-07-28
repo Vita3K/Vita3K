@@ -12,6 +12,7 @@ size_t get_height(const emu::SceGxmTexture *texture);
 SceGxmTextureFormat get_format(const emu::SceGxmTexture *texture);
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
 bool is_paletted_format(SceGxmTextureFormat src);
+size_t attribute_format_size(SceGxmAttributeFormat format);
 } // namespace gxm
 
 namespace gxp {

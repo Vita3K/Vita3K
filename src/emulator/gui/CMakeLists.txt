@@ -21,7 +21,6 @@ add_library(
 	src/allocations_dialog.cpp
 	src/disassembly_dialog.cpp
 	src/about_dialog.cpp
-	src/shader_editor_dialog.cpp
 )
 
 target_include_directories(gui PUBLIC include)

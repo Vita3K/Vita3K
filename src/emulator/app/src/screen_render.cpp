@@ -49,8 +49,8 @@ bool gl_screen_renderer::init(const std::string &base_path) {
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_STATIC_DRAW);
 
-    GLint posAttrib = glGetAttribLocation(*m_render_shader, "position_vertex");
-    GLint uvAttrib = glGetAttribLocation(*m_render_shader, "uv_vertex");
+    posAttrib = glGetAttribLocation(*m_render_shader, "position_vertex");
+    uvAttrib = glGetAttribLocation(*m_render_shader, "uv_vertex");
 
     // 1st attribute: positions
     glVertexAttribPointer(
@@ -74,7 +74,7 @@ bool gl_screen_renderer::init(const std::string &base_path) {
     );
     glEnableVertexAttribArray(uvAttrib);
 
-    glClearColor(1.0, 0.0, 0.5, 1.0);
+    glClearColor(0.125490203f, 0.698039234f, 0.666666687f, 1.0f);
     glClearDepth(1.0f);
 
     return true;
@@ -84,14 +84,50 @@ void gl_screen_renderer::render(const HostState &host) {
     const DisplayState &display = host.display;
     const MemState &mem = host.mem;
 
+    // Backup GL state
+    glActiveTexture(GL_TEXTURE0);
+    GLint last_texture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+    GLint last_viewport[4];
+    glGetIntegerv(GL_VIEWPORT, last_viewport);
+    GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
+    GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glViewport(static_cast<GLint>(host.viewport_pos.x), static_cast<GLint>(host.viewport_pos.y), static_cast<GLsizei>(host.viewport_size.x),
         static_cast<GLsizei>(host.viewport_size.y));
 
+    glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_BLEND);
+
     if ((display.image_size.x > 0) && (display.image_size.y > 0)) {
         glUseProgram(*m_render_shader);
         glBindVertexArray(m_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+
+        // 1st attribute: positions
+        glVertexAttribPointer(
+            posAttrib, // attribute index
+            3, // size
+            GL_FLOAT, // type
+            GL_FALSE, // normalized?
+            screen_vertex_size, // stride
+            reinterpret_cast<void *>(0) // array buffer offset
+        );
+        glEnableVertexAttribArray(posAttrib);
+
+        // 2nd attribute: uvs
+        glVertexAttribPointer(
+            uvAttrib, // attribute index
+            2, // size
+            GL_FLOAT, // type
+            GL_FALSE, // normalized?
+            screen_vertex_size, // stride
+            reinterpret_cast<void *>(3 * sizeof(GLfloat)) // array buffer offset
+        );
+        glEnableVertexAttribArray(uvAttrib);
 
         glBindTexture(GL_TEXTURE_2D, m_screen_texture);
         const auto pixels = display.base.cast<void>().get(mem);
@@ -105,6 +141,20 @@ void gl_screen_renderer::render(const HostState &host) {
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
+
+    glBindTexture(GL_TEXTURE_2D, last_texture);
+
+    if (last_enable_blend)
+        glEnable(GL_BLEND);
+    else
+        glDisable(GL_BLEND);
+
+    if (last_enable_scissor_test)
+        glEnable(GL_SCISSOR_TEST);
+    else
+        glDisable(GL_SCISSOR_TEST);
+
+    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
 void gl_screen_renderer::destroy() {

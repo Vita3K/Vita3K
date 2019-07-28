@@ -580,7 +580,8 @@ bool USSETranslatorVisitor::vpck(
         }
     }
 
-    if (repack_opcode[dest_fmt][src_fmt] != spv::OpAll) {
+    // When scale, don't do conversion. Reinterpret them.
+    if (repack_opcode[dest_fmt][src_fmt] != spv::OpAll && !scale) {
         // Do conversion
         spv::Id dest_type = type_f32;
 

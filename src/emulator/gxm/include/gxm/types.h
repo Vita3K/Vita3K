@@ -57,6 +57,10 @@ struct SceGxmTexture {
     uint32_t lod_min1 : 2;
     uint32_t swizzle_format : 3;
     uint32_t normalize_mode : 1;
+
+    int texture_type() const {
+        return type << 29;
+    }
 };
 
 struct SceGxmColorSurface {
@@ -90,6 +94,7 @@ struct SceGxmContextParams {
 } // namespace emu
 
 typedef std::array<Ptr<void>, 16> UniformBuffers;
+typedef std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> StreamDatas;
 
 struct GxmViewport {
     SceGxmViewportMode enable = SCE_GXM_VIEWPORT_DISABLED;
@@ -114,7 +119,16 @@ enum class SceGxmLastReserveStatus {
 };
 
 struct SceGxmSyncObject {
-    void *value;
+    std::uint32_t done;
+
+    std::mutex lock;
+    std::condition_variable cond;
+};
+
+struct GXMRecordState {
+    // Programs.
+    Ptr<const SceGxmFragmentProgram> fragment_program;
+    Ptr<const SceGxmVertexProgram> vertex_program;
 };
 
 struct GxmContextState {
@@ -139,6 +153,9 @@ struct GxmContextState {
     Ptr<const SceGxmFragmentProgram> fragment_program;
     Ptr<const SceGxmVertexProgram> vertex_program;
 
+    Ptr<const SceGxmFragmentProgram> last_draw_fragment_program;
+    Ptr<const SceGxmVertexProgram> last_draw_vertex_program;
+
     // Uniforms.
     UniformBuffers fragment_uniform_buffers;
     UniformBuffers vertex_uniform_buffers;
@@ -148,7 +165,7 @@ struct GxmContextState {
     SceGxmLastReserveStatus vertex_last_reserve_status = SceGxmLastReserveStatus::Available;
 
     // Vertex streams.
-    std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
+    StreamDatas stream_data;
 
     // Depth.
     SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
@@ -239,7 +256,9 @@ using SceGxmVertexOutputTexCoordInfos = std::array<SceGxmVertexOutputTexCoordInf
 
 #pragma pack(push, 1)
 struct SceGxmProgramVertexOutput {
-    std::uint8_t unk0[12];
+    std::uint8_t unk0[10];
+    std::uint8_t output_param_type;
+    std::uint8_t output_comp_count;
 
     std::uint16_t varyings_count;
     std::uint16_t pad0; // padding maybe
@@ -369,7 +388,18 @@ public:
         return (uint64_t *)((uint8_t *)&secondary_program_offset_end + secondary_program_offset_end);
     }
     bool is_native_color() const {
-        return unk20 & 0b1000000;
+        return ((type >> 6) & 1);
+    }
+    bool is_reg_format() const {
+        return ((type >> 7) & 1);
+    }
+    SceGxmParameterType get_fragment_output_type() const {
+        return static_cast<const SceGxmParameterType>(reinterpret_cast<const SceGxmProgramVertexOutput *>(
+            reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset)
+                                                          ->output_param_type);
+    }
+    std::uint8_t get_fragment_output_component_count() const {
+        return reinterpret_cast<const SceGxmProgramVertexOutput *>(reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset)->output_comp_count;
     }
 };
 
