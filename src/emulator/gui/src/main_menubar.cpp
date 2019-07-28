@@ -33,7 +33,6 @@ static void draw_debug_menu(DebugMenuState &state) {
         ImGui::MenuItem("Event Flags", nullptr, &state.eventflags_dialog);
         ImGui::MenuItem("Memory Allocations", nullptr, &state.allocations_dialog);
         ImGui::MenuItem("Disassembly", nullptr, &state.disassembly_dialog);
-        ImGui::MenuItem("Shader Editor", nullptr, &state.shader_editor_dialog);
         ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
