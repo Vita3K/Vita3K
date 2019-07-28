@@ -9,18 +9,18 @@
 #include <spdlog/fmt/fmt.h>
 
 namespace emu::np::trophy {
-Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream,
+Context::Context(const CommunicationID &comm_id, IOState &io, const SceUID trophy_stream,
     const std::string &output_progress_path)
     : comm_id(comm_id)
     , io(io)
     , trophy_file_stream(trophy_stream)
     , trophy_progress_output_file_path(output_progress_path) {
     trophy_file.read_func = [&](void *dest, std::uint32_t amount) -> bool {
-        return read_file(dest, *this->io, this->trophy_file_stream, amount, "parse_trophy_file");
+        return read_file(dest, this->io, this->trophy_file_stream, amount, "parse_trophy_file");
     };
 
     trophy_file.seek_func = [&](std::uint32_t amount) -> bool {
-        return seek_file(this->trophy_file_stream, amount, SCE_SEEK_SET, *this->io, "parse_trophy_file");
+        return seek_file(this->trophy_file_stream, amount, SCE_SEEK_SET, this->io, "parse_trophy_file");
     };
 }
 
@@ -112,10 +112,10 @@ static constexpr std::uint32_t TROPHY_USR_MAGIC = 0x12D5819A;
 
 void Context::save_trophy_progress_file() {
     // Open the file
-    const SceUID output = open_file(*io, trophy_progress_output_file_path.c_str(), SCE_O_WRONLY, pref_path.c_str(), "save_trophy_progress");
+    const SceUID output = open_file(io, trophy_progress_output_file_path.c_str(), SCE_O_WRONLY, pref_path.c_str(), "save_trophy_progress");
 
     auto write_stuff = [&](const void *data, std::uint32_t amount) -> int {
-        return write_file(output, data, amount, *io, "save_trophy_progress_file");
+        return write_file(output, data, amount, io, "save_trophy_progress_file");
     };
 
     write_stuff(&TROPHY_USR_MAGIC, 4);
@@ -127,14 +127,14 @@ void Context::save_trophy_progress_file() {
     write_stuff(&unlock_timestamps[0], (std::uint32_t)unlock_timestamps.size() * 8);
     write_stuff(&trophy_kinds[0], (std::uint32_t)trophy_kinds.size());
 
-    close_file(*io, output, "save_trophy_progress_file");
+    close_file(io, output, "save_trophy_progress_file");
 }
 
 bool Context::load_trophy_progress_file(const SceUID &progress_input_file) {
     // Check magic
     std::uint32_t magic;
     auto read_stuff = [&](void *data, std::uint32_t amount) -> int {
-        return read_file(data, *io, progress_input_file, amount, "load_trophy_progress_file");
+        return read_file(data, io, progress_input_file, amount, "load_trophy_progress_file");
     };
 
     if (read_stuff(&magic, 4) != 4 || magic != TROPHY_USR_MAGIC) {
@@ -327,7 +327,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
 
     if (!new_context) {
         // Yikes. Create new one.
-        np.trophy_state.contexts.emplace_back(*custom_comm, &io, trophy_file, trophy_progress_save_file);
+        np.trophy_state.contexts.emplace_back(*custom_comm, io, trophy_file, trophy_progress_save_file);
         np.trophy_state.contexts.back().id = static_cast<emu::np::trophy::ContextHandle>(np.trophy_state.contexts.size());
 
         new_context = &np.trophy_state.contexts.back();
@@ -366,7 +366,7 @@ bool destroy_trophy_context(NpTrophyState &state, const emu::np::trophy::Context
         return false;
     }
 
-    close_file(*state.contexts[handle - 1].io, state.contexts[handle - 1].trophy_file_stream, "destroy_trophy_context");
+    close_file(state.contexts[handle - 1].io, state.contexts[handle - 1].trophy_file_stream, "destroy_trophy_context");
     state.contexts[handle - 1].valid = false;
 
     return true;
