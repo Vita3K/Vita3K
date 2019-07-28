@@ -978,8 +978,21 @@ EXPORT(int, sceKernelGetLwMutexInfoById) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetModuleInfoByAddr) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, emu::SceKernelModuleInfo *info) {
+    KernelState *const state = &host.kernel;
+
+    for (SceKernelModuleInfoPtrs::iterator module = state->loaded_modules.begin(); module != state->loaded_modules.end(); ++module){
+        for(int n = 0; n < MODULE_INFO_NUM_SEGMENTS; n++) {
+            const auto segment_address_begin = module->second->segments[n].vaddr.address();
+            const auto segment_address_end = segment_address_begin+module->second->segments[n].memsz;
+            if (addr.address() >segment_address_begin && addr.address() < segment_address_end) {
+                memcpy(info, module->second.get(), sizeof(emu::SceKernelModuleInfo));
+                return SCE_KERNEL_OK;
+            }
+        }
+    }
+
+    return SCE_KERNEL_ERROR_MODULEMGR_NOENT;
 }
 
 EXPORT(int, sceKernelGetMsgPipeInfo) {
