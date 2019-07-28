@@ -488,15 +488,67 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             break;
         }
         case 5: {
-            // TODO:
             const EntryFormat5 *const format5_entry = static_cast<const EntryFormat5 *>(entry);
-            LOG_WARN("[FORMAT5/UNIMP]: dist1: {}, dist2: {}, dist3: {}, dist4: {}", log_hex(format5_entry->dist1), log_hex(format5_entry->dist2), log_hex(format5_entry->dist3), log_hex(format5_entry->dist4));
+
+            g_offset += format5_entry->dist1;
+            
+            const auto s = g_saddr;
+            const auto a = g_addend;
+            const auto p = g_addr + g_offset;
+            
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+                return false;
+            }
+            
+            if (!relocate_entry(Ptr<uint32_t>(p + format5_entry->dist2).get(mem), static_cast<Code>(g_type2), s, a, p + format5_entry->dist2)) {
+                return false;
+            }
+            
+            g_offset += format5_entry->dist3;
+            const auto p2 = g_addr + g_offset;
+            
+            if (!relocate_entry(Ptr<uint32_t>(p2).get(mem), static_cast<Code>(g_type), s, a, p2)) {
+                return false;
+            }
+            
+            if (!relocate_entry(Ptr<uint32_t>(p2 + format5_entry->dist4).get(mem), static_cast<Code>(g_type2), s, a, p2 + format5_entry->dist4)) {
+                return false;
+            }
+            
             break;
         }
         case 6: {
-            // TODO:
             const EntryFormat6 *const format6_entry = static_cast<const EntryFormat6 *>(entry);
-            LOG_WARN("[FORMAT5/UNIMP]: offset: {}", log_hex(format6_entry->offset));
+
+            g_offset += format6_entry->offset;
+            
+            const auto patch_seg_start = segments.find(g_patchseg)->second.addr;
+            
+            const uint32_t orgval = *Ptr<uint32_t>(patch_seg_start + g_offset).get(mem);
+            
+            uint32_t segbase = 0;
+            for (const auto seg_ : segments) {
+                const auto seg = seg_.second;
+                if (orgval >= seg.p_vaddr && orgval < seg.p_vaddr + seg.size) {
+                    segbase = seg.p_vaddr;
+                    g_saddr = seg.addr;
+                }
+            }
+            
+            assert((uint32_t)orgval >= (uint32_t)segbase);
+            const auto addend = orgval - segbase;
+            
+            g_type2 = 0;
+            g_type = Abs32;
+            
+            const auto s = g_saddr;
+            const auto a = addend;
+            const auto p = g_addr + g_offset;
+            
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+                return false;
+            }
+            
             break;
         }
         case 7:
@@ -535,7 +587,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                     }
                 }
 
-                assert((uint32_t)orgval > (uint32_t)segbase);
+                assert((uint32_t)orgval >= (uint32_t)segbase);
                 const auto addend = orgval - segbase;
 
                 g_type2 = 0;
