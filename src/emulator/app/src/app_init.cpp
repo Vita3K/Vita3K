@@ -207,12 +207,11 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 #endif
     update_viewport(state);
 
-    // Try adaptive vsync first, falling back to regular vsync.
-    if (SDL_GL_SetSwapInterval(-1) < 0) {
-        SDL_GL_SetSwapInterval(1);
-    }
-    if (!cfg.wait_for_vsync) {
-        SDL_GL_SetSwapInterval(0);
+    if (cfg.wait_for_vsync) {
+        // Try adaptive vsync first, falling back to regular vsync.
+        if (SDL_GL_SetSwapInterval(-1) < 0) {
+            SDL_GL_SetSwapInterval(1);
+        }
     } 
     LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
 
