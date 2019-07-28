@@ -160,12 +160,7 @@ int main(int argc, char *argv[]) {
         }
         gui::draw_end(host.window.get());
 
-        if (!host.cfg.sync_rendering)
-            host.display.condvar.notify_all();
-        else {
-            std::unique_lock<std::mutex> lock(host.display.mutex);
-            host.display.condvar.wait(lock);
-        }
+        host.display.condvar.notify_all();
 
         app::set_window_title(host);
     }

@@ -22,12 +22,9 @@
 #include <psp2/display.h>
 
 static int display_wait(HostState &host) {
-    if (!host.cfg.sync_rendering) {
-        std::unique_lock<std::mutex> lock(host.display.mutex);
-        host.display.condvar.wait(lock);
-    } else
-        host.display.condvar.notify_all();
-
+    std::unique_lock<std::mutex> lock(host.display.mutex);
+    host.display.condvar.wait(lock);
+    
     if (host.display.abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
 
