@@ -60,22 +60,22 @@ static void draw_trophy_unlocked(GuiState &gui, NpTrophyUnlockCallbackData &call
 
     switch (callback_data.trophy_kind) {
     case emu::np::trophy::TrophyType::PLATINUM: {
-        trophy_kind_s = "P";
+        trophy_kind_s = "Platinum";
         break;
     }
 
     case emu::np::trophy::TrophyType::BRONZE: {
-        trophy_kind_s = "B";
+        trophy_kind_s = "Bronze";
         break;
     }
 
     case emu::np::trophy::TrophyType::SILVER: {
-        trophy_kind_s = "S";
+        trophy_kind_s = "Silver";
         break;
     }
 
     case emu::np::trophy::TrophyType::GOLD: {
-        trophy_kind_s = "G";
+        trophy_kind_s = "Gold";
         break;
     }
 
