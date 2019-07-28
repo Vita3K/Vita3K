@@ -1,6 +1,6 @@
-#include <psp2/gxm.h>
-#include <cstring>
 #include <cmath>
+#include <cstring>
+#include <psp2/gxm.h>
 
 namespace renderer::texture {
 
@@ -77,11 +77,11 @@ size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
 
 // Inverse of Part1By1 - "delete" all odd-indexed bits
 static uint32_t compact_one_by_one(uint32_t x) {
-    x &= 0x55555555;                  // x = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
-    x = (x ^ (x >>  1)) & 0x33333333; // x = --fe --dc --ba --98 --76 --54 --32 --10
-    x = (x ^ (x >>  2)) & 0x0f0f0f0f; // x = ---- fedc ---- ba98 ---- 7654 ---- 3210
-    x = (x ^ (x >>  4)) & 0x00ff00ff; // x = ---- ---- fedc ba98 ---- ---- 7654 3210
-    x = (x ^ (x >>  8)) & 0x0000ffff; // x = ---- ---- ---- ---- fedc ba98 7654 3210
+    x &= 0x55555555; // x = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
+    x = (x ^ (x >> 1)) & 0x33333333; // x = --fe --dc --ba --98 --76 --54 --32 --10
+    x = (x ^ (x >> 2)) & 0x0f0f0f0f; // x = ---- fedc ---- ba98 ---- 7654 ---- 3210
+    x = (x ^ (x >> 4)) & 0x00ff00ff; // x = ---- ---- fedc ba98 ---- ---- 7654 3210
+    x = (x ^ (x >> 8)) & 0x0000ffff; // x = ---- ---- ---- ---- fedc ba98 7654 3210
     return x;
 }
 
@@ -102,22 +102,22 @@ void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint1
     uint8_t bytes_per_pixel = (bits_per_pixel + 7) >> 3;
 
     for (uint32_t i = 0; i < static_cast<uint32_t>(width * height); i++) {
-        size_t min = width < height? width : height;
+        size_t min = width < height ? width : height;
         size_t k = static_cast<size_t>(log2(min));
 
         size_t x, y;
         if (height < width) {
             // XXXyxyxyx → XXXxxxyyy
-            size_t j = i >> (2*k) << (2*k)
-                    | (decode_morton2_y(i) & (min - 1)) << k
-                    | (decode_morton2_x(i) & (min - 1)) << 0;
+            size_t j = i >> (2 * k) << (2 * k)
+                | (decode_morton2_y(i) & (min - 1)) << k
+                | (decode_morton2_x(i) & (min - 1)) << 0;
             x = j / height;
             y = j % height;
         } else {
             // YYYyxyxyx → YYYyyyxxx
-            size_t j = i >> (2*k) << (2*k)
-                    | (decode_morton2_x(i) & (min - 1)) << k
-                    | (decode_morton2_y(i) & (min - 1)) << 0;
+            size_t j = i >> (2 * k) << (2 * k)
+                | (decode_morton2_x(i) & (min - 1)) << k
+                | (decode_morton2_y(i) & (min - 1)) << 0;
             x = j % width;
             y = j / width;
         }
@@ -128,7 +128,7 @@ void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint1
 
 void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel) {
     // 32x32 block is assembled to tiled.
-     if (bits_per_pixel % 8 != 0) {
+    if (bits_per_pixel % 8 != 0) {
         // Don't support yet
         return;
     }

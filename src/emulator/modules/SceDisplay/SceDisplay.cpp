@@ -24,7 +24,7 @@
 static int display_wait(HostState &host) {
     std::unique_lock<std::mutex> lock(host.display.mutex);
     host.display.condvar.wait(lock);
-    
+
     if (host.display.abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
 

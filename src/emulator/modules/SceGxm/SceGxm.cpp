@@ -1239,7 +1239,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(parameter->container_index == SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX);
     assert(componentCount > 0);
     assert(sourceData != nullptr);
-    
+
     size_t size = componentCount * sizeof(float);
     size_t offset = (parameter->resource_index + componentOffset) * sizeof(float);
     memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, sourceData, size);
@@ -1843,7 +1843,7 @@ EXPORT(int, sceGxmTextureInitSwizzledArbitrary) {
 }
 
 EXPORT(int, sceGxmTextureInitTiled, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
-     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_TILED);
+    const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_TILED);
 
     if (result == 0)
         return 0;

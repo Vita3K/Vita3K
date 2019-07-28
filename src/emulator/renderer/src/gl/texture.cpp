@@ -63,52 +63,52 @@ void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState 
     std::vector<uint32_t> palette_texture_pixels;
 
     const void *pixels = nullptr;
-    
+
     size_t stride = 0;
     const auto base_format = gxm::get_base_format(fmt);
     size_t bpp = renderer::texture::bits_per_pixel(base_format);
     size_t bytes_per_pixel = (bpp + 7) >> 3;
 
-        switch (gxm_texture.texture_type()) {
-        case SCE_GXM_TEXTURE_SWIZZLED:
-        case SCE_GXM_TEXTURE_TILED: {
-            const bool is_swizzled = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED);
+    switch (gxm_texture.texture_type()) {
+    case SCE_GXM_TEXTURE_SWIZZLED:
+    case SCE_GXM_TEXTURE_TILED: {
+        const bool is_swizzled = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED);
 
-            if (is_swizzled && !can_texture_be_unswizzled_without_decode(base_format))
-                break;
-
-            // Convert data
-            texture_pixels_lineared.resize(width * height * bytes_per_pixel);
-
-            if (is_swizzled)
-                renderer::texture::swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), texture_data, width, height, bpp);
-            else
-                renderer::texture::tiled_texture_to_linear_texture(texture_pixels_lineared.data(), texture_data, width, height, bpp);
-
-            pixels = texture_pixels_lineared.data();
-            stride = width;
-            texture_data = texture_pixels_lineared.data();
-        
+        if (is_swizzled && !can_texture_be_unswizzled_without_decode(base_format))
             break;
-        }
 
-        default:
-            pixels = texture_data;
-            stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
+        // Convert data
+        texture_pixels_lineared.resize(width * height * bytes_per_pixel);
 
-            break;
-        }
-    
+        if (is_swizzled)
+            renderer::texture::swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), texture_data, width, height, bpp);
+        else
+            renderer::texture::tiled_texture_to_linear_texture(texture_pixels_lineared.data(), texture_data, width, height, bpp);
+
+        pixels = texture_pixels_lineared.data();
+        stride = width;
+        texture_data = texture_pixels_lineared.data();
+
+        break;
+    }
+
+    default:
+        pixels = texture_data;
+        stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
+
+        break;
+    }
+
     if (gxm::is_paletted_format(fmt)) {
         const auto base_format = gxm::get_base_format(fmt);
-        
+
         const uint32_t *const palette_bytes = renderer::texture::get_texture_palette(gxm_texture, mem);
         palette_texture_pixels.resize(width * height * 4);
         if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
-            renderer::texture::palette_texture_to_rgba_8(reinterpret_cast<uint32_t*>(palette_texture_pixels.data()),
+            renderer::texture::palette_texture_to_rgba_8(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
                 texture_data, width, height, palette_bytes);
         } else {
-            renderer::texture::palette_texture_to_rgba_4(reinterpret_cast<uint32_t*>(palette_texture_pixels.data()),
+            renderer::texture::palette_texture_to_rgba_4(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
                 texture_data, width, height, palette_bytes);
         }
         pixels = palette_texture_pixels.data();
