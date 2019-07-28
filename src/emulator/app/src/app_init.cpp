@@ -266,15 +266,15 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
 
     if (state.features.direct_fragcolor) {
-        LOG_INFO("Your GPU support direct access to last fragment color. Your performance with programmable blending game will be optimized.");
+        LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
     } else if (state.features.support_shader_interlock) {
-        LOG_INFO("Your GPU supports shader interlock, some games use programmable blending will have better performance.");
+        LOG_INFO("Your GPU supports shader interlock, some games that use programmable blending will have better performance.");
     } else if (state.features.support_texture_barrier) {
         LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
-        LOG_INFO("Consider updating to GPU that has shader interlock.");
+        LOG_WARN("Consider updating to GPU that has shader interlock.");
     } else {
         LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
-        LOG_INFO("Consider updating your GPU.");
+        LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
     state.kernel.base_tick = { rtc_base_ticks() };

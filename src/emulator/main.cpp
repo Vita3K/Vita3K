@@ -153,7 +153,6 @@ int main(int argc, char *argv[]) {
             host.io.title_id.c_str());
 
         gui::draw_begin(gui, host);
-        //gui::draw_display(gui, host.display, host.mem);
         gui::draw_common_dialog(gui, host);
         if (host.display.imgui_render) {
             gui::draw_ui(gui, host);
