@@ -17,9 +17,14 @@
 
 #pragma once
 
-#include <map>
+#include <np/common.h>
+#include <np/trophy/context.h>
 
 #include <mem/mem.h> // Address.
+
+#include <map>
+#include <mutex>
+#include <vector>
 
 namespace emu {
 struct SceNpServiceStateCallback {
@@ -30,8 +35,28 @@ struct SceNpServiceStateCallback {
 
 typedef std::map<int, emu::SceNpServiceStateCallback> np_callbacks;
 
+struct NpTrophyUnlockCallbackData {
+    std::string trophy_name;
+    std::string description;
+    emu::np::trophy::TrophyType trophy_kind;
+    std::vector<std::uint8_t> icon_buf;
+};
+
+using NpTrophyUnlockCallback = std::function<void(NpTrophyUnlockCallbackData &)>;
+
+struct NpTrophyState {
+    bool inited = false;
+    std::mutex access_mutex;
+
+    std::vector<emu::np::trophy::Context> contexts;
+    NpTrophyUnlockCallback trophy_unlock_callback;
+};
+
 struct NpState {
     bool inited = false;
     np_callbacks cbs;
     int state = -1;
+
+    NpTrophyState trophy_state;
+    emu::np::CommunicationID comm_id;
 };

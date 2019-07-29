@@ -18,11 +18,14 @@
 #pragma once
 
 #include <dialog/state.h>
+#include <np/state.h>
 
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
 #include <glutil/object.h>
+
+#include <queue>
 
 namespace gui {
 
@@ -78,6 +81,13 @@ struct HelpMenuState {
 
 } // namespace gui
 
+enum class TrophyAnimationStage {
+    SLIDE_IN = 0,
+    STATIC = 1,
+    SLIDE_OUT = 2,
+    END = 3
+};
+
 struct GuiState {
     bool renderer_focused = true;
     gui::DebugMenuState debug_menu;
@@ -104,6 +114,15 @@ struct GuiState {
     std::map<std::string, GLObject> user_backgrounds;
 
     SceUID thread_watch_index = -1;
+
+    std::uint32_t trophy_window_frame_count{ 0 };
+    TrophyAnimationStage trophy_window_frame_stage{ TrophyAnimationStage::SLIDE_IN };
+    std::uint32_t trophy_window_icon{ 0xFFFFFFFF };
+
+    std::queue<NpTrophyUnlockCallbackData> trophy_unlock_display_requests;
+    std::mutex trophy_unlock_display_requests_access_mutex;
+
+    ImVec2 trophy_window_pos;
 
     // imgui
     ImFont *normal_font{};

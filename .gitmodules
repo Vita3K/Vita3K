@@ -10,9 +10,6 @@
 [submodule "src/external/yaml-cpp"]
 	path = src/external/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
-[submodule "src/external/vita-toolchain"]
-	path = src/external/vita-toolchain
-	url = https://github.com/Vita3K/vita-toolchain
 [submodule "src/external/microprofile"]
 	path = src/external/microprofile
 	url = https://github.com/jonasmr/microprofile.git
@@ -66,3 +63,9 @@
 [submodule "src/external/SPIRV-Cross"]
 	path = src/external/SPIRV-Cross
 	url = https://github.com/vita3k/SPIRV-Cross
+[submodule "src/external/pugixml"]
+	path = src/external/pugixml
+	url = https://github.com/zeux/pugixml
+[submodule "src/external/vita-toolchain"]
+	path = src/external/vita-toolchain
+	url = https://github.com/vita3k/vita-toolchain

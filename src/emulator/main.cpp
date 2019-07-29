@@ -41,6 +41,7 @@
 #endif
 
 #include <cstdlib>
+#include <SDL.h>
 
 int main(int argc, char *argv[]) {
     Root root_paths;
@@ -162,6 +163,7 @@ int main(int argc, char *argv[]) {
 
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
+        gui::draw_trophies_unlocked(gui);
         if (host.display.imgui_render) {
             gui::draw_ui(gui, host);
         }

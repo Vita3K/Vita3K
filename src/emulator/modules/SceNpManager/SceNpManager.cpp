@@ -19,6 +19,22 @@
 
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
+
+#include <np/functions.h>
+
+struct SceNpOnlineID {
+    // Maximum name is 16 bytes
+    char name[16];
+    char term;
+    char dummy;
+};
+
+struct SceNpId {
+    SceNpOnlineID online_id;
+    std::uint8_t opt[8];
+    std::uint8_t unk0[8];
+};
 
 EXPORT(int, sceNpAuthAbortOAuthRequest) {
     return UNIMPLEMENTED();
@@ -55,8 +71,18 @@ EXPORT(int, sceNpGetServiceState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpInit) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpInit, emu::np::CommunicationConfig *comm_config, void *dontcare) {
+    if (host.np.inited) {
+        return SCE_NP_ERROR_ALREADY_INITIALIZED;
+    }
+
+    const emu::np::CommunicationID *comm_id = (comm_config) ? comm_config->comm_id.get(host.mem) : nullptr;
+
+    if (!init(host.np, comm_id)) {
+        return SCE_NP_ERROR_NOT_INITIALIZED;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceNpManagerGetAccountRegion) {
@@ -75,8 +101,26 @@ EXPORT(int, sceNpManagerGetContentRatingFlag) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpManagerGetNpId) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpManagerGetNpId, SceNpId *id) {
+    if (!host.np.inited) {
+        return SCE_NP_MANAGER_ERROR_NOT_INITIALIZED;
+    }
+
+    if (host.cfg.online_id.length() > 16) {
+        LOG_ERROR("Your online ID has over 16 characters, try again with shorter name");
+        return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
+    }
+
+    std::copy(host.cfg.online_id.begin(), host.cfg.online_id.end(), id->online_id.name);
+    id->online_id.term = '\0';
+    id->online_id.dummy = 0;
+
+    // Fill the unused stuffs to 0 (prevent some weird things happen)
+    std::fill(id->opt, id->opt + 8, 0);
+    std::fill(id->unk0, id->unk0 + 8, 0);
+
+    // Everything is totally fine
+    return 0;
 }
 
 EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> data) {
@@ -89,8 +133,13 @@ EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> dat
     return 0;
 }
 
-EXPORT(int, sceNpTerm) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceNpTerm) {
+    if (!host.np.inited) {
+        LOG_WARN("NP library not initialized but termination got called");
+        return;
+    }
+
+    deinit(host.np);
 }
 
 EXPORT(int, sceNpUnregisterServiceStateCallback) {
