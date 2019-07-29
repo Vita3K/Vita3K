@@ -254,6 +254,10 @@ void set_context(GLContext &context, const GLRenderTarget *rt, const FeatureStat
         }
     }
 
+    // Enable/disable depth and stencil data based on depth/stencil surface
+    sync_depth_data(state);
+    sync_stencil_data(state);
+    
     // TODO This is just for debugging.
     // glClear(GL_COLOR_BUFFER_BIT);
 }
