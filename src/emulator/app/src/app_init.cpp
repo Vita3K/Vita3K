@@ -212,7 +212,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         if (SDL_GL_SetSwapInterval(-1) < 0) {
             SDL_GL_SetSwapInterval(1);
         }
-    } 
+    }
     LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
 
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);

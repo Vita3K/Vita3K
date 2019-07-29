@@ -382,8 +382,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         LOG_INFO("log-exports: {}", cfg.log_exports);
         LOG_INFO("log-active-shaders: {}", cfg.log_active_shaders);
         LOG_INFO("log-uniforms: {}", cfg.log_uniforms);
-        LOG_INFO("fps-limit-enabled: {}", cfg.fps_limit);
-        LOG_INFO("vsync-enable: {}", cfg.wait_for_vsync);
+        LOG_INFO("fps-limit: {}", cfg.fps_limit);
+        LOG_INFO("wait-for-vysnc: {}", cfg.wait_for_vsync);
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";

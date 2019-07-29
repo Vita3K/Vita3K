@@ -40,8 +40,8 @@
 #include <combaseapi.h>
 #endif
 
-#include <cstdlib>
 #include <chrono>
+#include <cstdlib>
 
 int main(int argc, char *argv[]) {
     Root root_paths;
@@ -155,9 +155,10 @@ int main(int argc, char *argv[]) {
         return RendererInitFailed;
 
     while (handle_events(host)) {
-        std::chrono::steady_clock::time_point frame_start, frame_end;
+        std::chrono::steady_clock::time_point frame_start;
+        std::chrono::steady_clock::time_point frame_end;
 
-        if (host.cfg.fps_limit){
+        if (host.cfg.fps_limit) {
             frame_start = std::chrono::steady_clock::now();
         }
         gl_renderer.render(host);
@@ -175,7 +176,7 @@ int main(int argc, char *argv[]) {
 
         host.display.condvar.notify_all();
         if (host.cfg.fps_limit) {
-            constexpr double full_second = 1000000.0; //microseconds
+            constexpr double full_second = 1000000.0; // microseconds
 
             const std::chrono::microseconds TARGET_TIME{ static_cast<uint32_t>(full_second / (host.cfg.desired_fps + 1)) };
 
