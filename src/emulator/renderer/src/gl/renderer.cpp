@@ -231,7 +231,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
     return true;
 }
 
-void set_context(GLContext &context, const GLRenderTarget *rt, const FeatureState &features) {
+void set_context(GLContext &context, GxmContextState &state, const GLRenderTarget *rt, const FeatureState &features) {
     R_PROFILE(__func__);
 
     bind_fundamental(context);
@@ -252,6 +252,17 @@ void set_context(GLContext &context, const GLRenderTarget *rt, const FeatureStat
             glActiveTexture(GL_TEXTURE0 + COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
             glBindTexture(GL_TEXTURE_2D, rt->color_attachment[0]);
         }
+    }
+
+    // Sync enable/disable depth/stencil based on depth stencil surface.
+    if (sync_depth_data(state)) {
+        sync_front_depth_func(state);
+        sync_front_depth_write_enable(state);
+    }
+
+    if (sync_stencil_data(state)) {
+        sync_stencil_func(state, true);
+        sync_stencil_func(state, false);
     }
 
     // TODO This is just for debugging.

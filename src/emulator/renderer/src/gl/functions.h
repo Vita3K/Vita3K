@@ -37,7 +37,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
 bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache);
 void sync_rendertarget(const GLRenderTarget &rt);
-void set_context(GLContext &ctx, const GLRenderTarget *rt, const FeatureState &features);
+void set_context(GLContext &ctx, GxmContextState &state, const GLRenderTarget *rt, const FeatureState &features);
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels);
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id,
