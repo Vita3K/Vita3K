@@ -32,6 +32,8 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#include <SDL.h>
+
 #ifdef USE_GDBSTUB
 #include <gdbstub/functions.h>
 #endif

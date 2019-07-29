@@ -56,5 +56,5 @@ struct Config {
     int desired_fps = 60;
     bool wait_for_vsync = true;
     optional<bool> wait_for_debugger;
-
+    std::string online_id = "Vita3K";
 }; // struct Config

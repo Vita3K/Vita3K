@@ -132,6 +132,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "desired-fps", &cfg.desired_fps, static_cast<int>(60));
     get_yaml_value(config_node, "wait-for-vsync", &cfg.wait_for_vsync, true);
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
+    get_yaml_value(config_node, "online-id", &cfg.online_id, std::string("Vita3K"));
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
         LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
@@ -185,6 +186,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "desired-fps", cfg.desired_fps);
     config_file_emit_single(emitter, "wait-for-vsync", cfg.wait_for_vsync);
     config_file_emit_optional_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
+    config_file_emit_single(emitter, "online-id", cfg.online_id);
 
     emitter << YAML::EndMap;
 

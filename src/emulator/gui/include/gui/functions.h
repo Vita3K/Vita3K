@@ -17,13 +17,16 @@
 
 #pragma once
 
-#include <host/state.h>
+#include <gui/state.h>
 
-#include <SDL.h>
-
+#include <cstdint>
 #include <string>
+#include <vector>
 
-struct GuiState;
+struct DisplayState;
+struct HostState;
+struct SDL_Window;
+struct NpTrophyUnlockCallbackData;
 
 namespace gui {
 
@@ -48,6 +51,10 @@ void draw_ui(GuiState &gui, HostState &host);
 void draw_common_dialog(GuiState &gui, HostState &host);
 void draw_game_selector(GuiState &gui, HostState &host);
 void draw_reinstall_dialog(GenericDialogState *status);
+void draw_trophies_unlocked(GuiState &gui);
+
+std::uint32_t load_image(GuiState &gui, const char *data, const std::size_t size);
+void destroy_image(const std::uint32_t obj);
 
 } // namespace gui
 

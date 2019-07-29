@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <util/bytes.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -184,3 +185,37 @@ std::string toupper(const std::string &s) {
 }
 
 } // namespace string_utils
+
+template <>
+std::uint16_t byte_swap(std::uint16_t val) {
+    return (val >> 8) | (val << 8);
+}
+
+template <>
+std::uint32_t byte_swap(std::uint32_t val) {
+    //        AA             BB00                   CC0000                  DD000000
+    return (val >> 24) | (val >> 8) & 0xFF00 | (val << 8) & 0xFF0000 | (val << 24) & 0xFF000000;
+}
+
+template <>
+std::uint64_t byte_swap(std::uint64_t val) {
+    val = ((val << 8) & 0xFF00FF00FF00FF00ULL) | ((val >> 8) & 0x00FF00FF00FF00FFULL);
+    val = ((val << 16) & 0xFFFF0000FFFF0000ULL) | ((val >> 16) & 0x0000FFFF0000FFFFULL);
+
+    return (val << 32) | (val >> 32);
+}
+
+template <>
+std::int16_t byte_swap(std::int16_t val) {
+    return byte_swap(static_cast<std::uint16_t>(val));
+}
+
+template <>
+std::int32_t byte_swap(std::int32_t val) {
+    return byte_swap(static_cast<std::uint32_t>(val));
+}
+
+template <>
+std::int64_t byte_swap(std::int64_t val) {
+    return byte_swap(static_cast<std::uint64_t>(val));
+}
