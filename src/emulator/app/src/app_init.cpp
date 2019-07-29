@@ -29,7 +29,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#ifdef USE_DISCORD_RICH_PRESENCE
+#if DISCORD_RPC
 #include <app/discord.h>
 #endif
 
@@ -202,7 +202,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         return false;
     }
 
-#ifdef USE_DISCORD_RICH_PRESENCE
+#if DISCORD_RPC
     discord::init();
     if (cfg.discord_rich_presence) {
         discord::update_presence("");

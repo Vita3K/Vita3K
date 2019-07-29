@@ -1,4 +1,4 @@
-#ifdef USE_DISCORD_RICH_PRESENCE
+#if DISCORD_RPC
 
 #include <app/discord.h>
 #include <discord_rpc.h>

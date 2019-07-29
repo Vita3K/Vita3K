@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(USE_GDBSTUB "Build Vita3K with GDB Debugger." OFF)
-option(USE_DISCORD_RICH_PRESENCE "Build Vita3K with Discord Rich Presence" OFF)
+option(USE_DISCORD_RICH_PRESENCE "Build Vita3K with Discord Rich Presence" ON)
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -33,10 +33,6 @@ macro(pre_configure_boost)
 	message("Using Boost_INCLUDE_DIRS: ${BOOST_INCLUDEDIR}")
 	message("Using Boost_LIBRARY_DIRS: ${BOOST_LIBRARYDIR}")
 endmacro(pre_configure_boost)
-
-if (CI)
-	set(USE_DISCORD_RICH_PRESENCE ON)
-endif()
 
 if(NOT CI)
 	pre_configure_boost()

@@ -22,7 +22,7 @@
 #include <kernel/functions.h>
 #include <util/log.h>
 
-#ifdef USE_DISCORD_RICH_PRESENCE
+#if DISCORD_RPC
 #include <app/discord.h>
 #endif
 

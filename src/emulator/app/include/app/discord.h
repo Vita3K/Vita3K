@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef USE_DISCORD_RICH_PRESENCE
+#if DISCORD_RPC
 
 #include <string>
 
