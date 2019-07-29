@@ -992,7 +992,7 @@ EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, emu::SceKernelModuleIn
         }
     }
 
-    return SCE_KERNEL_ERROR_MODULEMGR_NOENT;
+    return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NOENT);
 }
 
 EXPORT(int, sceKernelGetMsgPipeInfo) {
