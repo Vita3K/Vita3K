@@ -1781,7 +1781,7 @@ static int init_texture_base(const char *export_name, emu::SceGxmTexture *textur
             LOG_ERROR("Initialized texture with unsupported texture format: {}", log_hex(texFormat));
     }
 
-    texture->mip_count = mipCount - 1;
+    texture->mip_count = std::min<std::uint32_t>(0, mipCount - 1);
     texture->format0 = (texFormat & 0x80000000) >> 31;
     texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
     texture->lod_bias = 31;
