@@ -38,7 +38,7 @@
 #include <gdbstub/functions.h>
 #endif
 
-#ifdef USE_DISCORD_RICH_PRESENCE
+#if DISCORD_RPC
 #include <app/discord.h>
 #endif
 
@@ -334,7 +334,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
     server_open(host);
 #endif
 
-#ifdef USE_DISCORD_RICH_PRESENCE
+#if DISCORD_RPC
     if (host.cfg.discord_rich_presence)
         discord::update_presence(host.io.title_id, host.game_title);
 #endif

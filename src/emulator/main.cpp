@@ -28,7 +28,7 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#ifdef USE_DISCORD_RICH_PRESENCE
+#if DISCORD_RPC 
 #include <app/discord.h>
 #endif
 
@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_begin(gui, host);
 
-#ifdef USE_DISCORD_RICH_PRESENCE
+#if DISCORD_RPC
             discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
             gui::draw_ui(gui, host);
