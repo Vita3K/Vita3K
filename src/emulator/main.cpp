@@ -173,23 +173,18 @@ int main(int argc, char *argv[]) {
         }
         gui::draw_end(host.window.get());
 
-        if (!host.cfg.sync_rendering) {
-            host.display.condvar.notify_all();
-            if (host.cfg.fps_limit) {
-                constexpr double full_second = 1000000.0; //microseconds
+        host.display.condvar.notify_all();
+        if (host.cfg.fps_limit) {
+            constexpr double full_second = 1000000.0; //microseconds
 
-                const std::chrono::microseconds TARGET_TIME{ static_cast<uint32_t>(full_second / (host.cfg.desired_fps + 1)) };
-                
-                frame_end = std::chrono::steady_clock::now();
-                std::chrono::microseconds frame_processing_time = std::chrono::duration_cast<std::chrono::microseconds>(frame_end - frame_start);
-                if (frame_processing_time < TARGET_TIME) {
-                    std::chrono::microseconds frame_idle_time = TARGET_TIME - frame_processing_time;
-                    std::this_thread::sleep_for(frame_idle_time);
-                }
+            const std::chrono::microseconds TARGET_TIME{ static_cast<uint32_t>(full_second / (host.cfg.desired_fps + 1)) };
+
+            frame_end = std::chrono::steady_clock::now();
+            std::chrono::microseconds frame_processing_time = std::chrono::duration_cast<std::chrono::microseconds>(frame_end - frame_start);
+            if (frame_processing_time < TARGET_TIME) {
+                std::chrono::microseconds frame_idle_time = TARGET_TIME - frame_processing_time;
+                std::this_thread::sleep_for(frame_idle_time);
             }
-        } else {
-            std::unique_lock<std::mutex> lock(host.display.mutex);
-            host.display.condvar.wait(lock);
         }
 
         app::set_window_title(host);
