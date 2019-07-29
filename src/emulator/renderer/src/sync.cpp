@@ -42,8 +42,12 @@ int wait_for_status(State &state, int *result_code) {
 }
 
 void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
-    if (sync_object->done & subjects) {
-        return;
+    {
+        const std::lock_guard<std::mutex> mutex_guard(sync_object->lock);
+
+        if (sync_object->done & subjects) {
+            return;
+        }
     }
 
     std::unique_lock<std::mutex> finish_mutex(sync_object->lock);
@@ -51,11 +55,16 @@ void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
 }
 
 void subject_done(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
-    sync_object->done |= subjects;
+    {
+        const std::lock_guard<std::mutex> mutex_guard(sync_object->lock);
+        sync_object->done |= subjects;
+    }
+
     sync_object->cond.notify_all();
 }
 
 void subject_in_progress(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
+    const std::lock_guard<std::mutex> mutex_guard(sync_object->lock);
     sync_object->done &= ~subjects;
 }
 
