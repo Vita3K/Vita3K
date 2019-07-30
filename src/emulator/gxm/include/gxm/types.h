@@ -168,8 +168,8 @@ struct GxmContextState {
     StreamDatas stream_data;
 
     // Depth.
-    SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
-    SceGxmDepthFunc back_depth_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
+    SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
+    SceGxmDepthFunc back_depth_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
     SceGxmDepthWriteMode front_depth_write_enable = SCE_GXM_DEPTH_WRITE_ENABLED;
     SceGxmDepthWriteMode back_depth_write_enable = SCE_GXM_DEPTH_WRITE_ENABLED;
 
