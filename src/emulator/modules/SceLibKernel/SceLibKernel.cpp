@@ -983,10 +983,10 @@ EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, emu::SceKernelModuleIn
 
     for (const auto &module : state->loaded_modules) {
         for (int n = 0; n < MODULE_INFO_NUM_SEGMENTS; n++) {
-            const auto segment_address_begin = module->second->segments[n].vaddr.address();
-            const auto segment_address_end = segment_address_begin + module->second->segments[n].memsz;
+            const auto segment_address_begin = module.second->segments[n].vaddr.address();
+            const auto segment_address_end = segment_address_begin + module.second->segments[n].memsz;
             if (addr.address() > segment_address_begin && addr.address() < segment_address_end) {
-                memcpy(info, module->second.get(), sizeof(emu::SceKernelModuleInfo));
+                memcpy(info, module.second.get(), sizeof(emu::SceKernelModuleInfo));
                 return SCE_KERNEL_OK;
             }
         }
