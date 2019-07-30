@@ -8,12 +8,12 @@ if errorlevel 2 set vs_version=Visual Studio 16 2019
 REM CI uses pre-built Boost
 IF "%CI%"=="" IF "%vs_version%"=="Visual Studio 15 2017 Win64" (
 	REM Create build dir
-	mkdir src\external\boost-build
-	cd src\external\boost
+	mkdir external\boost-build
+	cd external\boost
 
 	REM Build our Boost subset
 	b2 -j5 --build-dir=../boost-build --stagedir=../boost-build toolset=msvc stage
-	cd ../../..
+	cd ../..
 )
 
 REM Create build folder

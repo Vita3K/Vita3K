@@ -3,7 +3,7 @@
 /build-windows/
 /api.trace
 .vs/
-/src/external/boost-build
+/external/boost-build
 .idea/
 .vs
 .vscode

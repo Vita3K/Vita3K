@@ -6,8 +6,8 @@ BOOST_FOUND="$(cmake --find-package -DNAME=Boost -DCOMPILER_ID=GNU -DLANGUAGE=C 
 # CI uses pre-built Boost
 if [[ -z "${CI}" && ${BOOST_FOUND} != "Boost found." ]]; then
 	# Create build dir
-	mkdir -p src/external/boost-build
-	cd src/external/boost
+	mkdir -p external/boost-build
+	cd external/boost
 
 	# Non-Windows needs to build Boost.Build first
 	chmod +x tools/build/src/engine/build.sh
@@ -15,7 +15,7 @@ if [[ -z "${CI}" && ${BOOST_FOUND} != "Boost found." ]]; then
 
 	# Build our Boost subset
 	./b2 -j5 --build-dir=../boost-build --stagedir=../boost-build stage
-	cd ../../..
+	cd ../..
 fi
 
 # Generate project files
