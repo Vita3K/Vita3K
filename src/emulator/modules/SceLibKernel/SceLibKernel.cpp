@@ -981,7 +981,7 @@ EXPORT(int, sceKernelGetLwMutexInfoById) {
 EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, emu::SceKernelModuleInfo *info) {
     KernelState *const state = &host.kernel;
 
-    for (SceKernelModuleInfoPtrs::iterator module = state->loaded_modules.begin(); module != state->loaded_modules.end(); ++module){
+    for (const auto &module : state->loaded_modules) {
         for (int n = 0; n < MODULE_INFO_NUM_SEGMENTS; n++) {
             const auto segment_address_begin = module->second->segments[n].vaddr.address();
             const auto segment_address_end = segment_address_begin+module->second->segments[n].memsz;
