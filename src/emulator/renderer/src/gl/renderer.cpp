@@ -180,6 +180,8 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_target->renderbuffers[depth_fb_index]);
     glClearColor(0.968627450f, 0.776470588f, 0.0f, 1.0f);
+    glClearDepth(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return true;
@@ -254,6 +256,14 @@ void set_context(GLContext &context, GxmContextState &state, const GLRenderTarge
         }
     }
 
+    // Try to clear the depth buffer.
+    // TODO: Take request to force load from given memory
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glClearDepth(1.0f);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+
     // Sync enable/disable depth/stencil based on depth stencil surface.
     if (sync_depth_data(state)) {
         sync_front_depth_func(state);
@@ -264,9 +274,6 @@ void set_context(GLContext &context, GxmContextState &state, const GLRenderTarge
         sync_stencil_func(state, true);
         sync_stencil_func(state, false);
     }
-
-    // TODO This is just for debugging.
-    // glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels) {
