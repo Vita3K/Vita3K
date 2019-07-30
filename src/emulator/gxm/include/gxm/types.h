@@ -58,7 +58,7 @@ struct SceGxmTexture {
     uint32_t swizzle_format : 3;
     uint32_t normalize_mode : 1;
 
-    SceGxmTextureType texture_type() const {
+    uint32_t texture_type() const {
         return type << 29;
     }
 };
