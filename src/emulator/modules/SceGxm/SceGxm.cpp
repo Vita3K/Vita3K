@@ -379,10 +379,11 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
     return 0;
 }
 
-EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<SceGxmSyncObject> newBuffer, Ptr<const void> callbackData) {
-    //assert(oldBuffer != nullptr);
-    //assert(newBuffer != nullptr);
-    assert(callbackData);
+EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<SceGxmSyncObject> newBuffer, Ptr<const void> callbackData) {
+    if (!oldBuffer || !newBuffer || !callbackData) {
+        return SCE_GXM_ERROR_INVALID_POINTER;
+    }
+
     DisplayCallback display_callback;
 
     const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
@@ -393,15 +394,15 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     SceGxmSyncObject *oldBufferSync = Ptr<SceGxmSyncObject>(oldBuffer).get(host.mem);
     SceGxmSyncObject *newBufferSync = Ptr<SceGxmSyncObject>(newBuffer).get(host.mem);
 
+    renderer::subject_in_progress(newBufferSync, renderer::SyncObjectSubject::DisplayQueue);
+
     display_callback.data = address;
     display_callback.pc = host.gxm.params.displayQueueCallback.address();
     display_callback.old_buffer = oldBuffer.address();
     display_callback.new_buffer = newBuffer.address();
     host.gxm.display_queue.push(display_callback);
 
-    renderer::subject_in_progress(newBufferSync, renderer::SyncObjectSubject::DisplayQueue);
-
-    // TODO Return success if/when we call callback not as a tail call.
+    return 0;
 }
 
 EXPORT(int, sceGxmDisplayQueueFinish) {
@@ -1239,7 +1240,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(parameter->container_index == SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX);
     assert(componentCount > 0);
     assert(sourceData != nullptr);
-
+    
     size_t size = componentCount * sizeof(float);
     size_t offset = (parameter->resource_index + componentOffset) * sizeof(float);
     memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, sourceData, size);
