@@ -942,11 +942,15 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
         // TODO: Need confirmation.
         // Normally, the total components is first 2 bits of the info plus 1. Dependent on if the component type is F16
         // or F32, we can get the total F32 components.
+        //
+        // NOTE: The following is wrong. Needs confirmation.
         // If bit 3 of the coord info is set, the coord should be packed by shader bytecodes to F16, else it will
         // be packed to F32.
         // How coincidental that the bit will tell us how much to shift right, to get the total F32 components that this
         // coord will consist of.
-        return (info.comp_count + 1 + info.type) >> info.type;
+        //
+        // Testing reveal no usage of bit 3 yet.
+        return (info.comp_count + 1);
     };
 
     // TODO: Verify component counts
