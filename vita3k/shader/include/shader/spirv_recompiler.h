@@ -6,6 +6,8 @@
 #include <shader/usse_translator_types.h>
 #include <shader/usse_types.h>
 
+#include <features/features.h>
+
 #include <string>
 #include <utility>
 #include <vector>

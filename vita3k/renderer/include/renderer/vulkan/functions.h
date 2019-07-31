@@ -17,24 +17,20 @@
 
 #pragma once
 
-#include <renderer/state.h>
-#include <renderer/types.h>
+#include "state.h"
 
-#include <features/features.h>
+namespace renderer::vulkan {
+#define VULKAN_CHECK(a) assert(a == vk::Result::eSuccess)
 
-#include <SDL.h>
+bool create(WindowPtr window, std::unique_ptr<renderer::State> &state);
 
-#include <map>
-#include <string>
-#include <vector>
-
-namespace renderer::gl {
-struct GLState : public renderer::State {
-    GLContextPtr context;
-
-    ShaderCache fragment_shader_cache;
-    ShaderCache vertex_shader_cache;
-    ProgramCache program_cache;
+// I think I will drop this approach but this is fine for now.
+enum class CommandType {
+    General,
+    Transfer
 };
 
-} // namespace renderer::gl
+vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type);
+void free_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer);
+void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer);
+}

@@ -14,6 +14,10 @@
 #include <tuple>
 #include <vector>
 
+typedef void *SDL_GLContext;
+
+typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
+
 struct SceGxmProgramParameter;
 
 namespace renderer::gl {

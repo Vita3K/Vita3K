@@ -11,6 +11,14 @@
 #include <memory>
 #include <tuple>
 #include <vector>
+#include <string>
+
+static constexpr auto DEFAULT_RES_WIDTH = 960;
+static constexpr auto DEFAULT_RES_HEIGHT = 544;
+
+// Copy from host/window.h for the moment.
+struct SDL_Window;
+typedef std::shared_ptr<SDL_Window> WindowPtr;
 
 namespace renderer {
 
@@ -59,9 +67,9 @@ enum SyncObjectSubject : std::uint32_t {
 struct RenderTarget;
 
 struct Context {
-    const RenderTarget *current_render_target;
+    const RenderTarget *current_render_target{};
     CommandList command_list;
-    int render_finish_status{ 0 };
+    int render_finish_status = 0;
 };
 
 struct ShaderProgram {

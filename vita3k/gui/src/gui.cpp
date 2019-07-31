@@ -19,8 +19,9 @@
 
 #include <gui/functions.h>
 
+#include <gui/imgui_impl_sdl.h>
+
 #include <glutil/gl.h>
-#include <gui/imgui_impl_sdl_gl3.h>
 #include <host/functions.h>
 #include <host/state.h>
 #include <io/vfs.h>
@@ -274,7 +275,7 @@ void destroy_image(const std::uint32_t obj) {
 
 void init(GuiState &gui, HostState &host) {
     ImGui::CreateContext();
-    ImGui_ImplSdlGL3_Init(host.window.get());
+    ImGui_ImplSdl_Init(host.renderer, host.window.get(), host.base_path);
 
     init_style();
     init_font(gui, host);
@@ -294,7 +295,7 @@ void init(GuiState &gui, HostState &host) {
 }
 
 void draw_begin(GuiState &gui, HostState &host) {
-    ImGui_ImplSdlGL3_NewFrame(host.window.get());
+    ImGui_ImplSdl_NewFrame(host.renderer, host.window.get());
     host.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
 
     ImGui::PushFont(gui.normal_font);
@@ -318,11 +319,11 @@ void draw_display(GuiState &gui, DisplayState &display, MemState &mem) {
     ImGui::GetBackgroundDrawList()->AddImage((ImTextureID)gui.display, ImVec2(0, 0), ImGui::GetIO().DisplaySize);
 }
 
-void draw_end(SDL_Window *window) {
+void draw_end(HostState &host, SDL_Window *window) {
     ImGui::PopFont();
 
     ImGui::Render();
-    ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGui_ImplSdl_RenderDrawData(host.renderer, ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
 }
 

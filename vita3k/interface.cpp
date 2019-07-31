@@ -18,7 +18,6 @@
 #include "interface.h"
 
 #include <gui/functions.h>
-#include <gui/imgui_impl_sdl_gl3.h>
 #include <host/functions.h>
 #include <host/load_self.h>
 #include <host/sfo.h>
@@ -32,7 +31,7 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <SDL.h>
+#include <gui/imgui_impl_sdl.h>
 
 #ifdef USE_GDBSTUB
 #include <gdbstub/functions.h>
@@ -118,13 +117,13 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState 
     if (!created) {
         gui::GenericDialogState status = gui::UNK_STATE;
         while (handle_events(host) && (status == 0)) {
-            ImGui_ImplSdlGL3_NewFrame(host.window.get());
+            ImGui_ImplSdl_NewFrame(host.renderer, host.window.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_ui(gui, host);
             gui::draw_reinstall_dialog(&status);
             glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
             ImGui::Render();
-            ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
+            ImGui_ImplSdl_RenderDrawData(host.renderer, ImGui::GetDrawData());
             SDL_GL_SwapWindow(host.window.get());
         }
         if (status == gui::CANCEL_STATE) {
@@ -262,7 +261,7 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
 bool handle_events(HostState &host) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        ImGui_ImplSdlGL3_ProcessEvent(&event);
+        ImGui_ImplSdl_ProcessEvent(host.renderer, &event);
         switch (event.type) {
         case SDL_QUIT:
             stop_all_threads(host.kernel);

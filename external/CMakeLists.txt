@@ -184,3 +184,8 @@ target_include_directories(dlmalloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc
 target_compile_definitions(dlmalloc PUBLIC ONLY_MSPACES=1)
 
 add_subdirectory(pugixml)
+
+find_package(Vulkan REQUIRED)
+add_library(vulkan INTERFACE)
+target_include_directories(vulkan INTERFACE ${Vulkan_INCLUDE_DIRS})
+target_link_libraries(vulkan INTERFACE ${Vulkan_LIBRARIES})

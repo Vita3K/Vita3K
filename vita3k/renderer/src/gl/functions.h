@@ -1,3 +1,20 @@
+// Vita3K emulator project
+// Copyright (C) 2018 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 #pragma once
 
 #include <crypto/hash.h>
@@ -31,6 +48,7 @@ std::string load_shader(const SceGxmProgram &program, const FeatureState &featur
 bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderStatics &statics, const MemState &mem,
     const SceGxmProgramParameter *parameter, const void *data, bool log_uniforms);
 
+bool create(WindowPtr &window, std::unique_ptr<renderer::State> &state);
 bool create(std::unique_ptr<Context> &context);
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
@@ -91,5 +109,5 @@ size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 bool init(GLTextureCacheState &cache);
 
 } // namespace texture
-
 } // namespace renderer::gl
+

@@ -21,7 +21,9 @@
 #include <memory>
 
 struct SDL_Window;
+namespace renderer {
+struct State;
+}
 
 typedef std::shared_ptr<SDL_Window> WindowPtr;
-typedef void *SDL_GLContext;
-typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
+typedef std::unique_ptr<renderer::State> RendererPtr;

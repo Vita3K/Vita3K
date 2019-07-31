@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
             gui::draw_ui(gui, host);
             gui::draw_game_selector(gui, host);
 
-            gui::draw_end(host.window.get());
+            gui::draw_end(host, host.window.get());
         } else {
             return QuitRequested;
         }

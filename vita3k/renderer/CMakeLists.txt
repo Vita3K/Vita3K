@@ -7,6 +7,11 @@ add_library(
 	include/renderer/state.h
 	include/renderer/texture_cache_state.h
 	include/renderer/types.h
+
+	include/renderer/vulkan/types.h
+	include/renderer/vulkan/state.h
+	include/renderer/vulkan/functions.h
+
 	src/gl/attribute_formats.cpp
 	src/gl/compile_program.cpp
 	src/gl/draw.cpp
@@ -19,6 +24,9 @@ add_library(
 	src/gl/texture.cpp
 	src/gl/types.h
 	src/gl/uniforms.cpp
+
+	src/vulkan/renderer.cpp
+
 	src/batch.cpp
 	src/creation.cpp
 	src/driver_functions.h
@@ -33,4 +41,6 @@ add_library(
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC crypto shader glutil threads config stb vita-headers util)
+target_link_libraries(renderer PUBLIC crypto shader glutil threads config vita-headers util)
+target_link_libraries(renderer PRIVATE sdl2 vulkan)
+

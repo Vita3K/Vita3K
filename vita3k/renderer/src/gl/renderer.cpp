@@ -6,13 +6,17 @@
 
 #include <renderer/state.h>
 #include <renderer/types.h>
+#include <features/features.h>
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <util/log.h>
 
+#include <SDL.h>
+#include <SDL_video.h>
+
+#include <sstream>
 #include <cassert>
-#include <features/state.h>
 
 namespace renderer::gl {
 namespace texture {
@@ -114,17 +118,202 @@ void bind_fundamental(GLContext &context) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.element_buffer[0]);
 }
 
+#if MICROPROFILE_ENABLED
+    static void before_callback(const char *name, void *funcptr, int len_args, ...) {
+    const MicroProfileToken token = MicroProfileGetToken("OpenGL", name, MP_CYAN, MicroProfileTokenTypeCpu);
+    MICROPROFILE_ENTER_TOKEN(token);
+}
+#endif // MICROPROFILE_ENABLED
+
+static void after_callback(const char *name, void *funcptr, int len_args, ...) {
+    MICROPROFILE_LEAVE();
+    for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
+#ifndef NDEBUG
+        std::stringstream gl_error;
+        gl_error << error;
+            LOG_ERROR("OpenGL: {} set error {}.", name, gl_error.str());
+        assert(false);
+#else
+        LOG_ERROR("OpenGL error: {}", log_hex(static_cast<std::uint32_t>(error)));
+#endif
+    }
+}
+
+static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                  const GLchar *message, const void *userParam) {
+    const char *type_str = nullptr;
+
+    switch (type){
+        case GL_DEBUG_TYPE_ERROR:
+            type_str = "ERROR";
+            break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+            type_str = "DEPRECATED_BEHAVIOR";
+            break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+            type_str = "UNDEFINED_BEHAVIOR";
+            break;
+        case GL_DEBUG_TYPE_PORTABILITY:
+            type_str = "PORTABILITY";
+            break;
+        case GL_DEBUG_TYPE_PERFORMANCE:
+            type_str = "PERFORMANCE";
+            break;
+        case GL_DEBUG_TYPE_OTHER:
+            type_str = "OTHER";
+            break;
+        default:
+            type_str = "UNKTYPE";
+            break;
+    }
+
+    const char *severity_fmt = nullptr;
+    switch (severity) {
+        case GL_DEBUG_SEVERITY_LOW:
+            severity_fmt = "LOW";
+            break;
+        case GL_DEBUG_SEVERITY_MEDIUM:
+            severity_fmt = "MEDIUM";
+            break;
+        case GL_DEBUG_SEVERITY_HIGH:
+            severity_fmt = "HIGH";
+            break;
+        default:
+            severity_fmt = "UNKSERV";
+            break;
+    }
+
+        LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
+}
+
+bool create(WindowPtr &window, std::unique_ptr<State> &state) {
+    GLState *gl_state = reinterpret_cast<GLState *>(state.get());
+
+    // Recursively create GL version until one accepts
+    // Major 4 is mandantory
+    const int accept_gl_version[] = {
+        5,      // OpenGL 4.5
+        3,      // OpenGL 4.3
+        2,      // OpenGL 4.2
+        1       // OpenGL 4.1
+    };
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+    int choosen_minor_version = 0;
+
+    for (int i = 0; i < sizeof(accept_gl_version) / sizeof(int); i++) {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, accept_gl_version[i]);
+
+        gl_state->context = GLContextPtr(SDL_GL_CreateContext(window.get()), SDL_GL_DeleteContext);
+        if (gl_state->context) {
+            choosen_minor_version = accept_gl_version[i];
+            break;
+        }
+    }
+
+    if (!gl_state->context)
+        return false;
+
+    // Try adaptive vsync first, falling back to regular vsync.
+    if (SDL_GL_SetSwapInterval(-1) < 0) {
+        SDL_GL_SetSwapInterval(1);
+    }
+    LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
+
+    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
+#if MICROPROFILE_ENABLED != 0
+    glad_set_pre_callback(before_callback);
+#endif // MICROPROFILE_ENABLED
+    glad_set_post_callback(after_callback);
+
+    // Detect feature
+    std::string version = reinterpret_cast<const GLchar*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+    LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
+    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
+
+    // Try to parse and get version
+    const std::size_t dot_pos = version.find_first_of('.');
+
+    if (dot_pos != std::string::npos) {
+        const std::string major = version.substr(0, dot_pos);
+        const std::string minor = version.substr(dot_pos + 1);
+
+        gl_state->features.direct_pack_unpack_half = false;
+
+        if (std::atoi(major.c_str()) >= 4 && minor.length() >= 1) {
+            if (minor[0] >= '2') {
+                gl_state->features.direct_pack_unpack_half = true;
+            }
+        }
+    }
+
+    if (choosen_minor_version >= 3) {
+        glDebugMessageCallback(debug_output_callback, nullptr);
+    }
+
+    int total_extensions = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
+
+    std::unordered_map<std::string, bool*> check_extensions = {
+        { "GL_ARB_fragment_shader_interlock", &gl_state->features.support_shader_interlock },
+        { "GL_ARB_texture_barrier", &gl_state->features.support_texture_barrier },
+        { "GL_EXT_shader_framebuffer_fetch", &gl_state->features.direct_fragcolor },
+        { "GL_ARB_shading_language_packing", &gl_state->features.pack_unpack_half_through_ext }
+    };
+
+    for (int i = 0; i < total_extensions; i++) {
+        const std::string extension = reinterpret_cast<const GLchar*>(glGetStringi(GL_EXTENSIONS, i));
+        auto find_result = check_extensions.find(extension);
+
+        if (find_result != check_extensions.end()) {
+            *find_result->second = true;
+            check_extensions.erase(find_result);
+        }
+    }
+
+    // Workaround driver bugs
+    const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
+    const bool is_rtx = gpu_name.find("GeForce RTX") != std::string::npos;
+
+    if (is_rtx) {
+        // Disable shader interlock for all drivers.
+        // TODO: Report and fix this on NVIDIA GeForce GTX driver
+        gl_state->features.support_shader_interlock = false;
+    }
+
+    if (gl_state->features.direct_fragcolor) {
+        LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
+    } else if (gl_state->features.support_shader_interlock) {
+        LOG_INFO("Your GPU supports shader interlock, some games that use programmable blending will have better performance.");
+    } else if (gl_state->features.support_texture_barrier) {
+        LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
+
+        if (is_rtx) {
+            LOG_WARN("Shader interlock on GeForce RTX GPU driver is disabled due to a bug in the driver pending to be fixed.");
+        } else {
+            LOG_WARN("Consider updating to GPU that has shader interlock.");
+        }
+    } else {
+        LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
+        LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
+    }
+
+    return true;
+}
+
 bool create(std::unique_ptr<Context> &context) {
     R_PROFILE(__func__);
 
     context = std::make_unique<GLContext>();
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    if (!texture::init(gl_context->texture_cache) || !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) || !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)) {
-        return false;
-    }
-
-    return true;
+    return !(!texture::init(gl_context->texture_cache) ||
+             !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) ||
+             !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) ||
+             !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers));
 }
 
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {

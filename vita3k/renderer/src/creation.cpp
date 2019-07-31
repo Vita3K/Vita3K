@@ -1,11 +1,32 @@
+// Vita3K emulator project
+// Copyright (C) 2018 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 #include <gxm/types.h>
 #include <renderer/commands.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache_state.h>
 #include <renderer/types.h>
 
+#include <renderer/vulkan/functions.h>
+#include <renderer/texture_cache_state.h>
+
 #include "driver_functions.h"
 #include "gl/functions.h"
+#include "gl/state.h"
 
 #include <gxm/types.h>
 #include <renderer/functions.h>
@@ -90,17 +111,16 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
     return false;
 }
 
-bool init(std::unique_ptr<State> &state, Backend backend) {
+bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend) {
     switch (backend) {
-    case Backend::OpenGL: {
-        state = std::make_unique<gl::GLState>();
-        break;
-    }
-
-    default: {
-        REPORT_MISSING(backend);
-        break;
-    }
+        case Backend::OpenGL:
+            state = std::make_unique<gl::GLState>();
+            gl::create(window, state);
+            break;
+        case Backend::Vulkan:
+            state = std::make_unique<vulkan::VulkanState>();
+            vulkan::create(window, state);
+            break;
     }
 
     state->current_backend = backend;
@@ -110,4 +130,4 @@ bool init(std::unique_ptr<State> &state, Backend backend) {
 
     return true;
 }
-} // namespace renderer
+}
