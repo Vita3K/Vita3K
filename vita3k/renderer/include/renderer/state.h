@@ -7,7 +7,6 @@
 #include <threads/queue.h>
 
 namespace renderer {
-
 struct State {
     GXPPtrMap gxp_ptr_map;
     Queue<CommandList> command_buffer_queue;
@@ -15,7 +14,12 @@ struct State {
     std::mutex command_finish_one_mutex;
     Backend current_backend;
 
+    FeatureState features;
+
     std::uint32_t scene_processed_since_last_frame = 0;
     std::uint32_t average_scene_per_frame = 1;
+
+    virtual ~State() = default;
 };
 } // namespace renderer
+

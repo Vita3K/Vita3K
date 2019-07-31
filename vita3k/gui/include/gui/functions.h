@@ -44,7 +44,7 @@ void load_game_background(GuiState &gui, HostState &host, const std::string &tit
 
 void draw_begin(GuiState &gui, HostState &host);
 void draw_display(GuiState &gui, DisplayState &display, MemState &mem);
-void draw_end(SDL_Window *window);
+void draw_end(HostState &host, SDL_Window *window);
 void draw_display(GuiState &gui, DisplayState &display, MemState &mem);
 void draw_ui(GuiState &gui, HostState &host);
 

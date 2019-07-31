@@ -68,7 +68,7 @@ struct HostState {
     uint32_t ms_per_frame = 0;
     bool should_update_window_title = false;
     WindowPtr window;
-    GLContextPtr glcontext;
+    RendererPtr renderer;
     SceIVector2 drawable_size = { 0, 0 };
     SceFVector2 viewport_pos = { 0, 0 };
     SceFVector2 viewport_size = { 0, 0 };
@@ -77,7 +77,6 @@ struct HostState {
     KernelState kernel;
     AudioState audio;
     GxmState gxm;
-    std::unique_ptr<renderer::State> renderer;
     bool renderer_focused;
     IOState io;
     NetState net;
@@ -86,7 +85,6 @@ struct HostState {
     DialogState common_dialog;
     SfoFile sfo_handle;
     NIDSet missing_nids;
-    FeatureState features;
 #ifdef USE_GDBSTUB
     GDBState gdb;
 #endif

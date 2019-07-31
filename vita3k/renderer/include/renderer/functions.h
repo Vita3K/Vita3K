@@ -47,7 +47,7 @@ void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, GxmContextState *gxm_context_state, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list, const char *base_path, const char *title_id);
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path, const char *title_id);
-bool init(std::unique_ptr<State> &state, Backend backend);
+bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend);
 
 /**
  * \brief Copy uniform data and queue it to available command list.

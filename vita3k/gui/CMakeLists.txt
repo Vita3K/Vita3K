@@ -3,6 +3,8 @@ add_library(
 	STATIC
 	include/gui/functions.h
 	include/gui/imgui_impl_sdl_gl3.h
+	include/gui/imgui_impl_sdl_vulkan.h
+	include/gui/imgui_impl_sdl.h
 	include/gui/state.h
 	src/common_dialog.cpp
 	src/condvars_dialog.cpp
@@ -10,6 +12,8 @@ add_library(
 	src/game_selector.cpp
 	src/gui.cpp
 	src/imgui_impl_sdl_gl3.cpp
+	src/imgui_impl_sdl_vulkan.cpp
+	src/imgui_impl_sdl.cpp
 	src/main_menubar.cpp
 	src/mutexes_dialog.cpp
 	src/perf_overlay.cpp
@@ -26,5 +30,5 @@ add_library(
 )
 
 target_include_directories(gui PUBLIC include)
-target_link_libraries(gui PUBLIC host imgui)
-target_link_libraries(gui PRIVATE stb)
+target_link_libraries(gui PUBLIC host imgui glutil)
+target_link_libraries(gui PRIVATE stb renderer)

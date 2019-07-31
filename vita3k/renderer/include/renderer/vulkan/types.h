@@ -17,24 +17,10 @@
 
 #pragma once
 
-#include <renderer/state.h>
 #include <renderer/types.h>
 
-#include <features/features.h>
+namespace renderer::vulkan {
+    struct VKContext {
 
-#include <SDL.h>
-
-#include <map>
-#include <string>
-#include <vector>
-
-namespace renderer::gl {
-struct GLState : public renderer::State {
-    GLContextPtr context;
-
-    ShaderCache fragment_shader_cache;
-    ShaderCache vertex_shader_cache;
-    ProgramCache program_cache;
-};
-
-} // namespace renderer::gl
+    };
+}

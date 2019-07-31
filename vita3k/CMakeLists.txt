@@ -49,6 +49,10 @@ if (USE_GDBSTUB)
 	add_definitions(-DUSE_GDBSTUB)
 endif()
 
+if (USE_VULKAN)
+	add_definitions(-DUSE_VULKAN)
+endif()
+
 add_subdirectory(app)
 add_subdirectory(audio)
 add_subdirectory(config)
