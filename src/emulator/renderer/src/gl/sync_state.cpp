@@ -105,11 +105,12 @@ void sync_viewport(const GxmContextState &state) {
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
     const GxmViewport &viewport = state.viewport;
     if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
-        const GLfloat w = std::abs(viewport.scale.x * 2);
-        const GLfloat h = std::abs(viewport.scale.y * 2);
+        const GLfloat w = 2 * viewport.scale.x;
+        const GLfloat h = -2 * viewport.scale.y;
         const GLfloat x = viewport.offset.x - viewport.scale.x;
-        const GLfloat y = display_h - (viewport.offset.y - viewport.scale.y);
-        glViewportIndexedf(0, x, y, w, h);
+        const GLfloat y = viewport.offset.y + (h < 0 ? -viewport.scale.y : viewport.scale.y);
+
+        glViewportIndexedf(0, x, y, std::abs(w), std::abs(h));
         glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
     } else {
         glViewport(0, 0, display_w, display_h);
