@@ -38,6 +38,8 @@ struct SceGxmContext {
 
 struct SceGxmRenderTarget {
     std::unique_ptr<renderer::RenderTarget> renderer;
+    std::uint16_t width;
+    std::uint16_t height;
 };
 
 struct FragmentProgramCacheKey {
@@ -141,8 +143,21 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         *depth_stencil_surface_copy = *depthStencil;
     }
 
+    const std::uint32_t xmin = 0;
+    const std::uint32_t ymin = 0;
+    const std::uint32_t xmax = (validRegion ? validRegion->xMax : renderTarget->width);
+    const std::uint32_t ymax = (validRegion ? validRegion->yMax : renderTarget->height);
+
     renderer::set_context(*host.renderer, context->renderer.get(), &context->state, renderTarget->renderer.get(),
         color_surface_copy, depth_stencil_surface_copy);
+
+    // Set default region clip and viewport
+    renderer::set_region_clip(*host.renderer, context->renderer.get(), &context->state, SCE_GXM_REGION_CLIP_OUTSIDE,
+        xmin, xmax, ymin, ymax);
+    
+    renderer::set_viewport(*host.renderer, context->renderer.get(), &context->state,
+        0.5f * static_cast<float>(1.0f + xmin + xmax), 0.5f * (static_cast<float>(1.0 + ymin + ymax)),
+        0.5f, 0.5f * static_cast<float>(1.0f + xmax - xmin), -0.5f * static_cast<float>(1.0f + ymax - ymin), 0.5f);
 
     return 0;
 }
@@ -280,6 +295,9 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
         free(host.mem, *renderTarget);
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
+
+    rt->width = params->width;
+    rt->height = params->height;
 
     return 0;
 }
@@ -522,7 +540,7 @@ EXPORT(int, sceGxmEndCommandList) {
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotification *vertexNotification, const emu::SceGxmNotification *fragmentNotification) {
     const MemState &mem = host.mem;
     assert(context != nullptr);
-    assert(vertexNotification == nullptr);
+    //assert(vertexNotification == nullptr);
     //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.is_in_scene) {
@@ -730,7 +748,7 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, SceSize size, unsigned 
 EXPORT(int, sceGxmMapMemory, void *base, SceSize size, SceGxmMemoryAttribFlags attr) {
     assert(base != nullptr);
     assert(size > 0);
-    assert((attr == SCE_GXM_MEMORY_ATTRIB_READ) || (attr == SCE_GXM_MEMORY_ATTRIB_RW));
+    //assert((attr == SCE_GXM_MEMORY_ATTRIB_READ) || (attr == SCE_GXM_MEMORY_ATTRIB_RW));
 
     return 0;
 }
