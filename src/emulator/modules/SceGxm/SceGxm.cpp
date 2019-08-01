@@ -145,8 +145,8 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
 
     const std::uint32_t xmin = 0;
     const std::uint32_t ymin = 0;
-    const std::uint32_t xmax = (validRegion ? validRegion->xMax : renderTarget->width);
-    const std::uint32_t ymax = (validRegion ? validRegion->yMax : renderTarget->height);
+    const std::uint32_t xmax = (validRegion ? validRegion->xMax : renderTarget->width - 1);
+    const std::uint32_t ymax = (validRegion ? validRegion->yMax : renderTarget->height - 1);
 
     renderer::set_context(*host.renderer, context->renderer.get(), &context->state, renderTarget->renderer.get(),
         color_surface_copy, depth_stencil_surface_copy);
@@ -154,7 +154,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     // Set default region clip and viewport
     renderer::set_region_clip(*host.renderer, context->renderer.get(), &context->state, SCE_GXM_REGION_CLIP_OUTSIDE,
         xmin, xmax, ymin, ymax);
-    
+
     renderer::set_viewport(*host.renderer, context->renderer.get(), &context->state,
         0.5f * static_cast<float>(1.0f + xmin + xmax), 0.5f * (static_cast<float>(1.0 + ymin + ymax)),
         0.5f, 0.5f * static_cast<float>(1.0f + xmax - xmin), -0.5f * static_cast<float>(1.0f + ymax - ymin), 0.5f);
