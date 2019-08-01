@@ -105,10 +105,14 @@ void sync_viewport(GLContext &context, const GxmContextState &state) {
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
     const GxmViewport &viewport = state.viewport;
     if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
+        const GLfloat ymin = viewport.offset.y + viewport.scale.y;
+        const GLfloat ymax = viewport.offset.y - viewport.scale.y - 1;
+        const GLfloat yedge = std::min<GLfloat>(viewport.offset.y, ymax);
+
         const GLfloat w = std::abs(2 * viewport.scale.x);
         const GLfloat h = std::abs(2 * viewport.scale.y);
         const GLfloat x = viewport.offset.x - std::abs(viewport.scale.x);
-        const GLfloat y = (display_h - viewport.offset.y) - std::abs(viewport.scale.y);
+        const GLfloat y = (display_h - std::abs(yedge)) - std::abs(viewport.scale.y);
 
         context.viewport_flip[0] = (viewport.scale.x < 0) ? -1.0f : 1.0f;
         context.viewport_flip[1] = (viewport.scale.y < 0) ? -1.0f : 1.0f;
