@@ -56,7 +56,9 @@ struct VulkanState : public renderer::State {
     vk::RenderPass general_renderpass;
 
     vk::Framebuffer gui_framebuffer;
-
+    vk::Sampler gui_sampler;
+    vk::DescriptorSetLayout gui_descriptor_set;
+    vk::PipelineLayout gui_pipeline_layout;
     vk::Pipeline gui_pipeline;
 
     vk::DescriptorPool descriptor_pool;
@@ -65,7 +67,8 @@ struct VulkanState : public renderer::State {
     vk::SwapchainKHR swapchain;
 
     uint32_t swapchain_image_last = 0;
+    // These would be vectors...
     std::vector<vk::Image> swapchain_images;
-    std::vector<vk::ImageView> swapchain_views;
+    vk::ImageView swapchain_views[2];
 };
 }

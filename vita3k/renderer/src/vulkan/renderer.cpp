@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <renderer/types.h>
 #include <renderer/functions.h>
 
 #include <config/version.h>
@@ -28,7 +29,7 @@
 
 // Setting a default value for now.
 // In the future, it might be a good idea to take the host's device memory into account.
-constexpr static size_t private_allocation_size = MB(500);
+constexpr static size_t private_allocation_size = MB(1);
 
 // Some random number as value. It will likely be very different. There are probably SCE feilds for this, I will look later.
 constexpr static uint32_t max_sets = 192;
@@ -36,8 +37,6 @@ constexpr static uint32_t max_buffers = 64;
 constexpr static uint32_t max_images = 64;
 constexpr static uint32_t max_samplers = 64;
 
-constexpr static uint32_t screen_width = 960;
-constexpr static uint32_t screen_height = 540;
 constexpr static vk::Format screen_format = vk::Format::eB8G8R8A8Unorm;
 
 const static FeatureState default_features = {
@@ -59,6 +58,9 @@ const static std::vector<const char *> instance_extensions = {
 #ifdef __APPLE__
     "VK_MVK_macos_surface",
 #endif
+#ifdef WIN32
+    "VK_KHR_win32_surface",
+#endif
 };
 
 const static std::vector<const char *> device_layers = {
@@ -66,10 +68,6 @@ const static std::vector<const char *> device_layers = {
 };
 
 const static std::vector<const char *> device_extensions = {
-//    "VK_KHR_surface",
-//#ifdef __APPLE__
-//    "VK_MVK_macos_surface",
-//#endif
     "VK_KHR_swapchain",
 };
 
@@ -91,9 +89,8 @@ static bool device_is_compatible(vk::PhysicalDeviceProperties &properties, vk::P
     return true;
 }
 
-static std::vector<vk::DeviceQueueCreateInfo> select_queues(VulkanState &vulkan_state) {
-    std::vector<vk::DeviceQueueCreateInfo> queue_infos;
-
+static bool select_queues(VulkanState &vulkan_state,
+    std::vector<vk::DeviceQueueCreateInfo> &queue_infos, std::vector<std::vector<float>> &queue_priorities) {
     // TODO: Better queue allocation.
 
     /**
@@ -102,17 +99,17 @@ static std::vector<vk::DeviceQueueCreateInfo> select_queues(VulkanState &vulkan_
      *  - Queues that appear first in the list are faster.
      *  - We really just need a queue for Graphics and Transfer right now afaik.
      *  - Multiple queues families can do the same thing.
-     *  - Multiple different queues should be chosen if availible.
+     *  - Multiple different queues should be chosen if available.
      * The current algorithm only picks the first one it finds, a new algorithm should be made that takes everything into account.
      */
 
     bool found_graphics = false, found_transfer = false;
 
-    for (uint32_t a = 0; a < vulkan_state.physical_device_queue_families.size(); a++) {
+    for (size_t a = 0; a < vulkan_state.physical_device_queue_families.size(); a++) {
         const auto &queue_family = vulkan_state.physical_device_queue_families[a];
 
         // MoltenVK does not accept nullptr a pPriorities for some reason.
-        std::vector<float> priorities(queue_family.queueCount, 1.0f);
+        std::vector<float> &priorities = queue_priorities.emplace_back(queue_family.queueCount, 1.0f);
 
         // Only one DeviceQueueCreateInfo should be created per family.
         if (!found_graphics && queue_family.queueFlags & vk::QueueFlagBits::eGraphics
@@ -140,9 +137,7 @@ static std::vector<vk::DeviceQueueCreateInfo> select_queues(VulkanState &vulkan_
             break;
     }
 
-    assert(found_graphics && found_transfer);
-
-    return queue_infos;
+    return found_graphics && found_transfer;
 }
 
 static void select_memory(VulkanState &vulkan_state) {
@@ -236,58 +231,66 @@ void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuff
 
 // TODO: Replace asserts for vulkan methods and VULKAN_CHECK so the method fails.
 bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
-    auto &vulkan_state = reinterpret_cast<VulkanState &>(*state);
+    auto &vulkan_state = dynamic_cast<VulkanState &>(*state);
 
     // Create Instance
-    vk::ApplicationInfo app_info(
-        app_name, // App Name
-        0, // App Version
-        org_name, // Engine Name, using org instead.
-        0, // Engine Version
-        VK_MAKE_VERSION(1, 0, 0) // Lowest possible.
+    {
+        vk::ApplicationInfo app_info(
+            app_name, // App Name
+            0, // App Version
+            org_name, // Engine Name, using org instead.
+            0, // Engine Version
+            VK_MAKE_VERSION(1, 0, 0) // Lowest possible.
         );
 
-    vk::InstanceCreateInfo instance_info(
-        vk::InstanceCreateFlags(), // No Flags
-        &app_info, // App Info
-        instance_layers.size(), instance_layers.data(), // No Layers
-        instance_extensions.size(), instance_extensions.data() // No Extensions
+        vk::InstanceCreateInfo instance_info(
+            vk::InstanceCreateFlags(), // No Flags
+            &app_info, // App Info
+            instance_layers.size(), instance_layers.data(), // No Layers
+            instance_extensions.size(), instance_extensions.data() // No Extensions
         );
 
-    vulkan_state.instance = vk::createInstance(instance_info, nullptr);
-    assert(vulkan_state.instance);
-
-    // Select Physical Device
-    std::vector<vk::PhysicalDevice> physical_devices = vulkan_state.instance.enumeratePhysicalDevices();
-
-    for (const auto &device : physical_devices) {
-        vk::PhysicalDeviceProperties properties = device.getProperties();
-        vk::PhysicalDeviceFeatures features = device.getFeatures();
-        if (device_is_compatible(properties, features)) {
-            vulkan_state.physical_device = device;
-            vulkan_state.physical_device_properties = properties;
-            vulkan_state.physical_device_features = features;
-            vulkan_state.physical_device_memory = device.getMemoryProperties();
-            vulkan_state.physical_device_queue_families = device.getQueueFamilyProperties();
-            break;
-        }
+        vulkan_state.instance = vk::createInstance(instance_info, nullptr);
+        assert(vulkan_state.instance);
     }
 
-    assert(vulkan_state.physical_device);
+    // Select Physical Device
+    {
+        std::vector<vk::PhysicalDevice> physical_devices = vulkan_state.instance.enumeratePhysicalDevices();
 
-    std::vector<vk::DeviceQueueCreateInfo> queue_infos = select_queues(vulkan_state);
+        for (const auto &device : physical_devices) {
+            vk::PhysicalDeviceProperties properties = device.getProperties();
+            vk::PhysicalDeviceFeatures features = device.getFeatures();
+            if (device_is_compatible(properties, features)) {
+                vulkan_state.physical_device = device;
+                vulkan_state.physical_device_properties = properties;
+                vulkan_state.physical_device_features = features;
+                vulkan_state.physical_device_memory = device.getMemoryProperties();
+                vulkan_state.physical_device_queue_families = device.getQueueFamilyProperties();
+                break;
+            }
+        }
+
+        assert(vulkan_state.physical_device);
+    }
 
     // Create Device
-    vk::DeviceCreateInfo device_info(
-        vk::DeviceCreateFlags(), // No Flags
-        queue_infos.size(), queue_infos.data(), // No Queues
-        device_layers.size(), device_layers.data(), // No Layers
-        device_extensions.size(), device_extensions.data(), // No Extensions
-        &required_features
-        );
+    {
+        std::vector<vk::DeviceQueueCreateInfo> queue_infos;
+        std::vector<std::vector<float>> queue_priorities;
+        assert(select_queues(vulkan_state, queue_infos, queue_priorities));
 
-    vulkan_state.device = vulkan_state.physical_device.createDevice(device_info, nullptr);
-    assert(vulkan_state.device);
+        vk::DeviceCreateInfo device_info(
+            vk::DeviceCreateFlags(), // No Flags
+            queue_infos.size(), queue_infos.data(), // No Queues
+            device_layers.size(), device_layers.data(), // No Layers
+            device_extensions.size(), device_extensions.data(), // No Extensions
+            &required_features
+            );
+
+        vulkan_state.device = vulkan_state.physical_device.createDevice(device_info, nullptr);
+        assert(vulkan_state.device);
+    }
 
     // Get Queues
     for (uint32_t a = 0; a < vulkan_state.physical_device_queue_families[vulkan_state.general_family_index].queueCount; a++) {
@@ -301,74 +304,85 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
     }
 
     // Create Command Pools
-    vk::CommandPoolCreateInfo general_pool_info(
-        vk::CommandPoolCreateFlagBits::eResetCommandBuffer, // Flags
-        vulkan_state.general_family_index // Queue Family Index
+    {
+        vk::CommandPoolCreateInfo general_pool_info(
+            vk::CommandPoolCreateFlagBits::eResetCommandBuffer, // Flags
+            vulkan_state.general_family_index // Queue Family Index
         );
 
-    vk::CommandPoolCreateInfo transfer_pool_info(
-        vk::CommandPoolCreateFlagBits::eTransient, // Flags
-        vulkan_state.transfer_family_index // Queue Family Index
+        vk::CommandPoolCreateInfo transfer_pool_info(
+            vk::CommandPoolCreateFlagBits::eTransient, // Flags
+            vulkan_state.transfer_family_index // Queue Family Index
         );
 
-    vulkan_state.general_command_pool = vulkan_state.device.createCommandPool(general_pool_info, nullptr);
-    assert(vulkan_state.general_command_pool);
-    vulkan_state.transfer_command_pool = vulkan_state.device.createCommandPool(transfer_pool_info, nullptr);
-    assert(vulkan_state.transfer_command_pool);
-    
-    vulkan_state.gui_command_buffer = create_command_buffer(vulkan_state, CommandType::General);
-    vulkan_state.general_command_buffer = create_command_buffer(vulkan_state, CommandType::General);
+        vulkan_state.general_command_pool = vulkan_state.device.createCommandPool(general_pool_info, nullptr);
+        assert(vulkan_state.general_command_pool);
+        vulkan_state.transfer_command_pool = vulkan_state.device.createCommandPool(transfer_pool_info, nullptr);
+        assert(vulkan_state.transfer_command_pool);
+
+        vulkan_state.gui_command_buffer = create_command_buffer(vulkan_state, CommandType::General);
+        vulkan_state.general_command_buffer = create_command_buffer(vulkan_state, CommandType::General);
+    }
 
     // Allocate Memory for Images and Buffers
-    vk::MemoryAllocateInfo private_info(
-        private_allocation_size, // Size
-        vulkan_state.private_memory_index // Index
+    {
+        vk::MemoryAllocateInfo private_info(
+            private_allocation_size, // Size
+            vulkan_state.private_memory_index // Index
         );
 
-    vulkan_state.private_memory = vulkan_state.device.allocateMemory(private_info, nullptr);
-    assert(vulkan_state.private_memory);
+        vulkan_state.private_memory = vulkan_state.device.allocateMemory(private_info, nullptr);
+        assert(vulkan_state.private_memory);
+    }
 
     // Create Descriptor Pool
-    vk::DescriptorPoolCreateInfo descriptor_pool_info(
-        vk::DescriptorPoolCreateFlags(), // No Flags
-        max_sets, // Maximum Sets
-        descriptor_pool_sizes.size(), descriptor_pool_sizes.data() // Descriptor Pool
+    {
+        vk::DescriptorPoolCreateInfo descriptor_pool_info(
+            vk::DescriptorPoolCreateFlags(), // No Flags
+            max_sets, // Maximum Sets
+            descriptor_pool_sizes.size(), descriptor_pool_sizes.data() // Descriptor Pool
         );
 
-    vulkan_state.descriptor_pool = vulkan_state.device.createDescriptorPool(descriptor_pool_info, nullptr);
-    assert(vulkan_state.descriptor_pool);
+        vulkan_state.descriptor_pool = vulkan_state.device.createDescriptorPool(descriptor_pool_info, nullptr);
+        assert(vulkan_state.descriptor_pool);
+    }
 
     // Create Surface and Swapchain
-    VkSurfaceKHR surface;
-    assert(SDL_Vulkan_CreateSurface(window.get(), vulkan_state.instance, &surface));
-    vulkan_state.surface = vk::SurfaceKHR(surface);
+    {
+        VkSurfaceKHR surface;
+        assert(SDL_Vulkan_CreateSurface(window.get(), vulkan_state.instance, &surface));
+        vulkan_state.surface = vk::SurfaceKHR(surface);
 
-    assert(vulkan_state.physical_device.getSurfaceSupportKHR(vulkan_state.general_family_index, vulkan_state.surface));
+        assert(vulkan_state.physical_device.getSurfaceSupportKHR(vulkan_state.general_family_index,
+                                                                 vulkan_state.surface));
 
-    vk::SwapchainCreateInfoKHR swapchain_info(
-        vk::SwapchainCreateFlagsKHR(), // No Flags
-        vulkan_state.surface, // Surface
-        2, // Double Buffering
-        screen_format, // Image Format, BGRA is supported by MoltenVK
-        vk::ColorSpaceKHR::eSrgbNonlinear, // Color Space
-        vk::Extent2D(screen_width, screen_height), // Image Extent
-        1, // Image Array Length
-        vk::ImageUsageFlagBits::eColorAttachment, // Image Usage, consider VK_IMAGE_USAGE_STORAGE_BIT?
-        vk::SharingMode::eExclusive,
-        0, nullptr, // Unused when sharing mode is exclusive
-        vk::SurfaceTransformFlagBitsKHR::eIdentity, // Transform
-        vk::CompositeAlphaFlagBitsKHR::ePreMultiplied, // Alpha
-        vk::PresentModeKHR::eFifo, // Present Mode, FIFO and Immediate are supported on MoltenVK. Would've chosen Mailbox otherwise.
-        true, // Clipping
-        vk::SwapchainKHR() // No old swapchain.
+        vk::SwapchainCreateInfoKHR swapchain_info(
+            vk::SwapchainCreateFlagsKHR(), // No Flags
+            vulkan_state.surface, // Surface
+            2, // Double Buffering
+            screen_format, // Image Format, BGRA is supported by MoltenVK
+            vk::ColorSpaceKHR::eSrgbNonlinear, // Color Space
+            vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT), // Image Extent
+            1, // Image Array Length
+            vk::ImageUsageFlagBits::eColorAttachment, // Image Usage, consider VK_IMAGE_USAGE_STORAGE_BIT?
+            vk::SharingMode::eExclusive,
+            0, nullptr, // Unused when sharing mode is exclusive
+            vk::SurfaceTransformFlagBitsKHR::eIdentity, // Transform
+            vk::CompositeAlphaFlagBitsKHR::eOpaque, // Alpha
+            vk::PresentModeKHR::eFifo, // Present Mode, FIFO and Immediate are supported on MoltenVK. Would've chosen Mailbox otherwise.
+            true, // Clipping
+            vk::SwapchainKHR() // No old swapchain.
         );
 
-    vulkan_state.swapchain = vulkan_state.device.createSwapchainKHR(swapchain_info, nullptr);
-    assert(vulkan_state.swapchain);
+        vulkan_state.swapchain = vulkan_state.device.createSwapchainKHR(swapchain_info, nullptr);
+        assert(vulkan_state.swapchain);
+    }
 
+    // Get Swapchain Images
     vulkan_state.swapchain_images = vulkan_state.device.getSwapchainImagesKHR(vulkan_state.swapchain);
 
-    for (const auto &image : vulkan_state.swapchain_images) {
+    for (uint32_t a = 0; a < 2 /*vulkan_state.swapchain_images.size()*/; a++) {
+        const auto &image = vulkan_state.swapchain_images[a];
         vk::ImageViewCreateInfo view_info(
             vk::ImageViewCreateFlags(), // No Flags
             image, // Image
@@ -387,7 +401,7 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         vk::ImageView view = vulkan_state.device.createImageView(view_info, nullptr);
         assert(view);
 
-        vulkan_state.swapchain_views.push_back(view);
+        vulkan_state.swapchain_views[a] = view;
     }
 
     return true;

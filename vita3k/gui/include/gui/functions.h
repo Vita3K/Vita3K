@@ -38,7 +38,6 @@ enum GenericDialogState {
 
 void init(GuiState &gui, HostState &host);
 void init_background(GuiState &gui, const std::string &image_path);
-void init_display(GuiState &gui);
 void get_game_titles(GuiState &gui, HostState &host);
 void load_game_background(GuiState &gui, HostState &host, const std::string &title_id);
 

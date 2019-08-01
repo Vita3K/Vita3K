@@ -261,7 +261,7 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
 bool handle_events(HostState &host) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        ImGui_ImplSdl_ProcessEvent(host.renderer, &event);
+        ImGui_ImplSdl_ProcessEvent(&event);
         switch (event.type) {
         case SDL_QUIT:
             stop_all_threads(host.kernel);

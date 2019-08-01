@@ -12,7 +12,6 @@ IMGUI_API bool ImGui_ImplSdlVulkan_Init(RendererPtr &renderer, SDL_Window *windo
 IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(RendererPtr &renderer);
 IMGUI_API void ImGui_ImplSdlVulkan_NewFrame(RendererPtr &renderer, SDL_Window *window);
 IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawData *draw_data);
-IMGUI_API bool ImGui_ImplSdlVulkan_ProcessEvent(RendererPtr &renderer, SDL_Event *event);
 
 // Use if you want to reset your rendering device without losing ImGui state.
 IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(RendererPtr &renderer);
