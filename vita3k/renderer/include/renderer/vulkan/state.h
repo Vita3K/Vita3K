@@ -56,7 +56,9 @@ struct VulkanState : public renderer::State {
     vk::RenderPass general_renderpass;
 
     vk::Framebuffer gui_framebuffer;
-
+    vk::Sampler gui_sampler;
+    vk::DescriptorSetLayout gui_descriptor_set;
+    vk::PipelineLayout gui_pipeline_layout;
     vk::Pipeline gui_pipeline;
 
     vk::DescriptorPool descriptor_pool;
