@@ -52,7 +52,7 @@ struct GLContext : public renderer::Context {
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     GLuint last_draw_program{ 0 };
 
-    float viewport_flip[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    float viewport_flip[4] = { 1.0f, -1.0f, 1.0f, 1.0f };
 
     std::vector<UniformSetRequest> vertex_set_requests;
     std::vector<UniformSetRequest> fragment_set_requests;

@@ -319,7 +319,7 @@ COMMAND_SET_STATE(cull_mode) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::sync_cull(*state);
+        gl::sync_cull(*reinterpret_cast<gl::GLContext *>(render_context), *state);
         break;
     }
 

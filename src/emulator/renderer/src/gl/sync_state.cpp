@@ -123,7 +123,7 @@ void sync_viewport(GLContext &context, const GxmContextState &state) {
         glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
     } else {
         context.viewport_flip[0] = 1.0f;
-        context.viewport_flip[1] = 1.0f;
+        context.viewport_flip[1] = -1.0f;
         context.viewport_flip[2] = 1.0f;
         context.viewport_flip[3] = 1.0f;
 
@@ -159,16 +159,16 @@ void sync_clipping(const GxmContextState &state) {
     }
 }
 
-void sync_cull(const GxmContextState &state) {
+void sync_cull(GLContext &context, const GxmContextState &state) {
     // Culling.
     switch (state.cull_mode) {
     case SCE_GXM_CULL_CCW:
         glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
+        glCullFace(context.viewport_flip[1] == 1.0f ? GL_FRONT : GL_BACK);
         break;
     case SCE_GXM_CULL_CW:
         glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
+        glCullFace(context.viewport_flip[1] == 1.0f ? GL_BACK : GL_FRONT);
         break;
     case SCE_GXM_CULL_NONE:
         glDisable(GL_CULL_FACE);
@@ -302,7 +302,7 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
 
     sync_viewport(context, state);
     sync_clipping(state);
-    sync_cull(state);
+    sync_cull(context, state);
 
     if (sync_depth_data(state)) {
         sync_front_depth_func(state);
