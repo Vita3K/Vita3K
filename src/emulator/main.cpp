@@ -152,6 +152,7 @@ int main(int argc, char *argv[]) {
 
     while (handle_events(host)) {
         gl_renderer.render(host);
+        host.display.condvar.notify_all();
 
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.features, host.mem, host.cfg, host.base_path.c_str(),
@@ -164,8 +165,6 @@ int main(int argc, char *argv[]) {
             gui::draw_ui(gui, host);
         }
         gui::draw_end(host.window.get());
-
-        host.display.condvar.notify_all();
 
         app::set_window_title(host);
     }
