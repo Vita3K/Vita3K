@@ -118,6 +118,14 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         }
     }
 
+    // Try to configure the vertex shader, to output coordinates suited for GXM viewport
+    GLuint flip_vec_loc = glGetUniformLocation(program_id, "flip_vec");
+
+    if (flip_vec_loc != -1) {
+        // Let's do flipping
+        glUniform4fv(flip_vec_loc, 1, context.viewport_flip);
+    }
+
     context.vertex_set_requests.clear();
     context.fragment_set_requests.clear();
 

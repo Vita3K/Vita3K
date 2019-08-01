@@ -46,7 +46,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);
 
 // State
-void sync_viewport(const GxmContextState &state);
+void sync_viewport(GLContext &context, const GxmContextState &state);
 void sync_clipping(const GxmContextState &state);
 void sync_cull(const GxmContextState &state);
 void sync_front_depth_func(const GxmContextState &state);

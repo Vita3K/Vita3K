@@ -108,19 +108,6 @@ static AttributeLocations attribute_locations(const SceGxmProgram &vertex_progra
     return locations;
 }
 
-static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
-    R_PROFILE(__func__);
-
-    uint32_t *row1 = &pixels[0];
-    uint32_t *row2 = &pixels[(height - 1) * stride_in_pixels];
-
-    while (row1 < row2) {
-        std::swap_ranges(&row1[0], &row1[width], &row2[0]);
-        row1 += stride_in_pixels;
-        row2 -= stride_in_pixels;
-    }
-}
-
 void bind_fundamental(GLContext &context) {
     // Bind the vertex array and element buffer.
     glBindVertexArray(context.vertex_array[0]);
@@ -286,8 +273,6 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
     glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-
-    flip_vertically(pixels, width, height, stride_in_pixels);
 
     ++context.texture_cache.timestamp;
 }

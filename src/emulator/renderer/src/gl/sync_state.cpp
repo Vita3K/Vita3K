@@ -99,20 +99,30 @@ static void set_stencil_state(GLenum face, const GxmStencilState &state) {
     glStencilMaskSeparate(face, state.write_mask);
 }
 
-void sync_viewport(const GxmContextState &state) {
+void sync_viewport(GLContext &context, const GxmContextState &state) {
     // Viewport.
     const GLsizei display_w = state.color_surface.pbeEmitWords[0];
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
     const GxmViewport &viewport = state.viewport;
     if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
-        const GLfloat w = 2 * viewport.scale.x;
-        const GLfloat h = -2 * viewport.scale.y;
-        const GLfloat x = viewport.offset.x - viewport.scale.x;
-        const GLfloat y = viewport.offset.y + (h < 0 ? -viewport.scale.y : viewport.scale.y);
+        const GLfloat w = std::abs(2 * viewport.scale.x);
+        const GLfloat h = std::abs(2 * viewport.scale.y);
+        const GLfloat x = viewport.offset.x - std::abs(viewport.scale.x);
+        const GLfloat y = (display_h - viewport.offset.y) - std::abs(viewport.scale.y);
 
-        glViewportIndexedf(0, x, y, std::abs(w), std::abs(h));
+        context.viewport_flip[0] = (viewport.scale.x < 0) ? -1.0f : 1.0f;
+        context.viewport_flip[1] = (viewport.scale.y < 0) ? -1.0f : 1.0f;
+        context.viewport_flip[2] = 1.0f;
+        context.viewport_flip[3] = 1.0f;
+
+        glViewportIndexedf(0, x, y, w, h);
         glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
     } else {
+        context.viewport_flip[0] = 1.0f;
+        context.viewport_flip[1] = 1.0f;
+        context.viewport_flip[2] = 1.0f;
+        context.viewport_flip[3] = 1.0f;
+
         glViewport(0, 0, display_w, display_h);
         glDepthRange(0, 1);
     }
@@ -286,7 +296,7 @@ void sync_rendertarget(const GLRenderTarget &rt) {
 bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache) {
     R_PROFILE(__func__);
 
-    sync_viewport(state);
+    sync_viewport(context, state);
     sync_clipping(state);
     sync_cull(state);
 
