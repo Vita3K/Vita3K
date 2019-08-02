@@ -179,7 +179,7 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     }
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_target->renderbuffers[depth_fb_index]);
-    glClearColor(0.392156899f, 0.584313750f, 0.929411829f, 1.0f);
+    glClearColor(0.968627450f, 0.776470588f, 0.0f, 1.0f);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return true;

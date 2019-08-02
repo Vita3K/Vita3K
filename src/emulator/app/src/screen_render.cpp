@@ -74,7 +74,7 @@ bool gl_screen_renderer::init(const std::string &base_path) {
     );
     glEnableVertexAttribArray(uvAttrib);
 
-    glClearColor(0.125490203f, 0.698039234f, 0.666666687f, 1.0f);
+    glClearColor(0.913725490f, 0.498039215f, 0.007843137f, 1.0f);
     glClearDepth(1.0f);
 
     return true;
