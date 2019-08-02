@@ -29,9 +29,7 @@ matrix:
           tags: false
       script: bash $TRAVIS_BUILD_DIR/.travis/macos/build.sh
     - os: linux
-      sudo: required
       services: docker
-      dist: trusty
       script: bash $TRAVIS_BUILD_DIR/.travis/linux/build.sh
       before_deploy:
       - git config --global user.email "builds@travis-ci.com"
