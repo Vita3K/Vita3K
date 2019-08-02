@@ -129,7 +129,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "pref-path", &cfg.pref_path, root_pref_path);
     get_yaml_value(config_node, "discord-rich-presence", &cfg.discord_rich_presence, true);
     get_yaml_value(config_node, "online-id", &cfg.online_id, std::string("Vita3K"));
-    get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
+    get_yaml_value(config_node, "wait-for-debugger", &cfg.wait_for_debugger, false);
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
         LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
@@ -180,7 +180,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_single(emitter, "discord-rich-presence", cfg.discord_rich_presence);
     config_file_emit_single(emitter, "online-id", cfg.online_id);
-    config_file_emit_optional_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
+    config_file_emit_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
 
     emitter << YAML::EndMap;
 
@@ -235,10 +235,8 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
     }
     if (lhs.discord_rich_presence != rhs.discord_rich_presence && (!init || rhs.discord_rich_presence))
         lhs.discord_rich_presence = rhs.discord_rich_presence;
-    if (rhs.wait_for_debugger.is_initialized()) {
-        if (lhs.wait_for_debugger != rhs.wait_for_debugger && (!init || *rhs.wait_for_debugger))
-            lhs.wait_for_debugger = rhs.wait_for_debugger;
-    }
+    if (lhs.wait_for_debugger != rhs.wait_for_debugger && (!init || rhs.wait_for_debugger))
+        lhs.wait_for_debugger = rhs.wait_for_debugger;
 
     // Not stored in config file
     if (init) {

@@ -33,6 +33,10 @@
 #include <app/discord.h>
 #endif
 
+#ifdef USE_GDBSTUB
+#include <gdbstub/functions.h>
+#endif
+
 #include <SDL_video.h>
 #include <microprofile.h>
 
@@ -154,9 +158,8 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     };
 
     state.cfg = std::move(cfg);
-    if (state.cfg.wait_for_debugger) {
-        state.kernel.wait_for_debugger = state.cfg.wait_for_debugger.value();
-    }
+    state.kernel.wait_for_debugger = state.cfg.wait_for_debugger;
+
     state.base_path = root_paths.get_base_path_string();
 
     // If configuration does not provide a preference path, use SDL's default
@@ -287,6 +290,20 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
 
     return true;
+}
+
+void destory(HostState &host) {
+#ifdef USE_DISCORD_RICH_PRESENCE
+    discord::shutdown();
+#endif
+
+#ifdef USE_GDBSTUB
+    server_close(host);
+#endif
+
+    // There may be changes that made in the GUI, so we should save, again
+    if (host.cfg.overwrite_config)
+        config::serialize_config(host.cfg, host.cfg.config_path);
 }
 
 } // namespace app

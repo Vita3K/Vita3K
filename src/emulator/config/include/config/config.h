@@ -52,6 +52,6 @@ struct Config {
     bool overwrite_config = true;
     bool load_config = false;
     bool discord_rich_presence = true;
-    optional<bool> wait_for_debugger;
+    bool wait_for_debugger;
     std::string online_id = "Vita3K";
 }; // struct Config
