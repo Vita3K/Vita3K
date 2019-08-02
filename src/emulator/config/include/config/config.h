@@ -52,6 +52,9 @@ struct Config {
     bool overwrite_config = true;
     bool load_config = false;
     bool discord_rich_presence = true;
+    bool fps_limit = false;
+    int desired_fps = 60;
+    bool wait_for_vsync = true;
     optional<bool> wait_for_debugger;
     std::string online_id = "Vita3K";
 }; // struct Config

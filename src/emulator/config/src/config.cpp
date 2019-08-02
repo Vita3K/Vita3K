@@ -128,8 +128,11 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value(config_node, "pref-path", &cfg.pref_path, root_pref_path);
     get_yaml_value(config_node, "discord-rich-presence", &cfg.discord_rich_presence, true);
-    get_yaml_value(config_node, "online-id", &cfg.online_id, std::string("Vita3K"));
+    get_yaml_value(config_node, "fps-limit", &cfg.fps_limit, false);
+    get_yaml_value(config_node, "desired-fps", &cfg.desired_fps, static_cast<int>(60));
+    get_yaml_value(config_node, "wait-for-vsync", &cfg.wait_for_vsync, true);
     get_yaml_value_optional(config_node, "wait-for-debugger", &cfg.wait_for_debugger);
+    get_yaml_value(config_node, "online-id", &cfg.online_id, std::string("Vita3K"));
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
         LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
@@ -179,8 +182,11 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "pref-path", cfg.pref_path);
     config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_single(emitter, "discord-rich-presence", cfg.discord_rich_presence);
-    config_file_emit_single(emitter, "online-id", cfg.online_id);
+    config_file_emit_single(emitter, "fps-limit", cfg.fps_limit);
+    config_file_emit_single(emitter, "desired-fps", cfg.desired_fps);
+    config_file_emit_single(emitter, "wait-for-vsync", cfg.wait_for_vsync);
     config_file_emit_optional_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
+    config_file_emit_single(emitter, "online-id", cfg.online_id);
 
     emitter << YAML::EndMap;
 
@@ -235,6 +241,12 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
     }
     if (lhs.discord_rich_presence != rhs.discord_rich_presence && (!init || rhs.discord_rich_presence))
         lhs.discord_rich_presence = rhs.discord_rich_presence;
+    if (lhs.fps_limit != rhs.fps_limit && (!init || rhs.fps_limit))
+        lhs.fps_limit = rhs.fps_limit;
+    if (lhs.desired_fps != rhs.desired_fps && (!init || rhs.desired_fps != static_cast<int>(60)))
+        lhs.desired_fps = rhs.desired_fps;
+    if (lhs.wait_for_vsync != rhs.wait_for_vsync && (!init || !rhs.wait_for_vsync))
+        lhs.wait_for_vsync = rhs.wait_for_vsync;
     if (rhs.wait_for_debugger.is_initialized()) {
         if (lhs.wait_for_debugger != rhs.wait_for_debugger && (!init || *rhs.wait_for_debugger))
             lhs.wait_for_debugger = rhs.wait_for_debugger;
@@ -372,6 +384,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         LOG_INFO("log-exports: {}", cfg.log_exports);
         LOG_INFO("log-active-shaders: {}", cfg.log_active_shaders);
         LOG_INFO("log-uniforms: {}", cfg.log_uniforms);
+        LOG_INFO("fps-limit: {}", cfg.fps_limit);
+        LOG_INFO("wait-for-vysnc: {}", cfg.wait_for_vsync);
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";
