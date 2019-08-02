@@ -155,6 +155,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("GPU")) {
         ImGui::PopStyleColor();
+#ifdef USE_VULKAN
+        ImGui::Combo("Backend Render (Reboot for apply)", reinterpret_cast<int *>(&host.backend_renderer), "OpenGL\0Vulkan\0");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select your preferred backend render.");
+        if (static_cast<int>(host.backend_renderer) == 0 && host.cfg.backend_renderer != "OpenGL")
+            host.cfg.backend_renderer = std::string("OpenGL");
+        else if (static_cast<int>(host.backend_renderer) == 1 && host.cfg.backend_renderer != "Vulkan")
+            host.cfg.backend_renderer = std::string("Vulkan");
+#endif
         ImGui::Checkbox("Hardware Flip", &host.cfg.hardware_flip);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable texture flipping from GPU side.\nIt is recommended to disable this option for homebrew.");

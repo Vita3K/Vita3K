@@ -252,8 +252,14 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.hardware_flip = rhs.hardware_flip;
     if (lhs.performance_overlay != rhs.performance_overlay && (!init || rhs.performance_overlay))
         lhs.performance_overlay = rhs.performance_overlay;
-    if (lhs.backend_renderer != rhs.backend_renderer && (!init || rhs.backend_renderer != std::string("OpenGL")))
-        lhs.backend_renderer = rhs.backend_renderer;
+    if (lhs.backend_renderer != rhs.backend_renderer) {
+#ifdef USE_VULKAN
+        if (!init || rhs.backend_renderer != std::string("OpenGL"))
+#else
+        if (!init || lhs.backend_renderer != std::string("OpenGL"))
+#endif
+            lhs.backend_renderer = rhs.backend_renderer;
+    }
 
     // Not stored in config file
     if (init) {
@@ -289,7 +295,9 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         po::options_description config_desc("Configuration");
         config_desc.add_options()
             ("archive-log,A", po::bool_switch(&command_line.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
+#ifdef USE_VULKAN
             ("backend-renderer,B", po::value(&command_line.backend_renderer), "Renderer backend to use, either \"OpenGL\" or \"Vulkan\"")
+#endif
             ("color-surface-debug, C", po::bool_switch(&command_line.color_surface_debug),"Save color surfaces")
             ("config-location,c", po::value<fs::path>(&command_line.config_path), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault: <Vita3K folder>/config.yml")
             ("keep-config,w", po::bool_switch(&command_line.overwrite_config)->default_value(true), "Do not modify the configuration file after loading.")
@@ -336,8 +344,10 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
             return QuitRequested;
         }
-        if (var_map.count("backend-renderer"))
-            cfg.backend_renderer = command_line.backend_renderer;
+#ifdef USE_VULKAN
+        if (var_map.count("backend-renderer") && string_utils::toupper(command_line.backend_renderer) == "OPENGL")
+            cfg.backend_renderer = std::string("OpenGL");
+#endif
 
         if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
             if (command_line.config_path.empty()) {
