@@ -54,4 +54,5 @@ struct Config {
     bool discord_rich_presence = true;
     bool wait_for_debugger;
     std::string online_id = "Vita3K";
+    bool color_surface_debug = false;
 }; // struct Config
