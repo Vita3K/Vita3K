@@ -36,7 +36,7 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
 }
 
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, const MemState &mem,
-    const char *base_path, const char *title_id, const bool log_active_shaders, const bool log_uniforms) {
+    const char *base_path, const char *title_id, const bool log_active_shaders, const bool log_uniforms, const bool do_hardware_flip) {
     R_PROFILE(__func__);
 
     GLuint program_id = context.last_draw_program;
@@ -118,12 +118,14 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         }
     }
 
-    // Try to configure the vertex shader, to output coordinates suited for GXM viewport
-    GLuint flip_vec_loc = glGetUniformLocation(program_id, "flip_vec");
+    if (do_hardware_flip) {
+        // Try to configure the vertex shader, to output coordinates suited for GXM viewport
+        GLuint flip_vec_loc = glGetUniformLocation(program_id, "flip_vec");
 
-    if (flip_vec_loc != -1) {
-        // Let's do flipping
-        glUniform4fv(flip_vec_loc, 1, context.viewport_flip);
+        if (flip_vec_loc != -1) {
+            // Let's do flipping
+            glUniform4fv(flip_vec_loc, 1, context.viewport_flip);
+        }
     }
 
     context.vertex_set_requests.clear();

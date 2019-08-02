@@ -280,6 +280,8 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
+    state.features.hardware_flip = state.cfg.hardware_flip;
+
     state.kernel.base_tick = { rtc_base_ticks() };
 
     if (state.cfg.overwrite_config)

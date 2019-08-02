@@ -872,7 +872,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    if (program_type == emu::SceGxmProgramType::Vertex) {
+    if (program_type == emu::SceGxmProgramType::Vertex && features.hardware_flip) {
         // Create variable that helps us do flipping
         // TODO: Not emit this on Vulkan or DirectX
         spv::Id f32 = b.makeFloatType(32);
