@@ -75,6 +75,7 @@ struct HostState {
     uint32_t ms_per_frame = 0;
     bool should_update_window_title = false;
     WindowPtr window = WindowPtr(nullptr, nullptr);
+    renderer::Backend backend_renderer;
     RendererPtr renderer;
     SceIVector2 drawable_size = { 0, 0 };
     SceFVector2 viewport_pos = { 0, 0 };
