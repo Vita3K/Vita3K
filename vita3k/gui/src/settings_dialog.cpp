@@ -193,6 +193,13 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GPU")) {
         ImGui::PopStyleColor();
+#ifdef USE_VULKAN
+        static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
+        if (ImGui::Combo("Backend Renderer (Reboot for apply)", reinterpret_cast<int *>(&host.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
+            host.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(host.backend_renderer)];
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select your preferred backend renderer.");
+#endif
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

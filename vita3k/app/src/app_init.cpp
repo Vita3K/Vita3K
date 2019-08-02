@@ -119,15 +119,15 @@ bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject in
         state.pref_path = string_utils::utf_to_wide(state.cfg.pref_path);
     }
 
-    renderer::Backend backend = renderer::Backend::OpenGL;
-
 #ifdef USE_VULKAN
     if (string_utils::toupper(state.cfg.backend_renderer) == "VULKAN")
-        backend = renderer::Backend::Vulkan;
+        state.backend_renderer = renderer::Backend::Vulkan;
+    else
 #endif
+        state.backend_renderer = renderer::Backend::OpenGL;
 
     int window_type = 0;
-    switch (backend) {
+    switch (state.backend_renderer) {
     case renderer::Backend::OpenGL:
         window_type = SDL_WINDOW_OPENGL;
         break;
@@ -186,11 +186,11 @@ bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject in
     state.kernel.base_tick = { rtc_base_ticks() };
 
     if (!cfg.console) {
-        if (renderer::init(state.window.get(), state.renderer, backend)) {
+        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer)) {
             update_viewport(state);
             return true;
         } else {
-            switch (backend) {
+            switch (state.backend_renderer) {
             case renderer::Backend::OpenGL:
                 error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.1?", nullptr);
                 break;
