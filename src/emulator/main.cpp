@@ -151,12 +151,11 @@ int main(int argc, char *argv[]) {
         return RendererInitFailed;
 
     while (handle_events(host)) {
-        gl_renderer.render(host);
-        host.display.condvar.notify_all();
-
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
+
+        gl_renderer.render(host);
 
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
@@ -164,8 +163,9 @@ int main(int argc, char *argv[]) {
         if (host.display.imgui_render) {
             gui::draw_ui(gui, host);
         }
+        
+        host.display.condvar.notify_all();
         gui::draw_end(host.window.get());
-
         app::set_window_title(host);
     }
 
