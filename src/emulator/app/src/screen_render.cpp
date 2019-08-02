@@ -92,6 +92,8 @@ void gl_screen_renderer::render(const HostState &host) {
     glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
     GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
+    GLboolean last_enable_depth = glIsEnabled(GL_DEPTH_TEST);
+    GLboolean last_enable_cull = glIsEnabled(GL_CULL_FACE);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -101,6 +103,8 @@ void gl_screen_renderer::render(const HostState &host) {
 
     glDisable(GL_SCISSOR_TEST);
     glDisable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
 
     if ((display.image_size.x > 0) && (display.image_size.y > 0)) {
         glUseProgram(*m_render_shader);
@@ -153,6 +157,16 @@ void gl_screen_renderer::render(const HostState &host) {
         glEnable(GL_SCISSOR_TEST);
     else
         glDisable(GL_SCISSOR_TEST);
+
+    if (last_enable_depth)
+        glEnable(GL_DEPTH_TEST);
+    else
+        glDisable(GL_DEPTH_TEST);
+
+    if (last_enable_cull)
+        glEnable(GL_CULL_FACE);
+    else
+        glDisable(GL_CULL_FACE);
 
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
