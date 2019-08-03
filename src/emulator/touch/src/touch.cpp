@@ -17,6 +17,7 @@
 
 #include <touch/touch.h>
 
+#include <psp2/common_dialog.h>
 #include <psp2/touch.h>
 
 #include <SDL_events.h>
@@ -106,22 +107,26 @@ int toggle_touchscreen() {
     return 0;
 }
 
-int peek_touch(const SceFVector2 viewport_pos, const SceFVector2 viewport_size, const SceIVector2 drawable_size, const bool renderer_focused, const CtrlState &ctrl, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count) {
+int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count) {
     memset(pData, 0, sizeof(*pData));
     pData->timeStamp = timestamp++; // TODO Use the real time and units.
+
+    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_NONE) {
+        return 0;
+    }
 
     SceIVector2 touch_pos_window = { 0, 0 };
     const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
     const uint32_t mask = (port == SCE_TOUCH_PORT_BACK) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
-    if ((buttons & mask) && renderer_focused) {
+    if ((buttons & mask) && host.renderer_focused) {
         SceIVector2 SDL_window_size = { 0, 0 };
         SDL_Window *const window = SDL_GetMouseFocus();
         SDL_GetWindowSize(window, &SDL_window_size.x, &SDL_window_size.y);
 
         SceFVector2 scale = { 1, 1 };
         if ((SDL_window_size.x > 0) && (SDL_window_size.y > 0)) {
-            scale.x = static_cast<float>(drawable_size.x) / SDL_window_size.x;
-            scale.y = static_cast<float>(drawable_size.y) / SDL_window_size.y;
+            scale.x = static_cast<float>(host.drawable_size.x) / SDL_window_size.x;
+            scale.y = static_cast<float>(host.drawable_size.y) / SDL_window_size.y;
         }
 
         const SceFVector2 touch_pos_drawable = {
@@ -130,8 +135,8 @@ int peek_touch(const SceFVector2 viewport_pos, const SceFVector2 viewport_size, 
         };
 
         const SceFVector2 touch_pos_viewport = {
-            (touch_pos_drawable.x - viewport_pos.x) / viewport_size.x,
-            (touch_pos_drawable.y - viewport_pos.y) / viewport_size.y
+            (touch_pos_drawable.x - host.viewport_pos.x) / host.viewport_size.x,
+            (touch_pos_drawable.y - host.viewport_pos.y) / host.viewport_size.y
         };
 
         if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {
@@ -144,7 +149,7 @@ int peek_touch(const SceFVector2 viewport_pos, const SceFVector2 viewport_size, 
             ++pData->reportNum;
         }
 
-        if (!ctrl.touch_mode[port]) {
+        if (!host.ctrl.touch_mode[port]) {
             pData->reportNum = 0;
         }
     } else if (registered_touch() == true && port == touchscreen_port) {
