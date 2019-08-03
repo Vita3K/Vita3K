@@ -47,7 +47,7 @@ void upload_vertex_stream(GLContext &context, const std::size_t stream_index, co
 
 // State
 void sync_viewport(GLContext &context, const GxmContextState &state, const bool hardware_flip);
-void sync_clipping(const GxmContextState &state);
+void sync_clipping(GLContext &context, const GxmContextState &state, const bool hardware_flip);
 void sync_cull(GLContext &context, const GxmContextState &state);
 void sync_front_depth_func(const GxmContextState &state);
 void sync_front_depth_write_enable(const GxmContextState &state);

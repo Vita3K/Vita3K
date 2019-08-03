@@ -112,11 +112,18 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
         const GLfloat w = std::abs(2 * viewport.scale.x);
         const GLfloat h = std::abs(2 * viewport.scale.y);
         const GLfloat x = viewport.offset.x - std::abs(viewport.scale.x);
-        const GLfloat y = (display_h - std::abs(yedge)) - std::abs(viewport.scale.y);
+        GLfloat y = 0;
+
+        if (hardware_flip && (ymin < ymax)) {
+            // Y-Coordinate flipped later in pixels. Use top left coordinate system.
+            y = ymin;
+        } else {
+            y = (display_h - std::abs(yedge)) - std::abs(viewport.scale.y);
+        }
 
         if (hardware_flip) {
-            context.viewport_flip[0] = (viewport.scale.x < 0) ? -1.0f : 1.0f;
-            context.viewport_flip[1] = (viewport.scale.y < 0) ? -1.0f : 1.0f;
+            context.viewport_flip[0] = 1.0f;
+            context.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
             context.viewport_flip[2] = 1.0f;
             context.viewport_flip[3] = 1.0f;
         }
@@ -136,11 +143,17 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
     }
 }
 
-void sync_clipping(const GxmContextState &state) {
+void sync_clipping(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
     const GLsizei display_w = state.color_surface.pbeEmitWords[0];
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
     const GLsizei scissor_x = state.region_clip_min.x;
-    const GLsizei scissor_y = display_h - state.region_clip_max.y - 1;
+    GLsizei scissor_y = 0;
+
+    if (hardware_flip && context.viewport_flip[1] == -1.0f)
+        scissor_y = state.region_clip_min.y;
+    else
+        scissor_y = display_h - state.region_clip_max.y - 1;
+
     const GLsizei scissor_w = state.region_clip_max.x - state.region_clip_min.x + 1;
     const GLsizei scissor_h = state.region_clip_max.y - state.region_clip_min.y + 1;
     switch (state.region_clip_mode) {
@@ -305,7 +318,7 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
     R_PROFILE(__func__);
 
     sync_viewport(context, state, hardware_flip);
-    sync_clipping(state);
+    sync_clipping(context, state, hardware_flip);
     sync_cull(context, state);
 
     if (sync_depth_data(state)) {

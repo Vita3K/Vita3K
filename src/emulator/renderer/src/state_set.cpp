@@ -26,7 +26,7 @@ COMMAND_SET_STATE(region_clip) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::sync_clipping(*state);
+        gl::sync_clipping(*reinterpret_cast<gl::GLContext *>(render_context), *state, config.hardware_flip);
         break;
     }
 

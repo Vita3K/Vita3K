@@ -11,7 +11,7 @@
 #include <renderer/functions.h>
 #include <util/log.h>
 
-#define DEBUG_FRAMEBUFFER 0
+#define DEBUG_FRAMEBUFFER 1
 
 #if DEBUG_FRAMEBUFFER
 #define STB_IMAGE_WRITE_IMPLEMENTATION
