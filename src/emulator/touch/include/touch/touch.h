@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include <ctrl/state.h>
+#include <host/state.h>
 
 struct SDL_TouchFingerEvent;
 
 int handle_touch_event(SDL_TouchFingerEvent &finger);
 int toggle_touchscreen();
-int peek_touch(SceFVector2 viewport_pos, SceFVector2 viewport_size, SceIVector2 drawable_size, bool renderer_focused, const CtrlState &ctrl, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count);
+int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count);
