@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <algorithm>
+#include <cstring>
 #include <np/trophy/trp_parser.h>
 #include <util/bytes.h>
 
