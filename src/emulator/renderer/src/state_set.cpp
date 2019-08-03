@@ -111,7 +111,7 @@ COMMAND_SET_STATE(viewport) {
     // Sync
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::sync_viewport(*reinterpret_cast<gl::GLContext *>(render_context), *state);
+        gl::sync_viewport(*reinterpret_cast<gl::GLContext *>(render_context), *state, config.hardware_flip);
         break;
     }
 

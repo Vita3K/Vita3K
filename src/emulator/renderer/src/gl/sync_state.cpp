@@ -99,7 +99,7 @@ static void set_stencil_state(GLenum face, const GxmStencilState &state) {
     glStencilMaskSeparate(face, state.write_mask);
 }
 
-void sync_viewport(GLContext &context, const GxmContextState &state) {
+void sync_viewport(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
     // Viewport.
     const GLsizei display_w = state.color_surface.pbeEmitWords[0];
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
@@ -114,18 +114,22 @@ void sync_viewport(GLContext &context, const GxmContextState &state) {
         const GLfloat x = viewport.offset.x - std::abs(viewport.scale.x);
         const GLfloat y = (display_h - std::abs(yedge)) - std::abs(viewport.scale.y);
 
-        context.viewport_flip[0] = (viewport.scale.x < 0) ? -1.0f : 1.0f;
-        context.viewport_flip[1] = (viewport.scale.y < 0) ? -1.0f : 1.0f;
-        context.viewport_flip[2] = 1.0f;
-        context.viewport_flip[3] = 1.0f;
+        if (hardware_flip) {
+            context.viewport_flip[0] = (viewport.scale.x < 0) ? -1.0f : 1.0f;
+            context.viewport_flip[1] = (viewport.scale.y < 0) ? -1.0f : 1.0f;
+            context.viewport_flip[2] = 1.0f;
+            context.viewport_flip[3] = 1.0f;
+        }
 
         glViewportIndexedf(0, x, y, w, h);
         glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
     } else {
-        context.viewport_flip[0] = 1.0f;
-        context.viewport_flip[1] = -1.0f;
-        context.viewport_flip[2] = 1.0f;
-        context.viewport_flip[3] = 1.0f;
+        if (hardware_flip) {
+            context.viewport_flip[0] = 1.0f;
+            context.viewport_flip[1] = -1.0f;
+            context.viewport_flip[2] = 1.0f;
+            context.viewport_flip[3] = 1.0f;
+        }
 
         glViewport(0, 0, display_w, display_h);
         glDepthRange(0, 1);
@@ -297,10 +301,10 @@ void sync_rendertarget(const GLRenderTarget &rt) {
     glBindFramebuffer(GL_FRAMEBUFFER, rt.framebuffer[0]);
 }
 
-bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache) {
+bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip) {
     R_PROFILE(__func__);
 
-    sync_viewport(context, state);
+    sync_viewport(context, state, hardware_flip);
     sync_clipping(state);
     sync_cull(context, state);
 

@@ -35,7 +35,7 @@ bool create(std::unique_ptr<Context> &context);
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
-bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache);
+bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip);
 void sync_rendertarget(const GLRenderTarget &rt);
 void set_context(GLContext &ctx, GxmContextState &state, const GLRenderTarget *rt, const FeatureState &features);
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, const bool do_flip);
@@ -46,7 +46,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);
 
 // State
-void sync_viewport(GLContext &context, const GxmContextState &state);
+void sync_viewport(GLContext &context, const GxmContextState &state, const bool hardware_flip);
 void sync_clipping(const GxmContextState &state);
 void sync_cull(GLContext &context, const GxmContextState &state);
 void sync_front_depth_func(const GxmContextState &state);
