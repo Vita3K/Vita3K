@@ -1,5 +1,6 @@
 #include <gui/imgui_impl_sdl_vulkan.h>
 
+#include <renderer/types.h>
 #include <renderer/vulkan/state.h>
 
 #include <fstream>
@@ -44,24 +45,38 @@ IMGUI_API bool ImGui_ImplSdlVulkan_Init(RendererPtr &renderer, SDL_Window *windo
             vk::AttachmentStoreOp::eDontCare, // No Stencils
             vk::ImageLayout::eUndefined, // Initial Layout
             vk::ImageLayout::eColorAttachmentOptimal // Final Layout
-            )
+            ),
+        vk::AttachmentDescription(
+            vk::AttachmentDescriptionFlags(), // No Flags
+            vk::Format::eB8G8R8A8Unorm, // Format, MoltenVK requires rgba?
+            vk::SampleCountFlagBits::e1, // No Multisampling
+            vk::AttachmentLoadOp::eClear, // Clear Image
+            vk::AttachmentStoreOp::eStore, // Keep Image Data
+            vk::AttachmentLoadOp::eDontCare, // No Stencils
+            vk::AttachmentStoreOp::eDontCare, // No Stencils
+            vk::ImageLayout::eUndefined, // Initial Layout
+            vk::ImageLayout::eColorAttachmentOptimal // Final Layout
+            ),
     };
 
-    const uint32_t color_attachment_index = 0;
-
-    vk::AttachmentReference color_attachment_reference(
-        color_attachment_index, // attachments[color_attachment_index]
-        vk::ImageLayout::eColorAttachmentOptimal // Image Layout
-        );
+    std::vector<vk::AttachmentReference> color_attachment_references = {
+        vk::AttachmentReference(
+            0, // attachments[0]
+            vk::ImageLayout::eColorAttachmentOptimal // Image Layout
+            ),
+        vk::AttachmentReference(
+            1, // attachments[0]
+            vk::ImageLayout::eColorAttachmentOptimal // Image Layout
+            ),
+    };
 
     std::vector<vk::SubpassDescription> subpasses = {
         vk::SubpassDescription(
             vk::SubpassDescriptionFlags(), // No Flags
             vk::PipelineBindPoint::eGraphics, // Type
             0, nullptr, // No Inputs
-            1, &color_attachment_reference, // Color Attachment References
+            color_attachment_references.size(), color_attachment_references.data(), // Color Attachment References
             nullptr, nullptr, // No Resolve or Depth/Stencil for now
-//            1, &color_attachment_index // Preserve Color Attachment
             0, nullptr // Vulkan Book says you don't need this for a Color Attachment?
             )
     };
@@ -80,8 +95,8 @@ IMGUI_API bool ImGui_ImplSdlVulkan_Init(RendererPtr &renderer, SDL_Window *windo
     vk::FramebufferCreateInfo framebuffer_info(
         vk::FramebufferCreateFlags(), // No Flags
         state.gui_renderpass, // Renderpass
-        state.swapchain_views.size(), state.swapchain_views.data(), // Attachments
-        960, 540, // Size
+        2 /*state.swapchain_views.size()*/, state.swapchain_views/*.data()*/, // Attachments
+        DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, // Size
         1 // Layers
         );
 
@@ -176,13 +191,13 @@ IMGUI_API bool ImGui_ImplSdlVulkan_Init(RendererPtr &renderer, SDL_Window *windo
             1, // Location
             0, // Binding
             vk::Format::eR32G32Sfloat,
-            sizeof(float) * 2 // Offset
+            sizeof(ImVec2) // Offset
             ),
         vk::VertexInputAttributeDescription(
             2, // Location
             0, // Binding
-            vk::Format::eR32G32B32A32Sfloat,
-            sizeof(float) * 4 // Offset
+            vk::Format::eR8G8B8A8Uint,
+            sizeof(ImVec2) * 2 // Offset
             ),
     };
 
@@ -244,7 +259,17 @@ IMGUI_API bool ImGui_ImplSdlVulkan_Init(RendererPtr &renderer, SDL_Window *windo
             vk::BlendFactor::eDstAlpha, // Dst Alpha
             vk::BlendOp::eAdd, // Alpha Blend Op
             vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-            )
+            ),
+        vk::PipelineColorBlendAttachmentState(
+            true, // Enable Blending
+            vk::BlendFactor::eSrcColor, // Src Color
+            vk::BlendFactor::eDstColor, // Dst Color
+            vk::BlendOp::eAdd, // Color Blend Op
+            vk::BlendFactor::eSrcAlpha, // Src Alpha
+            vk::BlendFactor::eDstAlpha, // Dst Alpha
+            vk::BlendOp::eAdd, // Alpha Blend Op
+            vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+            ),
     };
 
     vk::PipelineColorBlendStateCreateInfo gui_pipeline_blend_info(
@@ -255,7 +280,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_Init(RendererPtr &renderer, SDL_Window *windo
         );
 
     std::vector<vk::DynamicState> dynamic_states = {
-
+        // Nothing so far...
     };
 
     vk::PipelineDynamicStateCreateInfo gui_pipeline_dynamic_info(
@@ -301,10 +326,6 @@ IMGUI_API void ImGui_ImplSdlVulkan_NewFrame(RendererPtr &renderer, SDL_Window *w
 
 }
 IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawData *draw_data) {
-    auto &state = vulkan_state(renderer);
-
-}
-IMGUI_API bool ImGui_ImplSdlVulkan_ProcessEvent(RendererPtr &renderer, SDL_Event *event) {
     auto &state = vulkan_state(renderer);
 
 }

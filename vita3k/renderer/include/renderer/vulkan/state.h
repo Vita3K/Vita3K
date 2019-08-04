@@ -67,7 +67,8 @@ struct VulkanState : public renderer::State {
     vk::SwapchainKHR swapchain;
 
     uint32_t swapchain_image_last = 0;
+    // These would be vectors...
     std::vector<vk::Image> swapchain_images;
-    std::vector<vk::ImageView> swapchain_views;
+    vk::ImageView swapchain_views[2];
 };
 }
