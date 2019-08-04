@@ -12,35 +12,39 @@ matrix:
       before_script:
       - export CMAKE=cmake
       before_deploy:
-      - git config --global user.email "builds@travis-ci.com"
-      - git config --global user.name "Travis CI"
+      - git tag "$TRAVIS_BRANCH-v$TRAVIS_BUILD_NUMBER"
       - cd ${TRAVIS_BUILD_DIR}/build/bin
-      - zip -r Vita3K-mac-nightly.zip Vita3K.app
+      - zip -r "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip" Vita3K.app
       deploy:
-        provider: script
-        overwrite: true
+        provider: releases
+        api_key: $GITHUB_OAUTH_TOKEN
+        file: "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip"
         skip_cleanup: true
-        script: bash $TRAVIS_BUILD_DIR/.travis/macos/deploy.sh
         on:
+          branch: master
           repo: Vita3K/Vita3K
-          tags: false
       script: bash $TRAVIS_BUILD_DIR/.travis/macos/build.sh
     - os: linux
+      sudo: required
       services: docker
       script: bash $TRAVIS_BUILD_DIR/.travis/linux/build.sh
       before_deploy:
-      - git config --global user.email "builds@travis-ci.com"
-      - git config --global user.name "Travis CI"
-      - cd "$HOME/linux-build/bin/"
-      - zip -r Vita3K-linux-nightly.zip .
+      - git tag "$TRAVIS_BRANCH-v$TRAVIS_BUILD_NUMBER"
+      - sudo chown -R travis:travis ${TRAVIS_BUILD_DIR}
+      - cd ${TRAVIS_BUILD_DIR}/build/bin
+      - zip -r "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip" .
       deploy:
-        provider: script
-        overwrite: true
+        provider: releases
+        api_key: $GITHUB_OAUTH_TOKEN
+        file: "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip"
         skip_cleanup: true
-        script: bash $TRAVIS_BUILD_DIR/.travis/linux/deploy.sh
         on:
+          branch: master
           repo: Vita3K/Vita3K
-          tags: false
+
+branches:
+  except:
+    - "/master-v[0-9]/"
 
 env:
   global:
