@@ -96,15 +96,15 @@ void gl_screen_renderer::render(const HostState &host) {
     GLboolean last_enable_cull = glIsEnabled(GL_CULL_FACE);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glViewport(static_cast<GLint>(host.viewport_pos.x), static_cast<GLint>(host.viewport_pos.y), static_cast<GLsizei>(host.viewport_size.x),
-        static_cast<GLsizei>(host.viewport_size.y));
-
     glDisable(GL_SCISSOR_TEST);
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
+
+    glViewport(static_cast<GLint>(host.viewport_pos.x), static_cast<GLint>(host.viewport_pos.y), static_cast<GLsizei>(host.viewport_size.x),
+        static_cast<GLsizei>(host.viewport_size.y));
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if ((display.image_size.x > 0) && (display.image_size.y > 0)) {
         glUseProgram(*m_render_shader);
