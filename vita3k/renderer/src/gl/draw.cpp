@@ -1,8 +1,8 @@
 #include <renderer/functions.h>
 #include <renderer/profile.h>
 
-#include "functions.h"
-#include "state.h"
+#include <renderer/gl/functions.h>
+#include <renderer/gl/state.h>
 
 #include <renderer/state.h>
 #include <renderer/types.h>
@@ -11,7 +11,7 @@
 #include <util/log.h>
 
 #include <gxm/functions.h>
-#include <features/features.h>
+#include <features/state.h>
 
 namespace renderer::gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {

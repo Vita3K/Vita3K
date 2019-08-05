@@ -1,8 +1,8 @@
 #include <renderer/functions.h>
 #include <renderer/profile.h>
 
-#include "functions.h"
-#include "types.h"
+#include <renderer/gl/functions.h>
+#include <renderer/gl/types.h>
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>

@@ -33,6 +33,8 @@
 
 #include <gui/imgui_impl_sdl.h>
 
+#include <SDL.h>
+
 #ifdef USE_GDBSTUB
 #include <gdbstub/functions.h>
 #endif
@@ -261,7 +263,7 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
 bool handle_events(HostState &host) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        ImGui_ImplSdl_ProcessEvent(&event);
+        ImGui_ImplSdl_ProcessEvent(host.renderer, &event);
         switch (event.type) {
         case SDL_QUIT:
             stop_all_threads(host.kernel);

@@ -163,6 +163,7 @@ Command *make_command(const CommandOpcode opcode, int *status, Args... arguments
 
     if constexpr (sizeof...(arguments) > 0) {
         if (!do_command_push_data(helper, arguments...)) {
+            delete new_command;
             return nullptr;
         }
     }

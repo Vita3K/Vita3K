@@ -1,12 +1,12 @@
 #include <renderer/functions.h>
-
-#include "functions.h"
-#include "types.h"
 #include <renderer/profile.h>
-
 #include <renderer/state.h>
 #include <renderer/types.h>
-#include <features/features.h>
+
+#include <renderer/gl/functions.h>
+#include <renderer/gl/types.h>
+
+#include <features/state.h>
 
 #include <gxm/functions.h>
 #include <gxm/types.h>

@@ -118,7 +118,6 @@ int main(int argc, char *argv[]) {
     // Application not provided via argument, show game selector
     while (run_type == app::AppRunType::Unknown) {
         if (handle_events(host)) {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_begin(gui, host);
 
 #if DISCORD_RPC
@@ -152,7 +151,7 @@ int main(int argc, char *argv[]) {
 
     while (handle_events(host)) {
         // Driver acto!
-        renderer::process_batches(*host.renderer.get(), host.features, host.mem, host.cfg, host.base_path.c_str(),
+        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
 
         gl_renderer.render(host);
