@@ -3,6 +3,8 @@
 #include <renderer/types.h>
 #include <renderer/vulkan/state.h>
 
+#include <SDL_vulkan.h>
+
 #include <fstream>
 
 static renderer::vulkan::VulkanState &vulkan_state(RendererPtr &renderer) {
@@ -321,13 +323,13 @@ IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(RendererPtr &renderer) {
 
     state.device.destroy(state.gui_renderpass);
 }
-IMGUI_API void ImGui_ImplSdlVulkan_NewFrame(RendererPtr &renderer, SDL_Window *window) {
-    auto &state = vulkan_state(renderer);
-
-}
 IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawData *draw_data) {
     auto &state = vulkan_state(renderer);
 
+}
+
+IMGUI_API void ImGui_ImplSdlVulkan_GetDrawableSize(SDL_Window *window, int &width, int &height) {
+    SDL_Vulkan_GetDrawableSize(window, &width, &height);
 }
 
 // Use if you want to reset your rendering device without losing ImGui state.

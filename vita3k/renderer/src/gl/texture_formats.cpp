@@ -1,4 +1,4 @@
-#include "functions.h"
+#include <renderer/gl/functions.h>
 
 #include <gxm/functions.h>
 #include <util/log.h>

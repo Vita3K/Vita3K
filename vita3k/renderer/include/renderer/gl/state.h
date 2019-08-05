@@ -20,7 +20,8 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 
-#include <features/features.h>
+#include "types.h"
+#include <features/state.h>
 
 #include <SDL.h>
 
@@ -35,6 +36,15 @@ struct GLState : public renderer::State {
     ShaderCache fragment_shader_cache;
     ShaderCache vertex_shader_cache;
     ProgramCache program_cache;
+
+    struct {
+        char glsl_version[32] = "#version 150";
+        GLuint font_texture = 0;
+        GLuint shader_handle = 0, vertex_handle = 0, fragment_handle = 0;
+        GLuint attribute_location_tex = 0, attribute_projection_mat = 0;
+        GLuint attribute_position_location = 0, attribute_uv_location = 0, attribute_color_location = 0;
+        GLuint vbo = 0, elements = 0;
+    } gui_gl;
 };
 
 } // namespace renderer::gl

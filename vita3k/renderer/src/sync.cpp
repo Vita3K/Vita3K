@@ -5,7 +5,7 @@
 #include <renderer/types.h>
 
 #include "driver_functions.h"
-#include "gl/functions.h"
+#include <renderer/gl/functions.h>
 
 #include <renderer/functions.h>
 #include <util/log.h>

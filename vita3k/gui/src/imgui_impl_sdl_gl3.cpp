@@ -42,23 +42,25 @@
 #include <gui/imgui_impl_sdl.h>
 #include <gui/imgui_impl_sdl_gl3.h>
 
+#include <renderer/types.h>
+#include <renderer/gl/state.h>
+
 // SDL,GL3W
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include <glutil/gl.h>
+#include <renderer/state.h>
 
-// OpenGL data
-static char g_GlslVersion[32] = "#version 150";
-static GLuint g_FontTexture = 0;
-static int g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
-static int g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
-static int g_AttribLocationPosition = 0, g_AttribLocationUV = 0, g_AttribLocationColor = 0;
-static unsigned int g_VboHandle = 0, g_ElementsHandle = 0;
+static renderer::gl::GLState &gl_state(RendererPtr &renderer) {
+    return reinterpret_cast<renderer::gl::GLState &>(*renderer.get());
+}
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so.
 // If text or lines are blurry when integrating ImGui in your engine: in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
-void ImGui_ImplSdlGL3_RenderDrawData(ImDrawData *draw_data) {
+void ImGui_ImplSdlGL3_RenderDrawData(RendererPtr &renderer, ImDrawData *draw_data) {
+    auto &state = gl_state(renderer);
+    
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
     ImGuiIO &io = ImGui::GetIO();
     int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
@@ -117,6 +119,8 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImDrawData *draw_data) {
     glEnable(GL_SCISSOR_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     // Setup viewport, orthographic projection matrix
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
     const float ortho_projection[4][4] = {
@@ -125,9 +129,9 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImDrawData *draw_data) {
         { 0.0f, 0.0f, -1.0f, 0.0f },
         { -1.0f, 1.0f, 0.0f, 1.0f },
     };
-    glUseProgram(g_ShaderHandle);
-    glUniform1i(g_AttribLocationTex, 0);
-    glUniformMatrix4fv(g_AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]);
+    glUseProgram(state.gui_gl.shader_handle);
+    glUniform1i(state.gui_gl.attribute_location_tex, 0);
+    glUniformMatrix4fv(state.gui_gl.attribute_projection_mat, 1, GL_FALSE, &ortho_projection[0][0]);
     glBindSampler(0, 0); // Rely on combined texture/sampler state.
 
     // Recreate the VAO every time
@@ -135,23 +139,23 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImDrawData *draw_data) {
     GLuint vao_handle = 0;
     glGenVertexArrays(1, &vao_handle);
     glBindVertexArray(vao_handle);
-    glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
-    glEnableVertexAttribArray(g_AttribLocationPosition);
-    glEnableVertexAttribArray(g_AttribLocationUV);
-    glEnableVertexAttribArray(g_AttribLocationColor);
-    glVertexAttribPointer(g_AttribLocationPosition, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid *)IM_OFFSETOF(ImDrawVert, pos));
-    glVertexAttribPointer(g_AttribLocationUV, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid *)IM_OFFSETOF(ImDrawVert, uv));
-    glVertexAttribPointer(g_AttribLocationColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid *)IM_OFFSETOF(ImDrawVert, col));
+    glBindBuffer(GL_ARRAY_BUFFER, state.gui_gl.vbo);
+    glEnableVertexAttribArray(state.gui_gl.attribute_position_location);
+    glEnableVertexAttribArray(state.gui_gl.attribute_uv_location);
+    glEnableVertexAttribArray(state.gui_gl.attribute_color_location);
+    glVertexAttribPointer(state.gui_gl.attribute_position_location, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid *)IM_OFFSETOF(ImDrawVert, pos));
+    glVertexAttribPointer(state.gui_gl.attribute_uv_location, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid *)IM_OFFSETOF(ImDrawVert, uv));
+    glVertexAttribPointer(state.gui_gl.attribute_color_location, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid *)IM_OFFSETOF(ImDrawVert, col));
 
     // Draw
     for (int n = 0; n < draw_data->CmdListsCount; n++) {
         const ImDrawList *cmd_list = draw_data->CmdLists[n];
         const ImDrawIdx *idx_buffer_offset = 0;
 
-        glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
+        glBindBuffer(GL_ARRAY_BUFFER, state.gui_gl.vbo);
         glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), (const GLvoid *)cmd_list->VtxBuffer.Data, GL_STREAM_DRAW);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ElementsHandle);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state.gui_gl.elements);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), (const GLvoid *)cmd_list->IdxBuffer.Data, GL_STREAM_DRAW);
 
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
@@ -207,7 +211,9 @@ static void ImGui_ImplSdlGL3_SetClipboardText(void *, const char *text) {
     SDL_SetClipboardText(text);
 }
 
-void ImGui_ImplSdlGL3_CreateFontsTexture() {
+void ImGui_ImplSdlGL3_CreateFontsTexture(RendererPtr &renderer) {
+    auto &state = gl_state(renderer);
+
     // Build texture atlas
     ImGuiIO &io = ImGui::GetIO();
     unsigned char *pixels;
@@ -217,21 +223,23 @@ void ImGui_ImplSdlGL3_CreateFontsTexture() {
     // Upload texture to graphics system
     GLint last_texture;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    glGenTextures(1, &g_FontTexture);
-    glBindTexture(GL_TEXTURE_2D, g_FontTexture);
+    glGenTextures(1, &state.gui_gl.font_texture);
+    glBindTexture(GL_TEXTURE_2D, state.gui_gl.font_texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Store our identifier
-    io.Fonts->TexID = (void *)(intptr_t)g_FontTexture;
+    io.Fonts->TexID = (ImTextureID)(intptr_t)state.gui_gl.font_texture;
 
     // Restore state
     glBindTexture(GL_TEXTURE_2D, last_texture);
 }
 
-bool ImGui_ImplSdlGL3_CreateDeviceObjects() {
+bool ImGui_ImplSdlGL3_CreateDeviceObjects(RendererPtr &renderer) {
+    auto &state = gl_state(renderer);
+
     // Backup GL state
     GLint last_texture, last_array_buffer, last_vertex_array;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
@@ -260,30 +268,30 @@ bool ImGui_ImplSdlGL3_CreateDeviceObjects() {
                                     "	Out_Color = Frag_Color * texture( Texture, Frag_UV.st);\n"
                                     "}\n";
 
-    const GLchar *vertex_shader_with_version[2] = { g_GlslVersion, vertex_shader };
-    const GLchar *fragment_shader_with_version[2] = { g_GlslVersion, fragment_shader };
+    const GLchar *vertex_shader_with_version[2] = { state.gui_gl.glsl_version, vertex_shader };
+    const GLchar *fragment_shader_with_version[2] = { state.gui_gl.glsl_version, fragment_shader };
 
-    g_ShaderHandle = glCreateProgram();
-    g_VertHandle = glCreateShader(GL_VERTEX_SHADER);
-    g_FragHandle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(g_VertHandle, 2, vertex_shader_with_version, NULL);
-    glShaderSource(g_FragHandle, 2, fragment_shader_with_version, NULL);
-    glCompileShader(g_VertHandle);
-    glCompileShader(g_FragHandle);
-    glAttachShader(g_ShaderHandle, g_VertHandle);
-    glAttachShader(g_ShaderHandle, g_FragHandle);
-    glLinkProgram(g_ShaderHandle);
+    state.gui_gl.shader_handle = glCreateProgram();
+    state.gui_gl.vertex_handle = glCreateShader(GL_VERTEX_SHADER);
+    state.gui_gl.fragment_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(state.gui_gl.vertex_handle, 2, vertex_shader_with_version, NULL);
+    glShaderSource(state.gui_gl.fragment_handle, 2, fragment_shader_with_version, NULL);
+    glCompileShader(state.gui_gl.vertex_handle);
+    glCompileShader(state.gui_gl.fragment_handle);
+    glAttachShader(state.gui_gl.shader_handle, state.gui_gl.vertex_handle);
+    glAttachShader(state.gui_gl.shader_handle, state.gui_gl.fragment_handle);
+    glLinkProgram(state.gui_gl.shader_handle);
 
-    g_AttribLocationTex = glGetUniformLocation(g_ShaderHandle, "Texture");
-    g_AttribLocationProjMtx = glGetUniformLocation(g_ShaderHandle, "ProjMtx");
-    g_AttribLocationPosition = glGetAttribLocation(g_ShaderHandle, "Position");
-    g_AttribLocationUV = glGetAttribLocation(g_ShaderHandle, "UV");
-    g_AttribLocationColor = glGetAttribLocation(g_ShaderHandle, "Color");
+    state.gui_gl.attribute_location_tex = glGetUniformLocation(state.gui_gl.shader_handle, "Texture");
+    state.gui_gl.attribute_projection_mat = glGetUniformLocation(state.gui_gl.shader_handle, "ProjMtx");
+    state.gui_gl.attribute_position_location = glGetAttribLocation(state.gui_gl.shader_handle, "Position");
+    state.gui_gl.attribute_uv_location = glGetAttribLocation(state.gui_gl.shader_handle, "UV");
+    state.gui_gl.attribute_color_location = glGetAttribLocation(state.gui_gl.shader_handle, "Color");
 
-    glGenBuffers(1, &g_VboHandle);
-    glGenBuffers(1, &g_ElementsHandle);
+    glGenBuffers(1, &state.gui_gl.vbo);
+    glGenBuffers(1, &state.gui_gl.elements);
 
-    ImGui_ImplSdlGL3_CreateFontsTexture();
+    ImGui_ImplSdlGL3_CreateFontsTexture(renderer);
 
     // Restore modified GL state
     glBindTexture(GL_TEXTURE_2D, last_texture);
@@ -293,43 +301,47 @@ bool ImGui_ImplSdlGL3_CreateDeviceObjects() {
     return true;
 }
 
-void ImGui_ImplSdlGL3_InvalidateDeviceObjects() {
-    if (g_VboHandle)
-        glDeleteBuffers(1, &g_VboHandle);
-    if (g_ElementsHandle)
-        glDeleteBuffers(1, &g_ElementsHandle);
-    g_VboHandle = g_ElementsHandle = 0;
+void ImGui_ImplSdlGL3_InvalidateDeviceObjects(RendererPtr &renderer) {
+    auto &state = gl_state(renderer);
 
-    if (g_ShaderHandle && g_VertHandle)
-        glDetachShader(g_ShaderHandle, g_VertHandle);
-    if (g_VertHandle)
-        glDeleteShader(g_VertHandle);
-    g_VertHandle = 0;
+    if (state.gui_gl.vbo)
+        glDeleteBuffers(1, &state.gui_gl.vbo);
+    if (state.gui_gl.elements)
+        glDeleteBuffers(1, &state.gui_gl.elements);
+    state.gui_gl.vbo = state.gui_gl.elements = 0;
 
-    if (g_ShaderHandle && g_FragHandle)
-        glDetachShader(g_ShaderHandle, g_FragHandle);
-    if (g_FragHandle)
-        glDeleteShader(g_FragHandle);
-    g_FragHandle = 0;
+    if (state.gui_gl.shader_handle && state.gui_gl.vertex_handle)
+        glDetachShader(state.gui_gl.shader_handle, state.gui_gl.vertex_handle);
+    if (state.gui_gl.vertex_handle)
+        glDeleteShader(state.gui_gl.vertex_handle);
+    state.gui_gl.vertex_handle = 0;
 
-    if (g_ShaderHandle)
-        glDeleteProgram(g_ShaderHandle);
-    g_ShaderHandle = 0;
+    if (state.gui_gl.shader_handle && state.gui_gl.fragment_handle)
+        glDetachShader(state.gui_gl.shader_handle, state.gui_gl.fragment_handle);
+    if (state.gui_gl.fragment_handle)
+        glDeleteShader(state.gui_gl.fragment_handle);
+    state.gui_gl.fragment_handle = 0;
 
-    if (g_FontTexture) {
-        glDeleteTextures(1, &g_FontTexture);
+    if (state.gui_gl.shader_handle)
+        glDeleteProgram(state.gui_gl.shader_handle);
+    state.gui_gl.shader_handle = 0;
+
+    if (state.gui_gl.font_texture) {
+        glDeleteTextures(1, &state.gui_gl.font_texture);
         ImGui::GetIO().Fonts->TexID = 0;
-        g_FontTexture = 0;
+        state.gui_gl.font_texture = 0;
     }
 }
 
-bool ImGui_ImplSdlGL3_Init(SDL_Window *window, const char *glsl_version) {
+bool ImGui_ImplSdlGL3_Init(RendererPtr &renderer, SDL_Window *window, const char *glsl_version) {
+    auto &state = gl_state(renderer);
+
     // Store GL version string so we can refer to it later in case we recreate shaders.
     if (glsl_version == NULL)
         glsl_version = "#version 150";
-    IM_ASSERT((int)strlen(glsl_version) + 2 < IM_ARRAYSIZE(g_GlslVersion));
-    strcpy(g_GlslVersion, glsl_version);
-    strcat(g_GlslVersion, "\n");
+    IM_ASSERT((int)strlen(glsl_version) + 2 < IM_ARRAYSIZE(state.gui_gl.glsl_version));
+    strcpy(state.gui_gl.glsl_version, glsl_version);
+    strcat(state.gui_gl.glsl_version, "\n");
 
     // Setup back-end capabilities flags
     ImGuiIO &io = ImGui::GetIO();
@@ -362,13 +374,13 @@ bool ImGui_ImplSdlGL3_Init(SDL_Window *window, const char *glsl_version) {
     io.GetClipboardTextFn = ImGui_ImplSdlGL3_GetClipboardText;
     io.ClipboardUserData = NULL;
 
-    g_MouseCursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-    g_MouseCursors[ImGuiMouseCursor_TextInput] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-    g_MouseCursors[ImGuiMouseCursor_ResizeAll] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-    g_MouseCursors[ImGuiMouseCursor_ResizeNS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-    g_MouseCursors[ImGuiMouseCursor_ResizeEW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-    g_MouseCursors[ImGuiMouseCursor_ResizeNESW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-    g_MouseCursors[ImGuiMouseCursor_ResizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+    state.gui.mouse_cursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    state.gui.mouse_cursors[ImGuiMouseCursor_TextInput] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+    state.gui.mouse_cursors[ImGuiMouseCursor_ResizeAll] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+    state.gui.mouse_cursors[ImGuiMouseCursor_ResizeNS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+    state.gui.mouse_cursors[ImGuiMouseCursor_ResizeEW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+    state.gui.mouse_cursors[ImGuiMouseCursor_ResizeNESW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+    state.gui.mouse_cursors[ImGuiMouseCursor_ResizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
 
 #ifdef _WIN32
     SDL_SysWMinfo wmInfo;
@@ -382,72 +394,18 @@ bool ImGui_ImplSdlGL3_Init(SDL_Window *window, const char *glsl_version) {
     return true;
 }
 
-void ImGui_ImplSdlGL3_Shutdown() {
+void ImGui_ImplSdlGL3_Shutdown(RendererPtr &renderer) {
+    auto &state = gl_state(renderer);
+
     // Destroy SDL mouse cursors
-    for (ImGuiMouseCursor cursor_n = 0; cursor_n < ImGuiMouseCursor_COUNT; cursor_n++)
-        SDL_FreeCursor(g_MouseCursors[cursor_n]);
-    memset(g_MouseCursors, 0, sizeof(g_MouseCursors));
+    for (auto & mouse_cursor : state.gui.mouse_cursors)
+        SDL_FreeCursor(mouse_cursor);
+    memset(state.gui.mouse_cursors, 0, sizeof(state.gui.mouse_cursors));
 
     // Destroy OpenGL objects
-    ImGui_ImplSdlGL3_InvalidateDeviceObjects();
+    ImGui_ImplSdlGL3_InvalidateDeviceObjects(renderer);
 }
 
-void ImGui_ImplSdlGL3_NewFrame(SDL_Window *window) {
-    if (!g_FontTexture)
-        ImGui_ImplSdlGL3_CreateDeviceObjects();
-
-    ImGuiIO &io = ImGui::GetIO();
-
-    // Setup display size (every frame to accommodate for window resizing)
-    int w, h;
-    int display_w, display_h;
-    SDL_GetWindowSize(window, &w, &h);
-    SDL_GL_GetDrawableSize(window, &display_w, &display_h);
-    io.DisplaySize = ImVec2((float)w, (float)h);
-    io.DisplayFramebufferScale = ImVec2(w > 0 ? ((float)display_w / w) : 0, h > 0 ? ((float)display_h / h) : 0);
-
-    // Setup time step (we don't use SDL_GetTicks() because it is using millisecond resolution)
-    static Uint64 frequency = SDL_GetPerformanceFrequency();
-    Uint64 current_time = SDL_GetPerformanceCounter();
-    io.DeltaTime = g_Time > 0 ? (float)((double)(current_time - g_Time) / frequency) : (float)(1.0f / 60.0f);
-    g_Time = current_time;
-
-    // Setup mouse inputs (we already got mouse wheel, keyboard keys & characters from our event handler)
-    int mx, my;
-    Uint32 mouse_buttons = SDL_GetMouseState(&mx, &my);
-    io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
-    io.MouseDown[0] = g_MousePressed[0] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0; // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
-    io.MouseDown[1] = g_MousePressed[1] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0;
-    io.MouseDown[2] = g_MousePressed[2] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0;
-    g_MousePressed[0] = g_MousePressed[1] = g_MousePressed[2] = false;
-
-// We need to use SDL_CaptureMouse() to easily retrieve mouse coordinates outside of the client area. This is only supported from SDL 2.0.4 (released Jan 2016)
-#if (SDL_MAJOR_VERSION >= 2) && (SDL_MINOR_VERSION >= 0) && (SDL_PATCHLEVEL >= 4)
-    if ((SDL_GetWindowFlags(window) & (SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_MOUSE_CAPTURE)) != 0)
-        io.MousePos = ImVec2((float)mx, (float)my);
-    bool any_mouse_button_down = false;
-    for (int n = 0; n < IM_ARRAYSIZE(io.MouseDown); n++)
-        any_mouse_button_down |= io.MouseDown[n];
-    if (any_mouse_button_down && (SDL_GetWindowFlags(window) & SDL_WINDOW_MOUSE_CAPTURE) == 0)
-        SDL_CaptureMouse(SDL_TRUE);
-    if (!any_mouse_button_down && (SDL_GetWindowFlags(window) & SDL_WINDOW_MOUSE_CAPTURE) != 0)
-        SDL_CaptureMouse(SDL_FALSE);
-#else
-    if ((SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0)
-        io.MousePos = ImVec2((float)mx, (float)my);
-#endif
-
-    // Update OS/hardware mouse cursor if imgui isn't drawing a software cursor
-    if ((io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange) == 0) {
-        ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
-        if (io.MouseDrawCursor || cursor == ImGuiMouseCursor_None) {
-            SDL_ShowCursor(0);
-        } else {
-            SDL_SetCursor(g_MouseCursors[cursor] ? g_MouseCursors[cursor] : g_MouseCursors[ImGuiMouseCursor_Arrow]);
-            SDL_ShowCursor(1);
-        }
-    }
-
-    // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
-    ImGui::NewFrame();
+IMGUI_API void ImGui_ImplSdlGL3_GetDrawableSize(SDL_Window *window, int &width, int &height) {
+    SDL_GL_GetDrawableSize(window, &width, &height);
 }

@@ -21,12 +21,11 @@
 #include <renderer/texture_cache_state.h>
 #include <renderer/types.h>
 
+#include <renderer/gl/functions.h>
 #include <renderer/vulkan/functions.h>
 #include <renderer/texture_cache_state.h>
 
 #include "driver_functions.h"
-#include "gl/functions.h"
-#include "gl/state.h"
 
 #include <gxm/types.h>
 #include <renderer/functions.h>

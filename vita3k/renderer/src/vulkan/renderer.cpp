@@ -19,7 +19,7 @@
 #include <renderer/functions.h>
 
 #include <config/version.h>
-#include <features/features.h>
+#include <features/state.h>
 
 #include <renderer/vulkan/state.h>
 #include <renderer/vulkan/functions.h>
@@ -38,14 +38,6 @@ constexpr static uint32_t max_images = 64;
 constexpr static uint32_t max_samplers = 64;
 
 constexpr static vk::Format screen_format = vk::Format::eB8G8R8A8Unorm;
-
-const static FeatureState default_features = {
-    .direct_pack_unpack_half = false,
-    .pack_unpack_half_through_ext = false, // OpenGL Extension
-    .support_shader_interlock = true,
-    .support_texture_barrier = true,
-    .direct_fragcolor = false, // OpenGL Extension
-};
 
 const static std::vector<const char *> instance_layers = {
 #ifndef NDEBUG

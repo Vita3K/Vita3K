@@ -110,4 +110,3 @@ bool init(GLTextureCacheState &cache);
 
 } // namespace texture
 } // namespace renderer::gl
-

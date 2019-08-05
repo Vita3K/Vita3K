@@ -24,7 +24,6 @@
 #include <config/config.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
-#include <features/state.h>
 #include <gxm/state.h>
 #include <io/state.h>
 #include <kernel/state.h>

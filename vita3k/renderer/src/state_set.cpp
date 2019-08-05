@@ -3,9 +3,11 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 
+#include <renderer/gl/functions.h>
+#include <renderer/gl/types.h>
+
 #include "driver_functions.h"
-#include "gl/functions.h"
-#include "gl/types.h"
+
 #include <util/align.h>
 #include <util/log.h>
 
