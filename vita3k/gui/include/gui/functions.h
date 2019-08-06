@@ -37,10 +37,12 @@ enum GenericDialogState {
 };
 
 void get_modules_list(GuiState &gui, HostState &host);
+void get_game_titles(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);
 void init_background(GuiState &gui, const std::string &image_path);
-void get_game_titles(GuiState &gui, HostState &host);
+void init_icons(GuiState &gui, HostState &host);
 void load_game_background(GuiState &gui, HostState &host, const std::string &title_id);
+bool refresh_game_list(GuiState &gui, HostState &host);
 
 void draw_begin(GuiState &gui, HostState &host);
 void draw_end(GuiState &host, SDL_Window *window);

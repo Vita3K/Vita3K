@@ -59,6 +59,7 @@ struct HostState {
     std::string game_version;
     std::string game_title;
     std::string base_path;
+    std::string default_path;
     std::string pref_path;
     Config cfg;
     size_t frame_count = 0;

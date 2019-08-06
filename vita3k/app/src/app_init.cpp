@@ -106,6 +106,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     state.kernel.wait_for_debugger = state.cfg.wait_for_debugger;
 
     state.base_path = root_paths.get_base_path_string();
+    state.default_path = root_paths.get_pref_path_string();
 
     // If configuration does not provide a preference path, use SDL's default
     if (state.cfg.pref_path == root_paths.get_pref_path_string() || state.cfg.pref_path.empty())
