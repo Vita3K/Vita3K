@@ -19,6 +19,7 @@ add_library(
 	src/common_dialog.cpp
 	src/condvars_dialog.cpp
 	src/eventflags_dialog.cpp
+	src/game_context_menu.cpp
 	src/game_selector.cpp
 	src/gui.cpp
 	src/imgui_impl_sdl_gl3.cpp

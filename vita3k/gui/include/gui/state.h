@@ -124,6 +124,8 @@ struct GuiState {
     std::map<std::string, ImGui_Texture> user_backgrounds;
     bool delete_game_background = false;
 
+    bool delete_game_icon = false;
+
     SceUID thread_watch_index = -1;
 
     std::uint32_t trophy_window_frame_count{ 0 };
