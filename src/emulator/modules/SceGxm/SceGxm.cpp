@@ -126,8 +126,6 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     host.gxm.is_in_scene = true;
 
     // Reset command list and finish status
-    context->renderer->render_finish_status = renderer::CommandErrorCodePending;
-
     renderer::reset_command_list(context->renderer->command_list);
 
     emu::SceGxmColorSurface *color_surface_copy = nullptr;
@@ -207,7 +205,7 @@ EXPORT(int, sceGxmColorSurfaceInit, emu::SceGxmColorSurface *surface, SceGxmColo
     assert(surface != nullptr);
     assert(colorFormat == SCE_GXM_COLOR_FORMAT_A8B8G8R8);
     assert(surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR);
-    assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
+    //assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
     assert(outputRegisterSize == SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT);
     assert(width > 0);
     assert(height > 0);
