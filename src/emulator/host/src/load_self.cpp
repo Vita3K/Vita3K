@@ -54,8 +54,8 @@
 
 using namespace ELFIO;
 
-static constexpr bool LOG_MODULE_LOADING = false;
-static constexpr bool DUMP_SEGMENTS = false;
+static constexpr bool LOG_MODULE_LOADING = true;
+static constexpr bool DUMP_SEGMENTS = true;
 
 static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, const Config &cfg) {
     struct VarImportsHeader {
@@ -379,6 +379,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         if (seg_infos[seg_index].encryption == 1)
         {
             LOG_CRITICAL("SELF {} is encrypted. Decryption is not yet supported.", self_path);
+            //LOG_INFO();
             return -1;
         }
         else if (seg_infos[seg_index].encryption != 2)
