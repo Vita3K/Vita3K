@@ -205,7 +205,7 @@ EXPORT(int, sceGxmColorSurfaceInit, emu::SceGxmColorSurface *surface, SceGxmColo
     assert(surface != nullptr);
     assert(colorFormat == SCE_GXM_COLOR_FORMAT_A8B8G8R8);
     assert(surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR);
-    //assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
+    assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
     assert(outputRegisterSize == SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT);
     assert(width > 0);
     assert(height > 0);
@@ -538,7 +538,7 @@ EXPORT(int, sceGxmEndCommandList) {
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotification *vertexNotification, const emu::SceGxmNotification *fragmentNotification) {
     const MemState &mem = host.mem;
     assert(context != nullptr);
-    //assert(vertexNotification == nullptr);
+    assert(vertexNotification == nullptr);
     //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.is_in_scene) {
@@ -746,7 +746,7 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, SceSize size, unsigned 
 EXPORT(int, sceGxmMapMemory, void *base, SceSize size, SceGxmMemoryAttribFlags attr) {
     assert(base != nullptr);
     assert(size > 0);
-    //assert((attr == SCE_GXM_MEMORY_ATTRIB_READ) || (attr == SCE_GXM_MEMORY_ATTRIB_RW));
+    assert((attr == SCE_GXM_MEMORY_ATTRIB_READ) || (attr == SCE_GXM_MEMORY_ATTRIB_RW));
 
     return 0;
 }
@@ -1369,7 +1369,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     MemState &mem = host.mem;
     assert(shaderPatcher != nullptr);
     assert(programId != nullptr);
-    //assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
+    assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
     assert(fragmentProgram != nullptr);
 
     static const emu::SceGxmBlendInfo default_blend_info = {
