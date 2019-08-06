@@ -373,8 +373,19 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         };
 
         LOG_DEBUG_IF(LOG_MODULE_LOADING, "    [{}] (p_type: {}): p_offset: {}, p_vaddr: {}, p_paddr: {}, p_filesz: {}, p_memsz: {}, p_flags: {}, p_align: {}", get_seg_header_string(), log_hex(seg_header.p_type), log_hex(seg_header.p_offset), log_hex(seg_header.p_vaddr), log_hex(seg_header.p_paddr), log_hex(seg_header.p_filesz), log_hex(seg_header.p_memsz), log_hex(seg_header.p_flags), log_hex(seg_header.p_align));
-
-        assert(seg_infos[seg_index].encryption == 2);
+        
+        // Check if Segment is encrypted.
+        // Fail safely instead of using an assert.
+        if (seg_infos[seg_index].encryption == 1)
+        {
+            LOG_CRITICAL("SELF {} is encrypted. Decryption is not yet supported.", self_path);
+            return -1;
+        }
+        else if (seg_infos[seg_index].encryption != 2)
+        {
+            LOG_CRITICAL("SELF Segment in {} has an unknown encryption code: {}.", self_path, seg_infos[seg_index].encryption);
+            return -1;
+        }
         if (seg_header.p_type == PT_LOAD) {
             Address segment_address = 0;
             auto alloc_name = fmt::format("SELF at {}", self_path);
