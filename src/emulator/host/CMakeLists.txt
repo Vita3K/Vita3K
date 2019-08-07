@@ -8,8 +8,10 @@ add_library(
 	include/host/sfo.h
 	include/host/state.h
 	include/host/window.h
+	include/host/screenshot.h
 	src/load_self.cpp
 	src/sfo.cpp
+	src/screenshot.cpp
 )
 
 target_include_directories(host PUBLIC include)

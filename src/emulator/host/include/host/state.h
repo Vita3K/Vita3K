@@ -19,6 +19,7 @@
 
 #include <host/sfo.h>
 #include <host/window.h>
+#include <host/screenshot.h>
 
 #include <audio/state.h>
 #include <config/config.h>
@@ -32,6 +33,7 @@
 #include <nids/types.h>
 #include <np/state.h>
 #include <renderer/state.h>
+
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
 #ifdef USE_GDBSTUB
@@ -83,6 +85,7 @@ struct HostState {
     SfoFile sfo_handle;
     NIDSet missing_nids;
     FeatureState features;
+    ScreenShot screenshot;
 #ifdef USE_GDBSTUB
     GDBState gdb;
 #endif

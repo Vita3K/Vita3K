@@ -17,14 +17,31 @@
 
 #include "SceScreenShot.h"
 
+#include <io/functions.h>
+#include <io/types.h>
 #include <psp2/screenshot.h>
-
 EXPORT(int, sceScreenShotCapture) {
-    return UNIMPLEMENTED();
+    
+    if (host.screenshot.enabled) {
+        // get base FB
+
+        // get image size
+        // do magic
+        write_file();
+        return 0;
+    } else {
+        LOG_INFO("The app has requested to disable Screenshot Access.");
+        return 0;
+    }
+    return 0;
 }
 
 EXPORT(int, sceScreenShotDisable) {
-    LOG_INFO("sceScreenShotDisable Stubbed for testing.");
+    if (host.screenshot.enabled) {
+        host.screenshot.enabled = false;
+    } else {
+        LOG_INFO("Already disabled. App called Disabled Again.");
+    }
     return 0;
 }
 
@@ -33,7 +50,11 @@ EXPORT(int, sceScreenShotDisableNotification) {
 }
 
 EXPORT(int, sceScreenShotEnable) {
-    LOG_INFO("sceScreenShotEnable Stubbed for testing.");
+    if (!host.screenshot.enabled) {
+        host.screenshot.enabled = true;
+    } else {
+        LOG_INFO("Already disabled. App called Disabled Again.");
+    }
     return 0;
 }
 
@@ -46,11 +67,18 @@ EXPORT(int, sceScreenShotGetParam) {
 }
 
 EXPORT(int, sceScreenShotSetOverlayImage, const char *filepath, int offsetX, int offsetY) {
-    return UNIMPLEMENTED();
+    host.screenshot.overlayfilePath = std::string(filepath);
+    host.screenshot.overlayoffsetX = offsetX;
+    host.screenshot.overlayoffsetY = offsetY;
+    return 0;
 }
 
 EXPORT(int, sceScreenShotSetParam, const SceScreenShotParam *param) {
-    return UNIMPLEMENTED();
+    //TODO: Find a way to set WChar stuff.
+    //host.screenshot.gameTitle = std::wstring(param->gameTitle);
+    //host.screenshot.photoTitle = param->photoTitle;
+    //host.screenshot.gameTitle = param->gameTitle;
+    return 0;
 }
 
 BRIDGE_IMPL(sceScreenShotCapture)
