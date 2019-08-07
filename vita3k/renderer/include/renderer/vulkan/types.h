@@ -19,8 +19,11 @@
 
 #include <renderer/types.h>
 
-namespace renderer::vulkan {
-    struct VKContext {
+#include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.h>
 
+namespace renderer::vulkan {
+    struct VulkanContext : renderer::Context {
+        // GXM Context Info
     };
 }

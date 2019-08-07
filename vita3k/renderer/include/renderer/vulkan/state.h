@@ -20,7 +20,7 @@
 #include <renderer/types.h>
 #include <renderer/state.h>
 
-#include <vulkan/vulkan.hpp>
+#include <renderer/vulkan/types.h>
 
 namespace renderer::vulkan {
 struct VulkanState : public renderer::State {
@@ -31,11 +31,12 @@ struct VulkanState : public renderer::State {
     vk::PhysicalDevice physical_device;
     vk::PhysicalDeviceProperties physical_device_properties;
     vk::PhysicalDeviceFeatures physical_device_features;
+    vk::SurfaceCapabilitiesKHR physical_device_surface_capabilities;
+    std::vector<vk::SurfaceFormatKHR> physical_device_surface_formats;
     vk::PhysicalDeviceMemoryProperties physical_device_memory;
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
 
-    uint32_t private_memory_index = 0;
-    vk::DeviceMemory private_memory;
+    VmaAllocator allocator;
 
     uint32_t general_family_index = 0;
     uint32_t transfer_family_index = 0;
@@ -49,17 +50,28 @@ struct VulkanState : public renderer::State {
     // Transfer pool has transient bit set.
     vk::CommandPool transfer_command_pool;
 
-    vk::CommandBuffer gui_command_buffer;
     vk::CommandBuffer general_command_buffer;
 
-    vk::RenderPass gui_renderpass;
     vk::RenderPass general_renderpass;
 
-    vk::Framebuffer gui_framebuffer;
-    vk::Sampler gui_sampler;
-    vk::DescriptorSetLayout gui_descriptor_set;
-    vk::PipelineLayout gui_pipeline_layout;
-    vk::Pipeline gui_pipeline;
+    struct {
+        vk::ShaderModule vertex_module;
+        vk::ShaderModule fragment_module;
+
+        vk::RenderPass renderpass;
+        vk::Framebuffer framebuffer;
+        vk::DescriptorSetLayout descriptor_set_layout;
+        vk::PipelineLayout pipeline_layout;
+        vk::Pipeline pipeline;
+
+        vk::Sampler sampler;
+        VmaAllocation font_allocation = VK_NULL_HANDLE;
+        vk::Image font_texture;
+        VmaAllocation draw_allocation = VK_NULL_HANDLE;
+        vk::Buffer draw_buffer;
+
+        vk::CommandBuffer command_buffer;
+    } gui_vulkan;
 
     vk::DescriptorPool descriptor_pool;
 
@@ -68,7 +80,7 @@ struct VulkanState : public renderer::State {
 
     uint32_t swapchain_image_last = 0;
     // These would be vectors...
-    std::vector<vk::Image> swapchain_images;
+    vk::Image swapchain_images[2];
     vk::ImageView swapchain_views[2];
 };
 }

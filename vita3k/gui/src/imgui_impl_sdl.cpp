@@ -23,8 +23,10 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(RendererPtr &renderer) {
     }
 }
 IMGUI_API void ImGui_ImplSdl_NewFrame(RendererPtr &renderer, SDL_Window *window) {
-    if (!renderer->gui.init)
+    if (!renderer->gui.init) {
         ImGui_ImplSdl_CreateDeviceObjects(renderer);
+        renderer->gui.init = true;
+    }
 
     ImGuiIO &io = ImGui::GetIO();
 
