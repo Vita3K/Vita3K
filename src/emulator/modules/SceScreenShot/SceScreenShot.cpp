@@ -17,12 +17,15 @@
 
 #include "SceScreenShot.h"
 
+#include <psp2/screenshot.h>
+
 EXPORT(int, sceScreenShotCapture) {
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceScreenShotDisable) {
-    return UNIMPLEMENTED();
+    LOG_INFO("sceScreenShotDisable Stubbed for testing.");
+    return 0;
 }
 
 EXPORT(int, sceScreenShotDisableNotification) {
@@ -30,7 +33,8 @@ EXPORT(int, sceScreenShotDisableNotification) {
 }
 
 EXPORT(int, sceScreenShotEnable) {
-    return UNIMPLEMENTED();
+    LOG_INFO("sceScreenShotEnable Stubbed for testing.");
+    return 0;
 }
 
 EXPORT(int, sceScreenShotEnableNotification) {
@@ -41,11 +45,11 @@ EXPORT(int, sceScreenShotGetParam) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceScreenShotSetOverlayImage) {
+EXPORT(int, sceScreenShotSetOverlayImage, const char *filepath, int offsetX, int offsetY) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceScreenShotSetParam) {
+EXPORT(int, sceScreenShotSetParam, const SceScreenShotParam *param) {
     return UNIMPLEMENTED();
 }
 

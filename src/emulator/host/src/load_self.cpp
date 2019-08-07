@@ -376,14 +376,11 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         
         // Check if Segment is encrypted.
         // Fail safely instead of using an assert.
-        if (seg_infos[seg_index].encryption == 1)
-        {
+        if (seg_infos[seg_index].encryption == 1) {
             LOG_CRITICAL("SELF {} is encrypted. Decryption is not yet supported.", self_path);
             //LOG_INFO();
             return -1;
-        }
-        else if (seg_infos[seg_index].encryption != 2)
-        {
+        } else if (seg_infos[seg_index].encryption != 2) {
             LOG_CRITICAL("SELF Segment in {} has an unknown encryption code: {}.", self_path, seg_infos[seg_index].encryption);
             return -1;
         }
