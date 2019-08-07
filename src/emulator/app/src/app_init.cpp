@@ -268,6 +268,16 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         }
     }
 
+    // Workaround driver bugs
+    const std::string gpu_name = reinterpret_cast<const GLchar*>(glGetString(GL_RENDERER));
+
+    if (gpu_name.find("GeForce RTX") != std::string::npos || gpu_name.find("RTX") != std::string::npos ||
+        gpu_name.find("rtx") != std::string::npos) {
+        // Disable shader interlock for all drivers.
+        // TODO: Report and fix this on NVIDIA GeForce GTX driver
+        state.features.support_shader_interlock = false; 
+    }
+
     if (state.features.direct_fragcolor) {
         LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
     } else if (state.features.support_shader_interlock) {
