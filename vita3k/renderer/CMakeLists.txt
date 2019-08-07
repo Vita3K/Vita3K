@@ -27,6 +27,7 @@ add_library(
 	src/gl/uniforms.cpp
 
 	src/vulkan/renderer.cpp
+	src/vulkan/allocator.cpp
 
 	src/batch.cpp
 	src/creation.cpp
@@ -42,6 +43,6 @@ add_library(
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC crypto shader glutil threads config vita-headers util)
-target_link_libraries(renderer PRIVATE sdl2 vulkan)
+target_link_libraries(renderer PUBLIC crypto shader glutil threads config vita-headers util vulkan vma)
+target_link_libraries(renderer PRIVATE sdl2)
 

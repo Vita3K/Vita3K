@@ -132,25 +132,6 @@ static bool select_queues(VulkanState &vulkan_state,
     return found_graphics && found_transfer;
 }
 
-static void select_memory(VulkanState &vulkan_state) {
-    bool found_private = false;
-
-    for (uint32_t a = 0; a < vulkan_state.physical_device_memory.memoryTypeCount; a++) {
-        const auto &type = vulkan_state.physical_device_memory.memoryTypes[a];
-        const auto &heap = vulkan_state.physical_device_memory.memoryHeaps[a];
-
-        if (type.propertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal && heap.size >= private_allocation_size) {
-            vulkan_state.private_memory_index = a;
-            found_private = true;
-        }
-
-        if (found_private)
-            break;
-    }
-
-    assert(found_private);
-}
-
 vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type) {
     vk::CommandBuffer buffer;
 
@@ -197,7 +178,7 @@ void free_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer
     state.device.freeCommandBuffers(pool, 1, &buffer);
 }
 
-void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer) {
+void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer, bool wait_idle) {
     vk::Queue queue;
 
     switch (type) {
@@ -219,7 +200,91 @@ void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuff
         );
 
     queue.submit(1, &submit_info, vk::Fence());
+    queue.waitIdle();
 }
+
+vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, MemoryType type, VmaAllocation &allocation) {
+    VmaMemoryUsage memory_usage;
+    switch (type) {
+    case MemoryType::Mappable:
+        memory_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        break;
+    case MemoryType::Device:
+        memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        break;
+    }
+
+    VmaAllocationCreateInfo allocation_info = { };
+    allocation_info.flags = 0;
+    allocation_info.usage = memory_usage;
+    // Usage is specified via usage field. Others are ignored.
+    allocation_info.requiredFlags = 0;
+    allocation_info.preferredFlags = 0;
+    allocation_info.memoryTypeBits = 0;
+    allocation_info.pool = VK_NULL_HANDLE;
+    allocation_info.pUserData = nullptr;
+
+    VkBuffer buffer;
+    vmaCreateBuffer(state.allocator, (VkBufferCreateInfo *)&buffer_info, &allocation_info, &buffer, &allocation, nullptr);
+
+    return buffer;
+}
+
+void free_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocation) {
+    vmaDestroyBuffer(state.allocator, buffer, allocation);
+}
+
+vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, MemoryType type, VmaAllocation &allocation) {
+    VmaMemoryUsage memory_usage;
+    switch (type) {
+        case MemoryType::Mappable:
+            memory_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+            break;
+        case MemoryType::Device:
+            memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+            break;
+    }
+
+    VmaAllocationCreateInfo allocation_info = { };
+    allocation_info.flags = 0;
+    allocation_info.usage = memory_usage;
+    // Usage is specified via usage field. Others are ignored.
+    allocation_info.requiredFlags = 0;
+    allocation_info.preferredFlags = 0;
+    allocation_info.memoryTypeBits = 0;
+    allocation_info.pool = VK_NULL_HANDLE;
+    allocation_info.pUserData = nullptr;
+
+    VkImage image;
+    vmaCreateImage(state.allocator, (VkImageCreateInfo *)&image_info, &allocation_info, &image, &allocation, nullptr);
+
+    return image;
+}
+
+void free_image(VulkanState &state, vk::Image image, VmaAllocation allocation) {
+    vmaDestroyImage(state.allocator, image, allocation);
+}
+
+//bool allocate_memory(VulkanState &state, vk::MemoryRequirements memory_requirements, vk::DeviceMemory &memory, size_t &offset) {
+//    // TODO: This should adapt to the requirements of the image instead of just shutting down if does not support it.
+//    if ((memory_requirements.memoryTypeBits >> state.private_memory_index) & 1u)
+//        return false;
+//
+//    memory = state.private_memory;
+//
+//    size_t remainder = state.private_memory_pointer % memory_requirements.alignment;
+//    if (remainder != 0)
+//        state.private_memory_pointer = state.private_memory_pointer - remainder + memory_requirements.alignment;
+//
+//    offset = state.private_memory_pointer;
+//
+//    state.private_memory_pointer += memory_requirements.size;
+//    // set private_memory_size to something
+//    if (state.private_memory_pointer >= state.private_memory_size)
+//        return false;
+//
+//    return true;
+//}
 
 // TODO: Replace asserts for vulkan methods and VULKAN_CHECK so the method fails.
 bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
@@ -312,19 +377,24 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         vulkan_state.transfer_command_pool = vulkan_state.device.createCommandPool(transfer_pool_info, nullptr);
         assert(vulkan_state.transfer_command_pool);
 
-        vulkan_state.gui_command_buffer = create_command_buffer(vulkan_state, CommandType::General);
         vulkan_state.general_command_buffer = create_command_buffer(vulkan_state, CommandType::General);
     }
 
     // Allocate Memory for Images and Buffers
     {
-        vk::MemoryAllocateInfo private_info(
-            private_allocation_size, // Size
-            vulkan_state.private_memory_index // Index
-        );
+        VmaAllocatorCreateInfo allocator_info = { };
+        allocator_info.flags = 0;
+        allocator_info.physicalDevice = vulkan_state.physical_device;
+        allocator_info.device = vulkan_state.device;
+        allocator_info.preferredLargeHeapBlockSize = 0;
+        allocator_info.pAllocationCallbacks = nullptr;
+        allocator_info.pDeviceMemoryCallbacks = nullptr;
+        allocator_info.frameInUseCount = 0;
+        allocator_info.pHeapSizeLimit = nullptr;
+        allocator_info.pVulkanFunctions = nullptr; // VMA_STATIC_VULKAN_FUNCTIONS 1 is default I think
+        allocator_info.pRecordSettings = nullptr;
 
-        vulkan_state.private_memory = vulkan_state.device.allocateMemory(private_info, nullptr);
-        assert(vulkan_state.private_memory);
+        vmaCreateAllocator(&allocator_info, &vulkan_state.allocator);
     }
 
     // Create Descriptor Pool
@@ -345,8 +415,8 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         assert(SDL_Vulkan_CreateSurface(window.get(), vulkan_state.instance, &surface));
         vulkan_state.surface = vk::SurfaceKHR(surface);
 
-        assert(vulkan_state.physical_device.getSurfaceSupportKHR(vulkan_state.general_family_index,
-                                                                 vulkan_state.surface));
+        assert(vulkan_state.physical_device.getSurfaceSupportKHR(
+            vulkan_state.general_family_index, vulkan_state.surface));
 
         vk::SwapchainCreateInfoKHR swapchain_info(
             vk::SwapchainCreateFlagsKHR(), // No Flags
@@ -411,9 +481,8 @@ void close(std::unique_ptr<renderer::State> &state) {
 
     vulkan_state.device.destroy(vulkan_state.descriptor_pool);
 
-    vulkan_state.device.free(vulkan_state.private_memory);
+    vmaDestroyAllocator(vulkan_state.allocator);
 
-    free_command_buffer(vulkan_state, CommandType::General, vulkan_state.gui_command_buffer);
     free_command_buffer(vulkan_state, CommandType::General, vulkan_state.general_command_buffer);
 
     vulkan_state.device.destroy(vulkan_state.general_command_pool);
