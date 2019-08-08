@@ -8,8 +8,15 @@
 
 #include <fstream>
 
-// MB(1)
-constexpr size_t gui_max_draw_size = 1 * 1024 * 1024;
+// 200000000 Nanoseconds = 0.2 seconds
+constexpr uint64_t next_image_timeout = 200000000;
+
+const std::array<float, 4> clear_color = { 0.125490203f, 0.698039234f, 0.666666687f, 1.0f };
+const std::array<vk::ClearValue, 2> clear_values = {
+    vk::ClearColorValue(clear_color),
+    vk::ClearColorValue(clear_color),
+};
+
 
 static renderer::vulkan::VulkanState &vulkan_state(RendererPtr &renderer) {
     return reinterpret_cast<renderer::vulkan::VulkanState &>(*renderer.get());
@@ -48,8 +55,89 @@ IMGUI_API bool ImGui_ImplSdlVulkan_Init(RendererPtr &renderer, SDL_Window *windo
 IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(RendererPtr &renderer) {
     auto &state = vulkan_state(renderer);
 }
+
+// Only one mapping can be created on a section of memory at a time. This method is split into the "vertex" and "index" parts to avoid overlapping maps.
+static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &state, ImDrawData *draw_data) {
+    ImDrawVert *draw_buffer_data = nullptr;
+
+    if (state.gui_vulkan.draw_buffer_vertices != draw_data->TotalVtxCount) {
+        // Recreate Buffer
+        if (state.gui_vulkan.draw_buffer)
+            renderer::vulkan::destroy_buffer(state, state.gui_vulkan.draw_buffer, state.gui_vulkan.draw_allocation);
+
+        vk::BufferCreateInfo draw_buffer_info(
+            vk::BufferCreateFlags(), // No Flags
+            draw_data->TotalVtxCount * sizeof(ImDrawVert), // Size
+            vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, // Usage
+            vk::SharingMode::eExclusive, 0, nullptr // Exclusive Sharing Mode
+        );
+
+        state.gui_vulkan.draw_buffer = renderer::vulkan::create_buffer(state, draw_buffer_info,
+                                                                       renderer::vulkan::MemoryType::Mappable, state.gui_vulkan.draw_allocation);
+
+        state.gui_vulkan.draw_buffer_vertices = draw_data->TotalVtxCount;
+    }
+
+    assert(vmaMapMemory(state.allocator, state.gui_vulkan.draw_allocation, reinterpret_cast<void **>(&draw_buffer_data)) == VK_SUCCESS);
+    assert(draw_buffer_data);
+
+    size_t draw_buffer_pointer = 0;
+
+    for (uint32_t a = 0; a < draw_data->CmdListsCount; a++) {
+        ImDrawList *draw_list = draw_data->CmdLists[a];
+
+        std::memcpy(&draw_buffer_data[draw_buffer_pointer], draw_list->VtxBuffer.Data, draw_list->VtxBuffer.Size * sizeof(ImDrawVert));
+
+        draw_buffer_pointer += draw_list->VtxBuffer.Size;
+    }
+
+    vmaUnmapMemory(state.allocator, state.gui_vulkan.draw_allocation);
+
+    // Write to index buffer...
+    ImDrawIdx *index_buffer_data = nullptr;
+
+    if (state.gui_vulkan.index_buffer_indices != draw_data->TotalIdxCount) {
+        // Recreate Buffer
+        if (state.gui_vulkan.index_buffer)
+            renderer::vulkan::destroy_buffer(state, state.gui_vulkan.index_buffer, state.gui_vulkan.index_allocation);
+
+        vk::BufferCreateInfo index_buffer_info(
+            vk::BufferCreateFlags(), // No Flags
+            draw_data->TotalIdxCount * sizeof(ImDrawIdx), // Size
+            vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, // Usage
+            vk::SharingMode::eExclusive, 0, nullptr // Exclusive Sharing Mode
+        );
+
+        state.gui_vulkan.index_buffer = renderer::vulkan::create_buffer(state, index_buffer_info,
+                                                                        renderer::vulkan::MemoryType::Mappable, state.gui_vulkan.index_allocation);
+
+        state.gui_vulkan.index_buffer_indices = draw_data->TotalIdxCount;
+    }
+
+    assert(vmaMapMemory(state.allocator, state.gui_vulkan.index_allocation, reinterpret_cast<void **>(&index_buffer_data)) == VK_SUCCESS);
+    assert(index_buffer_data);
+
+    size_t index_buffer_pointer = 0;
+
+    for (uint32_t a = 0; a < draw_data->CmdListsCount; a++) {
+        ImDrawList *draw_list = draw_data->CmdLists[a];
+
+        std::memcpy(&index_buffer_data[index_buffer_pointer], draw_list->IdxBuffer.Data, draw_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+
+        index_buffer_pointer += draw_list->IdxBuffer.Size;
+    }
+
+    vmaUnmapMemory(state.allocator, state.gui_vulkan.index_allocation);
+}
+
 IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawData *draw_data) {
     auto &state = vulkan_state(renderer);
+
+    uint32_t image_index = ~0u;
+    state.device.resetFences(1, &state.gui_vulkan.next_image_fence);
+    state.device.acquireNextImageKHR(state.swapchain, next_image_timeout,vk::Semaphore(), state.gui_vulkan.next_image_fence, &image_index);
+
+    ImGui_ImplSdlVulkan_UpdateBuffers(state, draw_data);
 
     state.gui_vulkan.command_buffer.reset(vk::CommandBufferResetFlags());
 
@@ -60,15 +148,47 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
 
     state.gui_vulkan.command_buffer.begin(begin_info);
 
+
+
+    vk::RenderPassBeginInfo renderpass_begin_info(
+        state.gui_vulkan.renderpass, // Renderpass
+        state.gui_vulkan.framebuffer, // Framebuffer
+        vk::Rect2D(
+            vk::Offset2D(0, 0),
+            vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT)
+            ), // Render Area
+        clear_values.size(), clear_values.data() // Clear Colors
+        );
+
+    state.gui_vulkan.command_buffer.beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
     state.gui_vulkan.command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, state.gui_vulkan.pipeline);
 
-    for (uint32_t a = 0; a < draw_data->CmdListsCount; a++) {
-        ImDrawList *draw_list = draw_data->CmdLists[a];
+    state.gui_vulkan.command_buffer.endRenderPass();
 
-    }
+    // TODO: Oh god we need an image.
+//    vk::ImageMemoryBarrier color_attachment_present_barrier(
+//        vk::AccessFlagBits::eColorAttachmentWrite, // From rendering
+//        vk::AccessFlagBits::eMemoryRead, // To readable format for presenting
+//        vk::ImageLayout::eColorAttachmentOptimal,
+//        vk::ImageLayout::ePresentSrcKHR,
+//        state.general_family_index, state.general_family_index, // No Transfer
+//        );
+//
+//    state.gui_vulkan.command_buffer.pipelineBarrier(
+//        vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eBottomOfPipe, // Color Attachment Output -> Bottom of Pipe Stage
+//        vk::DependencyFlags(), // No Dependency Flags
+//        0, nullptr, // No Memory Barriers
+//        0, nullptr, // No Buffer Barriers
+//        1, &color_attachment_present_barrier // Image Barrier
+//        );
 
     state.gui_vulkan.command_buffer.end();
-    renderer::vulkan::submit_command_buffer(state, renderer::vulkan::CommandType::General, state.gui_vulkan.command_buffer);
+
+    // This is wait idle to ensure presentation happens after render. The command buffer should instead signal a fence or something.
+    renderer::vulkan::submit_command_buffer(state, renderer::vulkan::CommandType::General, state.gui_vulkan.command_buffer, true);
+
+    state.device.waitForFences(1, &state.gui_vulkan.next_image_fence, true, next_image_timeout);
+    renderer::vulkan::present(state, image_index);
 }
 
 IMGUI_API void ImGui_ImplSdlVulkan_GetDrawableSize(SDL_Window *window, int &width, int &height) {
@@ -76,7 +196,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_GetDrawableSize(SDL_Window *window, int &widt
 }
 
 static void ImGui_ImplSdlVulkan_InvalidateFontsTexture(renderer::vulkan::VulkanState &state) {
-    renderer::vulkan::free_image(state, state.gui_vulkan.font_texture, state.gui_vulkan.font_allocation);
+    renderer::vulkan::destroy_image(state, state.gui_vulkan.font_texture, state.gui_vulkan.font_allocation);
 }
 
 static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState &state) {
@@ -196,7 +316,7 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
     renderer::vulkan::submit_command_buffer(state, renderer::vulkan::CommandType::Transfer, transfer_buffer, true);
     renderer::vulkan::free_command_buffer(state, renderer::vulkan::CommandType::Transfer, transfer_buffer);
 
-    renderer::vulkan::free_buffer(state, temp_buffer, temp_allocation);
+    renderer::vulkan::destroy_buffer(state, temp_buffer, temp_allocation);
 
     io.Fonts->TexID = reinterpret_cast<ImTextureID>(static_cast<VkImage>(state.gui_vulkan.font_texture));
 }
@@ -204,6 +324,8 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
 // Use if you want to reset your rendering device without losing ImGui state.
 IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(RendererPtr &renderer) {
     auto &state = vulkan_state(renderer);
+
+    state.device.destroy(state.gui_vulkan.next_image_fence);
 
     renderer::vulkan::free_command_buffer(state, renderer::vulkan::CommandType::General, state.gui_vulkan.command_buffer);
 
@@ -497,6 +619,10 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     ImGui_ImplSdlVulkan_CreateFontsTexture(state);
 
     state.gui_vulkan.command_buffer = renderer::vulkan::create_command_buffer(state, renderer::vulkan::CommandType::General);
+
+    vk::FenceCreateInfo next_image_fence_info((vk::FenceCreateFlags()));
+
+    state.gui_vulkan.next_image_fence = state.device.createFence(next_image_fence_info);
 
     return true;
 }

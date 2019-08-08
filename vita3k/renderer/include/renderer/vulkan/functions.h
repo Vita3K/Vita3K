@@ -35,12 +35,14 @@ enum class MemoryType {
     Device,
 };
 
+void present(VulkanState &state, uint32_t index);
+
 vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type);
 void free_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer);
 void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer, bool wait_idle = false);
 
 vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, MemoryType type, VmaAllocation &allocation);
-void free_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocation);
+void destroy_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocation);
 vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, MemoryType type, VmaAllocation &allocation);
-void free_image(VulkanState &state, vk::Image image, VmaAllocation allocation);
+void destroy_image(VulkanState &state, vk::Image image, VmaAllocation allocation);
 }

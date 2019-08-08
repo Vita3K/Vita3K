@@ -151,6 +151,35 @@ static vk::Format select_surface_format(std::vector<vk::SurfaceFormatKHR> &forma
     return vk::Format::eR8G8B8A8Unorm;
 }
 
+static vk::Queue select_queue(VulkanState &state, CommandType type) {
+    vk::Queue queue;
+
+    switch (type) {
+        case CommandType::General:
+            queue = state.general_queues[state.general_queue_last % state.general_queues.size()];
+            state.general_queue_last++;
+            break;
+        case CommandType::Transfer:
+            queue = state.transfer_queues[state.transfer_queue_last % state.transfer_queues.size()];
+            state.transfer_queue_last++;
+            break;
+    }
+
+    return queue;
+}
+
+void present(VulkanState &state, uint32_t image_index) { // this needs semaphore, image index etc.
+    // The general queue family is guaranteed (by an assert) to have present support.
+    vk::Queue present_queue = select_queue(state, CommandType::General);
+
+    vk::PresentInfoKHR present_info(
+        0, nullptr, // No Semaphores
+        1, &state.swapchain, &image_index, nullptr // Swapchain
+        );
+
+    present_queue.presentKHR(present_info);
+}
+
 vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type) {
     vk::CommandBuffer buffer;
 
@@ -198,18 +227,7 @@ void free_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer
 }
 
 void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer, bool wait_idle) {
-    vk::Queue queue;
-
-    switch (type) {
-        case CommandType::General:
-            queue = state.general_queues[state.general_queue_last % state.general_queues.size()];
-            state.general_queue_last++;
-            break;
-        case CommandType::Transfer:
-            queue = state.transfer_queues[state.transfer_queue_last % state.transfer_queues.size()];
-            state.transfer_queue_last++;
-            break;
-    }
+    vk::Queue queue = select_queue(state, type);
 
     vk::SubmitInfo submit_info(
         0, nullptr, nullptr, // Wait Semaphores
@@ -253,7 +271,7 @@ vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, 
     return buffer;
 }
 
-void free_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocation) {
+void destroy_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocation) {
     vmaDestroyBuffer(state.allocator, buffer, allocation);
 }
 
@@ -288,7 +306,7 @@ vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, Memo
     return image;
 }
 
-void free_image(VulkanState &state, vk::Image image, VmaAllocation allocation) {
+void destroy_image(VulkanState &state, vk::Image image, VmaAllocation allocation) {
     vmaDestroyImage(state.allocator, image, allocation);
 }
 
@@ -313,7 +331,7 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             instance_extensions.size(), instance_extensions.data() // No Extensions
             );
 
-        vulkan_state.instance = vk::createInstance(instance_info, nullptr);
+        vulkan_state.instance = vk::createInstance(instance_info);
         assert(vulkan_state.instance);
     }
 
@@ -364,7 +382,7 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             &required_features
             );
 
-        vulkan_state.device = vulkan_state.physical_device.createDevice(device_info, nullptr);
+        vulkan_state.device = vulkan_state.physical_device.createDevice(device_info);
         assert(vulkan_state.device);
     }
 
@@ -391,9 +409,9 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             vulkan_state.transfer_family_index // Queue Family Index
             );
 
-        vulkan_state.general_command_pool = vulkan_state.device.createCommandPool(general_pool_info, nullptr);
+        vulkan_state.general_command_pool = vulkan_state.device.createCommandPool(general_pool_info);
         assert(vulkan_state.general_command_pool);
-        vulkan_state.transfer_command_pool = vulkan_state.device.createCommandPool(transfer_pool_info, nullptr);
+        vulkan_state.transfer_command_pool = vulkan_state.device.createCommandPool(transfer_pool_info);
         assert(vulkan_state.transfer_command_pool);
 
         vulkan_state.general_command_buffer = create_command_buffer(vulkan_state, CommandType::General);
@@ -425,7 +443,7 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             descriptor_pool_sizes.size(), descriptor_pool_sizes.data() // Descriptor Pool
             );
 
-        vulkan_state.descriptor_pool = vulkan_state.device.createDescriptorPool(descriptor_pool_info, nullptr);
+        vulkan_state.descriptor_pool = vulkan_state.device.createDescriptorPool(descriptor_pool_info);
         assert(vulkan_state.descriptor_pool);
     }
 
@@ -450,7 +468,7 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             vk::SwapchainKHR() // No old swapchain.
             );
 
-        vulkan_state.swapchain = vulkan_state.device.createSwapchainKHR(swapchain_info, nullptr);
+        vulkan_state.swapchain = vulkan_state.device.createSwapchainKHR(swapchain_info);
         assert(vulkan_state.swapchain);
     }
 
@@ -475,7 +493,7 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
                 )
             );
 
-        vk::ImageView view = vulkan_state.device.createImageView(view_info, nullptr);
+        vk::ImageView view = vulkan_state.device.createImageView(view_info);
         assert(view);
 
         vulkan_state.swapchain_views[a] = view;
