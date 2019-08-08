@@ -99,8 +99,10 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
 
     uint8_t *temp_memory;
     vmaMapMemory(state.allocator, temp_allocation, reinterpret_cast<void **>(&temp_memory));
+    assert(temp_memory);
     std::memcpy(temp_memory, pixels, buffer_size);
     vmaUnmapMemory(state.allocator, temp_allocation);
+    vmaFlushAllocation(state.allocator, temp_allocation, 0, VK_WHOLE_SIZE);
 
     vk::ImageCreateInfo image_info(
         vk::ImageCreateFlags(), // No Flags
@@ -129,6 +131,30 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
 
     transfer_buffer.begin(begin_info);
 
+    vk::ImageSubresourceRange font_range(
+        vk::ImageAspectFlagBits::eColor, // Color
+        0, 1, // First Level
+        0, 1 // First Layer
+        );
+
+    vk::ImageMemoryBarrier image_transfer_optimal_barrier(
+        vk::AccessFlags(), // Was not written yet.
+        vk::AccessFlagBits::eTransferWrite, // Will be written by a transfer operation.
+        vk::ImageLayout::eUndefined, // Old Layout
+        vk::ImageLayout::eTransferDstOptimal, // New Layout
+        state.transfer_family_index, state.transfer_family_index, // No Queue Family Transition
+        state.gui_vulkan.font_texture,
+        font_range // Subresource Range
+        );
+
+    transfer_buffer.pipelineBarrier(
+        vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, // Top Of Pipe -> Transfer Stage
+        vk::DependencyFlags(), // No Dependency Flags
+        0, nullptr, // No Memory Barriers
+        0, nullptr, // No Buffer Memory Barriers
+        1, &image_transfer_optimal_barrier // 1 Image Memory Barrier
+        );
+
     vk::BufferImageCopy region(
         0, // Buffer Offset
         width, // Buffer Row Length
@@ -139,14 +165,31 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         ),
         vk::Offset3D(0, 0, 0), // Image Offset
         vk::Extent3D(width, height, 1) // Image Extent
-    );
-
+        );
 
     transfer_buffer.copyBufferToImage(
         temp_buffer, // Buffer
         state.gui_vulkan.font_texture, // Image
-        vk::ImageLayout::eUndefined, // Image Layout
+        vk::ImageLayout::eTransferDstOptimal, // Image Layout
         1, &region // Regions
+        );
+
+    vk::ImageMemoryBarrier image_shader_read_only_barrier(
+        vk::AccessFlags(), // Was not written yet.
+        vk::AccessFlagBits::eShaderRead, // Will be read by the shader.
+        vk::ImageLayout::eTransferDstOptimal, // Old Layout
+        vk::ImageLayout::eShaderReadOnlyOptimal, // New Layout
+        state.transfer_family_index, state.general_family_index, // No Queue Family Transition
+        state.gui_vulkan.font_texture,
+        font_range // Subresource Range
+        );
+
+    transfer_buffer.pipelineBarrier(
+        vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, // Transfer -> Fragment Shader Stage
+        vk::DependencyFlags(), // No Dependency Flags
+        0, nullptr, // No Memory Barriers
+        0, nullptr, // No Buffer Barriers
+        1, &image_shader_read_only_barrier // 1 Image Memory Barrier
         );
 
     transfer_buffer.end();
@@ -407,7 +450,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
             vk::BlendFactor::eSrcColor, // Src Color
             vk::BlendFactor::eDstColor, // Dst Color
             vk::BlendOp::eAdd, // Color Blend Op
-            vk::BlendFactor::eSrcAlpha, // Src Alpha
+            vk::BlendFactor::eOneMinusSrcAlpha, // Src Alpha
             vk::BlendFactor::eDstAlpha, // Dst Alpha
             vk::BlendOp::eAdd, // Alpha Blend Op
             vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA

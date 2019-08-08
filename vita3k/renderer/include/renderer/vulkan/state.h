@@ -31,6 +31,8 @@ struct VulkanState : public renderer::State {
     vk::PhysicalDevice physical_device;
     vk::PhysicalDeviceProperties physical_device_properties;
     vk::PhysicalDeviceFeatures physical_device_features;
+    vk::SurfaceCapabilitiesKHR physical_device_surface_capabilities;
+    std::vector<vk::SurfaceFormatKHR> physical_device_surface_formats;
     vk::PhysicalDeviceMemoryProperties physical_device_memory;
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
 
@@ -78,7 +80,7 @@ struct VulkanState : public renderer::State {
 
     uint32_t swapchain_image_last = 0;
     // These would be vectors...
-    std::vector<vk::Image> swapchain_images;
+    vk::Image swapchain_images[2];
     vk::ImageView swapchain_views[2];
 };
 }

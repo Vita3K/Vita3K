@@ -68,14 +68,21 @@ const static vk::PhysicalDeviceFeatures required_features({
     // etc.
 });
 
-std::vector<vk::DescriptorPoolSize> descriptor_pool_sizes = {
+const static std::vector<vk::DescriptorPoolSize> descriptor_pool_sizes = {
     vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, max_buffers),
     vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, max_images),
     vk::DescriptorPoolSize(vk::DescriptorType::eSampler, max_samplers),
 };
 
+const static std::vector<vk::Format> acceptable_surface_formats = {
+    vk::Format::eB8G8R8A8Unorm, // Molten VK
+};
+
 namespace renderer::vulkan {
-static bool device_is_compatible(vk::PhysicalDeviceProperties &properties, vk::PhysicalDeviceFeatures &features) {
+static bool device_is_compatible(
+    vk::PhysicalDeviceProperties &properties,
+    vk::PhysicalDeviceFeatures &features,
+    vk::SurfaceCapabilitiesKHR &capabilities) {
     // TODO: Do any required checks here. Should check against required_features.
 
     return true;
@@ -130,6 +137,18 @@ static bool select_queues(VulkanState &vulkan_state,
     }
 
     return found_graphics && found_transfer;
+}
+
+static vk::Format select_surface_format(std::vector<vk::SurfaceFormatKHR> &formats) {
+    for (const auto &format : formats) {
+        if (std::find(acceptable_surface_formats.begin(), acceptable_surface_formats.end(), format.format)
+            != acceptable_surface_formats.end())
+            return format.format;
+    }
+
+    assert(false);
+
+    return vk::Format::eR8G8B8A8Unorm;
 }
 
 vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type) {
@@ -193,14 +212,14 @@ void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuff
     }
 
     vk::SubmitInfo submit_info(
-        0, nullptr, // Wait Semaphores
-        nullptr, // Destination Stage Mask
+        0, nullptr, nullptr, // Wait Semaphores
         1, &buffer, // Command Buffers
         0, nullptr // Signal Semaphores
         );
 
     queue.submit(1, &submit_info, vk::Fence());
-    queue.waitIdle();
+    if (wait_idle)
+        queue.waitIdle();
 }
 
 vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, MemoryType type, VmaAllocation &allocation) {
@@ -225,7 +244,11 @@ vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, 
     allocation_info.pUserData = nullptr;
 
     VkBuffer buffer;
-    vmaCreateBuffer(state.allocator, (VkBufferCreateInfo *)&buffer_info, &allocation_info, &buffer, &allocation, nullptr);
+    assert(vmaCreateBuffer(state.allocator,
+        reinterpret_cast<VkBufferCreateInfo *>(&buffer_info),
+        &allocation_info, &buffer, &allocation, nullptr) == VK_SUCCESS);
+    assert(allocation != VK_NULL_HANDLE);
+    assert(buffer != VK_NULL_HANDLE);
 
     return buffer;
 }
@@ -256,7 +279,11 @@ vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, Memo
     allocation_info.pUserData = nullptr;
 
     VkImage image;
-    vmaCreateImage(state.allocator, (VkImageCreateInfo *)&image_info, &allocation_info, &image, &allocation, nullptr);
+    assert(vmaCreateImage(state.allocator,
+        reinterpret_cast<VkImageCreateInfo *>(&image_info),
+        &allocation_info, &image, &allocation, nullptr) == VK_SUCCESS);
+    assert(allocation != VK_NULL_HANDLE);
+    assert(image != VK_NULL_HANDLE);
 
     return image;
 }
@@ -264,27 +291,6 @@ vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, Memo
 void free_image(VulkanState &state, vk::Image image, VmaAllocation allocation) {
     vmaDestroyImage(state.allocator, image, allocation);
 }
-
-//bool allocate_memory(VulkanState &state, vk::MemoryRequirements memory_requirements, vk::DeviceMemory &memory, size_t &offset) {
-//    // TODO: This should adapt to the requirements of the image instead of just shutting down if does not support it.
-//    if ((memory_requirements.memoryTypeBits >> state.private_memory_index) & 1u)
-//        return false;
-//
-//    memory = state.private_memory;
-//
-//    size_t remainder = state.private_memory_pointer % memory_requirements.alignment;
-//    if (remainder != 0)
-//        state.private_memory_pointer = state.private_memory_pointer - remainder + memory_requirements.alignment;
-//
-//    offset = state.private_memory_pointer;
-//
-//    state.private_memory_pointer += memory_requirements.size;
-//    // set private_memory_size to something
-//    if (state.private_memory_pointer >= state.private_memory_size)
-//        return false;
-//
-//    return true;
-//}
 
 // TODO: Replace asserts for vulkan methods and VULKAN_CHECK so the method fails.
 bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
@@ -298,17 +304,24 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             org_name, // Engine Name, using org instead.
             0, // Engine Version
             VK_MAKE_VERSION(1, 0, 0) // Lowest possible.
-        );
+            );
 
         vk::InstanceCreateInfo instance_info(
             vk::InstanceCreateFlags(), // No Flags
             &app_info, // App Info
             instance_layers.size(), instance_layers.data(), // No Layers
             instance_extensions.size(), instance_extensions.data() // No Extensions
-        );
+            );
 
         vulkan_state.instance = vk::createInstance(instance_info, nullptr);
         assert(vulkan_state.instance);
+    }
+
+    // Create Surface
+    {
+        VkSurfaceKHR surface;
+        assert(SDL_Vulkan_CreateSurface(window.get(), vulkan_state.instance, &surface));
+        vulkan_state.surface = vk::SurfaceKHR(surface);
     }
 
     // Select Physical Device
@@ -318,10 +331,13 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         for (const auto &device : physical_devices) {
             vk::PhysicalDeviceProperties properties = device.getProperties();
             vk::PhysicalDeviceFeatures features = device.getFeatures();
-            if (device_is_compatible(properties, features)) {
+            vk::SurfaceCapabilitiesKHR capabilities = device.getSurfaceCapabilitiesKHR(vulkan_state.surface);
+            if (device_is_compatible(properties, features, capabilities)) {
                 vulkan_state.physical_device = device;
                 vulkan_state.physical_device_properties = properties;
                 vulkan_state.physical_device_features = features;
+                vulkan_state.physical_device_surface_capabilities = capabilities;
+                vulkan_state.physical_device_surface_formats = device.getSurfaceFormatsKHR(vulkan_state.surface);
                 vulkan_state.physical_device_memory = device.getMemoryProperties();
                 vulkan_state.physical_device_queue_families = device.getQueueFamilyProperties();
                 break;
@@ -336,6 +352,9 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         std::vector<vk::DeviceQueueCreateInfo> queue_infos;
         std::vector<std::vector<float>> queue_priorities;
         assert(select_queues(vulkan_state, queue_infos, queue_priorities));
+
+        assert(vulkan_state.physical_device.getSurfaceSupportKHR(
+            vulkan_state.general_family_index, vulkan_state.surface));
 
         vk::DeviceCreateInfo device_info(
             vk::DeviceCreateFlags(), // No Flags
@@ -365,12 +384,12 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         vk::CommandPoolCreateInfo general_pool_info(
             vk::CommandPoolCreateFlagBits::eResetCommandBuffer, // Flags
             vulkan_state.general_family_index // Queue Family Index
-        );
+            );
 
         vk::CommandPoolCreateInfo transfer_pool_info(
             vk::CommandPoolCreateFlagBits::eTransient, // Flags
             vulkan_state.transfer_family_index // Queue Family Index
-        );
+            );
 
         vulkan_state.general_command_pool = vulkan_state.device.createCommandPool(general_pool_info, nullptr);
         assert(vulkan_state.general_command_pool);
@@ -394,7 +413,8 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         allocator_info.pVulkanFunctions = nullptr; // VMA_STATIC_VULKAN_FUNCTIONS 1 is default I think
         allocator_info.pRecordSettings = nullptr;
 
-        vmaCreateAllocator(&allocator_info, &vulkan_state.allocator);
+        assert(vmaCreateAllocator(&allocator_info, &vulkan_state.allocator) == VK_SUCCESS);
+        assert(vulkan_state.allocator != VK_NULL_HANDLE);
     }
 
     // Create Descriptor Pool
@@ -403,21 +423,15 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             vk::DescriptorPoolCreateFlags(), // No Flags
             max_sets, // Maximum Sets
             descriptor_pool_sizes.size(), descriptor_pool_sizes.data() // Descriptor Pool
-        );
+            );
 
         vulkan_state.descriptor_pool = vulkan_state.device.createDescriptorPool(descriptor_pool_info, nullptr);
         assert(vulkan_state.descriptor_pool);
     }
 
-    // Create Surface and Swapchain
+    // Create Swapchain
     {
-        VkSurfaceKHR surface;
-        assert(SDL_Vulkan_CreateSurface(window.get(), vulkan_state.instance, &surface));
-        vulkan_state.surface = vk::SurfaceKHR(surface);
-
-        assert(vulkan_state.physical_device.getSurfaceSupportKHR(
-            vulkan_state.general_family_index, vulkan_state.surface));
-
+        // TODO: Extents should be based on surface capabilities.
         vk::SwapchainCreateInfoKHR swapchain_info(
             vk::SwapchainCreateFlagsKHR(), // No Flags
             vulkan_state.surface, // Surface
@@ -434,14 +448,15 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             vk::PresentModeKHR::eFifo, // Present Mode, FIFO and Immediate are supported on MoltenVK. Would've chosen Mailbox otherwise.
             true, // Clipping
             vk::SwapchainKHR() // No old swapchain.
-        );
+            );
 
         vulkan_state.swapchain = vulkan_state.device.createSwapchainKHR(swapchain_info, nullptr);
         assert(vulkan_state.swapchain);
     }
 
     // Get Swapchain Images
-    vulkan_state.swapchain_images = vulkan_state.device.getSwapchainImagesKHR(vulkan_state.swapchain);
+    uint32_t swapchain_image_count = 2;
+    vulkan_state.device.getSwapchainImagesKHR(vulkan_state.swapchain, &swapchain_image_count, vulkan_state.swapchain_images);
 
     for (uint32_t a = 0; a < 2 /*vulkan_state.swapchain_images.size()*/; a++) {
         const auto &image = vulkan_state.swapchain_images[a];
@@ -449,7 +464,7 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             vk::ImageViewCreateFlags(), // No Flags
             image, // Image
             vk::ImageViewType::e2D, // Image View Type
-            screen_format, // Format
+            select_surface_format(vulkan_state.physical_device_surface_formats), // Format
             vk::ComponentMapping(), // Default Component Mapping
             vk::ImageSubresourceRange(
                 vk::ImageAspectFlagBits::eColor,
@@ -491,4 +506,4 @@ void close(std::unique_ptr<renderer::State> &state) {
     vulkan_state.device.destroy();
     vulkan_state.instance.destroy();
 }
-}
+} // namespace renderer::vulkan
