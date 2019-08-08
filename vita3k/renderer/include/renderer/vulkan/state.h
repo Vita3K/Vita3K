@@ -69,8 +69,14 @@ struct VulkanState : public renderer::State {
         vk::Image font_texture;
         VmaAllocation draw_allocation = VK_NULL_HANDLE;
         vk::Buffer draw_buffer;
+        size_t draw_buffer_vertices = 0;
+        VmaAllocation index_allocation = VK_NULL_HANDLE;
+        vk::Buffer index_buffer;
+        size_t index_buffer_indices = 0;
 
         vk::CommandBuffer command_buffer;
+
+        vk::Fence next_image_fence;
     } gui_vulkan;
 
     vk::DescriptorPool descriptor_pool;
