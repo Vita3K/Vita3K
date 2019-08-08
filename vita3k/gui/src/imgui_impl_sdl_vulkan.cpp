@@ -102,7 +102,6 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
     assert(temp_memory);
     std::memcpy(temp_memory, pixels, buffer_size);
     vmaUnmapMemory(state.allocator, temp_allocation);
-    vmaFlushAllocation(state.allocator, temp_allocation, 0, VK_WHOLE_SIZE);
 
     vk::ImageCreateInfo image_info(
         vk::ImageCreateFlags(), // No Flags

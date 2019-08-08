@@ -206,7 +206,7 @@ void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuff
             state.general_queue_last++;
             break;
         case CommandType::Transfer:
-            queue = state.transfer_queues[state.transfer_queue_last & state.transfer_queues.size()];
+            queue = state.transfer_queues[state.transfer_queue_last % state.transfer_queues.size()];
             state.transfer_queue_last++;
             break;
     }
