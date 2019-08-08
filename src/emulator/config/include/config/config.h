@@ -56,4 +56,5 @@ struct Config {
     std::string online_id = "Vita3K";
     bool color_surface_debug = false;
     bool hardware_flip = false;
+    bool performance_overlay = true;
 }; // struct Config

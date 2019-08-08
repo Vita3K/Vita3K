@@ -157,8 +157,15 @@ int main(int argc, char *argv[]) {
 
         gl_renderer.render(host);
 
+        // Calculate FPS
+        app::calculate_fps(host);
+
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
+
+        if (host.cfg.performance_overlay)
+            gui::draw_perf_overlay(gui, host);
+
         gui::draw_trophies_unlocked(gui);
         if (host.display.imgui_render) {
             gui::draw_ui(gui, host);

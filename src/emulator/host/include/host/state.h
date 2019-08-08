@@ -53,6 +53,7 @@ struct DisplayState {
     std::condition_variable condvar;
     std::atomic<bool> abort{ false };
     std::atomic<bool> imgui_render{ true };
+    std::atomic<bool> fullscreen{ false };
 };
 
 struct HostState {
@@ -63,6 +64,9 @@ struct HostState {
     Config cfg;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
+    uint32_t fps = 0.0f;
+    uint32_t ms_per_frame = 0.0f;
+    bool should_update_window_title = false;
     WindowPtr window;
     GLContextPtr glcontext;
     SceIVector2 drawable_size = { 0, 0 };

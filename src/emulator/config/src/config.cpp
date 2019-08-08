@@ -131,6 +131,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "online-id", &cfg.online_id, std::string("Vita3K"));
     get_yaml_value(config_node, "wait-for-debugger", &cfg.wait_for_debugger, false);
     get_yaml_value(config_node, "hardware-flip", &cfg.hardware_flip, false);
+    get_yaml_value(config_node, "performance-overlay", &cfg.performance_overlay, true);
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
         LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
@@ -183,6 +184,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "online-id", cfg.online_id);
     config_file_emit_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
     config_file_emit_single(emitter, "hardware-flip", cfg.hardware_flip);
+    config_file_emit_single(emitter, "performance-overlay", cfg.performance_overlay);
 
     emitter << YAML::EndMap;
 
@@ -241,6 +243,8 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.wait_for_debugger = rhs.wait_for_debugger;
     if (lhs.hardware_flip != rhs.hardware_flip && (!init || rhs.hardware_flip))
         lhs.hardware_flip = rhs.hardware_flip;
+    if (lhs.performance_overlay != rhs.performance_overlay && (!init || !rhs.performance_overlay))
+        lhs.performance_overlay = rhs.performance_overlay;
 
     // Not stored in config file
     if (init) {

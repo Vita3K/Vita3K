@@ -12,6 +12,7 @@ add_library(
 	src/imgui_impl_sdl_gl3.cpp
 	src/main_menubar.cpp
 	src/mutexes_dialog.cpp
+	src/perf_overlay.cpp
 	src/private.h
 	src/reinstall.cpp
 	src/semaphores_dialog.cpp

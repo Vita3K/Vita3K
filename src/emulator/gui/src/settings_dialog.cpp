@@ -298,6 +298,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Save color surfaces", &host.cfg.color_surface_debug);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
+        ImGui::Checkbox("Performance overlay", &host.cfg.performance_overlay);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Display performance information on the screen as an overlay.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();

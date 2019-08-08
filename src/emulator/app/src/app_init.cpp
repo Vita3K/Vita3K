@@ -284,7 +284,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         LOG_INFO("Your GPU supports shader interlock, some games that use programmable blending will have better performance.");
     } else if (state.features.support_texture_barrier) {
         LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
-        
+
         if (is_rtx)
             LOG_WARN("Shader interlock on GeForce RTX GPU driver is disabled due to a bug in the driver pending to be fixed.");
         else
