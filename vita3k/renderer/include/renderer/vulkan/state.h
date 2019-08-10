@@ -61,18 +61,23 @@ struct VulkanState : public renderer::State {
         vk::RenderPass renderpass;
         vk::Framebuffer framebuffer;
         vk::DescriptorSetLayout descriptor_set_layout;
+        vk::DescriptorPool descriptor_pool;
+        vk::DescriptorSet descriptor_set;
         vk::PipelineLayout pipeline_layout;
         vk::Pipeline pipeline;
 
         vk::Sampler sampler;
         VmaAllocation font_allocation = VK_NULL_HANDLE;
         vk::Image font_texture;
+        vk::ImageView font_texture_view;
         VmaAllocation draw_allocation = VK_NULL_HANDLE;
         vk::Buffer draw_buffer;
         size_t draw_buffer_vertices = 0;
         VmaAllocation index_allocation = VK_NULL_HANDLE;
         vk::Buffer index_buffer;
         size_t index_buffer_indices = 0;
+        VmaAllocation transformation_allocation = VK_NULL_HANDLE;
+        vk::Buffer transformation_buffer;
 
         vk::CommandBuffer command_buffer;
 

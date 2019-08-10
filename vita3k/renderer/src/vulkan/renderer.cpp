@@ -242,7 +242,7 @@ void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuff
         queue.waitIdle();
 }
 
-vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, MemoryType type, VmaAllocation &allocation) {
+vk::Buffer create_buffer(VulkanState &state, const vk::BufferCreateInfo &buffer_info, MemoryType type, VmaAllocation &allocation) {
     VmaMemoryUsage memory_usage;
     switch (type) {
     case MemoryType::Mappable:
@@ -265,7 +265,7 @@ vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, 
 
     VkBuffer buffer;
     VkResult result = vmaCreateBuffer(state.allocator,
-        reinterpret_cast<VkBufferCreateInfo *>(&buffer_info),
+        reinterpret_cast<const VkBufferCreateInfo *>(&buffer_info),
         &allocation_info, &buffer, &allocation, nullptr);
     assert(result == VK_SUCCESS);
     assert(allocation != VK_NULL_HANDLE);
@@ -278,7 +278,7 @@ void destroy_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocat
     vmaDestroyBuffer(state.allocator, buffer, allocation);
 }
 
-vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, MemoryType type, VmaAllocation &allocation) {
+vk::Image create_image(VulkanState &state, const vk::ImageCreateInfo &image_info, MemoryType type, VmaAllocation &allocation) {
     VmaMemoryUsage memory_usage;
     switch (type) {
     case MemoryType::Mappable:
@@ -301,7 +301,7 @@ vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, Memo
 
     VkImage image;
     VkResult result = vmaCreateImage(state.allocator,
-        reinterpret_cast<VkImageCreateInfo *>(&image_info),
+        reinterpret_cast<const VkImageCreateInfo *>(&image_info),
         &allocation_info, &image, &allocation, nullptr);
     assert(result == VK_SUCCESS);
     assert(allocation != VK_NULL_HANDLE);
