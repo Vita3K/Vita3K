@@ -19,6 +19,13 @@ const std::array<vk::ClearValue, 2> clear_values = {
     vk::ClearColorValue(clear_color),
 };
 
+// This is seperated because I use similar objects a lot and it is getting irritating to type.
+const vk::ImageSubresourceRange base_subresource_range = vk::ImageSubresourceRange(
+    vk::ImageAspectFlagBits::eColor, // Aspect
+    0, 1, // Level Range
+    0, 1 // Layer Range
+);
+
 static renderer::vulkan::VulkanState &vulkan_state(RendererPtr &renderer) {
     return reinterpret_cast<renderer::vulkan::VulkanState &>(*renderer.get());
 }
@@ -149,7 +156,16 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
 
     uint32_t image_index = ~0u;
     state.device.resetFences(1, &state.gui_vulkan.next_image_fence);
-    state.device.acquireNextImageKHR(state.swapchain, next_image_timeout, vk::Semaphore(), state.gui_vulkan.next_image_fence, &image_index);
+    vk::Result acquire_result = state.device.acquireNextImageKHR(state.swapchain, next_image_timeout,
+        vk::Semaphore(), state.gui_vulkan.next_image_fence, &image_index);
+
+    // TODO: Use semaphores so acquiring can happen at the same time as the buffer? Better sync solution please.
+    vk::Result wait_result = state.device.waitForFences(1, &state.gui_vulkan.next_image_fence,
+        true, next_image_timeout);
+    if (acquire_result == vk::Result::eTimeout || wait_result == vk::Result::eTimeout) {
+        LOG_WARN("Missed timeout for acquiring next image.");
+        return;
+    }
 
     ImGui_ImplSdlVulkan_UpdateBuffers(state, draw_data);
 
@@ -162,6 +178,16 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
 
     state.gui_vulkan.command_buffer.begin(begin_info);
 
+    // Identity for now...
+    float matrix[] = {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+    };
+
+    state.gui_vulkan.command_buffer.updateBuffer(state.gui_vulkan.transformation_buffer, 0, sizeof(matrix), matrix);
+
     vk::RenderPassBeginInfo renderpass_begin_info(
         state.gui_vulkan.renderpass, // Renderpass
         state.gui_vulkan.framebuffer, // Framebuffer
@@ -173,32 +199,39 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
 
     state.gui_vulkan.command_buffer.beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
     state.gui_vulkan.command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, state.gui_vulkan.pipeline);
+    state.gui_vulkan.command_buffer.bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics, // Bind Point
+        state.gui_vulkan.pipeline_layout, // Layout
+        0, // First Set
+        1, &state.gui_vulkan.descriptor_set, // Sets
+        0, nullptr // Dynamic Offsets
+        );
 
     state.gui_vulkan.command_buffer.endRenderPass();
 
-    // TODO: Oh god we need an image.
-//    vk::ImageMemoryBarrier color_attachment_present_barrier(
-//        vk::AccessFlagBits::eColorAttachmentWrite, // From rendering
-//        vk::AccessFlagBits::eMemoryRead, // To readable format for presenting
-//        vk::ImageLayout::eColorAttachmentOptimal,
-//        vk::ImageLayout::ePresentSrcKHR,
-//        state.general_family_index, state.general_family_index, // No Transfer
-//        );
-//
-//    state.gui_vulkan.command_buffer.pipelineBarrier(
-//        vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eBottomOfPipe, // Color Attachment Output -> Bottom of Pipe Stage
-//        vk::DependencyFlags(), // No Dependency Flags
-//        0, nullptr, // No Memory Barriers
-//        0, nullptr, // No Buffer Barriers
-//        1, &color_attachment_present_barrier // Image Barrier
-//        );
+    vk::ImageMemoryBarrier color_attachment_present_barrier(
+        vk::AccessFlagBits::eColorAttachmentWrite, // From rendering
+        vk::AccessFlagBits::eMemoryRead, // To readable format for presenting
+        vk::ImageLayout::eColorAttachmentOptimal,
+        vk::ImageLayout::ePresentSrcKHR,
+        state.general_family_index, state.general_family_index, // No Transfer
+        state.swapchain_images[image_index], // Image
+        base_subresource_range
+        );
+
+    state.gui_vulkan.command_buffer.pipelineBarrier(
+        vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eBottomOfPipe, // Color Attachment Output -> Bottom of Pipe Stage
+        vk::DependencyFlags(), // No Dependency Flags
+        0, nullptr, // No Memory Barriers
+        0, nullptr, // No Buffer Barriers
+        1, &color_attachment_present_barrier // Image Barrier
+        );
 
     state.gui_vulkan.command_buffer.end();
 
     // This is wait idle to ensure presentation happens after render. The command buffer should instead signal a fence or something.
     renderer::vulkan::submit_command_buffer(state, renderer::vulkan::CommandType::General, state.gui_vulkan.command_buffer, true);
 
-    state.device.waitForFences(1, &state.gui_vulkan.next_image_fence, true, next_image_timeout);
     renderer::vulkan::present(state, image_index);
 }
 
@@ -268,12 +301,6 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
 
     transfer_buffer.begin(begin_info);
 
-    vk::ImageSubresourceRange font_range(
-        vk::ImageAspectFlagBits::eColor, // Color
-        0, 1, // First Level
-        0, 1 // First Layer
-    );
-
     vk::ImageMemoryBarrier image_transfer_optimal_barrier(
         vk::AccessFlags(), // Was not written yet.
         vk::AccessFlagBits::eTransferWrite, // Will be written by a transfer operation.
@@ -281,7 +308,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::ImageLayout::eTransferDstOptimal, // New Layout
         state.transfer_family_index, state.transfer_family_index, // No Queue Family Transition
         state.gui_vulkan.font_texture,
-        font_range // Subresource Range
+        base_subresource_range // Subresource Range
     );
 
     transfer_buffer.pipelineBarrier(
@@ -318,7 +345,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::ImageLayout::eShaderReadOnlyOptimal, // New Layout
         state.transfer_family_index, state.general_family_index, // No Queue Family Transition
         state.gui_vulkan.font_texture,
-        font_range // Subresource Range
+        base_subresource_range // Subresource Range
     );
 
     transfer_buffer.pipelineBarrier(
@@ -336,7 +363,18 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
 
     renderer::vulkan::destroy_buffer(state, temp_buffer, temp_allocation);
 
-    io.Fonts->TexID = reinterpret_cast<ImTextureID>(static_cast<VkImage>(state.gui_vulkan.font_texture));
+    vk::ImageViewCreateInfo font_view_info(
+        vk::ImageViewCreateFlags(), // No Flags
+        state.gui_vulkan.font_texture, // Image
+        vk::ImageViewType::e2D, // Image View Type
+        vk::Format::eR8G8B8A8Uint, // Image View Format
+        vk::ComponentMapping(), // Default Component Mapping (RGBA)
+        base_subresource_range // Subresource Range
+        );
+
+    state.gui_vulkan.font_texture_view = state.device.createImageView(font_view_info);
+
+    io.Fonts->TexID = reinterpret_cast<ImTextureID>(static_cast<VkImageView>(state.gui_vulkan.font_texture_view));
 
     return true;
 }
@@ -456,20 +494,29 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
         return false;
     }
 
-    vk::DescriptorSetLayoutBinding texture_binding_info(
-        0, // Binding
-        vk::DescriptorType::eCombinedImageSampler, // Descriptor Type
-        1, // Array Size
-        vk::ShaderStageFlagBits::eFragment, // Usage Stage
-        &state.gui_vulkan.sampler // Used Samplers
-    );
+    std::vector<vk::DescriptorSetLayoutBinding> descriptor_layout_bindings = {
+        vk::DescriptorSetLayoutBinding(
+            0, // Binding
+            vk::DescriptorType::eUniformBuffer, // Descriptor Type
+            1, // Array Size
+            vk::ShaderStageFlagBits::eVertex, // Usage Stage
+            nullptr // Used Samplers
+            ),
+        vk::DescriptorSetLayoutBinding(
+            1, // Binding
+            vk::DescriptorType::eCombinedImageSampler, // Descriptor Type
+            1, // Array Size
+            vk::ShaderStageFlagBits::eFragment, // Usage Stage
+            &state.gui_vulkan.sampler // Used Samplers
+            ),
+    };
 
-    vk::DescriptorSetLayoutCreateInfo descriptor_info(
+    vk::DescriptorSetLayoutCreateInfo descriptor_layout_info(
         vk::DescriptorSetLayoutCreateFlags(), // No Flags
-        1, &texture_binding_info // Bindings
+        descriptor_layout_bindings.size(), descriptor_layout_bindings.data() // Bindings
     );
 
-    state.gui_vulkan.descriptor_set_layout = state.device.createDescriptorSetLayout(descriptor_info, nullptr);
+    state.gui_vulkan.descriptor_set_layout = state.device.createDescriptorSetLayout(descriptor_layout_info, nullptr);
     if (!state.gui_vulkan.descriptor_set_layout) {
         LOG_ERROR("Failed to create Vulkan gui descriptor layout.");
         return false;
@@ -615,7 +662,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     );
 
     std::vector<vk::DynamicState> dynamic_states = {
-        // Nothing so far...
+        vk::DynamicState::eViewport,
     };
 
     vk::PipelineDynamicStateCreateInfo gui_pipeline_dynamic_info(
@@ -647,12 +694,87 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
         return false;
     }
 
-    ImGui_ImplSdlVulkan_CreateFontsTexture(state);
+    if (!ImGui_ImplSdlVulkan_CreateFontsTexture(state)) {
+        LOG_ERROR("Failed to create Vulkan gui font texture.");
+        return false;
+    }
+
+    constexpr size_t mat4_size = sizeof(float) * 4 * 4;
+
+    vk::BufferCreateInfo transformation_buffer_create_info(
+        vk::BufferCreateFlags(), // No Flags
+        mat4_size, // Size
+        vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformBuffer, // Usage Flags
+        vk::SharingMode::eExclusive, 0, nullptr // Exclusive Sharing
+    );
+
+    state.gui_vulkan.transformation_buffer = renderer::vulkan::create_buffer(state, transformation_buffer_create_info,
+        renderer::vulkan::MemoryType::Device, state.gui_vulkan.transformation_allocation);
+
+    // Create Descriptor Pool and Set
+    {
+        std::vector<vk::DescriptorPoolSize> pool_sizes = {
+            vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
+            vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1),
+        };
+
+        vk::DescriptorPoolCreateInfo descriptor_pool_info(
+            vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, // Flags
+            1, // Max Sets
+            pool_sizes.size(), pool_sizes.data() // Pool Sizes
+        );
+
+        state.gui_vulkan.descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
+
+        vk::DescriptorSetAllocateInfo descriptor_info(
+            state.gui_vulkan.descriptor_pool, // Descriptor Pool
+            1, &state.gui_vulkan.descriptor_set_layout // Set Information
+        );
+
+        state.gui_vulkan.descriptor_set = state.device.allocateDescriptorSets(descriptor_info)[0];
+        if (!state.gui_vulkan.descriptor_set) {
+            LOG_ERROR("Failed to create Vulkan gui descriptor set.");
+            return false;
+        }
+
+        vk::DescriptorBufferInfo uniform_buffer_info(
+            state.gui_vulkan.transformation_buffer, // Buffer
+            0, mat4_size // Range
+        );
+
+        vk::DescriptorImageInfo sampler_image_info(
+            state.gui_vulkan.sampler, // Sampler
+            state.gui_vulkan.font_texture_view, // Image View
+            vk::ImageLayout::eShaderReadOnlyOptimal // Image Layout
+        );
+
+        std::vector<vk::WriteDescriptorSet> write_descriptor_sets = {
+            vk::WriteDescriptorSet(
+                state.gui_vulkan.descriptor_set, // Descriptor Set
+                0, // Binding
+                0, 1, // Array Range
+                vk::DescriptorType::eUniformBuffer, // Descriptor Type
+                nullptr, // Image Info
+                &uniform_buffer_info, // Buffer Info
+                nullptr // Buffer Texel Views
+                ),
+            vk::WriteDescriptorSet(
+                state.gui_vulkan.descriptor_set, // Descriptor Set
+                1, // Binding
+                0, 1, // Array Range
+                vk::DescriptorType::eCombinedImageSampler, // Descriptor Type
+                &sampler_image_info, // Image Info
+                nullptr, // Buffer Info
+                nullptr // Buffer Texel Views
+                )
+        };
+
+        state.device.updateDescriptorSets(write_descriptor_sets, {});
+    }
 
     state.gui_vulkan.command_buffer = renderer::vulkan::create_command_buffer(state, renderer::vulkan::CommandType::General);
 
     vk::FenceCreateInfo next_image_fence_info((vk::FenceCreateFlags()));
-
     state.gui_vulkan.next_image_fence = state.device.createFence(next_image_fence_info);
 
     return true;
