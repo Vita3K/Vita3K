@@ -24,7 +24,6 @@
 #include <host/functions.h>
 #include <host/load_self.h>
 #include <io/functions.h>
-#include <io/types.h>
 #include <kernel/functions.h>
 #include <kernel/thread/sync_primitives.h>
 #include <kernel/thread/thread_functions.h>
@@ -34,13 +33,8 @@
 #include <util/log.h>
 
 #include <psp2/kernel/error.h>
-#include <psp2/kernel/threadmgr.h>
-#undef st_atime
-#undef st_ctime
-#undef st_mtime
-#include <psp2/io/dirent.h>
-#include <psp2/io/stat.h>
 #include <psp2/kernel/modulemgr.h>
+#include <psp2/kernel/threadmgr.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -258,7 +252,7 @@ EXPORT(int, sceClibStrlcpyChk) {
 
 EXPORT(int, sceClibStrncasecmp, const char *string1, const char *string2, int count) {
 #ifdef WIN32
-    return strnicmp(string1, string2, count);
+    return _strnicmp(string1, string2, count);
 #else
     return strncasecmp(string1, string2, count);
 #endif
@@ -357,26 +351,26 @@ EXPORT(int, sceIoDevctlAsync) {
 }
 
 EXPORT(int, sceIoDopen, const char *dir) {
-    return open_dir(host.io, dir, host.pref_path.c_str(), export_name);
+    return open_dir(host.io, dir, host.pref_path, export_name);
 }
 
-EXPORT(int, sceIoDread, SceUID fd, emu::SceIoDirent *dir) {
+EXPORT(int, sceIoDread, const SceUID fd, emu::SceIoDirent *dir) {
     if (dir == nullptr) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     }
-    return read_dir(host.io, fd, dir, host.pref_path.c_str(), host.kernel.base_tick.tick, export_name);
+    return read_dir(host.io, fd, dir, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(host.io, file, stat, host.pref_path.c_str(), host.kernel.base_tick.tick, export_name);
+    return stat_file(host.io, file, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoGetstatByFd, const int fd, SceIoStat *stat) {
-    return stat_file_by_fd(host.io, fd, stat, host.pref_path.c_str(), host.kernel.base_tick.tick, export_name);
+EXPORT(int, sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
+    return stat_file_by_fd(host.io, fd, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoIoctl) {
@@ -387,7 +381,7 @@ EXPORT(int, sceIoIoctlAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceOff, sceIoLseek, SceUID fd, SceOff offset, int whence) {
+EXPORT(SceOff, sceIoLseek, const SceUID fd, const SceOff offset, const SceIoSeekMode whence) {
     return seek_file(fd, offset, whence, host.io, export_name);
 }
 
@@ -395,30 +389,30 @@ EXPORT(int, sceIoLseekAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoMkdir, const char *dir, SceMode mode) {
-    return create_dir(host.io, dir, mode, host.pref_path.c_str(), export_name);
+EXPORT(int, sceIoMkdir, const char *dir, const SceMode mode) {
+    return create_dir(host.io, dir, mode, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoMkdirAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceUID, sceIoOpen, const char *file, int flags, SceMode mode) {
+EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode) {
     if (file == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     LOG_INFO("Opening file: {}", file);
-    return open_file(host.io, file, flags, host.pref_path.c_str(), export_name);
+    return open_file(host.io, file, flags, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoOpenAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoPread, SceUID fd, void *data, SceSize size, SceOff offset) {
-    SceOff pos = tell_file(host.io, fd, export_name);
+EXPORT(int, sceIoPread, const SceUID fd, void *data, const SceSize size, const SceOff offset) {
+    auto pos = tell_file(host.io, fd, export_name);
     if (pos < 0) {
-        return pos;
+        return static_cast<int>(pos);
     }
     seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, host.io, export_name);
     const int res = read_file(data, host.io, fd, size, export_name);
@@ -430,10 +424,10 @@ EXPORT(int, sceIoPreadAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoPwrite, SceUID fd, const void *data, SceSize size, SceOff offset) {
-    SceOff pos = tell_file(host.io, fd, export_name);
+EXPORT(int, sceIoPwrite, const SceUID fd, const void *data, const SceSize size, const SceOff offset) {
+    auto pos = tell_file(host.io, fd, export_name);
     if (pos < 0) {
-        return pos;
+        return static_cast<int>(pos);
     }
     seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, host.io, export_name);
     const int res = write_file(fd, data, size, host.io, export_name);
@@ -453,7 +447,7 @@ EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_file(host.io, path, host.pref_path.c_str(), export_name);
+    return remove_file(host.io, path, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRemoveAsync) {
@@ -472,7 +466,7 @@ EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_dir(host.io, path, host.pref_path.c_str(), export_name);
+    return remove_dir(host.io, path, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRmdirAsync) {
@@ -1105,36 +1099,36 @@ EXPORT(int, sceKernelGetTimerTime) {
  * \param error_val Error value on failure
  * \return True on success, false on failure
  */
-bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, HostState &host, const char *export_name, char *path, int &error_val) {
+bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, HostState &host, const char *export_name, const char *path, int &error_val) {
     const auto &loaded_modules = host.kernel.loaded_modules;
 
-    SceKernelModuleInfoPtrs::const_iterator module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [path](const auto &p) {
+    auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [path](const auto &p) {
         return std::string(p.second->path) == path;
     });
 
     if (module_iter == loaded_modules.end()) {
         // module is not loaded, load it here
 
-        SceUID file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path.c_str(), export_name);
+        const auto file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path, export_name);
         if (file < 0) {
             error_val = RET_ERROR(file);
             return false;
         }
-        int size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
+        const auto size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
         if (size < 0) {
             error_val = RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
             return false;
         }
 
         if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0) {
-            error_val = RET_ERROR(size);
+            error_val = RET_ERROR(static_cast<int>(size));
             return false;
         }
 
-        char *data = new char[size];
+        auto *data = new char[static_cast<int>(size) + 1]; // null-terminated char array
         if (read_file(data, host.io, file, size, export_name) < 0) {
             delete[] data;
-            error_val = RET_ERROR(size);
+            error_val = RET_ERROR(static_cast<int>(size));
             return false;
         }
 

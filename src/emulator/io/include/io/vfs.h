@@ -15,26 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#ifndef DEVICE
-    #define DEVICE(x,y)
-#endif
+#pragma once
 
-DEVICE("addcont0", ADDCONT0)
-DEVICE("app0", APP0)
-DEVICE("gro0", GRO0)
-DEVICE("grw0", GRW0)
-DEVICE("os0", OS0)
-DEVICE("pd0", PD0)
-DEVICE("sa0", SA0)
-DEVICE("savedata0", SAVEDATA0)
-DEVICE("savedata1", SAVEDATA1)
-DEVICE("sd0", SD0)
-DEVICE("tm0", TM0)
-DEVICE("tty0", TTY0)
-DEVICE("tty1", TTY1)
-DEVICE("ud0", UD0)
-DEVICE("uma0", UMA0)
-DEVICE("ur0", UR0)
-DEVICE("ux0", UX0)
-DEVICE("vd0", VD0)
-DEVICE("vs0", VS0)
+#include <psp2/types.h>
+
+#include <util/fs.h>
+
+class VitaIoDevice;
+
+namespace vfs {
+using FileBuffer = std::vector<SceUInt8>;
+
+bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const fs::path &vfs_file_path);
+bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string &title_id, const fs::path &vfs_file_path);
+} // namespace vfs

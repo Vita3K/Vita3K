@@ -23,7 +23,7 @@
 #include <host/load_self.h>
 #include <host/sfo.h>
 #include <io/functions.h>
-#include <io/io.h>
+#include <io/vfs.h>
 #include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <modules/module_parent.h>
@@ -153,7 +153,6 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState 
             mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_path().string().c_str(), 0);
         }
     }
-    fs::create_directories(fs::path(host.pref_path) / "ux0/user/00/savedata" / host.io.title_id);
 
     LOG_INFO("{} installed succesfully!", host.io.title_id);
     return true;
@@ -242,6 +241,10 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
             return FileNotFound;
     } else
         return FileNotFound;
+
+    host.io.pref_save_path = host.pref_path + "/ux0/user/00/savedata/" + host.io.title_id + '/';
+    if (!fs::exists(host.io.pref_save_path))
+        fs::create_directories(host.io.pref_save_path);
 
     return Success;
 }

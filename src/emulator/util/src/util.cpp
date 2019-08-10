@@ -149,6 +149,14 @@ std::string remove_special_chars(std::string str) {
     return str;
 }
 
+// Based on: https://stackoverflow.com/a/23135441
+// Search and replace "in" with "out" in the given string
+void replace(std::string &str, const std::string &in, const std::string &out) {
+    for (auto start = str.find(in); start != std::string::npos; start = str.find(in)) {
+        str.replace(str.find(in), in.length(), out);
+    }
+}
+
 #ifdef WIN32
 std::string utf16_to_utf8(const std::u16string &str) {
     std::wstring_convert<std::codecvt_utf8_utf16<int16_t>, int16_t> myconv;

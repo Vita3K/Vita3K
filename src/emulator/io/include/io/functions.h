@@ -17,33 +17,38 @@
 
 #pragma once
 
-#include <psp2/types.h>
+#undef st_atime
+#undef st_ctime
+#undef st_mtime
+#include <psp2/io/dirent.h>
+#include <psp2/io/fcntl.h>
+#include <psp2/io/stat.h>
 
 #include <io/types.h>
+
 #include <util/fs.h>
 
-#include <miniz.h>
 #include <string>
 
 struct IOState;
-struct SceIoStat;
-struct SceIoDirent;
+
+inline SceUID invalid_fd = -1;
 
 void init_device_paths(IOState &io);
-
 bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path);
-SceUID open_file(IOState &io, const std::string &path_, int flags, const char *pref_path, const char *export_name);
+
+SceUID open_file(IOState &io, const char *path, const int flags, const std::string &pref_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);
-SceOff seek_file(SceUID fd, SceOff offset, int whence, IOState &io, const char *export_name);
+SceOff seek_file(SceUID fd, SceOff offset, SceIoSeekMode whence, IOState &io, const char *export_name);
+SceOff tell_file(IOState &io, const SceUID fd, const char *export_name);
+int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string &pref_path, SceUInt64 base_tick, const char *export_name, SceUID fd = invalid_fd);
+int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const std::string &pref_path, SceUInt64 base_tick, const char *export_name);
 int close_file(IOState &io, SceUID fd, const char *export_name);
-int create_dir(IOState &io, const char *dir, int mode, const char *pref_path, const char *export_name, const bool recursive = false);
-int remove_file(IOState &io, const char *file, const char *pref_path, const char *export_name);
-int remove_dir(IOState &io, const char *dir, const char *pref_path, const char *export_name);
-int stat_file(IOState &io, const char *file, SceIoStat *stat, const char *pref_path, uint64_t base_tick, const char *export_name);
-int stat_file_by_fd(IOState &io, const int fd, SceIoStat *statp, const char *pref_path, uint64_t base_tick, const char *export_name);
-SceOff tell_file(IOState &io, SceUID fd, const char *export_name);
+int remove_file(IOState &io, const char *file, const std::string &pref_path, const char *export_name);
 
-int open_dir(IOState &io, const char *path, const char *pref_path, const char *export_name);
-int read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const char *pref_path, uint64_t base_tick, const char *export_name);
+SceUID open_dir(IOState &io, const char *path, const std::string &pref_path, const char *export_name);
+SceUID read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const std::string &pref_path, const SceUInt64 base_tick, const char *export_name);
+int create_dir(IOState &io, const char *dir, int mode, const std::string &pref_path, const char *export_name, const bool recursive = false);
 int close_dir(IOState &io, SceUID fd, const char *export_name);
+int remove_dir(IOState &io, const char *dir, const std::string &pref_path, const char *export_name);

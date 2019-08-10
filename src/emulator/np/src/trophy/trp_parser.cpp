@@ -20,6 +20,8 @@
 #include <np/trophy/trp_parser.h>
 #include <util/bytes.h>
 
+#include <cstring>
+
 namespace emu::np::trophy {
 
 static constexpr std::uint32_t NP_TRP_HEADER_MAGIC = 0x004DA2DC;
