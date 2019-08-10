@@ -15,8 +15,8 @@
 #include <SDL.h>
 #include <SDL_video.h>
 
-#include <sstream>
 #include <cassert>
+#include <sstream>
 
 namespace renderer::gl {
 namespace texture {
@@ -119,7 +119,7 @@ void bind_fundamental(GLContext &context) {
 }
 
 #if MICROPROFILE_ENABLED
-    static void before_callback(const char *name, void *funcptr, int len_args, ...) {
+static void before_callback(const char *name, void *funcptr, int len_args, ...) {
     const MicroProfileToken token = MicroProfileGetToken("OpenGL", name, MP_CYAN, MicroProfileTokenTypeCpu);
     MICROPROFILE_ENTER_TOKEN(token);
 }
@@ -131,7 +131,7 @@ static void after_callback(const char *name, void *funcptr, int len_args, ...) {
 #ifndef NDEBUG
         std::stringstream gl_error;
         gl_error << error;
-            LOG_ERROR("OpenGL: {} set error {}.", name, gl_error.str());
+        LOG_ERROR("OpenGL: {} set error {}.", name, gl_error.str());
         assert(false);
 #else
         LOG_ERROR("OpenGL error: {}", log_hex(static_cast<std::uint32_t>(error)));
@@ -140,50 +140,50 @@ static void after_callback(const char *name, void *funcptr, int len_args, ...) {
 }
 
 static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                                  const GLchar *message, const void *userParam) {
+    const GLchar *message, const void *userParam) {
     const char *type_str = nullptr;
 
-    switch (type){
-        case GL_DEBUG_TYPE_ERROR:
-            type_str = "ERROR";
-            break;
-        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-            type_str = "DEPRECATED_BEHAVIOR";
-            break;
-        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-            type_str = "UNDEFINED_BEHAVIOR";
-            break;
-        case GL_DEBUG_TYPE_PORTABILITY:
-            type_str = "PORTABILITY";
-            break;
-        case GL_DEBUG_TYPE_PERFORMANCE:
-            type_str = "PERFORMANCE";
-            break;
-        case GL_DEBUG_TYPE_OTHER:
-            type_str = "OTHER";
-            break;
-        default:
-            type_str = "UNKTYPE";
-            break;
+    switch (type) {
+    case GL_DEBUG_TYPE_ERROR:
+        type_str = "ERROR";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        type_str = "DEPRECATED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        type_str = "UNDEFINED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        type_str = "PORTABILITY";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        type_str = "PERFORMANCE";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+        type_str = "OTHER";
+        break;
+    default:
+        type_str = "UNKTYPE";
+        break;
     }
 
     const char *severity_fmt = nullptr;
     switch (severity) {
-        case GL_DEBUG_SEVERITY_LOW:
-            severity_fmt = "LOW";
-            break;
-        case GL_DEBUG_SEVERITY_MEDIUM:
-            severity_fmt = "MEDIUM";
-            break;
-        case GL_DEBUG_SEVERITY_HIGH:
-            severity_fmt = "HIGH";
-            break;
-        default:
-            severity_fmt = "UNKSERV";
-            break;
+    case GL_DEBUG_SEVERITY_LOW:
+        severity_fmt = "LOW";
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severity_fmt = "MEDIUM";
+        break;
+    case GL_DEBUG_SEVERITY_HIGH:
+        severity_fmt = "HIGH";
+        break;
+    default:
+        severity_fmt = "UNKSERV";
+        break;
     }
 
-        LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
+    LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
 }
 
 bool create(WindowPtr &window, std::unique_ptr<State> &state) {
@@ -192,10 +192,10 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     // Recursively create GL version until one accepts
     // Major 4 is mandantory
     const int accept_gl_version[] = {
-        5,      // OpenGL 4.5
-        3,      // OpenGL 4.3
-        2,      // OpenGL 4.2
-        1       // OpenGL 4.1
+        5, // OpenGL 4.5
+        3, // OpenGL 4.3
+        2, // OpenGL 4.2
+        1 // OpenGL 4.1
     };
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -229,7 +229,7 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     glad_set_post_callback(after_callback);
 
     // Detect feature
-    std::string version = reinterpret_cast<const GLchar*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+    std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
@@ -257,7 +257,7 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     int total_extensions = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
 
-    std::unordered_map<std::string, bool*> check_extensions = {
+    std::unordered_map<std::string, bool *> check_extensions = {
         { "GL_ARB_fragment_shader_interlock", &gl_state->features.support_shader_interlock },
         { "GL_ARB_texture_barrier", &gl_state->features.support_texture_barrier },
         { "GL_EXT_shader_framebuffer_fetch", &gl_state->features.direct_fragcolor },
@@ -265,7 +265,7 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     };
 
     for (int i = 0; i < total_extensions; i++) {
-        const std::string extension = reinterpret_cast<const GLchar*>(glGetStringi(GL_EXTENSIONS, i));
+        const std::string extension = reinterpret_cast<const GLchar *>(glGetStringi(GL_EXTENSIONS, i));
         auto find_result = check_extensions.find(extension);
 
         if (find_result != check_extensions.end()) {
@@ -310,10 +310,7 @@ bool create(std::unique_ptr<Context> &context) {
     context = std::make_unique<GLContext>();
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    return !(!texture::init(gl_context->texture_cache) ||
-             !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) ||
-             !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) ||
-             !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers));
+    return !(!texture::init(gl_context->texture_cache) || !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) || !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers));
 }
 
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {

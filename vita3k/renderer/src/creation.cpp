@@ -22,8 +22,8 @@
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
-#include <renderer/vulkan/functions.h>
 #include <renderer/texture_cache_state.h>
+#include <renderer/vulkan/functions.h>
 
 #include "driver_functions.h"
 
@@ -112,14 +112,16 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
 
 bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend) {
     switch (backend) {
-        case Backend::OpenGL:
-            state = std::make_unique<gl::GLState>();
-            gl::create(window, state);
-            break;
-        case Backend::Vulkan:
-            state = std::make_unique<vulkan::VulkanState>();
-            vulkan::create(window, state);
-            break;
+    case Backend::OpenGL:
+        state = std::make_unique<gl::GLState>();
+        if (!gl::create(window, state))
+            return false;
+        break;
+    case Backend::Vulkan:
+        state = std::make_unique<vulkan::VulkanState>();
+        if (!vulkan::create(window, state))
+            return false;
+        break;
     }
 
     state->current_backend = backend;
@@ -129,4 +131,4 @@ bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend) {
 
     return true;
 }
-}
+} // namespace renderer

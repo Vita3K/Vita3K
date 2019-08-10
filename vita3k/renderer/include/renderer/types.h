@@ -9,9 +9,9 @@
 
 #include <map>
 #include <memory>
+#include <string>
 #include <tuple>
 #include <vector>
-#include <string>
 
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;

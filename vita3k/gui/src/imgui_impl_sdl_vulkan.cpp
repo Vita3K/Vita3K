@@ -1,8 +1,10 @@
 #include <gui/imgui_impl_sdl_vulkan.h>
 
 #include <renderer/types.h>
-#include <renderer/vulkan/state.h>
 #include <renderer/vulkan/functions.h>
+#include <renderer/vulkan/state.h>
+
+#include <util/log.h>
 
 #include <SDL_vulkan.h>
 
@@ -17,28 +19,30 @@ const std::array<vk::ClearValue, 2> clear_values = {
     vk::ClearColorValue(clear_color),
 };
 
-
 static renderer::vulkan::VulkanState &vulkan_state(RendererPtr &renderer) {
     return reinterpret_cast<renderer::vulkan::VulkanState &>(*renderer.get());
 }
 
 static vk::ShaderModule load_shader(vk::Device device, const std::string &path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
-    assert(file.good());
+    if (!file.good()) {
+        LOG_ERROR("Could not find shader SPIR-V at `{}`.", path);
+        return vk::ShaderModule();
+    }
     std::vector<char> shader_data(file.tellg());
     file.seekg(0, std::ios::beg);
 
-    file.read(reinterpret_cast<char *>(shader_data.data()), shader_data.size());
+    file.read(shader_data.data(), shader_data.size());
     file.close();
 
     vk::ShaderModuleCreateInfo shader_info(
-        vk::ShaderModuleCreateFlags(),
-        shader_data.size(),
-        reinterpret_cast<uint32_t *>(shader_data.data())
-        );
+        vk::ShaderModuleCreateFlags(), // No Flags
+        shader_data.size(), reinterpret_cast<uint32_t *>(shader_data.data()) // Code
+    );
 
     vk::ShaderModule module = device.createShaderModule(shader_info, nullptr);
-    assert(module);
+    if (!module)
+        LOG_ERROR("Could not build Vulkan shader module from SPIR-V at `{}`.", path);
 
     return module;
 }
@@ -58,6 +62,8 @@ IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(RendererPtr &renderer) {
 
 // Only one mapping can be created on a section of memory at a time. This method is split into the "vertex" and "index" parts to avoid overlapping maps.
 static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &state, ImDrawData *draw_data) {
+    VkResult result;
+
     ImDrawVert *draw_buffer_data = nullptr;
 
     if (state.gui_vulkan.draw_buffer_vertices != draw_data->TotalVtxCount) {
@@ -73,13 +79,17 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
         );
 
         state.gui_vulkan.draw_buffer = renderer::vulkan::create_buffer(state, draw_buffer_info,
-                                                                       renderer::vulkan::MemoryType::Mappable, state.gui_vulkan.draw_allocation);
+            renderer::vulkan::MemoryType::Mappable, state.gui_vulkan.draw_allocation);
 
         state.gui_vulkan.draw_buffer_vertices = draw_data->TotalVtxCount;
     }
 
-    assert(vmaMapMemory(state.allocator, state.gui_vulkan.draw_allocation, reinterpret_cast<void **>(&draw_buffer_data)) == VK_SUCCESS);
-    assert(draw_buffer_data);
+    result = vmaMapMemory(state.allocator, state.gui_vulkan.draw_allocation,
+        reinterpret_cast<void **>(&draw_buffer_data));
+    if (result != VK_SUCCESS || !draw_buffer_data) {
+        LOG_WARN("Failed to map memory for gui draw vertex buffer.");
+        return;
+    }
 
     size_t draw_buffer_pointer = 0;
 
@@ -109,13 +119,17 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
         );
 
         state.gui_vulkan.index_buffer = renderer::vulkan::create_buffer(state, index_buffer_info,
-                                                                        renderer::vulkan::MemoryType::Mappable, state.gui_vulkan.index_allocation);
+            renderer::vulkan::MemoryType::Mappable, state.gui_vulkan.index_allocation);
 
         state.gui_vulkan.index_buffer_indices = draw_data->TotalIdxCount;
     }
 
-    assert(vmaMapMemory(state.allocator, state.gui_vulkan.index_allocation, reinterpret_cast<void **>(&index_buffer_data)) == VK_SUCCESS);
-    assert(index_buffer_data);
+    result = vmaMapMemory(state.allocator, state.gui_vulkan.index_allocation,
+        reinterpret_cast<void **>(&index_buffer_data));
+    if (result != VK_SUCCESS || !index_buffer_data) {
+        LOG_WARN("Failed to map memory for gui index buffer.");
+        return;
+    }
 
     size_t index_buffer_pointer = 0;
 
@@ -135,7 +149,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
 
     uint32_t image_index = ~0u;
     state.device.resetFences(1, &state.gui_vulkan.next_image_fence);
-    state.device.acquireNextImageKHR(state.swapchain, next_image_timeout,vk::Semaphore(), state.gui_vulkan.next_image_fence, &image_index);
+    state.device.acquireNextImageKHR(state.swapchain, next_image_timeout, vk::Semaphore(), state.gui_vulkan.next_image_fence, &image_index);
 
     ImGui_ImplSdlVulkan_UpdateBuffers(state, draw_data);
 
@@ -144,21 +158,18 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
     vk::CommandBufferBeginInfo begin_info(
         vk::CommandBufferUsageFlags(), // No Flags
         nullptr // Inheritance
-        );
+    );
 
     state.gui_vulkan.command_buffer.begin(begin_info);
-
-
 
     vk::RenderPassBeginInfo renderpass_begin_info(
         state.gui_vulkan.renderpass, // Renderpass
         state.gui_vulkan.framebuffer, // Framebuffer
         vk::Rect2D(
             vk::Offset2D(0, 0),
-            vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT)
-            ), // Render Area
+            vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT)), // Render Area
         clear_values.size(), clear_values.data() // Clear Colors
-        );
+    );
 
     state.gui_vulkan.command_buffer.beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
     state.gui_vulkan.command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, state.gui_vulkan.pipeline);
@@ -199,7 +210,7 @@ static void ImGui_ImplSdlVulkan_InvalidateFontsTexture(renderer::vulkan::VulkanS
     renderer::vulkan::destroy_image(state, state.gui_vulkan.font_texture, state.gui_vulkan.font_allocation);
 }
 
-static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState &state) {
+static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState &state) {
     ImGuiIO &io = ImGui::GetIO();
     uint8_t *pixels;
     int width, height;
@@ -212,14 +223,21 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         buffer_size, // Size
         vk::BufferUsageFlagBits::eTransferSrc, // Usage
         vk::SharingMode::eExclusive, 0, nullptr // Sharing Mode
-        );
+    );
 
     VmaAllocation temp_allocation;
     vk::Buffer temp_buffer = renderer::vulkan::create_buffer(state, buffer_info, renderer::vulkan::MemoryType::Mappable, temp_allocation);
 
     uint8_t *temp_memory;
-    vmaMapMemory(state.allocator, temp_allocation, reinterpret_cast<void **>(&temp_memory));
-    assert(temp_memory);
+    VkResult result = vmaMapMemory(state.allocator, temp_allocation, reinterpret_cast<void **>(&temp_memory));
+    if (result != VK_SUCCESS) {
+        LOG_ERROR("Could not map font buffer memory. VMA result: {}.", result);
+        return false;
+    }
+    if (!temp_memory) {
+        LOG_ERROR("Could not map font buffer memory.");
+        return false;
+    }
     std::memcpy(temp_memory, pixels, buffer_size);
     vmaUnmapMemory(state.allocator, temp_allocation);
 
@@ -236,7 +254,7 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::SharingMode::eExclusive, // Only one queue family can access at a time.
         0, nullptr, // Ignored on Exclusive sharing mode
         vk::ImageLayout::eUndefined // Sampling Layout (must be undefined)
-        );
+    );
 
     state.gui_vulkan.font_texture = renderer::vulkan::create_image(
         state, image_info, renderer::vulkan::MemoryType::Device, state.gui_vulkan.font_allocation);
@@ -246,7 +264,7 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
     vk::CommandBufferBeginInfo begin_info(
         vk::CommandBufferUsageFlagBits::eOneTimeSubmit, // One Time Buffer
         nullptr // Inheritance Info
-        );
+    );
 
     transfer_buffer.begin(begin_info);
 
@@ -254,7 +272,7 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::ImageAspectFlagBits::eColor, // Color
         0, 1, // First Level
         0, 1 // First Layer
-        );
+    );
 
     vk::ImageMemoryBarrier image_transfer_optimal_barrier(
         vk::AccessFlags(), // Was not written yet.
@@ -264,7 +282,7 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         state.transfer_family_index, state.transfer_family_index, // No Queue Family Transition
         state.gui_vulkan.font_texture,
         font_range // Subresource Range
-        );
+    );
 
     transfer_buffer.pipelineBarrier(
         vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, // Top Of Pipe -> Transfer Stage
@@ -272,7 +290,7 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         0, nullptr, // No Memory Barriers
         0, nullptr, // No Buffer Memory Barriers
         1, &image_transfer_optimal_barrier // 1 Image Memory Barrier
-        );
+    );
 
     vk::BufferImageCopy region(
         0, // Buffer Offset
@@ -281,17 +299,17 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::ImageSubresourceLayers(
             vk::ImageAspectFlagBits::eColor, // Aspects
             0, 0, 1 // First Layer/Level
-        ),
+            ),
         vk::Offset3D(0, 0, 0), // Image Offset
         vk::Extent3D(width, height, 1) // Image Extent
-        );
+    );
 
     transfer_buffer.copyBufferToImage(
         temp_buffer, // Buffer
         state.gui_vulkan.font_texture, // Image
         vk::ImageLayout::eTransferDstOptimal, // Image Layout
         1, &region // Regions
-        );
+    );
 
     vk::ImageMemoryBarrier image_shader_read_only_barrier(
         vk::AccessFlags(), // Was not written yet.
@@ -301,7 +319,7 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         state.transfer_family_index, state.general_family_index, // No Queue Family Transition
         state.gui_vulkan.font_texture,
         font_range // Subresource Range
-        );
+    );
 
     transfer_buffer.pipelineBarrier(
         vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, // Transfer -> Fragment Shader Stage
@@ -309,7 +327,7 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         0, nullptr, // No Memory Barriers
         0, nullptr, // No Buffer Barriers
         1, &image_shader_read_only_barrier // 1 Image Memory Barrier
-        );
+    );
 
     transfer_buffer.end();
 
@@ -319,6 +337,8 @@ static void ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
     renderer::vulkan::destroy_buffer(state, temp_buffer, temp_allocation);
 
     io.Fonts->TexID = reinterpret_cast<ImTextureID>(static_cast<VkImage>(state.gui_vulkan.font_texture));
+
+    return true;
 }
 
 // Use if you want to reset your rendering device without losing ImGui state.
@@ -354,7 +374,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
             vk::AttachmentStoreOp::eDontCare, // No Stencils
             vk::ImageLayout::eUndefined, // Initial Layout
             vk::ImageLayout::eColorAttachmentOptimal // Final Layout
-        ),
+            ),
         vk::AttachmentDescription(
             vk::AttachmentDescriptionFlags(), // No Flags
             vk::Format::eB8G8R8A8Unorm, // Format, MoltenVK requires rgba?
@@ -365,18 +385,18 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
             vk::AttachmentStoreOp::eDontCare, // No Stencils
             vk::ImageLayout::eUndefined, // Initial Layout
             vk::ImageLayout::eColorAttachmentOptimal // Final Layout
-        ),
+            ),
     };
 
     std::vector<vk::AttachmentReference> color_attachment_references = {
         vk::AttachmentReference(
             0, // attachments[0]
             vk::ImageLayout::eColorAttachmentOptimal // Image Layout
-        ),
+            ),
         vk::AttachmentReference(
             1, // attachments[0]
             vk::ImageLayout::eColorAttachmentOptimal // Image Layout
-        ),
+            ),
     };
 
     std::vector<vk::SubpassDescription> subpasses = {
@@ -387,7 +407,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
             color_attachment_references.size(), color_attachment_references.data(), // Color Attachment References
             nullptr, nullptr, // No Resolve or Depth/Stencil for now
             0, nullptr // Vulkan Book says you don't need this for a Color Attachment?
-        )
+            )
     };
 
     vk::RenderPassCreateInfo renderpass_info(
@@ -398,13 +418,16 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     );
 
     state.gui_vulkan.renderpass = state.device.createRenderPass(renderpass_info, nullptr);
-    assert(state.gui_vulkan.renderpass);
+    if (!state.gui_vulkan.renderpass) {
+        LOG_ERROR("Failed to create Vulkan gui renderpass.");
+        return false;
+    }
 
     // Create Framebuffer
     vk::FramebufferCreateInfo framebuffer_info(
         vk::FramebufferCreateFlags(), // No Flags
         state.gui_vulkan.renderpass, // Renderpass
-        2 /*state.swapchain_views.size()*/, state.swapchain_views/*.data()*/, // Attachments
+        2 /*state.swapchain_views.size()*/, state.swapchain_views /*.data()*/, // Attachments
         DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, // Size
         1 // Layers
     );
@@ -428,14 +451,17 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     );
 
     state.gui_vulkan.sampler = state.device.createSampler(sampler_info, nullptr);
-    assert(state.gui_vulkan.sampler);
+    if (!state.gui_vulkan.sampler) {
+        LOG_ERROR("Failed to create Vulkan gui sampler.");
+        return false;
+    }
 
     vk::DescriptorSetLayoutBinding texture_binding_info(
         0, // Binding
         vk::DescriptorType::eCombinedImageSampler, // Descriptor Type
         1, // Array Size
-        vk::ShaderStageFlagBits::eFragment,
-        &state.gui_vulkan.sampler
+        vk::ShaderStageFlagBits::eFragment, // Usage Stage
+        &state.gui_vulkan.sampler // Used Samplers
     );
 
     vk::DescriptorSetLayoutCreateInfo descriptor_info(
@@ -444,7 +470,10 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     );
 
     state.gui_vulkan.descriptor_set_layout = state.device.createDescriptorSetLayout(descriptor_info, nullptr);
-    assert(state.gui_vulkan.descriptor_set_layout);
+    if (!state.gui_vulkan.descriptor_set_layout) {
+        LOG_ERROR("Failed to create Vulkan gui descriptor layout.");
+        return false;
+    }
 
     vk::PushConstantRange matrix_push_constant(
         vk::ShaderStageFlagBits::eVertex,
@@ -459,7 +488,10 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     );
 
     state.gui_vulkan.pipeline_layout = state.device.createPipelineLayout(pipeline_layout_info, nullptr);
-    assert(state.gui_vulkan.pipeline_layout);
+    if (!state.gui_vulkan.pipeline_layout) {
+        LOG_ERROR("Failed to create Vulkan gui pipeline layout.");
+        return false;
+    }
 
     std::vector<vk::PipelineShaderStageCreateInfo> shader_stage_infos = {
         vk::PipelineShaderStageCreateInfo(
@@ -468,22 +500,21 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
             state.gui_vulkan.vertex_module, // Module
             "main", // Name
             nullptr // Specialization
-        ),
+            ),
         vk::PipelineShaderStageCreateInfo(
             vk::PipelineShaderStageCreateFlags(), // No Flags
             vk::ShaderStageFlagBits::eFragment, // Fragment Shader
             state.gui_vulkan.fragment_module, // Module
             "main", // Name
             nullptr // Specialization
-        ),
+            ),
     };
 
     std::vector<vk::VertexInputBindingDescription> gui_pipeline_bindings = {
         vk::VertexInputBindingDescription(
             0, // Binding
             sizeof(ImDrawVert), // Stride
-            vk::VertexInputRate::eVertex
-        ),
+            vk::VertexInputRate::eVertex),
     };
 
     std::vector<vk::VertexInputAttributeDescription> gui_pipeline_attributes = {
@@ -492,19 +523,19 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
             0, // Binding
             vk::Format::eR32G32Sfloat,
             0 // Offset
-        ),
+            ),
         vk::VertexInputAttributeDescription(
             1, // Location
             0, // Binding
             vk::Format::eR32G32Sfloat,
             sizeof(ImVec2) // Offset
-        ),
+            ),
         vk::VertexInputAttributeDescription(
             2, // Location
             0, // Binding
             vk::Format::eR8G8B8A8Uint,
             sizeof(ImVec2) * 2 // Offset
-        ),
+            ),
     };
 
     vk::PipelineVertexInputStateCreateInfo gui_pipeline_vertex_info(
@@ -564,8 +595,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
             vk::BlendFactor::eOneMinusSrcAlpha, // Src Alpha
             vk::BlendFactor::eDstAlpha, // Dst Alpha
             vk::BlendOp::eAdd, // Alpha Blend Op
-            vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-        ),
+            vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
         vk::PipelineColorBlendAttachmentState(
             true, // Enable Blending
             vk::BlendFactor::eSrcColor, // Src Color
@@ -574,8 +604,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
             vk::BlendFactor::eOneMinusSrcAlpha, // Src Alpha
             vk::BlendFactor::eDstAlpha, // Dst Alpha
             vk::BlendOp::eAdd, // Alpha Blend Op
-            vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-        ),
+            vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
     };
 
     vk::PipelineColorBlendStateCreateInfo gui_pipeline_blend_info(
@@ -610,11 +639,13 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
         state.gui_vulkan.renderpass,
         0,
         vk::Pipeline(),
-        0
-    );
+        0);
 
     state.gui_vulkan.pipeline = state.device.createGraphicsPipeline(vk::PipelineCache(), gui_pipeline_info, nullptr);
-    assert(state.gui_vulkan.pipeline);
+    if (!state.gui_vulkan.pipeline) {
+        LOG_ERROR("Failed to create Vulkan gui pipeline.");
+        return false;
+    }
 
     ImGui_ImplSdlVulkan_CreateFontsTexture(state);
 

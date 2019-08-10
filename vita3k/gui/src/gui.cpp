@@ -271,7 +271,8 @@ void destroy_image(const std::uint32_t obj) {
 
 void init(GuiState &gui, HostState &host) {
     ImGui::CreateContext();
-    assert(ImGui_ImplSdl_Init(host.renderer, host.window.get(), host.base_path));
+    bool result = ImGui_ImplSdl_Init(host.renderer, host.window.get(), host.base_path);
+    assert(result);
 
     init_style();
     init_font(gui, host);
