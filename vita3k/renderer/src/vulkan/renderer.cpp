@@ -15,17 +15,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <renderer/types.h>
 #include <renderer/functions.h>
+#include <renderer/types.h>
 
 #include <config/version.h>
 #include <features/state.h>
 
-#include <renderer/vulkan/state.h>
 #include <renderer/vulkan/functions.h>
+#include <renderer/vulkan/state.h>
 
 #include <SDL.h>
 #include <SDL_vulkan.h>
+
+#include <util/log.h>
 
 // Setting a default value for now.
 // In the future, it might be a good idea to take the host's device memory into account.
@@ -114,11 +116,11 @@ static bool select_queues(VulkanState &vulkan_state,
         if (!found_graphics && queue_family.queueFlags & vk::QueueFlagBits::eGraphics
             && queue_family.queueFlags & vk::QueueFlagBits::eTransfer) {
             queue_infos.emplace_back(
-                 vk::DeviceQueueCreateFlagBits(), // No Flags
-                 a, // Queue Family Index
-                 queue_family.queueCount, // Queue Count
-                 priorities.data() // Priorities
-                 );
+                vk::DeviceQueueCreateFlagBits(), // No Flags
+                a, // Queue Family Index
+                queue_family.queueCount, // Queue Count
+                priorities.data() // Priorities
+            );
             vulkan_state.general_family_index = a;
             found_graphics = true;
         } else if (!found_transfer && queue_family.queueFlags & vk::QueueFlagBits::eTransfer) {
@@ -127,7 +129,7 @@ static bool select_queues(VulkanState &vulkan_state,
                 a, // Queue Family Index
                 queue_family.queueCount, // Queue Count
                 priorities.data() // Priorities
-                );
+            );
             vulkan_state.transfer_family_index = a;
             found_transfer = true;
         }
@@ -155,14 +157,14 @@ static vk::Queue select_queue(VulkanState &state, CommandType type) {
     vk::Queue queue;
 
     switch (type) {
-        case CommandType::General:
-            queue = state.general_queues[state.general_queue_last % state.general_queues.size()];
-            state.general_queue_last++;
-            break;
-        case CommandType::Transfer:
-            queue = state.transfer_queues[state.transfer_queue_last % state.transfer_queues.size()];
-            state.transfer_queue_last++;
-            break;
+    case CommandType::General:
+        queue = state.general_queues[state.general_queue_last % state.general_queues.size()];
+        state.general_queue_last++;
+        break;
+    case CommandType::Transfer:
+        queue = state.transfer_queues[state.transfer_queue_last % state.transfer_queues.size()];
+        state.transfer_queue_last++;
+        break;
     }
 
     return queue;
@@ -175,7 +177,7 @@ void present(VulkanState &state, uint32_t image_index) { // this needs semaphore
     vk::PresentInfoKHR present_info(
         0, nullptr, // No Semaphores
         1, &state.swapchain, &image_index, nullptr // Swapchain
-        );
+    );
 
     present_queue.presentKHR(present_info);
 }
@@ -184,26 +186,26 @@ vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type) {
     vk::CommandBuffer buffer;
 
     switch (type) {
-        case CommandType::General: {
-            vk::CommandBufferAllocateInfo command_buffer_info(
-                state.general_command_pool, // Command Pool
-                vk::CommandBufferLevel::ePrimary, // Level
-                1 // Count
-                );
+    case CommandType::General: {
+        vk::CommandBufferAllocateInfo command_buffer_info(
+            state.general_command_pool, // Command Pool
+            vk::CommandBufferLevel::ePrimary, // Level
+            1 // Count
+        );
 
-            state.device.allocateCommandBuffers(&command_buffer_info, &buffer);
-            break;
-        }
-        case CommandType::Transfer: {
-            vk::CommandBufferAllocateInfo command_buffer_info(
-                state.transfer_command_pool, // Command Pool
-                vk::CommandBufferLevel::ePrimary, // Level
-                1 // Count
-                );
+        state.device.allocateCommandBuffers(&command_buffer_info, &buffer);
+        break;
+    }
+    case CommandType::Transfer: {
+        vk::CommandBufferAllocateInfo command_buffer_info(
+            state.transfer_command_pool, // Command Pool
+            vk::CommandBufferLevel::ePrimary, // Level
+            1 // Count
+        );
 
-            state.device.allocateCommandBuffers(&command_buffer_info, &buffer);
-            break;
-        }
+        state.device.allocateCommandBuffers(&command_buffer_info, &buffer);
+        break;
+    }
     }
 
     assert(buffer);
@@ -215,12 +217,12 @@ void free_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer
     vk::CommandPool pool;
 
     switch (type) {
-        case CommandType::General:
-            pool = state.general_command_pool;
-            break;
-        case CommandType::Transfer:
-            pool = state.transfer_command_pool;
-            break;
+    case CommandType::General:
+        pool = state.general_command_pool;
+        break;
+    case CommandType::Transfer:
+        pool = state.transfer_command_pool;
+        break;
     }
 
     state.device.freeCommandBuffers(pool, 1, &buffer);
@@ -233,7 +235,7 @@ void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuff
         0, nullptr, nullptr, // Wait Semaphores
         1, &buffer, // Command Buffers
         0, nullptr // Signal Semaphores
-        );
+    );
 
     queue.submit(1, &submit_info, vk::Fence());
     if (wait_idle)
@@ -251,7 +253,7 @@ vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, 
         break;
     }
 
-    VmaAllocationCreateInfo allocation_info = { };
+    VmaAllocationCreateInfo allocation_info = {};
     allocation_info.flags = 0;
     allocation_info.usage = memory_usage;
     // Usage is specified via usage field. Others are ignored.
@@ -262,9 +264,10 @@ vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, 
     allocation_info.pUserData = nullptr;
 
     VkBuffer buffer;
-    assert(vmaCreateBuffer(state.allocator,
+    VkResult result = vmaCreateBuffer(state.allocator,
         reinterpret_cast<VkBufferCreateInfo *>(&buffer_info),
-        &allocation_info, &buffer, &allocation, nullptr) == VK_SUCCESS);
+        &allocation_info, &buffer, &allocation, nullptr);
+    assert(result == VK_SUCCESS);
     assert(allocation != VK_NULL_HANDLE);
     assert(buffer != VK_NULL_HANDLE);
 
@@ -278,15 +281,15 @@ void destroy_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocat
 vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, MemoryType type, VmaAllocation &allocation) {
     VmaMemoryUsage memory_usage;
     switch (type) {
-        case MemoryType::Mappable:
-            memory_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-            break;
-        case MemoryType::Device:
-            memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
-            break;
+    case MemoryType::Mappable:
+        memory_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        break;
+    case MemoryType::Device:
+        memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        break;
     }
 
-    VmaAllocationCreateInfo allocation_info = { };
+    VmaAllocationCreateInfo allocation_info = {};
     allocation_info.flags = 0;
     allocation_info.usage = memory_usage;
     // Usage is specified via usage field. Others are ignored.
@@ -297,9 +300,10 @@ vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, Memo
     allocation_info.pUserData = nullptr;
 
     VkImage image;
-    assert(vmaCreateImage(state.allocator,
+    VkResult result = vmaCreateImage(state.allocator,
         reinterpret_cast<VkImageCreateInfo *>(&image_info),
-        &allocation_info, &image, &allocation, nullptr) == VK_SUCCESS);
+        &allocation_info, &image, &allocation, nullptr);
+    assert(result == VK_SUCCESS);
     assert(allocation != VK_NULL_HANDLE);
     assert(image != VK_NULL_HANDLE);
 
@@ -310,7 +314,6 @@ void destroy_image(VulkanState &state, vk::Image image, VmaAllocation allocation
     vmaDestroyImage(state.allocator, image, allocation);
 }
 
-// TODO: Replace asserts for vulkan methods and VULKAN_CHECK so the method fails.
 bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
     auto &vulkan_state = dynamic_cast<VulkanState &>(*state);
 
@@ -322,24 +325,36 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             org_name, // Engine Name, using org instead.
             0, // Engine Version
             VK_MAKE_VERSION(1, 0, 0) // Lowest possible.
-            );
+        );
 
         vk::InstanceCreateInfo instance_info(
             vk::InstanceCreateFlags(), // No Flags
             &app_info, // App Info
             instance_layers.size(), instance_layers.data(), // No Layers
             instance_extensions.size(), instance_extensions.data() // No Extensions
-            );
+        );
 
         vulkan_state.instance = vk::createInstance(instance_info);
-        assert(vulkan_state.instance);
+        if (!vulkan_state.instance) {
+            LOG_ERROR("Failed to create Vulkan instance.");
+            return false;
+        }
     }
 
     // Create Surface
     {
-        VkSurfaceKHR surface;
-        assert(SDL_Vulkan_CreateSurface(window.get(), vulkan_state.instance, &surface));
+        VkSurfaceKHR surface = VK_NULL_HANDLE;
+        bool surface_error = SDL_Vulkan_CreateSurface(window.get(), vulkan_state.instance, &surface);
+        if (!surface_error) {
+            const char *error = SDL_GetError();
+            LOG_ERROR("Failed to create vulkan surface. SDL Error: {}.", error);
+            return false;
+        }
         vulkan_state.surface = vk::SurfaceKHR(surface);
+        if (!vulkan_state.surface) {
+            LOG_ERROR("Failed to create Vulkan surface.");
+            return false;
+        }
     }
 
     // Select Physical Device
@@ -362,28 +377,39 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             }
         }
 
-        assert(vulkan_state.physical_device);
+        if (!vulkan_state.physical_device) {
+            LOG_ERROR("Failed to select Vulkan physical device.");
+            return false;
+        }
     }
 
     // Create Device
     {
         std::vector<vk::DeviceQueueCreateInfo> queue_infos;
         std::vector<std::vector<float>> queue_priorities;
-        assert(select_queues(vulkan_state, queue_infos, queue_priorities));
+        if (!select_queues(vulkan_state, queue_infos, queue_priorities)) {
+            LOG_ERROR("Failed to select proper Vulkan queues. This is likely a bug.");
+            return false;
+        }
 
-        assert(vulkan_state.physical_device.getSurfaceSupportKHR(
-            vulkan_state.general_family_index, vulkan_state.surface));
+        if (!vulkan_state.physical_device.getSurfaceSupportKHR(
+                vulkan_state.general_family_index, vulkan_state.surface)) {
+            LOG_ERROR("Failed to select a Vulkan queue that supports presentation. This is likely a bug.");
+            return false;
+        }
 
         vk::DeviceCreateInfo device_info(
             vk::DeviceCreateFlags(), // No Flags
             queue_infos.size(), queue_infos.data(), // No Queues
             device_layers.size(), device_layers.data(), // No Layers
             device_extensions.size(), device_extensions.data(), // No Extensions
-            &required_features
-            );
+            &required_features);
 
         vulkan_state.device = vulkan_state.physical_device.createDevice(device_info);
-        assert(vulkan_state.device);
+        if (!vulkan_state.device) {
+            LOG_ERROR("Failed to create a Vulkan device.");
+            return false;
+        }
     }
 
     // Get Queues
@@ -402,24 +428,30 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         vk::CommandPoolCreateInfo general_pool_info(
             vk::CommandPoolCreateFlagBits::eResetCommandBuffer, // Flags
             vulkan_state.general_family_index // Queue Family Index
-            );
+        );
 
         vk::CommandPoolCreateInfo transfer_pool_info(
             vk::CommandPoolCreateFlagBits::eTransient, // Flags
             vulkan_state.transfer_family_index // Queue Family Index
-            );
+        );
 
         vulkan_state.general_command_pool = vulkan_state.device.createCommandPool(general_pool_info);
-        assert(vulkan_state.general_command_pool);
+        if (!vulkan_state.general_command_pool) {
+            LOG_ERROR("Failed to create general command pool.");
+            return false;
+        }
         vulkan_state.transfer_command_pool = vulkan_state.device.createCommandPool(transfer_pool_info);
-        assert(vulkan_state.transfer_command_pool);
+        if (!vulkan_state.transfer_command_pool) {
+            LOG_ERROR("Failed to create transfer command pool.");
+            return false;
+        }
 
         vulkan_state.general_command_buffer = create_command_buffer(vulkan_state, CommandType::General);
     }
 
     // Allocate Memory for Images and Buffers
     {
-        VmaAllocatorCreateInfo allocator_info = { };
+        VmaAllocatorCreateInfo allocator_info = {};
         allocator_info.flags = 0;
         allocator_info.physicalDevice = vulkan_state.physical_device;
         allocator_info.device = vulkan_state.device;
@@ -431,8 +463,15 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         allocator_info.pVulkanFunctions = nullptr; // VMA_STATIC_VULKAN_FUNCTIONS 1 is default I think
         allocator_info.pRecordSettings = nullptr;
 
-        assert(vmaCreateAllocator(&allocator_info, &vulkan_state.allocator) == VK_SUCCESS);
-        assert(vulkan_state.allocator != VK_NULL_HANDLE);
+        VkResult result = vmaCreateAllocator(&allocator_info, &vulkan_state.allocator);
+        if (result != VK_SUCCESS) {
+            LOG_ERROR("Failed to create VMA allocator. VMA result: {}.", static_cast<uint32_t>(result));
+            return false;
+        }
+        if (vulkan_state.allocator == VK_NULL_HANDLE) {
+            LOG_ERROR("Failed to create VMA allocator.");
+            return false;
+        }
     }
 
     // Create Descriptor Pool
@@ -441,10 +480,13 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             vk::DescriptorPoolCreateFlags(), // No Flags
             max_sets, // Maximum Sets
             descriptor_pool_sizes.size(), descriptor_pool_sizes.data() // Descriptor Pool
-            );
+        );
 
         vulkan_state.descriptor_pool = vulkan_state.device.createDescriptorPool(descriptor_pool_info);
-        assert(vulkan_state.descriptor_pool);
+        if (!vulkan_state.descriptor_pool) {
+            LOG_ERROR("Failed to create Vulkan descriptor pool.");
+            return false;
+        }
     }
 
     // Create Swapchain
@@ -466,10 +508,13 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
             vk::PresentModeKHR::eFifo, // Present Mode, FIFO and Immediate are supported on MoltenVK. Would've chosen Mailbox otherwise.
             true, // Clipping
             vk::SwapchainKHR() // No old swapchain.
-            );
+        );
 
         vulkan_state.swapchain = vulkan_state.device.createSwapchainKHR(swapchain_info);
-        assert(vulkan_state.swapchain);
+        if (!vulkan_state.swapchain) {
+            LOG_ERROR("Failed to create Vulkan swapchain.");
+            return false;
+        }
     }
 
     // Get Swapchain Images
@@ -490,11 +535,13 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
                 1, // Level Count
                 0, // Base Array Index
                 1 // Layer Count
-                )
-            );
+                ));
 
         vk::ImageView view = vulkan_state.device.createImageView(view_info);
-        assert(view);
+        if (!view) {
+            LOG_ERROR("Failed to Vulkan image view for swpachain image id {}.", a);
+            return false;
+        }
 
         vulkan_state.swapchain_views[a] = view;
     }

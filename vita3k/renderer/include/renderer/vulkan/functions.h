@@ -45,4 +45,4 @@ vk::Buffer create_buffer(VulkanState &state, vk::BufferCreateInfo &buffer_info, 
 void destroy_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocation);
 vk::Image create_image(VulkanState &state, vk::ImageCreateInfo &image_info, MemoryType type, VmaAllocation &allocation);
 void destroy_image(VulkanState &state, vk::Image image, VmaAllocation allocation);
-}
+} // namespace renderer::vulkan

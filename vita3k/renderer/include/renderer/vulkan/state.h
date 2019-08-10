@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <renderer/types.h>
 #include <renderer/state.h>
+#include <renderer/types.h>
 
 #include <renderer/vulkan/types.h>
 
@@ -89,4 +89,4 @@ struct VulkanState : public renderer::State {
     vk::Image swapchain_images[2];
     vk::ImageView swapchain_views[2];
 };
-}
+} // namespace renderer::vulkan

@@ -42,8 +42,8 @@
 #include <gui/imgui_impl_sdl.h>
 #include <gui/imgui_impl_sdl_gl3.h>
 
-#include <renderer/types.h>
 #include <renderer/gl/state.h>
+#include <renderer/types.h>
 
 // SDL,GL3W
 #include <SDL.h>
@@ -60,7 +60,7 @@ static renderer::gl::GLState &gl_state(RendererPtr &renderer) {
 // If text or lines are blurry when integrating ImGui in your engine: in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
 void ImGui_ImplSdlGL3_RenderDrawData(RendererPtr &renderer, ImDrawData *draw_data) {
     auto &state = gl_state(renderer);
-    
+
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
     ImGuiIO &io = ImGui::GetIO();
     int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
@@ -398,7 +398,7 @@ void ImGui_ImplSdlGL3_Shutdown(RendererPtr &renderer) {
     auto &state = gl_state(renderer);
 
     // Destroy SDL mouse cursors
-    for (auto & mouse_cursor : state.gui.mouse_cursors)
+    for (auto &mouse_cursor : state.gui.mouse_cursors)
         SDL_FreeCursor(mouse_cursor);
     memset(state.gui.mouse_cursors, 0, sizeof(state.gui.mouse_cursors));
 

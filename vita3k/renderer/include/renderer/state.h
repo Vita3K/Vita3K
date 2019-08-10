@@ -1,12 +1,12 @@
 #pragma once
 
+#include <features/state.h>
 #include <renderer/commands.h>
 #include <renderer/types.h>
 #include <threads/queue.h>
-#include <features/state.h>
 
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 
 struct SDL_Cursor;
 
@@ -29,8 +29,8 @@ struct State {
     // This should be moved somewhere else since it is not renderer related.
     struct {
         uint64_t time = 0;
-        bool mouse_pressed[3] = {false, false, false};
-        SDL_Cursor *mouse_cursors[cursor_count] = {nullptr};
+        bool mouse_pressed[3] = { false, false, false };
+        SDL_Cursor *mouse_cursors[cursor_count] = { nullptr };
 
         bool init = false;
     } gui;
@@ -38,4 +38,3 @@ struct State {
     virtual ~State() = default;
 };
 } // namespace renderer
-
