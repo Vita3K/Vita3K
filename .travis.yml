@@ -17,7 +17,8 @@ matrix:
       - zip -r "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip" Vita3K.app
       deploy:
         provider: releases
-        api_key: $GITHUB_OAUTH_TOKEN
+        api_key:
+          secure: BNMTgPAb7mywkv/LH+SyXApneR/YGIUVmLlmddNVS82BuE/+zuPAyHziiBtsDJRrYjqRVkBXYQ566q83WiAKILIrKVOgNrp+5nTkMEAZREPTUFG7IO63M0nthrPXrgR5QTc1iPF+XNWjE+inuBSZjFvBxaj461eth0XvY0Cu7eKxd3g3xdNA0ejmiLNDxr7SegCsjsuxbeVC8EcNzlYQiWq0jKX9WgBYdAB6XT6toNJ5OonRS7T5XxnjvF0NtBerysKTYd14aAoGTXXoLU4nXesF7YRaxBo6FAzBaKQnLX3OPMRAVCaGEcGWUtEJcb9qv05AtTKuUzrXpRYEvsGO8dPdl/oAiniOncZkzTrjlIF1u7WDMN+MB603hTIti0k9R/RtQPQEEyNg8Et0O7qS5uGOWbdCeSppOuw5PzD4JtCOvZweO0D5RVrRe5f2xRVncoiF5jZJ55RPavbGcug5JqtR+MjVVnQJSx69i5AX3pLw08jXM7cpgitCKo9sk0YVwUSltmoVQ9TNu2hTRkcq46Dy4TNtZYc9HriJPRdQSg11juetOzpXduSPOJpehTlv4fgXBXGz1DwQTApMv46khlbWKrNxtYXNH0eXHzVQNzpgwiz5BNv8tCZRqeqmpvX69z3AWaRsmESQTWxV7eoTuKwZjnWa+SJmvXRTULr289s=
         file: "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip"
         skip_cleanup: true
         on:
@@ -35,7 +36,8 @@ matrix:
       - zip -r "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip" .
       deploy:
         provider: releases
-        api_key: $GITHUB_OAUTH_TOKEN
+        api_key:
+          secure: BNMTgPAb7mywkv/LH+SyXApneR/YGIUVmLlmddNVS82BuE/+zuPAyHziiBtsDJRrYjqRVkBXYQ566q83WiAKILIrKVOgNrp+5nTkMEAZREPTUFG7IO63M0nthrPXrgR5QTc1iPF+XNWjE+inuBSZjFvBxaj461eth0XvY0Cu7eKxd3g3xdNA0ejmiLNDxr7SegCsjsuxbeVC8EcNzlYQiWq0jKX9WgBYdAB6XT6toNJ5OonRS7T5XxnjvF0NtBerysKTYd14aAoGTXXoLU4nXesF7YRaxBo6FAzBaKQnLX3OPMRAVCaGEcGWUtEJcb9qv05AtTKuUzrXpRYEvsGO8dPdl/oAiniOncZkzTrjlIF1u7WDMN+MB603hTIti0k9R/RtQPQEEyNg8Et0O7qS5uGOWbdCeSppOuw5PzD4JtCOvZweO0D5RVrRe5f2xRVncoiF5jZJ55RPavbGcug5JqtR+MjVVnQJSx69i5AX3pLw08jXM7cpgitCKo9sk0YVwUSltmoVQ9TNu2hTRkcq46Dy4TNtZYc9HriJPRdQSg11juetOzpXduSPOJpehTlv4fgXBXGz1DwQTApMv46khlbWKrNxtYXNH0eXHzVQNzpgwiz5BNv8tCZRqeqmpvX69z3AWaRsmESQTWxV7eoTuKwZjnWa+SJmvXRTULr289s=
         file: "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip"
         skip_cleanup: true
         on:
@@ -45,7 +47,3 @@ matrix:
 branches:
   except:
     - "/master-v[0-9]/"
-
-env:
-  global:
-    secure: BNMTgPAb7mywkv/LH+SyXApneR/YGIUVmLlmddNVS82BuE/+zuPAyHziiBtsDJRrYjqRVkBXYQ566q83WiAKILIrKVOgNrp+5nTkMEAZREPTUFG7IO63M0nthrPXrgR5QTc1iPF+XNWjE+inuBSZjFvBxaj461eth0XvY0Cu7eKxd3g3xdNA0ejmiLNDxr7SegCsjsuxbeVC8EcNzlYQiWq0jKX9WgBYdAB6XT6toNJ5OonRS7T5XxnjvF0NtBerysKTYd14aAoGTXXoLU4nXesF7YRaxBo6FAzBaKQnLX3OPMRAVCaGEcGWUtEJcb9qv05AtTKuUzrXpRYEvsGO8dPdl/oAiniOncZkzTrjlIF1u7WDMN+MB603hTIti0k9R/RtQPQEEyNg8Et0O7qS5uGOWbdCeSppOuw5PzD4JtCOvZweO0D5RVrRe5f2xRVncoiF5jZJ55RPavbGcug5JqtR+MjVVnQJSx69i5AX3pLw08jXM7cpgitCKo9sk0YVwUSltmoVQ9TNu2hTRkcq46Dy4TNtZYc9HriJPRdQSg11juetOzpXduSPOJpehTlv4fgXBXGz1DwQTApMv46khlbWKrNxtYXNH0eXHzVQNzpgwiz5BNv8tCZRqeqmpvX69z3AWaRsmESQTWxV7eoTuKwZjnWa+SJmvXRTULr289s=
