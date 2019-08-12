@@ -190,7 +190,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
         2.0f / DEFAULT_RES_WIDTH, 0, 0, 0,
         0, 2.0f / DEFAULT_RES_HEIGHT, 0, 0,
         0, 0, 1, 0,
-        0, 0, 0, 1,
+        -1, -1, 0, 1,
     };
 
     state.gui_vulkan.command_buffer.updateBuffer(state.gui_vulkan.transformation_buffer, 0, sizeof(matrix), matrix);
@@ -214,6 +214,9 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
         0, nullptr // Dynamic Offsets
         );
 
+//    vk::Viewport viewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0.0f, 1.0f);
+//    state.gui_vulkan.command_buffer.setViewport(0, 1, &viewport);
+
     uint64_t vertex_offset = 0;
     uint64_t index_offset = 0;
 
@@ -231,6 +234,11 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
             if (cmd.UserCallback) {
                 cmd.UserCallback(draw_list, &cmd);
             } else {
+//                vk::Rect2D scissor_rect(
+//                    vk::Offset2D(cmd.ClipRect.x, cmd.ClipRect.y),
+//                    vk::Extent2D(cmd.ClipRect.z, cmd.ClipRect.w)
+//                );
+//                state.gui_vulkan.command_buffer.setScissor(0, 1, &scissor_rect);
                 state.gui_vulkan.command_buffer.drawIndexed(cmd.ElemCount, 1, index_element_offset, 0, 0);
             }
         }
@@ -243,7 +251,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
         vk::AccessFlagBits::eMemoryRead, // To readable format for presenting
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR,
-        state.general_family_index, state.general_family_index, // No Transfer
+        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, // No Transfer
         state.swapchain_images[image_index], // Image
         base_subresource_range
         );
@@ -649,11 +657,11 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
 
     vk::PipelineColorBlendAttachmentState attachment_blending(
         true, // Enable Blending
-        vk::BlendFactor::eSrcColor, // Src Color
-        vk::BlendFactor::eDstColor, // Dst Color
+        vk::BlendFactor::eSrcAlpha, // Src Color
+        vk::BlendFactor::eOneMinusSrcAlpha, // Dst Color
         vk::BlendOp::eAdd, // Color Blend Op
-        vk::BlendFactor::eOneMinusSrcAlpha, // Src Alpha
-        vk::BlendFactor::eDstAlpha, // Dst Alpha
+        vk::BlendFactor::eOne, // Src Alpha
+        vk::BlendFactor::eZero, // Dst Alpha
         vk::BlendOp::eAdd, // Alpha Blend Op
         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
 
@@ -665,6 +673,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     );
 
     std::vector<vk::DynamicState> dynamic_states = {
+//        vk::DynamicState::eScissor,
 //        vk::DynamicState::eViewport,
     };
 
