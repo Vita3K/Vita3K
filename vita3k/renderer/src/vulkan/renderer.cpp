@@ -41,6 +41,27 @@ constexpr static uint32_t max_samplers = 64;
 
 constexpr static vk::Format screen_format = vk::Format::eB8G8R8A8Unorm;
 
+#ifdef __APPLE__
+const char *surface_macos_extension = "VK_MVK_macos_surface";
+const char *metal_surface_extension = "VK_EXT_metal_surface";
+
+const char *get_surface_extension() {
+    const std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties(nullptr);
+
+    if (std::find_if(extensions.begin(), extensions.end(), [](const vk::ExtensionProperties &props) {
+        return strcmp(props.extensionName, metal_surface_extension) == 0;
+    }) != extensions.end())
+        return metal_surface_extension;
+
+    if (std::find_if(extensions.begin(), extensions.end(), [](const vk::ExtensionProperties &props) {
+        return strcmp(props.extensionName, surface_macos_extension) == 0;
+    }) != extensions.end())
+        return surface_macos_extension;
+
+    return nullptr;
+}
+#endif
+
 const static std::vector<const char *> instance_layers = {
 #ifndef NDEBUG
     "VK_LAYER_LUNARG_standard_validation",
@@ -50,7 +71,7 @@ const static std::vector<const char *> instance_layers = {
 const static std::vector<const char *> instance_extensions = {
     "VK_KHR_surface",
 #ifdef __APPLE__
-    "VK_MVK_macos_surface",
+    get_surface_extension(),
 #endif
 #ifdef WIN32
     "VK_KHR_win32_surface",

@@ -14,10 +14,7 @@
 constexpr uint64_t next_image_timeout = 200000000;
 
 const std::array<float, 4> clear_color = { 0.125490203f, 0.698039234f, 0.666666687f, 1.0f };
-const std::array<vk::ClearValue, 2> clear_values = {
-    vk::ClearColorValue(clear_color),
-    vk::ClearColorValue(clear_color),
-};
+const vk::ClearValue clear_value((vk::ClearColorValue(clear_color)));
 
 // This is seperated because I use similar objects a lot and it is getting irritating to type.
 const vk::ImageSubresourceRange base_subresource_range = vk::ImageSubresourceRange(
@@ -25,6 +22,8 @@ const vk::ImageSubresourceRange base_subresource_range = vk::ImageSubresourceRan
     0, 1, // Level Range
     0, 1 // Layer Range
 );
+
+const vk::IndexType imgui_index_type = sizeof(ImDrawIdx) == 2 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
 
 static renderer::vulkan::VulkanState &vulkan_state(RendererPtr &renderer) {
     return reinterpret_cast<renderer::vulkan::VulkanState &>(*renderer.get());
@@ -93,6 +92,8 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
 
     result = vmaMapMemory(state.allocator, state.gui_vulkan.draw_allocation,
         reinterpret_cast<void **>(&draw_buffer_data));
+    vmaInvalidateAllocation(state.allocator, state.gui_vulkan.draw_allocation,
+        0, draw_data->TotalVtxCount * sizeof(ImDrawVert));
     if (result != VK_SUCCESS || !draw_buffer_data) {
         LOG_WARN("Failed to map memory for gui draw vertex buffer.");
         return;
@@ -108,6 +109,8 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
         draw_buffer_pointer += draw_list->VtxBuffer.Size;
     }
 
+    vmaFlushAllocation(state.allocator, state.gui_vulkan.draw_allocation,
+        0, draw_data->TotalVtxCount * sizeof(ImDrawVert));
     vmaUnmapMemory(state.allocator, state.gui_vulkan.draw_allocation);
 
     // Write to index buffer...
@@ -133,6 +136,8 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
 
     result = vmaMapMemory(state.allocator, state.gui_vulkan.index_allocation,
         reinterpret_cast<void **>(&index_buffer_data));
+    vmaInvalidateAllocation(state.allocator, state.gui_vulkan.index_allocation,
+        0, draw_data->TotalIdxCount * sizeof(ImDrawIdx));
     if (result != VK_SUCCESS || !index_buffer_data) {
         LOG_WARN("Failed to map memory for gui index buffer.");
         return;
@@ -148,6 +153,8 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
         index_buffer_pointer += draw_list->IdxBuffer.Size;
     }
 
+    vmaFlushAllocation(state.allocator, state.gui_vulkan.index_allocation,
+        0, draw_data->TotalIdxCount * sizeof(ImDrawIdx));
     vmaUnmapMemory(state.allocator, state.gui_vulkan.index_allocation);
 }
 
@@ -180,21 +187,21 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
 
     // Identity for now...
     float matrix[] = {
-        1, 0, 0, 0,
-        0, 1, 0, 0,
+        2.0f / DEFAULT_RES_WIDTH, 0, 0, 0,
+        0, 2.0f / DEFAULT_RES_HEIGHT, 0, 0,
         0, 0, 1, 0,
-        0, 0, 0, 1,
+        -1, -1, 0, 1,
     };
 
     state.gui_vulkan.command_buffer.updateBuffer(state.gui_vulkan.transformation_buffer, 0, sizeof(matrix), matrix);
 
     vk::RenderPassBeginInfo renderpass_begin_info(
         state.gui_vulkan.renderpass, // Renderpass
-        state.gui_vulkan.framebuffer, // Framebuffer
+        state.gui_vulkan.framebuffers[image_index], // Framebuffer
         vk::Rect2D(
             vk::Offset2D(0, 0),
             vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT)), // Render Area
-        clear_values.size(), clear_values.data() // Clear Colors
+        1, &clear_value // Clear Colors
     );
 
     state.gui_vulkan.command_buffer.beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
@@ -207,6 +214,36 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
         0, nullptr // Dynamic Offsets
         );
 
+//    vk::Viewport viewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0.0f, 1.0f);
+//    state.gui_vulkan.command_buffer.setViewport(0, 1, &viewport);
+
+    uint64_t vertex_offset = 0;
+    uint64_t index_offset = 0;
+
+    for (uint32_t a = 0; a < draw_data->CmdListsCount; a++) {
+        ImDrawList *draw_list = draw_data->CmdLists[a];
+
+        state.gui_vulkan.command_buffer.bindVertexBuffers(0, 1, &state.gui_vulkan.draw_buffer, &vertex_offset);
+        state.gui_vulkan.command_buffer.bindIndexBuffer(state.gui_vulkan.index_buffer, index_offset, imgui_index_type);
+        vertex_offset += draw_list->VtxBuffer.Size * sizeof(ImDrawVert);
+        index_offset += draw_list->IdxBuffer.Size * sizeof(ImDrawIdx);
+
+        uint64_t index_element_offset = 0;
+
+        for (const auto &cmd : draw_list->CmdBuffer) {
+            if (cmd.UserCallback) {
+                cmd.UserCallback(draw_list, &cmd);
+            } else {
+//                vk::Rect2D scissor_rect(
+//                    vk::Offset2D(cmd.ClipRect.x, cmd.ClipRect.y),
+//                    vk::Extent2D(cmd.ClipRect.z, cmd.ClipRect.w)
+//                );
+//                state.gui_vulkan.command_buffer.setScissor(0, 1, &scissor_rect);
+                state.gui_vulkan.command_buffer.drawIndexed(cmd.ElemCount, 1, index_element_offset, 0, 0);
+            }
+        }
+    }
+
     state.gui_vulkan.command_buffer.endRenderPass();
 
     vk::ImageMemoryBarrier color_attachment_present_barrier(
@@ -214,7 +251,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
         vk::AccessFlagBits::eMemoryRead, // To readable format for presenting
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR,
-        state.general_family_index, state.general_family_index, // No Transfer
+        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, // No Transfer
         state.swapchain_images[image_index], // Image
         base_subresource_range
         );
@@ -263,6 +300,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
 
     uint8_t *temp_memory;
     VkResult result = vmaMapMemory(state.allocator, temp_allocation, reinterpret_cast<void **>(&temp_memory));
+    vmaInvalidateAllocation(state.allocator, temp_allocation, 0, buffer_size);
     if (result != VK_SUCCESS) {
         LOG_ERROR("Could not map font buffer memory. VMA result: {}.", result);
         return false;
@@ -272,12 +310,13 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         return false;
     }
     std::memcpy(temp_memory, pixels, buffer_size);
+    vmaFlushAllocation(state.allocator, temp_allocation, 0, buffer_size);
     vmaUnmapMemory(state.allocator, temp_allocation);
 
     vk::ImageCreateInfo image_info(
         vk::ImageCreateFlags(), // No Flags
         vk::ImageType::e2D, // 2D Image
-        vk::Format::eR8G8B8A8Uint, // RGBA32
+        vk::Format::eR8G8B8A8Unorm, // RGBA32
         vk::Extent3D(width, height, 1), // Size
         1, // Mip Levels
         1, // Array Layers
@@ -306,7 +345,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::AccessFlagBits::eTransferWrite, // Will be written by a transfer operation.
         vk::ImageLayout::eUndefined, // Old Layout
         vk::ImageLayout::eTransferDstOptimal, // New Layout
-        state.transfer_family_index, state.transfer_family_index, // No Queue Family Transition
+        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, // No Queue Family Transition
         state.gui_vulkan.font_texture,
         base_subresource_range // Subresource Range
     );
@@ -339,12 +378,12 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
     );
 
     vk::ImageMemoryBarrier image_shader_read_only_barrier(
-        vk::AccessFlags(), // Was not written yet.
+        vk::AccessFlagBits::eTransferWrite, // Was just written to.
         vk::AccessFlagBits::eShaderRead, // Will be read by the shader.
         vk::ImageLayout::eTransferDstOptimal, // Old Layout
         vk::ImageLayout::eShaderReadOnlyOptimal, // New Layout
-        state.transfer_family_index, state.general_family_index, // No Queue Family Transition
-        state.gui_vulkan.font_texture,
+        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, // No Queue Family Transition
+        state.gui_vulkan.font_texture, // Image
         base_subresource_range // Subresource Range
     );
 
@@ -353,7 +392,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::DependencyFlags(), // No Dependency Flags
         0, nullptr, // No Memory Barriers
         0, nullptr, // No Buffer Barriers
-        1, &image_shader_read_only_barrier // 1 Image Memory Barrier
+        1, &image_shader_read_only_barrier // Image Memory Barriers
     );
 
     transfer_buffer.end();
@@ -367,7 +406,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::ImageViewCreateFlags(), // No Flags
         state.gui_vulkan.font_texture, // Image
         vk::ImageViewType::e2D, // Image View Type
-        vk::Format::eR8G8B8A8Uint, // Image View Format
+        vk::Format::eR8G8B8A8Unorm, // Image View Format
         vk::ComponentMapping(), // Default Component Mapping (RGBA)
         base_subresource_range // Subresource Range
         );
@@ -394,55 +433,36 @@ IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(RendererPtr &renderer
     state.device.destroy(state.gui_vulkan.descriptor_set_layout);
 
     state.device.destroy(state.gui_vulkan.sampler);
-    state.device.destroy(state.gui_vulkan.framebuffer);
+    for (const vk::Framebuffer &framebuffer : state.gui_vulkan.framebuffers) state.device.destroy(framebuffer);
     state.device.destroy(state.gui_vulkan.renderpass);
 }
 IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     auto &state = vulkan_state(renderer);
 
     // Create GUI Renderpass
-    std::vector<vk::AttachmentDescription> attachments = {
-        vk::AttachmentDescription(
-            vk::AttachmentDescriptionFlags(), // No Flags
-            vk::Format::eB8G8R8A8Unorm, // Format, MoltenVK requires bgra?
-            vk::SampleCountFlagBits::e1, // No Multisampling
-            vk::AttachmentLoadOp::eClear, // Clear Image
-            vk::AttachmentStoreOp::eStore, // Keep Image Data
-            vk::AttachmentLoadOp::eDontCare, // No Stencils
-            vk::AttachmentStoreOp::eDontCare, // No Stencils
-            vk::ImageLayout::eUndefined, // Initial Layout
-            vk::ImageLayout::eColorAttachmentOptimal // Final Layout
-            ),
-        vk::AttachmentDescription(
-            vk::AttachmentDescriptionFlags(), // No Flags
-            vk::Format::eB8G8R8A8Unorm, // Format, MoltenVK requires rgba?
-            vk::SampleCountFlagBits::e1, // No Multisampling
-            vk::AttachmentLoadOp::eClear, // Clear Image
-            vk::AttachmentStoreOp::eStore, // Keep Image Data
-            vk::AttachmentLoadOp::eDontCare, // No Stencils
-            vk::AttachmentStoreOp::eDontCare, // No Stencils
-            vk::ImageLayout::eUndefined, // Initial Layout
-            vk::ImageLayout::eColorAttachmentOptimal // Final Layout
-            ),
-    };
+    vk::AttachmentDescription attachment_description(
+        vk::AttachmentDescriptionFlags(), // No Flags
+        vk::Format::eB8G8R8A8Unorm, // Format, MoltenVK requires bgra?
+        vk::SampleCountFlagBits::e1, // No Multisampling
+        vk::AttachmentLoadOp::eClear, // Clear Image
+        vk::AttachmentStoreOp::eStore, // Keep Image Data
+        vk::AttachmentLoadOp::eDontCare, // No Stencils
+        vk::AttachmentStoreOp::eDontCare, // No Stencils
+        vk::ImageLayout::eUndefined, // Initial Layout
+        vk::ImageLayout::eColorAttachmentOptimal // Final Layout
+    );
 
-    std::vector<vk::AttachmentReference> color_attachment_references = {
-        vk::AttachmentReference(
-            0, // attachments[0]
-            vk::ImageLayout::eColorAttachmentOptimal // Image Layout
-            ),
-        vk::AttachmentReference(
-            1, // attachments[0]
-            vk::ImageLayout::eColorAttachmentOptimal // Image Layout
-            ),
-    };
+    vk::AttachmentReference attachment_reference(
+        0, // attachments[0]
+        vk::ImageLayout::eColorAttachmentOptimal // Image Layout
+    );
 
     std::vector<vk::SubpassDescription> subpasses = {
         vk::SubpassDescription(
             vk::SubpassDescriptionFlags(), // No Flags
             vk::PipelineBindPoint::eGraphics, // Type
             0, nullptr, // No Inputs
-            color_attachment_references.size(), color_attachment_references.data(), // Color Attachment References
+            1, &attachment_reference, // Color Attachment References
             nullptr, nullptr, // No Resolve or Depth/Stencil for now
             0, nullptr // Vulkan Book says you don't need this for a Color Attachment?
             )
@@ -450,7 +470,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
 
     vk::RenderPassCreateInfo renderpass_info(
         vk::RenderPassCreateFlags(), // No Flags
-        attachments.size(), attachments.data(), // Attachments
+        1, &attachment_description, // Attachments
         subpasses.size(), subpasses.data(), // Subpasses
         0, nullptr // Dependencies
     );
@@ -462,15 +482,17 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     }
 
     // Create Framebuffer
-    vk::FramebufferCreateInfo framebuffer_info(
-        vk::FramebufferCreateFlags(), // No Flags
-        state.gui_vulkan.renderpass, // Renderpass
-        2 /*state.swapchain_views.size()*/, state.swapchain_views /*.data()*/, // Attachments
-        DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, // Size
-        1 // Layers
-    );
+    for (uint32_t a = 0; a < 2; a++) {
+        vk::FramebufferCreateInfo framebuffer_info(
+            vk::FramebufferCreateFlags(), // No Flags
+            state.gui_vulkan.renderpass, // Renderpass
+            1, &state.swapchain_views[a], // Attachments
+            DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, // Size
+            1 // Layers
+        );
 
-    state.gui_vulkan.framebuffer = state.device.createFramebuffer(framebuffer_info, nullptr);
+        state.gui_vulkan.framebuffers[a] = state.device.createFramebuffer(framebuffer_info, nullptr);
+    }
 
     vk::SamplerCreateInfo sampler_info(
         vk::SamplerCreateFlags(), // No Flags
@@ -597,8 +619,8 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
         false // No Primitive Restart?
     );
 
-    vk::Viewport viewport(-1.0f, -1.0f, 1.0f, 1.0f, 0.0f, 1.0f);
-    vk::Rect2D scissor(vk::Offset2D(-1, -1), vk::Extent2D(2, 2));
+    vk::Viewport viewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0.0f, 1.0f);
+    vk::Rect2D scissor(vk::Offset2D(0, 0), vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT));
 
     vk::PipelineViewportStateCreateInfo gui_pipeline_viewport_info(
         vk::PipelineViewportStateCreateFlags(),
@@ -633,36 +655,26 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
         0.0f, 1.0f // Depth Bounds
     );
 
-    std::vector<vk::PipelineColorBlendAttachmentState> attachment_blending = {
-        vk::PipelineColorBlendAttachmentState(
-            true, // Enable Blending
-            vk::BlendFactor::eSrcColor, // Src Color
-            vk::BlendFactor::eDstColor, // Dst Color
-            vk::BlendOp::eAdd, // Color Blend Op
-            vk::BlendFactor::eOneMinusSrcAlpha, // Src Alpha
-            vk::BlendFactor::eDstAlpha, // Dst Alpha
-            vk::BlendOp::eAdd, // Alpha Blend Op
-            vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
-        vk::PipelineColorBlendAttachmentState(
-            true, // Enable Blending
-            vk::BlendFactor::eSrcColor, // Src Color
-            vk::BlendFactor::eDstColor, // Dst Color
-            vk::BlendOp::eAdd, // Color Blend Op
-            vk::BlendFactor::eOneMinusSrcAlpha, // Src Alpha
-            vk::BlendFactor::eDstAlpha, // Dst Alpha
-            vk::BlendOp::eAdd, // Alpha Blend Op
-            vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
-    };
+    vk::PipelineColorBlendAttachmentState attachment_blending(
+        true, // Enable Blending
+        vk::BlendFactor::eSrcAlpha, // Src Color
+        vk::BlendFactor::eOneMinusSrcAlpha, // Dst Color
+        vk::BlendOp::eAdd, // Color Blend Op
+        vk::BlendFactor::eOne, // Src Alpha
+        vk::BlendFactor::eZero, // Dst Alpha
+        vk::BlendOp::eAdd, // Alpha Blend Op
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
 
     vk::PipelineColorBlendStateCreateInfo gui_pipeline_blend_info(
         vk::PipelineColorBlendStateCreateFlags(), // No Flags
         false, vk::LogicOp::eClear, // No Logic Op
-        attachment_blending.size(), attachment_blending.data(), // Blending Attachments
+        1, &attachment_blending, // Blending Attachments
         { 1, 1, 1, 1 } // Blend Constants
     );
 
     std::vector<vk::DynamicState> dynamic_states = {
-        vk::DynamicState::eViewport,
+//        vk::DynamicState::eScissor,
+//        vk::DynamicState::eViewport,
     };
 
     vk::PipelineDynamicStateCreateInfo gui_pipeline_dynamic_info(
