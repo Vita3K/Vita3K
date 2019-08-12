@@ -59,7 +59,7 @@ struct VulkanState : public renderer::State {
         vk::ShaderModule fragment_module;
 
         vk::RenderPass renderpass;
-        vk::Framebuffer framebuffer;
+        vk::Framebuffer framebuffers[2];
         vk::DescriptorSetLayout descriptor_set_layout;
         vk::DescriptorPool descriptor_pool;
         vk::DescriptorSet descriptor_set;
