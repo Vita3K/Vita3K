@@ -26,6 +26,8 @@ const vk::ImageSubresourceRange base_subresource_range = vk::ImageSubresourceRan
     0, 1 // Layer Range
 );
 
+const vk::IndexType imgui_index_type = sizeof(ImDrawIdx) == 2 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
+
 static renderer::vulkan::VulkanState &vulkan_state(RendererPtr &renderer) {
     return reinterpret_cast<renderer::vulkan::VulkanState &>(*renderer.get());
 }
@@ -108,6 +110,12 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
         draw_buffer_pointer += draw_list->VtxBuffer.Size;
     }
 
+//    for (uint32_t vertex_id = 0; vertex_id < draw_data->TotalVtxCount; vertex_id++) {
+//        ImDrawVert vert = draw_buffer_data[vertex_id];
+//
+//        LOG_INFO("Vertex {}: ({}, {}) uv ({}, {}) col {}", vertex_id, vert.pos.x, vert.pos.y, vert.uv.x, vert.uv.y, vert.col);
+//    }
+
     vmaUnmapMemory(state.allocator, state.gui_vulkan.draw_allocation);
 
     // Write to index buffer...
@@ -180,8 +188,8 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
 
     // Identity for now...
     float matrix[] = {
-        1, 0, 0, 0,
-        0, 1, 0, 0,
+        1.0f / DEFAULT_RES_WIDTH, 0, 0, 0,
+        0, 1.0f / DEFAULT_RES_HEIGHT, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1,
     };
@@ -206,6 +214,28 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawD
         1, &state.gui_vulkan.descriptor_set, // Sets
         0, nullptr // Dynamic Offsets
         );
+
+    uint64_t vertex_offset = 0;
+    uint64_t index_offset = 0;
+
+    for (uint32_t a = 0; a < draw_data->CmdListsCount; a++) {
+        ImDrawList *draw_list = draw_data->CmdLists[a];
+
+        state.gui_vulkan.command_buffer.bindVertexBuffers(0, 1, &state.gui_vulkan.draw_buffer, &vertex_offset);
+        state.gui_vulkan.command_buffer.bindIndexBuffer(state.gui_vulkan.index_buffer, index_offset, imgui_index_type);
+        vertex_offset += draw_list->VtxBuffer.Size * sizeof(ImDrawVert);
+        index_offset += draw_list->IdxBuffer.Size * sizeof(ImDrawIdx);
+
+        uint64_t index_element_offset = 0;
+
+        for (const auto &cmd : draw_list->CmdBuffer) {
+            if (cmd.UserCallback) {
+                cmd.UserCallback(draw_list, &cmd);
+            } else {
+                state.gui_vulkan.command_buffer.drawIndexed(cmd.ElemCount, 1, index_element_offset, 0, 0);
+            }
+        }
+    }
 
     state.gui_vulkan.command_buffer.endRenderPass();
 
@@ -277,7 +307,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
     vk::ImageCreateInfo image_info(
         vk::ImageCreateFlags(), // No Flags
         vk::ImageType::e2D, // 2D Image
-        vk::Format::eR8G8B8A8Uint, // RGBA32
+        vk::Format::eR8G8B8A8Unorm, // RGBA32
         vk::Extent3D(width, height, 1), // Size
         1, // Mip Levels
         1, // Array Layers
@@ -306,7 +336,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::AccessFlagBits::eTransferWrite, // Will be written by a transfer operation.
         vk::ImageLayout::eUndefined, // Old Layout
         vk::ImageLayout::eTransferDstOptimal, // New Layout
-        state.transfer_family_index, state.transfer_family_index, // No Queue Family Transition
+        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, // No Queue Family Transition
         state.gui_vulkan.font_texture,
         base_subresource_range // Subresource Range
     );
@@ -339,12 +369,12 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
     );
 
     vk::ImageMemoryBarrier image_shader_read_only_barrier(
-        vk::AccessFlags(), // Was not written yet.
+        vk::AccessFlagBits::eTransferWrite, // Was just written to.
         vk::AccessFlagBits::eShaderRead, // Will be read by the shader.
         vk::ImageLayout::eTransferDstOptimal, // Old Layout
         vk::ImageLayout::eShaderReadOnlyOptimal, // New Layout
-        state.transfer_family_index, state.general_family_index, // No Queue Family Transition
-        state.gui_vulkan.font_texture,
+        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, // No Queue Family Transition
+        state.gui_vulkan.font_texture, // Image
         base_subresource_range // Subresource Range
     );
 
@@ -353,7 +383,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::DependencyFlags(), // No Dependency Flags
         0, nullptr, // No Memory Barriers
         0, nullptr, // No Buffer Barriers
-        1, &image_shader_read_only_barrier // 1 Image Memory Barrier
+        1, &image_shader_read_only_barrier // Image Memory Barriers
     );
 
     transfer_buffer.end();
@@ -367,7 +397,7 @@ static bool ImGui_ImplSdlVulkan_CreateFontsTexture(renderer::vulkan::VulkanState
         vk::ImageViewCreateFlags(), // No Flags
         state.gui_vulkan.font_texture, // Image
         vk::ImageViewType::e2D, // Image View Type
-        vk::Format::eR8G8B8A8Uint, // Image View Format
+        vk::Format::eR8G8B8A8Unorm, // Image View Format
         vk::ComponentMapping(), // Default Component Mapping (RGBA)
         base_subresource_range // Subresource Range
         );
@@ -597,8 +627,8 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
         false // No Primitive Restart?
     );
 
-    vk::Viewport viewport(-1.0f, -1.0f, 1.0f, 1.0f, 0.0f, 1.0f);
-    vk::Rect2D scissor(vk::Offset2D(-1, -1), vk::Extent2D(2, 2));
+    vk::Viewport viewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0.0f, 1.0f);
+    vk::Rect2D scissor(vk::Offset2D(0, 0), vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT));
 
     vk::PipelineViewportStateCreateInfo gui_pipeline_viewport_info(
         vk::PipelineViewportStateCreateFlags(),
@@ -662,7 +692,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer) {
     );
 
     std::vector<vk::DynamicState> dynamic_states = {
-        vk::DynamicState::eViewport,
+//        vk::DynamicState::eViewport,
     };
 
     vk::PipelineDynamicStateCreateInfo gui_pipeline_dynamic_info(
