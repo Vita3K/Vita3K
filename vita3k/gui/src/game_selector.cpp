@@ -43,7 +43,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImVec2(0, 0), display_size);
     }
 
-    static int &icon_size = host.cfg.icon_size;
+    const float icon_size = static_cast<float>(host.cfg.icon_size);
 
     switch (gui.game_selector.state) {
     case SELECT_APP:
@@ -167,14 +167,13 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             bool selected[4] = { false, false, false, false };
             if (!gui.game_search_bar.PassFilter(game.title.c_str()) && !gui.game_search_bar.PassFilter(game.title_id.c_str()))
                 continue;
-            if (gui.game_selector.icons[game.title_id]) {
-                GLuint texture = gui.game_selector.icons[game.title_id].get();
-                ImGui::Image(reinterpret_cast<void *>(texture), ImVec2(icon_size, icon_size));
+            if (gui.game_selector.icons.find(game.title_id) != gui.game_selector.icons.end()) {
+                ImGui::Image(gui.game_selector.icons[game.title_id], ImVec2(icon_size, icon_size));
                 if (ImGui::IsItemHovered()) {
                     if (host.cfg.show_game_background) {
-                        if (!gui.game_backgrounds[game.title_id])
+                        if (gui.game_backgrounds.find(game.title_id) == gui.game_backgrounds.end())
                             load_game_background(gui, host, game.title_id);
-                        else if (gui.current_background != static_cast<std::uint32_t>(gui.game_backgrounds[game.title_id]))
+                        else
                             gui.current_background = gui.game_backgrounds[game.title_id];
                     }
                     if (ImGui::IsMouseClicked(0))
@@ -188,10 +187,10 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImGui::NextColumn();
             if (ImGui::IsItemHovered()) {
                 if (host.cfg.show_game_background) {
-                    if (gui.user_backgrounds[host.cfg.background_image] && gui.current_background != static_cast<std::uint32_t>(gui.user_backgrounds[host.cfg.background_image]))
+                    if (gui.user_backgrounds.find(host.cfg.background_image) != gui.user_backgrounds.end())
                         gui.current_background = gui.user_backgrounds[host.cfg.background_image];
-                    else if (!gui.user_backgrounds[host.cfg.background_image] && gui.current_background != 0)
-                        gui.current_background = 0;
+                    else
+                        gui.current_background = nullptr;
                 }
             }
             ImGui::Selectable(game.title.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));

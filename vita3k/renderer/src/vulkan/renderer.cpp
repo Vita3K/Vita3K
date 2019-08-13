@@ -495,21 +495,6 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         }
     }
 
-    // Create Descriptor Pool
-    {
-        vk::DescriptorPoolCreateInfo descriptor_pool_info(
-            vk::DescriptorPoolCreateFlags(), // No Flags
-            max_sets, // Maximum Sets
-            descriptor_pool_sizes.size(), descriptor_pool_sizes.data() // Descriptor Pool
-        );
-
-        vulkan_state.descriptor_pool = vulkan_state.device.createDescriptorPool(descriptor_pool_info);
-        if (!vulkan_state.descriptor_pool) {
-            LOG_ERROR("Failed to create Vulkan descriptor pool.");
-            return false;
-        }
-    }
-
     // Create Swapchain
     {
         // TODO: Extents should be based on surface capabilities.
@@ -579,8 +564,6 @@ void close(std::unique_ptr<renderer::State> &state) {
 
     vulkan_state.device.destroy(vulkan_state.swapchain);
     vulkan_state.instance.destroy(vulkan_state.surface);
-
-    vulkan_state.device.destroy(vulkan_state.descriptor_pool);
 
     vmaDestroyAllocator(vulkan_state.allocator);
 

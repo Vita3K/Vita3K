@@ -51,14 +51,14 @@
 #include <glutil/gl.h>
 #include <renderer/state.h>
 
-static renderer::gl::GLState &gl_state(RendererPtr &renderer) {
-    return reinterpret_cast<renderer::gl::GLState &>(*renderer.get());
+static renderer::gl::GLState &gl_state(renderer::State *renderer) {
+    return reinterpret_cast<renderer::gl::GLState &>(*renderer);
 }
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so.
 // If text or lines are blurry when integrating ImGui in your engine: in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
-void ImGui_ImplSdlGL3_RenderDrawData(RendererPtr &renderer, ImDrawData *draw_data) {
+void ImGui_ImplSdlGL3_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data) {
     auto &state = gl_state(renderer);
 
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
@@ -211,7 +211,7 @@ static void ImGui_ImplSdlGL3_SetClipboardText(void *, const char *text) {
     SDL_SetClipboardText(text);
 }
 
-void ImGui_ImplSdlGL3_CreateFontsTexture(RendererPtr &renderer) {
+void ImGui_ImplSdlGL3_CreateFontsTexture(renderer::State *renderer) {
     auto &state = gl_state(renderer);
 
     // Build texture atlas
@@ -237,7 +237,7 @@ void ImGui_ImplSdlGL3_CreateFontsTexture(RendererPtr &renderer) {
     glBindTexture(GL_TEXTURE_2D, last_texture);
 }
 
-bool ImGui_ImplSdlGL3_CreateDeviceObjects(RendererPtr &renderer) {
+bool ImGui_ImplSdlGL3_CreateDeviceObjects(renderer::State *renderer) {
     auto &state = gl_state(renderer);
 
     // Backup GL state
@@ -298,10 +298,12 @@ bool ImGui_ImplSdlGL3_CreateDeviceObjects(RendererPtr &renderer) {
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
     glBindVertexArray(last_vertex_array);
 
+    state.gui.init = true;
+
     return true;
 }
 
-void ImGui_ImplSdlGL3_InvalidateDeviceObjects(RendererPtr &renderer) {
+void ImGui_ImplSdlGL3_InvalidateDeviceObjects(renderer::State *renderer) {
     auto &state = gl_state(renderer);
 
     if (state.gui_gl.vbo)
@@ -333,7 +335,7 @@ void ImGui_ImplSdlGL3_InvalidateDeviceObjects(RendererPtr &renderer) {
     }
 }
 
-bool ImGui_ImplSdlGL3_Init(RendererPtr &renderer, SDL_Window *window, const char *glsl_version) {
+bool ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Window *window, const char *glsl_version) {
     auto &state = gl_state(renderer);
 
     // Store GL version string so we can refer to it later in case we recreate shaders.
@@ -394,7 +396,7 @@ bool ImGui_ImplSdlGL3_Init(RendererPtr &renderer, SDL_Window *window, const char
     return true;
 }
 
-void ImGui_ImplSdlGL3_Shutdown(RendererPtr &renderer) {
+void ImGui_ImplSdlGL3_Shutdown(renderer::State *renderer) {
     auto &state = gl_state(renderer);
 
     // Destroy SDL mouse cursors
@@ -409,3 +411,25 @@ void ImGui_ImplSdlGL3_Shutdown(RendererPtr &renderer) {
 IMGUI_API void ImGui_ImplSdlGL3_GetDrawableSize(SDL_Window *window, int &width, int &height) {
     SDL_GL_GetDrawableSize(window, &width, &height);
 }
+
+IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(renderer::State *renderer, void *data, int width, int height) {
+    GLuint texture;
+    glGenTextures(1, &texture);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    return reinterpret_cast<ImTextureID>(static_cast<uintptr_t>(texture));
+}
+
+IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(renderer::State *renderer, ImTextureID texture) {
+    auto texture_name = static_cast<GLuint>(reinterpret_cast<uintptr_t>(texture));
+    glDeleteTextures(1, &texture_name);
+}
+
+
