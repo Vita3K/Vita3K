@@ -100,21 +100,6 @@ static void init_style() {
     style->Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 }
 
-static GLuint load_texture(int32_t width, int32_t height, const unsigned char *data, GLenum type = GL_RGBA) {
-    GLuint texture;
-    glGenTextures(1, &texture);
-
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, type, width, height, 0, type, GL_UNSIGNED_BYTE, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    return texture;
-}
-
 static void init_font(GuiState &gui, HostState &host) {
     const auto DATA_DIRNAME = "data";
     const auto FONT_DIRNAME = "fonts";
@@ -143,7 +128,7 @@ static void init_font(GuiState &gui, HostState &host) {
     gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
-void init_background(GuiState &gui, const std::string &image_path) {
+void init_background(GuiState &gui, HostState &host, const std::string &image_path) {
     if (!fs::exists(image_path)) {
         LOG_WARN("Image doesn't exist: {}.", image_path);
         return;
@@ -158,7 +143,7 @@ void init_background(GuiState &gui, const std::string &image_path) {
         return;
     }
 
-    gui.user_backgrounds[image_path].init(load_texture(width, height, data), glDeleteTextures);
+    gui.user_backgrounds[image_path].init(host.renderer.get(), data, width, height);
     gui.current_background = gui.user_backgrounds[image_path];
     stbi_image_free(data);
 }
@@ -187,7 +172,7 @@ static void init_icons(GuiState &gui, HostState &host) {
             LOG_ERROR("Invalid icon for title {}, {}.", game.title_id, game.title);
             continue;
         }
-        gui.game_selector.icons[game.title_id].init(load_texture(width, height, data, GL_RGBA), glDeleteTextures);
+        gui.game_selector.icons[game.title_id].init(host.renderer.get(), data, width, height);
         stbi_image_free(data);
     }
 }
@@ -204,10 +189,10 @@ void load_game_background(GuiState &gui, HostState &host, const std::string &tit
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg.png");
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg0.png");
         } else {
-            if (gui.user_backgrounds[host.cfg.background_image] && gui.current_background != static_cast<std::uint32_t>(gui.user_backgrounds[host.cfg.background_image]))
+            if (gui.user_backgrounds.find(host.cfg.background_image) != gui.user_backgrounds.end())
                 gui.current_background = gui.user_backgrounds[host.cfg.background_image];
-            else if (!gui.user_backgrounds[host.cfg.background_image] && gui.current_background != 0)
-                gui.current_background = 0;
+            else
+                gui.current_background = nullptr;
             LOG_WARN("Game background not found for title {}.", title_id);
             return;
         }
@@ -217,7 +202,7 @@ void load_game_background(GuiState &gui, HostState &host, const std::string &tit
         LOG_ERROR("Invalid game background for title {}.", title_id);
         return;
     }
-    gui.game_backgrounds[title_id].init(load_texture(width, height, data), glDeleteTextures);
+    gui.game_backgrounds[title_id].init(host.renderer.get(), data, width, height);
     stbi_image_free(data);
 }
 
@@ -248,40 +233,39 @@ void get_game_titles(GuiState &gui, HostState &host) {
     }
 }
 
-std::uint32_t load_image(GuiState &gui, const char *data, const std::size_t size) {
+ImTextureID load_image(HostState &host, const char *data, const std::size_t size) {
     int width;
     int height;
 
     stbi_uc *img_data = stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(data), size, &width, &height,
         nullptr, STBI_rgb_alpha);
 
-    if (!data) {
-        return static_cast<std::uint32_t>(-1);
-    }
+    if (!data)
+        return nullptr;
 
-    const auto handle = load_texture(width, height, img_data);
+    const auto handle = ImGui_ImplSdl_CreateTexture(host.renderer.get(), img_data, width, height);
     stbi_image_free(img_data);
 
     return handle;
 }
 
-void destroy_image(const std::uint32_t obj) {
-    glDeleteTextures(1, &obj);
-}
-
 void init(GuiState &gui, HostState &host) {
     ImGui::CreateContext();
-    bool result = ImGui_ImplSdl_Init(host.renderer, host.window.get(), host.base_path);
+    bool result;
+    result = ImGui_ImplSdl_Init(host.renderer.get(), host.window.get(), host.base_path);
     assert(result);
 
     init_style();
     init_font(gui, host);
 
+    result = ImGui_ImplSdl_CreateDeviceObjects(host.renderer.get());
+    assert(result);
+
     get_game_titles(gui, host);
-    //init_icons(gui, host);
+    init_icons(gui, host);
 
     if (!host.cfg.background_image.empty())
-        init_background(gui, host.cfg.background_image);
+        init_background(gui, host, host.cfg.background_image);
 
     // Initialize trophy callback
     host.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
@@ -291,7 +275,7 @@ void init(GuiState &gui, HostState &host) {
 }
 
 void draw_begin(GuiState &gui, HostState &host) {
-    ImGui_ImplSdl_NewFrame(host.renderer, host.window.get());
+    ImGui_ImplSdl_NewFrame(host.renderer.get(), host.window.get());
     host.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
 
     ImGui::PushFont(gui.normal_font);
@@ -301,7 +285,7 @@ void draw_end(HostState &host, SDL_Window *window) {
     ImGui::PopFont();
 
     ImGui::Render();
-    ImGui_ImplSdl_RenderDrawData(host.renderer, ImGui::GetDrawData());
+    ImGui_ImplSdl_RenderDrawData(host.renderer.get(), ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
 }
 

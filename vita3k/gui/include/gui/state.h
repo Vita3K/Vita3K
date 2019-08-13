@@ -23,6 +23,8 @@
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
+#include <gui/imgui_impl_sdl.h>
+
 #include <glutil/object.h>
 
 #include <queue>
@@ -47,7 +49,7 @@ struct Game {
 
 struct GamesSelector {
     std::vector<Game> games;
-    std::map<std::string, GLObject> icons;
+    std::map<std::string, ImGui_Texture> icons;
     std::string selected_title_id;
     bool is_game_list_sorted{ false };
     SortState title_id_sort_state = NOT_SORTED;
@@ -108,16 +110,16 @@ struct GuiState {
     ImGuiTextFilter module_search_bar;
 
     ImGuiTextFilter game_search_bar;
-    GLuint current_background = 0;
+    ImTextureID current_background{};
     GLuint display = 0;
-    std::map<std::string, GLObject> game_backgrounds;
-    std::map<std::string, GLObject> user_backgrounds;
+    std::map<std::string, ImGui_Texture> game_backgrounds;
+    std::map<std::string, ImGui_Texture> user_backgrounds;
 
     SceUID thread_watch_index = -1;
 
     std::uint32_t trophy_window_frame_count{ 0 };
     TrophyAnimationStage trophy_window_frame_stage{ TrophyAnimationStage::SLIDE_IN };
-    std::uint32_t trophy_window_icon{ 0xFFFFFFFF };
+    ImTextureID trophy_window_icon{};
 
     std::queue<NpTrophyUnlockCallbackData> trophy_unlock_display_requests;
     std::mutex trophy_unlock_display_requests_access_mutex;

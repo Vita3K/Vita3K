@@ -3,6 +3,8 @@
 #include <gui/functions.h>
 #include <gui/state.h>
 
+#include <host/state.h>
+
 namespace gui {
 
 static constexpr float TROPHY_MOVE_DELTA = 12.0f;
@@ -12,7 +14,7 @@ static const ImVec2 TROPHY_WINDOW_SIZE = ImVec2(360, TROPHY_WINDOW_ICON_SIZE + T
 static constexpr int TROPHY_WINDOW_STATIC_FRAME_COUNT = 250;
 static constexpr float TROPHY_WINDOW_Y_POS = 20.0f;
 
-static void draw_trophy_unlocked(GuiState &gui, NpTrophyUnlockCallbackData &callback_data) {
+static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockCallbackData &callback_data) {
     if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN
         || gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_OUT) {
         ImVec2 target_window_pos = ImVec2(0.0f, 0.0f);
@@ -27,7 +29,7 @@ static void draw_trophy_unlocked(GuiState &gui, NpTrophyUnlockCallbackData &call
             gui.trophy_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_Y_POS);
 
             // Load icon
-            gui.trophy_window_icon = load_image(gui, (const char *)callback_data.icon_buf.data(),
+            gui.trophy_window_icon = load_image(host, (const char *)callback_data.icon_buf.data(),
                 static_cast<std::uint32_t>(callback_data.icon_buf.size()));
         } else if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN && gui.trophy_window_pos.x > target_window_pos.x) {
             gui.trophy_window_pos.x -= TROPHY_MOVE_DELTA;
@@ -106,7 +108,7 @@ static void draw_trophy_unlocked(GuiState &gui, NpTrophyUnlockCallbackData &call
     }
 }
 
-void draw_trophies_unlocked(GuiState &gui) {
+void draw_trophies_unlocked(GuiState &gui, HostState &host) {
     const std::lock_guard<std::mutex> guard(gui.trophy_unlock_display_requests_access_mutex);
 
     if (!gui.trophy_unlock_display_requests.empty()) {
@@ -115,12 +117,12 @@ void draw_trophies_unlocked(GuiState &gui) {
 
             // Destroy the texture
             if (gui.trophy_window_frame_count != 0xFFFFFFFF)
-                destroy_image(gui.trophy_window_icon);
+                ImGui_ImplSdl_DeleteTexture(host.renderer.get(), gui.trophy_window_icon);
 
             gui.trophy_window_frame_stage = TrophyAnimationStage::SLIDE_IN;
             gui.trophy_window_frame_count = 0;
         } else {
-            draw_trophy_unlocked(gui, gui.trophy_unlock_display_requests.back());
+            draw_trophy_unlocked(gui, host, gui.trophy_unlock_display_requests.back());
         }
     }
 }

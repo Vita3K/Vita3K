@@ -6,7 +6,7 @@
 
 #include <SDL.h>
 
-IMGUI_API bool ImGui_ImplSdl_Init(RendererPtr &renderer, SDL_Window *window, const std::string &base_path) {
+IMGUI_API bool ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_Init(renderer, window, nullptr);
@@ -14,7 +14,7 @@ IMGUI_API bool ImGui_ImplSdl_Init(RendererPtr &renderer, SDL_Window *window, con
         return ImGui_ImplSdlVulkan_Init(renderer, window, base_path);
     }
 }
-IMGUI_API void ImGui_ImplSdl_Shutdown(RendererPtr &renderer) {
+IMGUI_API void ImGui_ImplSdl_Shutdown(renderer::State *renderer) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_Shutdown(renderer);
@@ -22,12 +22,7 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(RendererPtr &renderer) {
         return ImGui_ImplSdlVulkan_Shutdown(renderer);
     }
 }
-IMGUI_API void ImGui_ImplSdl_NewFrame(RendererPtr &renderer, SDL_Window *window) {
-    if (!renderer->gui.init) {
-        ImGui_ImplSdl_CreateDeviceObjects(renderer);
-        renderer->gui.init = true;
-    }
-
+IMGUI_API void ImGui_ImplSdl_NewFrame(renderer::State *renderer, SDL_Window *window) {
     ImGuiIO &io = ImGui::GetIO();
 
     // Setup display size (every frame to accommodate for window resizing)
@@ -83,7 +78,7 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(RendererPtr &renderer, SDL_Window *window)
     // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
     ImGui::NewFrame();
 }
-IMGUI_API void ImGui_ImplSdl_RenderDrawData(RendererPtr &renderer, ImDrawData *draw_data) {
+IMGUI_API void ImGui_ImplSdl_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_RenderDrawData(renderer, draw_data);
@@ -96,7 +91,7 @@ IMGUI_API void ImGui_ImplSdl_RenderDrawData(RendererPtr &renderer, ImDrawData *d
 // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
 // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
 // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-bool ImGui_ImplSdl_ProcessEvent(RendererPtr &renderer, SDL_Event *event) {
+bool ImGui_ImplSdl_ProcessEvent(renderer::State *renderer, SDL_Event *event) {
     ImGuiIO &io = ImGui::GetIO();
     switch (event->type) {
     case SDL_MOUSEWHEEL: {
@@ -138,7 +133,7 @@ bool ImGui_ImplSdl_ProcessEvent(RendererPtr &renderer, SDL_Event *event) {
     return false;
 }
 
-IMGUI_API void ImGui_ImplSdl_GetDrawableSize(RendererPtr &renderer, SDL_Window *window, int &width, int &height) {
+IMGUI_API void ImGui_ImplSdl_GetDrawableSize(renderer::State *renderer, SDL_Window *window, int &width, int &height) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         ImGui_ImplSdlGL3_GetDrawableSize(window, width, height);
@@ -147,8 +142,26 @@ IMGUI_API void ImGui_ImplSdl_GetDrawableSize(RendererPtr &renderer, SDL_Window *
     }
 }
 
+IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(renderer::State *renderer, void *data, int width, int height) {
+    switch (renderer->current_backend) {
+    case renderer::Backend::OpenGL:
+        return ImGui_ImplSdlGL3_CreateTexture(renderer, data, width, height);
+    case renderer::Backend::Vulkan:
+        return ImGui_ImplSdlVulkan_CreateTexture(renderer, data, width, height);
+    }
+}
+
+IMGUI_API void ImGui_ImplSdl_DeleteTexture(renderer::State *renderer, ImTextureID texture) {
+    switch (renderer->current_backend) {
+    case renderer::Backend::OpenGL:
+        return ImGui_ImplSdlGL3_DeleteTexture(renderer, texture);
+    case renderer::Backend::Vulkan:
+        return ImGui_ImplSdlVulkan_DeleteTexture(renderer, texture);
+    }
+}
+
 // Use if you want to reset your rendering device without losing ImGui state.
-IMGUI_API void ImGui_ImplSdl_InvalidateDeviceObjects(RendererPtr &renderer) {
+IMGUI_API void ImGui_ImplSdl_InvalidateDeviceObjects(renderer::State *renderer) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_InvalidateDeviceObjects(renderer);
@@ -156,11 +169,43 @@ IMGUI_API void ImGui_ImplSdl_InvalidateDeviceObjects(RendererPtr &renderer) {
         return ImGui_ImplSdlVulkan_InvalidateDeviceObjects(renderer);
     }
 }
-IMGUI_API bool ImGui_ImplSdl_CreateDeviceObjects(RendererPtr &renderer) {
+IMGUI_API bool ImGui_ImplSdl_CreateDeviceObjects(renderer::State *renderer) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_CreateDeviceObjects(renderer);
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer);
     }
+}
+
+void ImGui_Texture::init(renderer::State *state, ImTextureID texture) {
+    assert(!texture_id);
+
+    renderer = state;
+    texture_id = texture;
+}
+
+void ImGui_Texture::init(renderer::State *state, void *data, int width, int height) {
+    init(state, ImGui_ImplSdl_CreateTexture(state, data, width, height));
+}
+
+ImGui_Texture::operator bool() {
+    return texture_id != nullptr;
+}
+
+ImGui_Texture::operator ImTextureID() {
+    return texture_id;
+}
+
+bool ImGui_Texture::operator==(const ImGui_Texture &texture) {
+    return texture_id == texture.texture_id;
+}
+
+ImGui_Texture::ImGui_Texture(renderer::State *renderer, void *data, int width, int height) {
+    init(renderer, data, width, height);
+}
+
+ImGui_Texture::~ImGui_Texture() {
+    if (texture_id)
+        ImGui_ImplSdl_DeleteTexture(renderer, texture_id);
 }

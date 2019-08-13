@@ -8,11 +8,14 @@
 
 typedef union SDL_Event SDL_Event;
 
-IMGUI_API bool ImGui_ImplSdlVulkan_Init(RendererPtr &renderer, SDL_Window *window, const std::string &base_path);
-IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(RendererPtr &renderer);
-IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(RendererPtr &renderer, ImDrawData *draw_data);
+IMGUI_API bool ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path);
+IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(renderer::State *renderer);
+IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data);
 IMGUI_API void ImGui_ImplSdlVulkan_GetDrawableSize(SDL_Window *window, int &width, int &height);
 
+IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *renderer, void *data, int width, int height);
+IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(renderer::State *renderer, ImTextureID texture);
+
 // Use if you want to reset your rendering device without losing ImGui state.
-IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(RendererPtr &renderer);
-IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(RendererPtr &renderer);
+IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(renderer::State *renderer);
+IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer);

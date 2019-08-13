@@ -22,6 +22,8 @@
 
 #include <renderer/vulkan/types.h>
 
+typedef void *ImTextureID;
+
 namespace renderer::vulkan {
 struct VulkanState : public renderer::State {
     vk::Instance instance;
@@ -60,16 +62,15 @@ struct VulkanState : public renderer::State {
 
         vk::RenderPass renderpass;
         vk::Framebuffer framebuffers[2];
-        vk::DescriptorSetLayout descriptor_set_layout;
+        vk::DescriptorSetLayout matrix_layout;
+        vk::DescriptorSetLayout sampler_layout;
         vk::DescriptorPool descriptor_pool;
-        vk::DescriptorSet descriptor_set;
+        vk::DescriptorSet matrix_set;
         vk::PipelineLayout pipeline_layout;
         vk::Pipeline pipeline;
 
         vk::Sampler sampler;
-        VmaAllocation font_allocation = VK_NULL_HANDLE;
-        vk::Image font_texture;
-        vk::ImageView font_texture_view;
+        ImTextureID font_texture{};
         VmaAllocation draw_allocation = VK_NULL_HANDLE;
         vk::Buffer draw_buffer;
         size_t draw_buffer_vertices = 0;
@@ -83,8 +84,6 @@ struct VulkanState : public renderer::State {
 
         vk::Fence next_image_fence;
     } gui_vulkan;
-
-    vk::DescriptorPool descriptor_pool;
 
     vk::SurfaceKHR surface;
     vk::SwapchainKHR swapchain;
