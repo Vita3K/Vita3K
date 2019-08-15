@@ -207,7 +207,7 @@ EXPORT(int, sceIoGetstatByFdAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoLseek32, const SceUID fd, const SceOff offset, const SceIoSeekMode whence) {
+EXPORT(int, sceIoLseek32, const SceUID fd, const int32_t offset, const SceIoSeekMode whence) {
     return static_cast<int>(seek_file(fd, offset, whence, host.io, export_name));
 }
 
