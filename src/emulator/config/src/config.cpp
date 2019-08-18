@@ -243,7 +243,7 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.wait_for_debugger = rhs.wait_for_debugger;
     if (lhs.hardware_flip != rhs.hardware_flip && (!init || rhs.hardware_flip))
         lhs.hardware_flip = rhs.hardware_flip;
-    if (lhs.performance_overlay != rhs.performance_overlay && (!init || !rhs.performance_overlay))
+    if (lhs.performance_overlay != rhs.performance_overlay && (!init || rhs.performance_overlay))
         lhs.performance_overlay = rhs.performance_overlay;
 
     // Not stored in config file
