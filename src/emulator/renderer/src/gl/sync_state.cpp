@@ -99,29 +99,61 @@ static void set_stencil_state(GLenum face, const GxmStencilState &state) {
     glStencilMaskSeparate(face, state.write_mask);
 }
 
-void sync_viewport(const GxmContextState &state) {
+void sync_viewport(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
     // Viewport.
     const GLsizei display_w = state.color_surface.pbeEmitWords[0];
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
     const GxmViewport &viewport = state.viewport;
     if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
-        const GLfloat w = std::abs(viewport.scale.x * 2);
-        const GLfloat h = std::abs(viewport.scale.y * 2);
-        const GLfloat x = viewport.offset.x - viewport.scale.x;
-        const GLfloat y = display_h - (viewport.offset.y - viewport.scale.y);
+        const GLfloat ymin = viewport.offset.y + viewport.scale.y;
+        const GLfloat ymax = viewport.offset.y - viewport.scale.y - 1;
+        const GLfloat yedge = std::min<GLfloat>(viewport.offset.y, ymax);
+
+        const GLfloat w = std::abs(2 * viewport.scale.x);
+        const GLfloat h = std::abs(2 * viewport.scale.y);
+        const GLfloat x = viewport.offset.x - std::abs(viewport.scale.x);
+        GLfloat y = 0;
+
+        if (hardware_flip && (ymin < ymax)) {
+            // Y-Coordinate flipped later in pixels. Use top left coordinate system.
+            y = ymin;
+        } else {
+            y = (display_h - std::abs(yedge)) - std::abs(viewport.scale.y);
+        }
+
+        if (hardware_flip) {
+            context.viewport_flip[0] = 1.0f;
+            context.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
+            context.viewport_flip[2] = 1.0f;
+            context.viewport_flip[3] = 1.0f;
+        }
+
         glViewportIndexedf(0, x, y, w, h);
         glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
     } else {
+        if (hardware_flip) {
+            context.viewport_flip[0] = 1.0f;
+            context.viewport_flip[1] = -1.0f;
+            context.viewport_flip[2] = 1.0f;
+            context.viewport_flip[3] = 1.0f;
+        }
+
         glViewport(0, 0, display_w, display_h);
         glDepthRange(0, 1);
     }
 }
 
-void sync_clipping(const GxmContextState &state) {
+void sync_clipping(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
     const GLsizei display_w = state.color_surface.pbeEmitWords[0];
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
     const GLsizei scissor_x = state.region_clip_min.x;
-    const GLsizei scissor_y = display_h - state.region_clip_max.y - 1;
+    GLsizei scissor_y = 0;
+
+    if (hardware_flip && context.viewport_flip[1] == -1.0f)
+        scissor_y = state.region_clip_min.y;
+    else
+        scissor_y = display_h - state.region_clip_max.y - 1;
+
     const GLsizei scissor_w = state.region_clip_max.x - state.region_clip_min.x + 1;
     const GLsizei scissor_h = state.region_clip_max.y - state.region_clip_min.y + 1;
     switch (state.region_clip_mode) {
@@ -144,16 +176,16 @@ void sync_clipping(const GxmContextState &state) {
     }
 }
 
-void sync_cull(const GxmContextState &state) {
+void sync_cull(GLContext &context, const GxmContextState &state) {
     // Culling.
     switch (state.cull_mode) {
     case SCE_GXM_CULL_CCW:
         glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
+        glCullFace(context.viewport_flip[1] == 1.0f ? GL_FRONT : GL_BACK);
         break;
     case SCE_GXM_CULL_CW:
         glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
+        glCullFace(context.viewport_flip[1] == 1.0f ? GL_BACK : GL_FRONT);
         break;
     case SCE_GXM_CULL_NONE:
         glDisable(GL_CULL_FACE);
@@ -282,12 +314,12 @@ void sync_rendertarget(const GLRenderTarget &rt) {
     glBindFramebuffer(GL_FRAMEBUFFER, rt.framebuffer[0]);
 }
 
-bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache) {
+bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip) {
     R_PROFILE(__func__);
 
-    sync_viewport(state);
-    sync_clipping(state);
-    sync_cull(state);
+    sync_viewport(context, state, hardware_flip);
+    sync_clipping(context, state, hardware_flip);
+    sync_cull(context, state);
 
     if (sync_depth_data(state)) {
         sync_front_depth_func(state);

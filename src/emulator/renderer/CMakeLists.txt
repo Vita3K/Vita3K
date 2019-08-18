@@ -33,4 +33,4 @@ add_library(
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC crypto shader glutil threads config vita-headers util)
+target_link_libraries(renderer PUBLIC crypto shader glutil threads config stb vita-headers util)

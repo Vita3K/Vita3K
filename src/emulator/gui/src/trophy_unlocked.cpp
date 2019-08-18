@@ -1,3 +1,5 @@
+#include "private.h"
+
 #include <gui/functions.h>
 #include <gui/state.h>
 
@@ -12,7 +14,7 @@ static constexpr float TROPHY_WINDOW_Y_POS = 20.0f;
 
 static void draw_trophy_unlocked(GuiState &gui, NpTrophyUnlockCallbackData &callback_data) {
     if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN
-         || gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_OUT) {
+        || gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_OUT) {
         ImVec2 target_window_pos = ImVec2(0.0f, 0.0f);
 
         if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN)
@@ -43,7 +45,7 @@ static void draw_trophy_unlocked(GuiState &gui, NpTrophyUnlockCallbackData &call
     ImGui::SetNextWindowPos(gui.trophy_window_pos);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.76f, 0.75f, 0.76f, 1.0f)); // Smooth gray
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, GUI_SMOOTH_GRAY);
     ImGui::SetNextWindowSize(TROPHY_WINDOW_SIZE);
     ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
 

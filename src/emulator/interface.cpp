@@ -283,6 +283,14 @@ bool handle_events(HostState &host) {
             if (event.key.keysym.sym == SDLK_t) {
                 toggle_touchscreen();
             }
+            if (event.key.keysym.sym == SDLK_F11) {
+                host.display.fullscreen = !host.display.fullscreen;
+
+                if (host.display.fullscreen.load())
+                    SDL_MaximizeWindow(host.window.get());
+
+                SDL_SetWindowFullscreen(host.window.get(), host.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+            }
 
         case SDL_WINDOWEVENT:
             handle_window_event(host, event.window);

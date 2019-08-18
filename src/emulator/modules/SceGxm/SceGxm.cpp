@@ -38,6 +38,8 @@ struct SceGxmContext {
 
 struct SceGxmRenderTarget {
     std::unique_ptr<renderer::RenderTarget> renderer;
+    std::uint16_t width;
+    std::uint16_t height;
 };
 
 struct FragmentProgramCacheKey {
@@ -124,8 +126,6 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     host.gxm.is_in_scene = true;
 
     // Reset command list and finish status
-    context->renderer->render_finish_status = renderer::CommandErrorCodePending;
-
     renderer::reset_command_list(context->renderer->command_list);
 
     emu::SceGxmColorSurface *color_surface_copy = nullptr;
@@ -141,8 +141,21 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
         *depth_stencil_surface_copy = *depthStencil;
     }
 
+    const std::uint32_t xmin = 0;
+    const std::uint32_t ymin = 0;
+    const std::uint32_t xmax = (validRegion ? validRegion->xMax : renderTarget->width - 1);
+    const std::uint32_t ymax = (validRegion ? validRegion->yMax : renderTarget->height - 1);
+
     renderer::set_context(*host.renderer, context->renderer.get(), &context->state, renderTarget->renderer.get(),
         color_surface_copy, depth_stencil_surface_copy);
+
+    // Set default region clip and viewport
+    renderer::set_region_clip(*host.renderer, context->renderer.get(), &context->state, SCE_GXM_REGION_CLIP_OUTSIDE,
+        xmin, xmax, ymin, ymax);
+
+    renderer::set_viewport(*host.renderer, context->renderer.get(), &context->state,
+        0.5f * static_cast<float>(1.0f + xmin + xmax), 0.5f * (static_cast<float>(1.0 + ymin + ymax)),
+        0.5f, 0.5f * static_cast<float>(1.0f + xmax - xmin), -0.5f * static_cast<float>(1.0f + ymax - ymin), 0.5f);
 
     return 0;
 }
@@ -281,6 +294,9 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
+    rt->width = params->width;
+    rt->height = params->height;
+
     return 0;
 }
 
@@ -379,10 +395,11 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
     return 0;
 }
 
-EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<SceGxmSyncObject> newBuffer, Ptr<const void> callbackData) {
-    //assert(oldBuffer != nullptr);
-    //assert(newBuffer != nullptr);
-    assert(callbackData);
+EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<SceGxmSyncObject> newBuffer, Ptr<const void> callbackData) {
+    if (!oldBuffer || !newBuffer || !callbackData) {
+        return SCE_GXM_ERROR_INVALID_POINTER;
+    }
+
     DisplayCallback display_callback;
 
     const Address address = alloc(host.mem, host.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
@@ -393,15 +410,15 @@ EXPORT(void, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sc
     SceGxmSyncObject *oldBufferSync = Ptr<SceGxmSyncObject>(oldBuffer).get(host.mem);
     SceGxmSyncObject *newBufferSync = Ptr<SceGxmSyncObject>(newBuffer).get(host.mem);
 
+    renderer::subject_in_progress(newBufferSync, renderer::SyncObjectSubject::DisplayQueue);
+
     display_callback.data = address;
     display_callback.pc = host.gxm.params.displayQueueCallback.address();
     display_callback.old_buffer = oldBuffer.address();
     display_callback.new_buffer = newBuffer.address();
     host.gxm.display_queue.push(display_callback);
 
-    renderer::subject_in_progress(newBufferSync, renderer::SyncObjectSubject::DisplayQueue);
-
-    // TODO Return success if/when we call callback not as a tail call.
+    return 0;
 }
 
 EXPORT(int, sceGxmDisplayQueueFinish) {
@@ -1352,7 +1369,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     MemState &mem = host.mem;
     assert(shaderPatcher != nullptr);
     assert(programId != nullptr);
-    //assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
+    assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
     assert(fragmentProgram != nullptr);
 
     static const emu::SceGxmBlendInfo default_blend_info = {
@@ -1781,7 +1798,7 @@ static int init_texture_base(const char *export_name, emu::SceGxmTexture *textur
             LOG_ERROR("Initialized texture with unsupported texture format: {}", log_hex(texFormat));
     }
 
-    texture->mip_count = mipCount - 1;
+    texture->mip_count = std::min<std::uint32_t>(0, mipCount - 1);
     texture->format0 = (texFormat & 0x80000000) >> 31;
     texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
     texture->lod_bias = 31;

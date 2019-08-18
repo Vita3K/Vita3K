@@ -11,6 +11,13 @@
 #include <renderer/functions.h>
 #include <util/log.h>
 
+#define DEBUG_FRAMEBUFFER 1
+
+#if DEBUG_FRAMEBUFFER
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+#endif
+
 namespace renderer {
 COMMAND(handle_set_context) {
     const RenderTarget *rt = helper.pop<const RenderTarget *>();
@@ -38,7 +45,7 @@ COMMAND(handle_set_context) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::set_context(*reinterpret_cast<gl::GLContext *>(render_context), reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
+        gl::set_context(*reinterpret_cast<gl::GLContext *>(render_context), *state, reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
         break;
     }
 
@@ -58,7 +65,7 @@ COMMAND(handle_sync_surface_data) {
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::get_surface_data(*reinterpret_cast<gl::GLContext *>(render_context), width, height,
-            stride_in_pixels, pixels);
+            stride_in_pixels, pixels, !config.hardware_flip);
 
         break;
     }
@@ -67,6 +74,19 @@ COMMAND(handle_sync_surface_data) {
         REPORT_MISSING(renderer.current_backend);
         break;
     }
+
+#if DEBUG_FRAMEBUFFER
+    if (data != 0 && config.color_surface_debug) {
+        const std::string filename = fmt::format("color_surface_0x{:X}.png", data);
+
+        // Assuming output is RGBA
+        const int result = stbi_write_png(filename.c_str(), width, height, 4, pixels, stride_in_pixels * 4);
+
+        if (!result) {
+            LOG_TRACE("Fail to save color surface 0x{:X}", data);
+        }
+    }
+#endif
 }
 
 COMMAND(handle_draw) {
@@ -78,7 +98,8 @@ COMMAND(handle_draw) {
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::draw(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
-            *state, features, type, format, indicies, count, mem, base_path, title_id, config.log_active_shaders, config.log_uniforms);
+            *state, features, type, format, indicies, count, mem, base_path, title_id, config.log_active_shaders, config.log_uniforms,
+            config.hardware_flip);
 
         break;
     }

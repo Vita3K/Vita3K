@@ -44,5 +44,6 @@ void update_viewport(HostState &state);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
 
 void set_window_title(HostState &host);
+void calculate_fps(HostState &host);
 
 } // namespace app

@@ -39,17 +39,25 @@ void error_dialog(const std::string &message, SDL_Window *window) {
     }
 }
 
-void set_window_title(HostState &host) {
+void calculate_fps(HostState &host) {
     const uint32_t sdl_ticks_now = SDL_GetTicks();
     const uint32_t ms = sdl_ticks_now - host.sdl_ticks;
     if (ms >= 1000 && host.frame_count > 0) {
-        const std::uint32_t fps = static_cast<std::uint32_t>((host.frame_count * 1000) / ms);
-        const std::uint32_t ms_per_frame = ms / static_cast<std::uint32_t>(host.frame_count);
-        std::ostringstream title;
-        title << window_title << " | " << host.game_title << " (" << host.io.title_id << ") | " << ms_per_frame << " ms/frame (" << fps << " frames/sec)";
-        SDL_SetWindowTitle(host.window.get(), title.str().c_str());
+        host.fps = static_cast<std::uint32_t>((host.frame_count * 1000) / ms);
+        host.ms_per_frame = ms / static_cast<std::uint32_t>(host.frame_count);
         host.sdl_ticks = sdl_ticks_now;
         host.frame_count = 0;
+        host.should_update_window_title = true;
+    }
+}
+
+void set_window_title(HostState &host) {
+    if (host.should_update_window_title) {
+        const std::string title_to_set = fmt::format("{} | {} ({}) | {} ms/frame ({} frames/sec)", window_title,
+            host.game_title, host.io.title_id, host.ms_per_frame, host.fps);
+
+        SDL_SetWindowTitle(host.window.get(), title_to_set.c_str());
+        host.should_update_window_title = false;
     }
 }
 

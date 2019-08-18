@@ -108,19 +108,6 @@ static AttributeLocations attribute_locations(const SceGxmProgram &vertex_progra
     return locations;
 }
 
-static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
-    R_PROFILE(__func__);
-
-    uint32_t *row1 = &pixels[0];
-    uint32_t *row2 = &pixels[(height - 1) * stride_in_pixels];
-
-    while (row1 < row2) {
-        std::swap_ranges(&row1[0], &row1[width], &row2[0]);
-        row1 += stride_in_pixels;
-        row2 -= stride_in_pixels;
-    }
-}
-
 void bind_fundamental(GLContext &context) {
     // Bind the vertex array and element buffer.
     glBindVertexArray(context.vertex_array[0]);
@@ -180,6 +167,8 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_target->renderbuffers[depth_fb_index]);
     glClearColor(0.968627450f, 0.776470588f, 0.0f, 1.0f);
+    glClearDepth(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return true;
@@ -231,7 +220,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
     return true;
 }
 
-void set_context(GLContext &context, const GLRenderTarget *rt, const FeatureState &features) {
+void set_context(GLContext &context, GxmContextState &state, const GLRenderTarget *rt, const FeatureState &features) {
     R_PROFILE(__func__);
 
     bind_fundamental(context);
@@ -254,11 +243,40 @@ void set_context(GLContext &context, const GLRenderTarget *rt, const FeatureStat
         }
     }
 
-    // TODO This is just for debugging.
-    // glClear(GL_COLOR_BUFFER_BIT);
+    // Try to clear the depth buffer.
+    // TODO: Take request to force load from given memory
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glClearDepth(1.0f);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+
+    // Sync enable/disable depth/stencil based on depth stencil surface.
+    if (sync_depth_data(state)) {
+        sync_front_depth_func(state);
+        sync_front_depth_write_enable(state);
+    }
+
+    if (sync_stencil_data(state)) {
+        sync_stencil_func(state, true);
+        sync_stencil_func(state, false);
+    }
 }
 
-void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels) {
+static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
+    R_PROFILE(__func__);
+
+    uint32_t *row1 = &pixels[0];
+    uint32_t *row2 = &pixels[(height - 1) * stride_in_pixels];
+
+    while (row1 < row2) {
+        std::swap_ranges(&row1[0], &row1[width], &row2[0]);
+        row1 += stride_in_pixels;
+        row2 -= stride_in_pixels;
+    }
+}
+
+void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, const bool do_flip) {
     R_PROFILE(__func__);
 
     if (pixels == nullptr) {
@@ -269,7 +287,9 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 
-    flip_vertically(pixels, width, height, stride_in_pixels);
+    if (do_flip) {
+        flip_vertically(pixels, width, height, stride_in_pixels);
+    }
 
     ++context.texture_cache.timestamp;
 }

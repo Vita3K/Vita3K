@@ -81,6 +81,7 @@ struct TranslationState {
     spv::Id last_frag_data_id = spv::NoResult;
     spv::Id color_attachment_id = spv::NoResult;
     spv::Id frag_coord_id = spv::NoResult; ///< gl_FragCoord, not built-in in SPIR-V.
+    spv::Id flip_vec_id = spv::NoResult;
 };
 
 struct VertexProgramOutputProperties {
@@ -498,6 +499,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         query_info.coord = coords[query_info.coord_index];
     }
 
+    spv::Id f32 = b.makeFloatType(32);
+    spv::Id v4 = b.makeVectorType(f32, 4);
+
     if (program.is_native_color()) {
         // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data
         spv::Id source = spv::NoResult;
@@ -505,7 +509,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         if (features.direct_fragcolor) {
             // The GPU supports gl_LastFragData. It's only OpenGL though
             // TODO: Make this not emit with OpenGL
-            spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
             spv::Id v4_a = b.makeArrayType(v4, b.makeIntConstant(1), 0);
             spv::Id last_frag_data_arr = b.createVariable(spv::StorageClassInput, v4_a, "gl_LastFragData");
             spv::Id last_frag_data = b.createOp(spv::OpAccessChain, v4, { last_frag_data_arr, b.makeIntConstant(0) });
@@ -869,6 +872,16 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
+    if (program_type == emu::SceGxmProgramType::Vertex && features.hardware_flip) {
+        // Create variable that helps us do flipping
+        // TODO: Not emit this on Vulkan or DirectX
+        spv::Id f32 = b.makeFloatType(32);
+        spv::Id v4 = b.makeVectorType(f32, 4);
+
+        spv::Id flip_vec = b.createVariable(spv::StorageClassUniformConstant, v4, "flip_vec");
+        translation_state.flip_vec_id = flip_vec;
+    }
+
     if (program_type == emu::SceGxmProgramType::Fragment) {
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
     }
@@ -919,7 +932,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 }
 
 static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
-    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const FeatureState &features) {
+    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *vert_fin_block;
@@ -942,11 +955,15 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
         // TODO: Need confirmation.
         // Normally, the total components is first 2 bits of the info plus 1. Dependent on if the component type is F16
         // or F32, we can get the total F32 components.
+        //
+        // NOTE: The following is wrong. Needs confirmation.
         // If bit 3 of the coord info is set, the coord should be packed by shader bytecodes to F16, else it will
         // be packed to F32.
         // How coincidental that the bit will tell us how much to shift right, to get the total F32 components that this
         // coord will consist of.
-        return (info.comp_count + 1 + info.type) >> info.type;
+        //
+        // Testing reveal no usage of bit 3 yet.
+        return info.comp_count + 1;
     };
 
     // TODO: Verify component counts
@@ -997,12 +1014,18 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
             const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), number_of_comp_vec);
             const spv::Id out_var = b.createVariable(spv::StorageClassOutput, out_type, properties.name.c_str());
 
-            // TODO: More decorations needed?
-            if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION)
-                b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);
-
             // Do store
             spv::Id o_val = utils::load(b, parameters, utils, features, o_op, DEST_MASKS[number_of_comp_vec], 0);
+
+            // TODO: More decorations needed?
+            if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION) {
+                b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);
+
+                if (translation_state.flip_vec_id != spv::NoResult) {
+                    o_val = b.createBinOp(spv::OpFMul, out_type, o_val, translation_state.flip_vec_id);
+                }
+            }
+
             b.createStore(o_val, out_var);
 
             o_op.num += properties.component_count;
@@ -1070,7 +1093,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     if (program.is_fragment()) {
         end_hook_func = make_frag_finalize_function(b, parameters, program, utils, features, translation_state);
     } else {
-        end_hook_func = make_vert_finalize_function(b, parameters, program, utils, features);
+        end_hook_func = make_vert_finalize_function(b, parameters, program, utils, features, translation_state);
     }
 
     generate_shader_body(b, parameters, program, features, utils, end_hook_func, texture_queries);
