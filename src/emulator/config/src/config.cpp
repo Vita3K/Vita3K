@@ -131,7 +131,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "online-id", &cfg.online_id, std::string("Vita3K"));
     get_yaml_value(config_node, "wait-for-debugger", &cfg.wait_for_debugger, false);
     get_yaml_value(config_node, "hardware-flip", &cfg.hardware_flip, false);
-    get_yaml_value(config_node, "performance-overlay", &cfg.performance_overlay, true);
+    get_yaml_value(config_node, "performance-overlay", &cfg.performance_overlay, false);
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
         LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
