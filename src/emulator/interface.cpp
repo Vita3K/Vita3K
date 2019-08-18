@@ -284,9 +284,9 @@ bool handle_events(HostState &host) {
                 host.display.fullscreen = !host.display.fullscreen;
 
                 if (host.display.fullscreen.load())
-                    SDL_MaximizeWindow(&(*host.window));
+                    SDL_MaximizeWindow(host.window.get());
 
-                SDL_SetWindowFullscreen(&(*host.window), host.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+                SDL_SetWindowFullscreen(host.window.get(), host.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
             }
 
         case SDL_WINDOWEVENT:
