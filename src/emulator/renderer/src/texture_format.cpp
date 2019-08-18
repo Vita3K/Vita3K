@@ -16,8 +16,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <psp2/gxm.h>
 
@@ -141,8 +141,9 @@ void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint1
             y = j / width;
         }
 
-        if (y >= height || x >= width) continue;
-        
+        if (y >= height || x >= width)
+            continue;
+
         std::memcpy(dest + (y * width + x) * bytes_per_pixel, src + i * bytes_per_pixel, bytes_per_pixel);
     }
 }
@@ -222,25 +223,25 @@ static void decompress_block_dxt1_shared(std::uint32_t x, std::uint32_t y, std::
     std::uint32_t temp;
 
     temp = (color0 >> 11) * 255 + 16;
-    std::uint8_t r0 = (std::uint8_t)((temp/32 + temp)/32);
+    std::uint8_t r0 = (std::uint8_t)((temp / 32 + temp) / 32);
     temp = ((color0 & 0x07E0) >> 5) * 255 + 32;
-    std::uint8_t g0 = (std::uint8_t)((temp/64 + temp)/64);
+    std::uint8_t g0 = (std::uint8_t)((temp / 64 + temp) / 64);
     temp = (color0 & 0x001F) * 255 + 16;
-    std::uint8_t b0 = (std::uint8_t)((temp/32 + temp)/32);
+    std::uint8_t b0 = (std::uint8_t)((temp / 32 + temp) / 32);
 
     temp = (color1 >> 11) * 255 + 16;
-    std::uint8_t r1 = (std::uint8_t)((temp/32 + temp)/32);
+    std::uint8_t r1 = (std::uint8_t)((temp / 32 + temp) / 32);
     temp = ((color1 & 0x07E0) >> 5) * 255 + 32;
-    std::uint8_t g1 = (std::uint8_t)((temp/64 + temp)/64);
+    std::uint8_t g1 = (std::uint8_t)((temp / 64 + temp) / 64);
     temp = (color1 & 0x001F) * 255 + 16;
-    std::uint8_t b1 = (std::uint8_t)((temp/32 + temp)/32);
+    std::uint8_t b1 = (std::uint8_t)((temp / 32 + temp) / 32);
 
     std::uint32_t code = *reinterpret_cast<const std::uint32_t *>(block_storage + 4);
 
-    for (int j=0; j < 4; j++) {
-        for (int i=0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 4; i++) {
             std::uint32_t final_color = 0;
-            std::uint8_t positionCode = (code >>  2*(4*j+i)) & 0x03;
+            std::uint8_t positionCode = (code >> 2 * (4 * j + i)) & 0x03;
             std::uint8_t alpha = alpha_table[j * 4 + i];
 
             if (color0 > color1) {
@@ -252,10 +253,10 @@ static void decompress_block_dxt1_shared(std::uint32_t x, std::uint32_t y, std::
                     final_color = pack_rgba_reversed(r1, g1, b1, alpha);
                     break;
                 case 2:
-                    final_color = pack_rgba_reversed((2*r0+r1)/3, (2*g0+g1)/3, (2*b0+b1)/3, alpha);
+                    final_color = pack_rgba_reversed((2 * r0 + r1) / 3, (2 * g0 + g1) / 3, (2 * b0 + b1) / 3, alpha);
                     break;
                 case 3:
-                    final_color = pack_rgba_reversed((r0+2*r1)/3, (g0+2*g1)/3, (b0+2*b1)/3, alpha);
+                    final_color = pack_rgba_reversed((r0 + 2 * r1) / 3, (g0 + 2 * g1) / 3, (b0 + 2 * b1) / 3, alpha);
                     break;
                 default:
                     final_color = 0xFFFFFFFF;
@@ -270,7 +271,7 @@ static void decompress_block_dxt1_shared(std::uint32_t x, std::uint32_t y, std::
                     final_color = pack_rgba_reversed(r1, g1, b1, alpha);
                     break;
                 case 2:
-                    final_color = pack_rgba_reversed((r0+r1)/2, (g0+g1)/2, (b0+b1)/2, alpha);
+                    final_color = pack_rgba_reversed((r0 + r1) / 2, (g0 + g1) / 2, (b0 + b1) / 2, alpha);
                     break;
                 case 3:
                     final_color = pack_rgba_reversed(0, 0, 0, alpha);
@@ -311,19 +312,18 @@ static void decompress_block_dxt3(std::uint32_t x, std::uint32_t y, std::uint32_
     std::uint8_t alpha_table[16] = { 0 };
 
     for (int i = 0; i < 4; ++i) {
-        const std::uint16_t* alpha_data = reinterpret_cast<const std::uint16_t*>(block_storage);
+        const std::uint16_t *alpha_data = reinterpret_cast<const std::uint16_t *>(block_storage);
 
-        alpha_table [i * 4 + 0] = (((*alpha_data) >> 0) & 0xF) * 17;
-        alpha_table [i * 4 + 1] = (((*alpha_data) >> 4) & 0xF) * 17;
-        alpha_table [i * 4 + 2] = (((*alpha_data) >> 8) & 0xF) * 17;
-        alpha_table [i * 4 + 3] = (((*alpha_data) >> 12) & 0xF) * 17;
+        alpha_table[i * 4 + 0] = (((*alpha_data) >> 0) & 0xF) * 17;
+        alpha_table[i * 4 + 1] = (((*alpha_data) >> 4) & 0xF) * 17;
+        alpha_table[i * 4 + 2] = (((*alpha_data) >> 8) & 0xF) * 17;
+        alpha_table[i * 4 + 3] = (((*alpha_data) >> 12) & 0xF) * 17;
 
         block_storage += 2;
     }
 
     decompress_block_dxt1_shared(x, y, width, block_storage, image, alpha_table);
 }
-
 
 /**
  * \brief Decompresses one block of a DXT5 texture and stores the resulting pixels at the appropriate offset in 'image'.
@@ -344,29 +344,29 @@ static void decompress_block_dxt5(std::uint32_t x, std::uint32_t y, std::uint32_
     std::uint16_t alpha_code_2 = bits[0] | (bits[1] << 8);
 
     std::uint16_t color0 = *reinterpret_cast<const std::uint16_t *>(block_storage + 8);
-    std::uint16_t color1 = *reinterpret_cast<const std::uint16_t *>(block_storage + 10);   
+    std::uint16_t color1 = *reinterpret_cast<const std::uint16_t *>(block_storage + 10);
 
     std::uint32_t temp;
 
     temp = (color0 >> 11) * 255 + 16;
-    std::uint8_t r0 = (std::uint8_t)((temp/32 + temp)/32);
+    std::uint8_t r0 = (std::uint8_t)((temp / 32 + temp) / 32);
     temp = ((color0 & 0x07E0) >> 5) * 255 + 32;
-    std::uint8_t g0 = (std::uint8_t)((temp/64 + temp)/64);
+    std::uint8_t g0 = (std::uint8_t)((temp / 64 + temp) / 64);
     temp = (color0 & 0x001F) * 255 + 16;
-    std::uint8_t b0 = (std::uint8_t)((temp/32 + temp)/32);
+    std::uint8_t b0 = (std::uint8_t)((temp / 32 + temp) / 32);
 
     temp = (color1 >> 11) * 255 + 16;
-    std::uint8_t r1 = (std::uint8_t)((temp/32 + temp)/32);
+    std::uint8_t r1 = (std::uint8_t)((temp / 32 + temp) / 32);
     temp = ((color1 & 0x07E0) >> 5) * 255 + 32;
-    std::uint8_t g1 = (std::uint8_t)((temp/64 + temp)/64);
+    std::uint8_t g1 = (std::uint8_t)((temp / 64 + temp) / 64);
     temp = (color1 & 0x001F) * 255 + 16;
-    std::uint8_t b1 = (std::uint8_t)((temp/32 + temp)/32);
+    std::uint8_t b1 = (std::uint8_t)((temp / 32 + temp) / 32);
 
     std::uint32_t code = *reinterpret_cast<const std::uint32_t *>(block_storage + 12);
 
-    for (int j=0; j < 4; j++) {
-        for (int i=0; i < 4; i++) {
-            int alpha_code_index = 3*(4*j+i);
+    for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 4; i++) {
+            int alpha_code_index = 3 * (4 * j + i);
             int alphaCode;
 
             if (alpha_code_index <= 12) {
@@ -384,33 +384,33 @@ static void decompress_block_dxt5(std::uint32_t x, std::uint32_t y, std::uint32_
                 final_alpha = alpha1;
             } else {
                 if (alpha0 > alpha1) {
-                    final_alpha = ((8-alphaCode)*alpha0 + (alphaCode-1)*alpha1)/7;
+                    final_alpha = ((8 - alphaCode) * alpha0 + (alphaCode - 1) * alpha1) / 7;
                 } else {
                     if (alphaCode == 6)
                         final_alpha = 0;
                     else if (alphaCode == 7)
                         final_alpha = 255;
                     else
-                        final_alpha = ((6-alphaCode)*alpha0 + (alphaCode-1)*alpha1)/5;
+                        final_alpha = ((6 - alphaCode) * alpha0 + (alphaCode - 1) * alpha1) / 5;
                 }
             }
 
-            std::uint8_t color_code = (code >> 2*(4*j+i)) & 0x03;
+            std::uint8_t color_code = (code >> 2 * (4 * j + i)) & 0x03;
 
             std::uint32_t final_color;
             switch (color_code) {
-                case 0:
-                    final_color = pack_rgba_reversed(r0, g0, b0, final_alpha);
-                    break;
-                case 1:
-                    final_color = pack_rgba_reversed(r1, g1, b1, final_alpha);
-                    break;
-                case 2:
-                    final_color = pack_rgba_reversed((2*r0+r1)/3, (2*g0+g1)/3, (2*b0+b1)/3, final_alpha);
-                    break;
-                case 3:
-                    final_color = pack_rgba_reversed((r0+2*r1)/3, (g0+2*g1)/3, (b0+2*b1)/3, final_alpha);
-                    break;
+            case 0:
+                final_color = pack_rgba_reversed(r0, g0, b0, final_alpha);
+                break;
+            case 1:
+                final_color = pack_rgba_reversed(r1, g1, b1, final_alpha);
+                break;
+            case 2:
+                final_color = pack_rgba_reversed((2 * r0 + r1) / 3, (2 * g0 + g1) / 3, (2 * b0 + b1) / 3, final_alpha);
+                break;
+            case 3:
+                final_color = pack_rgba_reversed((r0 + 2 * r1) / 3, (g0 + 2 * g1) / 3, (b0 + 2 * b1) / 3, final_alpha);
+                break;
             }
 
             image[j * 4 + i] = final_color;
@@ -449,16 +449,16 @@ void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const 
     for (std::uint32_t j = 0; j < block_count_y; j++) {
         for (std::uint32_t i = 0; i < block_count_x; i++) {
             switch (bc_type) {
-            case 1:    
-                decompress_block_dxt1(i*4, j*4, width, block_storage + i * block_size, temp_block_result);
+            case 1:
+                decompress_block_dxt1(i * 4, j * 4, width, block_storage + i * block_size, temp_block_result);
                 break;
 
             case 2:
-                decompress_block_dxt3(i*4, j*4, width, block_storage + i * block_size, temp_block_result);
+                decompress_block_dxt3(i * 4, j * 4, width, block_storage + i * block_size, temp_block_result);
                 break;
 
             case 3:
-                decompress_block_dxt5(i*4, j*4, width, block_storage + i * block_size, temp_block_result);
+                decompress_block_dxt5(i * 4, j * 4, width, block_storage + i * block_size, temp_block_result);
                 break;
             }
 
@@ -472,6 +472,5 @@ void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const 
         block_storage += block_count_x * block_size;
     }
 }
-
 
 } // namespace renderer::texture

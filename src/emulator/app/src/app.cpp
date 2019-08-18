@@ -53,9 +53,10 @@ void calculate_fps(HostState &host) {
 
 void set_window_title(HostState &host) {
     if (host.should_update_window_title) {
-        std::ostringstream title;
-        title << window_title << " | " << host.game_title << " (" << host.io.title_id << ") | " << host.ms_per_frame << " ms/frame (" << host.fps << " frames/sec)";
-        SDL_SetWindowTitle(host.window.get(), title.str().c_str());
+        const std::string title_to_set = fmt::format("{} | {} ({}) | {} ms/frame ({} frames/sec)", window_title,
+            host.game_title, host.io.title_id, host.ms_per_frame, host.fps);
+
+        SDL_SetWindowTitle(host.window.get(), title_to_set.c_str());
         host.should_update_window_title = false;
     }
 }

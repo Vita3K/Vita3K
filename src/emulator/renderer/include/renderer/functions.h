@@ -164,7 +164,7 @@ void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t
 void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 bool is_compressed_format(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height, size_t &source_size);
- 
+
 } // namespace texture
 
 } // namespace renderer

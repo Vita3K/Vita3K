@@ -247,7 +247,7 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
         return GL_RGBA;
-    
+
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 

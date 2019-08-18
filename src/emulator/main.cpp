@@ -36,8 +36,8 @@
 #include <combaseapi.h>
 #endif
 
-#include <cstdlib>
 #include <SDL.h>
+#include <cstdlib>
 
 int main(int argc, char *argv[]) {
     Root root_paths;
@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
         if (host.display.imgui_render) {
             gui::draw_ui(gui, host);
         }
-        
+
         host.display.condvar.notify_all();
         gui::draw_end(host.window.get());
         app::set_window_title(host);

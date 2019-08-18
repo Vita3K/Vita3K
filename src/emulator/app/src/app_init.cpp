@@ -269,13 +269,13 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
 
     // Workaround driver bugs
-    const std::string gpu_name = reinterpret_cast<const GLchar*>(glGetString(GL_RENDERER));
+    const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
     const bool is_rtx = gpu_name.find("GeForce RTX") != std::string::npos;
 
     if (is_rtx) {
         // Disable shader interlock for all drivers.
         // TODO: Report and fix this on NVIDIA GeForce GTX driver
-        state.features.support_shader_interlock = false; 
+        state.features.support_shader_interlock = false;
     }
 
     if (state.features.direct_fragcolor) {

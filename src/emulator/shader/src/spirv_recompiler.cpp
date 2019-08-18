@@ -877,7 +877,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         // TODO: Not emit this on Vulkan or DirectX
         spv::Id f32 = b.makeFloatType(32);
         spv::Id v4 = b.makeVectorType(f32, 4);
-    
+
         spv::Id flip_vec = b.createVariable(spv::StorageClassUniformConstant, v4, "flip_vec");
         translation_state.flip_vec_id = flip_vec;
     }
@@ -963,7 +963,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
         // coord will consist of.
         //
         // Testing reveal no usage of bit 3 yet.
-        return (info.comp_count + 1);
+        return info.comp_count + 1;
     };
 
     // TODO: Verify component counts
@@ -1016,7 +1016,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
             // Do store
             spv::Id o_val = utils::load(b, parameters, utils, features, o_op, DEST_MASKS[number_of_comp_vec], 0);
-            
+
             // TODO: More decorations needed?
             if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION) {
                 b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);

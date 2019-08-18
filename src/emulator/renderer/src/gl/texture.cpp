@@ -20,9 +20,7 @@ void bind_texture(GLTextureCacheState &cache, const emu::SceGxmTexture &gxm_text
 }
 
 static bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt) {
-    return (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P8 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5 ||
-        fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8 ||
-        fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8);
+    return (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P8 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8);
 }
 
 void configure_bound_texture(const emu::SceGxmTexture &gxm_texture) {
@@ -64,7 +62,7 @@ void configure_bound_texture(const emu::SceGxmTexture &gxm_texture) {
                 glTexImage2D(GL_TEXTURE_2D, mip_index, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             }
         }
-        
+
         mip_index++;
         width /= 2;
         height /= 2;
@@ -84,7 +82,7 @@ void configure_bound_texture(const emu::SceGxmTexture &gxm_texture) {
  */
 static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
     int ubc_type = 0;
-    
+
     switch (fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         ubc_type = 1;
@@ -103,8 +101,8 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
     }
 
     if (ubc_type) {
-        renderer::texture::decompress_bc_swizz_image(width, height, reinterpret_cast<const std::uint8_t*>(data),
-            reinterpret_cast<std::uint32_t*>(dest), ubc_type);
+        renderer::texture::decompress_bc_swizz_image(width, height, reinterpret_cast<const std::uint8_t *>(data),
+            reinterpret_cast<std::uint32_t *>(dest), ubc_type);
         return (((width + 3) / 4) * ((height + 3) / 4) * ((ubc_type > 1) ? 16 : 8));
     }
 
@@ -155,10 +153,10 @@ void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState 
             texture_pixels_lineared.resize(width * height * bytes_per_pixel);
 
             if (is_swizzled)
-                renderer::texture::swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t*>(pixels), width, height,
+                renderer::texture::swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), width, height,
                     static_cast<std::uint8_t>(bpp));
             else
-                renderer::texture::tiled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t*>(pixels), width, height,
+                renderer::texture::tiled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), width, height,
                     static_cast<std::uint8_t>(bpp));
 
             pixels = texture_pixels_lineared.data();
@@ -185,10 +183,10 @@ void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState 
             palette_texture_pixels.resize(width * height * 4);
             if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
                 renderer::texture::palette_texture_to_rgba_8(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
-                    reinterpret_cast<const uint8_t*>(pixels), width, height, palette_bytes);
+                    reinterpret_cast<const uint8_t *>(pixels), width, height, palette_bytes);
             } else {
                 renderer::texture::palette_texture_to_rgba_4(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
-                    reinterpret_cast<const uint8_t*>(pixels), width, height, palette_bytes);
+                    reinterpret_cast<const uint8_t *>(pixels), width, height, palette_bytes);
             }
             pixels = palette_texture_pixels.data();
             stride = width;

@@ -14,7 +14,7 @@ static constexpr float TROPHY_WINDOW_Y_POS = 20.0f;
 
 static void draw_trophy_unlocked(GuiState &gui, NpTrophyUnlockCallbackData &callback_data) {
     if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN
-         || gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_OUT) {
+        || gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_OUT) {
         ImVec2 target_window_pos = ImVec2(0.0f, 0.0f);
 
         if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN)

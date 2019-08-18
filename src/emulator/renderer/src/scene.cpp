@@ -74,7 +74,6 @@ COMMAND(handle_sync_surface_data) {
         REPORT_MISSING(renderer.current_backend);
         break;
     }
-    
 
 #if DEBUG_FRAMEBUFFER
     if (data != 0 && config.color_surface_debug) {
