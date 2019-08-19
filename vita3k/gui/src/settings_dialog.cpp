@@ -150,6 +150,18 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
     }
 
+    // GPU
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    if (ImGui::BeginTabItem("GPU")) {
+        ImGui::PopStyleColor();
+        ImGui::Checkbox("Hardware Flip", &host.cfg.hardware_flip);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check the box to enable texture flipping from GPU side.\nIt is recommended to disable this option for homebrew.");
+        ImGui::EndTabItem();
+    } else {
+        ImGui::PopStyleColor();
+    }
+
     // System
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("System")) {
@@ -187,6 +199,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable Archiving Log.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Performance overlay", &host.cfg.performance_overlay);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Display performance information on the screen as an overlay.");
         ImGui::SameLine();
         ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
         if (ImGui::IsItemHovered())
@@ -298,9 +314,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Save color surfaces", &host.cfg.color_surface_debug);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
-        ImGui::Checkbox("Performance overlay", &host.cfg.performance_overlay);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Display performance information on the screen as an overlay.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();
