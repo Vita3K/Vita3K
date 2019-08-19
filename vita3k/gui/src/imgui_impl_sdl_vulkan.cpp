@@ -224,18 +224,16 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer, ImD
 //    vk::Viewport viewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0.0f, 1.0f);
 //    state.gui_vulkan.command_buffer.setViewport(0, 1, &viewport);
 
+    uint64_t vertex_offset_null = 0;
+
+    state.gui_vulkan.command_buffer.bindVertexBuffers(0, 1, &state.gui_vulkan.draw_buffer, &vertex_offset_null);
+    state.gui_vulkan.command_buffer.bindIndexBuffer(state.gui_vulkan.index_buffer, 0, imgui_index_type);
+
     uint64_t vertex_offset = 0;
     uint64_t index_offset = 0;
 
     for (uint32_t a = 0; a < draw_data->CmdListsCount; a++) {
         ImDrawList *draw_list = draw_data->CmdLists[a];
-
-        state.gui_vulkan.command_buffer.bindVertexBuffers(0, 1, &state.gui_vulkan.draw_buffer, &vertex_offset);
-        state.gui_vulkan.command_buffer.bindIndexBuffer(state.gui_vulkan.index_buffer, index_offset, imgui_index_type);
-        vertex_offset += draw_list->VtxBuffer.Size * sizeof(ImDrawVert);
-        index_offset += draw_list->IdxBuffer.Size * sizeof(ImDrawIdx);
-
-        uint64_t index_element_offset = 0;
 
         for (const auto &cmd : draw_list->CmdBuffer) {
             if (cmd.UserCallback) {
@@ -254,9 +252,12 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer, ImD
                     1, &texture->descriptor_set,
                     0, nullptr
                     );
-                state.gui_vulkan.command_buffer.drawIndexed(cmd.ElemCount, 1, index_element_offset, 0, 0);
+                state.gui_vulkan.command_buffer.drawIndexed(cmd.ElemCount, 1, index_offset, vertex_offset, 0);
             }
+            index_offset += cmd.ElemCount;
         }
+        
+        vertex_offset += draw_list->VtxBuffer.Size;
     }
 
     state.gui_vulkan.command_buffer.endRenderPass();
@@ -388,16 +389,16 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *rendere
 
     vk::ImageMemoryBarrier image_shader_read_only_barrier(
         vk::AccessFlagBits::eTransferWrite, // Was just written to.
-        vk::AccessFlagBits::eShaderRead, // Will be read by the shader.
+        vk::AccessFlagBits(), // Will be read by the shader.
         vk::ImageLayout::eTransferDstOptimal, // Old Layout
         vk::ImageLayout::eShaderReadOnlyOptimal, // New Layout
-        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, // No Queue Family Transition
+        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, // Transfer to General Queue (but I don't right now)
         texture->image, // Image
         base_subresource_range // Subresource Range
     );
 
     transfer_buffer.pipelineBarrier(
-        vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, // Transfer -> Fragment Shader Stage
+        vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eBottomOfPipe, // Transfer -> Fragment Shader Stage
         vk::DependencyFlags(), // No Dependency Flags
         0, nullptr, // No Memory Barriers
         0, nullptr, // No Buffer Barriers
