@@ -22,7 +22,8 @@
 namespace renderer::vulkan {
 #define VULKAN_CHECK(a) assert(a == vk::Result::eSuccess)
 
-bool create(WindowPtr window, std::unique_ptr<renderer::State> &state);
+bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state);
+void close(std::unique_ptr<renderer::State> &state);
 
 // I think I will drop this approach but this is fine for now.
 enum class CommandType {
@@ -35,11 +36,12 @@ enum class MemoryType {
     Device,
 };
 
-void present(VulkanState &state, uint32_t index);
+vk::Queue select_queue(VulkanState &state, CommandType type);
+
+bool resize_swapchain(VulkanState &state, vk::Extent2D size);
 
 vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type);
 void free_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer);
-void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer, bool wait_idle = false);
 
 vk::Buffer create_buffer(VulkanState &state, const vk::BufferCreateInfo &buffer_info, MemoryType type, VmaAllocation &allocation);
 void destroy_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocation);

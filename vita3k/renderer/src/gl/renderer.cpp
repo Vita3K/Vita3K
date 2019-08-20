@@ -132,7 +132,6 @@ static void after_callback(const char *name, void *funcptr, int len_args, ...) {
         std::stringstream gl_error;
         gl_error << error;
         LOG_ERROR("OpenGL: {} set error {}.", name, gl_error.str());
-        assert(false);
 #else
         LOG_ERROR("OpenGL error: {}", log_hex(static_cast<std::uint32_t>(error)));
 #endif
@@ -187,7 +186,7 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 }
 
 bool create(WindowPtr &window, std::unique_ptr<State> &state) {
-    GLState *gl_state = reinterpret_cast<GLState *>(state.get());
+    auto &gl_state = dynamic_cast<GLState &>(*state);
 
     // Recursively create GL version until one accepts
     // Major 4 is mandantory
@@ -206,14 +205,14 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     for (int i = 0; i < sizeof(accept_gl_version) / sizeof(int); i++) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, accept_gl_version[i]);
 
-        gl_state->context = GLContextPtr(SDL_GL_CreateContext(window.get()), SDL_GL_DeleteContext);
-        if (gl_state->context) {
+        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window.get()), SDL_GL_DeleteContext);
+        if (gl_state.context) {
             choosen_minor_version = accept_gl_version[i];
             break;
         }
     }
 
-    if (!gl_state->context)
+    if (!gl_state.context)
         return false;
 
     // Try adaptive vsync first, falling back to regular vsync.
@@ -241,11 +240,11 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
         const std::string major = version.substr(0, dot_pos);
         const std::string minor = version.substr(dot_pos + 1);
 
-        gl_state->features.direct_pack_unpack_half = false;
+        gl_state.features.direct_pack_unpack_half = false;
 
         if (std::atoi(major.c_str()) >= 4 && minor.length() >= 1) {
             if (minor[0] >= '2') {
-                gl_state->features.direct_pack_unpack_half = true;
+                gl_state.features.direct_pack_unpack_half = true;
             }
         }
     }
@@ -258,10 +257,10 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
 
     std::unordered_map<std::string, bool *> check_extensions = {
-        { "GL_ARB_fragment_shader_interlock", &gl_state->features.support_shader_interlock },
-        { "GL_ARB_texture_barrier", &gl_state->features.support_texture_barrier },
-        { "GL_EXT_shader_framebuffer_fetch", &gl_state->features.direct_fragcolor },
-        { "GL_ARB_shading_language_packing", &gl_state->features.pack_unpack_half_through_ext }
+        { "GL_ARB_fragment_shader_interlock", &gl_state.features.support_shader_interlock },
+        { "GL_ARB_texture_barrier", &gl_state.features.support_texture_barrier },
+        { "GL_EXT_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
+        { "GL_ARB_shading_language_packing", &gl_state.features.pack_unpack_half_through_ext }
     };
 
     for (int i = 0; i < total_extensions; i++) {
@@ -281,14 +280,14 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     if (is_rtx) {
         // Disable shader interlock for all drivers.
         // TODO: Report and fix this on NVIDIA GeForce GTX driver
-        gl_state->features.support_shader_interlock = false;
+        gl_state.features.support_shader_interlock = false;
     }
 
-    if (gl_state->features.direct_fragcolor) {
+    if (gl_state.features.direct_fragcolor) {
         LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
-    } else if (gl_state->features.support_shader_interlock) {
+    } else if (gl_state.features.support_shader_interlock) {
         LOG_INFO("Your GPU supports shader interlock, some games that use programmable blending will have better performance.");
-    } else if (gl_state->features.support_texture_barrier) {
+    } else if (gl_state.features.support_texture_barrier) {
         LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
 
         if (is_rtx) {

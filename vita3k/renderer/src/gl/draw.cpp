@@ -10,8 +10,8 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <gxm/functions.h>
 #include <features/state.h>
+#include <gxm/functions.h>
 
 namespace renderer::gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {
