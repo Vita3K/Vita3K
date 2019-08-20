@@ -22,8 +22,10 @@
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
-#include <renderer/texture_cache_state.h>
+#ifdef USE_VULKAN
 #include <renderer/vulkan/functions.h>
+#endif
+#include <renderer/texture_cache_state.h>
 
 #include "driver_functions.h"
 
@@ -117,11 +119,13 @@ bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend) {
         if (!gl::create(window, state))
             return false;
         break;
+#ifdef USE_VULKAN
     case Backend::Vulkan:
         state = std::make_unique<vulkan::VulkanState>();
         if (!vulkan::create(window, state))
             return false;
         break;
+#endif
     }
 
     state->current_backend = backend;

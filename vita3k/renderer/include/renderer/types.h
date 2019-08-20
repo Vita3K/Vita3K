@@ -36,7 +36,9 @@ struct CommandBuffer;
 
 enum class Backend {
     OpenGL,
-    Vulkan
+#ifdef USE_VULKAN
+    Vulkan,
+#endif
 };
 
 enum class GXMState : std::uint16_t {

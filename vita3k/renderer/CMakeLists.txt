@@ -1,3 +1,18 @@
+if (USE_VULKAN)
+	set(RENDERER_VULKAN_SOURCES
+		include/renderer/vulkan/types.h
+		include/renderer/vulkan/state.h
+		include/renderer/vulkan/functions.h
+
+		src/vulkan/renderer.cpp
+		src/vulkan/allocator.cpp
+	)
+	set(RENDERER_VULKAN_LIBRARIES vulkan vma)
+else()
+	set(RENDERER_VULKAN_SOURCES "")
+	set(RENDERER_VULKAN_LIBRARIES "")
+endif()
+
 add_library(
 	renderer
 	STATIC
@@ -12,10 +27,6 @@ add_library(
 	include/renderer/gl/state.h
 	include/renderer/gl/functions.h
 
-	include/renderer/vulkan/types.h
-	include/renderer/vulkan/state.h
-	include/renderer/vulkan/functions.h
-
 	src/gl/attribute_formats.cpp
 	src/gl/compile_program.cpp
 	src/gl/draw.cpp
@@ -26,8 +37,7 @@ add_library(
 	src/gl/texture.cpp
 	src/gl/uniforms.cpp
 
-	src/vulkan/renderer.cpp
-	src/vulkan/allocator.cpp
+	${RENDERER_VULKAN_SOURCES}
 
 	src/batch.cpp
 	src/creation.cpp
@@ -43,6 +53,6 @@ add_library(
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC crypto shader glutil threads config vita-headers util vulkan vma)
+target_link_libraries(renderer PUBLIC crypto shader glutil threads config vita-headers util ${RENDERER_VULKAN_LIBRARIES})
 target_link_libraries(renderer PRIVATE sdl2)
 

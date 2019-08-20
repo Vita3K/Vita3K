@@ -10,16 +10,20 @@ IMGUI_API bool ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window,
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_Init(renderer, window, nullptr);
+#ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_Init(renderer, window, base_path);
+#endif
     }
 }
 IMGUI_API void ImGui_ImplSdl_Shutdown(renderer::State *renderer) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_Shutdown(renderer);
+#ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_Shutdown(renderer);
+#endif
     }
 }
 IMGUI_API void ImGui_ImplSdl_NewFrame(renderer::State *renderer, SDL_Window *window) {
@@ -82,8 +86,10 @@ IMGUI_API void ImGui_ImplSdl_RenderDrawData(renderer::State *renderer, ImDrawDat
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_RenderDrawData(renderer, draw_data);
+#ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_RenderDrawData(renderer, draw_data);
+#endif
     }
 }
 
@@ -137,8 +143,10 @@ IMGUI_API void ImGui_ImplSdl_GetDrawableSize(renderer::State *renderer, SDL_Wind
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         ImGui_ImplSdlGL3_GetDrawableSize(window, width, height);
+#ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         ImGui_ImplSdlVulkan_GetDrawableSize(window, width, height);
+#endif
     }
 }
 
@@ -146,8 +154,10 @@ IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(renderer::State *renderer, voi
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_CreateTexture(renderer, data, width, height);
+#ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_CreateTexture(renderer, data, width, height);
+#endif
     }
 }
 
@@ -155,8 +165,10 @@ IMGUI_API void ImGui_ImplSdl_DeleteTexture(renderer::State *renderer, ImTextureI
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_DeleteTexture(renderer, texture);
+#ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_DeleteTexture(renderer, texture);
+#endif
     }
 }
 
@@ -165,16 +177,20 @@ IMGUI_API void ImGui_ImplSdl_InvalidateDeviceObjects(renderer::State *renderer) 
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_InvalidateDeviceObjects(renderer);
+#ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_InvalidateDeviceObjects(renderer);
+#endif
     }
 }
 IMGUI_API bool ImGui_ImplSdl_CreateDeviceObjects(renderer::State *renderer) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
         return ImGui_ImplSdlGL3_CreateDeviceObjects(renderer);
+#ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer);
+#endif
     }
 }
 
