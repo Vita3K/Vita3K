@@ -165,13 +165,13 @@ int main(int argc, char *argv[]) {
         if (host.cfg.performance_overlay)
             gui::draw_perf_overlay(gui, host);
 
-        gui::draw_trophies_unlocked(gui);
+        gui::draw_trophies_unlocked(gui, host);
         if (host.display.imgui_render) {
             gui::draw_ui(gui, host);
         }
 
         host.display.condvar.notify_all();
-        gui::draw_end(host.window.get());
+        gui::draw_end(host, host.window.get());
         app::set_window_title(host);
     }
 

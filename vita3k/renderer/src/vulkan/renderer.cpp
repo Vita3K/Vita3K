@@ -17,17 +17,15 @@
 
 #include <renderer/functions.h>
 #include <renderer/types.h>
-
-#include <config/version.h>
-#include <features/state.h>
-
 #include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/state.h>
 
+#include <config/version.h>
+#include <features/state.h>
+#include <util/log.h>
+
 #include <SDL.h>
 #include <SDL_vulkan.h>
-
-#include <util/log.h>
 
 // Setting a default value for now.
 // In the future, it might be a good idea to take the host's device memory into account.

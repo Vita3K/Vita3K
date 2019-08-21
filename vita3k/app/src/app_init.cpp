@@ -131,7 +131,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
 #endif
 
-    state.renderer->hardware_flip = state.cfg.hardware_flip;
+    state.renderer->features.hardware_flip = state.cfg.hardware_flip;
 
     state.kernel.base_tick = { rtc_base_ticks() };
 
