@@ -1,74 +1,74 @@
-[submodule "src/external/elfio"]
-	path = src/external/elfio
-	url = https://github.com/serge1/ELFIO.git
-[submodule "src/external/capstone"]
-	path = src/external/capstone
+[submodule "external/better-enums"]
+	path = external/better-enums
+	url = https://github.com/aantron/better-enums
+[submodule "external/boost"]
+	path = external/boost
+	url = https://github.com/Vita3K/ext-boost
+[submodule "external/capstone"]
+	path = external/capstone
 	url = https://github.com/aquynh/capstone.git
-[submodule "src/external/vita-headers"]
-	path = src/external/vita-headers
-	url = https://github.com/vitasdk/vita-headers.git
-[submodule "src/external/yaml-cpp"]
-	path = src/external/yaml-cpp
-	url = https://github.com/jbeder/yaml-cpp
-[submodule "src/external/microprofile"]
-	path = src/external/microprofile
-	url = https://github.com/jonasmr/microprofile.git
-[submodule "src/external/sdl2-cmake-scripts"]
-	path = src/external/sdl2-cmake-scripts
-	url = https://github.com/tcbrindle/sdl2-cmake-scripts.git
-[submodule "src/external/spdlog"]
-	path = src/external/spdlog
-	url = https://github.com/gabime/spdlog.git
-	branch = v1.x
-[submodule "src/external/stb"]
-	path = src/external/stb
-	url = https://github.com/nothings/stb
-[submodule "src/external/dirent"]
-	path = src/external/dirent
+[submodule "external/crypto-algorithms"]
+	path = external/crypto-algorithms
+	url = https://github.com/B-Con/crypto-algorithms
+[submodule "external/dirent"]
+	path = external/dirent
 	url = https://github.com/tronkko/dirent
 	branch = v1.23
-[submodule "src/external/crypto-algorithms"]
-	path = src/external/crypto-algorithms
-	url = https://github.com/B-Con/crypto-algorithms.git
-[submodule "src/external/imgui"]
-	path = src/external/imgui
-	url = https://github.com/ocornut/imgui
-[submodule "src/external/googletest"]
-	path = src/external/googletest
-	url = https://github.com/google/googletest.git
-[submodule "src/emulator/shaders-db"]
-	path = src/emulator/shaders-db
-	url = https://github.com/Vita3K/shaders-db.git
-[submodule "src/external/glslang"]
-	path = src/external/glslang
-	url = https://github.com/KhronosGroup/glslang.git
-[submodule "src/external/boost"]
-	path = src/external/boost
-	url = https://github.com/Vita3K/ext-boost.git
-[submodule "src/external/dlmalloc"]
-	path = src/external/dlmalloc
-	url = https://github.com/Vita3K/dlmalloc
-[submodule "src/external/printf"]
-	path = src/external/printf
-	url = https://github.com/vita3k/printf
-[submodule "src/external/imgui_club"]
-	path = src/external/imgui_club
-	url = https://github.com/ocornut/imgui_club.git
-[submodule "src/external/unicorn-src"]
-	path = src/external/unicorn-src
-	url = https://github.com/unicorn-engine/unicorn.git
-[submodule "src/external/discord-rpc"]
-	path = src/external/discord-rpc
+[submodule "external/discord-rpc"]
+	path = external/discord-rpc
 	url = https://github.com/discordapp/discord-rpc
-[submodule "src/external/SPIRV-Cross"]
-	path = src/external/SPIRV-Cross
-	url = https://github.com/vita3k/SPIRV-Cross
-[submodule "src/external/pugixml"]
-	path = src/external/pugixml
+[submodule "external/dlmalloc"]
+	path = external/dlmalloc
+	url = https://github.com/Vita3K/dlmalloc
+[submodule "external/elfio"]
+	path = external/elfio
+	url = https://github.com/serge1/ELFIO
+[submodule "external/glslang"]
+	path = external/glslang
+	url = https://github.com/KhronosGroup/glslang
+[submodule "external/googletest"]
+	path = external/googletest
+	url = https://github.com/google/googletest
+[submodule "external/imgui"]
+	path = external/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "external/imgui_club"]
+	path = external/imgui_club
+	url = https://github.com/ocornut/imgui_club
+[submodule "external/microprofile"]
+	path = external/microprofile
+	url = https://github.com/jonasmr/microprofile
+[submodule "external/printf"]
+	path = external/printf
+	url = https://github.com/Vita3K/printf
+[submodule "external/pugixml"]
+	path = external/pugixml
 	url = https://github.com/zeux/pugixml
-[submodule "src/external/vita-toolchain"]
-	path = src/external/vita-toolchain
-	url = https://github.com/vita3k/vita-toolchain
-[submodule "src/external/better-enums"]
-	path = src/external/better-enums
-	url = https://github.com/aantron/better-enums.git
+[submodule "external/sdl2-cmake-scripts"]
+	path = external/sdl2-cmake-scripts
+	url = https://github.com/tcbrindle/sdl2-cmake-scripts
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/gabime/spdlog
+	branch = v1.x
+[submodule "external/SPIRV-Cross"]
+	path = external/SPIRV-Cross
+	url = https://github.com/Vita3K/SPIRV-Cross
+[submodule "vita3k/shaders-db"]
+	path = vita3k/shaders-db
+	url = https://github.com/Vita3K/shaders-db
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb
+[submodule "external/unicorn-src"]
+	path = external/unicorn-src
+	url = https://github.com/unicorn-engine/unicorn
+[submodule "external/vita-headers"]
+	path = external/vita-headers
+	url = https://github.com/vitasdk/vita-headers
+[submodule "external/vita-toolchain"]
+	path = external/vita-toolchain
+	url = https://github.com/Vita3K/vita-toolchain
+[submodule "external/yaml-cpp"]
+	path = external/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp

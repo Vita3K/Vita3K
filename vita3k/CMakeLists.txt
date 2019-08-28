@@ -81,14 +81,14 @@ if(USE_GDBSTUB)
 	add_subdirectory(gdbstub)
 endif()
 
-add_executable(emulator MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
+add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
 
-target_link_libraries(emulator PRIVATE app discord-rpc gui modules)
+target_link_libraries(vita3k PRIVATE app discord-rpc gui modules)
 if(LINUX)
-	target_link_libraries(emulator PRIVATE stdc++fs)
+	target_link_libraries(vita3k PRIVATE stdc++fs)
 endif()
 
-set_target_properties(emulator PROPERTIES OUTPUT_NAME Vita3K
+set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vita3K
 	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -113,36 +113,36 @@ if(APPLE)
 	set_source_files_properties(Vita3K.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
 	add_custom_command(
-		TARGET emulator
+		TARGET vita3k
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../../data" "$<TARGET_FILE_DIR:emulator>/../Resources/data"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/../Resources/shaders"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:emulator>/../Resources/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/src/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:emulator>/../Frameworks/SDL2.framework")
-	set_target_properties(emulator PROPERTIES LINK_FLAGS "-rpath @executable_path/../Frameworks/")
-	target_sources(emulator PRIVATE Vita3K.icns)
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/../Resources/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:vita3k>/../Frameworks/SDL2.framework")
+	set_target_properties(vita3k PROPERTIES LINK_FLAGS "-rpath @executable_path/../Frameworks/")
+	target_sources(vita3k PRIVATE Vita3K.icns)
 	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
 	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.Vita3K.Vita3K")
 	set(MACOSX_BUNDLE_BUNDLE_NAME "Vita3K")
 elseif(LINUX)
 	add_custom_command(
-		TARGET emulator
+		TARGET vita3k
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../../data" "$<TARGET_FILE_DIR:emulator>/data"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/shaders"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:emulator>/shaders-builtin")
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:vita3k>/shaders"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin")
 elseif(WIN32)
-	target_sources(emulator PRIVATE resource.h Vita3K.ico Vita3K.rc)
-	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT emulator)
-	set_target_properties(emulator PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build-windows/bin")
+	target_sources(vita3k PRIVATE resource.h Vita3K.ico Vita3K.rc)
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT vita3k)
+	set_target_properties(vita3k PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build-windows/bin")
 	add_custom_command(
-		TARGET emulator
+		TARGET vita3k
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../../data" "$<TARGET_FILE_DIR:emulator>/data"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:emulator>/shaders"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:emulator>/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/sdl/windows/lib/x64/SDL2.dll" "$<TARGET_FILE_DIR:emulator>"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/unicorn/windows/unicorn.dll" "$<TARGET_FILE_DIR:emulator>"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/unicorn/windows/libgcc_s_seh-1.dll" "$<TARGET_FILE_DIR:emulator>"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/external/unicorn/windows/libwinpthread-1.dll" "$<TARGET_FILE_DIR:emulator>")
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-db/shaders" "$<TARGET_FILE_DIR:vita3k>/shaders"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/external/sdl/windows/lib/x64/SDL2.dll" "$<TARGET_FILE_DIR:vita3k>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/external/unicorn/windows/unicorn.dll" "$<TARGET_FILE_DIR:vita3k>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/external/unicorn/windows/libgcc_s_seh-1.dll" "$<TARGET_FILE_DIR:vita3k>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/external/unicorn/windows/libwinpthread-1.dll" "$<TARGET_FILE_DIR:vita3k>")
 endif()
