@@ -45,11 +45,17 @@ namespace app {
 void update_viewport(HostState &state) {
     int w = 0;
     int h = 0;
-#ifdef USE_VULKAN // Does which version of this function we call even matter?
-    SDL_Vulkan_GetDrawableSize(state.window.get(), &w, &h);
-#else
-    SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
+
+    switch (state.renderer->current_backend) {
+    case renderer::Backend::OpenGL:
+        SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
+        break;
+#ifdef USE_VULKAN
+    case renderer::Backend::Vulkan:
+        SDL_Vulkan_GetDrawableSize(state.window.get(), &w, &h);
+        break;
 #endif
+    }
 
     state.drawable_size.x = w;
     state.drawable_size.y = h;
