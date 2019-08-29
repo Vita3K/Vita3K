@@ -1,4 +1,4 @@
 #! /bin/bash
 set -ex
 
-find src/vita3k src/gen-modules src/native-tool \( -name *.cpp -o -name *.h \) | xargs clang-format -i
+find vita3k tools/gen-modules tools/native-tool \( -name *.cpp -o -name *.h \) | xargs clang-format -i

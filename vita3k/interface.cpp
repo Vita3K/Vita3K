@@ -205,6 +205,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
     init_device_paths(host.io);
 
+    host.renderer->features.hardware_flip = host.cfg.hardware_flip;
+
     // Load pre-loaded libraries
     const char *const lib_load_list[] = {
         "sce_module/libc.suprx",

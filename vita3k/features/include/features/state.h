@@ -6,7 +6,7 @@ struct FeatureState {
     bool support_shader_interlock = false; ///< First option for blending. Using this with ordered execution mode.
     bool support_texture_barrier = false; ///< Second option for blending. Slower but work on 3 vendors.
     bool direct_fragcolor = false;
-    bool hardware_flip = true; ///< Allow flipping in shader.
+    bool hardware_flip = false; ///< Allow flipping in shader.
 
     bool is_programmable_blending_supported() const {
         return support_shader_interlock || support_texture_barrier || direct_fragcolor;

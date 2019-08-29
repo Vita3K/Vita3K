@@ -188,7 +188,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "color-surface-debug", cfg.color_surface_debug);
     config_file_emit_single(emitter, "hardware-flip", cfg.hardware_flip);
     config_file_emit_single(emitter, "performance-overlay", cfg.performance_overlay);
-    config_file_emit_single(emitter, "backend-render", cfg.backend_renderer);
+    config_file_emit_single(emitter, "backend-renderer", cfg.backend_renderer);
 
     emitter << YAML::EndMap;
 
@@ -252,7 +252,7 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.hardware_flip = rhs.hardware_flip;
     if (lhs.performance_overlay != rhs.performance_overlay && (!init || rhs.performance_overlay))
         lhs.performance_overlay = rhs.performance_overlay;
-    if (lhs.backend_renderer != rhs.backend_renderer && (!init || !rhs.backend_renderer.empty()))
+    if (lhs.backend_renderer != rhs.backend_renderer && (!init || rhs.backend_renderer != std::string("OpenGL")))
         lhs.backend_renderer = rhs.backend_renderer;
 
     // Not stored in config file
@@ -336,9 +336,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
             return QuitRequested;
         }
-        if (!var_map.count("backend-renderer")) {
-            command_line.backend_renderer = "";
-        }
+        if (var_map.count("backend-renderer"))
+            cfg.backend_renderer = command_line.backend_renderer;
 
         if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
             if (command_line.config_path.empty()) {
@@ -379,6 +378,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
         LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
+        LOG_INFO("backend-renderer: {}", cfg.backend_renderer);
         LOG_INFO("hardware-flip: {}", cfg.hardware_flip);
         if (!cfg.lle_modules.empty()) {
             std::string modules;

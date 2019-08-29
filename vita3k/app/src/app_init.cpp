@@ -109,9 +109,12 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 
     // If configuration does not provide a preference path, use SDL's default
     if (state.cfg.pref_path == root_paths.get_pref_path_string() || state.cfg.pref_path.empty())
-        state.pref_path = root_paths.get_pref_path_string() + '/';
-    else
-        state.pref_path = state.cfg.pref_path + '/';
+        state.pref_path = root_paths.get_pref_path_string();
+    else {
+        if (state.cfg.pref_path.back() != '/')
+            state.cfg.pref_path += '/';
+        state.pref_path = state.cfg.pref_path;
+    }
 
     renderer::Backend backend = renderer::Backend::OpenGL;
 
@@ -150,7 +153,6 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     state.kernel.base_tick = { rtc_base_ticks() };
 
     if (renderer::init(state.window, state.renderer, backend)) {
-        state.renderer->features.hardware_flip = state.cfg.hardware_flip;
         update_viewport(state);
         return true;
     } else {

@@ -103,9 +103,10 @@ static bool clear_and_refresh_game_list(HostState &host, GuiState &gui) {
 
 using namespace list;
 void draw_settings_dialog(GuiState &gui, HostState &host) {
+    const ImGuiWindowFlags settings_flags = ImGuiWindowFlags_AlwaysAutoResize;
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-    ImGui::Begin("Settings", &gui.configuration_menu.settings_dialog, ImGuiWindowFlags_AlwaysAutoResize);
-    const auto settings_tab_flags = ImGuiTabBarFlags_None;
+    ImGui::Begin("Settings", &gui.configuration_menu.settings_dialog, settings_flags);
+    const ImGuiTabBarFlags settings_tab_flags = ImGuiTabBarFlags_None;
     ImGui::BeginTabBar("SettingsTabBar", settings_tab_flags);
 
     // Core
@@ -213,8 +214,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Set the path to the folder here. \nPress \"Apply\" when finished to move to the new folder. \nWARNING: This cannot be undone.");
-        if (ImGui::Button("Apply New Path")) {
-            if (!host.cfg.pref_path.empty() && host.cfg.pref_path != host.pref_path) {
+        if (ImGui::Button("Apply New Path") && !host.cfg.pref_path.empty()) {
+            if (host.cfg.pref_path.back() != '/')
+                host.cfg.pref_path += '/';
+            if (host.cfg.pref_path != host.pref_path) {
                 if (change_pref_location(host.cfg.pref_path, host.pref_path)) {
                     host.pref_path = host.cfg.pref_path;
 
