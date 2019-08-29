@@ -118,7 +118,7 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
             context.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
             context.viewport_flip[2] = 1.0f;
             context.viewport_flip[3] = 1.0f;
-        } else 
+        }
 
         glViewportIndexedf(0, x, y, w, h);
         glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
