@@ -107,7 +107,6 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
     if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
         const GLfloat ymin = viewport.offset.y + viewport.scale.y;
         const GLfloat ymax = viewport.offset.y - viewport.scale.y - 1;
-        const GLfloat yedge = std::min<GLfloat>(viewport.offset.y, ymax);
 
         const GLfloat w = std::abs(2 * viewport.scale.x);
         const GLfloat h = std::abs(2 * viewport.scale.y);
@@ -118,7 +117,7 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
             // Y-Coordinate flipped later in pixels. Use top left coordinate system.
             y = ymin;
         } else {
-            y = (display_h - std::abs(yedge)) - std::abs(viewport.scale.y);
+            y = display_h - (ymax + h);
         }
 
         if (hardware_flip) {
