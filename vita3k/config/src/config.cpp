@@ -130,6 +130,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "discord-rich-presence", &cfg.discord_rich_presence, true);
     get_yaml_value(config_node, "online-id", &cfg.online_id, std::string("Vita3K"));
     get_yaml_value(config_node, "wait-for-debugger", &cfg.wait_for_debugger, false);
+    get_yaml_value(config_node, "color-surface-debug", &cfg.color_surface_debug, false);
     get_yaml_value(config_node, "hardware-flip", &cfg.hardware_flip, false);
     get_yaml_value(config_node, "performance-overlay", &cfg.performance_overlay, false);
 
@@ -183,6 +184,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "discord-rich-presence", cfg.discord_rich_presence);
     config_file_emit_single(emitter, "online-id", cfg.online_id);
     config_file_emit_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
+    config_file_emit_single(emitter, "color-surface-debug", cfg.color_surface_debug);
     config_file_emit_single(emitter, "hardware-flip", cfg.hardware_flip);
     config_file_emit_single(emitter, "performance-overlay", cfg.performance_overlay);
 
@@ -241,6 +243,8 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.discord_rich_presence = rhs.discord_rich_presence;
     if (lhs.wait_for_debugger != rhs.wait_for_debugger && (!init || rhs.wait_for_debugger))
         lhs.wait_for_debugger = rhs.wait_for_debugger;
+    if (lhs.color_surface_debug != rhs.color_surface_debug && (!init || rhs.color_surface_debug))
+        lhs.color_surface_debug = rhs.color_surface_debug;
     if (lhs.hardware_flip != rhs.hardware_flip && (!init || rhs.hardware_flip))
         lhs.hardware_flip = rhs.hardware_flip;
     if (lhs.performance_overlay != rhs.performance_overlay && (!init || rhs.performance_overlay))
@@ -280,6 +284,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         po::options_description config_desc("Configuration");
         config_desc.add_options()
             ("archive-log,A", po::bool_switch(&command_line.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
+            ("color-surface-debug, C", po::bool_switch(&command_line.color_surface_debug),"Save color surfaces")
             ("config-location,c", po::value<fs::path>(&command_line.config_path), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault: <Vita3K folder>/config.yml")
             ("keep-config,w", po::bool_switch(&command_line.overwrite_config)->default_value(true), "Do not modify the configuration file after loading.")
             ("load-config,f", po::bool_switch(&command_line.load_config), "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
@@ -365,6 +370,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
         LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
+        LOG_INFO("hardware-flip: {}", cfg.hardware_flip);
         if (!cfg.lle_modules.empty()) {
             std::string modules;
             for (const auto &mod : cfg.lle_modules) {

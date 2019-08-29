@@ -52,9 +52,10 @@ struct Config {
     bool overwrite_config = true;
     bool load_config = false;
     bool discord_rich_presence = true;
-    bool wait_for_debugger;
+    bool wait_for_debugger = false;
     std::string online_id = "Vita3K";
     bool color_surface_debug = false;
     bool hardware_flip = false;
     bool performance_overlay = false;
+
 }; // struct Config
