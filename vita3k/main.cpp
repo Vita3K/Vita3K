@@ -144,6 +144,8 @@ int main(int argc, char *argv[]) {
     if (const auto err = run_app(host, entry_point) != Success)
         return err;
 
+	host.renderer->gui.do_clear_screen = false;
+
     app::gl_screen_renderer gl_renderer;
 
     if (!gl_renderer.init(host.base_path))

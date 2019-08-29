@@ -34,6 +34,7 @@ struct State {
         SDL_Cursor *mouse_cursors[cursor_count] = { nullptr };
 
         bool init = false;
+        bool do_clear_screen = true;
     } gui;
 
     virtual ~State() = default;
