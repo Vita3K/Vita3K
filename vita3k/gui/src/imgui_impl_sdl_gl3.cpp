@@ -58,8 +58,10 @@ static renderer::gl::GLState &gl_state(renderer::State *renderer) {
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so.
 // If text or lines are blurry when integrating ImGui in your engine: in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
-void ImGui_ImplSdlGL3_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data) {
+void ImGui_ImplSdlGL3_RenderDrawData(renderer::State *renderer) {
     auto &state = gl_state(renderer);
+
+    ImDrawData *draw_data = ImGui::GetDrawData();
 
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
     ImGuiIO &io = ImGui::GetIO();
@@ -335,7 +337,7 @@ void ImGui_ImplSdlGL3_InvalidateDeviceObjects(renderer::State *renderer) {
     }
 }
 
-bool ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Window *window, const char *glsl_version) {
+bool ImGui_ImplSdlGL3_Init(renderer::State *renderer, const char *glsl_version) {
     auto &state = gl_state(renderer);
 
     // Store GL version string so we can refer to it later in case we recreate shaders.
@@ -387,10 +389,8 @@ bool ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Window *window, const 
 #ifdef _WIN32
     SDL_SysWMinfo wmInfo;
     SDL_VERSION(&wmInfo.version);
-    SDL_GetWindowWMInfo(window, &wmInfo);
+    SDL_GetWindowWMInfo(renderer->window, &wmInfo);
     io.ImeWindowHandle = wmInfo.info.win.window;
-#else
-    (void)window;
 #endif
 
     return true;
@@ -408,11 +408,7 @@ void ImGui_ImplSdlGL3_Shutdown(renderer::State *renderer) {
     ImGui_ImplSdlGL3_InvalidateDeviceObjects(renderer);
 }
 
-IMGUI_API void ImGui_ImplSdlGL3_GetDrawableSize(SDL_Window *window, int &width, int &height) {
-    SDL_GL_GetDrawableSize(window, &width, &height);
-}
-
-IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(renderer::State *renderer, void *data, int width, int height) {
+IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(void *data, int width, int height) {
     GLuint texture;
     glGenTextures(1, &texture);
 
@@ -427,7 +423,7 @@ IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(renderer::State *renderer, 
     return reinterpret_cast<ImTextureID>(static_cast<uintptr_t>(texture));
 }
 
-IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(renderer::State *renderer, ImTextureID texture) {
+IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(ImTextureID texture) {
     auto texture_name = static_cast<GLuint>(reinterpret_cast<uintptr_t>(texture));
     glDeleteTextures(1, &texture_name);
 }

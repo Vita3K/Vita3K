@@ -119,13 +119,13 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState 
     if (!created) {
         gui::GenericDialogState status = gui::UNK_STATE;
         while (handle_events(host) && (status == 0)) {
-            ImGui_ImplSdl_NewFrame(host.renderer.get(), host.window.get());
+            ImGui_ImplSdl_NewFrame(host.renderer.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_ui(gui, host);
             gui::draw_reinstall_dialog(&status);
             glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
             ImGui::Render();
-            ImGui_ImplSdl_RenderDrawData(host.renderer.get(), ImGui::GetDrawData());
+            ImGui_ImplSdl_RenderDrawData(host.renderer.get());
             SDL_GL_SwapWindow(host.window.get());
         }
         if (status == gui::CANCEL_STATE) {

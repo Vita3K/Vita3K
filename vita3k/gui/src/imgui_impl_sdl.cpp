@@ -5,14 +5,15 @@
 #include <renderer/state.h>
 
 #include <SDL.h>
+#include <SDL_vulkan.h>
 
-IMGUI_API bool ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path) {
+IMGUI_API bool ImGui_ImplSdl_Init(renderer::State *renderer, const std::string &base_path) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
-        return ImGui_ImplSdlGL3_Init(renderer, window, nullptr);
+        return ImGui_ImplSdlGL3_Init(renderer, nullptr);
 #ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
-        return ImGui_ImplSdlVulkan_Init(renderer, window, base_path);
+        return ImGui_ImplSdlVulkan_Init(renderer, base_path);
 #endif
     }
 }
@@ -26,14 +27,14 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(renderer::State *renderer) {
 #endif
     }
 }
-IMGUI_API void ImGui_ImplSdl_NewFrame(renderer::State *renderer, SDL_Window *window) {
+IMGUI_API void ImGui_ImplSdl_NewFrame(renderer::State *renderer) {
     ImGuiIO &io = ImGui::GetIO();
 
     // Setup display size (every frame to accommodate for window resizing)
     int w, h;
     int display_w, display_h;
-    SDL_GetWindowSize(window, &w, &h);
-    SDL_GL_GetDrawableSize(window, &display_w, &display_h);
+    SDL_GetWindowSize(renderer->window, &w, &h);
+    ImGui_ImplSdl_GetDrawableSize(renderer, display_w, display_h);
     io.DisplaySize = ImVec2((float)w, (float)h);
     io.DisplayFramebufferScale = ImVec2(w > 0 ? ((float)display_w / w) : 0, h > 0 ? ((float)display_h / h) : 0);
 
@@ -54,14 +55,14 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(renderer::State *renderer, SDL_Window *win
 
 // We need to use SDL_CaptureMouse() to easily retrieve mouse coordinates outside of the client area. This is only supported from SDL 2.0.4 (released Jan 2016)
 #if (SDL_MAJOR_VERSION >= 2) && (SDL_MINOR_VERSION >= 0) && (SDL_PATCHLEVEL >= 4)
-    if ((SDL_GetWindowFlags(window) & (SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_MOUSE_CAPTURE)) != 0)
+    if ((SDL_GetWindowFlags(renderer->window) & (SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_MOUSE_CAPTURE)) != 0)
         io.MousePos = ImVec2((float)mx, (float)my);
     bool any_mouse_button_down = false;
     for (int n = 0; n < IM_ARRAYSIZE(io.MouseDown); n++)
         any_mouse_button_down |= io.MouseDown[n];
-    if (any_mouse_button_down && (SDL_GetWindowFlags(window) & SDL_WINDOW_MOUSE_CAPTURE) == 0)
+    if (any_mouse_button_down && (SDL_GetWindowFlags(renderer->window) & SDL_WINDOW_MOUSE_CAPTURE) == 0)
         SDL_CaptureMouse(SDL_TRUE);
-    if (!any_mouse_button_down && (SDL_GetWindowFlags(window) & SDL_WINDOW_MOUSE_CAPTURE) != 0)
+    if (!any_mouse_button_down && (SDL_GetWindowFlags(renderer->window) & SDL_WINDOW_MOUSE_CAPTURE) != 0)
         SDL_CaptureMouse(SDL_FALSE);
 #else
     if ((SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0)
@@ -82,13 +83,13 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(renderer::State *renderer, SDL_Window *win
     // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
     ImGui::NewFrame();
 }
-IMGUI_API void ImGui_ImplSdl_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data) {
+IMGUI_API void ImGui_ImplSdl_RenderDrawData(renderer::State *renderer) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
-        return ImGui_ImplSdlGL3_RenderDrawData(renderer, draw_data);
+        return ImGui_ImplSdlGL3_RenderDrawData(renderer);
 #ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
-        return ImGui_ImplSdlVulkan_RenderDrawData(renderer, draw_data);
+        return ImGui_ImplSdlVulkan_RenderDrawData(renderer);
 #endif
     }
 }
@@ -139,13 +140,14 @@ bool ImGui_ImplSdl_ProcessEvent(renderer::State *renderer, SDL_Event *event) {
     return false;
 }
 
-IMGUI_API void ImGui_ImplSdl_GetDrawableSize(renderer::State *renderer, SDL_Window *window, int &width, int &height) {
+IMGUI_API void ImGui_ImplSdl_GetDrawableSize(renderer::State *renderer, int &width, int &height) {
+    // Does this even matter?
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
-        ImGui_ImplSdlGL3_GetDrawableSize(window, width, height);
+        SDL_GL_GetDrawableSize(renderer->window, &width, &height);
 #ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
-        ImGui_ImplSdlVulkan_GetDrawableSize(window, width, height);
+        SDL_Vulkan_GetDrawableSize(renderer->window, &width, &height);
 #endif
     }
 }
@@ -153,7 +155,7 @@ IMGUI_API void ImGui_ImplSdl_GetDrawableSize(renderer::State *renderer, SDL_Wind
 IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(renderer::State *renderer, void *data, int width, int height) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
-        return ImGui_ImplSdlGL3_CreateTexture(renderer, data, width, height);
+        return ImGui_ImplSdlGL3_CreateTexture(data, width, height);
 #ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_CreateTexture(renderer, data, width, height);
@@ -164,7 +166,7 @@ IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(renderer::State *renderer, voi
 IMGUI_API void ImGui_ImplSdl_DeleteTexture(renderer::State *renderer, ImTextureID texture) {
     switch (renderer->current_backend) {
     case renderer::Backend::OpenGL:
-        return ImGui_ImplSdlGL3_DeleteTexture(renderer, texture);
+        return ImGui_ImplSdlGL3_DeleteTexture(texture);
 #ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_DeleteTexture(renderer, texture);

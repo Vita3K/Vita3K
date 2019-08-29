@@ -7,12 +7,12 @@
 union SDL_Event;
 struct SDL_Cursor;
 
-IMGUI_API bool ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path);
+IMGUI_API bool ImGui_ImplSdl_Init(renderer::State *renderer, const std::string &base_path);
 IMGUI_API void ImGui_ImplSdl_Shutdown(renderer::State *renderer);
-IMGUI_API void ImGui_ImplSdl_NewFrame(renderer::State *renderer, SDL_Window *window);
-IMGUI_API void ImGui_ImplSdl_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data);
+IMGUI_API void ImGui_ImplSdl_NewFrame(renderer::State *renderer);
+IMGUI_API void ImGui_ImplSdl_RenderDrawData(renderer::State *renderer);
 IMGUI_API bool ImGui_ImplSdl_ProcessEvent(renderer::State *renderer, SDL_Event *event);
-IMGUI_API void ImGui_ImplSdl_GetDrawableSize(renderer::State *renderer, SDL_Window *window, int &width, int &height);
+IMGUI_API void ImGui_ImplSdl_GetDrawableSize(renderer::State *renderer, int &width, int &height);
 
 IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(renderer::State *renderer, void *data, int width, int height);
 IMGUI_API void ImGui_ImplSdl_DeleteTexture(renderer::State *renderer, ImTextureID texture);

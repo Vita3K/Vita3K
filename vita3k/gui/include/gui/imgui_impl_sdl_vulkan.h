@@ -8,10 +8,9 @@
 
 typedef union SDL_Event SDL_Event;
 
-IMGUI_API bool ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path);
+IMGUI_API bool ImGui_ImplSdlVulkan_Init(renderer::State *renderer, const std::string &base_path);
 IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(renderer::State *renderer);
-IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data);
-IMGUI_API void ImGui_ImplSdlVulkan_GetDrawableSize(SDL_Window *window, int &width, int &height);
+IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer);
 
 IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *renderer, void *data, int width, int height);
 IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(renderer::State *renderer, ImTextureID texture);

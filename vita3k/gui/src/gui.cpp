@@ -252,7 +252,7 @@ ImTextureID load_image(HostState &host, const char *data, const std::size_t size
 void init(GuiState &gui, HostState &host) {
     ImGui::CreateContext();
     bool result;
-    result = ImGui_ImplSdl_Init(host.renderer.get(), host.window.get(), host.base_path);
+    result = ImGui_ImplSdl_Init(host.renderer.get(), host.base_path);
     assert(result);
 
     init_style();
@@ -275,7 +275,7 @@ void init(GuiState &gui, HostState &host) {
 }
 
 void draw_begin(GuiState &gui, HostState &host) {
-    ImGui_ImplSdl_NewFrame(host.renderer.get(), host.window.get());
+    ImGui_ImplSdl_NewFrame(host.renderer.get());
     host.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
 
     ImGui::PushFont(gui.normal_font);
@@ -285,7 +285,7 @@ void draw_end(HostState &host, SDL_Window *window) {
     ImGui::PopFont();
 
     ImGui::Render();
-    ImGui_ImplSdl_RenderDrawData(host.renderer.get(), ImGui::GetDrawData());
+    ImGui_ImplSdl_RenderDrawData(host.renderer.get());
     SDL_GL_SwapWindow(window);
 }
 

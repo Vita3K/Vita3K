@@ -19,13 +19,12 @@
 struct SDL_Window;
 union SDL_Event;
 
-IMGUI_API bool ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Window *window, const char *glsl_version = NULL);
+IMGUI_API bool ImGui_ImplSdlGL3_Init(renderer::State *renderer, const char *glsl_version = NULL);
 IMGUI_API void ImGui_ImplSdlGL3_Shutdown(renderer::State *renderer);
-IMGUI_API void ImGui_ImplSdlGL3_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data);
-IMGUI_API void ImGui_ImplSdlGL3_GetDrawableSize(SDL_Window *window, int &width, int &height);
+IMGUI_API void ImGui_ImplSdlGL3_RenderDrawData(renderer::State *renderer);
 
-IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(renderer::State *renderer, void *data, int width, int height);
-IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(renderer::State *renderer, ImTextureID texture);
+IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(void *data, int width, int height);
+IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(ImTextureID texture);
 
 // Use if you want to reset your rendering device without losing ImGui state.
 IMGUI_API void ImGui_ImplSdlGL3_InvalidateDeviceObjects(renderer::State *renderer);

@@ -21,10 +21,8 @@
 #include <renderer/vulkan/state.h>
 
 #include <config/version.h>
-#include <features/state.h>
 #include <util/log.h>
 
-#include <SDL.h>
 #include <SDL_vulkan.h>
 
 // Setting a default value for now.
@@ -172,7 +170,7 @@ static vk::Format select_surface_format(std::vector<vk::SurfaceFormatKHR> &forma
     return vk::Format::eR8G8B8A8Unorm;
 }
 
-static vk::Queue select_queue(VulkanState &state, CommandType type) {
+vk::Queue select_queue(VulkanState &state, CommandType type) {
     vk::Queue queue;
 
     switch (type) {
@@ -199,6 +197,76 @@ void present(VulkanState &state, uint32_t image_index) { // this needs semaphore
     );
 
     present_queue.presentKHR(present_info);
+}
+
+bool resize_swapchain(VulkanState &state, vk::Extent2D size) {
+    state.swapchain_width = size.width;
+    state.swapchain_height = size.height;
+
+    if (state.swapchain) {
+        for (vk::ImageView view : state.swapchain_views)
+            state.device.destroy(view);
+        state.device.destroy(state.swapchain);
+    }
+
+    // Create Swapchain
+    {
+        // TODO: Extents should be based on surface capabilities.
+        vk::SwapchainCreateInfoKHR swapchain_info(
+            vk::SwapchainCreateFlagsKHR(), // No Flags
+            state.surface, // Surface
+            2, // Double Buffering
+            screen_format, // Image Format, BGRA is supported by MoltenVK
+            vk::ColorSpaceKHR::eSrgbNonlinear, // Color Space
+            size, // Image Extent
+            1, // Image Array Length
+            vk::ImageUsageFlagBits::eColorAttachment, // Image Usage, consider VK_IMAGE_USAGE_STORAGE_BIT?
+            vk::SharingMode::eExclusive,
+            0, nullptr, // Unused when sharing mode is exclusive
+            vk::SurfaceTransformFlagBitsKHR::eIdentity, // Transform
+            vk::CompositeAlphaFlagBitsKHR::eOpaque, // Alpha
+            vk::PresentModeKHR::eFifo, // Present Mode, FIFO and Immediate are supported on MoltenVK. Would've chosen Mailbox otherwise.
+            true, // Clipping
+            vk::SwapchainKHR() // No old swapchain.
+        );
+
+        state.swapchain = state.device.createSwapchainKHR(swapchain_info);
+        if (!state.swapchain) {
+            LOG_ERROR("Failed to create Vulkan swapchain.");
+            return false;
+        }
+    }
+
+    // Get Swapchain Images
+    uint32_t swapchain_image_count = 2;
+    state.device.getSwapchainImagesKHR(state.swapchain, &swapchain_image_count, state.swapchain_images);
+
+    for (uint32_t a = 0; a < 2 /*vulkan_state.swapchain_images.size()*/; a++) {
+        const auto &image = state.swapchain_images[a];
+        vk::ImageViewCreateInfo view_info(
+            vk::ImageViewCreateFlags(), // No Flags
+            image, // Image
+            vk::ImageViewType::e2D, // Image View Type
+            select_surface_format(state.physical_device_surface_formats), // Format
+            vk::ComponentMapping(), // Default Component Mapping
+            vk::ImageSubresourceRange(
+                vk::ImageAspectFlagBits::eColor,
+                0, // Mipmap Level
+                1, // Level Count
+                0, // Base Array Index
+                1 // Layer Count
+            ));
+
+        vk::ImageView view = state.device.createImageView(view_info);
+        if (!view) {
+                LOG_ERROR("Failed to Vulkan image view for swpachain image id {}.", a);
+            return false;
+        }
+
+        state.swapchain_views[a] = view;
+    }
+
+    return true;
 }
 
 vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type) {
@@ -245,20 +313,6 @@ void free_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer
     }
 
     state.device.freeCommandBuffers(pool, 1, &buffer);
-}
-
-void submit_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer, bool wait_idle) {
-    vk::Queue queue = select_queue(state, type);
-
-    vk::SubmitInfo submit_info(
-        0, nullptr, nullptr, // Wait Semaphores
-        1, &buffer, // Command Buffers
-        0, nullptr // Signal Semaphores
-    );
-
-    queue.submit(1, &submit_info, vk::Fence());
-    if (wait_idle)
-        queue.waitIdle();
 }
 
 vk::Buffer create_buffer(VulkanState &state, const vk::BufferCreateInfo &buffer_info, MemoryType type, VmaAllocation &allocation) {
@@ -333,8 +387,10 @@ void destroy_image(VulkanState &state, vk::Image image, VmaAllocation allocation
     vmaDestroyImage(state.allocator, image, allocation);
 }
 
-bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
+bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state) {
     auto &vulkan_state = dynamic_cast<VulkanState &>(*state);
+
+    vulkan_state.window = window.get();
 
     // Create Instance
     {
@@ -493,62 +549,9 @@ bool create(WindowPtr window, std::unique_ptr<renderer::State> &state) {
         }
     }
 
-    // Create Swapchain
-    {
-        // TODO: Extents should be based on surface capabilities.
-        vk::SwapchainCreateInfoKHR swapchain_info(
-            vk::SwapchainCreateFlagsKHR(), // No Flags
-            vulkan_state.surface, // Surface
-            2, // Double Buffering
-            screen_format, // Image Format, BGRA is supported by MoltenVK
-            vk::ColorSpaceKHR::eSrgbNonlinear, // Color Space
-            vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT), // Image Extent
-            1, // Image Array Length
-            vk::ImageUsageFlagBits::eColorAttachment, // Image Usage, consider VK_IMAGE_USAGE_STORAGE_BIT?
-            vk::SharingMode::eExclusive,
-            0, nullptr, // Unused when sharing mode is exclusive
-            vk::SurfaceTransformFlagBitsKHR::eIdentity, // Transform
-            vk::CompositeAlphaFlagBitsKHR::eOpaque, // Alpha
-            vk::PresentModeKHR::eFifo, // Present Mode, FIFO and Immediate are supported on MoltenVK. Would've chosen Mailbox otherwise.
-            true, // Clipping
-            vk::SwapchainKHR() // No old swapchain.
-        );
-
-        vulkan_state.swapchain = vulkan_state.device.createSwapchainKHR(swapchain_info);
-        if (!vulkan_state.swapchain) {
-            LOG_ERROR("Failed to create Vulkan swapchain.");
-            return false;
-        }
-    }
-
-    // Get Swapchain Images
-    uint32_t swapchain_image_count = 2;
-    vulkan_state.device.getSwapchainImagesKHR(vulkan_state.swapchain, &swapchain_image_count, vulkan_state.swapchain_images);
-
-    for (uint32_t a = 0; a < 2 /*vulkan_state.swapchain_images.size()*/; a++) {
-        const auto &image = vulkan_state.swapchain_images[a];
-        vk::ImageViewCreateInfo view_info(
-            vk::ImageViewCreateFlags(), // No Flags
-            image, // Image
-            vk::ImageViewType::e2D, // Image View Type
-            select_surface_format(vulkan_state.physical_device_surface_formats), // Format
-            vk::ComponentMapping(), // Default Component Mapping
-            vk::ImageSubresourceRange(
-                vk::ImageAspectFlagBits::eColor,
-                0, // Mipmap Level
-                1, // Level Count
-                0, // Base Array Index
-                1 // Layer Count
-                ));
-
-        vk::ImageView view = vulkan_state.device.createImageView(view_info);
-        if (!view) {
-            LOG_ERROR("Failed to Vulkan image view for swpachain image id {}.", a);
-            return false;
-        }
-
-        vulkan_state.swapchain_views[a] = view;
-    }
+    int width, height;
+    SDL_Vulkan_GetDrawableSize(vulkan_state.window, &width, &height);
+    resize_swapchain(vulkan_state, vk::Extent2D(width, height));
 
     return true;
 }

@@ -54,8 +54,6 @@ struct VulkanState : public renderer::State {
 
     vk::CommandBuffer general_command_buffer;
 
-    vk::RenderPass general_renderpass;
-
     struct {
         vk::ShaderModule vertex_module;
         vk::ShaderModule fragment_module;
@@ -82,14 +80,15 @@ struct VulkanState : public renderer::State {
 
         vk::CommandBuffer command_buffer;
 
-        vk::Fence next_image_fence;
+        vk::Semaphore image_acquired_semaphore;
+        vk::Semaphore render_complete_semaphore;
     } gui_vulkan;
 
     vk::SurfaceKHR surface;
     vk::SwapchainKHR swapchain;
 
-    uint32_t swapchain_image_last = 0;
     // These would be vectors...
+    uint32_t swapchain_width = 0, swapchain_height = 0;
     vk::Image swapchain_images[2];
     vk::ImageView swapchain_views[2];
 };

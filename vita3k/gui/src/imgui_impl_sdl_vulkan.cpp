@@ -13,7 +13,7 @@
 // 200000000 Nanoseconds = 0.2 seconds
 constexpr uint64_t next_image_timeout = 200000000;
 
-const std::array<float, 4> clear_color = { 0.125490203f, 0.698039234f, 0.666666687f, 1.0f };
+const std::array<float, 4> clear_color = { 0.0f, 0.0f, 0.0f, 1.0f };
 const vk::ClearValue clear_value((vk::ClearColorValue(clear_color)));
 
 // This is seperated because I use similar objects a lot and it is getting irritating to type.
@@ -60,7 +60,7 @@ static vk::ShaderModule load_shader(vk::Device device, const std::string &path) 
     return module;
 }
 
-IMGUI_API bool ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path) {
+IMGUI_API bool ImGui_ImplSdlVulkan_Init(renderer::State *renderer, const std::string &base_path) {
     auto &state = vulkan_state(renderer);
 
     state.gui_vulkan.vertex_module = load_shader(state.device, base_path + "shaders-builtin/vulkan_imgui_vert.spv");
@@ -71,6 +71,229 @@ IMGUI_API bool ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *w
 
 IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(renderer::State *renderer) {
     auto &state = vulkan_state(renderer);
+
+    state.device.destroy(state.gui_vulkan.vertex_module);
+    state.device.destroy(state.gui_vulkan.fragment_module);
+}
+
+static bool ImGui_ImplSdlVulkan_CreatePipeline(renderer::vulkan::VulkanState &state) {
+    // Create GUI Renderpass
+    vk::AttachmentDescription attachment_description(
+        vk::AttachmentDescriptionFlags(), // No Flags
+        vk::Format::eB8G8R8A8Unorm, // Format, BGRA is standard
+        vk::SampleCountFlagBits::e1, // No Multisampling
+        vk::AttachmentLoadOp::eClear, // Clear Image
+        vk::AttachmentStoreOp::eStore, // Keep Image Data
+        vk::AttachmentLoadOp::eDontCare, // No Stencils
+        vk::AttachmentStoreOp::eDontCare, // No Stencils
+        vk::ImageLayout::eUndefined, // Initial Layout
+        vk::ImageLayout::eColorAttachmentOptimal // Final Layout
+    );
+
+    vk::AttachmentReference attachment_reference(
+        0, // attachments[0]
+        vk::ImageLayout::eColorAttachmentOptimal // Image Layout
+    );
+
+    std::vector<vk::SubpassDescription> subpasses = {
+        vk::SubpassDescription(
+            vk::SubpassDescriptionFlags(), // No Flags
+            vk::PipelineBindPoint::eGraphics, // Type
+            0, nullptr, // No Inputs
+            1, &attachment_reference, // Color Attachment References
+            nullptr, nullptr, // No Resolve or Depth/Stencil for now
+            0, nullptr // Vulkan Book says you don't need this for a Color Attachment?
+        )
+    };
+
+    vk::RenderPassCreateInfo renderpass_info(
+        vk::RenderPassCreateFlags(), // No Flags
+        1, &attachment_description, // Attachments
+        subpasses.size(), subpasses.data(), // Subpasses
+        0, nullptr // Dependencies
+    );
+
+    state.gui_vulkan.renderpass = state.device.createRenderPass(renderpass_info, nullptr);
+    if (!state.gui_vulkan.renderpass) {
+        LOG_ERROR("Failed to create Vulkan gui renderpass.");
+        return false;
+    }
+
+    // Create Framebuffer
+    for (uint32_t a = 0; a < 2; a++) {
+        vk::FramebufferCreateInfo framebuffer_info(
+            vk::FramebufferCreateFlags(), // No Flags
+            state.gui_vulkan.renderpass, // Renderpass
+            1, &state.swapchain_views[a], // Attachments
+            state.swapchain_width, state.swapchain_height, // Size
+            1 // Layers
+        );
+
+        state.gui_vulkan.framebuffers[a] = state.device.createFramebuffer(framebuffer_info, nullptr);
+    }
+
+    std::vector<vk::DescriptorSetLayout> pipeline_layouts = {
+        state.gui_vulkan.matrix_layout,
+        state.gui_vulkan.sampler_layout,
+    };
+
+    vk::PipelineLayoutCreateInfo pipeline_layout_info(
+        vk::PipelineLayoutCreateFlags(), // No Flags
+        pipeline_layouts.size(), pipeline_layouts.data(), // Descriptor Layouts
+        0, nullptr // Push Constants
+    );
+
+    state.gui_vulkan.pipeline_layout = state.device.createPipelineLayout(pipeline_layout_info, nullptr);
+    if (!state.gui_vulkan.pipeline_layout) {
+        LOG_ERROR("Failed to create Vulkan gui pipeline layout.");
+        return false;
+    }
+
+    std::vector<vk::PipelineShaderStageCreateInfo> shader_stage_infos = {
+        vk::PipelineShaderStageCreateInfo(
+            vk::PipelineShaderStageCreateFlags(), // No Flags
+            vk::ShaderStageFlagBits::eVertex, // Vertex Shader
+            state.gui_vulkan.vertex_module, // Module
+            "main", // Name
+            nullptr // Specialization
+        ),
+        vk::PipelineShaderStageCreateInfo(
+            vk::PipelineShaderStageCreateFlags(), // No Flags
+            vk::ShaderStageFlagBits::eFragment, // Fragment Shader
+            state.gui_vulkan.fragment_module, // Module
+            "main", // Name
+            nullptr // Specialization
+        ),
+    };
+
+    std::vector<vk::VertexInputBindingDescription> gui_pipeline_bindings = {
+        vk::VertexInputBindingDescription(
+            0, // Binding
+            sizeof(ImDrawVert), // Stride
+            vk::VertexInputRate::eVertex),
+    };
+
+    std::vector<vk::VertexInputAttributeDescription> gui_pipeline_attributes = {
+        vk::VertexInputAttributeDescription(
+            0, // Location
+            0, // Binding
+            vk::Format::eR32G32Sfloat,
+            0 // Offset
+        ),
+        vk::VertexInputAttributeDescription(
+            1, // Location
+            0, // Binding
+            vk::Format::eR32G32Sfloat,
+            sizeof(ImVec2) // Offset
+        ),
+        vk::VertexInputAttributeDescription(
+            2, // Location
+            0, // Binding
+            vk::Format::eR8G8B8A8Uint,
+            sizeof(ImVec2) * 2 // Offset
+        ),
+    };
+
+    vk::PipelineVertexInputStateCreateInfo gui_pipeline_vertex_info(
+        vk::PipelineVertexInputStateCreateFlags(), // No Flags
+        gui_pipeline_bindings.size(), gui_pipeline_bindings.data(), // Bindings
+        gui_pipeline_attributes.size(), gui_pipeline_attributes.data() // Attributes
+    );
+
+    vk::PipelineInputAssemblyStateCreateInfo gui_pipeline_assembly_info(
+        vk::PipelineInputAssemblyStateCreateFlags(), // No Flags
+        vk::PrimitiveTopology::eTriangleList, // Topology
+        false // No Primitive Restart?
+    );
+
+    vk::Viewport viewport(0, 0, state.swapchain_width, state.swapchain_height, 0.0f, 1.0f);
+    vk::Rect2D scissor(vk::Offset2D(0, 0), vk::Extent2D(state.swapchain_width, state.swapchain_height));
+
+    vk::PipelineViewportStateCreateInfo gui_pipeline_viewport_info(
+        vk::PipelineViewportStateCreateFlags(),
+        1, &viewport, // Viewport
+        1, &scissor // Scissor
+    );
+
+    vk::PipelineRasterizationStateCreateInfo gui_pipeline_rasterization_info(
+        vk::PipelineRasterizationStateCreateFlags(), // No Flags
+        false, // No Depth Clamping
+        false, // Rasterization is NOT Disabled
+        vk::PolygonMode::eFill, // Fill Polygons
+        vk::CullModeFlags(), // No Culling
+        vk::FrontFace::eCounterClockwise, // Counter Clockwise Face Forwards
+        false, 0, 0, 0, // No Depth Bias
+        1.0f // Line Width
+    );
+
+    vk::PipelineMultisampleStateCreateInfo gui_pipeline_multisample_info(
+        vk::PipelineMultisampleStateCreateFlags(), // No Flags
+        vk::SampleCountFlagBits::e1, // No Multisampling
+        false, 0, // No Sample Shading
+        nullptr, // No Sample Mask
+        false, false // Alpha Stays the Same
+    );
+
+    vk::PipelineDepthStencilStateCreateInfo gui_pipeline_depth_stencil_info(
+        vk::PipelineDepthStencilStateCreateFlags(), // No Flags
+        false, false, vk::CompareOp::eAlways, // No Depth Test
+        false, // No Depth Bounds Test
+        false, vk::StencilOpState(), vk::StencilOpState(), // No Stencil Test
+        0.0f, 1.0f // Depth Bounds
+    );
+
+    vk::PipelineColorBlendAttachmentState attachment_blending(
+        true, // Enable Blending
+        vk::BlendFactor::eSrcAlpha, // Src Color
+        vk::BlendFactor::eOneMinusSrcAlpha, // Dst Color
+        vk::BlendOp::eAdd, // Color Blend Op
+        vk::BlendFactor::eOne, // Src Alpha
+        vk::BlendFactor::eZero, // Dst Alpha
+        vk::BlendOp::eAdd, // Alpha Blend Op
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
+
+    vk::PipelineColorBlendStateCreateInfo gui_pipeline_blend_info(
+        vk::PipelineColorBlendStateCreateFlags(), // No Flags
+        false, vk::LogicOp::eClear, // No Logic Op
+        1, &attachment_blending, // Blending Attachments
+        { 1, 1, 1, 1 } // Blend Constants
+    );
+
+    std::vector<vk::DynamicState> dynamic_states = {
+//        vk::DynamicState::eScissor,
+//        vk::DynamicState::eViewport,
+    };
+
+    vk::PipelineDynamicStateCreateInfo gui_pipeline_dynamic_info(
+        vk::PipelineDynamicStateCreateFlags(), // No Flags
+        dynamic_states.size(), dynamic_states.data() // Dynamic States
+    );
+
+    vk::GraphicsPipelineCreateInfo gui_pipeline_info(
+        vk::PipelineCreateFlags(),
+        shader_stage_infos.size(), shader_stage_infos.data(),
+        &gui_pipeline_vertex_info,
+        &gui_pipeline_assembly_info,
+        nullptr, // No Tessellation
+        &gui_pipeline_viewport_info,
+        &gui_pipeline_rasterization_info,
+        &gui_pipeline_multisample_info,
+        &gui_pipeline_depth_stencil_info,
+        &gui_pipeline_blend_info,
+        &gui_pipeline_dynamic_info,
+        state.gui_vulkan.pipeline_layout,
+        state.gui_vulkan.renderpass,
+        0,
+        state.gui_vulkan.pipeline,
+        0);
+
+    state.gui_vulkan.pipeline = state.device.createGraphicsPipeline(vk::PipelineCache(), gui_pipeline_info, nullptr);
+    if (!state.gui_vulkan.pipeline) {
+        LOG_ERROR("Failed to create Vulkan gui pipeline.");
+        return false;
+    }
+
+    return true;
 }
 
 // Only one mapping can be created on a section of memory at a time. This method is split into the "vertex" and "index" parts to avoid overlapping maps.
@@ -165,19 +388,28 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
     vmaUnmapMemory(state.allocator, state.gui_vulkan.index_allocation);
 }
 
-IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data) {
+IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer) {
     auto &state = vulkan_state(renderer);
 
-    uint32_t image_index = ~0u;
-    state.device.resetFences(1, &state.gui_vulkan.next_image_fence);
-    vk::Result acquire_result = state.device.acquireNextImageKHR(state.swapchain, next_image_timeout,
-        vk::Semaphore(), state.gui_vulkan.next_image_fence, &image_index);
+    ImDrawData *draw_data = ImGui::GetDrawData();
 
-    // TODO: Use semaphores so acquiring can happen at the same time as the buffer? Better sync solution please.
-    vk::Result wait_result = state.device.waitForFences(1, &state.gui_vulkan.next_image_fence,
-        true, next_image_timeout);
-    if (acquire_result == vk::Result::eTimeout || wait_result == vk::Result::eTimeout) {
-        LOG_WARN("Missed timeout for acquiring next image.");
+    uint32_t image_index = ~0u;
+    vk::Result acquire_result = state.device.acquireNextImageKHR(state.swapchain, next_image_timeout,
+        state.gui_vulkan.image_acquired_semaphore, vk::Fence(), &image_index);
+
+    while (acquire_result == vk::Result::eErrorOutOfDateKHR) {
+        // This whole acquire thing should probably be moved out of imgui since renderering will also happen elsewhere.
+        int width, height;
+        SDL_Vulkan_GetDrawableSize(state.window, &width, &height);
+        renderer::vulkan::resize_swapchain(state, vk::Extent2D(width, height));
+        ImGui_ImplSdlVulkan_CreatePipeline(state);
+
+        acquire_result = state.device.acquireNextImageKHR(state.swapchain, next_image_timeout,
+            state.gui_vulkan.image_acquired_semaphore, vk::Fence(), &image_index);
+    }
+
+    if (acquire_result != vk::Result::eSuccess) {
+        LOG_WARN("Failed to get next image. Error: {}", static_cast<VkResult>(acquire_result));
         return;
     }
 
@@ -192,10 +424,9 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer, ImD
 
     state.gui_vulkan.command_buffer.begin(begin_info);
 
-    // Identity for now...
     float matrix[] = {
-        2.0f / DEFAULT_RES_WIDTH, 0, 0, 0,
-        0, 2.0f / DEFAULT_RES_HEIGHT, 0, 0,
+        2.0f / draw_data->DisplaySize.x, 0, 0, 0,
+        0, 2.0f / draw_data->DisplaySize.y, 0, 0,
         0, 0, 1, 0,
         -1, -1, 0, 1,
     };
@@ -207,7 +438,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer, ImD
         state.gui_vulkan.framebuffers[image_index], // Framebuffer
         vk::Rect2D(
             vk::Offset2D(0, 0),
-            vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT)), // Render Area
+            vk::Extent2D(state.swapchain_width, state.swapchain_height)), // Render Area
         1, &clear_value // Clear Colors
     );
 
@@ -221,7 +452,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer, ImD
         0, nullptr // Dynamic Offsets
         );
 
-//    vk::Viewport viewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0.0f, 1.0f);
+//    vk::Viewport viewport(0, 0, draw_data->DisplaySize.x, draw_data->DisplaySize.y, 0.0f, 1.0f);
 //    state.gui_vulkan.command_buffer.setViewport(0, 1, &viewport);
 
     uint64_t vertex_offset_null = 0;
@@ -282,14 +513,25 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer, ImD
 
     state.gui_vulkan.command_buffer.end();
 
-    // This is wait idle to ensure presentation happens after render. The command buffer should instead signal a fence or something.
-    renderer::vulkan::submit_command_buffer(state, renderer::vulkan::CommandType::General, state.gui_vulkan.command_buffer, true);
+    vk::PipelineStageFlags image_wait_stage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
-    renderer::vulkan::present(state, image_index);
-}
+    vk::SubmitInfo submit_info(
+        1, &state.gui_vulkan.image_acquired_semaphore, &image_wait_stage, // Wait Semaphores (wait until image has been acquired to output)
+        1, &state.gui_vulkan.command_buffer, // Command Buffers
+        1, &state.gui_vulkan.render_complete_semaphore // Signal Render Complete Semaphore
+        );
 
-IMGUI_API void ImGui_ImplSdlVulkan_GetDrawableSize(SDL_Window *window, int &width, int &height) {
-    SDL_Vulkan_GetDrawableSize(window, &width, &height);
+    vk::Queue render_queue = renderer::vulkan::select_queue(state, renderer::vulkan::CommandType::General);
+    render_queue.submit(1, &submit_info, vk::Fence());
+
+    vk::PresentInfoKHR present_info(
+        1, &state.gui_vulkan.render_complete_semaphore, // Wait Render Complete Semaphore
+        1, &state.swapchain, &image_index, nullptr // Swapchain
+    );
+
+    vk::Queue present_queue = renderer::vulkan::select_queue(state, renderer::vulkan::CommandType::General);
+    present_queue.presentKHR(present_info);
+    present_queue.waitIdle(); // Wait idle is probably bad for performance.
 }
 
 IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *renderer, void *pixels, int width, int height) {
@@ -407,7 +649,15 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *rendere
 
     transfer_buffer.end();
 
-    renderer::vulkan::submit_command_buffer(state, renderer::vulkan::CommandType::Transfer, transfer_buffer, true);
+    vk::SubmitInfo submit_info(
+        0, nullptr, nullptr, // No Wait Semaphores
+        1, &transfer_buffer, // Command Buffer
+        0, nullptr // No Signal Semaphores
+        );
+    vk::Queue submit_queue = renderer::vulkan::select_queue(state, renderer::vulkan::CommandType::Transfer);
+    submit_queue.submit(1, &submit_info, vk::Fence());
+    submit_queue.waitIdle();
+
     renderer::vulkan::free_command_buffer(state, renderer::vulkan::CommandType::Transfer, transfer_buffer);
     renderer::vulkan::destroy_buffer(state, temp_buffer, temp_allocation);
 
@@ -465,8 +715,6 @@ IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(renderer::State *renderer, ImTe
 IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(renderer::State *renderer) {
     auto &state = vulkan_state(renderer);
 
-    state.device.destroy(state.gui_vulkan.next_image_fence);
-
     renderer::vulkan::free_command_buffer(state, renderer::vulkan::CommandType::General, state.gui_vulkan.command_buffer);
 
     ImGui_ImplSdlVulkan_DeleteTexture(renderer, state.gui_vulkan.font_texture);
@@ -480,61 +728,6 @@ IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(renderer::State *rend
 }
 IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer) {
     auto &state = vulkan_state(renderer);
-
-    // Create GUI Renderpass
-    vk::AttachmentDescription attachment_description(
-        vk::AttachmentDescriptionFlags(), // No Flags
-        vk::Format::eB8G8R8A8Unorm, // Format, MoltenVK requires bgra?
-        vk::SampleCountFlagBits::e1, // No Multisampling
-        vk::AttachmentLoadOp::eClear, // Clear Image
-        vk::AttachmentStoreOp::eStore, // Keep Image Data
-        vk::AttachmentLoadOp::eDontCare, // No Stencils
-        vk::AttachmentStoreOp::eDontCare, // No Stencils
-        vk::ImageLayout::eUndefined, // Initial Layout
-        vk::ImageLayout::eColorAttachmentOptimal // Final Layout
-    );
-
-    vk::AttachmentReference attachment_reference(
-        0, // attachments[0]
-        vk::ImageLayout::eColorAttachmentOptimal // Image Layout
-    );
-
-    std::vector<vk::SubpassDescription> subpasses = {
-        vk::SubpassDescription(
-            vk::SubpassDescriptionFlags(), // No Flags
-            vk::PipelineBindPoint::eGraphics, // Type
-            0, nullptr, // No Inputs
-            1, &attachment_reference, // Color Attachment References
-            nullptr, nullptr, // No Resolve or Depth/Stencil for now
-            0, nullptr // Vulkan Book says you don't need this for a Color Attachment?
-            )
-    };
-
-    vk::RenderPassCreateInfo renderpass_info(
-        vk::RenderPassCreateFlags(), // No Flags
-        1, &attachment_description, // Attachments
-        subpasses.size(), subpasses.data(), // Subpasses
-        0, nullptr // Dependencies
-    );
-
-    state.gui_vulkan.renderpass = state.device.createRenderPass(renderpass_info, nullptr);
-    if (!state.gui_vulkan.renderpass) {
-        LOG_ERROR("Failed to create Vulkan gui renderpass.");
-        return false;
-    }
-
-    // Create Framebuffer
-    for (uint32_t a = 0; a < 2; a++) {
-        vk::FramebufferCreateInfo framebuffer_info(
-            vk::FramebufferCreateFlags(), // No Flags
-            state.gui_vulkan.renderpass, // Renderpass
-            1, &state.swapchain_views[a], // Attachments
-            DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, // Size
-            1 // Layers
-        );
-
-        state.gui_vulkan.framebuffers[a] = state.device.createFramebuffer(framebuffer_info, nullptr);
-    }
 
     vk::SamplerCreateInfo sampler_info(
         vk::SamplerCreateFlags(), // No Flags
@@ -600,166 +793,8 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
         }
     }
 
-    std::vector<vk::DescriptorSetLayout> pipeline_layouts = {
-        state.gui_vulkan.matrix_layout,
-        state.gui_vulkan.sampler_layout,
-    };
-
-    vk::PipelineLayoutCreateInfo pipeline_layout_info(
-        vk::PipelineLayoutCreateFlags(), // No Flags
-        pipeline_layouts.size(), pipeline_layouts.data(), // Descriptor Layouts
-        0, nullptr // Push Constants
-    );
-
-    state.gui_vulkan.pipeline_layout = state.device.createPipelineLayout(pipeline_layout_info, nullptr);
-    if (!state.gui_vulkan.pipeline_layout) {
-        LOG_ERROR("Failed to create Vulkan gui pipeline layout.");
+    if (!ImGui_ImplSdlVulkan_CreatePipeline(state))
         return false;
-    }
-
-    std::vector<vk::PipelineShaderStageCreateInfo> shader_stage_infos = {
-        vk::PipelineShaderStageCreateInfo(
-            vk::PipelineShaderStageCreateFlags(), // No Flags
-            vk::ShaderStageFlagBits::eVertex, // Vertex Shader
-            state.gui_vulkan.vertex_module, // Module
-            "main", // Name
-            nullptr // Specialization
-            ),
-        vk::PipelineShaderStageCreateInfo(
-            vk::PipelineShaderStageCreateFlags(), // No Flags
-            vk::ShaderStageFlagBits::eFragment, // Fragment Shader
-            state.gui_vulkan.fragment_module, // Module
-            "main", // Name
-            nullptr // Specialization
-            ),
-    };
-
-    std::vector<vk::VertexInputBindingDescription> gui_pipeline_bindings = {
-        vk::VertexInputBindingDescription(
-            0, // Binding
-            sizeof(ImDrawVert), // Stride
-            vk::VertexInputRate::eVertex),
-    };
-
-    std::vector<vk::VertexInputAttributeDescription> gui_pipeline_attributes = {
-        vk::VertexInputAttributeDescription(
-            0, // Location
-            0, // Binding
-            vk::Format::eR32G32Sfloat,
-            0 // Offset
-            ),
-        vk::VertexInputAttributeDescription(
-            1, // Location
-            0, // Binding
-            vk::Format::eR32G32Sfloat,
-            sizeof(ImVec2) // Offset
-            ),
-        vk::VertexInputAttributeDescription(
-            2, // Location
-            0, // Binding
-            vk::Format::eR8G8B8A8Uint,
-            sizeof(ImVec2) * 2 // Offset
-            ),
-    };
-
-    vk::PipelineVertexInputStateCreateInfo gui_pipeline_vertex_info(
-        vk::PipelineVertexInputStateCreateFlags(), // No Flags
-        gui_pipeline_bindings.size(), gui_pipeline_bindings.data(), // Bindings
-        gui_pipeline_attributes.size(), gui_pipeline_attributes.data() // Attributes
-    );
-
-    vk::PipelineInputAssemblyStateCreateInfo gui_pipeline_assembly_info(
-        vk::PipelineInputAssemblyStateCreateFlags(), // No Flags
-        vk::PrimitiveTopology::eTriangleList, // Topology
-        false // No Primitive Restart?
-    );
-
-    vk::Viewport viewport(0, 0, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, 0.0f, 1.0f);
-    vk::Rect2D scissor(vk::Offset2D(0, 0), vk::Extent2D(DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT));
-
-    vk::PipelineViewportStateCreateInfo gui_pipeline_viewport_info(
-        vk::PipelineViewportStateCreateFlags(),
-        1, &viewport, // Viewport
-        1, &scissor // Scissor
-    );
-
-    vk::PipelineRasterizationStateCreateInfo gui_pipeline_rasterization_info(
-        vk::PipelineRasterizationStateCreateFlags(), // No Flags
-        false, // No Depth Clamping
-        false, // Rasterization is NOT Disabled
-        vk::PolygonMode::eFill, // Fill Polygons
-        vk::CullModeFlags(), // No Culling
-        vk::FrontFace::eCounterClockwise, // Counter Clockwise Face Forwards
-        false, 0, 0, 0, // No Depth Bias
-        1.0f // Line Width
-    );
-
-    vk::PipelineMultisampleStateCreateInfo gui_pipeline_multisample_info(
-        vk::PipelineMultisampleStateCreateFlags(), // No Flags
-        vk::SampleCountFlagBits::e1, // No Multisampling
-        false, 0, // No Sample Shading
-        nullptr, // No Sample Mask
-        false, false // Alpha Stays the Same
-    );
-
-    vk::PipelineDepthStencilStateCreateInfo gui_pipeline_depth_stencil_info(
-        vk::PipelineDepthStencilStateCreateFlags(), // No Flags
-        false, false, vk::CompareOp::eAlways, // No Depth Test
-        false, // No Depth Bounds Test
-        false, vk::StencilOpState(), vk::StencilOpState(), // No Stencil Test
-        0.0f, 1.0f // Depth Bounds
-    );
-
-    vk::PipelineColorBlendAttachmentState attachment_blending(
-        true, // Enable Blending
-        vk::BlendFactor::eSrcAlpha, // Src Color
-        vk::BlendFactor::eOneMinusSrcAlpha, // Dst Color
-        vk::BlendOp::eAdd, // Color Blend Op
-        vk::BlendFactor::eOne, // Src Alpha
-        vk::BlendFactor::eZero, // Dst Alpha
-        vk::BlendOp::eAdd, // Alpha Blend Op
-        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
-
-    vk::PipelineColorBlendStateCreateInfo gui_pipeline_blend_info(
-        vk::PipelineColorBlendStateCreateFlags(), // No Flags
-        false, vk::LogicOp::eClear, // No Logic Op
-        1, &attachment_blending, // Blending Attachments
-        { 1, 1, 1, 1 } // Blend Constants
-    );
-
-    std::vector<vk::DynamicState> dynamic_states = {
-//        vk::DynamicState::eScissor,
-//        vk::DynamicState::eViewport,
-    };
-
-    vk::PipelineDynamicStateCreateInfo gui_pipeline_dynamic_info(
-        vk::PipelineDynamicStateCreateFlags(), // No Flags
-        dynamic_states.size(), dynamic_states.data() // Dynamic States
-    );
-
-    vk::GraphicsPipelineCreateInfo gui_pipeline_info(
-        vk::PipelineCreateFlags(),
-        shader_stage_infos.size(), shader_stage_infos.data(),
-        &gui_pipeline_vertex_info,
-        &gui_pipeline_assembly_info,
-        nullptr, // No Tessellation
-        &gui_pipeline_viewport_info,
-        &gui_pipeline_rasterization_info,
-        &gui_pipeline_multisample_info,
-        &gui_pipeline_depth_stencil_info,
-        &gui_pipeline_blend_info,
-        &gui_pipeline_dynamic_info,
-        state.gui_vulkan.pipeline_layout,
-        state.gui_vulkan.renderpass,
-        0,
-        vk::Pipeline(),
-        0);
-
-    state.gui_vulkan.pipeline = state.device.createGraphicsPipeline(vk::PipelineCache(), gui_pipeline_info, nullptr);
-    if (!state.gui_vulkan.pipeline) {
-        LOG_ERROR("Failed to create Vulkan gui pipeline.");
-        return false;
-    }
 
     constexpr size_t mat4_size = sizeof(float) * 4 * 4;
 
@@ -835,8 +870,9 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
 
     state.gui_vulkan.command_buffer = renderer::vulkan::create_command_buffer(state, renderer::vulkan::CommandType::General);
 
-    vk::FenceCreateInfo next_image_fence_info((vk::FenceCreateFlags()));
-    state.gui_vulkan.next_image_fence = state.device.createFence(next_image_fence_info);
+    vk::SemaphoreCreateInfo semaphore_info((vk::SemaphoreCreateFlags()));
+    state.gui_vulkan.image_acquired_semaphore = state.device.createSemaphore(semaphore_info);
+    state.gui_vulkan.render_complete_semaphore = state.device.createSemaphore(semaphore_info);
 
     state.gui.init = true;
 
