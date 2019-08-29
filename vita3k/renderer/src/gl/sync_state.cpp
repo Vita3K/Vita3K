@@ -111,21 +111,14 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
         const GLfloat w = std::abs(2 * viewport.scale.x);
         const GLfloat h = std::abs(2 * viewport.scale.y);
         const GLfloat x = viewport.offset.x - std::abs(viewport.scale.x);
-        GLfloat y = 0;
-
-        if (hardware_flip && (ymin < ymax)) {
-            // Y-Coordinate flipped later in pixels. Use top left coordinate system.
-            y = ymin;
-        } else {
-            y = display_h - (ymax + h);
-        }
+        const GLfloat y = std::min<GLfloat>(ymin, ymax);
 
         if (hardware_flip) {
             context.viewport_flip[0] = 1.0f;
             context.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
             context.viewport_flip[2] = 1.0f;
             context.viewport_flip[3] = 1.0f;
-        }
+        } else 
 
         glViewportIndexedf(0, x, y, w, h);
         glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
