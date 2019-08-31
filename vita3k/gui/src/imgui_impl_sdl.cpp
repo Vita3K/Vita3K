@@ -1,11 +1,15 @@
 #include <gui/imgui_impl_sdl.h>
 #include <gui/imgui_impl_sdl_gl3.h>
+#ifdef USE_VULKAN
 #include <gui/imgui_impl_sdl_vulkan.h>
+#endif
 
 #include <renderer/state.h>
 
 #include <SDL.h>
+#ifdef USE_VULKAN
 #include <SDL_vulkan.h>
+#endif
 
 IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path) {
     switch (renderer->current_backend) {
