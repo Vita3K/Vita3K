@@ -13,6 +13,7 @@ add_library(
 	STATIC
 	include/gui/functions.h
 	include/gui/imgui_impl_sdl_gl3.h
+	include/gui/imgui_impl_sdl_state.h
 	include/gui/imgui_impl_sdl.h
 	include/gui/state.h
 	src/common_dialog.cpp

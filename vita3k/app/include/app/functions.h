@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <gui/imgui_impl_sdl_state.h>
+
 #include <string>
 
 struct Config;
@@ -39,7 +41,7 @@ enum class AppRunType {
 };
 
 bool init(HostState &state, Config cfg, const Root &root_paths);
-void destory(HostState &state);
+void destroy(HostState &host, ImGui_State *imgui);
 void update_viewport(HostState &state);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
 

@@ -23,7 +23,7 @@ const vk::ImageSubresourceRange base_subresource_range = vk::ImageSubresourceRan
     0, 1 // Layer Range
 );
 
-const vk::IndexType imgui_index_type = sizeof(ImDrawIdx) == 2 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
+constexpr vk::IndexType imgui_index_type = sizeof(ImDrawIdx) == 2 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
 
 struct TextureState {
     VmaAllocation allocation = VK_NULL_HANDLE;
@@ -31,10 +31,6 @@ struct TextureState {
     vk::ImageView image_view;
     vk::DescriptorSet descriptor_set;
 };
-
-static renderer::vulkan::VulkanState &vulkan_state(renderer::State *renderer) {
-    return reinterpret_cast<renderer::vulkan::VulkanState &>(*renderer);
-}
 
 static vk::ShaderModule load_shader(vk::Device device, const std::string &path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -60,30 +56,32 @@ static vk::ShaderModule load_shader(vk::Device device, const std::string &path) 
     return module;
 }
 
-IMGUI_API bool ImGui_ImplSdlVulkan_Init(renderer::State *renderer, const std::string &base_path) {
-    auto &state = vulkan_state(renderer);
+IMGUI_API ImGui_VulkanState *ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path) {
+    auto *state = new ImGui_VulkanState;
+    state->renderer = renderer;
+    state->window = window;
 
-    state.gui_vulkan.vertex_module = load_shader(state.device, base_path + "shaders-builtin/vulkan_imgui_vert.spv");
-    state.gui_vulkan.fragment_module = load_shader(state.device, base_path + "shaders-builtin/vulkan_imgui_frag.spv");
+    state->vertex_module = load_shader(state->get_renderer().device, base_path + "shaders-builtin/vulkan_imgui_vert.spv");
+    state->fragment_module = load_shader(state->get_renderer().device, base_path + "shaders-builtin/vulkan_imgui_frag.spv");
 
-    return true;
+    return state;
 }
 
-IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(renderer::State *renderer) {
-    auto &state = vulkan_state(renderer);
-
-    state.device.destroy(state.gui_vulkan.vertex_module);
-    state.device.destroy(state.gui_vulkan.fragment_module);
+IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(ImGui_VulkanState &state) {
+    ImGui_ImplSdlVulkan_InvalidateDeviceObjects(state);
+    
+    state.get_renderer().device.destroy(state.vertex_module);
+    state.get_renderer().device.destroy(state.fragment_module);
 }
 
-static void ImGui_ImplSdlVulkan_DeletePipeline(renderer::vulkan::VulkanState &state) {
-    state.device.destroy(state.gui_vulkan.pipeline);
-    for (vk::Framebuffer framebuffer : state.gui_vulkan.framebuffers)
-        state.device.destroy(framebuffer);
-    state.device.destroy(state.gui_vulkan.renderpass);
+static void ImGui_ImplSdlVulkan_DeletePipeline(ImGui_VulkanState &state) {
+    state.get_renderer().device.destroy(state.pipeline);
+    for (vk::Framebuffer framebuffer : state.framebuffers)
+        state.get_renderer().device.destroy(framebuffer);
+    state.get_renderer().device.destroy(state.renderpass);
 }
 
-static bool ImGui_ImplSdlVulkan_CreatePipeline(renderer::vulkan::VulkanState &state) {
+static bool ImGui_ImplSdlVulkan_CreatePipeline(ImGui_VulkanState &state) {
     // Create GUI Renderpass
     vk::AttachmentDescription attachment_description(
         vk::AttachmentDescriptionFlags(), // No Flags
@@ -120,8 +118,8 @@ static bool ImGui_ImplSdlVulkan_CreatePipeline(renderer::vulkan::VulkanState &st
         0, nullptr // Dependencies
     );
 
-    state.gui_vulkan.renderpass = state.device.createRenderPass(renderpass_info, nullptr);
-    if (!state.gui_vulkan.renderpass) {
+    state.renderpass = state.get_renderer().device.createRenderPass(renderpass_info, nullptr);
+    if (!state.renderpass) {
         LOG_ERROR("Failed to create Vulkan gui renderpass.");
         return false;
     }
@@ -130,27 +128,27 @@ static bool ImGui_ImplSdlVulkan_CreatePipeline(renderer::vulkan::VulkanState &st
     for (uint32_t a = 0; a < 2; a++) {
         vk::FramebufferCreateInfo framebuffer_info(
             vk::FramebufferCreateFlags(), // No Flags
-            state.gui_vulkan.renderpass, // Renderpass
-            1, &state.swapchain_views[a], // Attachments
-            state.swapchain_width, state.swapchain_height, // Size
+            state.renderpass, // Renderpass
+            1, &state.get_renderer().swapchain_views[a], // Attachments
+            state.get_renderer().swapchain_width, state.get_renderer().swapchain_height, // Size
             1 // Layers
         );
 
-        state.gui_vulkan.framebuffers[a] = state.device.createFramebuffer(framebuffer_info, nullptr);
+        state.framebuffers[a] = state.get_renderer().device.createFramebuffer(framebuffer_info, nullptr);
     }
 
     std::vector<vk::PipelineShaderStageCreateInfo> shader_stage_infos = {
         vk::PipelineShaderStageCreateInfo(
             vk::PipelineShaderStageCreateFlags(), // No Flags
             vk::ShaderStageFlagBits::eVertex, // Vertex Shader
-            state.gui_vulkan.vertex_module, // Module
+            state.vertex_module, // Module
             "main", // Name
             nullptr // Specialization
         ),
         vk::PipelineShaderStageCreateInfo(
             vk::PipelineShaderStageCreateFlags(), // No Flags
             vk::ShaderStageFlagBits::eFragment, // Fragment Shader
-            state.gui_vulkan.fragment_module, // Module
+            state.fragment_module, // Module
             "main", // Name
             nullptr // Specialization
         ),
@@ -196,8 +194,8 @@ static bool ImGui_ImplSdlVulkan_CreatePipeline(renderer::vulkan::VulkanState &st
         false // No Primitive Restart?
     );
 
-    vk::Viewport viewport(0, 0, state.swapchain_width, state.swapchain_height, 0.0f, 1.0f);
-    vk::Rect2D scissor(vk::Offset2D(0, 0), vk::Extent2D(state.swapchain_width, state.swapchain_height));
+    vk::Viewport viewport(0, 0, state.get_renderer().swapchain_width, state.get_renderer().swapchain_height, 0.0f, 1.0f);
+    vk::Rect2D scissor(vk::Offset2D(0, 0), vk::Extent2D(state.get_renderer().swapchain_width, state.get_renderer().swapchain_height));
 
     vk::PipelineViewportStateCreateInfo gui_pipeline_viewport_info(
         vk::PipelineViewportStateCreateFlags(),
@@ -271,14 +269,14 @@ static bool ImGui_ImplSdlVulkan_CreatePipeline(renderer::vulkan::VulkanState &st
         &gui_pipeline_depth_stencil_info,
         &gui_pipeline_blend_info,
         &gui_pipeline_dynamic_info,
-        state.gui_vulkan.pipeline_layout,
-        state.gui_vulkan.renderpass,
+        state.pipeline_layout,
+        state.renderpass,
         0,
         vk::Pipeline(),
         0);
 
-    state.gui_vulkan.pipeline = state.device.createGraphicsPipeline(vk::PipelineCache(), gui_pipeline_info, nullptr);
-    if (!state.gui_vulkan.pipeline) {
+    state.pipeline = state.get_renderer().device.createGraphicsPipeline(vk::PipelineCache(), gui_pipeline_info, nullptr);
+    if (!state.pipeline) {
         LOG_ERROR("Failed to create Vulkan gui pipeline.");
         return false;
     }
@@ -287,15 +285,15 @@ static bool ImGui_ImplSdlVulkan_CreatePipeline(renderer::vulkan::VulkanState &st
 }
 
 // Only one mapping can be created on a section of memory at a time. This method is split into the "vertex" and "index" parts to avoid overlapping maps.
-static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &state, ImDrawData *draw_data) {
+static void ImGui_ImplSdlVulkan_UpdateBuffers(ImGui_VulkanState &state, ImDrawData *draw_data) {
     VkResult result;
 
     ImDrawVert *draw_buffer_data = nullptr;
 
-    if (state.gui_vulkan.draw_buffer_vertices != draw_data->TotalVtxCount) {
+    if (state.draw_buffer_vertices != draw_data->TotalVtxCount) {
         // Recreate Buffer
-        if (state.gui_vulkan.draw_buffer)
-            renderer::vulkan::destroy_buffer(state, state.gui_vulkan.draw_buffer, state.gui_vulkan.draw_allocation);
+        if (state.draw_buffer)
+            renderer::vulkan::destroy_buffer(state.get_renderer(), state.draw_buffer, state.draw_allocation);
 
         vk::BufferCreateInfo draw_buffer_info(
             vk::BufferCreateFlags(), // No Flags
@@ -304,15 +302,15 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
             vk::SharingMode::eExclusive, 0, nullptr // Exclusive Sharing Mode
         );
 
-        state.gui_vulkan.draw_buffer = renderer::vulkan::create_buffer(state, draw_buffer_info,
-            renderer::vulkan::MemoryType::Mappable, state.gui_vulkan.draw_allocation);
+        state.draw_buffer = renderer::vulkan::create_buffer(state.get_renderer(), draw_buffer_info,
+            renderer::vulkan::MemoryType::Mappable, state.draw_allocation);
 
-        state.gui_vulkan.draw_buffer_vertices = draw_data->TotalVtxCount;
+        state.draw_buffer_vertices = draw_data->TotalVtxCount;
     }
 
-    result = vmaMapMemory(state.allocator, state.gui_vulkan.draw_allocation,
+    result = vmaMapMemory(state.get_renderer().allocator, state.draw_allocation,
         reinterpret_cast<void **>(&draw_buffer_data));
-    vmaInvalidateAllocation(state.allocator, state.gui_vulkan.draw_allocation,
+    vmaInvalidateAllocation(state.get_renderer().allocator, state.draw_allocation,
         0, draw_data->TotalVtxCount * sizeof(ImDrawVert));
     if (result != VK_SUCCESS || !draw_buffer_data) {
         LOG_WARN("Failed to map memory for gui draw vertex buffer.");
@@ -329,17 +327,17 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
         draw_buffer_pointer += draw_list->VtxBuffer.Size;
     }
 
-    vmaFlushAllocation(state.allocator, state.gui_vulkan.draw_allocation,
+    vmaFlushAllocation(state.get_renderer().allocator, state.draw_allocation,
         0, draw_data->TotalVtxCount * sizeof(ImDrawVert));
-    vmaUnmapMemory(state.allocator, state.gui_vulkan.draw_allocation);
+    vmaUnmapMemory(state.get_renderer().allocator, state.draw_allocation);
 
     // Write to index buffer...
     ImDrawIdx *index_buffer_data = nullptr;
 
-    if (state.gui_vulkan.index_buffer_indices != draw_data->TotalIdxCount) {
+    if (state.index_buffer_indices != draw_data->TotalIdxCount) {
         // Recreate Buffer
-        if (state.gui_vulkan.index_buffer)
-            renderer::vulkan::destroy_buffer(state, state.gui_vulkan.index_buffer, state.gui_vulkan.index_allocation);
+        if (state.index_buffer)
+            renderer::vulkan::destroy_buffer(state.get_renderer(), state.index_buffer, state.index_allocation);
 
         vk::BufferCreateInfo index_buffer_info(
             vk::BufferCreateFlags(), // No Flags
@@ -348,15 +346,15 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
             vk::SharingMode::eExclusive, 0, nullptr // Exclusive Sharing Mode
         );
 
-        state.gui_vulkan.index_buffer = renderer::vulkan::create_buffer(state, index_buffer_info,
-            renderer::vulkan::MemoryType::Mappable, state.gui_vulkan.index_allocation);
+        state.index_buffer = renderer::vulkan::create_buffer(state.get_renderer(), index_buffer_info,
+            renderer::vulkan::MemoryType::Mappable, state.index_allocation);
 
-        state.gui_vulkan.index_buffer_indices = draw_data->TotalIdxCount;
+        state.index_buffer_indices = draw_data->TotalIdxCount;
     }
 
-    result = vmaMapMemory(state.allocator, state.gui_vulkan.index_allocation,
+    result = vmaMapMemory(state.get_renderer().allocator, state.index_allocation,
         reinterpret_cast<void **>(&index_buffer_data));
-    vmaInvalidateAllocation(state.allocator, state.gui_vulkan.index_allocation,
+    vmaInvalidateAllocation(state.get_renderer().allocator, state.index_allocation,
         0, draw_data->TotalIdxCount * sizeof(ImDrawIdx));
     if (result != VK_SUCCESS || !index_buffer_data) {
         LOG_WARN("Failed to map memory for gui index buffer.");
@@ -373,30 +371,28 @@ static void ImGui_ImplSdlVulkan_UpdateBuffers(renderer::vulkan::VulkanState &sta
         index_buffer_pointer += draw_list->IdxBuffer.Size;
     }
 
-    vmaFlushAllocation(state.allocator, state.gui_vulkan.index_allocation,
+    vmaFlushAllocation(state.get_renderer().allocator, state.index_allocation,
         0, draw_data->TotalIdxCount * sizeof(ImDrawIdx));
-    vmaUnmapMemory(state.allocator, state.gui_vulkan.index_allocation);
+    vmaUnmapMemory(state.get_renderer().allocator, state.index_allocation);
 }
 
-IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer) {
-    auto &state = vulkan_state(renderer);
-
+IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state) {
     ImDrawData *draw_data = ImGui::GetDrawData();
 
     uint32_t image_index = ~0u;
-    vk::Result acquire_result = state.device.acquireNextImageKHR(state.swapchain, next_image_timeout,
-        state.gui_vulkan.image_acquired_semaphore, vk::Fence(), &image_index);
+    vk::Result acquire_result = state.get_renderer().device.acquireNextImageKHR(state.get_renderer().swapchain,
+        next_image_timeout, state.image_acquired_semaphore, vk::Fence(), &image_index);
 
     while (acquire_result == vk::Result::eErrorOutOfDateKHR) {
         // This whole acquire thing should probably be moved out of imgui since renderering will also happen elsewhere.
         int width, height;
         SDL_Vulkan_GetDrawableSize(state.window, &width, &height);
-        renderer::vulkan::resize_swapchain(state, vk::Extent2D(width, height));
+        renderer::vulkan::resize_swapchain(state.get_renderer(), vk::Extent2D(width, height));
         ImGui_ImplSdlVulkan_DeletePipeline(state);
         ImGui_ImplSdlVulkan_CreatePipeline(state);
 
-        acquire_result = state.device.acquireNextImageKHR(state.swapchain, next_image_timeout,
-            state.gui_vulkan.image_acquired_semaphore, vk::Fence(), &image_index);
+        acquire_result = state.get_renderer().device.acquireNextImageKHR(state.get_renderer().swapchain,
+            next_image_timeout, state.image_acquired_semaphore, vk::Fence(), &image_index);
     }
 
     if (acquire_result != vk::Result::eSuccess) {
@@ -406,14 +402,14 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer) {
 
     ImGui_ImplSdlVulkan_UpdateBuffers(state, draw_data);
 
-    state.gui_vulkan.command_buffer.reset(vk::CommandBufferResetFlags());
+    state.command_buffer.reset(vk::CommandBufferResetFlags());
 
     vk::CommandBufferBeginInfo begin_info(
         vk::CommandBufferUsageFlags(), // No Flags
         nullptr // Inheritance
     );
 
-    state.gui_vulkan.command_buffer.begin(begin_info);
+    state.command_buffer.begin(begin_info);
 
     const float matrix[] = {
         2.0f / draw_data->DisplaySize.x, 0, 0, 0,
@@ -422,34 +418,34 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer) {
         -1, -1, 0, 1,
     };
 
-    state.gui_vulkan.command_buffer.updateBuffer(state.gui_vulkan.transformation_buffer, 0, sizeof(matrix), matrix);
+    state.command_buffer.updateBuffer(state.transformation_buffer, 0, sizeof(matrix), matrix);
 
     vk::RenderPassBeginInfo renderpass_begin_info(
-        state.gui_vulkan.renderpass, // Renderpass
-        state.gui_vulkan.framebuffers[image_index], // Framebuffer
+        state.renderpass, // Renderpass
+        state.framebuffers[image_index], // Framebuffer
         vk::Rect2D(
             vk::Offset2D(0, 0),
-            vk::Extent2D(state.swapchain_width, state.swapchain_height)), // Render Area
+            vk::Extent2D(state.get_renderer().swapchain_width, state.get_renderer().swapchain_height)),
         1, &clear_value // Clear Colors
     );
 
-    state.gui_vulkan.command_buffer.beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
-    state.gui_vulkan.command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, state.gui_vulkan.pipeline);
-    state.gui_vulkan.command_buffer.bindDescriptorSets(
+    state.command_buffer.beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
+    state.command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, state.pipeline);
+    state.command_buffer.bindDescriptorSets(
         vk::PipelineBindPoint::eGraphics, // Bind Point
-        state.gui_vulkan.pipeline_layout, // Layout
+        state.pipeline_layout, // Layout
         0, // First Set
-        1, &state.gui_vulkan.matrix_set, // Sets
+        1, &state.matrix_set, // Sets
         0, nullptr // Dynamic Offsets
         );
 
 //    vk::Viewport viewport(0, 0, draw_data->DisplaySize.x, draw_data->DisplaySize.y, 0.0f, 1.0f);
-//    state.gui_vulkan.command_buffer.setViewport(0, 1, &viewport);
+//    state.command_buffer.setViewport(0, 1, &viewport);
 
     uint64_t vertex_offset_null = 0;
 
-    state.gui_vulkan.command_buffer.bindVertexBuffers(0, 1, &state.gui_vulkan.draw_buffer, &vertex_offset_null);
-    state.gui_vulkan.command_buffer.bindIndexBuffer(state.gui_vulkan.index_buffer, 0, imgui_index_type);
+    state.command_buffer.bindVertexBuffers(0, 1, &state.draw_buffer, &vertex_offset_null);
+    state.command_buffer.bindIndexBuffer(state.index_buffer, 0, imgui_index_type);
 
     uint64_t vertex_offset = 0;
     uint64_t index_offset = 0;
@@ -465,16 +461,16 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer) {
                     vk::Offset2D(cmd.ClipRect.x, cmd.ClipRect.y),
                     vk::Extent2D(cmd.ClipRect.z, cmd.ClipRect.w)
                 );
-                state.gui_vulkan.command_buffer.setScissor(0, 1, &scissor_rect);
+                state.command_buffer.setScissor(0, 1, &scissor_rect);
                 auto *texture = reinterpret_cast<TextureState *>(cmd.TextureId);
-                state.gui_vulkan.command_buffer.bindDescriptorSets(
+                state.command_buffer.bindDescriptorSets(
                     vk::PipelineBindPoint::eGraphics, // Bind Point
-                    state.gui_vulkan.pipeline_layout, // Layout
+                    state.pipeline_layout, // Layout
                     1,
                     1, &texture->descriptor_set,
                     0, nullptr
                     );
-                state.gui_vulkan.command_buffer.drawIndexed(cmd.ElemCount, 1, index_offset, vertex_offset, 0);
+                state.command_buffer.drawIndexed(cmd.ElemCount, 1, index_offset, vertex_offset, 0);
             }
             index_offset += cmd.ElemCount;
         }
@@ -482,7 +478,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer) {
         vertex_offset += draw_list->VtxBuffer.Size;
     }
 
-    state.gui_vulkan.command_buffer.endRenderPass();
+    state.command_buffer.endRenderPass();
 
     vk::ImageMemoryBarrier color_attachment_present_barrier(
         vk::AccessFlagBits::eColorAttachmentWrite, // From rendering
@@ -490,11 +486,11 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer) {
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR,
         VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, // No Transfer
-        state.swapchain_images[image_index], // Image
+        state.get_renderer().swapchain_images[image_index], // Image
         base_subresource_range
         );
 
-    state.gui_vulkan.command_buffer.pipelineBarrier(
+    state.command_buffer.pipelineBarrier(
         vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eBottomOfPipe, // Color Attachment Output -> Bottom of Pipe Stage
         vk::DependencyFlags(), // No Dependency Flags
         0, nullptr, // No Memory Barriers
@@ -502,31 +498,30 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(renderer::State *renderer) {
         1, &color_attachment_present_barrier // Image Barrier
         );
 
-    state.gui_vulkan.command_buffer.end();
+    state.command_buffer.end();
 
     vk::PipelineStageFlags image_wait_stage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
     vk::SubmitInfo submit_info(
-        1, &state.gui_vulkan.image_acquired_semaphore, &image_wait_stage, // Wait Semaphores (wait until image has been acquired to output)
-        1, &state.gui_vulkan.command_buffer, // Command Buffers
-        1, &state.gui_vulkan.render_complete_semaphore // Signal Render Complete Semaphore
+        1, &state.image_acquired_semaphore, &image_wait_stage, // Wait Semaphores (wait until image has been acquired to output)
+        1, &state.command_buffer, // Command Buffers
+        1, &state.render_complete_semaphore // Signal Render Complete Semaphore
         );
 
-    vk::Queue render_queue = renderer::vulkan::select_queue(state, renderer::vulkan::CommandType::General);
+    vk::Queue render_queue = renderer::vulkan::select_queue(state.get_renderer(), renderer::vulkan::CommandType::General);
     render_queue.submit(1, &submit_info, vk::Fence());
 
     vk::PresentInfoKHR present_info(
-        1, &state.gui_vulkan.render_complete_semaphore, // Wait Render Complete Semaphore
-        1, &state.swapchain, &image_index, nullptr // Swapchain
+        1, &state.render_complete_semaphore, // Wait Render Complete Semaphore
+        1, &state.get_renderer().swapchain, &image_index, nullptr // Swapchain
     );
 
-    vk::Queue present_queue = renderer::vulkan::select_queue(state, renderer::vulkan::CommandType::General);
+    vk::Queue present_queue = renderer::vulkan::select_queue(state.get_renderer(), renderer::vulkan::CommandType::General);
     present_queue.presentKHR(present_info);
     present_queue.waitIdle(); // Wait idle is probably bad for performance.
 }
 
-IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *renderer, void *pixels, int width, int height) {
-    auto &state = vulkan_state(renderer);
+IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(ImGui_VulkanState &state, void *pixels, int width, int height) {
     auto *texture = new TextureState;
 
     const size_t buffer_size = width * height * 4;
@@ -539,11 +534,11 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *rendere
     );
 
     VmaAllocation temp_allocation;
-    vk::Buffer temp_buffer = renderer::vulkan::create_buffer(state, buffer_info, renderer::vulkan::MemoryType::Mappable, temp_allocation);
+    vk::Buffer temp_buffer = renderer::vulkan::create_buffer(state.get_renderer(), buffer_info, renderer::vulkan::MemoryType::Mappable, temp_allocation);
 
     uint8_t *temp_memory;
-    VkResult result = vmaMapMemory(state.allocator, temp_allocation, reinterpret_cast<void **>(&temp_memory));
-    vmaInvalidateAllocation(state.allocator, temp_allocation, 0, buffer_size);
+    VkResult result = vmaMapMemory(state.get_renderer().allocator, temp_allocation, reinterpret_cast<void **>(&temp_memory));
+    vmaInvalidateAllocation(state.get_renderer().allocator, temp_allocation, 0, buffer_size);
     if (result != VK_SUCCESS) {
         LOG_ERROR("Could not map font buffer memory. VMA result: {}.", result);
         return nullptr;
@@ -553,8 +548,8 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *rendere
         return nullptr;
     }
     std::memcpy(temp_memory, pixels, buffer_size);
-    vmaFlushAllocation(state.allocator, temp_allocation, 0, buffer_size);
-    vmaUnmapMemory(state.allocator, temp_allocation);
+    vmaFlushAllocation(state.get_renderer().allocator, temp_allocation, 0, buffer_size);
+    vmaUnmapMemory(state.get_renderer().allocator, temp_allocation);
 
     vk::ImageCreateInfo image_info(
         vk::ImageCreateFlags(), // No Flags
@@ -571,10 +566,11 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *rendere
         vk::ImageLayout::eUndefined // Sampling Layout (must be undefined)
     );
 
-    texture->image = renderer::vulkan::create_image(
-        state, image_info, renderer::vulkan::MemoryType::Device, texture->allocation);
+    texture->image = renderer::vulkan::create_image(state.get_renderer(),
+        image_info, renderer::vulkan::MemoryType::Device, texture->allocation);
 
-    vk::CommandBuffer transfer_buffer = renderer::vulkan::create_command_buffer(state, renderer::vulkan::CommandType::Transfer);
+    vk::CommandBuffer transfer_buffer = renderer::vulkan::create_command_buffer(state.get_renderer(),
+        renderer::vulkan::CommandType::Transfer);
 
     vk::CommandBufferBeginInfo begin_info(
         vk::CommandBufferUsageFlagBits::eOneTimeSubmit, // One Time Buffer
@@ -645,12 +641,12 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *rendere
         1, &transfer_buffer, // Command Buffer
         0, nullptr // No Signal Semaphores
         );
-    vk::Queue submit_queue = renderer::vulkan::select_queue(state, renderer::vulkan::CommandType::Transfer);
+    vk::Queue submit_queue = renderer::vulkan::select_queue(state.get_renderer(), renderer::vulkan::CommandType::Transfer);
     submit_queue.submit(1, &submit_info, vk::Fence());
     submit_queue.waitIdle();
 
-    renderer::vulkan::free_command_buffer(state, renderer::vulkan::CommandType::Transfer, transfer_buffer);
-    renderer::vulkan::destroy_buffer(state, temp_buffer, temp_allocation);
+    renderer::vulkan::free_command_buffer(state.get_renderer(), renderer::vulkan::CommandType::Transfer, transfer_buffer);
+    renderer::vulkan::destroy_buffer(state.get_renderer(), temp_buffer, temp_allocation);
 
     vk::ImageViewCreateInfo font_view_info(
         vk::ImageViewCreateFlags(), // No Flags
@@ -661,17 +657,17 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *rendere
         base_subresource_range // Subresource Range
     );
 
-    texture->image_view = state.device.createImageView(font_view_info);
+    texture->image_view = state.get_renderer().device.createImageView(font_view_info);
 
     vk::DescriptorSetAllocateInfo descriptor_info(
-        state.gui_vulkan.descriptor_pool, // Descriptor Pool
-        1, &state.gui_vulkan.sampler_layout // Layouts
+        state.descriptor_pool, // Descriptor Pool
+        1, &state.sampler_layout // Layouts
     );
 
-    texture->descriptor_set = state.device.allocateDescriptorSets(descriptor_info)[0];
+    texture->descriptor_set = state.get_renderer().device.allocateDescriptorSets(descriptor_info)[0];
 
     vk::DescriptorImageInfo descriptor_image_info(
-        state.gui_vulkan.sampler, // Sampler
+        state.sampler, // Sampler
         texture->image_view, // Image View
         vk::ImageLayout::eShaderReadOnlyOptimal // Image Layout
     );
@@ -686,44 +682,39 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(renderer::State *rendere
         nullptr
     );
 
-    state.device.updateDescriptorSets(1, &descriptor_write_info, 0, nullptr);
+    state.get_renderer().device.updateDescriptorSets(1, &descriptor_write_info, 0, nullptr);
 
     return texture;
 }
 
-IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(renderer::State *renderer, ImTextureID texture) {
-    auto &state = vulkan_state(renderer);
+IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(ImGui_VulkanState &state, ImTextureID texture) {
     auto texture_ptr = reinterpret_cast<TextureState *>(texture);
 
-    state.device.free(state.gui_vulkan.descriptor_pool, 1, &texture_ptr->descriptor_set);
-    state.device.destroy(texture_ptr->image_view);
-    renderer::vulkan::destroy_image(state, texture_ptr->image, texture_ptr->allocation);
+    state.get_renderer().device.free(state.descriptor_pool, 1, &texture_ptr->descriptor_set);
+    state.get_renderer().device.destroy(texture_ptr->image_view);
+    renderer::vulkan::destroy_image(state.get_renderer(), texture_ptr->image, texture_ptr->allocation);
 
     delete texture_ptr;
 }
 
 // Use if you want to reset your rendering device without losing ImGui state.
-IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(renderer::State *renderer) {
-    auto &state = vulkan_state(renderer);
+IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(ImGui_VulkanState &state) {
+    state.get_renderer().device.destroy(state.image_acquired_semaphore);
+    state.get_renderer().device.destroy(state.render_complete_semaphore);
 
-    state.device.destroy(state.gui_vulkan.image_acquired_semaphore);
-    state.device.destroy(state.gui_vulkan.render_complete_semaphore);
+    renderer::vulkan::free_command_buffer(state.get_renderer(), renderer::vulkan::CommandType::General, state.command_buffer);
 
-    renderer::vulkan::free_command_buffer(state, renderer::vulkan::CommandType::General, state.gui_vulkan.command_buffer);
-
-    ImGui_ImplSdlVulkan_DeleteTexture(renderer, state.gui_vulkan.font_texture);
+    ImGui_ImplSdlVulkan_DeleteTexture(state, state.font_texture);
     ImGui_ImplSdlVulkan_DeletePipeline(state);
 
-    state.device.destroy(state.gui_vulkan.pipeline_layout);
-    state.device.destroy(state.gui_vulkan.sampler_layout);
-    state.device.destroy(state.gui_vulkan.matrix_layout);
+    state.get_renderer().device.destroy(state.pipeline_layout);
+    state.get_renderer().device.destroy(state.sampler_layout);
+    state.get_renderer().device.destroy(state.matrix_layout);
 
-    state.device.destroy(state.gui_vulkan.sampler);
+    state.get_renderer().device.destroy(state.sampler);
 }
 
-IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer) {
-    auto &state = vulkan_state(renderer);
-
+IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(ImGui_VulkanState &state) {
     vk::SamplerCreateInfo sampler_info(
         vk::SamplerCreateFlags(), // No Flags
         vk::Filter::eLinear, // Mag Filter
@@ -740,8 +731,8 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
         false // Sampler is Normalized [0.0 - 1.0]
     );
 
-    state.gui_vulkan.sampler = state.device.createSampler(sampler_info, nullptr);
-    if (!state.gui_vulkan.sampler) {
+    state.sampler = state.get_renderer().device.createSampler(sampler_info, nullptr);
+    if (!state.sampler) {
         LOG_ERROR("Failed to create Vulkan gui sampler.");
         return false;
     }
@@ -761,8 +752,8 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
             1, &matrix_layout_binding // Bindings
         );
 
-        state.gui_vulkan.matrix_layout = state.device.createDescriptorSetLayout(matrix_layout_info, nullptr);
-        if (!state.gui_vulkan.matrix_layout) {
+        state.matrix_layout = state.get_renderer().device.createDescriptorSetLayout(matrix_layout_info, nullptr);
+        if (!state.matrix_layout) {
             LOG_ERROR("Failed to create Vulkan gui matrix layout.");
             return false;
         }
@@ -772,7 +763,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
             vk::DescriptorType::eCombinedImageSampler, // Descriptor Type
             1, // Array Size
             vk::ShaderStageFlagBits::eFragment, // Usage Stage
-            &state.gui_vulkan.sampler // Used Samplers
+            &state.sampler // Used Samplers
         );
 
         vk::DescriptorSetLayoutCreateInfo sampler_layout_info(
@@ -780,15 +771,15 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
             1, &sampler_layout // Bindings
         );
 
-        state.gui_vulkan.sampler_layout = state.device.createDescriptorSetLayout(sampler_layout_info, nullptr);
-        if (!state.gui_vulkan.sampler_layout) {
+        state.sampler_layout = state.get_renderer().device.createDescriptorSetLayout(sampler_layout_info, nullptr);
+        if (!state.sampler_layout) {
             LOG_ERROR("Failed to create Vulkan gui sampler layout.");
             return false;
         }
 
         std::vector<vk::DescriptorSetLayout> pipeline_layouts = {
-            state.gui_vulkan.matrix_layout,
-            state.gui_vulkan.sampler_layout,
+            state.matrix_layout,
+            state.sampler_layout,
         };
 
         vk::PipelineLayoutCreateInfo pipeline_layout_info(
@@ -797,8 +788,8 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
             0, nullptr // Push Constants
         );
 
-        state.gui_vulkan.pipeline_layout = state.device.createPipelineLayout(pipeline_layout_info, nullptr);
-        if (!state.gui_vulkan.pipeline_layout) {
+        state.pipeline_layout = state.get_renderer().device.createPipelineLayout(pipeline_layout_info, nullptr);
+        if (!state.pipeline_layout) {
                 LOG_ERROR("Failed to create Vulkan gui pipeline layout.");
             return false;
         }
@@ -816,8 +807,8 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
         vk::SharingMode::eExclusive, 0, nullptr // Exclusive Sharing
     );
 
-    state.gui_vulkan.transformation_buffer = renderer::vulkan::create_buffer(state, transformation_buffer_create_info,
-        renderer::vulkan::MemoryType::Device, state.gui_vulkan.transformation_allocation);
+    state.transformation_buffer = renderer::vulkan::create_buffer(state.get_renderer(),
+        transformation_buffer_create_info, renderer::vulkan::MemoryType::Device, state.transformation_allocation);
 
     // Create Descriptor Pool and Set
     {
@@ -832,30 +823,30 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
             pool_sizes.size(), pool_sizes.data() // Pool Sizes
         );
 
-        state.gui_vulkan.descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
-        if (!state.gui_vulkan.descriptor_pool) {
+        state.descriptor_pool = state.get_renderer().device.createDescriptorPool(descriptor_pool_info);
+        if (!state.descriptor_pool) {
             LOG_ERROR("Failed to create Vulkan gui descriptor pool.");
             return false;
         }
 
         vk::DescriptorSetAllocateInfo descriptor_info(
-            state.gui_vulkan.descriptor_pool, // Descriptor Pool
-            1, &state.gui_vulkan.matrix_layout // Set Information
+            state.descriptor_pool, // Descriptor Pool
+            1, &state.matrix_layout // Set Information
         );
 
-        state.gui_vulkan.matrix_set = state.device.allocateDescriptorSets(descriptor_info)[0];
-        if (!state.gui_vulkan.matrix_set) {
+        state.matrix_set = state.get_renderer().device.allocateDescriptorSets(descriptor_info)[0];
+        if (!state.matrix_set) {
             LOG_ERROR("Failed to create Vulkan gui matrix descriptor set.");
             return false;
         }
 
         vk::DescriptorBufferInfo uniform_buffer_info(
-            state.gui_vulkan.transformation_buffer, // Buffer
+            state.transformation_buffer, // Buffer
             0, mat4_size // Range
         );
 
         vk::WriteDescriptorSet matrix_buffer_info(
-            state.gui_vulkan.matrix_set, // Descriptor Set
+            state.matrix_set, // Descriptor Set
             0, // Binding
             0, 1, // Array Range
             vk::DescriptorType::eUniformBuffer, // Descriptor Type
@@ -864,7 +855,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
             nullptr // Buffer Texel Views
         );
 
-        state.device.updateDescriptorSets(1, &matrix_buffer_info, 0, nullptr);
+        state.get_renderer().device.updateDescriptorSets(1, &matrix_buffer_info, 0, nullptr);
     }
 
     // Create ImGui Texture
@@ -875,17 +866,17 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(renderer::State *renderer
         int width, height;
         io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-        state.gui_vulkan.font_texture = ImGui_ImplSdlVulkan_CreateTexture(renderer, pixels, width, height);
-        io.Fonts->TexID = state.gui_vulkan.font_texture;
+        state.font_texture = ImGui_ImplSdlVulkan_CreateTexture(state, pixels, width, height);
+        io.Fonts->TexID = state.font_texture;
     }
 
-    state.gui_vulkan.command_buffer = renderer::vulkan::create_command_buffer(state, renderer::vulkan::CommandType::General);
+    state.command_buffer = renderer::vulkan::create_command_buffer(state.get_renderer(), renderer::vulkan::CommandType::General);
 
     vk::SemaphoreCreateInfo semaphore_info((vk::SemaphoreCreateFlags()));
-    state.gui_vulkan.image_acquired_semaphore = state.device.createSemaphore(semaphore_info);
-    state.gui_vulkan.render_complete_semaphore = state.device.createSemaphore(semaphore_info);
+    state.image_acquired_semaphore = state.get_renderer().device.createSemaphore(semaphore_info);
+    state.render_complete_semaphore = state.get_renderer().device.createSemaphore(semaphore_info);
 
-    state.gui.init = true;
+    state.init = true;
 
     return true;
 }

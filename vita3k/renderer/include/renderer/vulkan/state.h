@@ -54,36 +54,6 @@ struct VulkanState : public renderer::State {
 
     vk::CommandBuffer general_command_buffer;
 
-    struct {
-        vk::ShaderModule vertex_module;
-        vk::ShaderModule fragment_module;
-
-        vk::RenderPass renderpass;
-        vk::Framebuffer framebuffers[2];
-        vk::DescriptorSetLayout matrix_layout;
-        vk::DescriptorSetLayout sampler_layout;
-        vk::DescriptorPool descriptor_pool;
-        vk::DescriptorSet matrix_set;
-        vk::PipelineLayout pipeline_layout;
-        vk::Pipeline pipeline;
-
-        vk::Sampler sampler;
-        ImTextureID font_texture{};
-        VmaAllocation draw_allocation = VK_NULL_HANDLE;
-        vk::Buffer draw_buffer;
-        size_t draw_buffer_vertices = 0;
-        VmaAllocation index_allocation = VK_NULL_HANDLE;
-        vk::Buffer index_buffer;
-        size_t index_buffer_indices = 0;
-        VmaAllocation transformation_allocation = VK_NULL_HANDLE;
-        vk::Buffer transformation_buffer;
-
-        vk::CommandBuffer command_buffer;
-
-        vk::Semaphore image_acquired_semaphore;
-        vk::Semaphore render_complete_semaphore;
-    } gui_vulkan;
-
     vk::SurfaceKHR surface;
     vk::SwapchainKHR swapchain;
 

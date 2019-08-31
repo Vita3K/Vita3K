@@ -89,16 +89,10 @@ static bool change_pref_location(const std::string &input_path, const std::strin
     return true;
 }
 
-static bool clear_and_refresh_game_list(HostState &host, GuiState &gui) {
-    if (gui.game_selector.games.empty())
-        return false;
-
+static void clear_and_refresh_game_list(GuiState &gui, HostState &host) {
     gui.game_selector.games.clear();
-    if (!gui.game_selector.games.empty())
-        return false;
 
     get_game_titles(gui, host);
-    return true;
 }
 
 using namespace list;
@@ -220,7 +214,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 
                     // Refresh the working paths
                     config::serialize_config(host.cfg, host.cfg.config_path);
-                    LOG_INFO_IF(clear_and_refresh_game_list(host, gui), "Successfully moved Vita3K files to: {}", host.pref_path);
+                    clear_and_refresh_game_list(gui, host);
+                    LOG_INFO("Successfully moved Vita3K files to: {}", host.pref_path);
                 }
             }
         }
@@ -237,7 +232,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 
                     // Refresh the working paths
                     config::serialize_config(host.cfg, host.cfg.config_path);
-                    LOG_INFO_IF(clear_and_refresh_game_list(host, gui), "Successfully moved Vita3K files to: {}", host.pref_path);
+                    clear_and_refresh_game_list(gui, host);
+                    LOG_INFO_IF("Successfully moved Vita3K files to: {}", host.pref_path);
                 }
             }
         }
@@ -271,7 +267,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopItemWidth();
         if (ImGui::Button("Apply Change Image")) {
             if (!gui.user_backgrounds[host.cfg.background_image])
-                init_background(gui, host, host.cfg.background_image);
+                init_background(gui,  host.cfg.background_image);
             else if (gui.user_backgrounds[host.cfg.background_image])
                 gui.current_background = gui.user_backgrounds[host.cfg.background_image];
         }
@@ -279,7 +275,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::Button("Reset Background")) {
             host.cfg.background_image.clear();
             gui.user_backgrounds.clear();
-            gui.current_background = 0;
+            gui.current_background = nullptr;
         }
         ImGui::Spacing();
         if (gui.current_background) {

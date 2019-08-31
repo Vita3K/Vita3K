@@ -162,9 +162,8 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
 }
 
-void destory(HostState &host) {
-    ImGui_ImplSdl_InvalidateDeviceObjects(host.renderer.get());
-    ImGui_ImplSdl_Shutdown(host.renderer.get());
+void destroy(HostState &host, ImGui_State *imgui) {
+    ImGui_ImplSdl_Shutdown(imgui);
 #ifdef USE_VULKAN
     // I'm explicitly destroying VulkanState in app::destroy instead of a destructor because I want to ensure an order.
     // Objects in Vulkan should be destroyed in reverse order than they were created.

@@ -189,8 +189,6 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
 
-    gl_state.window = window.get();
-
     // Recursively create GL version until one accepts
     // Major 4 is mandantory
     const int accept_gl_version[] = {

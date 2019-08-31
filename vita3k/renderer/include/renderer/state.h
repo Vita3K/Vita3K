@@ -11,11 +11,7 @@
 struct SDL_Cursor;
 
 namespace renderer {
-// Used instead of including imgui.h for ImGuiMouseCursor_COUNT.
-constexpr uint32_t cursor_count = 8;
-
 struct State {
-    SDL_Window *window;
     Backend current_backend;
     FeatureState features;
 
@@ -26,16 +22,6 @@ struct State {
 
     std::uint32_t scene_processed_since_last_frame = 0;
     std::uint32_t average_scene_per_frame = 1;
-
-    // This should be moved somewhere else since it is not renderer related.
-    struct {
-        uint64_t time = 0;
-        bool mouse_pressed[3] = { false, false, false };
-        SDL_Cursor *mouse_cursors[cursor_count] = { nullptr };
-
-        bool init = false;
-        bool do_clear_screen = true;
-    } gui;
 
     virtual ~State() = default;
 };

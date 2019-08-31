@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
 
     // Application not provided via argument, show game selector
     while (run_type == app::AppRunType::Unknown) {
-        if (handle_events(host)) {
+        if (handle_events(host, gui)) {
             gui::draw_begin(gui, host);
 
 #if DISCORD_RPC
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
             gui::draw_ui(gui, host);
             gui::draw_game_selector(gui, host);
 
-            gui::draw_end(host, host.window.get());
+            gui::draw_end(gui, host.window.get());
         } else {
             return QuitRequested;
         }
@@ -144,14 +144,14 @@ int main(int argc, char *argv[]) {
     if (const auto err = run_app(host, entry_point) != Success)
         return err;
 
-	host.renderer->gui.do_clear_screen = false;
+	gui.imgui_state->do_clear_screen = false;
 
     app::gl_screen_renderer gl_renderer;
 
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
 
-    while (handle_events(host)) {
+    while (handle_events(host, gui)) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
         }
 
         host.display.condvar.notify_all();
-        gui::draw_end(host, host.window.get());
+        gui::draw_end(gui, host.window.get());
         app::set_window_title(host);
     }
 
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
     CoUninitialize();
 #endif
 
-    app::destory(host);
+    app::destroy(host, gui.imgui_state.get());
 
     return Success;
 }

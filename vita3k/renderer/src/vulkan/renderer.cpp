@@ -390,8 +390,6 @@ void destroy_image(VulkanState &state, vk::Image image, VmaAllocation allocation
 bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state) {
     auto &vulkan_state = dynamic_cast<VulkanState &>(*state);
 
-    vulkan_state.window = window.get();
-
     // Create Instance
     {
         vk::ApplicationInfo app_info(
@@ -399,7 +397,7 @@ bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state) {
             0, // App Version
             org_name, // Engine Name, using org instead.
             0, // Engine Version
-            VK_MAKE_VERSION(1, 0, 0) // Lowest possible.
+            VK_API_VERSION_1_0
         );
 
         vk::InstanceCreateInfo instance_info(
@@ -550,7 +548,7 @@ bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state) {
     }
 
     int width, height;
-    SDL_Vulkan_GetDrawableSize(vulkan_state.window, &width, &height);
+    SDL_Vulkan_GetDrawableSize(window.get(), &width, &height);
     resize_swapchain(vulkan_state, vk::Extent2D(width, height));
 
     return true;

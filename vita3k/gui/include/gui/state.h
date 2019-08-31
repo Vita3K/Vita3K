@@ -23,7 +23,7 @@
 #include <imgui.h>
 #include <imgui_memory_editor.h>
 
-#include <gui/imgui_impl_sdl.h>
+#include <gui/imgui_impl_sdl_state.h>
 
 #include <glutil/object.h>
 
@@ -91,6 +91,8 @@ enum class TrophyAnimationStage {
 };
 
 struct GuiState {
+    std::unique_ptr<ImGui_State> imgui_state;
+
     bool renderer_focused = true;
     gui::DebugMenuState debug_menu;
     gui::ConfigurationMenuState configuration_menu;

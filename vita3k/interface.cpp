@@ -118,14 +118,14 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState 
     const auto created = fs::create_directories(output_path);
     if (!created) {
         gui::GenericDialogState status = gui::UNK_STATE;
-        while (handle_events(host) && (status == 0)) {
-            ImGui_ImplSdl_NewFrame(host.renderer.get());
+        while (handle_events(host, gui) && (status == 0)) {
+            ImGui_ImplSdl_NewFrame(gui.imgui_state.get());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             gui::draw_ui(gui, host);
             gui::draw_reinstall_dialog(&status);
             glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
             ImGui::Render();
-            ImGui_ImplSdl_RenderDrawData(host.renderer.get());
+            ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
             SDL_GL_SwapWindow(host.window.get());
         }
         if (status == gui::CANCEL_STATE) {
@@ -260,10 +260,10 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
     }
 }
 
-bool handle_events(HostState &host) {
+bool handle_events(HostState &host, GuiState &gui) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        ImGui_ImplSdl_ProcessEvent(host.renderer.get(), &event);
+        ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
         case SDL_QUIT:
             stop_all_threads(host.kernel);

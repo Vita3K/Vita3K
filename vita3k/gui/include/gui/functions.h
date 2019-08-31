@@ -37,12 +37,12 @@ enum GenericDialogState {
 };
 
 void init(GuiState &gui, HostState &host);
-void init_background(GuiState &gui, HostState &host, const std::string &image_path);
+void init_background(GuiState &gui, const std::string &image_path);
 void get_game_titles(GuiState &gui, HostState &host);
 void load_game_background(GuiState &gui, HostState &host, const std::string &title_id);
 
 void draw_begin(GuiState &gui, HostState &host);
-void draw_end(HostState &host, SDL_Window *window);
+void draw_end(GuiState &host, SDL_Window *window);
 void draw_ui(GuiState &gui, HostState &host);
 
 void draw_common_dialog(GuiState &gui, HostState &host);
@@ -51,7 +51,7 @@ void draw_reinstall_dialog(GenericDialogState *status);
 void draw_trophies_unlocked(GuiState &gui, HostState &host);
 void draw_perf_overlay(GuiState &gui, HostState &host);
 
-ImTextureID load_image(HostState &host, const char *data, const std::size_t size);
+ImTextureID load_image(GuiState &gui, const char *data, const std::size_t size);
 
 } // namespace gui
 
