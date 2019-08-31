@@ -556,17 +556,15 @@ bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state) {
     return true;
 }
 
-// Not used, but Vulkan requires some special shutdown. I want to get it written down.
 void close(std::unique_ptr<renderer::State> &state) {
     auto &vulkan_state = reinterpret_cast<VulkanState &>(*state);
 
-    // Mainly this line. We could make this VulkanState's destructor?
     vulkan_state.device.waitIdle();
+
+    vmaDestroyAllocator(vulkan_state.allocator);
 
     vulkan_state.device.destroy(vulkan_state.swapchain);
     vulkan_state.instance.destroy(vulkan_state.surface);
-
-    vmaDestroyAllocator(vulkan_state.allocator);
 
     free_command_buffer(vulkan_state, CommandType::General, vulkan_state.general_command_buffer);
 

@@ -20,7 +20,7 @@
 #include <audio/functions.h>
 #include <config/functions.h>
 #include <config/version.h>
-#include <glutil/gl.h>
+#include <gui/imgui_impl_sdl.h>
 #include <host/state.h>
 #include <io/functions.h>
 #include <renderer/functions.h>
@@ -35,6 +35,10 @@
 
 #ifdef USE_GDBSTUB
 #include <gdbstub/functions.h>
+#endif
+
+#ifdef USE_VULKAN
+#include <renderer/vulkan/functions.h>
 #endif
 
 #include <SDL_video.h>
@@ -159,6 +163,16 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 }
 
 void destory(HostState &host) {
+    ImGui_ImplSdl_InvalidateDeviceObjects(host.renderer.get());
+    ImGui_ImplSdl_Shutdown(host.renderer.get());
+#ifdef USE_VULKAN
+    // I'm explicitly destroying VulkanState in app::destroy instead of a destructor because I want to ensure an order.
+    // Objects in Vulkan should be destroyed in reverse order than they were created.
+    if (host.renderer->current_backend == renderer::Backend::Vulkan) {
+        renderer::vulkan::close(host.renderer);
+    }
+#endif
+
 #ifdef USE_DISCORD_RICH_PRESENCE
     discord::shutdown();
 #endif
