@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include <cstdint>
+
 struct SDL_Window;
 struct SDL_Cursor;
 
