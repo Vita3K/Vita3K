@@ -57,5 +57,5 @@ struct Config {
     bool color_surface_debug = false;
     bool hardware_flip = false;
     bool performance_overlay = false;
-    std::string backend = {};
+    int backend = -1;
 }; // struct Config

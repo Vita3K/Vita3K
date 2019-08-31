@@ -55,6 +55,8 @@ void update_viewport(HostState &state) {
         SDL_Vulkan_GetDrawableSize(state.window.get(), &w, &h);
         break;
 #endif
+    default:
+        LOG_ERROR("Unimplemented backend {}.", static_cast<int>(state.renderer->current_backend));
     }
 
     state.drawable_size.x = w;
@@ -105,13 +107,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     else
         state.pref_path = state.cfg.pref_path + '/';
 
-    renderer::Backend backend;
-#ifdef USE_VULKAN
-    if (state.cfg.backend == "Vulkan")
-        backend = renderer::Backend::Vulkan;
-    else
-#endif
-        backend = renderer::Backend::OpenGL;
+    auto backend = static_cast<renderer::Backend>(state.cfg.backend);
 
     SDL_WindowFlags window_type;
     switch (backend) {
@@ -123,6 +119,8 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         window_type = SDL_WINDOW_VULKAN;
         break;
 #endif
+    default:
+        LOG_ERROR("Unimplemented backend {}.", state.cfg.backend);
     }
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
@@ -153,6 +151,8 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
             error_dialog("Could not create Vulkan context!");
             break;
 #endif
+        default:
+            error_dialog(fmt::format("Unknown backend {}.", state.cfg.backend));
         }
         return false;
     }
