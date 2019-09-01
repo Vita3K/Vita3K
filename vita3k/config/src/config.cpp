@@ -35,6 +35,13 @@
 namespace po = boost::program_options;
 
 namespace config {
+static std::string to_lower(const std::string &text) {
+    std::string result;
+    result.reserve(text.size());
+    for (char a : text)
+        result += a;
+    return result;
+}
 
 template <typename T, typename Q = T>
 static void get_yaml_value(YAML::Node &config_node, const char *key, T *target_val, Q default_val) {
@@ -138,7 +145,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "backend", &backend, std::string("OpenGL"));
 
 #ifdef USE_VULKAN
-    if (backend == "Vulkan")
+    if (to_lower(backend) == "vulkan")
         cfg.backend = 1;
     else
 #endif
@@ -341,11 +348,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         po::notify(var_map);
 
 #ifdef USE_VULKAN
-        if (backend == "Vulkan")
+        if (to_lower(backend) == "vulkan")
             command_line.backend = 1;
         else
 #endif
-        if (backend == "OpenGL")
+        if (to_lower(backend) == "opengl")
             command_line.backend = 0;
 
         if (var_map.count("help")) {
