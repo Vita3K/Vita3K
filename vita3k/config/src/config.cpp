@@ -39,7 +39,7 @@ static std::string to_lower(const std::string &text) {
     std::string result;
     result.reserve(text.size());
     for (char a : text)
-        result += a;
+        result += std::tolower(a);
     return result;
 }
 
@@ -293,7 +293,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         parse(cfg, root_paths.get_base_path(), root_paths.get_pref_path_string());
 
     try {
-        std::string backend = "";
+        std::string backend;
 
         // Declare all options
         // clang-format off
@@ -354,6 +354,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 #endif
         if (to_lower(backend) == "opengl")
             command_line.backend = 0;
+        else
+            command_line.backend = -1;
 
         if (var_map.count("help")) {
             std::cout << visible << std::endl;

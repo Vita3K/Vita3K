@@ -57,5 +57,5 @@ struct Config {
     bool color_surface_debug = false;
     bool hardware_flip = false;
     bool performance_overlay = false;
-    int backend = -1;
+    int backend = 0;
 }; // struct Config

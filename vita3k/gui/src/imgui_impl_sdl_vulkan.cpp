@@ -518,6 +518,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state) {
 
     vk::Queue present_queue = renderer::vulkan::select_queue(state.get_renderer(), renderer::vulkan::CommandType::General);
     present_queue.presentKHR(present_info);
+    render_queue.waitIdle();
     present_queue.waitIdle(); // Wait idle is probably bad for performance.
 }
 

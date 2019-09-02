@@ -61,6 +61,7 @@ void update_viewport(HostState &state) {
 #endif
     default:
         LOG_ERROR("Unimplemented backend {}.", static_cast<int>(state.renderer->current_backend));
+        break;
     }
 
     state.drawable_size.x = w;
@@ -125,6 +126,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 #endif
     default:
         LOG_ERROR("Unimplemented backend {}.", state.cfg.backend);
+        break;
     }
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
@@ -157,6 +159,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 #endif
         default:
             error_dialog(fmt::format("Unknown backend {}.", state.cfg.backend));
+            break;
         }
         return false;
     }
