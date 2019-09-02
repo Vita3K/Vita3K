@@ -1,8 +1,8 @@
 #include "private.h"
 
 #include <gui/functions.h>
-#include <gui/state.h>
 #include <gui/imgui_impl_sdl.h>
+#include <gui/state.h>
 
 #include <host/state.h>
 

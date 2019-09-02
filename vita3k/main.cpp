@@ -28,7 +28,7 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#if DISCORD_RPC 
+#if DISCORD_RPC
 #include <app/discord.h>
 #endif
 
@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
     if (const auto err = run_app(host, entry_point) != Success)
         return err;
 
-	gui.imgui_state->do_clear_screen = false;
+    gui.imgui_state->do_clear_screen = false;
 
     app::gl_screen_renderer gl_renderer;
 

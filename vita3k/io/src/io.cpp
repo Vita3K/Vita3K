@@ -443,11 +443,11 @@ SceUID read_dir(IOState &io, const SceUID fd, emu::SceIoDirent *dent, const std:
 
     const auto dir = io.dir_entries.find(fd);
 
-    // Refuse any fd that is not explicitly a directory
-    if (!dir->second.is_directory())
-        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
-
     if (dir != io.dir_entries.end()) {
+        // Refuse any fd that is not explicitly a directory
+        if (!dir->second.is_directory())
+            return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+
         const auto d = dir->second.get_dir_ptr();
         if (!d)
             return 0;

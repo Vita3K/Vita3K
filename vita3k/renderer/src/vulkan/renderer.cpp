@@ -45,13 +45,15 @@ const char *get_surface_extension() {
     const std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties(nullptr);
 
     if (std::find_if(extensions.begin(), extensions.end(), [](const vk::ExtensionProperties &props) {
-        return strcmp(props.extensionName, metal_surface_extension) == 0;
-    }) != extensions.end())
+            return strcmp(props.extensionName, metal_surface_extension) == 0;
+        })
+        != extensions.end())
         return metal_surface_extension;
 
     if (std::find_if(extensions.begin(), extensions.end(), [](const vk::ExtensionProperties &props) {
-        return strcmp(props.extensionName, surface_macos_extension) == 0;
-    }) != extensions.end())
+            return strcmp(props.extensionName, surface_macos_extension) == 0;
+        })
+        != extensions.end())
         return surface_macos_extension;
 
     return nullptr;
@@ -255,11 +257,11 @@ bool resize_swapchain(VulkanState &state, vk::Extent2D size) {
                 1, // Level Count
                 0, // Base Array Index
                 1 // Layer Count
-            ));
+                ));
 
         vk::ImageView view = state.device.createImageView(view_info);
         if (!view) {
-                LOG_ERROR("Failed to Vulkan image view for swpachain image id {}.", a);
+            LOG_ERROR("Failed to Vulkan image view for swpachain image id {}.", a);
             return false;
         }
 
@@ -397,8 +399,7 @@ bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state) {
             0, // App Version
             org_name, // Engine Name, using org instead.
             0, // Engine Version
-            VK_API_VERSION_1_0
-        );
+            VK_API_VERSION_1_0);
 
         vk::InstanceCreateInfo instance_info(
             vk::InstanceCreateFlags(), // No Flags

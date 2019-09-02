@@ -16,8 +16,8 @@
 
 #include <imgui.h>
 
-#include <renderer/gl/state.h>
 #include <gui/imgui_impl_sdl_state.h>
+#include <renderer/gl/state.h>
 
 struct SDL_Window;
 union SDL_Event;

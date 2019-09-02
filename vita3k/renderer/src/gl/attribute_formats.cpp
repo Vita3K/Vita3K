@@ -1,5 +1,5 @@
-#include <renderer/profile.h>
 #include <renderer/gl/functions.h>
+#include <renderer/profile.h>
 
 #include <util/log.h>
 

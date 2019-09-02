@@ -233,7 +233,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                     // Refresh the working paths
                     config::serialize_config(host.cfg, host.cfg.config_path);
                     clear_and_refresh_game_list(gui, host);
-                    LOG_INFO_IF("Successfully moved Vita3K files to: {}", host.pref_path);
+                    LOG_INFO("Successfully moved Vita3K files to: {}", host.pref_path);
                 }
             }
         }
@@ -267,7 +267,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopItemWidth();
         if (ImGui::Button("Apply Change Image")) {
             if (!gui.user_backgrounds[host.cfg.background_image])
-                init_background(gui,  host.cfg.background_image);
+                init_background(gui, host.cfg.background_image);
             else if (gui.user_backgrounds[host.cfg.background_image])
                 gui.current_background = gui.user_backgrounds[host.cfg.background_image];
         }

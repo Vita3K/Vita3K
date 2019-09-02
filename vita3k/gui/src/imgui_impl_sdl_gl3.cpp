@@ -116,7 +116,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     if (state.do_clear_screen)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Setup viewport, orthographic projection matrix
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
@@ -416,5 +416,3 @@ IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(ImTextureID texture) {
     auto texture_name = static_cast<GLuint>(reinterpret_cast<uintptr_t>(texture));
     glDeleteTextures(1, &texture_name);
 }
-
-

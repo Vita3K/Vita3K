@@ -8,7 +8,7 @@ struct SDL_Window;
 struct SDL_Cursor;
 
 namespace renderer {
-    struct State;
+struct State;
 }
 
 struct ImGui_State {
