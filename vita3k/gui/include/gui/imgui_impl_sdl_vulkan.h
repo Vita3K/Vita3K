@@ -38,10 +38,6 @@ struct ImGui_VulkanState : public ImGui_State {
 
     vk::Semaphore image_acquired_semaphore;
     vk::Semaphore render_complete_semaphore;
-
-    inline renderer::vulkan::VulkanState &get_renderer() {
-        return dynamic_cast<renderer::vulkan::VulkanState &>(*renderer);
-    }
 };
 
 IMGUI_API ImGui_VulkanState *ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path);

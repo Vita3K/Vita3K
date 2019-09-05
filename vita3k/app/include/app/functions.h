@@ -17,13 +17,12 @@
 
 #pragma once
 
-#include <gui/imgui_impl_sdl_state.h>
-
 #include <string>
 
 struct Config;
 struct HostState;
 struct SDL_Window;
+struct ImGui_State;
 template <class T>
 class Ptr;
 class Root;

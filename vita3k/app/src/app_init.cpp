@@ -112,7 +112,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     else
         state.pref_path = state.cfg.pref_path + '/';
 
-    auto backend = static_cast<renderer::Backend>(state.cfg.backend);
+    const auto backend = static_cast<renderer::Backend>(state.cfg.backend);
 
     SDL_WindowFlags window_type;
     switch (backend) {
@@ -163,6 +163,8 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         }
         return false;
     }
+
+    return true;
 }
 
 void destroy(HostState &host, ImGui_State *imgui) {
