@@ -126,6 +126,9 @@ bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend) {
             return false;
         break;
 #endif
+    default:
+        LOG_ERROR("Cannot create a renderer with unsupported backend {}.", static_cast<int>(backend));
+        return false;
     }
 
     state->current_backend = backend;

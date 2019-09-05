@@ -5,6 +5,7 @@
 #endif
 
 #include <renderer/state.h>
+#include <util/log.h>
 
 #include <SDL.h>
 #ifdef USE_VULKAN
@@ -19,6 +20,9 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
     case renderer::Backend::Vulkan:
         return dynamic_cast<ImGui_State *>(ImGui_ImplSdlVulkan_Init(renderer, window, base_path));
 #endif
+    default:
+        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(renderer->current_backend));
+        return nullptr;
     }
 }
 IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state) {
@@ -29,6 +33,8 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state) {
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_Shutdown(dynamic_cast<ImGui_VulkanState &>(*state));
 #endif
+    default:
+        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
     }
 }
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
@@ -153,6 +159,8 @@ IMGUI_API void ImGui_ImplSdl_GetDrawableSize(ImGui_State *state, int &width, int
     case renderer::Backend::Vulkan:
         SDL_Vulkan_GetDrawableSize(state->window, &width, &height);
 #endif
+    default:
+        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
     }
 }
 
@@ -164,6 +172,8 @@ IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(ImGui_State *state, void *data
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_CreateTexture(dynamic_cast<ImGui_VulkanState &>(*state), data, width, height);
 #endif
+    default:
+        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
     }
 }
 
@@ -175,6 +185,8 @@ IMGUI_API void ImGui_ImplSdl_DeleteTexture(ImGui_State *state, ImTextureID textu
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_DeleteTexture(dynamic_cast<ImGui_VulkanState &>(*state), texture);
 #endif
+    default:
+        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
     }
 }
 
@@ -187,6 +199,8 @@ IMGUI_API void ImGui_ImplSdl_InvalidateDeviceObjects(ImGui_State *state) {
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_InvalidateDeviceObjects(dynamic_cast<ImGui_VulkanState &>(*state));
 #endif
+    default:
+        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
     }
 }
 IMGUI_API bool ImGui_ImplSdl_CreateDeviceObjects(ImGui_State *state) {
@@ -197,6 +211,8 @@ IMGUI_API bool ImGui_ImplSdl_CreateDeviceObjects(ImGui_State *state) {
     case renderer::Backend::Vulkan:
         return ImGui_ImplSdlVulkan_CreateDeviceObjects(dynamic_cast<ImGui_VulkanState &>(*state));
 #endif
+    default:
+        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
     }
 }
 
