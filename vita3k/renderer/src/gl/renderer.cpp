@@ -132,7 +132,6 @@ static void after_callback(const char *name, void *funcptr, int len_args, ...) {
         std::stringstream gl_error;
         gl_error << error;
         LOG_ERROR("OpenGL: {} set error {}.", name, gl_error.str());
-        assert(false);
 #else
         LOG_ERROR("OpenGL error: {}", log_hex(static_cast<std::uint32_t>(error)));
 #endif
