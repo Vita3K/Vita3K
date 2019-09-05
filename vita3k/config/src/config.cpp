@@ -110,8 +110,6 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
         return FileNotFound;
     }
 
-    std::string backend = "OpenGL";
-
     get_yaml_value(config_node, "log-imports", &cfg.log_imports, false);
     get_yaml_value(config_node, "log-exports", &cfg.log_exports, false);
     get_yaml_value(config_node, "log-active-shaders", &cfg.log_active_shaders, false);
@@ -134,14 +132,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "color-surface-debug", &cfg.color_surface_debug, false);
     get_yaml_value(config_node, "hardware-flip", &cfg.hardware_flip, false);
     get_yaml_value(config_node, "performance-overlay", &cfg.performance_overlay, false);
-    get_yaml_value(config_node, "backend", &backend, std::string("OpenGL"));
-
-#ifdef USE_VULKAN
-    if (string_utils::toupper(backend) == "VULKAN")
-        cfg.backend = 1;
-    else
-#endif
-        cfg.backend = 0;
+    get_yaml_value(config_node, "backend", &cfg.backend, std::string("OpenGL"));
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
         LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
@@ -173,12 +164,6 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     YAML::Emitter emitter;
     emitter << YAML::BeginMap;
 
-    std::string backend = "OpenGL";
-#ifdef USE_VULKAN
-    if (cfg.backend == 1)
-        backend = "Vulkan";
-#endif
-
     config_file_emit_single(emitter, "log-imports", cfg.log_imports);
     config_file_emit_single(emitter, "log-exports", cfg.log_exports);
     config_file_emit_single(emitter, "log-active-shaders", cfg.log_active_shaders);
@@ -202,7 +187,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "color-surface-debug", cfg.color_surface_debug);
     config_file_emit_single(emitter, "hardware-flip", cfg.hardware_flip);
     config_file_emit_single(emitter, "performance-overlay", cfg.performance_overlay);
-    config_file_emit_single(emitter, "backend", backend);
+    config_file_emit_single(emitter, "backend", cfg.backend);
 
     emitter << YAML::EndMap;
 
@@ -266,7 +251,7 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.hardware_flip = rhs.hardware_flip;
     if (lhs.performance_overlay != rhs.performance_overlay && (!init || rhs.performance_overlay))
         lhs.performance_overlay = rhs.performance_overlay;
-    if (lhs.backend != rhs.backend && (!init || rhs.backend != -1))
+    if (lhs.backend != rhs.backend && (!init || !rhs.backend.empty()))
         lhs.backend = rhs.backend;
 
     // Not stored in config file
@@ -286,8 +271,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         parse(cfg, root_paths.get_base_path(), root_paths.get_pref_path_string());
 
     try {
-        std::string backend;
-
         // Declare all options
         // clang-format off
         Config command_line{};
@@ -315,7 +298,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             ("log-exports,E", po::bool_switch(&command_line.log_exports), "Log Exports")
             ("log-active-shaders,S", po::bool_switch(&command_line.log_active_shaders), "Log Active Shaders")
             ("log-uniforms,U", po::bool_switch(&command_line.log_uniforms), "Log Uniforms")
-            ("backend,B", po::value(&backend), "Renderer backend to use, either \"OpenGL\" or \"Vulkan\"");
+            ("backend,B", po::value(&command_line.backend), "Renderer backend to use, either \"OpenGL\" or \"Vulkan\"");
         // clang-format on
 
         // Positional args
@@ -339,16 +322,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         po::variables_map var_map;
         po::store(po::command_line_parser(argc, argv).options(all).positional(positional).run(), var_map);
         po::notify(var_map);
-
-#ifdef USE_VULKAN
-        if (string_utils::toupper(backend) == "VULKAN")
-            command_line.backend = 1;
-        else
-#endif
-        if (string_utils::toupper(backend) == "OPENGL")
-            command_line.backend = 0;
-        else
-            command_line.backend = -1;
 
         if (var_map.count("help")) {
             std::cout << visible << std::endl;

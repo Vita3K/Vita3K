@@ -28,6 +28,7 @@
 #include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #if DISCORD_RPC
 #include <app/discord.h>
@@ -112,7 +113,12 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     else
         state.pref_path = state.cfg.pref_path + '/';
 
-    const auto backend = static_cast<renderer::Backend>(state.cfg.backend);
+    renderer::Backend backend = renderer::Backend::OpenGL;
+
+#ifdef USE_VULKAN
+    if (string_utils::toupper(state.cfg.backend) == "VULKAN")
+        backend = renderer::Backend::Vulkan;
+#endif
 
     SDL_WindowFlags window_type;
     switch (backend) {
