@@ -20,7 +20,7 @@
 #include <audio/functions.h>
 #include <config/functions.h>
 #include <config/version.h>
-#include <glutil/gl.h>
+#include <gui/imgui_impl_sdl.h>
 #include <host/state.h>
 #include <io/functions.h>
 #include <renderer/functions.h>
@@ -28,6 +28,7 @@
 #include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #if DISCORD_RPC
 #include <app/discord.h>
@@ -35,6 +36,10 @@
 
 #ifdef USE_GDBSTUB
 #include <gdbstub/functions.h>
+#endif
+
+#ifdef USE_VULKAN
+#include <renderer/vulkan/functions.h>
 #endif
 
 #include <SDL_video.h>
@@ -45,11 +50,20 @@ namespace app {
 void update_viewport(HostState &state) {
     int w = 0;
     int h = 0;
-#ifdef USE_VULKAN // Does which version of this function we call even matter?
-    SDL_Vulkan_GetDrawableSize(state.window.get(), &w, &h);
-#else
-    SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
+
+    switch (state.renderer->current_backend) {
+    case renderer::Backend::OpenGL:
+        SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
+        break;
+#ifdef USE_VULKAN
+    case renderer::Backend::Vulkan:
+        SDL_Vulkan_GetDrawableSize(state.window.get(), &w, &h);
+        break;
 #endif
+    default:
+        LOG_ERROR("Unimplemented backend render: {}.", static_cast<int>(state.renderer->current_backend));
+        break;
+    }
 
     state.drawable_size.x = w;
     state.drawable_size.y = h;
@@ -99,11 +113,11 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     else
         state.pref_path = state.cfg.pref_path + '/';
 
-    renderer::Backend backend;
+    renderer::Backend backend = renderer::Backend::OpenGL;
+
 #ifdef USE_VULKAN
-    backend = renderer::Backend::Vulkan;
-#else
-    backend = renderer::Backend::OpenGL;
+    if (string_utils::toupper(state.cfg.backend_renderer) == "VULKAN")
+        backend = renderer::Backend::Vulkan;
 #endif
 
     SDL_WindowFlags window_type;
@@ -111,8 +125,13 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     case renderer::Backend::OpenGL:
         window_type = SDL_WINDOW_OPENGL;
         break;
+#ifdef USE_VULKAN
     case renderer::Backend::Vulkan:
         window_type = SDL_WINDOW_VULKAN;
+        break;
+#endif
+    default:
+        LOG_ERROR("Unimplemented backend render: {}.", state.cfg.backend_renderer);
         break;
     }
 
@@ -128,11 +147,10 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
 #endif
 
-    state.renderer->hardware_flip = state.cfg.hardware_flip;
-
     state.kernel.base_tick = { rtc_base_ticks() };
 
     if (renderer::init(state.window, state.renderer, backend)) {
+        state.renderer->features.hardware_flip = state.cfg.hardware_flip;
         update_viewport(state);
         return true;
     } else {
@@ -140,15 +158,31 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         case renderer::Backend::OpenGL:
             error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.1?", nullptr);
             break;
+#ifdef USE_VULKAN
         case renderer::Backend::Vulkan:
             error_dialog("Could not create Vulkan context!");
+            break;
+#endif
+        default:
+            error_dialog(fmt::format("Unknown backend render: {}.", state.cfg.backend_renderer));
             break;
         }
         return false;
     }
+
+    return true;
 }
 
-void destory(HostState &host) {
+void destroy(HostState &host, ImGui_State *imgui) {
+    ImGui_ImplSdl_Shutdown(imgui);
+#ifdef USE_VULKAN
+    // I'm explicitly destroying VulkanState in app::destroy instead of a destructor because I want to ensure an order.
+    // Objects in Vulkan should be destroyed in reverse order than they were created.
+    if (host.renderer->current_backend == renderer::Backend::Vulkan) {
+        renderer::vulkan::close(host.renderer);
+    }
+#endif
+
 #ifdef USE_DISCORD_RICH_PRESENCE
     discord::shutdown();
 #endif

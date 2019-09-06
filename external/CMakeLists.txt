@@ -185,10 +185,12 @@ target_compile_definitions(dlmalloc PUBLIC ONLY_MSPACES=1)
 
 add_subdirectory(pugixml)
 
-find_package(Vulkan REQUIRED)
-add_library(vulkan INTERFACE)
-target_include_directories(vulkan INTERFACE ${Vulkan_INCLUDE_DIRS})
-target_link_libraries(vulkan INTERFACE ${Vulkan_LIBRARIES})
+if (USE_VULKAN)
+	find_package(Vulkan REQUIRED)
+	add_library(vulkan INTERFACE)
+	target_include_directories(vulkan INTERFACE ${Vulkan_INCLUDE_DIRS})
+	target_link_libraries(vulkan INTERFACE ${Vulkan_LIBRARIES})
 
-add_library(vma INTERFACE)
-target_include_directories(vma INTERFACE VulkanMemoryAllocator/src)
+	add_library(vma INTERFACE)
+	target_include_directories(vma INTERFACE VulkanMemoryAllocator/src)
+endif()
