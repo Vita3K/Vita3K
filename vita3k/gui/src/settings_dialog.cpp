@@ -271,7 +271,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopItemWidth();
         if (ImGui::Button("Apply Change Image")) {
             if (!gui.user_backgrounds[host.cfg.background_image])
-                init_background(gui, host, host.cfg.background_image);
+                init_background(gui, host.cfg.background_image);
             else if (gui.user_backgrounds[host.cfg.background_image])
                 gui.current_background = gui.user_backgrounds[host.cfg.background_image];
         }
@@ -279,7 +279,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::Button("Reset Background")) {
             host.cfg.background_image.clear();
             gui.user_backgrounds.clear();
-            gui.current_background = 0;
+            gui.current_background = nullptr;
         }
         ImGui::Spacing();
         if (gui.current_background) {

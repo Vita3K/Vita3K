@@ -1,9 +1,19 @@
+if (USE_VULKAN)
+	set(IMGUI_IMPL_VULKAN_SOURCES
+		include/gui/imgui_impl_sdl_vulkan.h
+
+		src/imgui_impl_sdl_vulkan.cpp
+	)
+else()
+	set(IMGUI_IMPL_VULKAN_SOURCES "")
+endif()
+
 add_library(
 	gui
 	STATIC
 	include/gui/functions.h
 	include/gui/imgui_impl_sdl_gl3.h
-	include/gui/imgui_impl_sdl_vulkan.h
+	include/gui/imgui_impl_sdl_state.h
 	include/gui/imgui_impl_sdl.h
 	include/gui/state.h
 	src/common_dialog.cpp
@@ -12,7 +22,7 @@ add_library(
 	src/game_selector.cpp
 	src/gui.cpp
 	src/imgui_impl_sdl_gl3.cpp
-	src/imgui_impl_sdl_vulkan.cpp
+	${IMGUI_IMPL_VULKAN_SOURCES}
 	src/imgui_impl_sdl.cpp
 	src/main_menubar.cpp
 	src/mutexes_dialog.cpp

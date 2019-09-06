@@ -16,17 +16,33 @@
 
 #include <imgui.h>
 
+#include <gui/imgui_impl_sdl_state.h>
+#include <renderer/gl/state.h>
+
 struct SDL_Window;
 union SDL_Event;
 
-IMGUI_API bool ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Window *window, const char *glsl_version = NULL);
-IMGUI_API void ImGui_ImplSdlGL3_Shutdown(renderer::State *renderer);
-IMGUI_API void ImGui_ImplSdlGL3_RenderDrawData(renderer::State *renderer, ImDrawData *draw_data);
-IMGUI_API void ImGui_ImplSdlGL3_GetDrawableSize(SDL_Window *window, int &width, int &height);
+struct ImGui_GLState : public ImGui_State {
+    char glsl_version[32] = "#version 150";
+    uint32_t font_texture = 0;
+    uint32_t shader_handle = 0, vertex_handle = 0, fragment_handle = 0;
+    uint32_t attribute_location_tex = 0, attribute_projection_mat = 0;
+    uint32_t attribute_position_location = 0, attribute_uv_location = 0, attribute_color_location = 0;
+    uint32_t vbo = 0, elements = 0;
 
-IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(renderer::State *renderer, void *data, int width, int height);
-IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(renderer::State *renderer, ImTextureID texture);
+    // GL actually never needs the renderer. Putting it here just in case it is needed in the future.
+    inline renderer::gl::GLState &get_renderer() {
+        return dynamic_cast<renderer::gl::GLState &>(*renderer);
+    }
+};
+
+IMGUI_API ImGui_GLState *ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Window *window, const char *glsl_version = NULL);
+IMGUI_API void ImGui_ImplSdlGL3_Shutdown(ImGui_GLState &state);
+IMGUI_API void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state);
+
+IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(void *data, int width, int height);
+IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(ImTextureID texture);
 
 // Use if you want to reset your rendering device without losing ImGui state.
-IMGUI_API void ImGui_ImplSdlGL3_InvalidateDeviceObjects(renderer::State *renderer);
-IMGUI_API bool ImGui_ImplSdlGL3_CreateDeviceObjects(renderer::State *renderer);
+IMGUI_API void ImGui_ImplSdlGL3_InvalidateDeviceObjects(ImGui_GLState &state);
+IMGUI_API bool ImGui_ImplSdlGL3_CreateDeviceObjects(ImGui_GLState &state);

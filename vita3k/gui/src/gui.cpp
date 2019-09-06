@@ -128,7 +128,7 @@ static void init_font(GuiState &gui, HostState &host) {
     gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
-void init_background(GuiState &gui, HostState &host, const std::string &image_path) {
+void init_background(GuiState &gui, const std::string &image_path) {
     if (!fs::exists(image_path)) {
         LOG_WARN("Image doesn't exist: {}.", image_path);
         return;
@@ -143,7 +143,7 @@ void init_background(GuiState &gui, HostState &host, const std::string &image_pa
         return;
     }
 
-    gui.user_backgrounds[image_path].init(host.renderer.get(), data, width, height);
+    gui.user_backgrounds[image_path].init(gui.imgui_state.get(), data, width, height);
     gui.current_background = gui.user_backgrounds[image_path];
     stbi_image_free(data);
 }
@@ -172,7 +172,7 @@ static void init_icons(GuiState &gui, HostState &host) {
             LOG_ERROR("Invalid icon for title {}, {}.", game.title_id, game.title);
             continue;
         }
-        gui.game_selector.icons[game.title_id].init(host.renderer.get(), data, width, height);
+        gui.game_selector.icons[game.title_id].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 }
@@ -202,7 +202,7 @@ void load_game_background(GuiState &gui, HostState &host, const std::string &tit
         LOG_ERROR("Invalid game background for title {}.", title_id);
         return;
     }
-    gui.game_backgrounds[title_id].init(host.renderer.get(), data, width, height);
+    gui.game_backgrounds[title_id].init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 }
 
@@ -233,7 +233,7 @@ void get_game_titles(GuiState &gui, HostState &host) {
     }
 }
 
-ImTextureID load_image(HostState &host, const char *data, const std::size_t size) {
+ImTextureID load_image(GuiState &gui, const char *data, const std::size_t size) {
     int width;
     int height;
 
@@ -243,7 +243,7 @@ ImTextureID load_image(HostState &host, const char *data, const std::size_t size
     if (!data)
         return nullptr;
 
-    const auto handle = ImGui_ImplSdl_CreateTexture(host.renderer.get(), img_data, width, height);
+    const auto handle = ImGui_ImplSdl_CreateTexture(gui.imgui_state.get(), img_data, width, height);
     stbi_image_free(img_data);
 
     return handle;
@@ -251,21 +251,20 @@ ImTextureID load_image(HostState &host, const char *data, const std::size_t size
 
 void init(GuiState &gui, HostState &host) {
     ImGui::CreateContext();
-    bool result;
-    result = ImGui_ImplSdl_Init(host.renderer.get(), host.window.get(), host.base_path);
-    assert(result);
+    gui.imgui_state.reset(ImGui_ImplSdl_Init(host.renderer.get(), host.window.get(), host.base_path));
+    assert(gui.imgui_state);
 
     init_style();
     init_font(gui, host);
 
-    result = ImGui_ImplSdl_CreateDeviceObjects(host.renderer.get());
+    bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);
 
     get_game_titles(gui, host);
     init_icons(gui, host);
 
     if (!host.cfg.background_image.empty())
-        init_background(gui, host, host.cfg.background_image);
+        init_background(gui, host.cfg.background_image);
 
     // Initialize trophy callback
     host.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
@@ -275,17 +274,17 @@ void init(GuiState &gui, HostState &host) {
 }
 
 void draw_begin(GuiState &gui, HostState &host) {
-    ImGui_ImplSdl_NewFrame(host.renderer.get(), host.window.get());
+    ImGui_ImplSdl_NewFrame(gui.imgui_state.get());
     host.renderer_focused = !ImGui::GetIO().WantCaptureMouse;
 
     ImGui::PushFont(gui.normal_font);
 }
 
-void draw_end(HostState &host, SDL_Window *window) {
+void draw_end(GuiState &gui, SDL_Window *window) {
     ImGui::PopFont();
 
     ImGui::Render();
-    ImGui_ImplSdl_RenderDrawData(host.renderer.get(), ImGui::GetDrawData());
+    ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
     SDL_GL_SwapWindow(window);
 }
 

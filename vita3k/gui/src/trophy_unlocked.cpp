@@ -1,6 +1,7 @@
 #include "private.h"
 
 #include <gui/functions.h>
+#include <gui/imgui_impl_sdl.h>
 #include <gui/state.h>
 
 #include <host/state.h>
@@ -29,7 +30,7 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
             gui.trophy_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_Y_POS);
 
             // Load icon
-            gui.trophy_window_icon = load_image(host, (const char *)callback_data.icon_buf.data(),
+            gui.trophy_window_icon = load_image(gui, (const char *)callback_data.icon_buf.data(),
                 static_cast<std::uint32_t>(callback_data.icon_buf.size()));
         } else if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN && gui.trophy_window_pos.x > target_window_pos.x) {
             gui.trophy_window_pos.x -= TROPHY_MOVE_DELTA;
@@ -117,7 +118,7 @@ void draw_trophies_unlocked(GuiState &gui, HostState &host) {
 
             // Destroy the texture
             if (gui.trophy_window_frame_count != 0xFFFFFFFF)
-                ImGui_ImplSdl_DeleteTexture(host.renderer.get(), gui.trophy_window_icon);
+                ImGui_ImplSdl_DeleteTexture(gui.imgui_state.get(), gui.trophy_window_icon);
 
             gui.trophy_window_frame_stage = TrophyAnimationStage::SLIDE_IN;
             gui.trophy_window_frame_count = 0;
