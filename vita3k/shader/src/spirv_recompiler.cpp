@@ -639,6 +639,56 @@ static const char *get_container_name(const std::uint16_t idx) {
     return "INVALID ";
 }
 
+static void get_parameter_type_store_and_name(const SceGxmProgramParameter &parameter, DataType &store_type, const char *&param_type_name) {
+    switch (parameter.type) {
+    case SCE_GXM_PARAMETER_TYPE_F16: {
+        param_type_name = "half";
+        store_type = DataType::F16;
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_U16: {
+        param_type_name = "ushort";
+        store_type = DataType::UINT16;
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_S16: {
+        param_type_name = "ishort";
+        store_type = DataType::INT16;
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_U8: {
+        param_type_name = "uchar";
+        store_type = DataType::UINT8;
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_S8: {
+        param_type_name = "ichar";
+        store_type = DataType::INT8;
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_U32: {
+        param_type_name = "uint";
+        store_type = DataType::UINT32;
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_S32: {
+        param_type_name = "int";
+        store_type = DataType::INT32;
+        break;
+    }
+
+    default:
+        break;
+    }
+
+}
+
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
     const FeatureState &features, TranslationState &translation_state, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
@@ -668,6 +718,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv_params.outs = b.createVariable(spv::StorageClassPrivate, o_arr_type, "outs");
 
     SamplerMap samplers;
+
+    std::vector<std::uint32_t> default_uniform_buffer_offsets;
+    std::vector<spv::Id> default_uniform_buffer_members;
+    std::vector<const SceGxmProgramParameter*> default_uniform_buffer_parameters;
 
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
@@ -700,52 +754,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             auto param_type_name = "float";
             DataType store_type = DataType::F32;
 
-            switch (parameter.type) {
-            case SCE_GXM_PARAMETER_TYPE_F16: {
-                param_type_name = "half";
-                store_type = DataType::F16;
-                break;
-            }
-
-            case SCE_GXM_PARAMETER_TYPE_U16: {
-                param_type_name = "ushort";
-                store_type = DataType::UINT16;
-                break;
-            }
-
-            case SCE_GXM_PARAMETER_TYPE_S16: {
-                param_type_name = "ishort";
-                store_type = DataType::INT16;
-                break;
-            }
-
-            case SCE_GXM_PARAMETER_TYPE_U8: {
-                param_type_name = "uchar";
-                store_type = DataType::UINT8;
-                break;
-            }
-
-            case SCE_GXM_PARAMETER_TYPE_S8: {
-                param_type_name = "ichar";
-                store_type = DataType::INT8;
-                break;
-            }
-
-            case SCE_GXM_PARAMETER_TYPE_U32: {
-                param_type_name = "uint";
-                store_type = DataType::UINT32;
-                break;
-            }
-
-            case SCE_GXM_PARAMETER_TYPE_S32: {
-                param_type_name = "int";
-                store_type = DataType::INT32;
-                break;
-            }
-
-            default:
-                break;
-            }
+            get_parameter_type_store_and_name(parameter, store_type, param_type_name);
 
             // Make the type
             std::string param_log = fmt::format("[{} + {}] {}a{} = ({}{}) {}",
@@ -758,12 +767,21 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
             LOG_DEBUG(param_log);
 
-            int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
-            spv::Id var = create_input_variable(b, spv_params, utils, features, var_name.c_str(), param_reg_type, offset, param_type,
-                parameter.array_size * parameter.component_count * 4, 0, store_type);
+            if (is_uniform && features.use_ssbo) {
+                // Insert in offset order... Since the GXP dont order this rightly sometimes, but we still want to make include debug symbols.
+                int i = 0;
 
-            if (is_uniform) {
-                // Need to add an binding number to it. We can use resource index
+                while (default_uniform_buffer_offsets.size() != i && default_uniform_buffer_offsets[i] > offset) {
+                    i++;
+                }
+
+                default_uniform_buffer_members.insert(default_uniform_buffer_members.begin() + i, param_type);
+                default_uniform_buffer_parameters.insert(default_uniform_buffer_parameters.begin() + i, &parameter);
+                default_uniform_buffer_offsets.insert(default_uniform_buffer_offsets.begin() + i, offset);
+            } else {
+                int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
+                spv::Id var = create_input_variable(b, spv_params, utils, features, var_name.c_str(), param_reg_type, offset, param_type,
+                    parameter.array_size * parameter.component_count * 4, 0, store_type);
             }
 
             break;
@@ -772,6 +790,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         case SCE_GXM_PARAMETER_CATEGORY_SAMPLER: {
             const auto sampler_spv_var = create_param_sampler(b, parameter);
             samplers.emplace(parameter.resource_index, sampler_spv_var);
+
+            // TODO: I really want to give you binding.
+
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE: {
@@ -788,6 +809,43 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             LOG_CRITICAL("Unknown parameter type used in shader.");
             break;
         }
+        }
+    }
+
+    if (features.use_ssbo) {
+        // Create the default reg uniform buffer
+        spv::Id default_buffer_type = b.makeStructType(default_uniform_buffer_members, "defaultUniformBuffer");
+        b.addDecoration(default_buffer_type, spv::DecorationBlock, 1);
+        b.addDecoration(default_buffer_type, spv::DecorationGLSLShared, 1);
+
+        // Default uniform buffer always has binding of 0
+        spv::Id default_buffer = b.createVariable(spv::StorageClassUniform, default_buffer_type, "ublock0");
+        b.addDecoration(default_buffer, spv::DecorationBinding, 0);
+
+        int offset_so_far = 0;
+
+        // Decorate uniform buffer and load them to reg bank
+        for (std::size_t i = 0; i < default_uniform_buffer_members.size(); i++) {
+            b.addMemberDecoration(default_buffer_type, static_cast<int>(i), spv::DecorationOffset, offset_so_far);
+            offset_so_far += default_uniform_buffer_parameters[i]->array_size * default_uniform_buffer_parameters[i]->component_count * 4;
+
+            const std::string param_name = gxp::parameter_name(*default_uniform_buffer_parameters[i]);
+            b.addMemberName(default_buffer_type, static_cast<int>(i), param_name.c_str());
+
+            // Do access chain
+            spv::Id param = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassUniform,
+                default_uniform_buffer_members[i]), { default_buffer, b.makeIntConstant(static_cast<int>(i)) });
+
+            auto param_type_name = "float";
+            DataType store_type = DataType::F32;
+
+            get_parameter_type_store_and_name(*default_uniform_buffer_parameters[i], store_type, param_type_name);
+            
+            // Load themmmmmm!!!!
+            create_input_variable(b, spv_params, utils, features, param_name.c_str(), usse::RegisterBank::SECATTR,
+                default_uniform_buffer_offsets[i], default_uniform_buffer_members[i], 
+                default_uniform_buffer_parameters[i]->array_size * default_uniform_buffer_parameters[i]->component_count * 4,
+                param, store_type);
         }
     }
 
