@@ -141,6 +141,8 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         if (features.should_use_texture_barrier()) {
             // Needs texture barrier
             glTextureBarrier();
+        } else if (features.should_use_shader_interlock()) {
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
         }
     }
 
