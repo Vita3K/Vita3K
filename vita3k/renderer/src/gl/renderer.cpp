@@ -275,13 +275,8 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
         }
     }
 
-    const bool is_rtx = gpu_name.find("GeForce RTX") != std::string::npos;
-
-    if (is_rtx) {
-        // Disable shader interlock for all drivers.
-        // TODO: Report and fix this on NVIDIA GeForce GTX driver
-        gl_state.features.support_shader_interlock = false;
-    }
+    // Workaround driver bugs
+    const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
 
     if (gl_state.features.direct_fragcolor) {
         LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
@@ -289,12 +284,7 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
         LOG_INFO("Your GPU supports shader interlock, some games that use programmable blending will have better performance.");
     } else if (gl_state.features.support_texture_barrier) {
         LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
-
-        if (is_rtx) {
-            LOG_WARN("Shader interlock on GeForce RTX GPU driver is disabled due to a bug in the driver pending to be fixed.");
-        } else {
-            LOG_WARN("Consider updating to GPU that has shader interlock.");
-        }
+        LOG_WARN("Consider updating to GPU that has shader interlock.");
     } else {
         LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
