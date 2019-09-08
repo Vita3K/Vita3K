@@ -227,9 +227,11 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
 #endif // MICROPROFILE_ENABLED
     glad_set_post_callback(after_callback);
 
-    // Detect feature
-    std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+    // Detect GPU and features
+    const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
+    const std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+    LOG_INFO("GPU = {}", gpu_name);
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
 
@@ -273,8 +275,6 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
         }
     }
 
-    // Workaround driver bugs
-    const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
     const bool is_rtx = gpu_name.find("GeForce RTX") != std::string::npos;
 
     if (is_rtx) {
