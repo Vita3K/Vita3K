@@ -46,7 +46,8 @@
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
     code(bool, "hardware-flip", false, hardware_flip)                                                   \
-    code(bool, "performance-overlay", true, performance_overlay)                                        \
+    code(bool, "use-ubo", false, use_ubo)                                                               \
+    code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
     code(int, "user-id", 0, user_id)
 
