@@ -36,4 +36,29 @@ void set_uniforms(State &state, Context *ctx, const SceGxmProgram &program, cons
         renderer::set_uniform(state, ctx, !program.is_fragment(), &parameter, data);
     }
 }
+
+void set_uniform_buffers(State &state, Context *ctx, const SceGxmProgram &program, const UniformBuffers &buffers, const MemState &mem) {
+    for (std::size_t i = 0; i < buffers.size(); i++) {
+        if (!buffers[i]) {
+            continue;
+        }
+
+        auto container = gxp::get_container_by_index(program, i);
+        std::uint16_t buffer_size = 0;
+        
+        if (container) {
+            buffer_size = container->max_resource_index * 4;
+        }
+
+        if (buffer_size == 0) {
+            // Try to query the container with the given uniform buffer
+            // TODO: No hardcode my friend
+            buffer_size = 400;
+        }
+
+        // Shift all buffer by 1.
+        // The ideal is: default uniform buffer block has the binding of 14. Not really ideal, so i move it to 0, and buffer 0 to 1, etc..
+        renderer::set_uniform_buffer(state, ctx, !program.is_fragment(), static_cast<int>((i + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER), buffer_size, buffers[i].get(mem));
+    }
+}
 } // namespace renderer

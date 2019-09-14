@@ -48,6 +48,8 @@ std::string load_shader(const SceGxmProgram &program, const FeatureState &featur
 bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderStatics &statics, const MemState &mem,
     const SceGxmProgramParameter *parameter, const void *data, bool log_uniforms);
 
+bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int block_num, const int size, const void *data);
+
 bool create(WindowPtr &window, std::unique_ptr<renderer::State> &state);
 bool create(std::unique_ptr<Context> &context);
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);

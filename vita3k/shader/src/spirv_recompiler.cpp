@@ -573,72 +573,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     }
 }
 
-static const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program) {
-    const SceGxmProgramParameterContainer *containers = reinterpret_cast<const SceGxmProgramParameterContainer *>(reinterpret_cast<const std::uint8_t *>(&program.container_offset) + program.container_offset);
-    return containers;
-}
-
-static const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgram &program, const std::uint16_t idx) {
-    const SceGxmProgramParameterContainer *container = get_containers(program);
-
-    for (std::uint32_t i = 0; i < program.container_count; i++) {
-        if (container[i].container_index == idx) {
-            return &container[i];
-        }
-    }
-
-    return nullptr;
-}
-
-static const char *get_container_name(const std::uint16_t idx) {
-    switch (idx) {
-    case 0:
-        return "BUFFER0 ";
-    case 1:
-        return "BUFFER1 ";
-    case 2:
-        return "BUFFER2 ";
-    case 3:
-        return "BUFFER3 ";
-    case 4:
-        return "BUFFER4 ";
-    case 5:
-        return "BUFFER5 ";
-    case 6:
-        return "BUFFER6 ";
-    case 7:
-        return "BUFFER7 ";
-    case 8:
-        return "BUFFER8 ";
-    case 9:
-        return "BUFFER9 ";
-    case 10:
-        return "BUFFER10";
-    case 11:
-        return "BUFFER11";
-    case 12:
-        return "BUFFER12";
-    case 13:
-        return "BUFFER13";
-    case 14:
-        return "DEFAULT ";
-    case 15:
-        return "TEXTURE ";
-    case 16:
-        return "LITERAL ";
-    case 17:
-        return "SCRATCH ";
-    case 18:
-        return "THREAD  ";
-    case 19:
-        return "DATA    ";
-    default:
-        break;
-    }
-
-    return "INVALID ";
-}
-
 static void get_parameter_type_store_and_name(const SceGxmProgramParameter &parameter, DataType &store_type, const char *&param_type_name) {
     switch (parameter.type) {
     case SCE_GXM_PARAMETER_TYPE_F16: {
@@ -689,6 +623,27 @@ static void get_parameter_type_store_and_name(const SceGxmProgramParameter &para
 
 }
 
+/**
+ * \brief Calculate variable size, in float granularity.
+ */
+static size_t calculate_variable_size(const SceGxmProgramParameter &parameter, const DataType store_type) {
+    size_t element_size = shader::usse::get_data_type_size(store_type) * parameter.component_count;
+
+    if (parameter.array_size == 1) {
+        return (element_size + 3) / 4;
+    }
+
+    // Need to do alignment
+    if (parameter.component_count == 1) {
+        // Each element is a scalar. Apply 32-bit alignment.
+        // Assuming no scalar has larger size than 4.
+        return parameter.array_size;
+    }
+
+    // Apply 64-bit alignment
+    return parameter.array_size * (((element_size + 8 - (element_size & 7)) + 3) / 4);
+}
+
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
     const FeatureState &features, TranslationState &translation_state, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
@@ -710,7 +665,12 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     // Create register banks
     spv_params.ins = b.createVariable(spv::StorageClassPrivate, pa_arr_type, "pa");
-    spv_params.uniforms = b.createVariable(spv::StorageClassPrivate, sa_arr_type, "sa");
+
+    if (!features.use_ubo) {
+        spv_params.uniforms = b.createVariable(spv::StorageClassPrivate, sa_arr_type, "sa");
+        spv_params.is_sa_ublock = false;
+    }
+
     spv_params.internals = b.createVariable(spv::StorageClassPrivate, i_arr_type, "internals");
     spv_params.temps = b.createVariable(spv::StorageClassPrivate, temp_arr_type, "r");
     spv_params.predicates = b.createVariable(spv::StorageClassPrivate, pred_arr_type, "p");
@@ -718,10 +678,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv_params.outs = b.createVariable(spv::StorageClassPrivate, o_arr_type, "outs");
 
     SamplerMap samplers;
-
-    std::vector<std::uint32_t> default_uniform_buffer_offsets;
-    std::vector<spv::Id> default_uniform_buffer_members;
-    std::vector<const SceGxmProgramParameter*> default_uniform_buffer_parameters;
 
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
@@ -741,7 +697,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
             std::string var_name = gxp::parameter_name(parameter);
 
-            auto container = get_container_by_index(program, parameter.container_index);
+            auto container = gxp::get_container_by_index(program, parameter.container_index);
             std::uint32_t offset = parameter.resource_index;
 
             if (container && parameter.resource_index < container->max_resource_index) {
@@ -755,7 +711,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
             // Make the type
             std::string param_log = fmt::format("[{} + {}] {}a{} = ({}{}) {}",
-                get_container_name(parameter.container_index), parameter.resource_index,
+                gxp::get_container_name(parameter.container_index), parameter.resource_index,
                 is_uniform ? "s" : "p", offset, param_type_name, parameter.component_count, var_name);
 
             if (parameter.array_size > 1) {
@@ -764,18 +720,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
             LOG_DEBUG(param_log);
 
-            if (is_uniform && features.use_ssbo) {
-                // Insert in offset order... Since the GXP dont order this rightly sometimes, but we still want to make include debug symbols.
-                int i = 0;
-
-                while (default_uniform_buffer_offsets.size() != i && default_uniform_buffer_offsets[i] > offset) {
-                    i++;
-                }
-
-                default_uniform_buffer_members.insert(default_uniform_buffer_members.begin() + i, param_type);
-                default_uniform_buffer_parameters.insert(default_uniform_buffer_parameters.begin() + i, &parameter);
-                default_uniform_buffer_offsets.insert(default_uniform_buffer_offsets.begin() + i, offset);
-            } else {
+            if (!is_uniform || !features.use_ubo) {
                 int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
                 spv::Id var = create_input_variable(b, spv_params, utils, features, var_name.c_str(), param_reg_type, offset, param_type,
                     parameter.array_size * parameter.component_count * 4, 0, store_type);
@@ -809,44 +754,42 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    if (features.use_ssbo) {
+    if (features.use_ubo && program.default_uniform_buffer_count != 0) {
+        // Create an array of vec4
+        const int total_vec4 = static_cast<int>((program.default_uniform_buffer_count + 3) / 4) + 1;
+        spv::Id vec4_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(total_vec4), 16);
+
+        const std::string &name_type = program.is_fragment() ? "frag_defaultUniformBuffer" : "vert_defaultUniformBuffer";
+
         // Create the default reg uniform buffer
-        spv::Id default_buffer_type = b.makeStructType(default_uniform_buffer_members, "defaultUniformBuffer");
+        spv::Id default_buffer_type = b.makeStructType({ vec4_arr_type }, name_type.c_str());
         b.addDecoration(default_buffer_type, spv::DecorationBlock, 1);
         b.addDecoration(default_buffer_type, spv::DecorationGLSLShared, 1);
 
         // Default uniform buffer always has binding of 0
-        spv::Id default_buffer = b.createVariable(spv::StorageClassUniform, default_buffer_type, "ublock0");
-        b.addDecoration(default_buffer, spv::DecorationBinding, 0);
+        spv::Id default_buffer = b.createVariable(spv::StorageClassUniform, default_buffer_type, "ublock");
+        b.addDecoration(default_buffer, spv::DecorationBinding, ((program.is_fragment()) ? 15 : 0));
 
-        int offset_so_far = 0;
+        b.addMemberDecoration(default_buffer_type, 0, spv::DecorationOffset, 0);
+        b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
+        b.addMemberName(default_buffer_type, 0, "buffer");
 
-        // Decorate uniform buffer and load them to reg bank
-        for (std::size_t i = 0; i < default_uniform_buffer_members.size(); i++) {
-            b.addMemberDecoration(default_buffer_type, static_cast<int>(i), spv::DecorationOffset, offset_so_far);
-            offset_so_far += default_uniform_buffer_parameters[i]->array_size * default_uniform_buffer_parameters[i]->component_count * 4;
+        // If secondary program simply doesn't exist, we can use this uniform block as SA bank
+        // Else, we need to fork a new SA bank as an array from this uniform buffer
+        if (program.is_secondary_program_available()) {
+            spv_params.uniforms = b.createVariable(spv::StorageClassPrivate, vec4_arr_type, "sa");
+            spv::Id vec4_arr_ptr_type = b.makePointer(spv::StorageClassPrivate, vec4_arr_type);
+            spv::Id buf_arr = b.createLoad(b.createOp(spv::OpAccessChain, vec4_arr_ptr_type, { default_buffer, b.makeIntConstant(0) }));
+            b.createStore(buf_arr, spv_params.uniforms);
 
-            const std::string param_name = gxp::parameter_name(*default_uniform_buffer_parameters[i]);
-            b.addMemberName(default_buffer_type, static_cast<int>(i), param_name.c_str());
-
-            // Do access chain
-            spv::Id param = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassUniform,
-                default_uniform_buffer_members[i]), { default_buffer, b.makeIntConstant(static_cast<int>(i)) });
-
-            auto param_type_name = "float";
-            DataType store_type = DataType::F32;
-
-            get_parameter_type_store_and_name(*default_uniform_buffer_parameters[i], store_type, param_type_name);
-            
-            // Load themmmmmm!!!!
-            create_input_variable(b, spv_params, utils, features, param_name.c_str(), usse::RegisterBank::SECATTR,
-                default_uniform_buffer_offsets[i], default_uniform_buffer_members[i], 
-                default_uniform_buffer_parameters[i]->array_size * default_uniform_buffer_parameters[i]->component_count * 4,
-                param, store_type);
+            spv_params.is_sa_ublock = false;
+        } else {
+            spv_params.uniforms = default_buffer;
+            spv_params.is_sa_ublock = true;
         }
     }
 
-    const SceGxmProgramParameterContainer *container = get_container_by_index(program, 19);
+    const SceGxmProgramParameterContainer *container = gxp::get_container_by_index(program, 19);
 
     if (container) {
         // Create dependent sampler
@@ -864,11 +807,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     // Get base SA offset for literal
     // The container index of those literals are 16
-    container = get_container_by_index(program, 16);
+    container = gxp::get_container_by_index(program, 16);
 
     if (!container) {
         // Alternative is 19, which is DATA
-        container = get_container_by_index(program, 19);
+        container = gxp::get_container_by_index(program, 19);
     }
 
     if (!container) {
@@ -1367,6 +1310,7 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     features.direct_fragcolor = false;
     features.support_shader_interlock = true;
     features.pack_unpack_half_through_ext = false;
+    features.use_ubo = true;
 
     convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, true);
 

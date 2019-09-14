@@ -63,6 +63,7 @@ bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend);
  * 
  */
 void set_uniforms(State &state, Context *ctx, const SceGxmProgram &program, const UniformBuffers &buffers, const MemState &mem);
+void set_uniform_buffers(State &state, Context *ctx, const SceGxmProgram &program, const UniformBuffers &buffers, const MemState &mem);
 void set_vertex_data(State &state, Context *ctx, const StreamDatas &datas);
 
 void set_depth_bias(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, int factor, int units);
@@ -80,6 +81,7 @@ void set_viewport_enable(State &state, Context *ctx, GxmContextState *gxm_contex
 void set_region_clip(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax);
 void set_two_sided_enable(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmTwoSidedMode mode);
 void set_uniform(State &state, Context *ctx, const bool is_vertex_uniform, const SceGxmProgramParameter *parameter, const void *data);
+void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_num, const std::uint16_t buffer_size, const void *data);
 
 void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, emu::SceGxmColorSurface *color_surface, emu::SceGxmDepthStencilSurface *depth_stencil_surface);
 void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len, const void *data);

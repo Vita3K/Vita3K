@@ -184,4 +184,19 @@ void set_uniform(State &state, Context *ctx, const bool is_vertex_uniform, const
         break;
     }
 }
+
+void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_number, const std::uint16_t block_size, const void *data) {
+    switch (state.current_backend) {
+    default: {
+        // Calculate the number of bytes
+        std::uint32_t bytes_to_copy_and_pad = (((block_size + 15) / 16) + 1) * 16;
+        std::uint8_t *a_copy = new std::uint8_t[bytes_to_copy_and_pad];
+
+        std::memcpy(a_copy, data, block_size);
+
+        renderer::add_state_set_command(ctx, renderer::GXMState::UniformBuffer, is_vertex_uniform, block_number, bytes_to_copy_and_pad, a_copy);
+        break;
+    }
+    }
+}
 } // namespace renderer

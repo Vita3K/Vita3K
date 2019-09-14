@@ -57,6 +57,7 @@ enum class GXMState : std::uint16_t {
     TwoSided = 12,
     CullMode = 13,
     Uniform = 14,
+    UniformBuffer = 15,
     TotalState
 };
 
