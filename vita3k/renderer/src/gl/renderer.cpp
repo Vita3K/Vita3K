@@ -290,6 +290,8 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
+    gl_state.features.use_ubo = true;
+
     return true;
 }
 
@@ -299,7 +301,8 @@ bool create(std::unique_ptr<Context> &context) {
     context = std::make_unique<GLContext>();
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    return !(!texture::init(gl_context->texture_cache) || !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) || !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers));
+    return !(!texture::init(gl_context->texture_cache) || !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) || !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)
+        || !gl_context->uniform_buffer.init(glGenBuffers, glDeleteBuffers));
 }
 
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {

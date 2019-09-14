@@ -97,6 +97,27 @@ COMMAND_SET_STATE(uniform) {
     }
 }
 
+COMMAND_SET_STATE(uniform_buffer) {
+    const bool is_vertex = helper.pop<bool>();
+    const int block_num = helper.pop<int>();
+    const std::uint32_t size = helper.pop<std::uint32_t>();
+    const void *data = helper.pop<const void *>();
+
+    switch (renderer.current_backend) {
+    case Backend::OpenGL: {
+        gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), is_vertex, block_num, size, data);
+        delete data;
+
+        break;
+    }
+
+    default:
+        REPORT_MISSING(renderer.current_backend);
+        break;
+    }
+}
+
+
 COMMAND_SET_STATE(viewport) {
     state->viewport.enable = helper.pop<SceGxmViewportMode>();
     const bool set_viewport_param = helper.pop<bool>();
@@ -370,7 +391,8 @@ COMMAND(handle_set_state) {
         { renderer::GXMState::TwoSided, cmd_set_state_two_sided },
         { renderer::GXMState::CullMode, cmd_set_state_cull_mode },
         { renderer::GXMState::VertexStream, cmd_set_state_vertex_stream },
-        { renderer::GXMState::Uniform, cmd_set_state_uniform }
+        { renderer::GXMState::Uniform, cmd_set_state_uniform },
+        { renderer::GXMState::UniformBuffer, cmd_set_state_uniform_buffer }
     };
 
     auto result = handlers.find(gxm_state_to_set);

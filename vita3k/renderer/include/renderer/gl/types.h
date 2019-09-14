@@ -70,6 +70,7 @@ struct GLContext : public renderer::Context {
     GLTextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
+    GLObjectArray<30> uniform_buffer;
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     GLuint last_draw_program{ 0 };
 

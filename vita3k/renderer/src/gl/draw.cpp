@@ -79,24 +79,31 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 
     glUseProgram(program_id);
 
-    const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
-    const SceGxmVertexProgram &gxm_vertex_program = *state.vertex_program.get(mem);
+    if (!features.use_ubo) {
+        const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
+        const SceGxmVertexProgram &gxm_vertex_program = *state.vertex_program.get(mem);
+        const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
 
-    // Set uniforms
-    const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(mem);
-    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
+        // Set uniforms
+        const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(mem);
+        const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
 
-    gl::GLShaderStatics &vertex_gl_statics = reinterpret_cast<gl::GLVertexProgram *>(gxm_vertex_program.renderer_data.get())->statics;
-    gl::GLShaderStatics &fragment_gl_statics = reinterpret_cast<gl::GLFragmentProgram *>(gxm_fragment_program.renderer_data.get())->statics;
+        gl::GLShaderStatics &vertex_gl_statics = reinterpret_cast<gl::GLVertexProgram *>(gxm_vertex_program.renderer_data.get())->statics;
+        gl::GLShaderStatics &fragment_gl_statics = reinterpret_cast<gl::GLFragmentProgram *>(gxm_fragment_program.renderer_data.get())->statics;
 
-    for (auto &vertex_uniform : context.vertex_set_requests) {
-        gl::set_uniform(program_id, vertex_program_gxp, vertex_gl_statics, mem, vertex_uniform.parameter, vertex_uniform.data,
-            log_uniforms);
-    }
+        for (auto &vertex_uniform : context.vertex_set_requests) {
+            gl::set_uniform(program_id, vertex_program_gxp, vertex_gl_statics, mem, vertex_uniform.parameter, vertex_uniform.data,
+                log_uniforms);
 
-    for (auto &fragment_uniform : context.fragment_set_requests) {
-        gl::set_uniform(program_id, fragment_program_gxp, fragment_gl_statics, mem, fragment_uniform.parameter,
-            fragment_uniform.data, log_uniforms);
+            delete vertex_uniform.data;
+        }
+
+        for (auto &fragment_uniform : context.fragment_set_requests) {
+            gl::set_uniform(program_id, fragment_program_gxp, fragment_gl_statics, mem, fragment_uniform.parameter,
+                fragment_uniform.data, log_uniforms);
+
+            delete fragment_uniform.data;
+        }
     }
 
     if (fragment_gxp_program.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
