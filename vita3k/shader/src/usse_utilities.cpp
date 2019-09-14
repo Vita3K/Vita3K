@@ -571,7 +571,13 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     spv::Id first_pass = spv::NoResult;
     spv::Id connected_friend = spv::NoResult;
     spv::Id bank_base = *get_reg_bank(params, op.bank);
-    spv::Id comp_type = b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base))));
+    spv::Id comp_type = b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)));
+
+    if (params.is_sa_ublock && op.bank == RegisterBank::SECATTR) {
+        comp_type = b.getContainedTypeId(comp_type);
+    }
+
+    comp_type = b.makePointer(spv::StorageClassPrivate, comp_type);
 
     if (idx_in_arr_1 == spv::NoResult) {
         idx_in_arr_1 = b.makeIntConstant((op.num + shift_offset) >> 2);
@@ -581,9 +587,24 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         idx_in_arr_2 = b.makeIntConstant((op.num + shift_offset + 3) >> 2);
     }
 
+    std::vector<spv::Id> first_pass_operands;
+    std::vector<spv::Id> second_pass_operands;
+
+    first_pass_operands.push_back(bank_base);
+    second_pass_operands.push_back(bank_base);
+
+    if (params.is_sa_ublock && op.bank == RegisterBank::SECATTR) {
+        spv::Id zero_conan = b.makeIntConstant(0);
+        first_pass_operands.push_back(zero_conan);
+        second_pass_operands.push_back(zero_conan);
+    }
+
+    first_pass_operands.push_back(idx_in_arr_1);
+    second_pass_operands.push_back(idx_in_arr_2);
+
     // Do an access chain
-    first_pass = b.createOp(spv::OpAccessChain, comp_type, { bank_base, idx_in_arr_1 });
-    connected_friend = b.createOp(spv::OpAccessChain, comp_type, { bank_base, idx_in_arr_2 });
+    first_pass = b.createOp(spv::OpAccessChain, comp_type, first_pass_operands);
+    connected_friend = b.createOp(spv::OpAccessChain, comp_type, second_pass_operands);
 
     first_pass = finalize(b, b.createLoad(first_pass), b.createLoad(connected_friend), extract_swizz, op.num + shift_offset, extract_mask);
 

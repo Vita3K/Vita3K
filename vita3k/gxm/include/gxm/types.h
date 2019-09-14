@@ -11,6 +11,7 @@
 #include <mutex>
 
 #define SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX 0xE
+#define SCE_GXM_REAL_MAX_UNIFORM_BUFFER 15  // Include default
 
 namespace renderer {
 struct FragmentProgram;
@@ -93,7 +94,7 @@ struct SceGxmContextParams {
 };
 } // namespace emu
 
-typedef std::array<Ptr<void>, 16> UniformBuffers;
+typedef std::array<Ptr<void>, 15> UniformBuffers;
 typedef std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> StreamDatas;
 
 struct GxmViewport {
@@ -395,6 +396,9 @@ public:
     }
     std::uint8_t get_fragment_output_component_count() const {
         return reinterpret_cast<const SceGxmProgramVertexOutput *>(reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset)->output_comp_count;
+    }
+    bool is_secondary_program_available() const {
+        return secondary_program_offset < secondary_program_offset_end + 4;
     }
 };
 

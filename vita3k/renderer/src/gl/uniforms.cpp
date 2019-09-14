@@ -251,4 +251,16 @@ bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderSt
 
     return true;
 }
+
+bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int block_num, const int size, const void *data) {
+    const int binding_base = vertex_shader ? 0 : SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
+    glBindBuffer(GL_UNIFORM_BUFFER, context.uniform_buffer[binding_base + block_num]);
+    glBufferData(GL_UNIFORM_BUFFER, size, nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, binding_base + block_num, context.uniform_buffer[binding_base + block_num]);
+
+    return true;
+}
 } // namespace renderer::gl
