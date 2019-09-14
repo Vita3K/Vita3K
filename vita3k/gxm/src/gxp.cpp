@@ -317,4 +317,70 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
 
     return static_cast<SceGxmFragmentProgramInputs>(result);
 }
+
+const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program) {
+    const SceGxmProgramParameterContainer *containers = reinterpret_cast<const SceGxmProgramParameterContainer *>(reinterpret_cast<const std::uint8_t *>(&program.container_offset) + program.container_offset);
+    return containers;
+}
+
+const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgram &program, const std::uint16_t idx) {
+    const SceGxmProgramParameterContainer *container = get_containers(program);
+
+    for (std::uint32_t i = 0; i < program.container_count; i++) {
+        if (container[i].container_index == idx) {
+            return &container[i];
+        }
+    }
+
+    return nullptr;
+}
+
+const char *get_container_name(const std::uint16_t idx) {
+    switch (idx) {
+    case 0:
+        return "BUFFER0 ";
+    case 1:
+        return "BUFFER1 ";
+    case 2:
+        return "BUFFER2 ";
+    case 3:
+        return "BUFFER3 ";
+    case 4:
+        return "BUFFER4 ";
+    case 5:
+        return "BUFFER5 ";
+    case 6:
+        return "BUFFER6 ";
+    case 7:
+        return "BUFFER7 ";
+    case 8:
+        return "BUFFER8 ";
+    case 9:
+        return "BUFFER9 ";
+    case 10:
+        return "BUFFER10";
+    case 11:
+        return "BUFFER11";
+    case 12:
+        return "BUFFER12";
+    case 13:
+        return "BUFFER13";
+    case 14:
+        return "DEFAULT ";
+    case 15:
+        return "TEXTURE ";
+    case 16:
+        return "LITERAL ";
+    case 17:
+        return "SCRATCH ";
+    case 18:
+        return "THREAD  ";
+    case 19:
+        return "DATA    ";
+    default:
+        break;
+    }
+
+    return "INVALID ";
+}
 } // namespace gxp

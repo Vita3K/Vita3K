@@ -46,4 +46,8 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program);
 const int get_parameter_type_size(const SceGxmParameterType type);
 const int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num_comp);
 
+const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program);
+const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgram &program, const std::uint16_t idx);
+const char *get_container_name(const std::uint16_t idx);
+
 } // namespace gxp
