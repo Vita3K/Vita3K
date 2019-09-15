@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <queue>
+#include <map>
 #include <tuple>
 
 namespace shader::usse {
@@ -35,6 +36,7 @@ namespace shader::usse {
  * \returns True on instruction being a branch.
  */
 bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off);
+bool is_buffer_fetch_or_store(const std::uint64_t inst, int &base, int &cursor, int &offset, int &size);
 bool does_write_to_predicate(const std::uint64_t inst, std::uint8_t &pred);
 std::uint8_t get_predicate(const std::uint64_t inst);
 
@@ -58,7 +60,31 @@ struct USSEBlock {
     }
 };
 
+struct UniformBuffer {
+    int base;
+    int size;
+    int cursor;
+};
+
+using UniformBufferMap = std::map<int, UniformBuffer>;
+
 using USSEOffset = std::uint32_t;
+
+template <typename F>
+void data_analyze(USSEOffset end_offset, F read_func, UniformBufferMap &buffer_map) {
+    int base = 0;
+    int cursor = 0;
+    int offset = 0;
+    int size = 0;
+    
+    for (USSEOffset i = 0; i < end_offset; i++) {
+        // Analyze for any existing memory uniform buffer
+        if (is_buffer_fetch_or_store(read_func(i), base, cursor, offset, size)) {
+            buffer_map[base].base = base;
+            buffer_map[base].size = std::max<int>(buffer_map[base].size, offset + (size + 3) / 4);
+        }
+    }
+}
 
 template <typename F, typename H>
 void analyze(USSEOffset end_offset, F read_func, H handler_func) {
