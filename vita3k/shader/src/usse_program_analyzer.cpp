@@ -80,4 +80,24 @@ std::uint8_t get_predicate(const std::uint64_t inst) {
 
     return ((inst >> 32) & ~0xF8FFFFFFU) >> 24;
 }
+
+bool is_buffer_fetch_or_store(const std::uint64_t inst, int &base, int &cursor, int &offset, int &size) {
+    // TODO: Is there any exception? Like any instruction use pre or post increment addressing mode.
+    cursor = 0;
+
+    // Are you me? Or am i you
+    if (((inst >> 61) & 0b111) == 0b111) {
+        // Get the base
+        offset = cursor + (inst >> 7) & 0b1111111;
+        base = (inst >> 14) & 0b1111111;
+
+        // Data type downwards: 4 bytes, 2 bytes, 1 bytes, 0 bytes
+        // Total to fetch is at bit 44, and last for 4 bits.
+        size = 4 / (((inst >> 36) & 0b11) + 1) * (((inst >> 44) & 0b1111) + 1);
+
+        return true;
+    }
+
+    return false;
+}
 } // namespace shader::usse
