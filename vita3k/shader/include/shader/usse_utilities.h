@@ -27,4 +27,31 @@ spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState 
 
 spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val);
 
+template <typename F>
+void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite, spv::Id iterator_limit, F body) {
+    auto blocks = b.makeNewLoop();
+    b.createStore(initial_value_ite, iterator);
+    b.createBranch(&blocks.head);
+
+    b.setBuildPoint(&blocks.head);
+    spv::Id compare_result = b.createOp(spv::OpSLessThan, b.makeBoolType(), { iterator, iterator_limit });
+    
+    b.createLoopMerge(&blocks.merge, &blocks.continue_target, spv::LoopControlMaskNone, 0);
+    b.createConditionalBranch(compare_result, &blocks.body, &blocks.merge);
+
+    b.setBuildPoint(&blocks.body);
+    body();
+
+    // Increase i
+    spv::Id add_to_me = b.createBinOp(spv::OpIAdd, b.makeIntegerType(32, true), b.createLoad(iterator), b.makeIntConstant(1));
+    b.createStore(add_to_me, iterator);
+
+    b.createBranch(&blocks.continue_target);
+    
+    b.setBuildPoint(&blocks.continue_target);
+    b.createBranch(&blocks.head);
+    
+    b.setBuildPoint(&blocks.merge);
+    b.closeLoop();
+}
 } // namespace shader::usse::utils

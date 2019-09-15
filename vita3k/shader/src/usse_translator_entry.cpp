@@ -554,6 +554,37 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::vdual, "VDUAL ()", "0010cgsskdtpuuuunaaalriiiiwwwwmmffeebbbbbbbooohhjqvvxxyyyzzzzzzz"),
 
+      // Load and Store
+      /*
+                                  111 = op1_cnst
+                                      oo = op1 (2 bits)
+                                        ppp = pred (3 bits, ExtPredicate)
+                                          s = skipinv (1 bit)
+                                            n = nosched (1 bit)
+                                            m = moe_expand (1 bit)
+                                              y = sync_start (1 bit)
+                                              c = cache_ext (1 bit)
+                                                r = src0_bank_ext (1 bit)
+                                                b = src1_bank_ext (1 bit)
+                                                  a = src2_bank_ext (1 bit)
+                                                  kkkk = mask_count (4 bits)
+                                                      dd = addr_mode (2 bits)
+                                                        ee = mode (2 bits)
+                                                          t = dest_bank_primattr (1 bit)
+                                                            g = range_enable (1 bit)
+                                                            ff = data_type (2 bits)
+                                                              i = increment_or_decrement (1 bit)
+                                                                h = src0_bank (1 bit)
+                                                                j = cache_by_pass12 (1 bit)
+                                                                  l = drc_sel (1 bit)
+                                                                  qq = src1_bank (2 bits)
+                                                                    uu = src2_bank (2 bits)
+                                                                      vvvvvvv = dest_n (7 bits)
+                                                                              wwwwwww = src0_n (7 bits)
+                                                                                    xxxxxxx = src1_n (7 bits)
+                                                                                            zzzzzzz = src2_n (7 bits)
+      */
+      INST(&V::vldst, "VLDST ()", "111oopppsnmycrbakkkkddeetgffihjlqquuvvvvvvvwwwwwwwxxxxxxxzzzzzzz"),
         // clang-format on
     };
 #undef INST

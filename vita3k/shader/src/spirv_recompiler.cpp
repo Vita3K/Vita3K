@@ -18,6 +18,7 @@
 
 #include <shader/spirv_recompiler.h>
 #include <shader/usse_disasm.h>
+#include <shader/usse_program_analyzer.h>
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
@@ -646,34 +647,43 @@ static size_t calculate_variable_size(const SceGxmProgramParameter &parameter, c
 
 // For uniform buffer resigned in registers
 static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_bank, spv::Id block, spv::Id ite, const int vec4_count) {
-    auto blocks = builder.makeNewLoop();
-    builder.createStore(builder.makeIntConstant(0), ite);
-    builder.createBranch(&blocks.head);
+    utils::make_for_loop(builder, ite, builder.makeIntConstant(0), builder.makeIntConstant(vec4_count), [&]() {
+        spv::Id to_copy = builder.createAccessChain(spv::StorageClassUniform, block, { builder.makeIntConstant(0), ite });
+        spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { ite });
 
-    builder.setBuildPoint(&blocks.head);
-    spv::Id compare_result = builder.createOp(spv::OpSLessThan, builder.makeBoolType(), { ite, builder.makeIntConstant(vec4_count) });
-    
-    builder.createLoopMerge(&blocks.merge, &blocks.continue_target, spv::LoopControlMaskNone, 0);
-    builder.createConditionalBranch(compare_result, &blocks.body, &blocks.merge);
+        builder.createStore(builder.createLoad(to_copy), dest);
+    });
+}
 
-    builder.setBuildPoint(&blocks.body);
-    spv::Id to_copy = builder.createAccessChain(spv::StorageClassUniform, block, { builder.makeIntConstant(0), ite });
-    spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { ite });
+static spv::Id create_uniform_block(spv::Builder &b, const int base_binding, const int size_vec4_granularity, const bool is_vert) {
+    spv::Id f32_type = b.makeFloatType(32);
 
-    builder.createStore(builder.createLoad(to_copy), dest);
+    spv::Id f32_v4_type = b.makeVectorType(f32_type, 4);
+    spv::Id vec4_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(size_vec4_granularity), 16);
 
-    // Increase i
-    spv::Id add_to_me = builder.createBinOp(spv::OpIAdd, builder.makeIntegerType(32, true), builder.createLoad(ite),
-        builder.makeIntConstant(1));
-    builder.createStore(add_to_me, ite);
+    std::string name_type = (is_vert ? "vert" : "frag");
 
-    builder.createBranch(&blocks.continue_target);
-    
-    builder.setBuildPoint(&blocks.continue_target);
-    builder.createBranch(&blocks.head);
-    
-    builder.setBuildPoint(&blocks.merge);
-    builder.closeLoop();
+    if (base_binding == 0) {
+        name_type += "_defaultUniformBuffer";
+    } else {
+        name_type += fmt::format("_buffer{}", base_binding);
+    }
+
+    // Create the default reg uniform buffer
+    spv::Id default_buffer_type = b.makeStructType({ vec4_arr_type }, name_type.c_str());
+    b.addDecoration(default_buffer_type, spv::DecorationBlock, 1);
+    b.addDecoration(default_buffer_type, spv::DecorationGLSLShared, 1);
+
+    // Default uniform buffer always has binding of 0
+    const std::string buffer_var_name = fmt::format("buffer{}", base_binding);
+    spv::Id default_buffer = b.createVariable(spv::StorageClassUniform, default_buffer_type, buffer_var_name.c_str());
+    b.addDecoration(default_buffer, spv::DecorationBinding, (!is_vert) ? 15 : 0);
+
+    b.addMemberDecoration(default_buffer_type, 0, spv::DecorationOffset, 0);
+    b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
+    b.addMemberName(default_buffer_type, 0, "buffer");
+
+    return default_buffer;
 }
 
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
@@ -705,8 +715,35 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv_params.outs = b.createVariable(spv::StorageClassPrivate, o_arr_type, "outs");
 
     SamplerMap samplers;
+    UniformBufferMap buffers;
+
+    const std::uint64_t *secondary_program_insts = reinterpret_cast<const std::uint64_t*>(
+        reinterpret_cast<const std::uint8_t*>(&program.secondary_program_offset) + program.secondary_program_offset);
+
+    const std::uint64_t *primary_program_insts = program.primary_program_start();
+
+    // Analyze the shader to get maximum uniform buffer data
+    // Analyze secondary program
+    usse::data_analyze(
+        static_cast<shader::usse::USSEOffset>((program.secondary_program_offset_end + 4 - program.secondary_program_offset)) / 8,
+        [&](usse::USSEOffset off) -> std::uint64_t { 
+            return secondary_program_insts[off];
+        }, buffers);
+
+    // Analyze primary program
+    usse::data_analyze(
+        static_cast<shader::usse::USSEOffset>(program.primary_program_instr_count),
+        [&](usse::USSEOffset off) -> std::uint64_t { 
+            return primary_program_insts[off];
+        }, buffers);
 
     spv::Id ite_copy = b.createVariable(spv::StorageClassFunction, i32_type, "i");
+
+    const SceGxmUniformBufferInfo *info = reinterpret_cast<const SceGxmUniformBufferInfo*>(
+        reinterpret_cast<const std::uint8_t*>(&program.uniform_buffer_offset) + program.uniform_buffer_offset
+    );
+
+    auto buffer_pointer_container = gxp::get_container_by_index(program, 19);
 
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
@@ -775,8 +812,35 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER: {
+            // The array size is the size of the uniform buffer in bytes. If you encounter it as 64
+            // bytes, usually you have to count it inside shader since it's a filler for uniform buffer
+            // debug symbols being stripped.
+            // So for the best, just analyze the shader and get the maximum data it will fetch
             assert(parameter.component_count == 0);
-            LOG_CRITICAL("uniform_buffer used in shader");
+
+            // Determine base value
+            int base = (buffer_pointer_container ? buffer_pointer_container->base_sa_offset : 0);
+
+            if (program.uniform_buffer_count == 1) {
+                base += info->base_offset;
+            } else {
+                for (std::uint32_t i = 0; i < program.uniform_buffer_count; i++) {
+                    if (info[i].reside_buffer == parameter.resource_index) {
+                        base += info[i].base_offset;
+                    }
+                }
+            }
+
+            // Search for the buffer from analyzed list
+            if (buffers.find(base) != buffers.end()) {
+                const auto &buffer_analyzed_info = buffers[base];
+                spv::Id block = create_uniform_block(b, (parameter.resource_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER,
+                    (buffer_analyzed_info.size + 3) / 4, !program.is_fragment());
+
+                // We found it. Make things
+                spv_params.buffers.emplace(base, block);
+            }
+
             break;
         }
         default: {
@@ -789,23 +853,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     if (features.use_ubo && program.default_uniform_buffer_count != 0) {
         // Create an array of vec4
         const int total_vec4 = static_cast<int>((program.default_uniform_buffer_count + 3) / 4);
-        spv::Id vec4_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(total_vec4), 16);
-
-        const std::string &name_type = program.is_fragment() ? "frag_defaultUniformBuffer" : "vert_defaultUniformBuffer";
-
-        // Create the default reg uniform buffer
-        spv::Id default_buffer_type = b.makeStructType({ vec4_arr_type }, name_type.c_str());
-        b.addDecoration(default_buffer_type, spv::DecorationBlock, 1);
-        b.addDecoration(default_buffer_type, spv::DecorationGLSLShared, 1);
-
-        // Default uniform buffer always has binding of 0
-        spv::Id default_buffer = b.createVariable(spv::StorageClassUniform, default_buffer_type, "ublock");
-        b.addDecoration(default_buffer, spv::DecorationBinding, ((program.is_fragment()) ? 15 : 0));
-
-        b.addMemberDecoration(default_buffer_type, 0, spv::DecorationOffset, 0);
-        b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
-        b.addMemberName(default_buffer_type, 0, "buffer");
-
+        spv::Id default_buffer = create_uniform_block(b, 0, total_vec4, !program.is_fragment());
         copy_uniform_block_to_register(b, spv_params.uniforms, default_buffer, ite_copy, total_vec4);
     }
 
