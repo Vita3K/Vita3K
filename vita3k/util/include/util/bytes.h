@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <vector>
+
 template <typename T>
 T byte_swap(T val);
 
@@ -42,3 +45,5 @@ T network_to_host_order(T val) {
 
     return byte_swap(val);
 }
+
+void float_to_half(const float *src, std::uint16_t *dest, const int total);
