@@ -27,6 +27,7 @@
 #include <renderer/types.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/bytes.h>
 
 #include <psp2/kernel/error.h>
 
@@ -472,11 +473,16 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(host.mem);
 
-    // Update uniforms from this side. We should pass the pointer to parameter struct, since from there it can
-    // find the name and other things based on the pointer in memory. The pointer should be persists until
-    // the fragment is done, so we are guranteed to be safe.
-    renderer::set_uniforms(*host.renderer, context->renderer.get(), vertex_program_gxp, context->state.vertex_uniform_buffers, host.mem);
-    renderer::set_uniforms(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, host.mem);
+    if (host.renderer->features.use_ubo) {
+        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, context->state.vertex_uniform_buffers, host.mem);
+        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, host.mem);
+    } else {
+        // Update uniforms from this side. We should pass the pointer to parameter struct, since from there it can
+        // find the name and other things based on the pointer in memory. The pointer should be persists until
+        // the fragment is done, so we are guranteed to be safe.
+        renderer::set_uniforms(*host.renderer, context->renderer.get(), vertex_program_gxp, context->state.vertex_uniform_buffers, host.mem);
+        renderer::set_uniforms(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, host.mem);
+    }
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
@@ -1260,9 +1266,70 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(componentCount > 0);
     assert(sourceData != nullptr);
 
-    size_t size = componentCount * sizeof(float);
-    size_t offset = (parameter->resource_index + componentOffset) * sizeof(float);
-    memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, sourceData, size);
+    size_t size = 0;
+    size_t offset = 0;
+
+    const std::uint16_t param_type = parameter->type;
+
+    // Component size is in bytes
+    int comp_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>(param_type));
+    const std::uint8_t *source = reinterpret_cast<const std::uint8_t*>(sourceData);
+    std::vector<std::uint8_t> converted_data;
+
+    if (parameter->type == SCE_GXM_PARAMETER_TYPE_F16) {
+        // Convert this thing!!!
+        // Yeah the GXM library happens to convert the data for developer. I think U8 and U16 are kept
+        // TODO (pent0): Check more.
+        // AVX conversion requires number of dest aligned to 8
+        converted_data.resize(((componentCount + 7) / 8) * 8 * 2);
+        float_to_half(sourceData, reinterpret_cast<std::uint16_t*>(converted_data.data()), componentCount);
+
+        source = converted_data.data();
+    }
+
+    if (parameter->array_size == 1 || parameter->component_count == 1) {
+        // Case 1: No array. Only a single vector. Don't apply any alignment 
+        // Case 2: Array but component count equals to 1. This case, a scalar array, align it to 32-bit bound
+        if (parameter->component_count == 1) {
+            // Apply 32 bit alignment, by making each component has 4 bytes
+            comp_size = 4;
+        }
+
+        size = componentCount * comp_size;
+        offset = parameter->resource_index * sizeof(float) + componentOffset * comp_size;
+
+        memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, source, size);
+    } else {
+        // This is the size of each element.
+        size = parameter->component_count * comp_size;
+        int align_bytes = 0;
+
+        // Align it to 64-bit boundary (8 bytes)
+        if ((size & 7) != 0) {
+            align_bytes = 8 - (size & 7);
+        }
+
+        // wtf
+        const int vec_to_start_write = componentOffset / parameter->component_count;
+        int component_cursor_inside_vector = (componentOffset % parameter->component_count);
+        std::uint8_t *dest = reinterpret_cast<uint8_t*>(uniformBuffer) + parameter->resource_index * sizeof(float)
+            + vec_to_start_write * (size + align_bytes) + component_cursor_inside_vector * comp_size;
+
+        int component_to_copy_remain_per_elem = parameter->component_count - component_cursor_inside_vector;
+        int component_left_to_copy = componentCount;
+
+        while (component_left_to_copy > 0) {
+            memcpy(dest, source, component_to_copy_remain_per_elem * comp_size);
+
+            // Add and align destination
+            dest += comp_size * component_to_copy_remain_per_elem + align_bytes;
+            source += component_to_copy_remain_per_elem * comp_size;
+
+            component_left_to_copy -= component_to_copy_remain_per_elem;
+            component_to_copy_remain_per_elem = std::min<int>(4, component_to_copy_remain_per_elem);
+        }
+    }
+
     return 0;
 }
 
