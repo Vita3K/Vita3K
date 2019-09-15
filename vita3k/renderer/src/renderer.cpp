@@ -189,7 +189,7 @@ void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform
     switch (state.current_backend) {
     default: {
         // Calculate the number of bytes
-        std::uint32_t bytes_to_copy_and_pad = (((block_size + 15) / 16) + 1) * 16;
+        std::uint32_t bytes_to_copy_and_pad = (((block_size + 15) / 16)) * 16;
         std::uint8_t *a_copy = new std::uint8_t[bytes_to_copy_and_pad];
 
         std::memcpy(a_copy, data, block_size);
