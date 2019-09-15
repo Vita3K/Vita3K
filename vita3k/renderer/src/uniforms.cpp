@@ -48,12 +48,8 @@ void set_uniform_buffers(State &state, Context *ctx, const SceGxmProgram &progra
         
         if (container) {
             buffer_size = container->max_resource_index * 4;
-        }
-
-        if (buffer_size == 0) {
-            // Try to query the container with the given uniform buffer
-            // TODO: No hardcode my friend
-            buffer_size = 400;
+        } else {
+            // It may be a uniform buffer in memory
         }
 
         // Shift all buffer by 1.

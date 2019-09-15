@@ -44,8 +44,6 @@ struct SpirvShaderParameters {
 
     // Sampler map. Since all banks are a flat array, sampler must be in an explicit bank.
     std::unordered_map<std::uint32_t, spv::Id> samplers;
-
-    bool is_sa_ublock;
 };
 
 using Coord = std::pair<spv::Id, int>;

@@ -568,11 +568,6 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     spv::Id connected_friend = spv::NoResult;
     spv::Id bank_base = *get_reg_bank(params, op.bank);
     spv::Id comp_type = b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)));
-
-    if (params.is_sa_ublock && op.bank == RegisterBank::SECATTR) {
-        comp_type = b.getContainedTypeId(comp_type);
-    }
-
     comp_type = b.makePointer(spv::StorageClassPrivate, comp_type);
 
     if (idx_in_arr_1 == spv::NoResult) {
@@ -588,12 +583,6 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
     first_pass_operands.push_back(bank_base);
     second_pass_operands.push_back(bank_base);
-
-    if (params.is_sa_ublock && op.bank == RegisterBank::SECATTR) {
-        spv::Id zero_conan = b.makeIntConstant(0);
-        first_pass_operands.push_back(zero_conan);
-        second_pass_operands.push_back(zero_conan);
-    }
 
     first_pass_operands.push_back(idx_in_arr_1);
     second_pass_operands.push_back(idx_in_arr_2);
