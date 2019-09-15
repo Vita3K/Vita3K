@@ -644,6 +644,38 @@ static size_t calculate_variable_size(const SceGxmProgramParameter &parameter, c
     return parameter.array_size * (((element_size + 8 - (element_size & 7)) + 3) / 4);
 }
 
+// For uniform buffer resigned in registers
+static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_bank, spv::Id block, spv::Id ite, const int vec4_count) {
+    auto blocks = builder.makeNewLoop();
+    builder.createStore(builder.makeIntConstant(0), ite);
+    builder.createBranch(&blocks.head);
+
+    builder.setBuildPoint(&blocks.head);
+    spv::Id compare_result = builder.createOp(spv::OpSLessThan, builder.makeBoolType(), { ite, builder.makeIntConstant(vec4_count) });
+    
+    builder.createLoopMerge(&blocks.merge, &blocks.continue_target, spv::LoopControlMaskNone, 0);
+    builder.createConditionalBranch(compare_result, &blocks.body, &blocks.merge);
+
+    builder.setBuildPoint(&blocks.body);
+    spv::Id to_copy = builder.createAccessChain(spv::StorageClassUniform, block, { builder.makeIntConstant(0), ite });
+    spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { ite });
+
+    builder.createStore(builder.createLoad(to_copy), dest);
+
+    // Increase i
+    spv::Id add_to_me = builder.createBinOp(spv::OpIAdd, builder.makeIntegerType(32, true), builder.createLoad(ite),
+        builder.makeIntConstant(1));
+    builder.createStore(add_to_me, ite);
+
+    builder.createBranch(&blocks.continue_target);
+    
+    builder.setBuildPoint(&blocks.continue_target);
+    builder.createBranch(&blocks.head);
+    
+    builder.setBuildPoint(&blocks.merge);
+    builder.closeLoop();
+}
+
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
     const FeatureState &features, TranslationState &translation_state, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
@@ -665,12 +697,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     // Create register banks
     spv_params.ins = b.createVariable(spv::StorageClassPrivate, pa_arr_type, "pa");
-
-    if (!features.use_ubo) {
-        spv_params.uniforms = b.createVariable(spv::StorageClassPrivate, sa_arr_type, "sa");
-        spv_params.is_sa_ublock = false;
-    }
-
+    spv_params.uniforms = b.createVariable(spv::StorageClassPrivate, sa_arr_type, "sa");
     spv_params.internals = b.createVariable(spv::StorageClassPrivate, i_arr_type, "internals");
     spv_params.temps = b.createVariable(spv::StorageClassPrivate, temp_arr_type, "r");
     spv_params.predicates = b.createVariable(spv::StorageClassPrivate, pred_arr_type, "p");
@@ -678,6 +705,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv_params.outs = b.createVariable(spv::StorageClassPrivate, o_arr_type, "outs");
 
     SamplerMap samplers;
+
+    spv::Id ite_copy = b.createVariable(spv::StorageClassFunction, i32_type, "i");
 
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
@@ -759,7 +788,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     if (features.use_ubo && program.default_uniform_buffer_count != 0) {
         // Create an array of vec4
-        const int total_vec4 = static_cast<int>((program.default_uniform_buffer_count + 3) / 4) + 1;
+        const int total_vec4 = static_cast<int>((program.default_uniform_buffer_count + 3) / 4);
         spv::Id vec4_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(total_vec4), 16);
 
         const std::string &name_type = program.is_fragment() ? "frag_defaultUniformBuffer" : "vert_defaultUniformBuffer";
@@ -777,19 +806,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
         b.addMemberName(default_buffer_type, 0, "buffer");
 
-        // If secondary program simply doesn't exist, we can use this uniform block as SA bank
-        // Else, we need to fork a new SA bank as an array from this uniform buffer
-        if (program.is_secondary_program_available()) {
-            spv_params.uniforms = b.createVariable(spv::StorageClassPrivate, vec4_arr_type, "sa");
-            spv::Id vec4_arr_ptr_type = b.makePointer(spv::StorageClassPrivate, vec4_arr_type);
-            spv::Id buf_arr = b.createLoad(b.createOp(spv::OpAccessChain, vec4_arr_ptr_type, { default_buffer, b.makeIntConstant(0) }));
-            b.createStore(buf_arr, spv_params.uniforms);
-
-            spv_params.is_sa_ublock = false;
-        } else {
-            spv_params.uniforms = default_buffer;
-            spv_params.is_sa_ublock = true;
-        }
+        copy_uniform_block_to_register(b, spv_params.uniforms, default_buffer, ite_copy, total_vec4);
     }
 
     const SceGxmProgramParameterContainer *container = gxp::get_container_by_index(program, 19);
