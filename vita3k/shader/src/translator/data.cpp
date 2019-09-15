@@ -598,3 +598,153 @@ bool USSETranslatorVisitor::vpck(
 
     return true;
 }
+
+bool USSETranslatorVisitor::vldst(
+    Imm2 op1,
+    ExtPredicate pred,
+    Imm1 skipinv,
+    Imm1 nosched,
+    Imm1 moe_expand,
+    Imm1 sync_start,
+    Imm1 cache_ext,
+    Imm1 src0_bank_ext,
+    Imm1 src1_bank_ext,
+    Imm1 src2_bank_ext,
+    Imm4 mask_count,
+    Imm2 addr_mode,
+    Imm2 mode,
+    Imm1 dest_bank_primattr,
+    Imm1 range_enable,
+    Imm2 data_type,
+    Imm1 increment_or_decrement,
+    Imm1 src0_bank,
+    Imm1 cache_by_pass12,
+    Imm1 drc_sel,
+    Imm2 src1_bank,
+    Imm2 src2_bank,
+    Imm7 dest_n,
+    Imm7 src0_n,
+    Imm7 src1_n,
+    Imm7 src2_n) {
+    DataType type_to_ldst = DataType::UNK;
+
+    switch (data_type) {
+    case 0:
+        type_to_ldst = DataType::F32;
+        break;
+
+    case 1:
+        type_to_ldst = DataType::F16;
+        break;
+
+    case 2:
+        type_to_ldst = DataType::C10;
+        break;
+
+    default:
+        break;
+    }
+
+    const int total_number_to_fetch = mask_count + 1;
+    const int total_bytes_fo_fetch = get_data_type_size(type_to_ldst) * total_number_to_fetch;
+    const int total_number_to_fetch_in_vec4_granularity = total_bytes_fo_fetch / 16;
+    const int total_number_to_fetch_left_in_f32 = (total_bytes_fo_fetch - total_number_to_fetch_in_vec4_granularity * 16) / 4;
+    const int total_number_to_fetch_left_in_native_format = (total_bytes_fo_fetch - total_number_to_fetch_in_vec4_granularity * 16
+         - total_number_to_fetch_left_in_f32 * 4) / get_data_type_size(type_to_ldst);
+
+    Operand to_store;
+
+    if (m_program.is_secondary_program_available()) {
+        to_store.bank = RegisterBank::SECATTR;
+    } else {
+        if (dest_bank_primattr) {
+            to_store.bank = RegisterBank::PRIMATTR;
+        } else {
+            to_store.bank = RegisterBank::TEMP;
+        }
+    }
+
+    to_store.num = dest_n;
+    to_store.type = DataType::F32;
+
+    spv::Id buffer = m_spirv_params.buffers.at(src0_n);
+    const bool is_load = true;
+    spv::Id previous = spv::NoResult;
+
+    // TODO (pent0, spoiler: I will never do it)
+    // First:
+    // - Store instruction is not supported yet. So complicated...
+    // - Post or pre or any increment mode are not supported. I dont want to increase the latency yet,
+    // since no compiler ever uses it with the vita. We have to track the buffer cursor.
+    spv::Id i32_type = m_b.makeIntegerType(32, true);
+    spv::Id ite = m_b.createVariable(spv::StorageClassFunction, i32_type, "i");
+    spv::Id friend1 = spv::NoResult;
+    spv::Id zero = m_b.makeIntConstant(0);
+
+    auto fetch_ublock_data = [&](int base, int off_vec4, int num_comp) {
+        spv::Id to_load = spv::NoResult;
+        
+        if ((base & 3) == 0) {
+            // Aligned. We can load directly
+            to_load = m_b.createAccessChain(spv::StorageClassUniform, buffer, { zero, m_b.makeIntConstant(off_vec4) });
+            to_load = m_b.createLoad(to_load);
+
+            if (num_comp != 4) {
+                std::vector<spv::Id> operands = { to_load, to_load };
+
+                for (int i = 0; i < num_comp; i++) {
+                    operands.push_back(i);
+                }
+
+                to_load = m_b.createOp(spv::OpVectorShuffle, type_f32_v[num_comp], operands);
+            }
+        } else {
+            if (!friend1) {
+                friend1 = m_b.createAccessChain(spv::StorageClassUniform, buffer, { zero, m_b.makeIntConstant(off_vec4) });
+            }
+
+            spv::Id friend2 = m_b.createAccessChain(spv::StorageClassUniform, buffer, { zero, m_b.makeIntConstant(off_vec4 + 1) });
+
+            // Do swizzling the load from aligned
+            const unsigned int unaligned_start = src1_n & 3;
+            std::vector<spv::Id> operands = { friend1, friend2 };
+
+            for (int i = 0; i < num_comp; i++) {
+                operands.push_back(unaligned_start + i);
+            }
+
+            to_load = m_b.createOp(spv::OpVectorShuffle, type_f32_v[num_comp], operands);
+
+            friend1 = friend2;
+        }
+
+        return to_load;
+    };
+
+    to_store.type = DataType::F32;
+
+    // Since there is only maximum of 16 ints being fetched, not really hurt to not use loop
+    for (int i = src1_n / 4; i < (src1_n / 4) + total_number_to_fetch_in_vec4_granularity; i++) {
+        if (is_load) {
+            spv::Id to_load = fetch_ublock_data(src1_n, i, 4);
+            store(to_store, to_load, 0b1111, 0);
+            to_store.num += 4;
+        }
+    }
+
+    static constexpr const std::uint8_t mask_fetch[3] = { 0b1, 0b11, 0b111 };
+
+    if (is_load && total_number_to_fetch_left_in_f32) {
+        // Load the rest of the one unaligned as F32 if possible
+        spv::Id to_load = fetch_ublock_data(src1_n, (src1_n / 4) + total_number_to_fetch_in_vec4_granularity, total_number_to_fetch_left_in_f32);
+        std::uint8_t mask = mask_fetch[total_number_to_fetch_left_in_f32];
+        
+        store(to_store, to_load, mask);
+    }
+
+    // Load the rest in native format
+    // hard so give up. TODO
+    to_store.type = type_to_ldst;
+
+    return true;
+}
