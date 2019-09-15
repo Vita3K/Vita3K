@@ -299,6 +299,12 @@ enum SceGxmFragmentProgramInputs : int {
     _SCE_GXM_FRAGMENT_PROGRAM_INPUT_LAST = 1 << 15
 };
 
+struct SceGxmUniformBufferInfo {
+    std::uint16_t reside_buffer;    // If reside buffer = 0, this is a in memory buffer. Likely SSBO
+    std::uint16_t base_offset;
+    std::uint32_t unk0;
+};
+
 struct SceGxmProgram {
     std::uint32_t magic; // should be "GXP\0"
 
@@ -355,8 +361,8 @@ public:
 
     std::uint32_t literals_count;
     std::uint32_t literals_offset;
-    std::uint32_t unk_78;
-    std::uint32_t alternative_parameters_offset; // Point to the same thing as the upper field.
+    std::uint32_t uniform_buffer_count;
+    std::uint32_t uniform_buffer_offset;
 
     std::uint32_t dependent_sampler_count;
     std::uint32_t dependent_sampler_offset;
