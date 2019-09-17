@@ -81,7 +81,11 @@ bool init(MemState &state) {
 #else
     // http://man7.org/linux/man-pages/man2/mmap.2.html
     void *const addr = nullptr;
+#ifdef __APPLE__
     const int prot = PROT_READ | PROT_WRITE;
+#else
+    const int prot = PROT_NONE;
+#endif
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
     const int fd = 0;
     const off_t offset = 0;
