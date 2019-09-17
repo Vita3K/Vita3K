@@ -43,7 +43,8 @@ static void delete_memory(uint8_t *memory) {
 }
 
 static void alloc_inner(MemState &state, Address address, size_t page_count, Allocated::iterator block, const char *name) {
-    uint8_t *const memory = &state.memory[address];
+    //uint8_t *const memory = &state.memory[address];
+    uint8_t * memory = &state.memory[address];
     const size_t aligned_size = page_count * state.page_size;
 
     const Generation generation = ++state.generation;
@@ -56,6 +57,10 @@ static void alloc_inner(MemState &state, Address address, size_t page_count, All
     const void *const ret = VirtualAlloc(memory, aligned_size, MEM_COMMIT, PAGE_READWRITE);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", log_hex(GetLastError()));
 #else
+    void *addr = mmap(NULL, aligned_size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    if (addr == MAP_FAILED)
+        printf("mmap failed\n");
+    memory = (uint8_t *)addr;
     mprotect(memory, aligned_size, PROT_READ | PROT_WRITE);
 #endif
     std::memset(memory, 0, aligned_size);
@@ -81,7 +86,7 @@ bool init(MemState &state) {
 #else
     // http://man7.org/linux/man-pages/man2/mmap.2.html
     void *const addr = nullptr;
-    const int prot = PROT_NONE;
+    const int prot = PROT_READ | PROT_WRITE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
     const int fd = 0;
     const off_t offset = 0;

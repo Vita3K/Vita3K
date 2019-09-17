@@ -42,6 +42,7 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include <sys/mman.h>
 
 #define ET_SCE_EXEC 0xFE00
 
