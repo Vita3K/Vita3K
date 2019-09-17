@@ -57,10 +57,6 @@ static void alloc_inner(MemState &state, Address address, size_t page_count, All
     const void *const ret = VirtualAlloc(memory, aligned_size, MEM_COMMIT, PAGE_READWRITE);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", log_hex(GetLastError()));
 #else
-    void *addr = mmap(NULL, aligned_size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-    if (addr == MAP_FAILED)
-        printf("mmap failed\n");
-    memory = (uint8_t *)addr;
     mprotect(memory, aligned_size, PROT_READ | PROT_WRITE);
 #endif
     std::memset(memory, 0, aligned_size);
