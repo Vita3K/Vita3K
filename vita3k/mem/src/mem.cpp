@@ -43,8 +43,7 @@ static void delete_memory(uint8_t *memory) {
 }
 
 static void alloc_inner(MemState &state, Address address, size_t page_count, Allocated::iterator block, const char *name) {
-    //uint8_t *const memory = &state.memory[address];
-    uint8_t * memory = &state.memory[address];
+    uint8_t *const memory = &state.memory[address];
     const size_t aligned_size = page_count * state.page_size;
 
     const Generation generation = ++state.generation;
