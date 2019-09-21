@@ -63,7 +63,7 @@ bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend);
  * 
  */
 void set_uniforms(State &state, Context *ctx, const SceGxmProgram &program, const UniformBuffers &buffers, const MemState &mem);
-void set_uniform_buffers(State &state, Context *ctx, const SceGxmProgram &program, const UniformBuffers &buffers, const MemState &mem);
+void set_uniform_buffers(State &state, Context *ctx, const SceGxmProgram &program, const UniformBuffers &buffers, const UniformBufferSizes &sizes, const MemState &mem);
 void set_vertex_data(State &state, Context *ctx, const StreamDatas &datas);
 
 void set_depth_bias(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, int factor, int units);
