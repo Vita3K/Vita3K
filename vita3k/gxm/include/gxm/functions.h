@@ -50,4 +50,6 @@ const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &progr
 const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgram &program, const std::uint16_t idx);
 const char *get_container_name(const std::uint16_t idx);
 
+int get_uniform_buffer_base(const SceGxmProgram &program, const SceGxmProgramParameter &parameter);
+
 } // namespace gxp
