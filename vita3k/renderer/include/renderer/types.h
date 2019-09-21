@@ -7,6 +7,7 @@
 
 #include <psp2/gxm.h>
 
+#include <array>
 #include <map>
 #include <memory>
 #include <string>
@@ -19,6 +20,8 @@ static constexpr auto DEFAULT_RES_HEIGHT = 544;
 // Copy from host/window.h for the moment.
 struct SDL_Window;
 typedef std::shared_ptr<SDL_Window> WindowPtr;
+
+using UniformBufferSizes = std::array<std::uint32_t, 15>;
 
 namespace renderer {
 
@@ -77,6 +80,7 @@ struct Context {
 
 struct ShaderProgram {
     std::string hash;
+    UniformBufferSizes uniform_buffer_sizes;
 };
 
 struct FragmentProgram : ShaderProgram {
