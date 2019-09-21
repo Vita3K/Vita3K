@@ -17,10 +17,16 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <queue>
 #include <map>
 #include <tuple>
+
+using UniformBufferSizes = std::array<std::uint32_t, 15>;
+
+struct SceGxmProgramParameter;
+struct SceGxmProgram;
 
 namespace shader::usse {
 /**
@@ -69,6 +75,9 @@ struct UniformBuffer {
 using UniformBufferMap = std::map<int, UniformBuffer>;
 
 using USSEOffset = std::uint32_t;
+
+void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes);
+int match_uniform_buffer_with_buffer_size(const SceGxmProgram &program, const SceGxmProgramParameter &parameter, const shader::usse::UniformBufferMap &buffers);
 
 template <typename F>
 void data_analyze(USSEOffset end_offset, F read_func, UniformBufferMap &buffer_map) {
