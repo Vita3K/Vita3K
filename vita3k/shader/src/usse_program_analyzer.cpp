@@ -16,6 +16,10 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <shader/usse_program_analyzer.h>
+#include <gxm/types.h>
+#include <gxm/functions.h>
+
+#include <cassert>
 
 #include <shader/usse_types.h>
 
@@ -99,5 +103,72 @@ bool is_buffer_fetch_or_store(const std::uint64_t inst, int &base, int &cursor, 
     }
 
     return false;
+}
+
+int match_uniform_buffer_with_buffer_size(const SceGxmProgram &program, const SceGxmProgramParameter &parameter, const shader::usse::UniformBufferMap &buffers) {
+    assert(parameter.component_count == 0 && parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER);
+
+    // Determine base value
+    int base = gxp::get_uniform_buffer_base(program, parameter);
+
+    // Search for the buffer from analyzed list
+    if (buffers.find(base) != buffers.end()) {
+        return (buffers.at(base).size + 3) / 4;
+    }
+
+    return -1;
+}
+
+void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes) {
+    const std::uint64_t *secondary_program_insts = reinterpret_cast<const std::uint64_t*>(
+        reinterpret_cast<const std::uint8_t*>(&program.secondary_program_offset) + program.secondary_program_offset);
+
+    const std::uint64_t *primary_program_insts = program.primary_program_start();
+    shader::usse::UniformBufferMap buffers;
+
+    std::fill(sizes.begin(), sizes.end(), 0);
+    
+    // The array size is the size of the uniform buffer in bytes. If you encounter it as 64
+    // bytes, usually you have to count it inside shader since it's a filler for uniform buffer
+    // debug symbols being stripped.
+    // So for the best, just analyze the shader and get the maximum data it will fetch
+    
+    // Analyze the shader to get maximum uniform buffer data
+    // Analyze secondary program
+    shader::usse::data_analyze(
+        static_cast<shader::usse::USSEOffset>((program.secondary_program_offset_end + 4 - program.secondary_program_offset)) / 8,
+        [&](shader::usse::USSEOffset off) -> std::uint64_t { 
+            return secondary_program_insts[off];
+        }, buffers);
+
+    // Analyze primary program
+    shader::usse::data_analyze(
+        static_cast<shader::usse::USSEOffset>(program.primary_program_instr_count),
+        [&](shader::usse::USSEOffset off) -> std::uint64_t { 
+            return primary_program_insts[off];
+        }, buffers);
+
+
+    const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
+
+    for (size_t i = 0; i < program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = gxp_parameters[i];
+
+        if (parameter.type == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER) {
+            int buffer_size = match_uniform_buffer_with_buffer_size(program, parameter, buffers);
+
+            // Search for the buffer from analyzed list
+            if (buffer_size != -1) {
+                sizes[parameter.resource_index] = buffer_size;
+            }
+        }
+    }
+
+    // Get default container resource index
+    const auto default_con = gxp::get_container_by_index(program, SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX);
+
+    if (default_con) {
+        sizes[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = (default_con->max_resource_index + 3) / 4;
+    }
 }
 } // namespace shader::usse

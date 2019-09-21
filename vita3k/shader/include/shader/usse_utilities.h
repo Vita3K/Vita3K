@@ -3,6 +3,9 @@
 #include <SPIRV/SpvBuilder.h>
 #include <shader/usse_translator_types.h>
 #include <shader/usse_types.h>
+#include <shader/usse_program_analyzer.h>
+
+#include <gxm/types.h>
 
 struct FeatureState;
 

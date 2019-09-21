@@ -19,6 +19,7 @@
 #include <shader/spirv_recompiler.h>
 #include <shader/usse_disasm.h>
 #include <shader/usse_program_analyzer.h>
+#include <shader/usse_utilities.h>
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
@@ -739,12 +740,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     spv::Id ite_copy = b.createVariable(spv::StorageClassFunction, i32_type, "i");
 
-    const SceGxmUniformBufferInfo *info = reinterpret_cast<const SceGxmUniformBufferInfo*>(
-        reinterpret_cast<const std::uint8_t*>(&program.uniform_buffer_offset) + program.uniform_buffer_offset
-    );
-
-    auto buffer_pointer_container = gxp::get_container_by_index(program, 19);
-
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
 
@@ -809,30 +804,14 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER: {
-            // The array size is the size of the uniform buffer in bytes. If you encounter it as 64
-            // bytes, usually you have to count it inside shader since it's a filler for uniform buffer
-            // debug symbols being stripped.
-            // So for the best, just analyze the shader and get the maximum data it will fetch
-            assert(parameter.component_count == 0);
-
-            // Determine base value
-            int base = (buffer_pointer_container ? buffer_pointer_container->base_sa_offset : 0);
-
-            if (program.uniform_buffer_count == 1) {
-                base += info->base_offset;
-            } else {
-                for (std::uint32_t i = 0; i < program.uniform_buffer_count; i++) {
-                    if (info[i].reside_buffer == parameter.resource_index) {
-                        base += info[i].base_offset;
-                    }
-                }
-            }
+            const int buffer_size = match_uniform_buffer_with_buffer_size(program, parameter, buffers);
 
             // Search for the buffer from analyzed list
-            if (buffers.find(base) != buffers.end()) {
-                const auto &buffer_analyzed_info = buffers[base];
+            if (buffer_size != -1) {
+                const int base = gxp::get_uniform_buffer_base(program, parameter);
+
                 spv::Id block = create_uniform_block(b, (parameter.resource_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER,
-                    (buffer_analyzed_info.size + 3) / 4, !program.is_fragment());
+                    buffer_size, !program.is_fragment());
 
                 // We found it. Make things
                 spv_params.buffers.emplace(base, block);
