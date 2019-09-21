@@ -1,5 +1,6 @@
 #include <shader/usse_constant_table.h>
 #include <shader/usse_utilities.h>
+#include <shader/usse_program_analyzer.h>
 #include <util/log.h>
 
 #include <SPIRV/GLSL.std.450.h>
