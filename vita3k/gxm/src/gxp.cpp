@@ -334,6 +334,29 @@ const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgra
     return nullptr;
 }
 
+int get_uniform_buffer_base(const SceGxmProgram &program, const SceGxmProgramParameter &parameter) {
+    assert(parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER);
+
+    auto container = get_container_by_index(program, 19);
+    int base = (container ? container->base_sa_offset : 0);
+
+    const SceGxmUniformBufferInfo *info = reinterpret_cast<const SceGxmUniformBufferInfo*>(
+        reinterpret_cast<const std::uint8_t*>(&program.uniform_buffer_offset) + program.uniform_buffer_offset
+    );
+
+    if (program.uniform_buffer_count == 1) {
+        base += info->base_offset;
+    } else {
+        for (std::uint32_t i = 0; i < program.uniform_buffer_count; i++) {
+            if (info[i].reside_buffer == parameter.resource_index) {
+                base += info[i].base_offset;
+            }
+        }
+    }
+
+    return base;
+}
+
 const char *get_container_name(const std::uint16_t idx) {
     switch (idx) {
     case 0:
