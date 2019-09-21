@@ -277,9 +277,6 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
         }
     }
 
-    // Workaround driver bugs
-    const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
-
     if (gl_state.features.direct_fragcolor) {
         LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
     } else if (gl_state.features.support_shader_interlock) {
