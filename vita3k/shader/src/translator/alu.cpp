@@ -1106,3 +1106,386 @@ bool USSETranslatorVisitor::sop2(
 
     return true;
 }
+
+enum class DualSrcId {
+    INTERAL0,
+    INTERNAL1,
+    INTERAL2,
+    UNIFIED,
+    NONE,
+};
+
+typedef std::array<DualSrcId, 3> DualSrcLayout;
+
+static optional<DualSrcLayout> get_dual_op1_src_layout(uint8_t count, Imm2 config) {
+    switch (count) {
+    case 1:
+        switch (config) {
+        case 0: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
+        case 1: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::NONE, DualSrcId::NONE });
+        case 2: return optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::NONE, DualSrcId::NONE });
+        case 3: return optional<DualSrcLayout>({ DualSrcId::INTERAL2, DualSrcId::NONE, DualSrcId::NONE });
+        default:
+            return { };
+        }
+    case 2:
+        switch (config) {
+        case 0: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::NONE });
+        case 1: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
+        case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::NONE });
+        default:
+            return { };
+        }
+    case 3:
+        switch (config) {
+        case 0: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
+        case 1: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::INTERAL2 });
+        case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::UNIFIED });
+        case 3: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
+        default:
+            return { };
+        }
+    default:
+        return { };
+    }
+
+    return { };
+}
+
+// Dual op2 layout depends on op1's src layout too...
+static optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, uint8_t op2_count, Imm2 src_config) {
+    switch (op1_count) {
+    case 1:
+        switch (op2_count) {
+        case 1:
+            switch (src_config) {
+            case 0: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::NONE, DualSrcId::NONE });
+            case 1:
+            case 2:
+            case 3:
+                return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
+            default: return { };
+            }
+        case 2:
+            switch (src_config) {
+            case 0: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::NONE });
+            case 1: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::NONE });
+            case 2:
+            case 3:
+                return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
+            default: return { };
+            }
+        case 3:
+            switch (src_config) {
+            case 0: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
+            case 1: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
+            case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::INTERAL2 });
+            case 3: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::INTERNAL1 });
+            default: return { };
+            }
+        default: return { };
+        }
+    case 2:
+        switch (op2_count) {
+        case 1:
+            switch (src_config) {
+            case 0: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::NONE, DualSrcId::NONE });
+            case 1: return optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::NONE, DualSrcId::NONE });
+            case 2: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
+            default: return { };
+            }
+        case 2:
+            switch (src_config) {
+            case 0: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERAL2, DualSrcId::NONE });
+            case 1: return optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::INTERAL2, DualSrcId::NONE });
+            case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL2, DualSrcId::UNIFIED, DualSrcId::NONE });
+            default: return { };
+            }
+        default: return { };
+        }
+    case 3:
+        switch (op2_count) {
+        case 1:
+            switch (src_config) {
+            case 0: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::NONE, DualSrcId::NONE });
+            case 1: return optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::NONE, DualSrcId::NONE });
+            case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL2, DualSrcId::NONE, DualSrcId::NONE });
+            case 3: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
+            default: return { };
+            }
+        default: return { };
+        }
+    default: return { };
+    }
+
+    return { };
+}
+
+bool USSETranslatorVisitor::vdual(
+    Imm1 comp_count_type,
+    Imm1 gpi1_neg,
+    Imm2 sv_pred,
+    Imm1 skipinv,
+    Imm1 dual_op1_ext_vec3_or_has_w_vec4,
+    bool type_f16,
+    Imm1 gpi1_swizz_ext,
+    Imm4 unified_store_swizz,
+    Imm1 unified_store_neg,
+    Imm3 dual_op1,
+    Imm1 dual_op2_ext,
+    bool prim_ustore,
+    Imm4 gpi0_swizz,
+    Imm4 gpi1_swizz,
+    Imm2 prim_dest_bank,
+    Imm2 unified_store_slot_bank,
+    Imm2 prim_dest_num_gpi_case,
+    Imm7 prim_dest_num,
+    Imm3 dual_op2,
+    Imm2 src_config,
+    Imm1 gpi2_slot_num_bit_1,
+    Imm1 gpi2_slot_num_bit_0_or_unified_store_abs,
+    Imm2 gpi1_slot_num,
+    Imm2 gpi0_slot_num,
+    Imm3 write_mask_non_gpi,
+    Imm7 unified_store_slot_num)
+{
+    Instruction op1;
+    Instruction op2;
+
+    const Opcode op1_codes[16] = {
+        Opcode::VMAD,
+        Opcode::VDP,
+        Opcode::VSSQ,
+        Opcode::VMUL,
+        Opcode::VADD,
+        Opcode::VMOV,
+        Opcode::FRSQ,
+        Opcode::FRCP,
+
+        Opcode::FMAD,
+        Opcode::FADD,
+        Opcode::FMUL,
+        Opcode::FSUBFLR,
+        Opcode::FEXP,
+        Opcode::FLOG,
+        Opcode::INVALID,
+        Opcode::INVALID,
+    };
+
+    const Opcode op2_codes[16] = {
+        Opcode::INVALID,
+        Opcode::VDP,
+        Opcode::VSSQ,
+        Opcode::VMUL,
+        Opcode::VADD,
+        Opcode::VMOV,
+        Opcode::FRSQ,
+        Opcode::FRCP,
+
+        Opcode::FMAD,
+        Opcode::FADD,
+        Opcode::FMUL,
+        Opcode::FSUBFLR,
+        Opcode::FEXP,
+        Opcode::FLOG,
+        Opcode::INVALID,
+        Opcode::INVALID,
+    };
+
+    // Each instruction might have a different source layout or write mask depending on how the instruction works.
+    // Let's store insturction information in a map so it's easy for each instruction to be loaded.
+    struct DualOpInfo {
+        uint8_t src_count;
+        bool vector_load;
+        bool vector_store;
+    };
+
+    const std::map<Opcode, DualOpInfo> op_info = {
+        { Opcode::VMAD, { 3, true, true } },
+        { Opcode::VDP, { 2, true, false } },
+        { Opcode::VSSQ, { 1, true, false } },
+        { Opcode::VMUL, { 2, true, true } },
+        { Opcode::VADD, { 2, true, true } },
+        { Opcode::VMOV, { 1, true, true } },
+        { Opcode::FRSQ, { 1, false, false } },
+        { Opcode::FRCP, { 1, false, false } },
+        { Opcode::FMAD, { 3, false, false } },
+        { Opcode::FADD, { 2, false, false } },
+        { Opcode::FMUL, { 2, false, false } },
+        { Opcode::FSUBFLR, { 2, false, false } },
+        { Opcode::FEXP, { 1, false, false } },
+        { Opcode::FLOG, { 1, false, false } },
+    };
+
+    auto get_dual_op_write_mask = [&](const DualOpInfo &op, bool dest_internal) {
+        // Write masks are complicated and seem to depend on if they are in internal regs. Please double check.
+        if (dest_internal)
+            return comp_count_type ? 0b1111 : 0b0111;
+        if (op.vector_store)
+            return type_f16 ? 0b1111 : 0b0011;
+        else
+            return type_f16 ? 0b0011 : 0b0001;
+    };
+
+    op1.opcode = op1_codes[dual_op1_ext_vec3_or_has_w_vec4 << 3u | dual_op1];
+    op2.opcode = op2_codes[dual_op2_ext << 3u | dual_op2];
+
+    // Unified is only part of instruction that can reference any bank. Others are internal.
+    Operand unified_dest;
+    Operand internal_dest;
+    unified_dest = decode_dest(unified_dest, prim_dest_num, prim_dest_bank, false, true, 8, m_second_program);
+    internal_dest.bank = RegisterBank::FPINTERNAL;
+    internal_dest.num = prim_dest_num_gpi_case;
+    internal_dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    
+    // op1 is primary instruction. op2 is secondary.
+    op1.opr.dest = prim_ustore ? unified_dest : internal_dest;
+    op2.opr.dest = prim_ustore ? internal_dest : unified_dest;
+
+    const auto op1_info = op_info.at(op1.opcode);
+    const auto op2_info = op_info.at(op2.opcode);
+    const optional<DualSrcLayout> op1_layout = get_dual_op1_src_layout(op1_info.src_count, src_config);
+    const optional<DualSrcLayout> op2_layout = get_dual_op2_src_layout(op1_info.src_count, op2_info.src_count, src_config);
+
+    if (!op1_layout) {
+        LOG_ERROR("Missing dual for op1 layout.");
+        return false;
+    }
+
+    if (!op2_layout) {
+        LOG_ERROR("Missing dual for op2 layout.");
+        return false;
+    }
+
+    Imm4 op1_write_mask = prim_ustore ? get_dual_op_write_mask(op1_info, op1.opr.dest.bank == RegisterBank::FPINTERNAL) : write_mask_non_gpi;
+    Imm4 op2_write_mask = prim_ustore ? write_mask_non_gpi : get_dual_op_write_mask(op2_info, op2.opr.dest.bank == RegisterBank::FPINTERNAL);
+
+    auto create_srcs_from_layout = [&](std::array<DualSrcId, 3> layout, DualOpInfo code_info) {
+        std::vector<Operand> srcs;
+
+        for (DualSrcId id : layout) {
+            if (id == DualSrcId::NONE)
+                break;
+
+            Operand op;
+
+            switch (id) {
+            case DualSrcId::UNIFIED:
+                op = decode_src12(op, unified_store_slot_num, unified_store_slot_bank, false,
+                    code_info.vector_load, code_info.vector_load ? 8 : 7, m_second_program);
+                // gpi2_slot_num_bit_1 is also unified source ext
+                op.swizzle = decode_dual_swizzle(unified_store_swizz,
+                    code_info.src_count >= 2 ? false : gpi2_slot_num_bit_1, comp_count_type);
+                if (gpi2_slot_num_bit_0_or_unified_store_abs)
+                    op.flags |= RegisterFlags::Absolute;
+                if (unified_store_neg)
+                    op.flags |= RegisterFlags::Negative;
+                break;
+            case DualSrcId::INTERAL0:
+                op.bank = RegisterBank::FPINTERNAL;
+                op.num = gpi0_slot_num;
+                op.swizzle = decode_dual_swizzle(gpi0_swizz, false, comp_count_type);
+                break;
+            case DualSrcId::INTERNAL1:
+                op.bank = RegisterBank::FPINTERNAL;
+                op.num = gpi1_slot_num;
+                op.swizzle = decode_dual_swizzle(gpi1_swizz, gpi1_swizz_ext, comp_count_type);
+                if (gpi1_neg)
+                    op.flags |= RegisterFlags::Negative;
+                break;
+            case DualSrcId::INTERAL2:
+                op.bank = RegisterBank::FPINTERNAL;
+                op.num = code_info.src_count >= 2 ?
+                    (gpi2_slot_num_bit_1 << 1u | gpi2_slot_num_bit_0_or_unified_store_abs) : 2;
+                op.swizzle = SWIZZLE_CHANNEL_4(X, Y, Z, W);
+                break;
+            default:
+                break;
+            }
+            op.type = type_f16 ? DataType::F16 : DataType::F32;
+
+            srcs.push_back(op);
+        }
+
+        return srcs;
+    };
+
+    std::vector<Operand> op1_srcs = create_srcs_from_layout(*op1_layout, op1_info);
+    std::vector<Operand> op2_srcs = create_srcs_from_layout(*op2_layout, op2_info);
+
+    std::string disasm_str = fmt::format("{:016x}: ", m_instr);
+
+    auto do_dual_op = [&](Opcode code, std::vector<Operand> &ops, Operand &dest,
+        Imm4 write_mask_dest, const DualOpInfo &code_info) {
+        uint32_t write_mask_source = code_info.vector_load ? (0b1111u >> !comp_count_type) : 0b0001;
+
+        spv::Id result;
+
+        switch (code) {
+        case Opcode::VMOV: {
+            result = load(ops[0], write_mask_source);
+            break;
+        }
+        case Opcode::VADD: {
+            const spv::Id first = load(ops[0], write_mask_source);
+            const spv::Id second = load(ops[1], write_mask_source);
+            result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(first), first, second);
+            break;
+        }
+        case Opcode::FMUL:
+        case Opcode::VMUL: {
+            const spv::Id first = load(ops[0], write_mask_source);
+            const spv::Id second = load(ops[1], write_mask_source);
+            result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(first), first, second);
+            break;
+        }
+        case Opcode::VDP: {
+            const spv::Id first = load(ops[0], write_mask_source);
+            const spv::Id second = load(ops[1], write_mask_source);
+            result = m_b.createBinOp(spv::OpDot, type_f32, first, second);
+            break;
+        }
+        case Opcode::FEXP: {
+            const spv::Id source = load(ops[0], write_mask_source);
+            result = m_b.createBuiltinCall(m_b.getTypeId(source), std_builtins, GLSLstd450Exp, { source });
+            break;
+        }
+        case Opcode::FLOG: {
+            const spv::Id source = load(ops[0], write_mask_source);
+            result = m_b.createBuiltinCall(m_b.getTypeId(source), std_builtins, GLSLstd450Log, { source });
+            break;
+        }
+        case Opcode::VSSQ: {
+            const spv::Id source = load(ops[0], write_mask_source);
+            result = m_b.createBinOp(spv::OpDot, type_f32, source, source);
+            break;
+        }
+        default:
+            LOG_ERROR("Missing implementation for DUAL {}.", disasm::opcode_str(code));
+            return spv::NoResult;
+        }
+
+        disasm_str += fmt::format("{} {}", disasm::opcode_str(code), disasm::operand_to_str(dest, write_mask_dest));
+
+        for (Operand &op : ops)
+            disasm_str += " " + disasm::operand_to_str(op, write_mask_source);
+
+        return result;
+    };
+
+    spv::Id op1_result = do_dual_op(op1.opcode, op1_srcs, op1.opr.dest, op1_write_mask, op1_info);
+    if (op1_result == spv::NoResult)
+        return false;
+    disasm_str += " + ";
+    spv::Id op2_result = do_dual_op(op2.opcode, op2_srcs, op2.opr.dest, op2_write_mask, op2_info);
+    if (op2_result == spv::NoResult)
+        return false;
+
+    // Dual instructions are async. To simulate that we store after both instructions are completed.
+    store(op1.opr.dest, op1_result, op1_write_mask);
+    store(op2.opr.dest, op2_result, op2_write_mask);
+
+    LOG_DISASM(disasm_str);
+
+    return true;
+}
