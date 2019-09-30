@@ -77,6 +77,26 @@ target_include_directories(microprofile PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/micr
 set_property(TARGET microprofile PROPERTY CXX_STANDARD 11)
 target_compile_definitions(microprofile PUBLIC MICROPROFILE_ENABLED=0 MICROPROFILE_GPU_TIMERS=0)
 
+if(WIN32)
+	add_library(nativefiledialog STATIC nativefiledialog-cmake/src/nfd_win.cpp nativefiledialog-cmake/src/nfd_common.c)
+	target_include_directories(nativefiledialog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog-cmake/src/include")
+elseif(APPLE)
+	add_library(nativefiledialog STATIC nativefiledialog-cmake/src/nfd_cocoa.m nativefiledialog-cmake/src/nfd_common.c)
+	target_include_directories(nativefiledialog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog-cmake/src/include")
+elseif(UNIX)
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+	include_directories(${GTK3_INCLUDE_DIRS})
+	link_directories(${GTK3_LIBRARY_DIRS})
+
+	add_definitions(${GTK3_CFLAGS_OTHER})
+
+	add_library(nativefiledialog STATIC nativefiledialog-cmake/src/nfd_gtk.c nativefiledialog-cmake/src/nfd_common.c)
+	target_include_directories(nativefiledialog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog-cmake/src/include")
+	target_link_libraries(nativefiledialog ${GTK3_LIBRARIES})
+endif()
+
 # The imgui target is including both imgui and imgui_club.
 add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/misc/cpp/imgui_stdlib.cpp)
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
