@@ -42,4 +42,4 @@ add_library(
 
 target_include_directories(gui PUBLIC include)
 target_link_libraries(gui PUBLIC host imgui glutil)
-target_link_libraries(gui PRIVATE stb renderer)
+target_link_libraries(gui PRIVATE nativefiledialog stb renderer)
