@@ -19,10 +19,10 @@
 
 #include "private.h"
 
-#include <host/state.h>
 #include <host/functions.h>
-#include <util/log.h>
 #include <host/pup_types.h>
+#include <host/state.h>
+#include <util/log.h>
 
 #include <nfd.h>
 

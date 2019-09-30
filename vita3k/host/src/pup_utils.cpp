@@ -406,6 +406,6 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, SceHeader sce_h
         return { spkg.update_version << 16, SelfType::NONE };
     } else {
         LOG_ERROR("Unknown system version for type {}", static_cast<int>(sce_hdr.sce_type));
-        return { };
+        return {};
     }
 }

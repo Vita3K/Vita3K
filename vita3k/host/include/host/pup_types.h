@@ -105,9 +105,9 @@ enum class ControlType {
 };
 
 enum class SecureBool {
-	UNUSED = 0,
-	NO = 1,
-	YES = 2
+    UNUSED = 0,
+    NO = 1,
+    YES = 2
 };
 
 enum class EncryptionType {
@@ -258,20 +258,20 @@ private:
     uint16_t e_machine;
     uint32_t e_version;
     uint32_t e_entry;
-	uint32_t e_phoff;
+    uint32_t e_phoff;
     uint32_t e_shoff;
-	uint32_t e_flags;
-	uint16_t e_ehsize;
-	uint16_t e_phentsize;
-	uint16_t e_shentsize;
-	uint16_t e_shnum;
-	uint16_t e_shstrndx;
+    uint32_t e_flags;
+    uint16_t e_ehsize;
+    uint16_t e_phentsize;
+    uint16_t e_shentsize;
+    uint16_t e_shnum;
+    uint16_t e_shstrndx;
 
 public:
     static const int Size = 52;
     uint16_t e_phnum;
 
-    ElfHeader(char data[]){
+    ElfHeader(char data[]) {
         memcpy(&e_ident_1, &data[0], 8);
         memcpy(&e_ident_2, &data[8], 8);
         memcpy(&e_type, &data[16], 2);
@@ -288,12 +288,12 @@ public:
         memcpy(&e_shnum, &data[48], 2);
         memcpy(&e_shstrndx, &data[50], 2);
 
-		if (e_ident_1 != 0x10101464C457F)
+        if (e_ident_1 != 0x10101464C457F)
             LOG_ERROR("Unknown ELF e_indent");
-		if (e_machine != 0x28 && e_machine != 0xF00D)
-			LOG_ERROR("Unknown ELF e_machine");
-		if (e_version != 0x1)
-			LOG_ERROR("Unknown ELF e_version");
+        if (e_machine != 0x28 && e_machine != 0xF00D)
+            LOG_ERROR("Unknown ELF e_machine");
+        if (e_version != 0x1)
+            LOG_ERROR("Unknown ELF e_version");
     };
 };
 
@@ -311,16 +311,16 @@ public:
     uint32_t p_offset;
     uint32_t p_filesz;
 
-	ElfPhdr(char data[]) {
+    ElfPhdr(char data[]) {
         memcpy(&p_type, &data[0], 4);
-		memcpy(&p_offset, &data[4], 4);
+        memcpy(&p_offset, &data[4], 4);
         memcpy(&p_vaddr, &data[8], 4);
-		memcpy(&p_paddr, &data[12], 4);
+        memcpy(&p_paddr, &data[12], 4);
         memcpy(&p_filesz, &data[16], 4);
-		memcpy(&p_memsz, &data[20], 4);
+        memcpy(&p_memsz, &data[20], 4);
         memcpy(&p_flags, &data[24], 4);
-		memcpy(&p_align, &data[28], 4);
-	}
+        memcpy(&p_align, &data[28], 4);
+    }
 };
 
 class SegmentInfo {
@@ -337,17 +337,17 @@ public:
     SecureBool compressed;
     SecureBool plaintext;
 
-	SegmentInfo(char data[]) {
+    SegmentInfo(char data[]) {
         memcpy(&offset, &data[0], 8);
-		memcpy(&size, &data[8], 8);
+        memcpy(&size, &data[8], 8);
         memcpy(&_compressed, &data[16], 4);
-		memcpy(&field_14, &data[20], 4);
+        memcpy(&field_14, &data[20], 4);
         memcpy(&_plaintext, &data[24], 4);
-		memcpy(&field_1C, &data[28], 4);
+        memcpy(&field_1C, &data[28], 4);
 
-		this->compressed = SecureBool(_compressed);
-		this->plaintext = SecureBool(_plaintext);
-	}
+        this->compressed = SecureBool(_compressed);
+        this->plaintext = SecureBool(_plaintext);
+    }
 };
 
 class MetadataInfo {
@@ -562,9 +562,9 @@ public:
         memcpy(&sce_hash, &data[0], 20);
         memcpy(&file_hash, &data[20], 32);
 
-		memcpy(&filler1, &data[52], 4);
+        memcpy(&filler1, &data[52], 4);
         memcpy(&filler2, &data[56], 4);
-		memcpy(&sdk_version, &data[60], 4);
+        memcpy(&sdk_version, &data[60], 4);
     }
 };
 
@@ -579,30 +579,30 @@ private:
     unsigned char sig2r[0x1C];
     unsigned char sig2s[0x1C];
     uint32_t magic;
-	uint16_t sig_offset;
-	uint16_t size;
-	uint32_t field_C;
+    uint16_t sig_offset;
+    uint16_t size;
+    uint32_t field_C;
 
 public:
     static const int Size = 0x100;
     uint32_t npdrm_type;
 
-	SceControlInfoDRM(char data[]) {
+    SceControlInfoDRM(char data[]) {
         memcpy(&content_id, &data[0x10], 0x30);
-		memcpy(&digest1, &data[0x40], 0x10);
+        memcpy(&digest1, &data[0x40], 0x10);
         memcpy(&hash1, &data[0x50], 0x20);
-		memcpy(&hash2, &data[0x70], 0x20);
+        memcpy(&hash2, &data[0x70], 0x20);
         memcpy(&sig1r, &data[0x90], 0x1C);
-		memcpy(&sig1s, &data[0xAC], 0x1C);
+        memcpy(&sig1s, &data[0xAC], 0x1C);
         memcpy(&sig2r, &data[0xC8], 0x1C);
-		memcpy(&sig2s, &data[0xE4], 0x1C);
+        memcpy(&sig2s, &data[0xE4], 0x1C);
 
-		memcpy(&magic, &data[0], 4);
-		memcpy(&sig_offset, &data[4], 2);
-		memcpy(&size, &data[6], 2);
-		memcpy(&npdrm_type, &data[8], 4);
-		memcpy(&field_C, &data[12], 4);
-	}
+        memcpy(&magic, &data[0], 4);
+        memcpy(&sig_offset, &data[4], 2);
+        memcpy(&size, &data[6], 2);
+        memcpy(&npdrm_type, &data[8], 4);
+        memcpy(&field_C, &data[12], 4);
+    }
 };
 
 void register_keys(KeyStore &SCE_KEYS);

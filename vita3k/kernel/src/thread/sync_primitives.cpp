@@ -583,7 +583,6 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
 
                 waiting_thread->something_to_do.notify_one();
             }
-
         }
     }
 
