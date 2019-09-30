@@ -20,7 +20,11 @@
 #include <string>
 #include <vector>
 
+class KeyStore;
+
 struct SfoFile;
+
+void install_pup(std::string pup, std::string output);
 
 namespace sfo {
 bool get_data_by_id(std::string &out_data, SfoFile &file, int id);

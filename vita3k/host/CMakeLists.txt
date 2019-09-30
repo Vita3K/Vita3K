@@ -5,10 +5,13 @@ add_library(
 	include/host/functions.h
 	include/host/import_fn.h
 	include/host/load_self.h
+	include/host/pup_types.h
 	include/host/sfo.h
 	include/host/state.h
 	include/host/window.h
 	src/load_self.cpp
+	src/pup.cpp
+	src/pup_utils.cpp
 	src/sfo.cpp
 )
 
