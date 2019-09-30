@@ -61,6 +61,7 @@ struct GamesSelector {
 
 struct FileMenuState {
     bool game_install_dialog = false;
+    bool install_firmware_dialog = false;
 };
 
 struct DebugMenuState {

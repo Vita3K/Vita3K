@@ -39,6 +39,7 @@ const ImVec4 GUI_SMOOTH_GRAY = ImVec4(0.76f, 0.75f, 0.76f, 1.0f);
 
 void draw_main_menu_bar(GuiState &gui);
 void draw_game_install_dialog(GuiState &gui, HostState &host);
+void draw_install_firmware_dialog(GuiState &gui, HostState &host);
 void draw_threads_dialog(GuiState &gui, HostState &host);
 void draw_thread_details_dialog(GuiState &gui, HostState &host);
 void draw_semaphores_dialog(GuiState &gui, HostState &host);
