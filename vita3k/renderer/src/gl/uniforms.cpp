@@ -138,15 +138,10 @@ static void set_uniform(GLint location, size_t component_count, GLsizei array_si
         break;
     }
 
-    case 3: {
-        switch (array_size) {
-        case 1:
-            uniform_3<T>(location, array_size, value);
-            break;
-        }
+    case 3:
+        uniform_3<T>(location, array_size, value);
 
         break;
-    }
 
     case 4:
         if (is_matrix) {

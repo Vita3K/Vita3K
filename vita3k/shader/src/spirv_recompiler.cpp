@@ -266,7 +266,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         for (auto i = 0; i < b.getNumTypeComponents(arr_type); i++) {
             spv::Id elm = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, comp_type),
                 { var, b.makeIntConstant(i) });
-            utils::store(b, parameters, utils, features, dest, b.createLoad(elm), dest_mask, 0 + i * total_var_comp);
+            utils::store(b, parameters, utils, features, dest, b.createLoad(elm), dest_mask, 0 + i * 4);
         }
     } else {
         get_dest_mask();
@@ -963,7 +963,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
         // coord will consist of.
         //
         // Testing reveal no usage of bit 3 yet.
-        return info.comp_count + 1;
+        return info.comp_count + info.type;
     };
 
     // TODO: Verify component counts

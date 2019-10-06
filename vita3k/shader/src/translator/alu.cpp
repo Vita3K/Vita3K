@@ -345,8 +345,8 @@ bool USSETranslatorVisitor::vdp(
     m_b.setLine(m_recompiler.cur_pc);
 
     // Decoding done
-    BEGIN_REPEAT(repeat_count, 2)
-    GET_REPEAT(inst);
+    BEGIN_REPEAT_COMPLEX(repeat_count, 1, 4)
+    GET_REPEAT(inst)
 
     LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
         disasm::operand_to_str(inst.opr.src0, src_mask, 0), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
@@ -855,8 +855,8 @@ bool USSETranslatorVisitor::vcomp(
 
     store(inst.opr.dest, result, write_mask, dest_repeat_offset);
 
-    LOG_DISASM("{:016x}: {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset),
-        disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset));
+    LOG_DISASM("{:016x}: {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
+        disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
     END_REPEAT()
 
     return true;
