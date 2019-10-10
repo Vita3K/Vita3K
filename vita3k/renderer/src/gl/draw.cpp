@@ -66,8 +66,6 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     const SceGxmProgram &fragment_gxp_program = *state.fragment_program.get(mem)->program.get(mem);
 
     if (log_active_shaders) {
-        const SceGxmProgram &vertex_gxp_program = *state.vertex_program.get(mem)->program.get(mem);
-
         const std::string hash_text_f = hex_string(state.fragment_program.get(mem)->renderer_data->hash);
         const std::string hash_text_v = hex_string(state.vertex_program.get(mem)->renderer_data->hash);
 
@@ -83,7 +81,6 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
     const SceGxmVertexProgram &gxm_vertex_program = *state.vertex_program.get(mem);
-    const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
 
     // Set uniforms
     const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(mem);
