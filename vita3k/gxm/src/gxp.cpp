@@ -237,15 +237,16 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
         vo_ptr = (const SceGxmProgramVertexOutput *)(vo_offset_addr + vo_offset);
 
     // following code is adapted from decompilation
-    uint8_t *vo_start = (uint8_t *)vo_ptr->vertex_outputs1;
-    if (vo_start)
-        vo_start += (uint64_t)&vo_ptr->vertex_outputs1;
-    uint8_t *vo_end = vo_start + 16 * vo_ptr->varyings_count;
+    const uint8_t *vo_start = nullptr;
+    if (vo_ptr->vertex_outputs1 != 0) {
+        vo_start = reinterpret_cast<const uint8_t *>(&vo_ptr->vertex_outputs1) + vo_ptr->vertex_outputs1;
+    }
+    const uint8_t *const vo_end = vo_start + 16 * vo_ptr->varyings_count;
 
     if (vo_start == vo_end)
         return _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE;
 
-    uint32_t *fi_ptr = reinterpret_cast<uint32_t *>(vo_start + 64);
+    const uint32_t *fi_ptr = reinterpret_cast<const uint32_t *>(vo_start + 64);
 
     uint32_t result = 0;
     uint8_t *vo_current = nullptr;
