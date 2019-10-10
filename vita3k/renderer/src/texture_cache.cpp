@@ -13,10 +13,6 @@
 #include <execution>
 #endif
 
-static bool operator==(const emu::SceGxmTexture &a, const emu::SceGxmTexture &b) {
-    return memcmp(&a, &b, sizeof(a)) == 0;
-}
-
 namespace renderer {
 namespace texture {
 
