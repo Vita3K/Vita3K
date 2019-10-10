@@ -2,6 +2,7 @@ add_library(
 	util
 	STATIC
 	include/util/align.h
+    include/util/bytes.h
 	include/util/exit_code.h
 	include/util/exec.h
 	include/util/find.h
