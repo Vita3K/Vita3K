@@ -41,7 +41,6 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
 
     // Create a f32 pointer type first
     spv::Id type_f32 = b.makeFloatType(32);
-    spv::Id f32_pointer = b.makePointer(spv::StorageClassPrivate, type_f32);
 
     const auto first_comp_count = b.getNumComponents(first);
 
@@ -311,7 +310,6 @@ static spv::Id apply_modifiers(spv::Builder &b, const shader::usse::RegisterFlag
             return result;
         }
 
-        const int abs_op = is_int ? GLSLstd450SAbs : GLSLstd450FAbs;
         result = b.createBuiltinCall(dest_type, b.import("GLSL.std.450"), GLSLstd450FAbs, { result });
     }
 
@@ -442,8 +440,6 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
                 }
             }
 
-            const auto comp_count = static_cast<int>(dest_comp_count);
-            auto t = b.makeVectorType(type_f32, comp_count);
             spv::Id constant = spv::NoResult;
 
             const int imm = (op.bank == RegisterBank::IMMEDIATE) ? op.num : 0;
@@ -597,14 +593,12 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         first_pass = unpack(b, utils, features, first_pass, op.type, op.swizzle, dest_mask, 0);
     }
 
-    const bool is_unsigned_integer_dtype = is_unsigned_integer_data_type(op.type);
-    const bool is_signed_integer_dtype = is_signed_integer_data_type(op.type);
-
-    const bool is_integral = is_unsigned_integer_dtype || is_signed_integer_dtype;
-
     if (first_pass == spv::NoResult) {
         return first_pass;
     }
+    
+    const bool is_unsigned_integer_dtype = is_unsigned_integer_data_type(op.type);
+    const bool is_signed_integer_dtype = is_signed_integer_data_type(op.type);
 
     // Bitcast them to integer. Those flags assuming bits stores on those float registers are actually integer
     if (is_signed_integer_dtype) {
@@ -687,7 +681,6 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     // register boundary, translate it to just a createStore
     auto total_comp_source = static_cast<std::uint8_t>(b.getNumComponents(source));
 
-    const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
     const std::size_t size_comp = get_data_type_size(dest.type);
 
     // If the source to store, is not in float form, bitcast it to float
@@ -741,7 +734,6 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         dest.num <<= 2;
     }
 
-    spv::Id result = spv::NoResult;
     spv::Id bank_base = *get_reg_bank(params, dest.bank);
 
     // Element inside an array inside a pointer.

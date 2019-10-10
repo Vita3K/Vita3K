@@ -479,7 +479,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             tex_query_infos.push_back(tex_query_info);
 
-            pa_offset += ((descriptor->size >> 6) & 3) + 1;
+            pa_offset += size;
         }
     }
 
@@ -684,9 +684,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             spv::Id param_type = get_param_type(b, parameter);
 
             const bool is_uniform = param_reg_type == usse::RegisterBank::SECATTR;
-            const bool is_vertex_output = param_reg_type == usse::RegisterBank::OUTPUT && program_type == emu::SceGxmProgramType::Vertex;
-            const bool is_fragment_input = param_reg_type == usse::RegisterBank::PRIMATTR && program_type == emu::SceGxmProgramType::Fragment;
-            const bool can_be_interface_block = is_vertex_output || is_fragment_input;
 
             std::string var_name = gxp::parameter_name(parameter);
 
@@ -758,8 +755,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
             LOG_DEBUG(param_log);
 
-            int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
-            spv::Id var = create_input_variable(b, spv_params, utils, features, var_name.c_str(), param_reg_type, offset, param_type,
+            create_input_variable(b, spv_params, utils, features, var_name.c_str(), param_reg_type, offset, param_type,
                 parameter.array_size * parameter.component_count * 4, 0, store_type);
 
             if (is_uniform) {
@@ -1109,7 +1105,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     }
 
     // Add entry point to Builder
-    auto entry_point = b.addEntryPoint(execution_model, spv_func_main, entry_point_name.c_str());
+    b.addEntryPoint(execution_model, spv_func_main, entry_point_name.c_str());
     auto spirv_log = spv_logger.getAllMessages();
     if (!spirv_log.empty())
         LOG_ERROR("SPIR-V Error:\n{}", spirv_log);
