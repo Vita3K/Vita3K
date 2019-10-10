@@ -538,11 +538,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
 
 USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters,
     utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries)
-    : b(b)
-    , inst(inst)
-    , count(count)
-    , end_hook_func(end_hook_func)
-    , visitor(b, *this, program, features, utils, cur_instr, parameters, queries, true) {
+    : inst(nullptr)
+    , count(0)
+    , b(b)
+    , visitor(b, *this, program, features, utils, cur_instr, parameters, queries, true)
+    , end_hook_func(end_hook_func) {
 }
 
 void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count) {

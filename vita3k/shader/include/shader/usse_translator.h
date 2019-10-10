@@ -68,12 +68,12 @@ public:
     explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, const FeatureState &features,
         utils::SpirvUtilFunctions &utils, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
         bool is_secondary_program = false)
-        : m_b(_b)
-        , m_recompiler(_recompiler)
+        : m_util_funcs(utils)
+        , m_second_program(is_secondary_program)
+        , m_b(_b)
         , m_instr(_instr)
         , m_spirv_params(spirv_params)
-        , m_second_program(is_secondary_program)
-        , m_util_funcs(utils)
+        , m_recompiler(_recompiler)
         , m_program(program)
         , m_features(features) {
         // Default increase mode
