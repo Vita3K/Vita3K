@@ -92,15 +92,11 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     for (auto &vertex_uniform : context.vertex_set_requests) {
         gl::set_uniform(program_id, vertex_program_gxp, vertex_gl_statics, mem, vertex_uniform.parameter, vertex_uniform.data,
             log_uniforms);
-
-        delete vertex_uniform.data;
     }
 
     for (auto &fragment_uniform : context.fragment_set_requests) {
         gl::set_uniform(program_id, fragment_program_gxp, fragment_gl_statics, mem, fragment_uniform.parameter,
             fragment_uniform.data, log_uniforms);
-
-        delete fragment_uniform.data;
     }
 
     if (fragment_gxp_program.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
