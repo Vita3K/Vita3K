@@ -20,7 +20,6 @@
 #include "sfo.h"
 #include "window.h"
 
-#include <ctrl/state.h>
 #include <dialog/state.h>
 #include <gxm/state.h>
 #include <io/state.h>
@@ -42,6 +41,7 @@
 
 struct AudioState;
 struct Config;
+struct CtrlState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -72,7 +72,7 @@ struct HostState {
     SceFVector2 viewport_pos = { 0, 0 };
     SceFVector2 viewport_size = { 0, 0 };
     MemState mem;
-    CtrlState ctrl;
+    std::unique_ptr<CtrlState> ctrl;
     KernelState kernel;
     std::unique_ptr<AudioState> audio;
     GxmState gxm;

@@ -17,9 +17,11 @@
 
 #pragma once
 
-#include <host/state.h>
+#include <psp2/types.h>
 
+struct HostState;
 struct SDL_TouchFingerEvent;
+struct SceTouchData;
 
 int handle_touch_event(SDL_TouchFingerEvent &finger);
 int toggle_touchscreen();

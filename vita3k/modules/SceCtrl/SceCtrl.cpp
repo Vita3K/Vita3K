@@ -18,6 +18,7 @@
 #include "SceCtrl.h"
 
 #include <config/config.h>
+#include <ctrl/state.h>
 #include <util/log.h>
 
 #include <psp2/common_dialog.h>
@@ -249,7 +250,7 @@ static int peek_buffer(HostState &host, int port, SceCtrlData *&pad_data, int co
     if (port == 0) {
         port++;
     }
-    CtrlState &state = host.ctrl;
+    CtrlState &state = *host.ctrl;
     remove_disconnected_controllers(state);
     add_new_controllers(state);
 
@@ -320,12 +321,12 @@ EXPORT(int, sceCtrlGetButtonIntercept) {
 }
 
 EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
-    CtrlState &state = host.ctrl;
+    CtrlState &state = *host.ctrl;
     remove_disconnected_controllers(state);
     add_new_controllers(state);
     info->port[0] = host.cfg->pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < 4; i++) {
-        info->port[i + 1] = (host.cfg->pstv_mode && !host.ctrl.free_ports[i]) ? SCE_CTRL_TYPE_DS3 : SCE_CTRL_TYPE_UNPAIRED;
+        info->port[i + 1] = (host.cfg->pstv_mode && !host.ctrl->free_ports[i]) ? SCE_CTRL_TYPE_DS3 : SCE_CTRL_TYPE_UNPAIRED;
     }
     return 0;
 }
@@ -338,7 +339,7 @@ EXPORT(int, sceCtrlGetSamplingMode, SceCtrlPadInputMode *mode) {
     if (mode == nullptr) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    *mode = host.ctrl.input_mode;
+    *mode = host.ctrl->input_mode;
     return SCE_KERNEL_OK;
 }
 
@@ -346,7 +347,7 @@ EXPORT(int, sceCtrlGetSamplingModeExt, SceCtrlPadInputMode *mode) {
     if (mode == nullptr) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    *mode = host.ctrl.input_mode_ext;
+    *mode = host.ctrl->input_mode_ext;
     return SCE_KERNEL_OK;
 }
 
@@ -455,7 +456,7 @@ EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
         return RET_ERROR(SCE_CTRL_ERROR_NOT_SUPPORTED);
     }
 
-    CtrlState &state = host.ctrl;
+    CtrlState &state = *host.ctrl;
     remove_disconnected_controllers(state);
     add_new_controllers(state);
 
@@ -502,20 +503,20 @@ EXPORT(int, sceCtrlSetRapidFire) {
 #define SCE_CTRL_MODE_UNKNOWN 3 // missing in vita-headers
 
 EXPORT(int, sceCtrlSetSamplingMode, SceCtrlPadInputMode mode) {
-    SceCtrlPadInputMode old = host.ctrl.input_mode;
+    SceCtrlPadInputMode old = host.ctrl->input_mode;
     if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_UNKNOWN) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    host.ctrl.input_mode = mode;
+    host.ctrl->input_mode = mode;
     return old;
 }
 
 EXPORT(int, sceCtrlSetSamplingModeExt, SceCtrlPadInputMode mode) {
-    SceCtrlPadInputMode old = host.ctrl.input_mode_ext;
+    SceCtrlPadInputMode old = host.ctrl->input_mode_ext;
     if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_UNKNOWN) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    host.ctrl.input_mode_ext = mode;
+    host.ctrl->input_mode_ext = mode;
     return old;
 }
 
