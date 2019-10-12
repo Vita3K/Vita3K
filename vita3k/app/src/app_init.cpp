@@ -18,6 +18,7 @@
 #include <app/functions.h>
 
 #include <audio/functions.h>
+#include <config/config.h>
 #include <config/functions.h>
 #include <config/version.h>
 #include <gui/imgui_impl_sdl.h>
@@ -103,24 +104,24 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         thread->something_to_do.notify_all();
     };
 
-    state.cfg = std::move(cfg);
-    state.kernel.wait_for_debugger = state.cfg.wait_for_debugger;
+    *state.cfg = std::move(cfg);
+    state.kernel.wait_for_debugger = state.cfg->wait_for_debugger;
 
     state.base_path = root_paths.get_base_path_string();
 
     // If configuration does not provide a preference path, use SDL's default
-    if (state.cfg.pref_path == root_paths.get_pref_path_string() || state.cfg.pref_path.empty())
+    if (state.cfg->pref_path == root_paths.get_pref_path_string() || state.cfg->pref_path.empty())
         state.pref_path = root_paths.get_pref_path_string();
     else {
-        if (state.cfg.pref_path.back() != '/')
-            state.cfg.pref_path += '/';
-        state.pref_path = state.cfg.pref_path;
+        if (state.cfg->pref_path.back() != '/')
+            state.cfg->pref_path += '/';
+        state.pref_path = state.cfg->pref_path;
     }
 
     renderer::Backend backend = renderer::Backend::OpenGL;
 
 #ifdef USE_VULKAN
-    if (string_utils::toupper(state.cfg.backend_renderer) == "VULKAN")
+    if (string_utils::toupper(state.cfg->backend_renderer) == "VULKAN")
         backend = renderer::Backend::Vulkan;
 #endif
 
@@ -135,7 +136,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
         break;
 #endif
     default:
-        LOG_ERROR("Unimplemented backend render: {}.", state.cfg.backend_renderer);
+        LOG_ERROR("Unimplemented backend render: {}.", state.cfg->backend_renderer);
         break;
     }
 
@@ -167,7 +168,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
             break;
 #endif
         default:
-            error_dialog(fmt::format("Unknown backend render: {}.", state.cfg.backend_renderer));
+            error_dialog(fmt::format("Unknown backend render: {}.", state.cfg->backend_renderer));
             break;
         }
         return false;
@@ -195,8 +196,8 @@ void destroy(HostState &host, ImGui_State *imgui) {
 #endif
 
     // There may be changes that made in the GUI, so we should save, again
-    if (host.cfg.overwrite_config)
-        config::serialize_config(host.cfg, host.cfg.config_path);
+    if (host.cfg->overwrite_config)
+        config::serialize_config(*host.cfg, host.cfg->config_path);
 }
 
 } // namespace app

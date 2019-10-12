@@ -20,6 +20,7 @@
 
 #include "private.h"
 
+#include <config/config.h>
 #include <host/state.h>
 #include <util/string_utils.h>
 
@@ -35,7 +36,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
     if (gui.current_background)
-        ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
+        ImGui::SetNextWindowBgAlpha(host.cfg->background_alpha);
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     if (gui.current_background) {
@@ -43,7 +44,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImVec2(0, 0), display_size);
     }
 
-    const float icon_size = static_cast<float>(host.cfg.icon_size);
+    const float icon_size = static_cast<float>(host.cfg->icon_size);
 
     switch (gui.game_selector.state) {
     case SELECT_APP:
@@ -170,7 +171,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             if (gui.game_selector.icons.find(game.title_id) != gui.game_selector.icons.end()) {
                 ImGui::Image(gui.game_selector.icons[game.title_id], ImVec2(icon_size, icon_size));
                 if (ImGui::IsItemHovered()) {
-                    if (host.cfg.show_game_background) {
+                    if (host.cfg->show_game_background) {
                         if (gui.game_backgrounds.find(game.title_id) == gui.game_backgrounds.end())
                             load_game_background(gui, host, game.title_id);
                         else
@@ -186,9 +187,9 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
             if (ImGui::IsItemHovered()) {
-                if (host.cfg.show_game_background) {
-                    if (gui.user_backgrounds.find(host.cfg.background_image) != gui.user_backgrounds.end())
-                        gui.current_background = gui.user_backgrounds[host.cfg.background_image];
+                if (host.cfg->show_game_background) {
+                    if (gui.user_backgrounds.find(host.cfg->background_image) != gui.user_backgrounds.end())
+                        gui.current_background = gui.user_backgrounds[host.cfg->background_image];
                     else
                         gui.current_background = nullptr;
                 }

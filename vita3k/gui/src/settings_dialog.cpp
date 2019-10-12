@@ -120,15 +120,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             static bool module_select[MODULES_COUNT] = { false };
             if (ImGui::ListBoxHeader("##modules_list", MODULES_COUNT, 6)) {
                 for (int m = 0; m < MODULES_COUNT; m++) {
-                    auto modules = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), LIST_MODULES[m]);
-                    if (modules != host.cfg.lle_modules.end() && !module_select[m])
+                    auto modules = std::find(host.cfg->lle_modules.begin(), host.cfg->lle_modules.end(), LIST_MODULES[m]);
+                    if (modules != host.cfg->lle_modules.end() && !module_select[m])
                         module_select[m] = true;
                     if (!gui.module_search_bar.PassFilter(LIST_MODULES[m]))
                         continue;
-                    if (ImGui::Selectable(LIST_MODULES[m], &module_select[m]) && modules == host.cfg.lle_modules.end())
-                        host.cfg.lle_modules.push_back(LIST_MODULES[m]);
-                    else if (!module_select[m] && modules != host.cfg.lle_modules.end())
-                        host.cfg.lle_modules.erase(modules);
+                    if (ImGui::Selectable(LIST_MODULES[m], &module_select[m]) && modules == host.cfg->lle_modules.end())
+                        host.cfg->lle_modules.push_back(LIST_MODULES[m]);
+                    else if (!module_select[m] && modules != host.cfg->lle_modules.end())
+                        host.cfg->lle_modules.erase(modules);
                 }
                 ImGui::ListBoxFooter();
             }
@@ -138,7 +138,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             gui.module_search_bar.Draw("##module_search_bar", 200);
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
-                host.cfg.lle_modules.clear();
+                host.cfg->lle_modules.clear();
                 memset(module_select, 0, sizeof(module_select));
             }
         } else {
@@ -155,7 +155,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("GPU")) {
         ImGui::PopStyleColor();
-        ImGui::Checkbox("Hardware Flip", &host.cfg.hardware_flip);
+        ImGui::Checkbox("Hardware Flip", &host.cfg->hardware_flip);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable texture flipping from GPU side.\nIt is recommended to disable this option for homebrew.");
         ImGui::EndTabItem();
@@ -167,17 +167,17 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
-        ImGui::Combo("Console Language", &host.cfg.sys_lang, LIST_SYS_LANG, SYS_LANG_COUNT, 6);
+        ImGui::Combo("Console Language", &host.cfg->sys_lang, LIST_SYS_LANG, SYS_LANG_COUNT, 6);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your language. \nNote that some games might not have your language.");
         ImGui::Spacing();
         ImGui::Text("Enter Button Assignment \nSelect your 'Enter' Button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in game dialogs. \nSome games don't use this and get default confirmation button.");
-        ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
-        ImGui::RadioButton("Cross", &host.cfg.sys_button, 1);
+        ImGui::RadioButton("Circle", &host.cfg->sys_button, 0);
+        ImGui::RadioButton("Cross", &host.cfg->sys_button, 1);
         ImGui::Spacing();
-        ImGui::Checkbox("Emulated Console \nSelect your Console mode.", &host.cfg.pstv_mode);
+        ImGui::Checkbox("Emulated Console \nSelect your Console mode.", &host.cfg->pstv_mode);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable PS TV mode.");
         ImGui::EndTabItem();
@@ -190,39 +190,39 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
+        ImGui::Combo("Log Level", &host.cfg->log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred log level.");
         if (ImGui::Button("Apply Log Level")) {
-            logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
+            logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg->log_level));
         }
         ImGui::Spacing();
-        ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
+        ImGui::Checkbox("Archive Log", &host.cfg->archive_log);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable Archiving Log.");
         ImGui::SameLine();
-        ImGui::Checkbox("Performance overlay", &host.cfg.performance_overlay);
+        ImGui::Checkbox("Performance overlay", &host.cfg->performance_overlay);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Display performance information on the screen as an overlay.");
         ImGui::SameLine();
-        ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
+        ImGui::Checkbox("Texture Cache", &host.cfg->texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
-        ImGui::InputTextWithHint("Set emulated system storage folder.", "Write your path folder here", &host.cfg.pref_path);
+        ImGui::InputTextWithHint("Set emulated system storage folder.", "Write your path folder here", &host.cfg->pref_path);
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Set the path to the folder here. \nPress \"Apply\" when finished to move to the new folder. \nWARNING: This cannot be undone.");
-        if (ImGui::Button("Apply New Path") && !host.cfg.pref_path.empty()) {
-            if (host.cfg.pref_path.back() != '/')
-                host.cfg.pref_path += '/';
-            if (host.cfg.pref_path != host.pref_path) {
-                if (change_pref_location(host.cfg.pref_path, host.pref_path)) {
-                    host.pref_path = host.cfg.pref_path;
+        if (ImGui::Button("Apply New Path") && !host.cfg->pref_path.empty()) {
+            if (host.cfg->pref_path.back() != '/')
+                host.cfg->pref_path += '/';
+            if (host.cfg->pref_path != host.pref_path) {
+                if (change_pref_location(host.cfg->pref_path, host.pref_path)) {
+                    host.pref_path = host.cfg->pref_path;
 
                     // Refresh the working paths
-                    config::serialize_config(host.cfg, host.cfg.config_path);
+                    config::serialize_config(*host.cfg, host.cfg->config_path);
                     LOG_INFO_IF(clear_and_refresh_game_list(host, gui), "Successfully moved Vita3K files to: {}", host.pref_path);
                 }
             }
@@ -231,15 +231,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::SetTooltip("After pressing, restart Vita3K to fully apply changes.");
         ImGui::SameLine();
         if (ImGui::Button("Reset Configuration")) {
-            host.cfg = Config{};
+            host.cfg = std::make_unique<Config>();
 
             LOG_INFO("Resetted Vita3K configuration and config file to default values.");
-            if (host.cfg.pref_path != host.pref_path) {
-                if (change_pref_location(host.cfg.pref_path, host.pref_path)) {
-                    host.pref_path = host.cfg.pref_path;
+            if (host.cfg->pref_path != host.pref_path) {
+                if (change_pref_location(host.cfg->pref_path, host.pref_path)) {
+                    host.pref_path = host.cfg->pref_path;
 
                     // Refresh the working paths
-                    config::serialize_config(host.cfg, host.cfg.config_path);
+                    config::serialize_config(*host.cfg, host.cfg->config_path);
                     LOG_INFO_IF(clear_and_refresh_game_list(host, gui), "Successfully moved Vita3K files to: {}", host.pref_path);
                 }
             }
@@ -255,38 +255,38 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("GUI")) {
         ImGui::PopStyleColor();
-        ImGui::Checkbox("GUI Visible", &host.cfg.show_gui);
+        ImGui::Checkbox("GUI Visible", &host.cfg->show_gui);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show GUI after booting a game.");
         ImGui::SameLine();
-        ImGui::Checkbox("Game Background", &host.cfg.show_game_background);
+        ImGui::Checkbox("Game Background", &host.cfg->show_game_background);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable viewing Game background.");
         ImGui::SameLine();
-        ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
+        ImGui::Checkbox("Discord Rich Presence", &host.cfg->discord_rich_presence);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enables Discord Rich Presence to show what game you're playing on discord");
         ImGui::Spacing();
-        ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 16, 128);
+        ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg->icon_size, 16, 128);
         ImGui::Spacing();
         ImGui::PushItemWidth(400);
-        ImGui::InputTextWithHint("Set background image", "Add your path to the image here", &host.cfg.background_image);
+        ImGui::InputTextWithHint("Set background image", "Add your path to the image here", &host.cfg->background_image);
         ImGui::PopItemWidth();
         if (ImGui::Button("Apply Change Image")) {
-            if (!gui.user_backgrounds[host.cfg.background_image])
-                init_background(gui, host.cfg.background_image);
-            else if (gui.user_backgrounds[host.cfg.background_image])
-                gui.current_background = gui.user_backgrounds[host.cfg.background_image];
+            if (!gui.user_backgrounds[host.cfg->background_image])
+                init_background(gui, host.cfg->background_image);
+            else if (gui.user_backgrounds[host.cfg->background_image])
+                gui.current_background = gui.user_backgrounds[host.cfg->background_image];
         }
         ImGui::SameLine();
         if (ImGui::Button("Reset Background")) {
-            host.cfg.background_image.clear();
+            host.cfg->background_image.clear();
             gui.user_backgrounds.clear();
             gui.current_background = nullptr;
         }
         ImGui::Spacing();
         if (gui.current_background) {
-            ImGui::SliderFloat("Background Alpha \nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
+            ImGui::SliderFloat("Background Alpha \nSelect your preferred transparent background effect.", &host.cfg->background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("The minimum slider is opaque and the maximum is transparent.");
         }
@@ -299,22 +299,22 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
-        ImGui::Checkbox("Log Imports", &host.cfg.log_imports);
+        ImGui::Checkbox("Log Imports", &host.cfg->log_imports);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module import symbols.");
-        ImGui::Checkbox("Log Exports", &host.cfg.log_exports);
+        ImGui::Checkbox("Log Exports", &host.cfg->log_exports);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module export symbols.");
         ImGui::Spacing();
-        ImGui::Checkbox("Log Shaders", &host.cfg.log_active_shaders);
+        ImGui::Checkbox("Log Shaders", &host.cfg->log_active_shaders);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shaders being used on each draw call.");
-        ImGui::Checkbox("Log Uniforms", &host.cfg.log_uniforms);
+        ImGui::Checkbox("Log Uniforms", &host.cfg->log_uniforms);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shader uniform names and values.");
-        ImGui::Checkbox("Save color surfaces", &host.cfg.color_surface_debug);
+        ImGui::Checkbox("Save color surfaces", &host.cfg->color_surface_debug);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
         ImGui::EndTabItem();
@@ -322,8 +322,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
     }
 
-    if (host.cfg.overwrite_config)
-        config::serialize_config(host.cfg, host.cfg.config_path);
+    if (host.cfg->overwrite_config)
+        config::serialize_config(*host.cfg, host.cfg->config_path);
 
     ImGui::EndTabBar();
     ImGui::End();

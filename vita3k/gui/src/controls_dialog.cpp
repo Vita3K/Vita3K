@@ -19,6 +19,7 @@
 
 #include "private.h"
 
+#include <config/config.h>
 #include <host/state.h>
 
 namespace gui {
@@ -34,7 +35,7 @@ void draw_controls_dialog(GuiState &gui, HostState &host) {
     ImGui::Text("%-16s    %-16s", "Left stick", "WASD");
     ImGui::Text("%-16s    %-16s", "Right stick", "IJKL");
     ImGui::Text("%-16s    %-16s", "D-pad", "Arrow keys");
-    if (host.cfg.pstv_mode) {
+    if (host.cfg->pstv_mode) {
         ImGui::Text("%-16s    %-16s", "L1 button", "Q");
         ImGui::Text("%-16s    %-16s", "R1 button", "E");
         ImGui::Text("%-16s    %-16s", "L2 button", "U");

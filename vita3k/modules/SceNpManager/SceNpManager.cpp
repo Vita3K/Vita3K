@@ -17,6 +17,7 @@
 
 #include "SceNpManager.h"
 
+#include <config/config.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
@@ -106,12 +107,12 @@ EXPORT(int, sceNpManagerGetNpId, SceNpId *id) {
         return SCE_NP_MANAGER_ERROR_NOT_INITIALIZED;
     }
 
-    if (host.cfg.online_id.length() > 16) {
+    if (host.cfg->online_id.length() > 16) {
         LOG_ERROR("Your online ID has over 16 characters, try again with shorter name");
         return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
     }
 
-    std::copy(host.cfg.online_id.begin(), host.cfg.online_id.end(), id->online_id.name);
+    std::copy(host.cfg->online_id.begin(), host.cfg->online_id.end(), id->online_id.name);
     id->online_id.term = '\0';
     id->online_id.dummy = 0;
 

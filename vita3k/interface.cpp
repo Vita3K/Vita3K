@@ -17,6 +17,7 @@
 
 #include "interface.h"
 
+#include <config/config.h>
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/load_self.h>
@@ -191,7 +192,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         game_category = "N/A";
     }
 
-    if (host.cfg.archive_log) {
+    if (host.cfg->archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
         const auto log_name{ log_directory / (string_utils::remove_special_chars(host.game_title) + " - [" + host.io.title_id + "].log") };
@@ -206,7 +207,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
     init_device_paths(host.io);
 
-    host.renderer->features.hardware_flip = host.cfg.hardware_flip;
+    host.renderer->features.hardware_flip = host.cfg->hardware_flip;
 
     // Load pre-loaded libraries
     const char *const lib_load_list[] = {
@@ -220,7 +221,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         Ptr<const void> lib_entry_point;
 
         if (vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path)) {
-            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path, host.cfg);
+            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path, *host.cfg);
             if (module_id >= 0) {
                 const auto module = host.kernel.loaded_modules[module_id];
                 const auto module_name = module->module_name;
@@ -235,7 +236,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
     if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, EBOOT_PATH)) {
-        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
+        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, *host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
             const auto module_name = module->module_name;
@@ -326,7 +327,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
         app::error_dialog(message, host.window.get());
         return ModuleLoadFailed;
     }
-    if (!host.cfg.show_gui) {
+    if (!host.cfg->show_gui) {
         auto &imgui_render = host.display.imgui_render;
 
         bool old_imgui_render = imgui_render.load();
@@ -339,7 +340,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
 #endif
 
 #if DISCORD_RPC
-    if (host.cfg.discord_rich_presence)
+    if (host.cfg->discord_rich_presence)
         discord::update_presence(host.io.title_id, host.game_title);
 #endif
 

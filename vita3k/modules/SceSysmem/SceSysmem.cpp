@@ -17,6 +17,8 @@
 
 #include "SceSysmem.h"
 
+#include <config/config.h>
+
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/sysmem.h>
 
@@ -142,11 +144,11 @@ EXPORT(int, sceKernelGetMemBlockInfoByRange) {
 }
 
 EXPORT(int, sceKernelGetModel) {
-    return host.cfg.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
+    return host.cfg->pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetModelForCDialog) {
-    return host.cfg.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
+    return host.cfg->pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetSubbudgetInfo) {
@@ -154,7 +156,7 @@ EXPORT(int, sceKernelGetSubbudgetInfo) {
 }
 
 EXPORT(bool, sceKernelIsPSVitaTV) {
-    return host.cfg.pstv_mode;
+    return host.cfg->pstv_mode;
 }
 
 EXPORT(int, sceKernelOpenMemBlock) {

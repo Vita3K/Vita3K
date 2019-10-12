@@ -20,6 +20,7 @@
 #include <app/functions.h>
 #include <app/screen_render.h>
 #include <audio/state.h>
+#include <config/config.h>
 #include <config/functions.h>
 #include <config/version.h>
 #include <gui/functions.h>
@@ -108,6 +109,7 @@ int main(int argc, char *argv[]) {
 
     HostState host;
     host.audio = std::make_unique<AudioState>();
+    host.cfg = std::make_unique<Config>();
     if (!app::init(host, std::move(cfg), root_paths)) {
         app::error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
@@ -116,7 +118,7 @@ int main(int argc, char *argv[]) {
     GuiState gui;
     gui::init(gui, host);
 
-    auto discord_rich_presence_old = host.cfg.discord_rich_presence;
+    auto discord_rich_presence_old = host.cfg->discord_rich_presence;
 
     // Application not provided via argument, show game selector
     while (run_type == app::AppRunType::Unknown) {
@@ -124,7 +126,7 @@ int main(int argc, char *argv[]) {
             gui::draw_begin(gui, host);
 
 #if DISCORD_RPC
-            discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
+            discord::update_init_status(host.cfg->discord_rich_presence, &discord_rich_presence_old);
 #endif
             gui::draw_ui(gui, host);
             gui::draw_game_selector(gui, host);
@@ -156,7 +158,7 @@ int main(int argc, char *argv[]) {
 
     while (handle_events(host, gui)) {
         // Driver acto!
-        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
+        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, *host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
 
         gl_renderer.render(host);
@@ -167,7 +169,7 @@ int main(int argc, char *argv[]) {
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
 
-        if (host.cfg.performance_overlay)
+        if (host.cfg->performance_overlay)
             gui::draw_perf_overlay(gui, host);
 
         gui::draw_trophies_unlocked(gui, host);

@@ -20,7 +20,6 @@
 #include "sfo.h"
 #include "window.h"
 
-#include <config/config.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
 #include <gxm/state.h>
@@ -42,6 +41,7 @@
 #include <string>
 
 struct AudioState;
+struct Config;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -60,7 +60,7 @@ struct HostState {
     std::string game_title;
     std::string base_path;
     std::string pref_path;
-    Config cfg;
+    std::unique_ptr<Config> cfg;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
     uint32_t fps = 0;

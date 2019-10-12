@@ -21,6 +21,7 @@
 
 #include <gui/imgui_impl_sdl.h>
 
+#include <config/config.h>
 #include <glutil/gl.h>
 #include <host/functions.h>
 #include <host/state.h>
@@ -189,8 +190,8 @@ void load_game_background(GuiState &gui, HostState &host, const std::string &tit
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg.png");
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg0.png");
         } else {
-            if (gui.user_backgrounds.find(host.cfg.background_image) != gui.user_backgrounds.end())
-                gui.current_background = gui.user_backgrounds[host.cfg.background_image];
+            if (gui.user_backgrounds.find(host.cfg->background_image) != gui.user_backgrounds.end())
+                gui.current_background = gui.user_backgrounds[host.cfg->background_image];
             else
                 gui.current_background = nullptr;
             LOG_WARN("Game background not found for title {}.", title_id);
@@ -263,8 +264,8 @@ void init(GuiState &gui, HostState &host) {
     get_game_titles(gui, host);
     init_icons(gui, host);
 
-    if (!host.cfg.background_image.empty())
-        init_background(gui, host.cfg.background_image);
+    if (!host.cfg->background_image.empty())
+        init_background(gui, host.cfg->background_image);
 
     // Initialize trophy callback
     host.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
