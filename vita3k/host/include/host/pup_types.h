@@ -20,6 +20,8 @@
 
 #include <map>
 
+// Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
+
 struct KeyEntry {
     uint64_t minver;
     uint64_t maxver;
@@ -174,7 +176,7 @@ public:
     uint32_t metadata_offset;
     uint8_t key_revision;
 
-    SceHeader(char data[]) {
+    explicit SceHeader(const char *data) {
         memcpy(&magic, &data[0], 4);
         memcpy(&version, &data[4], 4);
         memcpy(&_platform, &data[8], 1);
@@ -212,7 +214,7 @@ public:
     uint64_t sceversion_offset;
     uint64_t controlinfo_offset;
 
-    SelfHeader(char data[]) {
+    explicit SelfHeader(const char *data) {
         memcpy(&file_length, &data[0], 8);
         memcpy(&field_8, &data[8], 8);
         memcpy(&self_offset, &data[16], 8);
@@ -239,7 +241,7 @@ public:
     uint64_t sys_version;
     SelfType self_type;
 
-    AppInfoHeader(char data[]) {
+    explicit AppInfoHeader(const char *data) {
         memcpy(&auth_id, &data[0], 8);
         memcpy(&vendor_id, &data[8], 4);
         memcpy(&_self_type, &data[12], 4);
@@ -271,7 +273,7 @@ public:
     static const int Size = 52;
     uint16_t e_phnum;
 
-    ElfHeader(char data[]) {
+    explicit ElfHeader(const char *data) {
         memcpy(&e_ident_1, &data[0], 8);
         memcpy(&e_ident_2, &data[8], 8);
         memcpy(&e_type, &data[16], 2);
@@ -311,7 +313,7 @@ public:
     uint32_t p_offset;
     uint32_t p_filesz;
 
-    ElfPhdr(char data[]) {
+    explicit ElfPhdr(const char *data) {
         memcpy(&p_type, &data[0], 4);
         memcpy(&p_offset, &data[4], 4);
         memcpy(&p_vaddr, &data[8], 4);
@@ -337,7 +339,7 @@ public:
     SecureBool compressed;
     SecureBool plaintext;
 
-    SegmentInfo(char data[]) {
+    explicit SegmentInfo(const char *data) {
         memcpy(&offset, &data[0], 8);
         memcpy(&size, &data[8], 8);
         memcpy(&_compressed, &data[16], 4);
@@ -362,7 +364,7 @@ public:
     unsigned char key[16];
     unsigned char iv[16];
 
-    MetadataInfo(unsigned char data[]) {
+    explicit MetadataInfo(const char *data) {
         memcpy(&key, &data[0], 16);
         memcpy(&iv, &data[32], 16);
 
@@ -389,7 +391,7 @@ public:
     uint32_t section_count;
     uint32_t key_count;
 
-    MetadataHeader(unsigned char data[]) {
+    explicit MetadataHeader(const char *data) {
         memcpy(&signature_input_length, &data[0], 8);
         memcpy(&signature_type, &data[8], 4);
         memcpy(&section_count, &data[12], 4);
@@ -419,7 +421,7 @@ public:
     int32_t key_idx;
     int32_t iv_idx;
 
-    MetadataSection(unsigned char data[]) {
+    explicit MetadataSection(const char *data) {
         memcpy(&offset, &data[0], 8);
         memcpy(&size, &data[8], 8);
         memcpy(&type, &data[16], 4);
@@ -450,7 +452,7 @@ public:
     static const int Size = 32;
     uint64_t sys_version;
 
-    SrvkHeader(char data[]) {
+    explicit SrvkHeader(const char *data) {
         memcpy(&field_0, &data[0], 4);
         memcpy(&field_4, &data[4], 4);
         memcpy(&sys_version, &data[8], 8);
@@ -488,7 +490,7 @@ public:
     SpkgType type;
     uint64_t update_version;
 
-    SpkgHeader(char data[]) {
+    explicit SpkgHeader(const char *data) {
         memcpy(&field_0, &data[0], 4);
         memcpy(&_pkg_type, &data[4], 4);
         memcpy(&flags, &data[8], 4);
@@ -521,7 +523,7 @@ public:
     uint32_t is_present;
     uint64_t size;
 
-    SceVersionInfo(char data[]) {
+    explicit SceVersionInfo(const char *data) {
         memcpy(&subtype, &data[0], 4);
         memcpy(&is_present, &data[4], 4);
         memcpy(&size, &data[8], 8);
@@ -538,7 +540,7 @@ public:
     ControlType type;
     uint32_t size;
 
-    SceControlInfo(char data[]) {
+    explicit SceControlInfo(const char *data) {
         memcpy(&control_type, &data[0], 4);
         memcpy(&size, &data[4], 4);
         memcpy(&more, &data[8], 8);
@@ -558,7 +560,7 @@ private:
 public:
     static const int Size = 64;
 
-    SceControlInfoDigest256(char data[]) {
+    explicit SceControlInfoDigest256(const char *data) {
         memcpy(&sce_hash, &data[0], 20);
         memcpy(&file_hash, &data[20], 32);
 
@@ -587,7 +589,7 @@ public:
     static const int Size = 0x100;
     uint32_t npdrm_type;
 
-    SceControlInfoDRM(char data[]) {
+    explicit SceControlInfoDRM(const char *data) {
         memcpy(&content_id, &data[0x10], 0x30);
         memcpy(&digest1, &data[0x40], 0x10);
         memcpy(&hash1, &data[0x50], 0x20);
@@ -606,5 +608,5 @@ public:
 };
 
 void register_keys(KeyStore &SCE_KEYS);
-std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, SceHeader sce_hdr);
-std::vector<SceSegment> get_segments(std::ifstream &file, SceHeader sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, int klictxt = 0);
+std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr);
+std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, int klictxt = 0);

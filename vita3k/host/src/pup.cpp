@@ -19,11 +19,12 @@
 #include <host/pup_types.h>
 #include <miniz.h>
 #include <util/fs.h>
-#include <util/string_utils.h>
 
 #include <fstream>
 
-std::map<int, std::string> pup_types = {
+// Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
+
+static const std::map<int, std::string> PUP_TYPES = {
     { 0x100, "version.txt" },
     { 0x101, "license.xml" },
     { 0x200, "psp2swu.self" },
@@ -34,7 +35,7 @@ std::map<int, std::string> pup_types = {
     { 0x2006, "UpdaterES2.CpUp" },
 };
 
-const std::string FSTYPE[] = {
+static const char *FSTYPE[] = {
     "unknown0",
     "os0",
     "unknown2",
@@ -65,7 +66,47 @@ const std::string FSTYPE[] = {
     "psp_emulist",
 };
 
-void self2elf(std::string infile, std::string outfile, KeyStore &SCE_KEYS, int klictxt) {
+static std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, const uint64_t &size) {
+    mz_stream stream;
+    stream.zalloc = Z_NULL;
+    stream.zfree = Z_NULL;
+    stream.opaque = Z_NULL;
+    stream.avail_in = 0;
+    stream.next_in = Z_NULL;
+    if (mz_inflateInit(&stream) != MZ_OK) {
+        LOG_ERROR("inflateInit failed while decompressing");
+        return "";
+    }
+
+    const std::string compressed_data((char *)&decrypted_data[0], size);
+    stream.next_in = (Bytef *)compressed_data.data();
+    stream.avail_in = compressed_data.size();
+
+    int ret = 0;
+    char outbuffer[4096];
+    std::string decompressed_data;
+
+    do {
+        stream.next_out = reinterpret_cast<Bytef *>(outbuffer);
+        stream.avail_out = sizeof(outbuffer);
+
+        ret = mz_inflate(&stream, 0);
+
+        if (decompressed_data.size() < stream.total_out) {
+            decompressed_data.append(outbuffer, stream.total_out - decompressed_data.size());
+        }
+    } while (ret == MZ_OK);
+
+    mz_inflateEnd(&stream);
+
+    if (ret != MZ_STREAM_END) {
+        LOG_ERROR("Exception during zlib decompression: ({}) {}", ret, stream.msg);
+        return "";
+    }
+    return decompressed_data;
+}
+
+static void self2elf(const std::string &infile, const std::string &outfile, KeyStore &SCE_KEYS, const int klictxt) {
     std::ifstream filein(infile, std::ios::binary);
     std::ofstream fileout(outfile, std::ios::binary);
 
@@ -80,18 +121,18 @@ void self2elf(std::string infile, std::string outfile, KeyStore &SCE_KEYS, int k
     filein.read(sceheaderbuffer, SceHeader::Size);
     filein.read(selfheaderbuffer, SelfHeader::Size);
 
-    SceHeader sce = SceHeader(sceheaderbuffer);
-    SelfHeader self_hdr = SelfHeader(selfheaderbuffer);
+    const SceHeader sce_hdr = SceHeader(sceheaderbuffer);
+    const SelfHeader self_hdr = SelfHeader(selfheaderbuffer);
 
     filein.seekg(self_hdr.appinfo_offset);
     filein.read(appinfobuffer, AppInfoHeader::Size);
 
-    AppInfoHeader appinfo_hdr = AppInfoHeader(appinfobuffer);
+    const AppInfoHeader appinfo_hdr = AppInfoHeader(appinfobuffer);
 
     filein.seekg(self_hdr.sceversion_offset);
     filein.read(verinfobuffer, SceVersionInfo::Size);
 
-    SceVersionInfo verinfo_hdr = SceVersionInfo(verinfobuffer);
+    const SceVersionInfo verinfo_hdr = SceVersionInfo(verinfobuffer);
 
     filein.seekg(self_hdr.controlinfo_offset);
     filein.read(controlinfobuffer, SceControlInfo::Size);
@@ -104,7 +145,7 @@ void self2elf(std::string infile, std::string outfile, KeyStore &SCE_KEYS, int k
         ci_off += SceControlInfoDigest256::Size;
         char controldigest256buffer[SceControlInfoDigest256::Size];
         filein.read(controldigest256buffer, SceControlInfoDigest256::Size);
-        SceControlInfoDigest256 controldigest256 = SceControlInfoDigest256(controldigest256buffer);
+        const SceControlInfoDigest256 controldigest256 = SceControlInfoDigest256(controldigest256buffer);
     }
     filein.seekg(self_hdr.controlinfo_offset + ci_off);
     filein.read(controlinfobuffer, SceControlInfo::Size);
@@ -116,7 +157,7 @@ void self2elf(std::string infile, std::string outfile, KeyStore &SCE_KEYS, int k
         ci_off += SceControlInfoDRM::Size;
         char controlnpdrmbuffer[SceControlInfoDRM::Size];
         filein.read(controlnpdrmbuffer, SceControlInfoDRM::Size);
-        SceControlInfoDRM controlnpdrm = SceControlInfoDRM(controlnpdrmbuffer);
+        const SceControlInfoDRM controlnpdrm = SceControlInfoDRM(controlnpdrmbuffer);
         npdrmtype = controlnpdrm.npdrm_type;
     }
 
@@ -125,17 +166,17 @@ void self2elf(std::string infile, std::string outfile, KeyStore &SCE_KEYS, int k
     filein.read(dat, ElfHeader::Size);
     fileout.write(dat, ElfHeader::Size);
 
-    ElfHeader elf_hdr = ElfHeader(dat);
+    const ElfHeader elf_hdr = ElfHeader(dat);
     std::vector<ElfPhdr> elf_phdrs;
     std::vector<SegmentInfo> segment_infos;
     bool encrypted = false;
-    int at = ElfHeader::Size;
+    uint64_t at = ElfHeader::Size;
 
-    for (int i = 0; i < elf_hdr.e_phnum; i++) {
+    for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
         filein.seekg(self_hdr.phdr_offset + i * ElfPhdr::Size);
         char dat[ElfPhdr::Size];
         filein.read(dat, ElfPhdr::Size);
-        ElfPhdr phdr = ElfPhdr(dat);
+        const ElfPhdr phdr = ElfPhdr(dat);
         elf_phdrs.push_back(phdr);
         fileout.write(dat, ElfPhdr::Size);
         at += ElfPhdr::Size;
@@ -143,7 +184,7 @@ void self2elf(std::string infile, std::string outfile, KeyStore &SCE_KEYS, int k
         filein.seekg(self_hdr.segment_info_offset + i * SegmentInfo::Size);
         char segmentinfobuffer[SegmentInfo::Size];
         filein.read(segmentinfobuffer, SegmentInfo::Size);
-        SegmentInfo segment_info = SegmentInfo(segmentinfobuffer);
+        const SegmentInfo segment_info = SegmentInfo(segmentinfobuffer);
         segment_infos.push_back(segment_info);
 
         if (segment_info.plaintext == SecureBool::NO)
@@ -153,11 +194,11 @@ void self2elf(std::string infile, std::string outfile, KeyStore &SCE_KEYS, int k
     std::vector<SceSegment> scesegs;
 
     if (encrypted) {
-        scesegs = get_segments(filein, sce, SCE_KEYS, appinfo_hdr.sys_version, appinfo_hdr.self_type, npdrmtype, klictxt);
+        scesegs = get_segments(filein, sce_hdr, SCE_KEYS, appinfo_hdr.sys_version, appinfo_hdr.self_type, npdrmtype, klictxt);
     }
 
-    for (int i = 0; i < elf_hdr.e_phnum; i++) {
-        int idx;
+    for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
+        int idx = 0;
 
         if (!scesegs.empty())
             idx = scesegs[i].idx;
@@ -166,107 +207,67 @@ void self2elf(std::string infile, std::string outfile, KeyStore &SCE_KEYS, int k
         if (elf_phdrs[idx].p_filesz == 0)
             continue;
 
-        int pad_len = elf_phdrs[idx].p_offset - at;
+        const int pad_len = elf_phdrs[idx].p_offset - at;
         if (pad_len < 0)
             LOG_ERROR("ELF p_offset Invalid");
 
-        std::string padding;
+        std::vector<char> padding;
         for (int i = 0; i < pad_len; i++) {
-            padding += "00";
+            padding.push_back('\0');
         }
 
-        auto padding_array = string_utils::string_to_byte_array(padding);
-
-        std::string result(padding_array.begin(), padding_array.end());
-        fileout.write(result.c_str(), pad_len);
+        fileout.write(padding.data(), pad_len);
 
         at += pad_len;
 
         filein.seekg(segment_infos[idx].offset);
-        unsigned char *dat = new unsigned char[segment_infos[idx].size];
-        filein.read((char *)dat, segment_infos[idx].size);
+        std::vector<unsigned char> dat(segment_infos[idx].size);
+        filein.read((char *)&dat[0], segment_infos[idx].size);
 
-        unsigned char *decrypted_data = new unsigned char[segment_infos[idx].size];
+        std::vector<unsigned char> decrypted_data(segment_infos[idx].size);
         if (segment_infos[idx].plaintext == SecureBool::NO) {
             aes_context aes_ctx;
             aes_setkey_enc(&aes_ctx, (unsigned char *)scesegs[i].key.c_str(), 128);
             size_t ctr_nc_off = 0;
             unsigned char ctr_stream_block[0x10];
-            aes_crypt_ctr(&aes_ctx, segment_infos[idx].size, &ctr_nc_off, (unsigned char *)scesegs[i].iv.c_str(), ctr_stream_block, dat, decrypted_data);
+            aes_crypt_ctr(&aes_ctx, segment_infos[idx].size, &ctr_nc_off, (unsigned char *)scesegs[i].iv.c_str(), ctr_stream_block, &dat[0], &decrypted_data[0]);
         }
 
         if (segment_infos[idx].compressed == SecureBool::YES) {
-            mz_stream stream;
-            stream.zalloc = Z_NULL;
-            stream.zfree = Z_NULL;
-            stream.opaque = Z_NULL;
-            stream.avail_in = 0;
-            stream.next_in = Z_NULL;
-            if (mz_inflateInit(&stream) != MZ_OK) {
-                LOG_ERROR("inflateInit failed while decompressing");
-                return;
-            }
-
-            std::string compressed_data((char *)decrypted_data, segment_infos[idx].size);
-            stream.next_in = (Bytef *)compressed_data.data();
-            stream.avail_in = compressed_data.size();
-
-            int ret;
-            char outbuffer[524288];
-            std::string decompressed_data;
-
-            do {
-                stream.next_out = reinterpret_cast<Bytef *>(outbuffer);
-                stream.avail_out = sizeof(outbuffer);
-
-                ret = mz_inflate(&stream, 0);
-
-                if (decompressed_data.size() < stream.total_out) {
-                    decompressed_data.append(outbuffer, stream.total_out - decompressed_data.size());
-                }
-
-            } while (ret == MZ_OK);
-
-            mz_inflateEnd(&stream);
-
-            if (ret != MZ_STREAM_END) {
-                LOG_ERROR("Exception during zlib decompression: ({}) {}", ret, stream.msg);
-                return;
-            }
+            const std::string decompressed_data = decompress_segments(decrypted_data, segment_infos[idx].size);
             fileout.write(decompressed_data.c_str(), decompressed_data.length());
             at += decompressed_data.length();
         } else {
-            fileout.write((char *)decrypted_data, segment_infos[idx].size);
+            fileout.write((char *)&decrypted_data[0], segment_infos[idx].size);
             at += segment_infos[idx].size;
         }
-        delete[] dat;
-        delete[] decrypted_data;
     }
     filein.close();
     fileout.close();
 }
 
-std::string make_filename(unsigned char *hdr, int64_t filetype) {
-    uint32_t magic;
-    uint32_t version;
-    uint32_t flags;
-    uint32_t moffs;
-    uint64_t metaoffs;
+static std::string make_filename(unsigned char *hdr, int64_t filetype, const int HEADER_SIZE) {
+    uint32_t magic = 0;
+    uint32_t version = 0;
+    uint32_t flags = 0;
+    uint32_t moffs = 0;
+    uint64_t metaoffs = 0;
     memcpy(&magic, &hdr[0], 4);
     memcpy(&version, &hdr[4], 4);
     memcpy(&flags, &hdr[8], 4);
     memcpy(&moffs, &hdr[12], 4);
     memcpy(&metaoffs, &hdr[16], 8);
 
-    if (magic == 0x454353 && version == 3 && flags == 0x30040) {
-        auto meta = std::vector<unsigned char>(&hdr[0] + metaoffs, &hdr[0] + 0x1000 - metaoffs);
-        unsigned char *array = &meta[0];
-        char t;
-        memcpy(&t, &array[4], 1);
+    const int SCE_MAGIC = 0x454353;
+
+    if (magic == SCE_MAGIC && version == 3 && flags == 0x30040) {
+        std::vector meta = std::vector<unsigned char>(&hdr[0] + metaoffs, &hdr[0] + (HEADER_SIZE - metaoffs));
+        char t = 0;
+        memcpy(&t, &meta[4], 1);
 
         static int typecount = 0;
 
-        if (t < 0x1C) {
+        if (t < 0x1C) { // 0x1C is the file seperator
             std::string name = fmt::format("{}-{:0>2}.pkg", FSTYPE[t], typecount);
             typecount++;
             return name;
@@ -275,24 +276,23 @@ std::string make_filename(unsigned char *hdr, int64_t filetype) {
     return fmt::format("unknown-0x{:X}.pkg", filetype);
 }
 
-void extract_pup_files(std::string pup, std::string output) {
+static void extract_pup_files(const std::string &pup, const std::string &output) {
     const int SCEUF_HEADER_SIZE = 0x80;
     const int SCEUF_FILEREC_SIZE = 0x20;
+    const int HEADER_SIZE = 0x1000;
     std::ifstream infile(pup, std::ios::binary);
     char header[SCEUF_HEADER_SIZE];
     infile.read(header, SCEUF_HEADER_SIZE);
 
-    for (int i = 0; i < 5; i++) {
-        if (header[i] != "SCEUF"[i]) {
-            LOG_ERROR("Invalid PUP");
-            return;
-        }
+    if (strncmp(header, "SCEUF", 5) != 0) {
+        LOG_ERROR("Invalid PUP");
+        return;
     }
 
-    uint32_t cnt;
-    uint32_t pup_version;
-    uint32_t firmware_version;
-    uint32_t build_number;
+    uint32_t cnt = 0;
+    uint32_t pup_version = 0;
+    uint32_t firmware_version = 0;
+    uint32_t build_number = 0;
     memcpy(&cnt, &header[0x18], 4);
     memcpy(&pup_version, &header[8], 4);
     memcpy(&firmware_version, &header[0x10], 4);
@@ -303,15 +303,15 @@ void extract_pup_files(std::string pup, std::string output) {
     LOG_INFO("Build Number: {:0}", build_number);
     LOG_INFO("Number Of Files: {}", cnt);
 
-    for (auto x = 0; x < cnt; x++) {
+    for (uint32_t x = 0; x < cnt; x++) {
         infile.seekg(SCEUF_HEADER_SIZE + x * SCEUF_FILEREC_SIZE);
         char rec[SCEUF_FILEREC_SIZE];
         infile.read(rec, SCEUF_FILEREC_SIZE);
 
-        uint64_t filetype;
-        uint64_t offset;
-        uint64_t length;
-        uint64_t flags;
+        uint64_t filetype = 0;
+        uint64_t offset = 0;
+        uint64_t length = 0;
+        uint64_t flags = 0;
 
         memcpy(&filetype, &rec[0], 8);
         memcpy(&offset, &rec[8], 8);
@@ -319,96 +319,57 @@ void extract_pup_files(std::string pup, std::string output) {
         memcpy(&flags, &rec[24], 8);
 
         std::string filename = "";
-        if (pup_types.count(filetype)) {
-            filename = pup_types.at(filetype);
+        if (PUP_TYPES.count(filetype)) {
+            filename = PUP_TYPES.at(filetype);
         } else {
             infile.seekg(offset);
-            char hdr[0x1000];
-            infile.read(hdr, 0x1000);
-            filename = make_filename((unsigned char *)hdr, filetype);
+            char hdr[HEADER_SIZE];
+            infile.read(hdr, HEADER_SIZE);
+            filename = make_filename((unsigned char *)hdr, filetype, HEADER_SIZE);
         }
 
         std::ofstream outfile(fmt::format("{}/{}", output, filename), std::ios::binary);
         infile.seekg(offset);
-        char *buffer = new char[length];
-        infile.read(buffer, length);
-        outfile.write(buffer, length);
+        std::vector<char> buffer(length);
+        infile.read(&buffer[0], length);
+        outfile.write(&buffer[0], length);
 
-        delete[] buffer;
         outfile.close();
     }
     infile.close();
 }
 
-void decrypt_segments(std::ifstream &infile, std::string outdir, std::string filename, KeyStore &SCE_KEYS) {
+static void decrypt_segments(std::ifstream &infile, const std::string &outdir, const std::string &filename, KeyStore &SCE_KEYS) {
     char sceheaderbuffer[SceHeader::Size];
     infile.read(sceheaderbuffer, SceHeader::Size);
-    SceHeader sce = SceHeader(sceheaderbuffer);
+    const SceHeader sce_hdr = SceHeader(sceheaderbuffer);
 
-    auto sysver = std::get<0>(get_key_type(infile, sce));
-    SelfType selftype = std::get<1>(get_key_type(infile, sce));
+    const auto sysver = std::get<0>(get_key_type(infile, sce_hdr));
+    const SelfType selftype = std::get<1>(get_key_type(infile, sce_hdr));
 
-    auto scesegs = get_segments(infile, sce, SCE_KEYS, sysver, selftype);
-    for (auto sceseg : scesegs) {
+    const auto scesegs = get_segments(infile, sce_hdr, SCE_KEYS, sysver, selftype);
+    for (const auto &sceseg : scesegs) {
         std::ofstream outfile(fmt::format("{}/{}.seg02", outdir, filename), std::ios::binary);
         infile.seekg(sceseg.offset);
-        unsigned char *encrypted_data = new unsigned char[sceseg.size];
-        infile.read((char *)encrypted_data, sceseg.size); //maybe rewrite the casts to static_cast<>() ??
+        std::vector<unsigned char> encrypted_data(sceseg.size);
+        infile.read((char *)&encrypted_data[0], sceseg.size);
         aes_context aes_ctx;
         aes_setkey_enc(&aes_ctx, (unsigned char *)sceseg.key.c_str(), 128);
         size_t ctr_nc_off = 0;
         unsigned char ctr_stream_block[0x10];
-        unsigned char *decrypted_data = new unsigned char[sceseg.size];
-        aes_crypt_ctr(&aes_ctx, sceseg.size, &ctr_nc_off, (unsigned char *)sceseg.iv.c_str(), ctr_stream_block, encrypted_data, decrypted_data);
+        std::vector<unsigned char> decrypted_data(sceseg.size);
+        aes_crypt_ctr(&aes_ctx, sceseg.size, &ctr_nc_off, (unsigned char *)sceseg.iv.c_str(), ctr_stream_block, &encrypted_data[0], &decrypted_data[0]);
         if (sceseg.compressed) {
-            mz_stream stream;
-            stream.zalloc = Z_NULL;
-            stream.zfree = Z_NULL;
-            stream.opaque = Z_NULL;
-            stream.avail_in = 0;
-            stream.next_in = Z_NULL;
-            if (mz_inflateInit(&stream) != MZ_OK) {
-                LOG_ERROR("inflateInit failed while decompressing");
-                return;
-            }
-
-            std::string compressed_data((char *)decrypted_data, sceseg.size);
-            stream.next_in = (Bytef *)compressed_data.data();
-            stream.avail_in = compressed_data.size();
-
-            int ret;
-            char outbuffer[524288];
-            std::string decompressed_data;
-
-            do {
-                stream.next_out = reinterpret_cast<Bytef *>(outbuffer);
-                stream.avail_out = sizeof(outbuffer);
-
-                ret = mz_inflate(&stream, 0);
-
-                if (decompressed_data.size() < stream.total_out) {
-                    decompressed_data.append(outbuffer, stream.total_out - decompressed_data.size());
-                }
-
-            } while (ret == MZ_OK);
-
-            mz_inflateEnd(&stream);
-
-            if (ret != MZ_STREAM_END) {
-                LOG_ERROR("Exception during zlib decompression: ({}) {}", ret, stream.msg);
-                return;
-            }
+            const std::string decompressed_data = decompress_segments(decrypted_data, sceseg.size);
             outfile.write(decompressed_data.c_str(), decompressed_data.size());
         } else {
-            outfile.write((char *)decrypted_data, sceseg.size);
+            outfile.write((char *)&decrypted_data[0], sceseg.size);
         }
         outfile.close();
-        delete[] encrypted_data;
-        delete[] decrypted_data;
     }
 };
 
-void join_files(std::string path, std::string filename, std::string output) {
+static void join_files(const std::string &path, const std::string &filename, const std::string &output) {
     std::vector<std::string> files;
 
     for (auto &p : fs::directory_iterator(path)) {
@@ -418,41 +379,41 @@ void join_files(std::string path, std::string filename, std::string output) {
     }
 
     std::ofstream fileout(output, std::ios::binary);
-    for (auto file : files) {
+    for (const auto &file : files) {
         std::ifstream filein(file, std::ios::binary);
-        char *buffer = new char[fs::file_size(file)];
-        filein.read(buffer, fs::file_size(file));
-        fileout.write(buffer, fs::file_size(file));
+        std::vector<char> buffer(fs::file_size(file));
+        filein.read(&buffer[0], fs::file_size(file));
+        fileout.write(&buffer[0], fs::file_size(file));
         filein.close();
         fs::remove(file);
     }
     fileout.close();
 }
 
-void decrypt_pup_packages(std::string src, std::string dest) {
+static void decrypt_pup_packages(const std::string &src, const std::string &dest) {
     std::vector<std::string> pkgfiles;
 
     KeyStore SCE_KEYS = KeyStore();
     register_keys(SCE_KEYS);
 
-    for (auto &p : fs::directory_iterator(src)) {
+    for (const auto &p : fs::directory_iterator(src)) {
         if (p.path().filename().extension().string() == ".pkg")
             pkgfiles.push_back(p.path().filename().string());
     }
 
-    for (auto filename : pkgfiles) {
-        auto filepath = fmt::format("{}/{}", src, filename);
+    for (const auto &filename : pkgfiles) {
+        const std::string &filepath = fmt::format("{}/{}", src, filename);
         std::ifstream infile(filepath, std::ios::binary);
         decrypt_segments(infile, dest, filename, SCE_KEYS);
         infile.close();
     }
 
-    join_files(dest, "os0-", dest + "/os0.bin");
-    join_files(dest, "vs0-", dest + "/vs0.bin");
-    join_files(dest, "sa0-", dest + "/sa0.bin");
+    join_files(dest, "os0-", dest + "/os0.img");
+    join_files(dest, "vs0-", dest + "/vs0.img");
+    join_files(dest, "sa0-", dest + "/sa0.img");
 }
 
-void install_pup(std::string pup, std::string output) {
+void install_pup(const std::string &pup, const std::string &output) {
     if (fs::exists(output)) {
         LOG_WARN("Path already exists, deleting it and reinstalling");
         fs::remove_all(output);

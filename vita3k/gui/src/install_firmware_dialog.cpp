@@ -29,8 +29,8 @@
 namespace gui {
 
 void draw_install_firmware_dialog(GuiState &gui, HostState &host) {
-    nfdchar_t *outpath = NULL;
-    nfdresult_t result = NFD_OpenDialog("PUP", NULL, &outpath);
+    nfdchar_t *outpath = nullptr;
+    nfdresult_t result = NFD_OpenDialog("PUP", nullptr, &outpath);
 
     if (result == NFD_OKAY) {
         install_pup(outpath, host.pref_path + "/PUP_DEC");
@@ -39,7 +39,7 @@ void draw_install_firmware_dialog(GuiState &gui, HostState &host) {
     } else if (result == NFD_CANCEL) {
         gui.file_menu.install_firmware_dialog = false;
     } else {
-        LOG_ERROR("Error: {}", NFD_GetError());
+        LOG_ERROR("Error initializing file dialog: {}", NFD_GetError());
     }
 }
 } // namespace gui

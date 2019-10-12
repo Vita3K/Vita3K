@@ -21,6 +21,8 @@
 
 #include <fstream>
 
+// Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
+
 void register_keys(KeyStore &SCE_KEYS) {
     SCE_KEYS.register_keys(
         KeyType::METADATA,
@@ -303,13 +305,13 @@ void register_keys(KeyStore &SCE_KEYS) {
         SelfType::APP);
 }
 
-std::vector<SceSegment> get_segments(std::ifstream &file, SceHeader sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver, SelfType self_type, int keytype, int klictxt) {
+std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, const uint64_t sysver, const SelfType self_type, int keytype, const int klictxt) {
     file.seekg(sce_hdr.metadata_offset + 48);
-    char *dat = new char[sce_hdr.header_length - sce_hdr.metadata_offset - 48];
-    file.read(dat, sce_hdr.header_length - sce_hdr.metadata_offset - 48);
+    std::vector<char> dat(sce_hdr.header_length - sce_hdr.metadata_offset - 48);
+    file.read(&dat[0], sce_hdr.header_length - sce_hdr.metadata_offset - 48);
 
-    std::string key = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).key;
-    std::string iv = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).iv;
+    const std::string key = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).key;
+    const std::string iv = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).iv;
     aes_context aes_ctx;
     unsigned char dec_in[MetadataInfo::Size];
 
@@ -317,8 +319,8 @@ std::vector<SceSegment> get_segments(std::ifstream &file, SceHeader sce_hdr, Key
         keytype = 0;
         if (sce_hdr.key_revision >= 2)
             keytype = 1;
-        auto np_key = SCE_KEYS.get(KeyType::NPDRM, sce_hdr.sce_type, sysver, keytype, self_type).key;
-        auto np_iv = SCE_KEYS.get(KeyType::NPDRM, sce_hdr.sce_type, sysver, keytype, self_type).iv;
+        const std::string np_key = SCE_KEYS.get(KeyType::NPDRM, sce_hdr.sce_type, sysver, keytype, self_type).key;
+        const std::string np_iv = SCE_KEYS.get(KeyType::NPDRM, sce_hdr.sce_type, sysver, keytype, self_type).iv;
         unsigned char predec[32];
         aes_setkey_dec(&aes_ctx, (unsigned char *)np_key.c_str(), 256);
         aes_crypt_cbc(&aes_ctx, AES_DECRYPT, sizeof(klictxt), (unsigned char *)np_iv.c_str(), (unsigned char *)klictxt, predec);
@@ -333,52 +335,47 @@ std::vector<SceSegment> get_segments(std::ifstream &file, SceHeader sce_hdr, Key
     }
     unsigned char dec[64];
 
-    auto key_vec = string_utils::string_to_byte_array(key);
+    const auto key_vec = string_utils::string_to_byte_array(key);
     auto iv_vec = string_utils::string_to_byte_array(iv);
     auto key_bytes = &key_vec[0];
     auto iv_bytes = &iv_vec[0];
     aes_setkey_dec(&aes_ctx, key_bytes, 256);
     aes_crypt_cbc(&aes_ctx, AES_DECRYPT, 64, iv_bytes, dec_in, dec);
 
-    MetadataInfo metadata_info = MetadataInfo(dec);
+    MetadataInfo metadata_info = MetadataInfo((char *)dec);
 
-    unsigned char *dec1 = new unsigned char[sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size];
-    unsigned char *input_data = new unsigned char[sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size];
-    std::copy(&dat[64], &dat[sce_hdr.header_length - sce_hdr.metadata_offset - 48], input_data);
+    std::vector<unsigned char> dec1(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
+    std::vector<unsigned char> input_data(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
+    memcpy(&input_data[0], &dat[64], sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
     aes_setkey_dec(&aes_ctx, metadata_info.key, 128);
-    aes_crypt_cbc(&aes_ctx, AES_DECRYPT, sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size, metadata_info.iv, input_data, dec1);
-
-    delete[] input_data;
-    delete[] dat;
+    aes_crypt_cbc(&aes_ctx, AES_DECRYPT, sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size, metadata_info.iv, &input_data[0], &dec1[0]);
 
     unsigned char dec2[MetadataHeader::Size];
     std::copy(&dec1[0], &dec1[MetadataHeader::Size], dec2);
-    MetadataHeader metadata_hdr = MetadataHeader(dec2);
+    MetadataHeader metadata_hdr = MetadataHeader((char *)dec2);
 
     std::vector<SceSegment> segs;
-    auto start = MetadataHeader::Size + metadata_hdr.section_count * MetadataSection::Size;
+    const auto start = MetadataHeader::Size + metadata_hdr.section_count * MetadataSection::Size;
     std::vector<std::string> vault;
 
-    for (int i = 0; i < metadata_hdr.key_count; i++) {
+    for (uint32_t i = 0; i < metadata_hdr.key_count; i++) {
         std::string key(&dec1[0] + (start + (16 * i)), &dec1[0] + (start + (16 * (i + 1))));
         vault.push_back(key);
     }
 
-    for (int i = 0; i < metadata_hdr.section_count; i++) {
-        unsigned char *dec3 = new unsigned char[(MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size)];
-        std::copy(&dec1[0] + (MetadataHeader::Size + i * MetadataSection::Size), &dec1[0] + (MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size), dec3);
-        MetadataSection metsec = MetadataSection(dec3);
+    for (uint32_t i = 0; i < metadata_hdr.section_count; i++) {
+        std::vector<unsigned char> dec3((MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size));
+        memcpy(&dec3[0], &dec1[0] + (MetadataHeader::Size + i * MetadataSection::Size), (MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size));
+        MetadataSection metsec = MetadataSection((char *)&dec3[0]);
 
         if (metsec.encryption == EncryptionType::AES128CTR) {
             segs.push_back({ metsec.offset, metsec.seg_idx, metsec.size, metsec.compression == CompressionType::DEFLATE, vault[metsec.key_idx], vault[metsec.iv_idx] });
         }
-        delete[] dec3;
     }
-    delete[] dec1;
     return segs;
 }
 
-std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, SceHeader sce_hdr) {
+std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr) {
     if (sce_hdr.sce_type == SceType::SELF) {
         file.seekg(32);
         char selfheaderbuffer[SelfHeader::Size];
