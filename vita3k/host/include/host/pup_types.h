@@ -131,35 +131,48 @@ enum class CompressionType {
     DEFLATE = 2
 };
 
+typedef std::unordered_map<
+KeyType, std::unordered_map<
+SceType, std::unordered_map<
+SelfType, std::vector<KeyEntry>>>> keystore;
+
 class KeyStore {
 private:
-    std::unordered_map<
-    int, std::unordered_map<
-    int, std::unordered_map<
-    int, std::vector<KeyEntry>>>> _store;
+    keystore store;
 
 public:
     void register_keys(KeyType keytype, SceType scetype, int keyrev, std::string key, std::string iv, uint64_t minver = 0, uint64_t maxver = 0xffffffffffffffff, SelfType selftype = SelfType::NONE) {
-        _store[static_cast<int>(keytype)][static_cast<int>(scetype)][static_cast<int>(selftype)].push_back({ minver, maxver, keyrev, key, iv });
+        store[keytype][scetype][selftype].push_back({ minver, maxver, keyrev, key, iv });
     }
 
     KeyEntry get(KeyType keytype, SceType scetype, uint64_t sysver = -1, int keyrev = -1, SelfType selftype = SelfType::NONE) {
-        if (_store.find(static_cast<int>(keytype)) == _store.end()) {
+        KeyEntry empty_keys = {0, 0, 0, "", ""};
+
+        auto key_type = store.find(keytype);
+        if (key_type == store.end()) {
             LOG_ERROR("Cannot find any keys for this key type");
+            return empty_keys;
         }
-        if (_store.at(static_cast<int>(keytype)).find(static_cast<int>(scetype)) == _store.at(static_cast<int>(keytype)).end()) {
+        auto sce_type = key_type->second.find(scetype);
+        if (sce_type == key_type->second.end()) {
             LOG_ERROR("Cannot find any keys for this SCE type");
+            return empty_keys;
         }
-        if (_store.at(static_cast<int>(keytype)).at(static_cast<int>(scetype)).find(static_cast<int>(selftype)) == _store.at(static_cast<int>(keytype)).at(static_cast<int>(scetype)).end()) {
+        auto self_type = sce_type->second.find(selftype);
+        if (self_type == sce_type->second.end()) {
             LOG_ERROR("Cannot find any keys for this SELF type");
+            return empty_keys;
         }
 
-        for (auto item : _store[static_cast<int>(keytype)][static_cast<int>(scetype)][static_cast<int>(selftype)]) {
+        auto &key_entries = *self_type;
+
+        for (auto item : key_entries.second) {
             if (sysver < 0 || (sysver >= item.minver && sysver <= item.maxver) && (keyrev < 0 || keyrev == item.keyrev)) {
                 return item;
             }
         }
         LOG_ERROR("Cannot find key/iv for this SCE file");
+        return empty_keys;
     }
 };
 
@@ -189,7 +202,7 @@ public:
         memcpy(&header_length, &data[16], 8);
         memcpy(&data_length, &data[24], 8);
 
-        if (magic != 0x00454353) {
+        if (magic != SCE_MAGIC) {
             LOG_ERROR("Invalid SCE magic");
         }
         if (version != 3) {

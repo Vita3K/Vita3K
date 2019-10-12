@@ -20,8 +20,6 @@
 #include <string>
 #include <vector>
 
-class KeyStore;
-
 struct SfoFile;
 
 void install_pup(const std::string &pup, const std::string &pref_path);

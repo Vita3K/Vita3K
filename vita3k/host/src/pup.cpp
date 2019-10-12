@@ -275,8 +275,8 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
 }
 
 static void extract_pup_files(const std::string &pup, const std::string &output) {
-    const int SCEUF_HEADER_SIZE = 0x80;
-    const int SCEUF_FILEREC_SIZE = 0x20;
+    constexpr int SCEUF_HEADER_SIZE = 0x80;
+    constexpr int SCEUF_FILEREC_SIZE = 0x20;
     std::ifstream infile(pup, std::ios::binary);
     char header[SCEUF_HEADER_SIZE];
     infile.read(header, SCEUF_HEADER_SIZE);
