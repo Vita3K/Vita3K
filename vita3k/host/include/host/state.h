@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <host/sfo.h>
-#include <host/window.h>
+#include "sfo.h"
+#include "window.h"
 
 #include <audio/state.h>
 #include <config/config.h>
@@ -30,7 +30,6 @@
 #include <net/state.h>
 #include <nids/types.h>
 #include <np/state.h>
-#include <renderer/state.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
 #ifdef USE_GDBSTUB
@@ -40,7 +39,6 @@
 #include <psp2/display.h>
 
 #include <atomic>
-#include <memory>
 #include <string>
 
 struct DisplayState {

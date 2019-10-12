@@ -26,6 +26,7 @@
 #include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <modules/module_parent.h>
+#include <renderer/state.h>
 #include <touch/touch.h>
 #include <util/find.h>
 #include <util/log.h>

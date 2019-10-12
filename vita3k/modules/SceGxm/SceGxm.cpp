@@ -24,6 +24,7 @@
 #include <gxm/types.h>
 #include <kernel/thread/thread_functions.h>
 #include <renderer/functions.h>
+#include <renderer/state.h>
 #include <renderer/types.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
