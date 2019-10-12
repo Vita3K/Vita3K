@@ -19,6 +19,7 @@
 
 #include <app/functions.h>
 #include <app/screen_render.h>
+#include <audio/state.h>
 #include <config/functions.h>
 #include <config/version.h>
 #include <gui/functions.h>
@@ -106,6 +107,7 @@ int main(int argc, char *argv[]) {
     }
 
     HostState host;
+    host.audio = std::make_unique<AudioState>();
     if (!app::init(host, std::move(cfg), root_paths)) {
         app::error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;

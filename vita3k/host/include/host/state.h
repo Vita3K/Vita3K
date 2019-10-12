@@ -20,7 +20,6 @@
 #include "sfo.h"
 #include "window.h"
 
-#include <audio/state.h>
 #include <config/config.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
@@ -39,7 +38,10 @@
 #include <psp2/display.h>
 
 #include <atomic>
+#include <memory>
 #include <string>
+
+struct AudioState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -72,7 +74,7 @@ struct HostState {
     MemState mem;
     CtrlState ctrl;
     KernelState kernel;
-    AudioState audio;
+    std::unique_ptr<AudioState> audio;
     GxmState gxm;
     bool renderer_focused;
     IOState io;

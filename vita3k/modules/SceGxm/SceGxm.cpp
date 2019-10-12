@@ -29,6 +29,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
+#include <SDL_thread.h>
 #include <psp2/kernel/error.h>
 
 struct SceGxmContext {
