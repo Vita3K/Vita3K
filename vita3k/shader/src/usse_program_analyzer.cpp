@@ -17,6 +17,8 @@
 
 #include <shader/usse_program_analyzer.h>
 
+#include <shader/usse_types.h>
+
 namespace shader::usse {
 bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off) {
     const std::uint32_t high = (inst >> 32);
@@ -53,6 +55,22 @@ std::uint8_t get_predicate(const std::uint64_t inst) {
     }
 
     // VMAD normal version, predicates only occupied two bits
+    case 0b00100:
+    case 0b00101: {
+        uint8_t predicate = ((inst >> 32) & ~0xFCFFFFFF) >> 24;
+        switch (predicate) {
+        case 0:
+            return static_cast<uint8_t>(ExtPredicate::NONE);
+        case 1:
+            return static_cast<uint8_t>(ExtPredicate::P0);
+        case 2:
+            return static_cast<uint8_t>(ExtPredicate::NEGP0);
+        case 3:
+            return static_cast<uint8_t>(ExtPredicate::PN);
+        default:
+            return 0;
+        }
+    }
     case 0b00000:
         return ((inst >> 32) & ~0xFCFFFFFF) >> 24;
 

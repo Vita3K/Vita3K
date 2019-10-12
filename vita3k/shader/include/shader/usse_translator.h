@@ -127,26 +127,27 @@ private:
     //
     // Translation helpers
     //
-
-#define BEGIN_REPEAT(repeat_count, jump)                     \
-    const auto repeat_count_num = (uint8_t)repeat_count + 1; \
-    const auto repeat_jump = jump;                           \
+#define BEGIN_REPEAT_COMPLEX(repeat_count, dest_jump, src_jump) \
+    const auto repeat_count_num = (uint8_t)repeat_count + 1;    \
+    constexpr auto dest_repeat_jump = dest_jump;                \
+    constexpr auto src_repeat_jump = src_jump;                  \
     for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
+#define BEGIN_REPEAT(repeat_count, jump) BEGIN_REPEAT_COMPLEX(repeat_count, jump, jump)
 #define END_REPEAT() }
 
-#define GET_REPEAT(inst)                                                                     \
-    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * repeat_jump; \
-    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * repeat_jump; \
-    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * repeat_jump; \
-    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * repeat_jump; \
-    if (inst.opr.dest.bank == RegisterBank::FPINTERNAL)                                      \
-        dest_repeat_offset /= repeat_jump;                                                   \
-    if (inst.opr.src0.bank == RegisterBank::FPINTERNAL)                                      \
-        src0_repeat_offset /= repeat_jump;                                                   \
-    if (inst.opr.src1.bank == RegisterBank::FPINTERNAL)                                      \
-        src1_repeat_offset /= repeat_jump;                                                   \
-    if (inst.opr.src2.bank == RegisterBank::FPINTERNAL)                                      \
-        src2_repeat_offset /= repeat_jump;
+#define GET_REPEAT(inst)                                                                          \
+    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * dest_repeat_jump; \
+    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * src_repeat_jump;  \
+    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * src_repeat_jump;  \
+    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * src_repeat_jump;  \
+    if (inst.opr.dest.bank == RegisterBank::FPINTERNAL)                                           \
+        dest_repeat_offset /= dest_repeat_jump;                                                   \
+    if (inst.opr.src0.bank == RegisterBank::FPINTERNAL)                                           \
+        src0_repeat_offset /= src_repeat_jump;                                                    \
+    if (inst.opr.src1.bank == RegisterBank::FPINTERNAL)                                           \
+        src1_repeat_offset /= src_repeat_jump;                                                    \
+    if (inst.opr.src2.bank == RegisterBank::FPINTERNAL)                                           \
+        src2_repeat_offset /= src_repeat_jump;
 
     const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index) {
         return repeat_increase[op.index][repeat_index];
@@ -537,6 +538,34 @@ public:
         Imm8 src0_inc,
         Imm8 src1_inc,
         Imm8 src2_inc);
+
+    bool vdual(
+        Imm1 comp_count_type,
+        Imm1 gpi1_neg,
+        Imm2 sv_pred,
+        Imm1 skipinv,
+        Imm1 dual_op1_ext_vec3_or_has_w_vec4,
+        bool type_f16,
+        Imm1 gpi1_swizz_ext,
+        Imm4 unified_store_swizz,
+        Imm1 unified_store_neg,
+        Imm3 dual_op1,
+        Imm1 dual_op2_ext,
+        bool prim_ustore,
+        Imm4 gpi0_swizz,
+        Imm4 gpi1_swizz,
+        Imm2 prim_dest_bank,
+        Imm2 unified_store_slot_bank,
+        Imm2 prim_dest_num_gpi_case,
+        Imm7 prim_dest_num,
+        Imm3 dual_op2,
+        Imm2 src_config,
+        Imm1 gpi2_slot_num_bit_1,
+        Imm1 gpi2_slot_num_bit_0_or_unified_store_abs,
+        Imm2 gpi1_slot_num,
+        Imm2 gpi0_slot_num,
+        Imm3 write_mask_non_gpi,
+        Imm7 unified_store_slot_num);
 
     bool nop();
     bool phas();

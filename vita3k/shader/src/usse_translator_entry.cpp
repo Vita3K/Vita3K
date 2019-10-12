@@ -522,6 +522,38 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     */
     INST(&V::vdp, "VDP ()", "00011pppsc0oderiigaanwwwwbflllttkkhhjjjjjjzzzzmmmqqqyyyxxxuuuuuu"),
 
+    // Dual issue instruction
+    /*
+                                 0010 = op1
+                                     c = comp_count_type (1 bit)
+                                      g = gpi1_neg (1 bit)
+                                       ss = sv_pred (2 bits)
+                                         k = skipinv (1 bit)
+                                          d = dual_op1_ext_vec3_or_has_w_vec4 (1 bit)
+                                           t = type_f16 (1 bit, bool)
+                                            p = gpi1_swizz_ext (1 bit)
+                                             uuuu = unified_store_swizz (4 bits)
+                                                 n = unified_store_neg (1 bit)
+                                                  aaa = dual_op1 (3 bits)
+                                                     l = dual_op2_ext (1 bit)
+                                                      r = prim_ustore (1 bit, bool)
+                                                       iiii = gpi0_swizz (4 bits)
+                                                           wwww = gpi1_swizz (4 bits)
+                                                               mm = prim_dest_bank (2 bits)
+                                                                 ff = unified_store_slot_bank (2 bits)
+                                                                   ee = prim_dest_num_gpi_case (2 bits)
+                                                                     bbbbbbb = prim_dest_num (7 bits)
+                                                                            ooo = dual_op2 (3 bits)
+                                                                               hh = src_config (2 bits)
+                                                                                 j = gpi2_slot_num_bit_1 (1 bit)
+                                                                                  q = gpi2_slot_num_bit_0_or_unified_store_abs (1 bit)
+                                                                                   vv = gpi1_slot_num (2 bits)
+                                                                                     xx = gpi0_slot_num (2 bits)
+                                                                                       yyy = write_mask_non_gpi (3 bits)
+                                                                                          zzzzzzz = unified_store_slot_num (7 bits)
+    */
+    INST(&V::vdual, "VDUAL ()", "0010cgsskdtpuuuunaaalriiiiwwwwmmffeebbbbbbbooohhjqvvxxyyyzzzzzzz"),
+
         // clang-format on
     };
 #undef INST
