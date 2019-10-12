@@ -16,8 +16,11 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <crypto/aes.h>
+#include <fat16/fat16.h>
 #include <host/pup_types.h>
 #include <util/string_utils.h>
+
+#include <self.h>
 
 #include <fstream>
 
@@ -303,6 +306,198 @@ void register_keys(KeyStore &SCE_KEYS) {
         0x36300000000,
         0xFFFFFFFFFFFFFFFF,
         SelfType::APP);
+}
+
+static void extract_file(Fat16::Image &img, Fat16::Entry &entry, const std::string &path) {
+    const std::u16string filename_16 = entry.get_filename();
+    const std::string filename = path + std::string(filename_16.begin(), filename_16.end());
+
+    FILE *f = fopen(filename.c_str(), "wb");
+
+    static constexpr std::uint32_t CHUNK_SIZE = 0x10000;
+
+    std::vector<std::uint8_t> temp_buf;
+    temp_buf.resize(CHUNK_SIZE);
+
+    std::uint32_t size_left = entry.entry.file_size;
+    std::uint32_t offset = 0;
+
+    while (size_left != 0) {
+        std::uint32_t size_to_take = std::min<std::uint32_t>(CHUNK_SIZE, size_left);
+        if (img.read_from_cluster(&temp_buf[0], offset, entry.entry.starting_cluster, size_to_take) != size_to_take) {
+            break;
+        }
+
+        size_left -= size_to_take;
+        offset += size_to_take;
+
+        fwrite(&temp_buf[0], 1, size_to_take, f);
+    }
+
+    fclose(f);
+}
+
+static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, std::string dir_path) {
+    fs::create_directories(dir_path);
+
+    while (img.get_next_entry(mee)) {
+        if (mee.entry.file_attributes & (int)Fat16::EntryAttribute::DIRECTORY) {
+            // Also check if it's not the back folder (. and ..)
+            // This can be done by gathering the name
+            if (mee.entry.get_entry_type_from_filename() != Fat16::EntryType::DIRECTORY) {
+                Fat16::Entry baby;
+                if (!img.get_first_entry_dir(mee, baby))
+                    break;
+
+                auto dir_name = mee.get_filename();
+
+                traverse_directory(img, baby, dir_path + "/" + std::string(dir_name.begin(), dir_name.end()) + "/");
+            }
+        }
+
+        if (mee.entry.file_attributes & (int)Fat16::EntryAttribute::ARCHIVE) {
+            extract_file(img, mee, dir_path + "/");
+        }
+    }
+}
+
+void extract_fat(const std::string &partition_path, const std::string &partition, const std::string &pref_path) {
+    FILE *f = fopen((partition_path + "/" + partition).c_str(), "rb");
+    Fat16::Image img(f,
+        // Read hook
+        [](void *userdata, void *buffer, std::uint32_t size) -> std::uint32_t {
+            return static_cast<std::uint32_t>(fread(buffer, 1, size, (FILE *)userdata));
+        },
+        // Seek hook
+        [](void *userdata, std::uint32_t offset, int mode) -> std::uint32_t {
+            fseek((FILE *)userdata, offset, (mode == Fat16::IMAGE_SEEK_MODE_BEG ? SEEK_SET : (mode == Fat16::IMAGE_SEEK_MODE_CUR ? SEEK_CUR : SEEK_END)));
+
+            return ftell((FILE *)userdata);
+        });
+
+    Fat16::Entry first;
+    traverse_directory(img, first, pref_path + partition.substr(0, 3));
+
+    fclose(f);
+}
+
+//Credits to the vitasdk team/contributors for vita-make-fself https://github.com/vitasdk/vita-toolchain/blob/master/src/vita-make-fself.c
+
+void make_fself(const std::string &input_file, const std::string &output_file) {
+    std::ifstream filein(input_file, std::ios::binary);
+    std::ofstream fileout(output_file, std::ios::binary);
+
+    uint64_t file_size = fs::file_size(input_file);
+
+    std::vector<char> input(file_size);
+    filein.read(&input[0], file_size);
+    filein.close();
+
+    ElfHeader ehdr = ElfHeader(&input[0]);
+
+    SCE_header hdr = { 0 };
+    hdr.magic = SCE_MAGIC;
+    hdr.version = 3;
+    hdr.sdk_type = 0xC0;
+    hdr.header_type = 1;
+    hdr.metadata_offset = 0x600;
+    hdr.header_len = HEADER_LENGTH;
+    hdr.elf_filesize = file_size;
+    hdr.self_offset = 4;
+    hdr.appinfo_offset = 0x80;
+    hdr.elf_offset = sizeof(SCE_header) + sizeof(SCE_appinfo);
+    hdr.phdr_offset = hdr.elf_offset + ElfHeader::Size;
+    hdr.phdr_offset = (hdr.phdr_offset + 0xf) & ~0xf; // align
+    hdr.section_info_offset = hdr.phdr_offset + ElfPhdr::Size * ehdr.e_phnum;
+    hdr.sceversion_offset = hdr.section_info_offset + sizeof(segment_info) * ehdr.e_phnum;
+    hdr.controlinfo_offset = hdr.sceversion_offset + sizeof(SCE_version);
+    hdr.controlinfo_size = sizeof(SCE_controlinfo_5) + sizeof(SCE_controlinfo_6) + sizeof(SCE_controlinfo_7);
+    hdr.self_filesize = 0;
+
+    uint32_t offset_to_real_elf = HEADER_LEN;
+
+    SCE_appinfo appinfo = { 0 };
+    appinfo.authid = 0x2F00000000000001ULL;
+    appinfo.vendor_id = 0;
+    appinfo.self_type = 8;
+    appinfo.version = 0x1000000000000;
+    appinfo.padding = 0;
+
+    SCE_version ver = { 0 };
+    ver.unk1 = 1;
+    ver.unk2 = 0;
+    ver.unk3 = 16;
+    ver.unk4 = 0;
+
+    SCE_controlinfo_5 control_5 = { 0 };
+    control_5.common.type = 5;
+    control_5.common.size = sizeof(control_5);
+    control_5.common.unk = 1;
+    SCE_controlinfo_6 control_6 = { 0 };
+    control_6.common.type = 6;
+    control_6.common.size = sizeof(control_6);
+    control_6.common.unk = 1;
+    control_6.unk1 = 1;
+    SCE_controlinfo_7 control_7 = { 0 };
+    control_7.common.type = 7;
+    control_7.common.size = sizeof(control_7);
+
+    char empty_buffer[ElfHeader::Size] = { 0 };
+    ElfHeader myhdr = ElfHeader(empty_buffer);
+    memcpy(&myhdr.e_ident_1, "\177ELF\1\1\1", 8);
+    myhdr.e_type = ehdr.e_type;
+    myhdr.e_machine = 0x28;
+    myhdr.e_version = 1;
+    myhdr.e_entry = ehdr.e_entry;
+    myhdr.e_phoff = 0x34;
+    myhdr.e_flags = 0x05000000U;
+    myhdr.e_ehsize = 0x34;
+    myhdr.e_phentsize = 0x20;
+    myhdr.e_phnum = ehdr.e_phnum;
+
+    fileout.seekp(hdr.appinfo_offset, std::ios_base::beg);
+    fileout.write((char *)&appinfo, sizeof(appinfo));
+
+    fileout.seekp(hdr.elf_offset, std::ios_base::beg);
+    fileout.write((char *)&myhdr, ElfHeader::Size);
+
+    fileout.seekp(hdr.phdr_offset, std::ios_base::beg);
+    for (int i = 0; i < ehdr.e_phnum; ++i) {
+        ElfPhdr phdr = ElfPhdr(&input[0] + ehdr.e_phoff + ehdr.e_phentsize * i);
+        if (phdr.p_align > 0x1000)
+            phdr.p_align = 0x1000;
+        fileout.write((char *)&phdr, sizeof(phdr));
+    }
+
+    fileout.seekp(hdr.section_info_offset, std::ios_base::beg);
+    for (int i = 0; i < ehdr.e_phnum; ++i) {
+        ElfPhdr phdr = ElfPhdr(&input[0] + ehdr.e_phoff + ehdr.e_phentsize * i);
+        segment_info segment_info = { 0 };
+        segment_info.offset = offset_to_real_elf + phdr.p_offset;
+        segment_info.length = phdr.p_filesz;
+        segment_info.compression = 1;
+        segment_info.encryption = 2;
+        fileout.write((char *)&segment_info, sizeof(segment_info));
+    }
+
+    fileout.seekp(hdr.sceversion_offset, std::ios_base::beg);
+    fileout.write((char *)&ver, sizeof(ver));
+
+    fileout.seekp(hdr.controlinfo_offset, std::ios_base::beg);
+    fileout.write((char *)&control_5, sizeof(control_5));
+    fileout.write((char *)&control_6, sizeof(control_6));
+    fileout.write((char *)&control_7, sizeof(control_7));
+
+    fileout.seekp(HEADER_LEN, std::ios_base::beg);
+    fileout.write((char *)&input[0], file_size);
+
+    fileout.seekp(0, std::ios_base::end);
+    hdr.self_filesize = fileout.tellp();
+    fileout.seekp(0, std::ios_base::beg);
+
+    fileout.write((char *)&hdr, sizeof(hdr));
+
+    fileout.close();
 }
 
 std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, const uint64_t sysver, const SelfType self_type, int keytype, const int klictxt) {

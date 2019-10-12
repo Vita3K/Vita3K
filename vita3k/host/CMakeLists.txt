@@ -20,4 +20,4 @@ target_link_libraries(host PUBLIC audio config ctrl dialog io kernel miniz net n
 if(USE_GDBSTUB)
 	target_link_libraries(host PUBLIC gdbstub)
 endif()
-target_link_libraries(host PRIVATE elfio vita-toolchain)
+target_link_libraries(host PRIVATE elfio FAT16 vita-toolchain)

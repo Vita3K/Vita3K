@@ -97,6 +97,8 @@ elseif(UNIX)
 	target_link_libraries(nativefiledialog ${GTK3_LIBRARIES})
 endif()
 
+add_subdirectory(libfat16)
+
 # The imgui target is including both imgui and imgui_club.
 add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/misc/cpp/imgui_stdlib.cpp)
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"

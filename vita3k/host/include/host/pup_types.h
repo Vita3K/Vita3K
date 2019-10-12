@@ -22,6 +22,9 @@
 
 // Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
 
+#define SCE_MAGIC 0x00454353
+#define HEADER_LENGTH 0x1000
+
 struct KeyEntry {
     uint64_t minver;
     uint64_t maxver;
@@ -253,9 +256,10 @@ public:
 };
 
 class ElfHeader {
-private:
-    uint64_t e_ident_1;
-    uint64_t e_ident_2;
+public:
+    static const int Size = 52;
+    unsigned char e_ident_1[8];
+    unsigned char e_ident_2[8];
     uint16_t e_type;
     uint16_t e_machine;
     uint32_t e_version;
@@ -265,13 +269,10 @@ private:
     uint32_t e_flags;
     uint16_t e_ehsize;
     uint16_t e_phentsize;
+    uint16_t e_phnum;
     uint16_t e_shentsize;
     uint16_t e_shnum;
     uint16_t e_shstrndx;
-
-public:
-    static const int Size = 52;
-    uint16_t e_phnum;
 
     explicit ElfHeader(const char *data) {
         memcpy(&e_ident_1, &data[0], 8);
@@ -289,29 +290,20 @@ public:
         memcpy(&e_shentsize, &data[46], 2);
         memcpy(&e_shnum, &data[48], 2);
         memcpy(&e_shstrndx, &data[50], 2);
-
-        if (e_ident_1 != 0x10101464C457F)
-            LOG_ERROR("Unknown ELF e_indent");
-        if (e_machine != 0x28 && e_machine != 0xF00D)
-            LOG_ERROR("Unknown ELF e_machine");
-        if (e_version != 0x1)
-            LOG_ERROR("Unknown ELF e_version");
     };
 };
 
 class ElfPhdr {
-private:
+public:
+    static const int Size = 32;
     uint32_t p_type;
+    uint32_t p_offset;
     uint32_t p_vaddr;
     uint32_t p_paddr;
+    uint32_t p_filesz;
     uint32_t p_memsz;
     uint32_t p_flags;
     uint32_t p_align;
-
-public:
-    static const int Size = 32;
-    uint32_t p_offset;
-    uint32_t p_filesz;
 
     explicit ElfPhdr(const char *data) {
         memcpy(&p_type, &data[0], 4);
@@ -608,5 +600,7 @@ public:
 };
 
 void register_keys(KeyStore &SCE_KEYS);
+void extract_fat(const std::string &partition_path, const std::string &partition, const std::string &pref_path);
+void make_fself(const std::string &input_file, const std::string &output_file);
 std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr);
 std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, int klictxt = 0);

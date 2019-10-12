@@ -246,7 +246,7 @@ static void self2elf(const std::string &infile, const std::string &outfile, KeyS
     fileout.close();
 }
 
-static std::string make_filename(unsigned char *hdr, int64_t filetype, const int HEADER_SIZE) {
+static std::string make_filename(unsigned char *hdr, int64_t filetype) {
     uint32_t magic = 0;
     uint32_t version = 0;
     uint32_t flags = 0;
@@ -258,10 +258,8 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype, const int
     memcpy(&moffs, &hdr[12], 4);
     memcpy(&metaoffs, &hdr[16], 8);
 
-    const int SCE_MAGIC = 0x454353;
-
     if (magic == SCE_MAGIC && version == 3 && flags == 0x30040) {
-        std::vector meta = std::vector<unsigned char>(&hdr[0] + metaoffs, &hdr[0] + (HEADER_SIZE - metaoffs));
+        std::vector meta = std::vector<unsigned char>(&hdr[0] + metaoffs, &hdr[0] + (HEADER_LENGTH - metaoffs));
         char t = 0;
         memcpy(&t, &meta[4], 1);
 
@@ -279,7 +277,6 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype, const int
 static void extract_pup_files(const std::string &pup, const std::string &output) {
     const int SCEUF_HEADER_SIZE = 0x80;
     const int SCEUF_FILEREC_SIZE = 0x20;
-    const int HEADER_SIZE = 0x1000;
     std::ifstream infile(pup, std::ios::binary);
     char header[SCEUF_HEADER_SIZE];
     infile.read(header, SCEUF_HEADER_SIZE);
@@ -323,9 +320,9 @@ static void extract_pup_files(const std::string &pup, const std::string &output)
             filename = PUP_TYPES.at(filetype);
         } else {
             infile.seekg(offset);
-            char hdr[HEADER_SIZE];
-            infile.read(hdr, HEADER_SIZE);
-            filename = make_filename((unsigned char *)hdr, filetype, HEADER_SIZE);
+            char hdr[HEADER_LENGTH];
+            infile.read(hdr, HEADER_LENGTH);
+            filename = make_filename((unsigned char *)hdr, filetype);
         }
 
         std::ofstream outfile(fmt::format("{}/{}", output, filename), std::ios::binary);
@@ -378,6 +375,8 @@ static void join_files(const std::string &path, const std::string &filename, con
         }
     }
 
+    std::sort(files.begin(), files.end());
+
     std::ofstream fileout(output, std::ios::binary);
     for (const auto &file : files) {
         std::ifstream filein(file, std::ios::binary);
@@ -390,11 +389,8 @@ static void join_files(const std::string &path, const std::string &filename, con
     fileout.close();
 }
 
-static void decrypt_pup_packages(const std::string &src, const std::string &dest) {
+static void decrypt_pup_packages(const std::string &src, const std::string &dest, KeyStore &SCE_KEYS) {
     std::vector<std::string> pkgfiles;
-
-    KeyStore SCE_KEYS = KeyStore();
-    register_keys(SCE_KEYS);
 
     for (const auto &p : fs::directory_iterator(src)) {
         if (p.path().filename().extension().string() == ".pkg")
@@ -413,22 +409,42 @@ static void decrypt_pup_packages(const std::string &src, const std::string &dest
     join_files(dest, "sa0-", dest + "/sa0.img");
 }
 
-void install_pup(const std::string &pup, const std::string &output) {
-    if (fs::exists(output)) {
+void install_pup(const std::string &pup, const std::string &pref_path) {
+    if (fs::exists(pref_path + "/PUP_DEC")) {
         LOG_WARN("Path already exists, deleting it and reinstalling");
-        fs::remove_all(output);
+        fs::remove_all(pref_path + "/PUP_DEC");
     }
 
-    LOG_INFO("Extracting {} to {}", pup, output);
+    LOG_INFO("Extracting {} to {}", pup, pref_path + "/PUP_DEC");
 
-    fs::create_directory(output);
-    auto pup_dest = fmt::format("{}/PUP", output);
+    fs::create_directory(pref_path + "/PUP_DEC");
+    const auto pup_dest = fmt::format("{}/PUP", pref_path + "/PUP_DEC");
     fs::create_directory(pup_dest);
 
     extract_pup_files(pup, pup_dest);
 
-    auto pup_dec = fmt::format("{}/PUP_dec", output);
+    const auto pup_dec = fmt::format("{}/PUP_dec", pref_path + "/PUP_DEC");
     fs::create_directory(pup_dec);
 
-    decrypt_pup_packages(pup_dest, pup_dec);
+    KeyStore SCE_KEYS;
+    register_keys(SCE_KEYS);
+
+    decrypt_pup_packages(pup_dest, pup_dec, SCE_KEYS);
+
+    if (fs::file_size(pup_dec + "/os0.img") > 0) {
+        extract_fat(pup_dec, "os0.img", pref_path);
+    }
+    if (fs::file_size(pup_dec + "/sa0.img") > 0) {
+        extract_fat(pup_dec, "sa0.img", pref_path);
+    }
+    if (fs::file_size(pup_dec + "/vs0.img") > 0) {
+        extract_fat(pup_dec, "vs0.img", pref_path);
+        for (const auto &file : fs::directory_iterator(pref_path + "/vs0/sys/external")) {
+            self2elf(file.path().string(), file.path().string() + "elf", SCE_KEYS, 0);
+            fs::rename(file.path().string() + "elf", file.path().string());
+            make_fself(file.path().string(), file.path().string() + "fself");
+            fs::rename(file.path().string() + "fself", file.path().string());
+        }
+    }
+    fs::remove_all(pref_path + "/PUP_DEC");
 }
