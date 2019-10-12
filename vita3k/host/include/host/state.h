@@ -20,7 +20,6 @@
 #include "sfo.h"
 #include "window.h"
 
-#include <dialog/state.h>
 #include <gxm/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
@@ -42,6 +41,7 @@
 struct AudioState;
 struct Config;
 struct CtrlState;
+struct DialogState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -81,7 +81,7 @@ struct HostState {
     NetState net;
     NpState np;
     DisplayState display;
-    DialogState common_dialog;
+    std::unique_ptr<DialogState> common_dialog;
     SfoFile sfo_handle;
     NIDSet missing_nids;
 #ifdef USE_GDBSTUB

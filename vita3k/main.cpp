@@ -24,6 +24,7 @@
 #include <config/functions.h>
 #include <config/version.h>
 #include <ctrl/state.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <gui/state.h>
 #include <renderer/functions.h>
@@ -112,6 +113,7 @@ int main(int argc, char *argv[]) {
     host.audio = std::make_unique<AudioState>();
     host.cfg = std::make_unique<Config>();
     host.ctrl = std::make_unique<CtrlState>();
+    host.common_dialog = std::make_unique<DialogState>();
     if (!app::init(host, std::move(cfg), root_paths)) {
         app::error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;

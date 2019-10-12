@@ -19,6 +19,7 @@
 
 #include <gui/functions.h>
 
+#include <dialog/state.h>
 #include <util/string_utils.h>
 
 #include <SDL.h>
@@ -94,16 +95,16 @@ static void draw_trophy_setup_dialog(DialogState &common_dialog) {
 }
 
 void draw_common_dialog(GuiState &gui, HostState &host) {
-    if (host.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
-        switch (host.common_dialog.type) {
+    if (host.common_dialog->status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+        switch (host.common_dialog->type) {
         case IME_DIALOG:
-            draw_ime_dialog(host.common_dialog);
+            draw_ime_dialog(*host.common_dialog);
             break;
         case MESSAGE_DIALOG:
-            draw_message_dialog(host.common_dialog);
+            draw_message_dialog(*host.common_dialog);
             break;
         case TROPHY_SETUP_DIALOG:
-            draw_trophy_setup_dialog(host.common_dialog);
+            draw_trophy_setup_dialog(*host.common_dialog);
             break;
         default:
             break;

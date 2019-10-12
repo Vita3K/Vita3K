@@ -3,6 +3,8 @@
 #include <mem/ptr.h>
 #include <threads/queue.h>
 
+#include <psp2/types.h>
+
 namespace emu {
 typedef void SceGxmDisplayQueueCallback(Ptr<const void> callbackData);
 

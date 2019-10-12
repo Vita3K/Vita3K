@@ -17,7 +17,7 @@
 
 #include "SceCommonDialog.h"
 
-#include <dialog/types.h>
+#include <dialog/state.h>
 #include <host/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -104,26 +104,26 @@ EXPORT(int, sceCrossControllerDialogTerm) {
 }
 
 EXPORT(int, sceImeDialogAbort) {
-    if (host.common_dialog.type != IME_DIALOG) {
+    if (host.common_dialog->type != IME_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    host.common_dialog->result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
 }
 
 EXPORT(int, sceImeDialogGetResult, SceImeDialogResult *result) {
-    result->result = host.common_dialog.result;
-    result->button = host.common_dialog.ime.status;
+    result->result = host.common_dialog->result;
+    result->button = host.common_dialog->ime.status;
     return 0;
 }
 
 EXPORT(int, sceImeDialogGetStatus) {
-    return host.common_dialog.status;
+    return host.common_dialog->status;
 }
 
 EXPORT(int, sceImeDialogInit, const Ptr<emu::SceImeDialogParam> param) {
-    if (host.common_dialog.type != NO_DIALOG) {
+    if (host.common_dialog->type != NO_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
 
@@ -132,60 +132,60 @@ EXPORT(int, sceImeDialogInit, const Ptr<emu::SceImeDialogParam> param) {
     std::u16string title = reinterpret_cast<char16_t *>(p->title.get(host.mem));
     std::u16string text = reinterpret_cast<char16_t *>(p->initialText.get(host.mem));
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.type = IME_DIALOG;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    host.common_dialog->type = IME_DIALOG;
 
-    host.common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_NONE;
-    host.common_dialog.ime.title = string_utils::utf16_to_utf8(title);
-    sprintf(host.common_dialog.ime.text, "%s", string_utils::utf16_to_utf8(text).c_str());
-    host.common_dialog.ime.max_length = p->maxTextLength;
-    host.common_dialog.ime.multiline = (p->option & SCE_IME_OPTION_MULTILINE);
-    host.common_dialog.ime.cancelable = (p->dialogMode == SCE_IME_DIALOG_DIALOG_MODE_WITH_CANCEL);
-    host.common_dialog.ime.result = reinterpret_cast<uint16_t *>(p->inputTextBuffer.get(host.mem));
+    host.common_dialog->ime.status = SCE_IME_DIALOG_BUTTON_NONE;
+    host.common_dialog->ime.title = string_utils::utf16_to_utf8(title);
+    sprintf(host.common_dialog->ime.text, "%s", string_utils::utf16_to_utf8(text).c_str());
+    host.common_dialog->ime.max_length = p->maxTextLength;
+    host.common_dialog->ime.multiline = (p->option & SCE_IME_OPTION_MULTILINE);
+    host.common_dialog->ime.cancelable = (p->dialogMode == SCE_IME_DIALOG_DIALOG_MODE_WITH_CANCEL);
+    host.common_dialog->ime.result = reinterpret_cast<uint16_t *>(p->inputTextBuffer.get(host.mem));
 
     return 0;
 }
 
 EXPORT(int, sceImeDialogTerm) {
-    if (host.common_dialog.type != IME_DIALOG) {
+    if (host.common_dialog->type != IME_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
-    host.common_dialog.type = NO_DIALOG;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_NONE;
+    host.common_dialog->type = NO_DIALOG;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogAbort) {
-    if (host.common_dialog.type != MESSAGE_DIALOG) {
+    if (host.common_dialog->type != MESSAGE_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    host.common_dialog->result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogClose) {
-    if (host.common_dialog.type != MESSAGE_DIALOG) {
+    if (host.common_dialog->type != MESSAGE_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    host.common_dialog->result = SCE_COMMON_DIALOG_RESULT_OK;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogGetResult, SceMsgDialogResult *result) {
-    result->result = host.common_dialog.result;
-    result->mode = host.common_dialog.msg.mode;
-    result->buttonId = host.common_dialog.msg.status;
+    result->result = host.common_dialog->result;
+    result->mode = host.common_dialog->msg.mode;
+    result->buttonId = host.common_dialog->msg.status;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogGetStatus) {
-    return host.common_dialog.status;
+    return host.common_dialog->status;
 }
 
 EXPORT(int, sceMsgDialogInit, const Ptr<emu::SceMsgDialogParam> param) {
-    if (host.common_dialog.type != NO_DIALOG) {
+    if (host.common_dialog->type != NO_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
 
@@ -194,47 +194,47 @@ EXPORT(int, sceMsgDialogInit, const Ptr<emu::SceMsgDialogParam> param) {
     emu::SceMsgDialogButtonsParam *bp;
     emu::SceMsgDialogProgressBarParam *pp;
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.type = MESSAGE_DIALOG;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    host.common_dialog->type = MESSAGE_DIALOG;
 
-    host.common_dialog.msg.mode = p->mode;
-    host.common_dialog.msg.status = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
+    host.common_dialog->msg.mode = p->mode;
+    host.common_dialog->msg.status = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
     switch (p->mode) {
     case SCE_MSG_DIALOG_MODE_USER_MSG:
         up = p->userMsgParam.get(host.mem);
-        host.common_dialog.msg.message = reinterpret_cast<char *>(up->msg.get(host.mem));
+        host.common_dialog->msg.message = reinterpret_cast<char *>(up->msg.get(host.mem));
         switch (up->buttonType) {
         case SCE_MSG_DIALOG_BUTTON_TYPE_OK:
-            host.common_dialog.msg.btn_num = 1;
-            host.common_dialog.msg.btn[0] = "OK";
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
+            host.common_dialog->msg.btn_num = 1;
+            host.common_dialog->msg.btn[0] = "OK";
+            host.common_dialog->msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_YESNO:
-            host.common_dialog.msg.btn_num = 2;
-            host.common_dialog.msg.btn[0] = "Yes";
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_YES;
-            host.common_dialog.msg.btn[1] = "No";
-            host.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+            host.common_dialog->msg.btn_num = 2;
+            host.common_dialog->msg.btn[0] = "Yes";
+            host.common_dialog->msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_YES;
+            host.common_dialog->msg.btn[1] = "No";
+            host.common_dialog->msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_NONE:
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_OK_CANCEL:
-            host.common_dialog.msg.btn_num = 2;
-            host.common_dialog.msg.btn[0] = "OK";
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
-            host.common_dialog.msg.btn[1] = "Cancel";
-            host.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+            host.common_dialog->msg.btn_num = 2;
+            host.common_dialog->msg.btn[0] = "OK";
+            host.common_dialog->msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
+            host.common_dialog->msg.btn[1] = "Cancel";
+            host.common_dialog->msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_3BUTTONS:
             bp = up->buttonParam.get(host.mem);
-            host.common_dialog.msg.btn_num = 3;
-            host.common_dialog.msg.btn[0] = bp->msg1.get(host.mem);
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_YES;
-            host.common_dialog.msg.btn[1] = bp->msg2.get(host.mem);
-            host.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
-            host.common_dialog.msg.btn[2] = bp->msg3.get(host.mem);
-            host.common_dialog.msg.btn_val[2] = SCE_MSG_DIALOG_BUTTON_ID_RETRY;
+            host.common_dialog->msg.btn_num = 3;
+            host.common_dialog->msg.btn[0] = bp->msg1.get(host.mem);
+            host.common_dialog->msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_YES;
+            host.common_dialog->msg.btn[1] = bp->msg2.get(host.mem);
+            host.common_dialog->msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+            host.common_dialog->msg.btn[2] = bp->msg3.get(host.mem);
+            host.common_dialog->msg.btn_val[2] = SCE_MSG_DIALOG_BUTTON_ID_RETRY;
             break;
         }
         break;
@@ -242,46 +242,46 @@ EXPORT(int, sceMsgDialogInit, const Ptr<emu::SceMsgDialogParam> param) {
         switch (p->sysMsgParam.get(host.mem)->sysMsgType) {
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT:
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_SMALL:
-            host.common_dialog.msg.message = "Please wait.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.message = "Please wait.";
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE:
-            host.common_dialog.msg.message = "There is not enough free space on the memory card.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.message = "There is not enough free space on the memory card.";
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_MAGNETIC_CALIBRATION:
-            host.common_dialog.msg.message = "Move away from the source of interference, or adjust the compass by moving your PS Vita system as shown below.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.message = "Move away from the source of interference, or adjust the compass by moving your PS Vita system as shown below.";
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
-            host.common_dialog.msg.message = "Please wait.";
-            host.common_dialog.msg.btn[0] = "Cancel";
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
-            host.common_dialog.msg.btn_num = 1;
+            host.common_dialog->msg.message = "Please wait.";
+            host.common_dialog->msg.btn[0] = "Cancel";
+            host.common_dialog->msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+            host.common_dialog->msg.btn_num = 1;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NEED_MC_CONTINUE:
-            host.common_dialog.msg.message = "Cannot continue the application. No memory card is inserted.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.message = "Cannot continue the application. No memory card is inserted.";
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NEED_MC_OPERATION:
-            host.common_dialog.msg.message = "Cannot perform this operation. No memory card is inserted.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.message = "Cannot perform this operation. No memory card is inserted.";
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_MIC_DISABLED:
-            host.common_dialog.msg.message = "You must enable the microphone.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.message = "You must enable the microphone.";
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_WIFI_REQUIRED_OPERATION:
-            host.common_dialog.msg.message = "You must use Wi-Fi to do this.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.message = "You must use Wi-Fi to do this.";
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_WIFI_REQUIRED_APPLICATION:
-            host.common_dialog.msg.message = "You must use Wi-Fi to use this application.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.message = "You must use Wi-Fi to use this application.";
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_EMPTY_STORE:
-            host.common_dialog.msg.message = "No content is available yet.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog->msg.message = "No content is available yet.";
+            host.common_dialog->msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_INVALID:
         default:
@@ -289,15 +289,15 @@ EXPORT(int, sceMsgDialogInit, const Ptr<emu::SceMsgDialogParam> param) {
         }
         break;
     case SCE_MSG_DIALOG_MODE_ERROR_CODE:
-        host.common_dialog.msg.message = fmt::format("An error occurred. Errorcode: {}", log_hex(p->errorCodeParam.get(host.mem)->errorCode));
-        host.common_dialog.msg.btn_num = 0;
+        host.common_dialog->msg.message = fmt::format("An error occurred. Errorcode: {}", log_hex(p->errorCodeParam.get(host.mem)->errorCode));
+        host.common_dialog->msg.btn_num = 0;
         break;
     case SCE_MSG_DIALOG_MODE_PROGRESS_BAR:
         // TODO: Properly implement this
         LOG_WARN("Progressbar message dialog used.");
         pp = p->progBarParam.get(host.mem);
-        host.common_dialog.msg.message = reinterpret_cast<char *>(pp->msg.get(host.mem));
-        host.common_dialog.msg.btn_num = 0;
+        host.common_dialog->msg.message = reinterpret_cast<char *>(pp->msg.get(host.mem));
+        host.common_dialog->msg.btn_num = 0;
         break;
     case SCE_MSG_DIALOG_MODE_INVALID:
     default:
@@ -321,11 +321,11 @@ EXPORT(int, sceMsgDialogProgressBarSetValue) {
 }
 
 EXPORT(int, sceMsgDialogTerm) {
-    if (host.common_dialog.type != MESSAGE_DIALOG) {
+    if (host.common_dialog->type != MESSAGE_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
-    host.common_dialog.type = NO_DIALOG;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_NONE;
+    host.common_dialog->type = NO_DIALOG;
     return 0;
 }
 
@@ -459,40 +459,40 @@ EXPORT(int, sceNpSnsFacebookDialogTerm) {
 }
 
 EXPORT(int, sceNpTrophySetupDialogAbort) {
-    if (host.common_dialog.type != TROPHY_SETUP_DIALOG) {
+    if (host.common_dialog->type != TROPHY_SETUP_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    host.common_dialog->result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetResult, emu::SceNpTrophySetupDialogResult *result) {
-    result->result = host.common_dialog.result;
+    result->result = host.common_dialog->result;
     return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetStatus) {
-    return host.common_dialog.status;
+    return host.common_dialog->status;
 }
 
 EXPORT(int, sceNpTrophySetupDialogInit, const Ptr<emu::SceNpTrophySetupDialogParam> param) {
-    if (host.common_dialog.type != NO_DIALOG) {
+    if (host.common_dialog->type != NO_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.type = TROPHY_SETUP_DIALOG;
-    host.common_dialog.trophy.tick = SDL_GetTicks() + (param.get(host.mem)->options & 0x01) ? 3000 : 0;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    host.common_dialog->type = TROPHY_SETUP_DIALOG;
+    host.common_dialog->trophy.tick = SDL_GetTicks() + (param.get(host.mem)->options & 0x01) ? 3000 : 0;
     return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogTerm) {
-    if (host.common_dialog.type != TROPHY_SETUP_DIALOG) {
+    if (host.common_dialog->type != TROPHY_SETUP_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
-    host.common_dialog.type = NO_DIALOG;
+    host.common_dialog->status = SCE_COMMON_DIALOG_STATUS_NONE;
+    host.common_dialog->type = NO_DIALOG;
     return 0;
 }
 

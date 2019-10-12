@@ -18,6 +18,7 @@
 #include <touch/touch.h>
 
 #include <ctrl/state.h>
+#include <dialog/state.h>
 #include <host/state.h>
 
 #include <psp2/common_dialog.h>
@@ -114,7 +115,7 @@ int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData
     memset(pData, 0, sizeof(*pData));
     pData->timeStamp = timestamp++; // TODO Use the real time and units.
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_NONE) {
+    if (host.common_dialog->status != SCE_COMMON_DIALOG_STATUS_NONE) {
         return 0;
     }
 
