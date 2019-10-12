@@ -17,9 +17,10 @@
 
 #pragma once
 
+#include <mem/ptr.h>
+
 #include <cstdint>
 #include <cstring>
-#include <mem/ptr.h>
 
 namespace emu::np {
 
