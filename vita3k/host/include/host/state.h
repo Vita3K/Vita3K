@@ -20,7 +20,6 @@
 #include "sfo.h"
 #include "window.h"
 
-#include <kernel/state.h>
 #include <net/state.h>
 #include <nids/types.h>
 #include <np/state.h>
@@ -33,6 +32,7 @@
 #include <psp2/display.h>
 
 #include <atomic>
+#include <condition_variable>
 #include <memory>
 #include <string>
 
@@ -42,6 +42,7 @@ struct CtrlState;
 struct DialogState;
 struct GxmState;
 struct IOState;
+struct KernelState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -73,7 +74,7 @@ struct HostState {
     SceFVector2 viewport_size = { 0, 0 };
     MemState mem;
     std::unique_ptr<CtrlState> ctrl;
-    KernelState kernel;
+    std::shared_ptr<KernelState> kernel;
     std::unique_ptr<AudioState> audio;
     std::shared_ptr<GxmState> gxm;
     bool renderer_focused;

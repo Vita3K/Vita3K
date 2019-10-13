@@ -18,6 +18,7 @@
 #include "SceAudio.h"
 
 #include <audio/state.h>
+#include <kernel/state.h>
 #include <util/lock_and_find.h>
 
 #include <psp2/audioout.h>
@@ -71,7 +72,7 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
     if (!thread) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }

@@ -24,6 +24,7 @@
 #include <gui/imgui_impl_sdl.h>
 #include <host/state.h>
 #include <io/functions.h>
+#include <kernel/state.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <rtc/rtc.h>
@@ -96,7 +97,7 @@ void update_viewport(HostState &state) {
 
 bool init(HostState &state, Config cfg, const Root &root_paths) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
-        const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
+        const auto thread = lock_and_find(thread_id, state.kernel->threads, state.kernel->mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         if (thread->to_do == ThreadToDo::wait) {
             thread->to_do = ThreadToDo::run;
@@ -105,7 +106,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     };
 
     *state.cfg = std::move(cfg);
-    state.kernel.wait_for_debugger = state.cfg->wait_for_debugger;
+    state.kernel->wait_for_debugger = state.cfg->wait_for_debugger;
 
     state.base_path = root_paths.get_base_path_string();
 
@@ -152,7 +153,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
 #endif
 
-    state.kernel.base_tick = { rtc_base_ticks() };
+    state.kernel->base_tick = { rtc_base_ticks() };
 
     if (renderer::init(state.window, state.renderer, backend)) {
         update_viewport(state);

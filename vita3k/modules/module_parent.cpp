@@ -23,6 +23,7 @@
 #include <host/state.h>
 #include <io/device.h>
 #include <io/vfs.h>
+#include <kernel/state.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
 #include <util/find.h>
@@ -78,7 +79,7 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
 }
 
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id) {
-    Address export_pc = resolve_export(host.kernel, nid);
+    Address export_pc = resolve_export(*host.kernel, nid);
 
     if (!export_pc) {
         // HLE - call our C++ function
@@ -96,7 +97,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         if (fn) {
             fn(host, cpu, thread_id);
         } else if (host.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
-            const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+            const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
             LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
 
             if (!LOG_UNK_NIDS_ALWAYS)
@@ -110,7 +111,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
 
             log_import_call('L', nid, thread_id, lle_nid_blacklist);
         }
-        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         write_pc(*thread->cpu, export_pc);
     }
@@ -135,8 +136,8 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
         Ptr<const void> lib_entry_point;
 
         if (vfs::read_file(VitaIoDevice::vs0, module_buffer, host.pref_path, module_path)) {
-            SceUID loaded_module_uid = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), module_path, *host.cfg);
-            const auto module = host.kernel.loaded_modules[loaded_module_uid];
+            SceUID loaded_module_uid = load_self(lib_entry_point, *host.kernel, host.mem, module_buffer.data(), module_path, *host.cfg);
+            const auto module = host.kernel->loaded_modules[loaded_module_uid];
             const auto module_name = module->module_name;
 
             if (loaded_module_uid >= 0) {
@@ -150,17 +151,17 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
                 LOG_DEBUG("Running module_start of module: {}", module_name);
 
                 Ptr<void> argp = Ptr<void>();
-                const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
+                const SceUID module_thread_id = create_thread(lib_entry_point, *host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
                     static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, false);
-                const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
+                const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel->threads);
                 const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
 
                 module_thread->to_do = ThreadToDo::exit;
                 module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
 
-                const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-                host.kernel.running_threads.erase(module_thread_id);
-                host.kernel.threads.erase(module_thread_id);
+                const std::lock_guard<std::mutex> lock(host.kernel->mutex);
+                host.kernel->running_threads.erase(module_thread_id);
+                host.kernel->threads.erase(module_thread_id);
                 LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
             }
 
@@ -170,7 +171,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
         }
     }
 
-    host.kernel.loaded_sysmodules.push_back(module_id);
+    host.kernel->loaded_sysmodules.push_back(module_id);
     return true;
 }
 

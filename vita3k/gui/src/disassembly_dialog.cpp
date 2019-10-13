@@ -20,6 +20,7 @@
 #include "private.h"
 
 #include <cpu/functions.h>
+#include <kernel/state.h>
 
 #include <spdlog/fmt/fmt.h>
 
@@ -28,7 +29,7 @@ namespace gui {
 static void evaluate_code(GuiState &gui, HostState &host, uint32_t from, uint32_t count, bool thumb) {
     gui.disassembly.clear();
 
-    if (host.kernel.threads.empty()) {
+    if (host.kernel->threads.empty()) {
         gui.disassembly.emplace_back("Nothing to disassemble.");
         return;
     }
@@ -48,7 +49,7 @@ static void evaluate_code(GuiState &gui, HostState &host, uint32_t from, uint32_
 
         // Use DisasmState for first thread.
         std::string disasm = fmt::format("{:0>8X}: {}",
-            addr, disassemble(*host.kernel.threads.begin()->second->cpu.get(), addr, thumb, &size));
+            addr, disassemble(*host.kernel->threads.begin()->second->cpu.get(), addr, thumb, &size));
         gui.disassembly.emplace_back(disasm);
         addr += size;
     }

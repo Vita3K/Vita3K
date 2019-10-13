@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 
 namespace gui {
@@ -25,9 +26,9 @@ void draw_semaphores_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Semaphores", &gui.debug_menu.semaphores_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s   %-16s", "ID", "Semaphore Name", "Status", "Locked Threads");
 
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(host.kernel->mutex);
 
-    for (auto semaphore : host.kernel.semaphores) {
+    for (auto semaphore : host.kernel->semaphores) {
         std::shared_ptr<Semaphore> sema_state = semaphore.second;
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d/%02d              %02zu",
             semaphore.first,

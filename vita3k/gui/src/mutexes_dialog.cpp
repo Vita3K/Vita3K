@@ -18,6 +18,7 @@
 #include "private.h"
 
 #include <host/state.h>
+#include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
 
@@ -27,9 +28,9 @@ void draw_mutexes_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Mutexes", &gui.debug_menu.mutexes_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s   %-16s   %-16s", "ID", "Mutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(host.kernel->mutex);
 
-    for (auto mutex : host.kernel.mutexes) {
+    for (auto mutex : host.kernel->mutexes) {
         std::shared_ptr<Mutex> mutex_state = mutex.second;
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d        %01d            %02zu                 %s",
             mutex.first,
@@ -46,8 +47,8 @@ void draw_lw_mutexes_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Lightweight Mutexes", &gui.debug_menu.lwmutexes_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-7s   %-8s  %-16s   %-16s", "ID", "LwMutex Name", "Status", "Attributes", "Waiting Threads", "Owner");
 
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    for (auto mutex : host.kernel.lwmutexes) {
+    const std::lock_guard<std::mutex> lock(host.kernel->mutex);
+    for (auto mutex : host.kernel->lwmutexes) {
         std::shared_ptr<Mutex> mutex_state = mutex.second;
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d        %01d           %02zu                 %s",
             mutex.first,

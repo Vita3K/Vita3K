@@ -18,6 +18,7 @@
 #include "private.h"
 
 #include <cpu/functions.h>
+#include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
 #include <util/resource.h>
@@ -27,7 +28,7 @@
 namespace gui {
 
 void draw_thread_details_dialog(GuiState &gui, HostState &host) {
-    ThreadStatePtr &thread = host.kernel.threads[gui.thread_watch_index];
+    ThreadStatePtr &thread = host.kernel->threads[gui.thread_watch_index];
     CPUState &cpu = *thread->cpu;
 
     ImGui::Begin("Thread Viewer", &gui.debug_menu.thread_details_dialog);
@@ -61,9 +62,9 @@ void draw_threads_dialog(GuiState &gui, HostState &host) {
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE,
         "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
 
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(host.kernel->mutex);
 
-    for (const auto &thread : host.kernel.threads) {
+    for (const auto &thread : host.kernel->threads) {
         std::shared_ptr<ThreadState> th_state = thread.second;
         std::string run_state;
         switch (th_state->to_do) {

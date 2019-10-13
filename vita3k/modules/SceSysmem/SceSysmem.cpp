@@ -18,6 +18,7 @@
 #include "SceSysmem.h"
 
 #include <config/config.h>
+#include <kernel/state.h>
 
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/sysmem.h>
@@ -39,7 +40,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }
 
-    KernelState *const state = &host.kernel;
+    KernelState *const state = host.kernel.get();
     const SceUID uid = state->get_next_uid();
     state->blocks.insert(Blocks::value_type(uid, address));
 
@@ -56,7 +57,7 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, int size) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }
 
-    KernelState *const state = &host.kernel;
+    KernelState *const state = host.kernel.get();
     const SceUID uid = state->get_next_uid();
     state->blocks.insert(Blocks::value_type(uid, address));
     state->vm_blocks.insert(Blocks::value_type(uid, address));
@@ -87,7 +88,7 @@ EXPORT(int, sceKernelFindMemBlockByAddr) {
 EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
     assert(uid >= 0);
 
-    KernelState *const state = &host.kernel;
+    KernelState *const state = host.kernel.get();
     const Blocks::const_iterator block = state->blocks.find(uid);
     assert(block != state->blocks.end());
 
@@ -100,7 +101,7 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
 EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     assert(uid >= 0);
 
-    KernelState *const state = &host.kernel;
+    KernelState *const state = host.kernel.get();
     const Blocks::const_iterator block = state->vm_blocks.find(uid);
     assert(block != state->vm_blocks.end());
 
@@ -123,7 +124,7 @@ EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
     assert(uid >= 0);
     assert(basep != nullptr);
 
-    const KernelState *const state = &host.kernel;
+    const KernelState *const state = host.kernel.get();
     const Blocks::const_iterator block = state->blocks.find(uid);
     if (block == state->blocks.end()) {
         // TODO Write address?

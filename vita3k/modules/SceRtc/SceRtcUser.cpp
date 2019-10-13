@@ -17,6 +17,7 @@
 
 #include "SceRtcUser.h"
 
+#include <kernel/state.h>
 #include <rtc/rtc.h>
 
 #include <chrono>
@@ -122,7 +123,7 @@ EXPORT(int, sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    uint64_t tick = rtc_get_ticks(host.kernel.base_tick.tick) + iTimeZone * 60 * 60 * VITA_CLOCKS_PER_SEC;
+    uint64_t tick = rtc_get_ticks(host.kernel->base_tick.tick) + iTimeZone * 60 * 60 * VITA_CLOCKS_PER_SEC;
     __RtcTicksToPspTime(datePtr, tick);
 
     return 0;
@@ -136,7 +137,7 @@ EXPORT(int, sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
     std::time_t t = std::time(nullptr);
     std::time_t local = std::mktime(std::localtime(&t));
     std::time_t gmt = std::mktime(std::gmtime(&t));
-    uint64_t tick = rtc_get_ticks(host.kernel.base_tick.tick) + (local - gmt) * VITA_CLOCKS_PER_SEC;
+    uint64_t tick = rtc_get_ticks(host.kernel->base_tick.tick) + (local - gmt) * VITA_CLOCKS_PER_SEC;
     __RtcTicksToPspTime(datePtr, tick);
     return 0;
 }
@@ -150,7 +151,7 @@ EXPORT(int, sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
+    tick->tick = rtc_get_ticks(host.kernel->base_tick.tick);
 
     return 0;
 }
@@ -164,7 +165,7 @@ EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
+    tick->tick = rtc_get_ticks(host.kernel->base_tick.tick);
 
     return 0;
 }
