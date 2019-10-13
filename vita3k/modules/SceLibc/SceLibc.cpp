@@ -388,7 +388,7 @@ EXPORT(int, exit) {
 }
 
 EXPORT(void, fclose, SceUID file) {
-    close_file(host.io, file, export_name);
+    close_file(*host.io, file, export_name);
 }
 
 EXPORT(int, fdopen) {
@@ -433,7 +433,7 @@ EXPORT(int, fileno) {
 
 EXPORT(int, fopen, const char *filename, const char *mode) {
     LOG_WARN_IF(mode[0] != 'r', "fopen({}, {})", filename, *mode);
-    return open_file(host.io, filename, SCE_O_RDONLY, host.pref_path, export_name);
+    return open_file(*host.io, filename, SCE_O_RDONLY, host.pref_path, export_name);
 }
 
 EXPORT(int, fopen_s) {

@@ -20,7 +20,6 @@
 #include "sfo.h"
 #include "window.h"
 
-#include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
 #include <nids/types.h>
@@ -42,6 +41,7 @@ struct Config;
 struct CtrlState;
 struct DialogState;
 struct GxmState;
+struct IOState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -77,7 +77,7 @@ struct HostState {
     std::unique_ptr<AudioState> audio;
     std::shared_ptr<GxmState> gxm;
     bool renderer_focused;
-    IOState io;
+    std::unique_ptr<IOState> io;
     NetState net;
     NpState np;
     DisplayState display;

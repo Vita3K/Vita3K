@@ -351,18 +351,18 @@ EXPORT(int, sceIoDevctlAsync) {
 }
 
 EXPORT(int, sceIoDopen, const char *dir) {
-    return open_dir(host.io, dir, host.pref_path, export_name);
+    return open_dir(*host.io, dir, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoDread, const SceUID fd, emu::SceIoDirent *dir) {
     if (dir == nullptr) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     }
-    return read_dir(host.io, fd, dir, host.pref_path, host.kernel.base_tick.tick, export_name);
+    return read_dir(*host.io, fd, dir, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(host.io, file, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
+    return stat_file(*host.io, file, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
@@ -370,7 +370,7 @@ EXPORT(int, sceIoGetstatAsync) {
 }
 
 EXPORT(int, sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
-    return stat_file_by_fd(host.io, fd, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
+    return stat_file_by_fd(*host.io, fd, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, sceIoIoctl) {
@@ -382,7 +382,7 @@ EXPORT(int, sceIoIoctlAsync) {
 }
 
 EXPORT(SceOff, sceIoLseek, const SceUID fd, const SceOff offset, const SceIoSeekMode whence) {
-    return seek_file(fd, offset, whence, host.io, export_name);
+    return seek_file(fd, offset, whence, *host.io, export_name);
 }
 
 EXPORT(int, sceIoLseekAsync) {
@@ -390,7 +390,7 @@ EXPORT(int, sceIoLseekAsync) {
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, const SceMode mode) {
-    return create_dir(host.io, dir, mode, host.pref_path, export_name);
+    return create_dir(*host.io, dir, mode, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoMkdirAsync) {
@@ -402,7 +402,7 @@ EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode)
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     LOG_INFO("Opening file: {}", file);
-    return open_file(host.io, file, flags, host.pref_path, export_name);
+    return open_file(*host.io, file, flags, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoOpenAsync) {
@@ -410,13 +410,13 @@ EXPORT(int, sceIoOpenAsync) {
 }
 
 EXPORT(int, sceIoPread, const SceUID fd, void *data, const SceSize size, const SceOff offset) {
-    auto pos = tell_file(host.io, fd, export_name);
+    auto pos = tell_file(*host.io, fd, export_name);
     if (pos < 0) {
         return static_cast<int>(pos);
     }
-    seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, host.io, export_name);
-    const int res = read_file(data, host.io, fd, size, export_name);
-    seek_file(fd, static_cast<int>(pos), SCE_SEEK_SET, host.io, export_name);
+    seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, *host.io, export_name);
+    const int res = read_file(data, *host.io, fd, size, export_name);
+    seek_file(fd, static_cast<int>(pos), SCE_SEEK_SET, *host.io, export_name);
     return res;
 }
 
@@ -425,13 +425,13 @@ EXPORT(int, sceIoPreadAsync) {
 }
 
 EXPORT(int, sceIoPwrite, const SceUID fd, const void *data, const SceSize size, const SceOff offset) {
-    auto pos = tell_file(host.io, fd, export_name);
+    auto pos = tell_file(*host.io, fd, export_name);
     if (pos < 0) {
         return static_cast<int>(pos);
     }
-    seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, host.io, export_name);
-    const int res = write_file(fd, data, size, host.io, export_name);
-    seek_file(fd, static_cast<int>(pos), SCE_SEEK_SET, host.io, export_name);
+    seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, *host.io, export_name);
+    const int res = write_file(fd, data, size, *host.io, export_name);
+    seek_file(fd, static_cast<int>(pos), SCE_SEEK_SET, *host.io, export_name);
     return res;
 }
 
@@ -447,7 +447,7 @@ EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_file(host.io, path, host.pref_path, export_name);
+    return remove_file(*host.io, path, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRemoveAsync) {
@@ -466,7 +466,7 @@ EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_dir(host.io, path, host.pref_path, export_name);
+    return remove_dir(*host.io, path, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRmdirAsync) {
@@ -1109,24 +1109,24 @@ bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleIn
     if (module_iter == loaded_modules.end()) {
         // module is not loaded, load it here
 
-        const auto file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path, export_name);
+        const auto file = open_file(*host.io, path, SCE_O_RDONLY, host.pref_path, export_name);
         if (file < 0) {
             error_val = RET_ERROR(file);
             return false;
         }
-        const auto size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
+        const auto size = seek_file(file, 0, SCE_SEEK_END, *host.io, export_name);
         if (size < 0) {
             error_val = RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
             return false;
         }
 
-        if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0) {
+        if (seek_file(file, 0, SCE_SEEK_SET, *host.io, export_name) < 0) {
             error_val = RET_ERROR(static_cast<int>(size));
             return false;
         }
 
         auto *data = new char[static_cast<int>(size) + 1]; // null-terminated char array
-        if (read_file(data, host.io, file, size, export_name) < 0) {
+        if (read_file(data, *host.io, file, size, export_name) < 0) {
             delete[] data;
             error_val = RET_ERROR(static_cast<int>(size));
             return false;
@@ -1134,7 +1134,7 @@ bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleIn
 
         mod_id = load_self(entry_point, host.kernel, host.mem, data, path, *host.cfg);
 
-        close_file(host.io, file, export_name);
+        close_file(*host.io, file, export_name);
         delete[] data;
         if (mod_id < 0) {
             error_val = RET_ERROR(mod_id);

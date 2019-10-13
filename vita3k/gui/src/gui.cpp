@@ -25,6 +25,7 @@
 #include <glutil/gl.h>
 #include <host/functions.h>
 #include <host/state.h>
+#include <io/state.h>
 #include <io/vfs.h>
 #include <util/fs.h>
 #include <util/log.h>
@@ -216,18 +217,18 @@ void get_game_titles(GuiState &gui, HostState &host) {
     while (it != fs::directory_iterator{}) {
         if (!it->path().empty() && !it->path().filename_is_dot() && !it->path().filename_is_dot_dot()) {
             vfs::FileBuffer params;
-            host.io.title_id = it->path().stem().generic_string();
-            if (vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
+            host.io->title_id = it->path().stem().generic_string();
+            if (vfs::read_app_file(params, host.pref_path, host.io->title_id, "sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
                 sfo::get_data_by_key(host.game_version, sfo_handle, "APP_VER");
                 sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
                 std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
             } else {
-                host.game_title = host.io.title_id; // Use TitleID as Title
+                host.game_title = host.io->title_id; // Use TitleID as Title
                 host.game_version = "N/A";
             }
-            gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io.title_id });
+            gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io->title_id });
         }
         boost::system::error_code er;
         it.increment(er);

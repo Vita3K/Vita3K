@@ -24,6 +24,7 @@
 #include <host/load_self.h>
 #include <host/sfo.h>
 #include <io/functions.h>
+#include <io/state.h>
 #include <io/vfs.h>
 #include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
@@ -114,9 +115,9 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState 
 
     SfoFile sfo_handle;
     sfo::load(sfo_handle, params);
-    sfo::get_data_by_key(host.io.title_id, sfo_handle, "TITLE_ID");
+    sfo::get_data_by_key(host.io->title_id, sfo_handle, "TITLE_ID");
 
-    fs::path output_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
+    fs::path output_path{ fs::path(host.pref_path) / "ux0/app" / host.io->title_id };
 
     const auto created = fs::create_directories(output_path);
     if (!created) {
@@ -132,7 +133,7 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState 
             SDL_GL_SwapWindow(host.window.get());
         }
         if (status == gui::CANCEL_STATE) {
-            LOG_INFO("{} already installed, launching application...", host.io.title_id);
+            LOG_INFO("{} already installed, launching application...", host.io->title_id);
             return true;
         } else if (status == gui::UNK_STATE) {
             exit(0);
@@ -158,7 +159,7 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState 
         }
     }
 
-    LOG_INFO("{} installed succesfully!", host.io.title_id);
+    LOG_INFO("{} installed succesfully!", host.io->title_id);
     return true;
 }
 
@@ -171,11 +172,11 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
             return FileNotFound;
         }
     } else if (run_type == app::AppRunType::Extracted) {
-        host.io.title_id = string_utils::wide_to_utf(path);
+        host.io->title_id = string_utils::wide_to_utf(path);
     }
 
     vfs::FileBuffer params;
-    bool params_found = vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
+    bool params_found = vfs::read_app_file(params, host.pref_path, host.io->title_id, "sce_sys/param.sfo");
 
     std::string game_category;
 
@@ -184,11 +185,11 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
         sfo::get_data_by_key(host.game_title, host.sfo_handle, "TITLE");
         std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' '); // Restrict title to one line
-        sfo::get_data_by_key(host.io.title_id, host.sfo_handle, "TITLE_ID");
+        sfo::get_data_by_key(host.io->title_id, host.sfo_handle, "TITLE_ID");
         sfo::get_data_by_key(host.game_version, host.sfo_handle, "APP_VER");
         sfo::get_data_by_key(game_category, host.sfo_handle, "CATEGORY");
     } else {
-        host.game_title = host.io.title_id; // Use TitleID as Title
+        host.game_title = host.io->title_id; // Use TitleID as Title
         host.game_version = "N/A";
         game_category = "N/A";
     }
@@ -196,17 +197,17 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     if (host.cfg->archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
-        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.game_title) + " - [" + host.io.title_id + "].log") };
+        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.game_title) + " - [" + host.io->title_id + "].log") };
         if (logging::add_sink(log_name) != Success)
             return InitConfigFailed;
     }
 
     LOG_INFO("Title: {}", host.game_title);
-    LOG_INFO("Serial: {}", host.io.title_id);
+    LOG_INFO("Serial: {}", host.io->title_id);
     LOG_INFO("Version: {}", host.game_version);
     LOG_INFO("Category: {}", game_category);
 
-    init_device_paths(host.io);
+    init_device_paths(*host.io);
 
     host.renderer->features.hardware_flip = host.cfg->hardware_flip;
 
@@ -221,7 +222,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         vfs::FileBuffer module_buffer;
         Ptr<const void> lib_entry_point;
 
-        if (vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path)) {
+        if (vfs::read_app_file(module_buffer, host.pref_path, host.io->title_id, module_path)) {
             SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path, *host.cfg);
             if (module_id >= 0) {
                 const auto module = host.kernel.loaded_modules[module_id];
@@ -236,7 +237,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
-    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, EBOOT_PATH)) {
+    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io->title_id, EBOOT_PATH)) {
         SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, *host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
@@ -248,9 +249,9 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     } else
         return FileNotFound;
 
-    host.io.pref_save_path = host.pref_path + "/ux0/user/00/savedata/" + host.io.title_id + '/';
-    if (!fs::exists(host.io.pref_save_path))
-        fs::create_directories(host.io.pref_save_path);
+    host.io->pref_save_path = host.pref_path + "/ux0/user/00/savedata/" + host.io->title_id + '/';
+    if (!fs::exists(host.io->pref_save_path))
+        fs::create_directories(host.io->pref_save_path);
 
     return Success;
 }
@@ -342,7 +343,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
 
 #if DISCORD_RPC
     if (host.cfg->discord_rich_presence)
-        discord::update_presence(host.io.title_id, host.game_title);
+        discord::update_presence(host.io->title_id, host.game_title);
 #endif
 
     return Success;
@@ -353,7 +354,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         ::call_import(host, cpu, nid, main_thread_id);
     };
 
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io->title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
         call_import, false);
 
     if (main_thread_id < 0) {

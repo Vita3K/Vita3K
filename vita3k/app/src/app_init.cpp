@@ -141,7 +141,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
     }
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
-    if (!state.window || !init(state.mem) || !init(*state.audio, resume_thread) || !init(state.io, state.base_path, state.pref_path)) {
+    if (!state.window || !init(state.mem) || !init(*state.audio, resume_thread) || !init(*state.io, state.base_path, state.pref_path)) {
         return false;
     }
 

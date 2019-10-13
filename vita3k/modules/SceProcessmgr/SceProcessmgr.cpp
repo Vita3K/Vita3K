@@ -96,15 +96,15 @@ EXPORT(int, sceKernelGetRemoteProcessTime) {
 }
 
 EXPORT(int, sceKernelGetStderr) {
-    return open_file(host.io, "tty0:", SCE_O_WRONLY, host.pref_path, export_name);
+    return open_file(*host.io, "tty0:", SCE_O_WRONLY, host.pref_path, export_name);
 }
 
 EXPORT(int, sceKernelGetStdin) {
-    return open_file(host.io, "tty0:", SCE_O_RDONLY, host.pref_path, export_name);
+    return open_file(*host.io, "tty0:", SCE_O_RDONLY, host.pref_path, export_name);
 }
 
 EXPORT(int, sceKernelGetStdout) {
-    return open_file(host.io, "tty0:", SCE_O_WRONLY, host.pref_path, export_name);
+    return open_file(*host.io, "tty0:", SCE_O_WRONLY, host.pref_path, export_name);
 }
 
 EXPORT(int, sceKernelIsCDialogAvailable) {

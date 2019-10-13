@@ -38,7 +38,7 @@ EXPORT(int, sceNpTrophyCreateContext, emu::np::trophy::ContextHandle *context, c
     }
 
     emu::np::NpTrophyError err = emu::np::NpTrophyError::TROPHY_ERROR_NONE;
-    *context = create_trophy_context(host.np, host.io, host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg->sys_lang),
+    *context = create_trophy_context(host.np, *host.io, host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg->sys_lang),
         &err);
 
     if (*context == emu::np::trophy::INVALID_CONTEXT_HANDLE) {
