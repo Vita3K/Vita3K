@@ -20,6 +20,7 @@
 #include <config/config.h>
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
+#include <np/state.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -55,15 +56,15 @@ EXPORT(int, sceNpAuthGetAuthorizationCode) {
 }
 
 EXPORT(int, sceNpCheckCallback) {
-    if (host.np.state == 0)
+    if (host.np->state == 0)
         return 0;
 
-    host.np.state = 0;
+    host.np->state = 0;
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
-    for (auto &callback : host.np.cbs) {
+    for (auto &callback : host.np->cbs) {
         Ptr<void> argp = Ptr<void>(callback.second.data);
-        run_on_current(*thread, Ptr<void>(callback.second.pc), host.np.state, argp);
+        run_on_current(*thread, Ptr<void>(callback.second.pc), host.np->state, argp);
     }
 
     return STUBBED("Stub");
@@ -74,13 +75,13 @@ EXPORT(int, sceNpGetServiceState) {
 }
 
 EXPORT(int, sceNpInit, emu::np::CommunicationConfig *comm_config, void *dontcare) {
-    if (host.np.inited) {
+    if (host.np->inited) {
         return SCE_NP_ERROR_ALREADY_INITIALIZED;
     }
 
     const emu::np::CommunicationID *comm_id = (comm_config) ? comm_config->comm_id.get(host.mem) : nullptr;
 
-    if (!init(host.np, comm_id)) {
+    if (!init(*host.np, comm_id)) {
         return SCE_NP_ERROR_NOT_INITIALIZED;
     }
 
@@ -104,7 +105,7 @@ EXPORT(int, sceNpManagerGetContentRatingFlag) {
 }
 
 EXPORT(int, sceNpManagerGetNpId, SceNpId *id) {
-    if (!host.np.inited) {
+    if (!host.np->inited) {
         return SCE_NP_MANAGER_ERROR_NOT_INITIALIZED;
     }
 
@@ -131,17 +132,17 @@ EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> dat
     emu::SceNpServiceStateCallback sceNpServiceStateCallback;
     sceNpServiceStateCallback.pc = callback.address();
     sceNpServiceStateCallback.data = data.address();
-    host.np.cbs.emplace(cid, sceNpServiceStateCallback);
+    host.np->cbs.emplace(cid, sceNpServiceStateCallback);
     return 0;
 }
 
 EXPORT(void, sceNpTerm) {
-    if (!host.np.inited) {
+    if (!host.np->inited) {
         LOG_WARN("NP library not initialized but termination got called");
         return;
     }
 
-    deinit(host.np);
+    deinit(*host.np);
 }
 
 EXPORT(int, sceNpUnregisterServiceStateCallback) {

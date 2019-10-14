@@ -27,6 +27,7 @@
 #include <host/state.h>
 #include <io/state.h>
 #include <io/vfs.h>
+#include <np/state.h>
 #include <util/fs.h>
 #include <util/log.h>
 
@@ -269,7 +270,7 @@ void init(GuiState &gui, HostState &host) {
         init_background(gui, host.cfg->background_image);
 
     // Initialize trophy callback
-    host.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
+    host.np->trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
         const std::lock_guard<std::mutex> guard(gui.trophy_unlock_display_requests_access_mutex);
         gui.trophy_unlock_display_requests.push(std::move(callback_data));
     };

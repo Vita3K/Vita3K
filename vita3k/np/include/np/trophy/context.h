@@ -19,6 +19,7 @@
 
 #include <np/common.h>
 #include <np/trophy/trp_parser.h>
+
 #include <psp2/types.h>
 
 #include <array>

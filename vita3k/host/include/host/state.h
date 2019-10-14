@@ -20,8 +20,8 @@
 #include "sfo.h"
 #include "window.h"
 
+#include <mem/ptr.h>
 #include <nids/types.h>
-#include <np/state.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
 #ifdef USE_GDBSTUB
@@ -43,6 +43,7 @@ struct GxmState;
 struct IOState;
 struct KernelState;
 struct NetState;
+struct NpState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -80,7 +81,7 @@ struct HostState {
     bool renderer_focused;
     std::unique_ptr<IOState> io;
     std::unique_ptr<NetState> net;
-    NpState np;
+    std::unique_ptr<NpState> np;
     DisplayState display;
     std::unique_ptr<DialogState> common_dialog;
     SfoFile sfo_handle;

@@ -20,6 +20,7 @@
 
 #include <psp2/sysmodule.h>
 
+#include <array>
 #include <vector>
 
 static constexpr auto SYSMODULE_COUNT = 0x56;

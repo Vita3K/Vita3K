@@ -31,6 +31,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
+#include <np/state.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <shader/spirv_recompiler.h>
@@ -122,6 +123,7 @@ int main(int argc, char *argv[]) {
     host.io = std::make_unique<IOState>();
     host.kernel = std::make_shared<KernelState>();
     host.net = std::make_unique<NetState>();
+    host.np = std::make_unique<NpState>();
     if (!app::init(host, std::move(cfg), root_paths)) {
         app::error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
