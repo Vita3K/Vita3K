@@ -20,7 +20,6 @@
 #include "sfo.h"
 #include "window.h"
 
-#include <net/state.h>
 #include <nids/types.h>
 #include <np/state.h>
 
@@ -43,6 +42,7 @@ struct DialogState;
 struct GxmState;
 struct IOState;
 struct KernelState;
+struct NetState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -79,7 +79,7 @@ struct HostState {
     std::shared_ptr<GxmState> gxm;
     bool renderer_focused;
     std::unique_ptr<IOState> io;
-    NetState net;
+    std::unique_ptr<NetState> net;
     NpState np;
     DisplayState display;
     std::unique_ptr<DialogState> common_dialog;

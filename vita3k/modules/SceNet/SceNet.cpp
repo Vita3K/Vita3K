@@ -18,6 +18,8 @@
 #include "SceNet.h"
 
 #include <net/functions.h>
+#include <net/state.h>
+
 #include <psp2/net/net.h>
 
 #ifdef WIN32
@@ -124,7 +126,7 @@ static int translate_errorcode() {
 }
 
 EXPORT(int, sceNetAccept, int s, SceNetSockaddr *addr, unsigned int *addrlen) {
-    int res = accept_socket(host.net, s, addr, addrlen);
+    int res = accept_socket(*host.net, s, addr, addrlen);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -133,7 +135,7 @@ EXPORT(int, sceNetAccept, int s, SceNetSockaddr *addr, unsigned int *addrlen) {
 }
 
 EXPORT(int, sceNetBind, int s, const SceNetSockaddr *name, unsigned int addrlen) {
-    int res = bind_socket(host.net, s, name, addrlen);
+    int res = bind_socket(*host.net, s, name, addrlen);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -146,7 +148,7 @@ EXPORT(int, sceNetClearDnsCache) {
 }
 
 EXPORT(int, sceNetConnect, int s, const SceNetSockaddr *name, unsigned int namelen) {
-    int res = connect_socket(host.net, s, name, namelen);
+    int res = connect_socket(*host.net, s, name, namelen);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -250,7 +252,7 @@ EXPORT(int, sceNetGetpeername) {
 }
 
 EXPORT(int, sceNetGetsockname, int s, SceNetSockaddr *name, unsigned int *namelen) {
-    int res = get_socket_address(host.net, s, name, namelen);
+    int res = get_socket_address(*host.net, s, name, namelen);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -301,7 +303,7 @@ EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
 }
 
 EXPORT(int, sceNetInit, SceNetInitParam *param) {
-    if (host.net.inited) {
+    if (host.net->inited) {
         return RET_ERROR(SCE_NET_ERROR_EINTERNAL);
     }
 #ifdef WIN32
@@ -309,12 +311,12 @@ EXPORT(int, sceNetInit, SceNetInitParam *param) {
     WSADATA wsaData;
     WSAStartup(versionWanted, &wsaData);
 #endif
-    host.net.inited = true;
+    host.net->inited = true;
     return 0;
 }
 
 EXPORT(int, sceNetListen, int s, int backlog) {
-    int res = listen_socket(host.net, s, backlog);
+    int res = listen_socket(*host.net, s, backlog);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -335,7 +337,7 @@ EXPORT(unsigned short int, sceNetNtohs, unsigned short int n) {
 }
 
 EXPORT(int, sceNetRecv, int s, void *buf, unsigned int len, int flags) {
-    int res = recv_packet(host.net, s, buf, len, flags, nullptr, 0);
+    int res = recv_packet(*host.net, s, buf, len, flags, nullptr, 0);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -344,7 +346,7 @@ EXPORT(int, sceNetRecv, int s, void *buf, unsigned int len, int flags) {
 }
 
 EXPORT(int, sceNetRecvfrom, int s, void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
-    int res = recv_packet(host.net, s, buf, len, flags, from, fromlen);
+    int res = recv_packet(*host.net, s, buf, len, flags, from, fromlen);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -385,7 +387,7 @@ EXPORT(int, sceNetResolverStartNtoa, int rid, const char *hostname, SceNetInAddr
 }
 
 EXPORT(int, sceNetSend, int s, const void *msg, unsigned int len, int flags) {
-    int res = send_packet(host.net, s, msg, len, flags, nullptr, 0);
+    int res = send_packet(*host.net, s, msg, len, flags, nullptr, 0);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -398,7 +400,7 @@ EXPORT(int, sceNetSendmsg) {
 }
 
 EXPORT(int, sceNetSendto, int s, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
-    int res = send_packet(host.net, s, msg, len, flags, to, tolen);
+    int res = send_packet(*host.net, s, msg, len, flags, to, tolen);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -411,7 +413,7 @@ EXPORT(int, sceNetSetDnsInfo) {
 }
 
 EXPORT(int, sceNetSetsockopt, int s, int level, int optname, const void *optval, unsigned int optlen) {
-    int res = set_socket_options(host.net, s, level, optname, optval, optlen);
+    int res = set_socket_options(*host.net, s, level, optname, optval, optlen);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -424,7 +426,7 @@ EXPORT(int, sceNetShowIfconfig) {
 }
 
 EXPORT(int, sceNetShowNetstat) {
-    if (!host.net.inited) {
+    if (!host.net->inited) {
         return RET_ERROR(SCE_NET_ERROR_ENOTINIT);
     }
     return 0;
@@ -442,7 +444,7 @@ EXPORT(int, sceNetSocket, const char *name, int domain, int type, int protocol) 
     if (type < SCE_NET_SOCK_STREAM || type > SCE_NET_SOCK_RAW) { // TODO: P2P type support
         return RET_ERROR(SCE_NET_ERROR_EINVAL);
     }
-    int res = open_socket(host.net, domain, type, protocol);
+    int res = open_socket(*host.net, domain, type, protocol);
     if (res < 0) {
         return RET_ERROR(translate_errorcode());
     } else {
@@ -455,17 +457,17 @@ EXPORT(int, sceNetSocketAbort) {
 }
 
 EXPORT(int, sceNetSocketClose, int s) {
-    return close_socket(host.net, s);
+    return close_socket(*host.net, s);
 }
 
 EXPORT(int, sceNetTerm) {
-    if (!host.net.inited) {
+    if (!host.net->inited) {
         return RET_ERROR(SCE_NET_ERROR_ENOTINIT);
     }
 #ifdef WIN32
     WSACleanup();
 #endif
-    host.net.inited = false;
+    host.net->inited = false;
     return 0;
 }
 

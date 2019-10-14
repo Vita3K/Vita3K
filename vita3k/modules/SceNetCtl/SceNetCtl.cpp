@@ -19,6 +19,7 @@
 
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
+#include <net/state.h>
 #include <util/lock_and_find.h>
 
 #include <psp2/net/netctl.h>
@@ -52,15 +53,15 @@ EXPORT(int, sceNetCtlAdhocUnregisterCallback) {
 }
 
 EXPORT(int, sceNetCtlCheckCallback) {
-    if (host.net.state == 0)
+    if (host.net->state == 0)
         return 0;
 
-    host.net.state = 0;
+    host.net->state = 0;
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
-    for (auto &callback : host.net.cbs) {
+    for (auto &callback : host.net->cbs) {
         Ptr<void> argp = Ptr<void>(callback.second.data);
-        run_on_current(*thread, Ptr<void>(callback.second.pc), host.net.state, argp);
+        run_on_current(*thread, Ptr<void>(callback.second.pc), host.net->state, argp);
     }
     return STUBBED("Stub");
 }
@@ -112,7 +113,7 @@ EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, u
     emu::SceNetCtlCallback sceNetCtlCallback;
     sceNetCtlCallback.pc = callback.address();
     sceNetCtlCallback.data = data.address();
-    host.net.cbs.emplace(*cid, sceNetCtlCallback);
+    host.net->cbs.emplace(*cid, sceNetCtlCallback);
     return 0;
 }
 

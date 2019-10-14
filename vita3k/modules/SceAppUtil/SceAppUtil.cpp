@@ -17,13 +17,14 @@
 
 #include "SceAppUtil.h"
 
-#include <psp2/apputil.h>
-#include <psp2/system_param.h>
-
 #include <config/config.h>
 #include <host/app_util.h>
 #include <io/device.h>
 #include <io/functions.h>
+#include <net/sockets.h>
+
+#include <psp2/apputil.h>
+#include <psp2/system_param.h>
 
 #include <cstring>
 
