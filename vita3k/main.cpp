@@ -25,6 +25,7 @@
 #include <config/version.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
+#include <display/display_state.h>
 #include <gui/functions.h>
 #include <gui/state.h>
 #include <gxm/state.h>
@@ -119,6 +120,7 @@ int main(int argc, char *argv[]) {
     host.cfg = std::make_unique<Config>();
     host.ctrl = std::make_unique<CtrlState>();
     host.common_dialog = std::make_unique<DialogState>();
+    host.display = std::make_unique<DisplayState>();
     host.gxm = std::make_shared<GxmState>();
     host.io = std::make_unique<IOState>();
     host.kernel = std::make_shared<KernelState>();
@@ -187,11 +189,11 @@ int main(int argc, char *argv[]) {
             gui::draw_perf_overlay(gui, host);
 
         gui::draw_trophies_unlocked(gui, host);
-        if (host.display.imgui_render) {
+        if (host.display->imgui_render) {
             gui::draw_ui(gui, host);
         }
 
-        host.display.condvar.notify_all();
+        host.display->condvar.notify_all();
         gui::draw_end(gui, host.window.get());
         app::set_window_title(host);
     }

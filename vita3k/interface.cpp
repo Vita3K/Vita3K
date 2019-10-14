@@ -18,6 +18,7 @@
 #include "interface.h"
 
 #include <config/config.h>
+#include <display/display_state.h>
 #include <gui/functions.h>
 #include <gxm/state.h>
 #include <host/functions.h>
@@ -275,13 +276,13 @@ bool handle_events(HostState &host, GuiState &gui) {
         case SDL_QUIT:
             stop_all_threads(*host.kernel);
             host.gxm->display_queue.abort();
-            host.display.abort.exchange(true);
-            host.display.condvar.notify_all();
+            host.display->abort.exchange(true);
+            host.display->condvar.notify_all();
             return false;
 
         case SDL_KEYDOWN:
             if (event.key.keysym.sym == SDLK_g) {
-                auto &display = host.display;
+                auto &display = *host.display;
 
                 // toggle gui state
                 bool old_imgui_render = display.imgui_render.load();
@@ -292,12 +293,12 @@ bool handle_events(HostState &host, GuiState &gui) {
                 toggle_touchscreen();
             }
             if (event.key.keysym.sym == SDLK_F11) {
-                host.display.fullscreen = !host.display.fullscreen;
+                host.display->fullscreen = !host.display->fullscreen;
 
-                if (host.display.fullscreen.load())
+                if (host.display->fullscreen.load())
                     SDL_MaximizeWindow(host.window.get());
 
-                SDL_SetWindowFullscreen(host.window.get(), host.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+                SDL_SetWindowFullscreen(host.window.get(), host.display->fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
             }
 
         case SDL_WINDOWEVENT:
@@ -331,7 +332,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
         return ModuleLoadFailed;
     }
     if (!host.cfg->show_gui) {
-        auto &imgui_render = host.display.imgui_render;
+        auto &imgui_render = host.display->imgui_render;
 
         bool old_imgui_render = imgui_render.load();
         while (!imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {

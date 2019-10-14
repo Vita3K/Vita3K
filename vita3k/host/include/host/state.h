@@ -20,7 +20,7 @@
 #include "sfo.h"
 #include "window.h"
 
-#include <mem/ptr.h>
+#include <mem/mem.h> // MemState
 #include <nids/types.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
@@ -28,10 +28,8 @@
 #include <gdbstub/state.h>
 #endif
 
-#include <psp2/display.h>
+#include <psp2/types.h>
 
-#include <atomic>
-#include <condition_variable>
 #include <memory>
 #include <string>
 
@@ -39,23 +37,12 @@ struct AudioState;
 struct Config;
 struct CtrlState;
 struct DialogState;
+struct DisplayState;
 struct GxmState;
 struct IOState;
 struct KernelState;
 struct NetState;
 struct NpState;
-
-struct DisplayState {
-    Ptr<const void> base;
-    uint32_t pitch = 0;
-    uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-    SceIVector2 image_size = { 0, 0 };
-    std::mutex mutex;
-    std::condition_variable condvar;
-    std::atomic<bool> abort{ false };
-    std::atomic<bool> imgui_render{ true };
-    std::atomic<bool> fullscreen{ false };
-};
 
 struct HostState {
     std::string game_version;
@@ -82,7 +69,7 @@ struct HostState {
     std::unique_ptr<IOState> io;
     std::unique_ptr<NetState> net;
     std::unique_ptr<NpState> np;
-    DisplayState display;
+    std::unique_ptr<DisplayState> display;
     std::unique_ptr<DialogState> common_dialog;
     SfoFile sfo_handle;
     NIDSet missing_nids;
