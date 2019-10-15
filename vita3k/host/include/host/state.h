@@ -44,6 +44,10 @@ struct KernelState;
 struct NetState;
 struct NpState;
 
+namespace renderer {
+struct State;
+}
+
 struct HostState {
     std::string game_version;
     std::string game_title;
@@ -56,7 +60,7 @@ struct HostState {
     uint32_t ms_per_frame = 0;
     bool should_update_window_title = false;
     WindowPtr window;
-    RendererPtr renderer;
+    std::unique_ptr<renderer::State> renderer;
     SceIVector2 drawable_size = { 0, 0 };
     SceFVector2 viewport_pos = { 0, 0 };
     SceFVector2 viewport_size = { 0, 0 };

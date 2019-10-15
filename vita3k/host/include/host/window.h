@@ -17,13 +17,8 @@
 
 #pragma once
 
-#include <functional>
 #include <memory>
 
 struct SDL_Window;
-namespace renderer {
-struct State;
-}
 
 typedef std::shared_ptr<SDL_Window> WindowPtr;
-typedef std::unique_ptr<renderer::State> RendererPtr;
