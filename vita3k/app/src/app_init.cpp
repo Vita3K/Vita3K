@@ -155,7 +155,7 @@ bool init(HostState &state, Config cfg, const Root &root_paths) {
 
     state.kernel->base_tick = { rtc_base_ticks() };
 
-    if (renderer::init(state.window, state.renderer, backend)) {
+    if (renderer::init(state.window.get(), state.renderer, backend)) {
         update_viewport(state);
         return true;
     } else {

@@ -48,7 +48,7 @@ std::string load_shader(const SceGxmProgram &program, const FeatureState &featur
 bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderStatics &statics, const MemState &mem,
     const SceGxmProgramParameter *parameter, const void *data, bool log_uniforms);
 
-bool create(WindowPtr &window, std::unique_ptr<renderer::State> &state);
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state);
 bool create(std::unique_ptr<Context> &context);
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);

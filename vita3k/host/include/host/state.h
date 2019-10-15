@@ -59,7 +59,7 @@ struct HostState {
     uint32_t fps = 0;
     uint32_t ms_per_frame = 0;
     bool should_update_window_title = false;
-    WindowPtr window;
+    WindowPtr window = WindowPtr(nullptr, nullptr);
     std::unique_ptr<renderer::State> renderer;
     SceIVector2 drawable_size = { 0, 0 };
     SceFVector2 viewport_pos = { 0, 0 };

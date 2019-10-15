@@ -112,7 +112,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
     return false;
 }
 
-bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend) {
+bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend) {
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();

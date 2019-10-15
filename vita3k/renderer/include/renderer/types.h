@@ -8,7 +8,6 @@
 #include <psp2/gxm.h>
 
 #include <map>
-#include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -16,9 +15,7 @@
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
 
-// Copy from host/window.h for the moment.
 struct SDL_Window;
-typedef std::shared_ptr<SDL_Window> WindowPtr;
 
 namespace renderer {
 

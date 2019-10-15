@@ -185,7 +185,7 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
     LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
 }
 
-bool create(WindowPtr &window, std::unique_ptr<State> &state) {
+bool create(SDL_Window *window, std::unique_ptr<State> &state) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
 
     // Recursively create GL version until one accepts
@@ -205,7 +205,7 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     for (int i = 0; i < sizeof(accept_gl_version) / sizeof(int); i++) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, accept_gl_version[i]);
 
-        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window.get()), SDL_GL_DeleteContext);
+        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
         if (gl_state.context) {
             choosen_minor_version = accept_gl_version[i];
             break;
