@@ -31,6 +31,7 @@
 #include <util/log.h>
 
 #include <algorithm>
+#include <nfd.h>
 
 namespace gui {
 
@@ -61,6 +62,45 @@ static bool change_pref_location(const std::string &input_path, const std::strin
         return false;
     }
     return true;
+}
+
+static void change_emulator_path(GuiState &gui, HostState &host) {
+    nfdchar_t *emulator_path = nullptr;
+    nfdresult_t result = NFD_PickFolder(nullptr, &emulator_path);
+
+    if (result == NFD_OKAY && emulator_path != host.pref_path) {
+        // Refresh the working paths
+        host.cfg.pref_path = static_cast<std::string>(emulator_path) + '/';
+        host.pref_path = host.cfg.pref_path;
+
+        config::serialize_config(host.cfg, host.cfg.config_path);
+
+        // TODO: Move game old to new path
+        refresh_game_list(gui, host);
+        LOG_INFO("Successfully moved Vita3K path to: {}", host.pref_path);
+    }
+}
+
+static bool change_user_image_background(GuiState &gui, HostState &host) {
+    nfdchar_t *image_path = nullptr;
+    nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &image_path);
+
+    if (result == NFD_OKAY && host.cfg.background_image != static_cast<std::string>(image_path)) {
+        const std::string image_path_str = static_cast<std::string>(image_path);
+
+        if (gui.user_backgrounds.find(image_path_str) == gui.user_backgrounds.end())
+            init_background(gui, image_path_str);
+        else
+            gui.current_background = gui.user_backgrounds[image_path_str];
+
+        if (gui.user_backgrounds.find(image_path_str) != gui.user_backgrounds.end()) {
+            host.cfg.background_image = image_path_str;
+            return true;
+        } else
+            return false;
+
+    } else
+        return false;
 }
 
 void get_modules_list(GuiState &gui, HostState &host) {
@@ -188,47 +228,33 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
+        ImGui::Separator();
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR_OPTIONS, "Emulated System Storage Folder");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
-        ImGui::InputTextWithHint("Set emulated system storage folder.", "Write your path folder here", &host.cfg.pref_path);
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", host.cfg.pref_path.c_str());
         ImGui::PopItemWidth();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Set the path to the folder here. \nPress \"Apply\" when finished to move to the new folder. \nWARNING: This cannot be undone.");
-        if (ImGui::Button("Apply New Path") && !host.cfg.pref_path.empty()) {
-            if (host.cfg.pref_path.back() != '/')
-                host.cfg.pref_path += '/';
-            if (host.cfg.pref_path != host.pref_path) {
-                //if (change_pref_location(host.cfg.pref_path, host.pref_path)) { TODO
-                host.pref_path = host.cfg.pref_path;
-
-                // Refresh the working paths
-                config::serialize_config(host.cfg, host.cfg.config_path);
-                refresh_game_list(gui, host);
-                LOG_INFO("Successfully change Vita3K path files to: {}", host.pref_path);
-                //}
-            }
-        }
+        ImGui::Spacing();
+        if (ImGui::Button("Change Emulator Path"))
+            change_emulator_path(gui, host);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Change Vita3K emulator path like wanted.\nNeed move folder old to new manualy.");
-        ImGui::SameLine();
-        if (ImGui::Button("Reset Path Emulator")) {
-            //host.cfg = Config{}; TODO: code broken, causing crash.
+        if (host.cfg.pref_path != host.default_path) {
+            ImGui::SameLine();
+            if (ImGui::Button("Reset Path Emulator")) {
+                if (host.default_path != host.pref_path) {
+                    host.pref_path = host.default_path;
+                    host.cfg.pref_path = host.pref_path;
 
-            //LOG_INFO("Resetted Vita3K configuration and config file to default values.");
-            if (host.default_path != host.pref_path) {
-                //if (change_pref_location(host.default_path, host.pref_path)) { // TODO, code broken, don't move anything.
-                host.pref_path = host.default_path;
-                host.cfg.pref_path = host.pref_path;
-
-                // Refresh the working paths
-                config::serialize_config(host.cfg, host.cfg.config_path);
-                refresh_game_list(gui, host);
-                LOG_INFO("Successfully restore default path for Vita3K files to: {}", host.pref_path);
-                //}
+                    // Refresh the working paths
+                    config::serialize_config(host.cfg, host.cfg.config_path);
+                    refresh_game_list(gui, host);
+                    LOG_INFO("Successfully restore default path for Vita3K files to: {}", host.pref_path);
+                }
             }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Reset Vita3K emulator path to default.\nNeed move folder old to default manualy.");
         }
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Reset Vita3K emulator path to default.\nNeed move folder old to default manualy.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();
@@ -252,25 +278,29 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 32, 128);
         ImGui::Spacing();
-        ImGui::PushItemWidth(400);
-        ImGui::InputTextWithHint("Set background image", "Add your path to the image here", &host.cfg.background_image);
-        ImGui::PopItemWidth();
-        if (ImGui::Button("Apply Change Image")) {
-            if (!gui.user_backgrounds[host.cfg.background_image])
-                init_background(gui, host.cfg.background_image);
-            else if (gui.user_backgrounds[host.cfg.background_image])
-                gui.current_background = gui.user_backgrounds[host.cfg.background_image];
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Reset Background")) {
-            if (gui.current_background == gui.user_backgrounds[host.cfg.background_image])
-                gui.current_background = nullptr;
-            host.cfg.background_image.clear();
-            gui.user_backgrounds.clear();
-        }
+        ImGui::Separator();
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR_OPTIONS, "Background Image");
         ImGui::Spacing();
+        char *image_button = "Add Image";
+        if (gui.user_backgrounds[host.cfg.background_image]) {
+            ImGui::PushItemWidth(400);
+            ImGui::TextColored(GUI_COLOR_TEXT, "Current image: %s", host.cfg.background_image.c_str());
+            ImGui::PopItemWidth();
+            ImGui::Spacing();
+            if (ImGui::Button("Reset Image")) {
+                if (gui.current_background == gui.user_backgrounds[host.cfg.background_image])
+                    gui.current_background = nullptr;
+                host.cfg.background_image.clear();
+                gui.user_backgrounds.clear();
+            }
+            image_button = "Change Image";
+            ImGui::SameLine();
+        }
+        if (ImGui::Button(image_button))
+            LOG_INFO_IF(change_user_image_background(gui, host), "Succes change image: {}", host.cfg.background_image);
         if (gui.current_background) {
-            ImGui::SliderFloat("Background Alpha \nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
+            ImGui::Spacing();
+            ImGui::SliderFloat("Background Alpha\nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("The minimum slider is opaque and the maximum is transparent.");
         }
