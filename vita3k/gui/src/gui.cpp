@@ -294,6 +294,8 @@ void draw_ui(GuiState &gui, HostState &host) {
 
     ImGui::PushFont(gui.monospaced_font);
 
+    if (gui.file_menu.game_install_dialog)
+        draw_game_install_dialog(gui, host);
     if (gui.debug_menu.threads_dialog)
         draw_threads_dialog(gui, host);
     if (gui.debug_menu.thread_details_dialog)

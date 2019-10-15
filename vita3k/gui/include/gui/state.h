@@ -59,6 +59,10 @@ struct GamesSelector {
     SelectorState state = SELECT_APP;
 };
 
+struct FileMenuState {
+    bool game_install_dialog = false;
+};
+
 struct DebugMenuState {
     bool threads_dialog = false;
     bool thread_details_dialog = false;
@@ -96,10 +100,14 @@ struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
 
     bool renderer_focused = true;
+    gui::FileMenuState file_menu;
     gui::DebugMenuState debug_menu;
     gui::ConfigurationMenuState configuration_menu;
     gui::HelpMenuState help_menu;
     gui::GamesSelector game_selector;
+
+    std::string app_ver;
+    bool game_reinstall_confirm = false;
 
     MemoryEditor memory_editor;
     MemoryEditor gxp_shader_editor;
