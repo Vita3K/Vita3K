@@ -76,6 +76,7 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
         config::serialize_config(host.cfg, host.cfg.config_path);
 
         // TODO: Move game old to new path
+        get_modules_list(gui, host);
         refresh_game_list(gui, host);
         LOG_INFO("Successfully moved Vita3K path to: {}", host.pref_path);
     }
@@ -246,8 +247,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                     host.pref_path = host.default_path;
                     host.cfg.pref_path = host.pref_path;
 
-                    // Refresh the working paths
                     config::serialize_config(host.cfg, host.cfg.config_path);
+
+                    // Refresh the working paths
+                    get_modules_list(gui, host);
                     refresh_game_list(gui, host);
                     LOG_INFO("Successfully restore default path for Vita3K files to: {}", host.pref_path);
                 }
@@ -281,7 +284,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR_OPTIONS, "Background Image");
         ImGui::Spacing();
-        char *image_button = "Add Image";
+        std::string image_button = "Add Image";
         if (gui.user_backgrounds[host.cfg.background_image]) {
             ImGui::PushItemWidth(400);
             ImGui::TextColored(GUI_COLOR_TEXT, "Current image: %s", host.cfg.background_image.c_str());
@@ -296,7 +299,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             image_button = "Change Image";
             ImGui::SameLine();
         }
-        if (ImGui::Button(image_button))
+        if (ImGui::Button(image_button.c_str()))
             LOG_INFO_IF(change_user_image_background(gui, host), "Succes change image: {}", host.cfg.background_image);
         if (gui.current_background) {
             ImGui::Spacing();

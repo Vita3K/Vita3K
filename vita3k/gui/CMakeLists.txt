@@ -20,6 +20,7 @@ add_library(
 	src/condvars_dialog.cpp
 	src/eventflags_dialog.cpp
 	src/game_context_menu.cpp
+	src/game_install_dialog.cpp
 	src/game_selector.cpp
 	src/gui.cpp
 	src/imgui_impl_sdl_gl3.cpp
@@ -41,6 +42,6 @@ add_library(
 	src/trophy_unlocked.cpp
 )
 
-target_include_directories(gui PUBLIC include)
-target_link_libraries(gui PUBLIC host imgui glutil)
+target_include_directories(gui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
+target_link_libraries(gui PUBLIC app host imgui glutil)
 target_link_libraries(gui PRIVATE nativefiledialog stb renderer)

@@ -67,7 +67,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
     return true;
 }
 
-static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const fs::path &path) {
+bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     if (!fs::exists(path)) {
         LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_path().string());
         return false;
@@ -113,27 +113,38 @@ static bool install_vpk(Ptr<const void> &entry_point, HostState &host, GuiState 
     SfoFile sfo_handle;
     sfo::load(sfo_handle, params);
     sfo::get_data_by_key(host.io.title_id, sfo_handle, "TITLE_ID");
+    sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
+    sfo::get_data_by_key(host.game_version, sfo_handle, "APP_VER");
 
     fs::path output_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
     const auto created = fs::create_directories(output_path);
     if (!created) {
-        gui::GenericDialogState status = gui::UNK_STATE;
-        while (handle_events(host, gui) && (status == 0)) {
-            ImGui_ImplSdl_NewFrame(gui.imgui_state.get());
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gui::draw_ui(gui, host);
-            gui::draw_reinstall_dialog(&status);
-            glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
-            ImGui::Render();
-            ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
-            SDL_GL_SwapWindow(host.window.get());
-        }
-        if (status == gui::CANCEL_STATE) {
-            LOG_INFO("{} already installed, launching application...", host.io.title_id);
-            return true;
-        } else if (status == gui::UNK_STATE) {
-            exit(0);
+        if (!gui.file_menu.game_install_dialog) {
+            gui::GenericDialogState status = gui::UNK_STATE;
+            while (handle_events(host, gui) && (status == 0)) {
+                ImGui_ImplSdl_NewFrame(gui.imgui_state.get());
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                gui::draw_ui(gui, host);
+                gui::draw_reinstall_dialog(&status);
+                glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
+                ImGui::Render();
+                ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
+                SDL_GL_SwapWindow(host.window.get());
+            }
+            if (status == gui::CANCEL_STATE) {
+                LOG_INFO("{} already installed, launching application...", host.io.title_id);
+                return true;
+            } else if (status == gui::UNK_STATE) {
+                exit(0);
+            }
+        } else if (gui.file_menu.game_install_dialog && !gui.game_reinstall_confirm) {
+            vfs::FileBuffer params;
+            vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
+            sfo::load(host.sfo_handle, params);
+            sfo::get_data_by_key(gui.app_ver, host.sfo_handle, "APP_VER");
+            gui.game_reinstall_confirm = true;
+            return false;
         }
     }
 
@@ -165,7 +176,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         return InvalidApplicationPath;
 
     if (run_type == app::AppRunType::Vpk) {
-        if (!install_vpk(entry_point, host, gui, path)) {
+        if (!install_vpk(host, gui, path)) {
             return FileNotFound;
         }
     } else if (run_type == app::AppRunType::Extracted) {
