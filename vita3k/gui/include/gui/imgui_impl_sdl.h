@@ -3,7 +3,8 @@
 #include <imgui.h>
 
 #include <gui/imgui_impl_sdl_state.h>
-#include <host/window.h>
+
+#include <string>
 
 union SDL_Event;
 struct SDL_Window;
