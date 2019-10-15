@@ -42,7 +42,7 @@ bool refresh_game_list(GuiState &gui, HostState &host) {
 
     if (gui.game_selector.games.empty())
         return false;
- 
+
     init_icons(gui, host);
 
     std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
@@ -247,7 +247,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
             if (ImGui::IsItemHovered() && gui.current_background != gui.user_backgrounds[host.cfg.background_image])
-                 gui.current_background = gui.user_backgrounds[host.cfg.background_image];
+                gui.current_background = gui.user_backgrounds[host.cfg.background_image];
             ImGui::Selectable(game.title.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, static_cast<float>(icon_size)));
             ImGui::NextColumn();
             if (std::find(std::begin(selected), std::end(selected), true) != std::end(selected)) {

@@ -114,7 +114,7 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
                     fs::remove_all(user_path / host.io.user_id);
                     host.cfg.online_id.erase(delete_online_id);
                     if (host.cfg.user_id < static_cast<int>(host.cfg.online_id.size())) {
-                        auto o = host.cfg.user_id + 1, n = host.cfg.user_id; 
+                        auto o = host.cfg.user_id + 1, n = host.cfg.user_id;
                         for (o, n; o < host.cfg.online_id.size() + 1 && n < host.cfg.online_id.size(); o++, n++) {
                             auto old_user_id = fmt::format("{:0>2d}", o);
                             auto new_user_id = fmt::format("{:0>2d}", n);
