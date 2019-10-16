@@ -941,29 +941,24 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     spv::Function *vert_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "vert_output_finalize", {},
         decorations, &vert_fin_block);
 
-    SceGxmVertexOutputTexCoordInfos coord_infos;
+    SceGxmVertexOutputTexCoordInfos coord_infos = { };
     SceGxmVertexProgramOutputs vertex_outputs = gxp::get_vertex_outputs(program, &coord_infos);
 
     auto set_property = [](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count) {
         return std::make_pair(vo, VertexProgramOutputProperties(name, component_count));
     };
 
-    static auto calculate_copy_comp_count = [](const SceGxmVertexOutputTexCoordInfo &info) {
-        // This is just an assumption, but the coord info type field tells us how the shader gonna pack the coord,
-        // either in F16 form or F32 form. What only matter here is the actually total F32 components that the coord will
-        // hold. How the fragment will pack or load this data doesn't matter to us here.
-        // TODO: Need confirmation.
-        // Normally, the total components is first 2 bits of the info plus 1. Dependent on if the component type is F16
-        // or F32, we can get the total F32 components.
-        //
-        // NOTE: The following is wrong. Needs confirmation.
-        // If bit 3 of the coord info is set, the coord should be packed by shader bytecodes to F16, else it will
-        // be packed to F32.
-        // How coincidental that the bit will tell us how much to shift right, to get the total F32 components that this
-        // coord will consist of.
-        //
-        // Testing reveal no usage of bit 3 yet.
-        return info.comp_count + info.type;
+    static auto calculate_copy_comp_count = [](uint8_t info) {
+        // TexCoord info uses preset values described below for determining lengths.
+        uint8_t length = 0;
+        if (info & 0b001u)
+            length += 2; // uses xy
+        if (info & 0b010u)
+            length += 1; // uses z
+        if (info & 0b100u)
+            length += 1; // uses w
+
+        return length;
     };
 
     // TODO: Verify component counts

@@ -1327,7 +1327,7 @@ bool USSETranslatorVisitor::vdual(
             return type_f16 ? 0b0011 : 0b0001;
     };
 
-    op1.opcode = op1_codes[dual_op1_ext_vec3_or_has_w_vec4 << 3u | dual_op1];
+    op1.opcode = op1_codes[(!comp_count_type && dual_op1_ext_vec3_or_has_w_vec4) << 3u | dual_op1];
     op2.opcode = op2_codes[dual_op2_ext << 3u | dual_op2];
 
     // Unified is only part of instruction that can reference any bank. Others are internal.
@@ -1357,8 +1357,12 @@ bool USSETranslatorVisitor::vdual(
         return false;
     }
 
-    Imm4 op1_write_mask = prim_ustore ? get_dual_op_write_mask(op1_info, op1.opr.dest.bank == RegisterBank::FPINTERNAL) : write_mask_non_gpi;
-    Imm4 op2_write_mask = prim_ustore ? write_mask_non_gpi : get_dual_op_write_mask(op2_info, op2.opr.dest.bank == RegisterBank::FPINTERNAL);
+    Imm4 fixed_write_mask = write_mask_non_gpi | ((comp_count_type && dual_op1_ext_vec3_or_has_w_vec4) << 3u);
+
+    Imm4 op1_write_mask = prim_ustore ?
+        get_dual_op_write_mask(op1_info, op1.opr.dest.bank == RegisterBank::FPINTERNAL) : fixed_write_mask;
+    Imm4 op2_write_mask = prim_ustore ?
+        fixed_write_mask : get_dual_op_write_mask(op2_info, op2.opr.dest.bank == RegisterBank::FPINTERNAL);
 
     auto create_srcs_from_layout = [&](std::array<DualSrcId, 3> layout, DualOpInfo code_info) {
         std::vector<Operand> srcs;
@@ -1458,6 +1462,16 @@ bool USSETranslatorVisitor::vdual(
         case Opcode::VSSQ: {
             const spv::Id source = load(ops[0], write_mask_source);
             result = m_b.createBinOp(spv::OpDot, type_f32, source, source);
+            break;
+        }
+        case Opcode::FMAD:
+        case Opcode::VMAD: {
+            const spv::Id first = load(ops[0], write_mask_source);
+            const spv::Id second = load(ops[1], write_mask_source);
+            const spv::Id third = load(ops[2], write_mask_source);
+            const spv::Id type = m_b.getTypeId(first);
+            result = m_b.createBinOp(spv::OpFMul, type, first, second);
+            result = m_b.createBinOp(spv::OpFAdd, type, result, third);
             break;
         }
         default:
