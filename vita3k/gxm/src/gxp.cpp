@@ -193,10 +193,8 @@ SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, SceG
         if (vo2 & coordinfo_mask) {
             res |= (SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0 << i);
 
-            if (coord_infos) {
-                std::uint8_t info = static_cast<std::uint8_t>(vo2 >> to_shift);
-                (*coord_infos)[i] = *reinterpret_cast<SceGxmVertexOutputTexCoordInfo *>(&info);
-            }
+            if (coord_infos)
+                (*coord_infos)[i] = static_cast<std::uint8_t>((vo2 >> to_shift) & 0b111u);
         }
 
         to_shift += 3;
