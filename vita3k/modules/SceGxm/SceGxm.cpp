@@ -1191,8 +1191,12 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     return 0;
 }
 
-EXPORT(int, sceGxmSetFragmentUniformBuffer) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmSetFragmentUniformBuffer, SceGxmContext *context, int index, Ptr<void> data) {
+    assert(context != nullptr);
+    assert(data);
+    
+    context->state.fragment_uniform_buffers[index] = data;
+    return 0;
 }
 
 EXPORT(void, sceGxmSetFrontDepthBias, SceGxmContext *context, int factor, int units) {
