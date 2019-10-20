@@ -431,7 +431,7 @@ struct SceGxmProgramParameterContainer {
     uint16_t container_index;
     uint16_t unk02;
     uint16_t base_sa_offset;
-    uint16_t max_resource_index;
+    uint16_t size_in_f32;
 };
 
 struct SceGxmRegisteredProgram {

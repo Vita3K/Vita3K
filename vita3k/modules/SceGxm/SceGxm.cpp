@@ -1366,8 +1366,12 @@ EXPORT(int, sceGxmSetVertexTexture) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetVertexUniformBuffer) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, int index, Ptr<void> data) {
+    assert(context != nullptr);
+    assert(data);
+    
+    context->state.vertex_uniform_buffers[index] = data;
+    return 0;
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
