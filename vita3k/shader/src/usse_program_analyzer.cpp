@@ -90,7 +90,7 @@ bool is_buffer_fetch_or_store(const std::uint64_t inst, int &base, int &cursor, 
     cursor = 0;
 
     // Are you me? Or am i you
-    if (((inst >> 61) & 0b111) == 0b111) {
+    if (((inst >> 59) & 0b11111) == 0b11101 || ((inst >> 59) & 0b11111) == 0b11110) {
         // Get the base
         offset = cursor + (inst >> 7) & 0b1111111;
         base = (inst >> 14) & 0b1111111;
@@ -161,14 +161,15 @@ void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &
             if (buffer_size != -1) {
                 sizes[parameter.resource_index] = buffer_size;
             }
+        } else if (parameter.type == SCE_GXM_PARAMETER_CATEGORY_UNIFORM || parameter.type == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+            const auto con = gxp::get_container_by_index(program, parameter.container_index);
+
+            if (con) {
+                sizes[parameter.container_index] = con->size_in_f32;
+            } else {
+                sizes[parameter.container_index] = 0;
+            }
         }
-    }
-
-    // Get default container resource index
-    const auto default_con = gxp::get_container_by_index(program, SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX);
-
-    if (default_con) {
-        sizes[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = (default_con->max_resource_index + 3) / 4;
     }
 }
 } // namespace shader::usse
