@@ -262,6 +262,7 @@ void init(GuiState &gui, HostState &host) {
     assert(result);
 
     get_game_titles(gui, host);
+    get_modules_list(gui, host);
     init_icons(gui, host);
 
     if (!host.cfg.background_image.empty())

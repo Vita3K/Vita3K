@@ -112,6 +112,7 @@ struct GuiState {
 
     std::string online_id;
 
+    std::vector<std::string> modules_list;
     ImGuiTextFilter module_search_bar;
 
     ImGuiTextFilter game_search_bar;

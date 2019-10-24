@@ -28,35 +28,9 @@
 #include <util/fs.h>
 #include <util/log.h>
 
+#include <algorithm>
+
 namespace gui {
-
-namespace list {
-
-static const char *LIST_MODULES[] = {
-    "activity_db", "adhoc_matching", "apputil", "apputil_ext", "audiocodec", "avcdec_for_player", "bgapputil", "bXCe",
-    "common_gui_dialog", "dbrecovery_utility", "dbutil", "friend_select", "incoming_dialog", "ini_file_processor",
-    "libatrac", "libc", "libcdlg", "libcdlg_calendar_review", "libcdlg_cameraimport", "libcdlg_checkout", "libcdlg_companion",
-    "libcdlg_compat", "libcdlg_cross_controller", "libcdlg_friendlist", "libcdlg_friendlist2", "libcdlg_game_custom_data",
-    "libcdlg_game_custom_data_impl", "libcdlg_ime", "libcdlg_invitation", "libcdlg_invitation_impl", "libcdlg_main", "libcdlg_msg",
-    "libcdlg_near", "libcdlg_netcheck", "libcdlg_npeula", "libcdlg_npprofile2", "libcdlg_np_message", "libcdlg_np_sns_fb",
-    "libcdlg_np_trophy_setup", "libcdlg_photoimport", "libcdlg_photoreview", "libcdlg_pocketstation", "libcdlg_remote_osk",
-    "libcdlg_savedata", "libcdlg_twitter", "libcdlg_tw_login", "libcdlg_videoimport", "libclipboard", "libdbg", "libfiber",
-    "libfios2", "libg729", "libgameupdate", "libhandwriting", "libhttp", "libime", "libipmi_nongame", "liblocation",
-    "liblocation_extension", "liblocation_factory", "liblocation_internal", "libmln", "libmlnapplib", "libmlndownloader",
-    "libnaac", "libnet", "libnetctl", "libngs", "libpaf", "libpaf_web_map_view", "libperf", "libpgf", "libpvf", "librudp",
-    "libsas", "libsceavplayer", "libSceBeisobmf", "libSceBemp2sys", "libSceCompanionUtil", "libSceDtcpIp", "libSceFt2",
-    "libscejpegarm", "libscejpegencarm", "libSceJson", "libscemp4", "libSceMp4Rec", "libSceMusicExport", "libSceNearDialogUtil",
-    "libSceNearUtil", "libScePhotoExport", "libScePromoterUtil", "libSceScreenShot", "libSceShutterSound", "libSceSqlite",
-    "libSceTelephonyUtil", "libSceTeleportClient", "libSceTeleportServer", "libSceVideoExport", "libSceVideoSearchEmpr",
-    "libSceXml", "libshellsvc", "libssl", "libsystemgesture", "libult", "libvoice", "libvoiceqos", "livearea_util",
-    "mail_api_for_local_libc", "near_profile", "notification_util", "np_activity", "np_activity_sdk", "np_basic",
-    "np_commerce2", "np_common", "np_common_ps4", "np_friend_privacylevel", "np_kdc", "np_manager", "np_matching2",
-    "np_message", "np_message_contacts", "np_message_dialog_impl", "np_message_padding", "np_party", "np_ranking",
-    "np_signaling", "np_sns_facebook", "np_trophy", "np_tus", "np_utility", "np_webapi", "party_member_list",
-    "psmkdc", "pspnet_adhoc", "signin_ext", "sqlite", "store_checkout_plugin", "trigger_util", "web_ui_plugin"
-};
-
-constexpr int MODULES_COUNT = IM_ARRAYSIZE(LIST_MODULES);
 
 static const char *LIST_SYS_LANG[] = {
     "Japanese", "American English", "French", "Spanish", "German", "Italian", "Dutch", "Portugal Portuguese",
@@ -65,8 +39,6 @@ static const char *LIST_SYS_LANG[] = {
 };
 
 constexpr int SYS_LANG_COUNT = IM_ARRAYSIZE(LIST_SYS_LANG);
-
-} // namespace list
 
 static bool change_pref_location(const std::string &input_path, const std::string &current_path) {
     if (fs::path(input_path).has_extension())
@@ -101,7 +73,22 @@ static bool clear_and_refresh_game_list(HostState &host, GuiState &gui) {
     return true;
 }
 
-using namespace list;
+void get_modules_list(GuiState &gui, HostState &host)
+{
+    gui.modules_list.clear();
+
+    const auto modules_path{ fs::path(host.pref_path) / "vs0/sys/external/" };
+    if (!modules_path.empty()) {
+        fs::recursive_directory_iterator end;
+        const std::string ext = ".suprx";
+        for (fs::recursive_directory_iterator m(modules_path); m != end; ++m) {
+            const fs::path lle = *m;
+            if (m->path().extension() == ext)
+                gui.modules_list.push_back(lle.filename().replace_extension().string());
+        }
+    }
+}
+
 void draw_settings_dialog(GuiState &gui, HostState &host) {
     const ImGuiWindowFlags settings_flags = ImGuiWindowFlags_AlwaysAutoResize;
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
@@ -112,21 +99,21 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     // Core
     if (ImGui::BeginTabItem("Core")) {
         ImGui::PopStyleColor();
-        if (fs::exists(fs::path(host.pref_path) / "vs0/sys/external")) {
-            ImGui::Text("Module List");
+        if (!gui.modules_list.empty()) {
+            ImGui::TextColored(GUI_COLOR_TEXT, "Module List");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::PushItemWidth(240);
-            static bool module_select[MODULES_COUNT] = { false };
-            if (ImGui::ListBoxHeader("##modules_list", MODULES_COUNT, 6)) {
-                for (int m = 0; m < MODULES_COUNT; m++) {
-                    auto modules = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), LIST_MODULES[m]);
+            static std::vector<bool> module_select(gui.modules_list.size());
+            if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules_list.size()), 6)) {
+                for (int m = 0; m < gui.modules_list.size(); m++) {
+                    auto modules = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), gui.modules_list[m]);
                     if (modules != host.cfg.lle_modules.end() && !module_select[m])
                         module_select[m] = true;
-                    if (!gui.module_search_bar.PassFilter(LIST_MODULES[m]))
+                    if (!gui.module_search_bar.PassFilter(gui.modules_list[m].c_str()))
                         continue;
-                    if (ImGui::Selectable(LIST_MODULES[m], &module_select[m]) && modules == host.cfg.lle_modules.end())
-                        host.cfg.lle_modules.push_back(LIST_MODULES[m]);
+                    if (ImGui::Selectable(gui.modules_list[m].c_str(), module_select[m]) && modules == host.cfg.lle_modules.end())
+                        host.cfg.lle_modules.push_back(gui.modules_list[m]);
                     else if (!module_select[m] && modules != host.cfg.lle_modules.end())
                         host.cfg.lle_modules.erase(modules);
                 }
@@ -139,10 +126,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
                 host.cfg.lle_modules.clear();
-                memset(module_select, 0, sizeof(module_select));
+                std::fill(module_select.begin(), module_select.end(), false);
             }
         } else {
-            ImGui::Text("No modules present.\nPlease dump decrypted modules from your PS Vita.");
+            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease dump decrypted modules from your PS Vita.");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Put decrypted modules inside 'vs0/sys/external/'.");
         }
@@ -171,7 +158,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your language. \nNote that some games might not have your language.");
         ImGui::Spacing();
-        ImGui::Text("Enter Button Assignment \nSelect your 'Enter' Button.");
+        ImGui::TextColored(GUI_COLOR_TEXT, "Enter Button Assignment \nSelect your 'Enter' Button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in game dialogs. \nSome games don't use this and get default confirmation button.");
         ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
@@ -193,9 +180,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred log level.");
-        if (ImGui::Button("Apply Log Level")) {
+        if (ImGui::Button("Apply Log Level"))
             logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
-        }
         ImGui::Spacing();
         ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
         if (ImGui::IsItemHovered())
@@ -286,7 +272,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         }
         ImGui::Spacing();
         if (gui.current_background) {
-            ImGui::SliderFloat("Background Alpha \nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
+            ImGui::SliderFloat("Background Alpha\nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("The minimum slider is opaque and the maximum is transparent.");
         }
