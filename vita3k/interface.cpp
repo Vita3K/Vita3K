@@ -17,6 +17,7 @@
 
 #include "interface.h"
 
+#include <config/functions.h>
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/load_self.h>
@@ -190,6 +191,15 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         game_category = "N/A";
     }
 
+    if (static_cast<int>(host.cfg.online_id.size()) - 1 < host.cfg.user_id || host.cfg.user_id < 0) {
+        host.cfg.user_id = 0;
+        if (host.cfg.overwrite_config)
+            config::serialize_config(host.cfg, host.cfg.config_path);
+    }
+
+    if (host.io.user_id.empty())
+        host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
+
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
@@ -204,6 +214,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     LOG_INFO("Category: {}", game_category);
 
     init_device_paths(host.io);
+    init_savedata_game_path(host.io, host.pref_path);
 
     host.renderer->features.hardware_flip = host.cfg.hardware_flip;
 
@@ -244,10 +255,6 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
             return FileNotFound;
     } else
         return FileNotFound;
-
-    host.io.pref_save_path = host.pref_path + "/ux0/user/00/savedata/" + host.io.title_id + '/';
-    if (!fs::exists(host.io.pref_save_path))
-        fs::create_directories(host.io.pref_save_path);
 
     return Success;
 }

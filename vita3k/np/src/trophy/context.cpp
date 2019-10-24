@@ -1,5 +1,6 @@
 #include <io/device.h>
 #include <io/functions.h>
+#include <io/state.h>
 #include <np/functions.h>
 #include <np/state.h>
 #include <np/trophy/context.h>
@@ -299,7 +300,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
 
     // Try to open the trophy save file. The context will automatically took the default profile to perform trophy
     // operations on.
-    auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/00/trophy/data/" + unique_trophy_folder);
+    auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + io.user_id + "/trophy/data/" + unique_trophy_folder);
 
     create_dir(io, trophy_progress_save_file.c_str(), 0, pref_path, "create_trophy_context", true);
     trophy_progress_save_file += "TROPUSR.DAT";

@@ -73,6 +73,7 @@ struct DebugMenuState {
 };
 
 struct ConfigurationMenuState {
+    bool profiles_manager_dialog = false;
     bool settings_dialog = false;
 };
 
@@ -108,6 +109,8 @@ struct GuiState {
     char disassembly_address[9] = "00000000";
     char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
+
+    std::string online_id;
 
     ImGuiTextFilter module_search_bar;
 

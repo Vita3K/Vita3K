@@ -118,7 +118,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "pstv-mode", &cfg.pstv_mode, false);
     get_yaml_value(config_node, "show-gui", &cfg.show_gui, false);
     get_yaml_value(config_node, "show-game-background", &cfg.show_game_background, true);
-    get_yaml_value(config_node, "icon-size", &cfg.icon_size, static_cast<int>(64));
+    get_yaml_value(config_node, "icon-size", &cfg.icon_size, 64);
     get_yaml_value(config_node, "archive-log", &cfg.archive_log, false);
     get_yaml_value(config_node, "texture-cache", &cfg.texture_cache, true);
     get_yaml_value(config_node, "sys-button", &cfg.sys_button, static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS));
@@ -128,12 +128,13 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     get_yaml_value(config_node, "log-level", &cfg.log_level, static_cast<int>(spdlog::level::trace));
     get_yaml_value(config_node, "pref-path", &cfg.pref_path, root_pref_path);
     get_yaml_value(config_node, "discord-rich-presence", &cfg.discord_rich_presence, true);
-    get_yaml_value(config_node, "online-id", &cfg.online_id, std::string("Vita3K"));
     get_yaml_value(config_node, "wait-for-debugger", &cfg.wait_for_debugger, false);
     get_yaml_value(config_node, "color-surface-debug", &cfg.color_surface_debug, false);
     get_yaml_value(config_node, "hardware-flip", &cfg.hardware_flip, false);
     get_yaml_value(config_node, "performance-overlay", &cfg.performance_overlay, false);
     get_yaml_value(config_node, "backend-renderer", &cfg.backend_renderer, std::string("OpenGL"));
+    get_yaml_value(config_node, "user-id", &cfg.user_id, 0);
+    get_yaml_value(config_node, "online-id", &cfg.online_id, std::vector<std::string>{ "Vita3K" });
 
     if (!fs::exists(cfg.pref_path) && !cfg.pref_path.empty()) {
         LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
@@ -181,14 +182,15 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     config_file_emit_single(emitter, "background-alpha", cfg.background_alpha);
     config_file_emit_single(emitter, "log-level", cfg.log_level);
     config_file_emit_single(emitter, "pref-path", cfg.pref_path);
-    config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
     config_file_emit_single(emitter, "discord-rich-presence", cfg.discord_rich_presence);
-    config_file_emit_single(emitter, "online-id", cfg.online_id);
     config_file_emit_single(emitter, "wait-for-debugger", cfg.wait_for_debugger);
     config_file_emit_single(emitter, "color-surface-debug", cfg.color_surface_debug);
     config_file_emit_single(emitter, "hardware-flip", cfg.hardware_flip);
     config_file_emit_single(emitter, "performance-overlay", cfg.performance_overlay);
     config_file_emit_single(emitter, "backend-renderer", cfg.backend_renderer);
+    config_file_emit_single(emitter, "user-id", cfg.user_id);
+    config_file_emit_vector(emitter, "online-id", cfg.online_id);
+    config_file_emit_vector(emitter, "lle-modules", cfg.lle_modules);
 
     emitter << YAML::EndMap;
 
@@ -220,7 +222,7 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.show_gui = rhs.show_gui;
     if (lhs.show_game_background != rhs.show_game_background && (!init || !rhs.show_game_background))
         lhs.show_game_background = rhs.show_game_background;
-    if (lhs.icon_size != rhs.icon_size && (!init || rhs.icon_size != static_cast<int>(64)))
+    if (lhs.icon_size != rhs.icon_size && (!init || rhs.icon_size != 64))
         lhs.icon_size = rhs.icon_size;
     if (lhs.archive_log != rhs.archive_log && (!init || rhs.archive_log))
         lhs.archive_log = rhs.archive_log;
@@ -254,6 +256,10 @@ void merge_configs(Config &lhs, const Config &rhs, const std::string &new_pref_p
         lhs.performance_overlay = rhs.performance_overlay;
     if (lhs.backend_renderer != rhs.backend_renderer && (!init || rhs.backend_renderer != std::string("OpenGL")))
         lhs.backend_renderer = rhs.backend_renderer;
+    if (lhs.user_id != rhs.user_id && (!init || rhs.user_id != 0))
+        lhs.user_id = rhs.user_id;
+    if (lhs.online_id != rhs.online_id && (!init || rhs.online_id != std::vector<std::string>({ "Vita3K" })))
+        lhs.online_id = rhs.online_id;
 
     // Not stored in config file
     if (init) {

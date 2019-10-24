@@ -92,15 +92,19 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
     const fs::path uma0_data{ uma0 / "data" };
     const fs::path ux0_app{ ux0 / "app" };
     const fs::path ux0_user{ ux0 / "user" };
-    const fs::path ux0_user00{ ux0_user / "00" };
-    const fs::path ux0_savedata{ ux0_user00 / "savedata" };
 
-    fs::create_directory(ux0_data);
-    fs::create_directory(ux0_app);
-    fs::create_directory(ux0_user);
-    fs::create_directory(ux0_user00);
-    fs::create_directory(ux0_savedata);
-    fs::create_directory(uma0_data);
+    if (!fs::exists(ux0))
+        fs::create_directories(ux0);
+    if (!fs::exists(ux0_data))
+        fs::create_directory(ux0_data);
+    if (!fs::exists(ux0_app))
+        fs::create_directory(ux0_app);
+    if (!fs::exists(ux0_user))
+        fs::create_directory(ux0_user);
+    if (!fs::exists(uma0))
+        fs::create_directory(uma0);
+    if (!fs::exists(uma0_data))
+        fs::create_directory(uma0_data);
 
     fs::create_directory(base_path / "shaderlog");
 
@@ -108,9 +112,24 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
 }
 
 void init_device_paths(IOState &io) {
-    io.device_paths.savedata0 = "user/00/savedata/" + io.title_id;
+    io.device_paths.savedata0 = "user/" + io.user_id + "/savedata/" + io.title_id;
     io.device_paths.app0 = "app/" + io.title_id;
     io.device_paths.addcont0 = "addcont/" + io.title_id;
+}
+
+bool init_savedata_game_path(IOState &io, const fs::path &pref_path) {
+    const fs::path user_id_path{ pref_path / (+VitaIoDevice::ux0)._to_string() / "user" / io.user_id };
+    const fs::path savedata_path{ user_id_path / "savedata" };
+    const fs::path savedata_game_path{ savedata_path / io.title_id };
+
+    if (!fs::exists(user_id_path))
+        fs::create_directory(user_id_path);
+    if (!fs::exists(savedata_path))
+        fs::create_directory(savedata_path);
+    if (!fs::exists(savedata_game_path))
+        fs::create_directory(savedata_game_path);
+
+    return true;
 }
 
 static std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths) {
@@ -254,7 +273,7 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
             if (s.back() == '\n')
                 s.pop_back();
 
-            LOG_INFO("*** TTY: {}", s);
+            LOG_TRACE("*** TTY: {}", s);
             return size;
         }
         return IO_ERROR_UNK();

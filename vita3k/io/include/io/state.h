@@ -103,7 +103,9 @@ struct IOState {
     } device_paths;
 
     std::string title_id;
-    std::string pref_save_path;
+
+    std::string user_id;
+
     SceUID next_fd = 0;
     TtyFiles tty_files;
     StdFiles std_files;

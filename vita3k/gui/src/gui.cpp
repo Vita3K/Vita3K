@@ -96,7 +96,7 @@ static void init_style() {
     style->Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
     style->Colors[ImGuiCol_PlotHistogram] = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
     style->Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
-    style->Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.25f, 1.00f, 0.00f, 0.43f);
+    style->Colors[ImGuiCol_TextSelectedBg] = ImVec4(1.00f, 1.00f, 0.00f, 0.50f);
     style->Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 }
 
@@ -167,7 +167,7 @@ static void init_icons(GuiState &gui, HostState &host) {
             LOG_WARN("Default icon not found for title {}, {}.", game.title_id, game.title);
             continue;
         }
-        stbi_uc *data = stbi_load_from_memory(&buffer[0], buffer.size(), &width, &height, nullptr, STBI_rgb_alpha);
+        stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (width != 128 || height != 128) {
             LOG_ERROR("Invalid icon for title {}, {}.", game.title_id, game.title);
             continue;
@@ -197,7 +197,7 @@ void load_game_background(GuiState &gui, HostState &host, const std::string &tit
             return;
         }
     }
-    stbi_uc *data = stbi_load_from_memory(&buffer[0], buffer.size(), &width, &height, nullptr, STBI_rgb_alpha);
+    stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
         LOG_ERROR("Invalid game background for title {}.", title_id);
         return;
@@ -315,6 +315,8 @@ void draw_ui(GuiState &gui, HostState &host) {
     if (gui.debug_menu.disassembly_dialog)
         draw_disassembly_dialog(gui, host);
 
+    if (gui.configuration_menu.profiles_manager_dialog)
+        draw_profiles_manager_dialog(gui, host);
     if (gui.configuration_menu.settings_dialog)
         draw_settings_dialog(gui, host);
 
