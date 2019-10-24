@@ -36,6 +36,7 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
+void get_modules_list(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);
 void init_background(GuiState &gui, const std::string &image_path);
 void get_game_titles(GuiState &gui, HostState &host);
