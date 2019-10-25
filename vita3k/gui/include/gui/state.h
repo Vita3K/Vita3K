@@ -28,6 +28,7 @@
 #include <glutil/object.h>
 
 #include <queue>
+#include <vector>
 
 namespace gui {
 
@@ -113,6 +114,7 @@ struct GuiState {
     std::string online_id;
 
     std::vector<std::string> modules_list;
+    std::vector<bool> modules_selected;
     ImGuiTextFilter module_search_bar;
 
     ImGuiTextFilter game_search_bar;

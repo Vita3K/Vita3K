@@ -63,12 +63,11 @@ static bool change_pref_location(const std::string &input_path, const std::strin
     return true;
 }
 
-void get_modules_list(GuiState &gui, HostState &host)
-{
+void get_modules_list(GuiState &gui, HostState &host) {
     gui.modules_list.clear();
 
     const auto modules_path{ fs::path(host.pref_path) / "vs0/sys/external/" };
-    if (!modules_path.empty()) {
+    if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
         fs::recursive_directory_iterator end;
         const std::string ext = ".suprx";
         for (fs::recursive_directory_iterator m(modules_path); m != end; ++m) {
@@ -77,6 +76,10 @@ void get_modules_list(GuiState &gui, HostState &host)
                 gui.modules_list.push_back(lle.filename().replace_extension().string());
         }
     }
+
+    gui.modules_selected.resize(gui.modules_list.size());
+    for (size_t i = 0; i < gui.modules_list.size(); ++i)
+        gui.modules_selected[i] = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), gui.modules_list[i]) != host.cfg.lle_modules.end();
 }
 
 void draw_settings_dialog(GuiState &gui, HostState &host) {
@@ -94,18 +97,19 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::PushItemWidth(240);
-            static std::vector<bool> module_select(gui.modules_list.size());
             if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules_list.size()), 6)) {
                 for (int m = 0; m < gui.modules_list.size(); m++) {
-                    auto modules = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), gui.modules_list[m]);
-                    if (modules != host.cfg.lle_modules.end() && !module_select[m])
-                        module_select[m] = true;
+                    const auto module = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), gui.modules_list[m]);
+                    const bool module_existed = (module != host.cfg.lle_modules.end());
                     if (!gui.module_search_bar.PassFilter(gui.modules_list[m].c_str()))
                         continue;
-                    if (ImGui::Selectable(gui.modules_list[m].c_str(), module_select[m]) && modules == host.cfg.lle_modules.end())
-                        host.cfg.lle_modules.push_back(gui.modules_list[m]);
-                    else if (!module_select[m] && modules != host.cfg.lle_modules.end())
-                        host.cfg.lle_modules.erase(modules);
+                    if (ImGui::Selectable(gui.modules_list[m].c_str(), gui.modules_selected[m])) {
+                        gui.modules_selected[m] = !module_existed; // set manually, since vector<bool> is retarded
+                        if (module_existed)
+                            host.cfg.lle_modules.erase(module);
+                        else
+                            host.cfg.lle_modules.push_back(gui.modules_list[m]);
+                    }
                 }
                 ImGui::ListBoxFooter();
             }
@@ -116,7 +120,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
                 host.cfg.lle_modules.clear();
-                std::fill(module_select.begin(), module_select.end(), false);
+                std::fill(gui.modules_selected.begin(), gui.modules_selected.end(), false);
             }
         } else {
             ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease dump decrypted modules from your PS Vita.");
@@ -195,12 +199,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 host.cfg.pref_path += '/';
             if (host.cfg.pref_path != host.pref_path) {
                 //if (change_pref_location(host.cfg.pref_path, host.pref_path)) { TODO
-                    host.pref_path = host.cfg.pref_path;
+                host.pref_path = host.cfg.pref_path;
 
-                    // Refresh the working paths
-                    config::serialize_config(host.cfg, host.cfg.config_path);
-                    refresh_game_list(gui, host);
-                    LOG_INFO("Successfully change Vita3K path files to: {}", host.pref_path);
+                // Refresh the working paths
+                config::serialize_config(host.cfg, host.cfg.config_path);
+                refresh_game_list(gui, host);
+                LOG_INFO("Successfully change Vita3K path files to: {}", host.pref_path);
                 //}
             }
         }
@@ -213,13 +217,13 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             //LOG_INFO("Resetted Vita3K configuration and config file to default values.");
             if (host.default_path != host.pref_path) {
                 //if (change_pref_location(host.default_path, host.pref_path)) { // TODO, code broken, don't move anything.
-                    host.pref_path = host.default_path;
-                    host.cfg.pref_path = host.pref_path;
+                host.pref_path = host.default_path;
+                host.cfg.pref_path = host.pref_path;
 
-                    // Refresh the working paths
-                    config::serialize_config(host.cfg, host.cfg.config_path);
-                    refresh_game_list(gui, host);
-                    LOG_INFO("Successfully restore default path for Vita3K files to: {}", host.pref_path);
+                // Refresh the working paths
+                config::serialize_config(host.cfg, host.cfg.config_path);
+                refresh_game_list(gui, host);
+                LOG_INFO("Successfully restore default path for Vita3K files to: {}", host.pref_path);
                 //}
             }
         }
