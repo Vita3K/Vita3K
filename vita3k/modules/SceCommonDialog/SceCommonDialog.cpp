@@ -589,7 +589,8 @@ EXPORT(int, sceSaveDataDialogGetResult) {
 }
 
 EXPORT(int, sceSaveDataDialogGetStatus) {
-    return UNIMPLEMENTED();
+    STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
+    return SCE_COMMON_DIALOG_STATUS_FINISHED;
 }
 
 EXPORT(int, sceSaveDataDialogGetSubStatus) {

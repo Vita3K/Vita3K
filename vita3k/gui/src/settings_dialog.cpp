@@ -32,8 +32,17 @@
 
 #include <algorithm>
 #include <nfd.h>
+#include <sstream>
 
 namespace gui {
+
+#ifdef _WIN32
+static const char OS_PREFIX[] = "start ";
+#elif __APPLE__
+static const char OS_PREFIX[] = "open ";
+#else
+static const char OS_PREFIX[] = "xdg-open ";
+#endif
 
 static const char *LIST_SYS_LANG[] = {
     "Japanese", "American English", "French", "Spanish", "German", "Italian", "Dutch", "Portugal Portuguese",
@@ -170,9 +179,13 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             }
             ImGui::SameLine();
         } else {
-            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease install the firmware");
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Put decrypted modules inside 'vs0/sys/external/'.");
+            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the last firmware.");
+            std::ostringstream link;
+            if (ImGui::Button("Download Firmware")) {
+                std::string firmware_url = "https://www.playstation.com/en-us/support/system-updates/ps-vita/";
+                link << OS_PREFIX << firmware_url;
+                system(link.str().c_str());
+            }
         }
         if (ImGui::Button("Refresh list"))
             get_modules_list(gui, host);

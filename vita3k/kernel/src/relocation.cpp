@@ -491,41 +491,41 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             const EntryFormat5 *const format5_entry = static_cast<const EntryFormat5 *>(entry);
 
             g_offset += format5_entry->dist1;
-            
+
             const auto s = g_saddr;
             const auto a = g_addend;
             const auto p = g_addr + g_offset;
-            
+
             if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
                 return false;
             }
-            
+
             if (!relocate_entry(Ptr<uint32_t>(p + format5_entry->dist2).get(mem), static_cast<Code>(g_type2), s, a, p + format5_entry->dist2)) {
                 return false;
             }
-            
+
             g_offset += format5_entry->dist3;
             const auto p2 = g_addr + g_offset;
-            
+
             if (!relocate_entry(Ptr<uint32_t>(p2).get(mem), static_cast<Code>(g_type), s, a, p2)) {
                 return false;
             }
-            
+
             if (!relocate_entry(Ptr<uint32_t>(p2 + format5_entry->dist4).get(mem), static_cast<Code>(g_type2), s, a, p2 + format5_entry->dist4)) {
                 return false;
             }
-            
+
             break;
         }
         case 6: {
             const EntryFormat6 *const format6_entry = static_cast<const EntryFormat6 *>(entry);
 
             g_offset += format6_entry->offset;
-            
+
             const auto patch_seg_start = segments.find(g_patchseg)->second.addr;
-            
+
             const uint32_t orgval = *Ptr<uint32_t>(patch_seg_start + g_offset).get(mem);
-            
+
             uint32_t segbase = 0;
             for (const auto seg_ : segments) {
                 const auto seg = seg_.second;
@@ -534,21 +534,21 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                     g_saddr = seg.addr;
                 }
             }
-            
+
             assert((uint32_t)orgval >= (uint32_t)segbase);
             const auto addend = orgval - segbase;
-            
+
             g_type2 = 0;
             g_type = Abs32;
-            
+
             const auto s = g_saddr;
             const auto a = addend;
             const auto p = g_addr + g_offset;
-            
+
             if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
                 return false;
             }
-            
+
             break;
         }
         case 7:

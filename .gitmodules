@@ -35,6 +35,9 @@
 [submodule "external/imgui_club"]
 	path = external/imgui_club
 	url = https://github.com/ocornut/imgui_club
+[submodule "external/libfat16"]
+	path = external/libfat16
+	url = https://github.com/Vita3K/libfat16
 [submodule "external/microprofile"]
 	path = external/microprofile
 	url = https://github.com/jonasmr/microprofile
@@ -47,6 +50,9 @@
 [submodule "external/pugixml"]
 	path = external/pugixml
 	url = https://github.com/zeux/pugixml
+[submodule "external/sdl"]
+	path = external/sdl
+	url = https://github.com/Vita3K/sdl
 [submodule "external/sdl2-cmake-scripts"]
 	path = external/sdl2-cmake-scripts
 	url = https://github.com/tcbrindle/sdl2-cmake-scripts
@@ -78,9 +84,3 @@
 [submodule "external/VulkanMemoryAllocator"]
 	path = external/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-[submodule "external/sdl"]
-	path = external/sdl
-	url = https://github.com/Vita3K/sdl
-[submodule "external/libfat16"]
-	path = external/libfat16
-	url = https://github.com/Vita3K/libfat16

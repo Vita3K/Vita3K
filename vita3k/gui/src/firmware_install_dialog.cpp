@@ -28,37 +28,37 @@
 
 namespace gui {
 
-static bool draw_file_dialog = true;
-
-void draw_install_firmware_dialog(GuiState &gui, HostState &host) {
-    nfdchar_t *outpath = nullptr;
+void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
+    nfdchar_t *fw_path = nullptr;
     nfdresult_t result = NFD_CANCEL;
 
-    const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
+    static bool draw_file_dialog = true;
 
     if (draw_file_dialog) {
-        result = NFD_OpenDialog("PUP", nullptr, &outpath);
+        result = NFD_OpenDialog("PUP", nullptr, &fw_path);
         draw_file_dialog = false;
 
         if (result == NFD_OKAY) {
-            install_pup(outpath, host.pref_path);
+            install_pup(fw_path, host.pref_path);
         } else if (result == NFD_CANCEL) {
-            gui.file_menu.install_firmware_dialog = false;
+            gui.file_menu.firmware_install_dialog = false;
             draw_file_dialog = true;
         } else {
             LOG_ERROR("Error initializing file dialog: {}", NFD_GetError());
-            gui.file_menu.install_firmware_dialog = false;
+            gui.file_menu.firmware_install_dialog = false;
             draw_file_dialog = true;
         }
     }
 
+    static const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
+
     ImGui::OpenPopup("Firmware Installation");
     if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_NoResize)) {
         ImGui::TextColored(GUI_COLOR_TEXT, "Successfully Installed Firmware");
-        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - BUTTON_SIZE.x - 10);
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
         if (ImGui::Button("OK", BUTTON_SIZE)) {
             get_modules_list(gui, host);
-            gui.file_menu.install_firmware_dialog = false;
+            gui.file_menu.firmware_install_dialog = false;
             draw_file_dialog = true;
         }
     }
