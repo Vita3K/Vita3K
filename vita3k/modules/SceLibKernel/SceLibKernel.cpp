@@ -39,6 +39,22 @@
 #include <algorithm>
 #include <cstdlib>
 
+enum class TimerFlags : uint32_t {
+    FIFO_THREAD = 0x00000000,
+    PRIORITY_THREAD = 0x00002000,
+    MANUAL_RESET = 0x00000000,
+    AUTOMATIC_RESET = 0x00000100,
+    ALL_NOTIFY = 0x00000000,
+    WAKE_ONLY_NOTIFY = 0x00000800,
+
+    OPENABLE = 0x00000080,
+};
+
+inline uint64_t get_current_time() {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+}
+
 EXPORT(int, SceKernelStackChkGuard) {
     return UNIMPLEMENTED();
 }
@@ -177,8 +193,7 @@ EXPORT(int, sceClibMspaceReallocalign) {
 }
 
 EXPORT(int, sceClibPrintf, const char *format, module::vargs args) {
-    std::string buffer;
-    buffer.resize(1024);
+    std::vector<char> buffer(1024);
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
@@ -186,13 +201,13 @@ EXPORT(int, sceClibPrintf, const char *format, module::vargs args) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    const int result = utils::sprintf(&buffer[0], format, *(thread->cpu), host.mem, args);
+    const int result = utils::snprintf(buffer.data(), buffer.size(), format, *(thread->cpu), host.mem, args);
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     }
 
-    LOG_INFO("{}", buffer);
+    LOG_INFO("{}", buffer.data());
 
     return SCE_KERNEL_OK;
 }
@@ -909,8 +924,35 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, emu::SceKernelThreadEntr
     return thid;
 }
 
-EXPORT(int, sceKernelCreateTimer) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelCreateTimer, const char *name, uint32_t flags, const void *next) {
+    assert(!next);
+
+    SceUID handle = host.kernel.get_next_uid();
+
+    host.kernel.timers[handle] = std::make_shared<TimerState>();
+    TimerPtr &timer_info = host.kernel.timers[handle];
+
+    timer_info->name = name;
+
+    if (flags & static_cast<uint32_t>(TimerFlags::PRIORITY_THREAD))
+        timer_info->thread_behaviour = TimerState::ThreadBehaviour::PRIORITY;
+    else
+        timer_info->thread_behaviour = TimerState::ThreadBehaviour::FIFO;
+
+    if (flags & static_cast<uint32_t>(TimerFlags::AUTOMATIC_RESET))
+        timer_info->reset_behaviour = TimerState::ResetBehaviour::AUTOMATIC;
+    else
+        timer_info->reset_behaviour = TimerState::ResetBehaviour::MANUAL;
+
+    if (flags & static_cast<uint32_t>(TimerFlags::WAKE_ONLY_NOTIFY))
+        timer_info->notify_behaviour = TimerState::NotifyBehaviour::ONLY_WAKE;
+    else
+        timer_info->notify_behaviour = TimerState::NotifyBehaviour::ALL;
+
+    if (flags & static_cast<uint32_t>(TimerFlags::OPENABLE))
+        timer_info->openable = true;
+
+    return handle;
 }
 
 EXPORT(int, sceKernelDeleteLwCond, Ptr<emu::SceKernelLwCondWork> workarea) {
@@ -1072,8 +1114,15 @@ EXPORT(int, sceKernelGetThreadRunStatus) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetTimerBase) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetTimerBase, SceUID timer_handle, SceKernelSysClock *time) {
+    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
+
+    if (!timer_info)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+
+    *time = timer_info->time;
+
+    return 0;
 }
 
 EXPORT(int, sceKernelGetTimerEventRemainingTime) {
@@ -1084,8 +1133,15 @@ EXPORT(int, sceKernelGetTimerInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetTimerTime) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time) {
+    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
+
+    if (!timer_info)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+
+    *time = get_current_time() - timer_info->time;
+
+    return 0;
 }
 
 /**
@@ -1303,8 +1359,19 @@ EXPORT(int, sceKernelSetThreadContextForVM) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSetTimerEvent) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSetTimerEvent, SceUID timer_handle, int32_t type, SceKernelSysClock *clock, int32_t repeats) {
+    STUBBED("Type not implemented.");
+
+    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
+
+    if (!timer_info)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+
+    //TODO: Timer values for type.
+
+    timer_info->repeats = repeats;
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelSetTimerTime) {

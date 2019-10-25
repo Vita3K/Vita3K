@@ -1757,7 +1757,7 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary) {
     return UNIMPLEMENTED();
 }
 
-static int init_texture_base(const char *export_name, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount,
+static int init_texture_base(const char *export_name, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat tex_format, unsigned int width, unsigned int height, unsigned int mipCount,
     const SceGxmTextureType &texture_type) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
@@ -1769,7 +1769,7 @@ static int init_texture_base(const char *export_name, emu::SceGxmTexture *textur
 
     // Add supported formats here
 
-    switch (texFormat) {
+    switch (tex_format) {
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
     case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
@@ -1783,21 +1783,28 @@ static int init_texture_base(const char *export_name, emu::SceGxmTexture *textur
         break;
 
     default:
-        if (gxm::is_paletted_format(texFormat)) {
-            switch (texFormat) {
+        if (gxm::is_paletted_format(tex_format)) {
+            switch (tex_format) {
             case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
             case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:
             case SCE_GXM_TEXTURE_FORMAT_P4_ABGR:
                 break;
             default:
-                LOG_WARN("Initialized texture with untested paletted texture format: {}", log_hex(texFormat));
+                LOG_WARN("Initialized texture with untested paletted texture format: {}", log_hex(tex_format));
+            }
+        } else if (gxm::is_yuv_format(tex_format)) {
+            switch (tex_format) {
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC1:
+                break;
+            default:
+                LOG_WARN("Iniitlaized texture with untested YUV texture format: {}", log_hex(tex_format));
             }
         } else
-            LOG_ERROR("Initialized texture with unsupported texture format: {}", log_hex(texFormat));
+            LOG_ERROR("Initialized texture with unsupported texture format: {}", log_hex(tex_format));
     }
 
     texture->mip_count = std::min<std::uint32_t>(0, mipCount - 1);
-    texture->format0 = (texFormat & 0x80000000) >> 31;
+    texture->format0 = (tex_format & 0x80000000) >> 31;
     texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
     texture->lod_bias = 31;
 
@@ -1820,10 +1827,10 @@ static int init_texture_base(const char *export_name, emu::SceGxmTexture *textur
         texture->width = width - 1;
     }
 
-    texture->base_format = (texFormat & 0x1F000000) >> 24;
+    texture->base_format = (tex_format & 0x1F000000) >> 24;
     texture->type = texture_type >> 29;
     texture->data_addr = data.address() >> 2;
-    texture->swizzle_format = (texFormat & 0x7000) >> 12;
+    texture->swizzle_format = (tex_format & 0x7000) >> 12;
     texture->normalize_mode = 1;
     texture->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
     texture->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
@@ -1833,9 +1840,6 @@ static int init_texture_base(const char *export_name, emu::SceGxmTexture *textur
 
 EXPORT(int, sceGxmTextureInitLinear, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_LINEAR);
-
-    if (result == 0)
-        return 0;
 
     return result;
 }
@@ -1847,9 +1851,6 @@ EXPORT(int, sceGxmTextureInitLinearStrided) {
 EXPORT(int, sceGxmTextureInitSwizzled, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_SWIZZLED);
 
-    if (result == 0)
-        return 0;
-
     return result;
 }
 
@@ -1859,9 +1860,6 @@ EXPORT(int, sceGxmTextureInitSwizzledArbitrary) {
 
 EXPORT(int, sceGxmTextureInitTiled, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_TILED);
-
-    if (result == 0)
-        return 0;
 
     return result;
 }
