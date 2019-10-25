@@ -1,7 +1,14 @@
 #pragma once
 
-#include <cstddef>
+#include <cstdint>
+#include <type_traits>
 
-constexpr size_t align(size_t current, size_t alignment) {
-    return (current + (alignment - 1)) & ~(alignment - 1);
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
+constexpr T align(const T &value, std::uint64_t align) {
+    return static_cast<T>((value + (align - 1)) & ~(align - 1));
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
+constexpr T align_down(const T &value, std::uint64_t align) {
+    return static_cast<T>(value & ~(align - 1));
 }
