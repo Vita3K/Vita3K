@@ -17,14 +17,16 @@
 
 #include "private.h"
 
-#include <gui/functions.h>
-
 #include <config/config.h>
 #include <config/functions.h>
+
+#include <gui/functions.h>
 #include <gui/state.h>
 
 #include <host/state.h>
+
 #include <misc/cpp/imgui_stdlib.h>
+
 #include <util/fs.h>
 #include <util/log.h>
 
@@ -58,18 +60,6 @@ static bool change_pref_location(const std::string &input_path, const std::strin
     } catch (const std::exception &err) {
         return false;
     }
-    return true;
-}
-
-static bool clear_and_refresh_game_list(HostState &host, GuiState &gui) {
-    if (gui.game_selector.games.empty())
-        return false;
-
-    gui.game_selector.games.clear();
-    if (!gui.game_selector.games.empty())
-        return false;
-
-    get_game_titles(gui, host);
     return true;
 }
 
@@ -204,34 +194,37 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (host.cfg.pref_path.back() != '/')
                 host.cfg.pref_path += '/';
             if (host.cfg.pref_path != host.pref_path) {
-                if (change_pref_location(host.cfg.pref_path, host.pref_path)) {
+                //if (change_pref_location(host.cfg.pref_path, host.pref_path)) { TODO
                     host.pref_path = host.cfg.pref_path;
 
                     // Refresh the working paths
                     config::serialize_config(host.cfg, host.cfg.config_path);
-                    LOG_INFO_IF(clear_and_refresh_game_list(host, gui), "Successfully moved Vita3K files to: {}", host.pref_path);
-                }
+                    refresh_game_list(gui, host);
+                    LOG_INFO("Successfully change Vita3K path files to: {}", host.pref_path);
+                //}
             }
         }
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("After pressing, restart Vita3K to fully apply changes.");
+            ImGui::SetTooltip("Change Vita3K emulator path like wanted.\nNeed move folder old to new manualy.");
         ImGui::SameLine();
-        if (ImGui::Button("Reset Configuration")) {
-            host.cfg = Config{};
+        if (ImGui::Button("Reset Path Emulator")) {
+            //host.cfg = Config{}; TODO: code broken, causing crash.
 
-            LOG_INFO("Resetted Vita3K configuration and config file to default values.");
-            if (host.cfg.pref_path != host.pref_path) {
-                if (change_pref_location(host.cfg.pref_path, host.pref_path)) {
-                    host.pref_path = host.cfg.pref_path;
+            //LOG_INFO("Resetted Vita3K configuration and config file to default values.");
+            if (host.default_path != host.pref_path) {
+                //if (change_pref_location(host.default_path, host.pref_path)) { // TODO, code broken, don't move anything.
+                    host.pref_path = host.default_path;
+                    host.cfg.pref_path = host.pref_path;
 
                     // Refresh the working paths
                     config::serialize_config(host.cfg, host.cfg.config_path);
-                    LOG_INFO_IF(clear_and_refresh_game_list(host, gui), "Successfully moved Vita3K files to: {}", host.pref_path);
-                }
+                    refresh_game_list(gui, host);
+                    LOG_INFO("Successfully restore default path for Vita3K files to: {}", host.pref_path);
+                //}
             }
         }
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Reset Vita3K's configuration to the default values. \nAfter pressing, restart Vita3K to fully apply. \nWARNING: This cannot be undone.");
+            ImGui::SetTooltip("Reset Vita3K emulator path to default.\nNeed move folder old to default manualy.");
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();
@@ -253,7 +246,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enables Discord Rich Presence to show what game you're playing on discord");
         ImGui::Spacing();
-        ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 16, 128);
+        ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 32, 128);
         ImGui::Spacing();
         ImGui::PushItemWidth(400);
         ImGui::InputTextWithHint("Set background image", "Add your path to the image here", &host.cfg.background_image);
@@ -266,13 +259,14 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         }
         ImGui::SameLine();
         if (ImGui::Button("Reset Background")) {
+            if (gui.current_background == gui.user_backgrounds[host.cfg.background_image])
+                gui.current_background = nullptr;
             host.cfg.background_image.clear();
             gui.user_backgrounds.clear();
-            gui.current_background = nullptr;
         }
         ImGui::Spacing();
         if (gui.current_background) {
-            ImGui::SliderFloat("Background Alpha\nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
+            ImGui::SliderFloat("Background Alpha \nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("The minimum slider is opaque and the maximum is transparent.");
         }

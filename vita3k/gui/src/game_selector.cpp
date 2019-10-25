@@ -15,17 +15,53 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "private.h"
+
 #include <gui/functions.h>
 #include <gui/state.h>
 
-#include "private.h"
-
 #include <host/state.h>
+
+#include <util/log.h>
 #include <util/string_utils.h>
 
 using namespace std::string_literals;
 
 namespace gui {
+
+bool refresh_game_list(GuiState &gui, HostState &host) {
+    auto game_list_size = gui.game_selector.games.size();
+
+    if (gui.current_background != gui.user_backgrounds[host.cfg.background_image])
+        gui.current_background = gui.user_backgrounds[host.cfg.background_image];
+    gui.game_selector.games.clear();
+    gui.game_selector.icons.clear();
+    gui.delete_game_background = true;
+
+    get_game_titles(gui, host);
+
+    if (gui.game_selector.games.empty())
+        return false;
+ 
+    init_icons(gui, host);
+
+    std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+        return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
+    });
+
+    std::string change_game_list = "new game(s) added";
+    if (game_list_size == gui.game_selector.games.size())
+        return false;
+    else if (game_list_size > gui.game_selector.games.size()) {
+        change_game_list = "game(s) removed";
+        game_list_size -= gui.game_selector.games.size();
+    } else
+        game_list_size = gui.game_selector.games.size() - game_list_size;
+
+    LOG_INFO("{} {}", game_list_size, change_game_list);
+
+    return true;
+}
 
 static constexpr auto MENUBAR_HEIGHT = 19;
 
@@ -41,6 +77,11 @@ void draw_game_selector(GuiState &gui, HostState &host) {
     if (gui.current_background) {
         ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(gui.current_background),
             ImVec2(0, 0), display_size);
+    }
+
+    if (gui.delete_game_background) {
+        gui.game_backgrounds.clear();
+        gui.delete_game_background = false;
     }
 
     const float icon_size = static_cast<float>(host.cfg.icon_size);
@@ -154,11 +195,13 @@ void draw_game_selector(GuiState &gui, HostState &host) {
         }
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("##refresh_game_list_button").x + ImGui::GetStyle().DisplayWindowPadding.x + 260));
+        if (ImGui::Button("Refresh game list"))
+            refresh_game_list(gui, host);
         ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Game Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 220));
         ImGui::TextColored(GUI_COLOR_TEXT, "Game Search");
         ImGui::SameLine();
         gui.game_search_bar.Draw("##game_search_bar", 220);
-
         ImGui::NextColumn();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1);
@@ -173,7 +216,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                     if (host.cfg.show_game_background) {
                         if (gui.game_backgrounds.find(game.title_id) == gui.game_backgrounds.end())
                             load_game_background(gui, host, game.title_id);
-                        else
+                        else if (gui.current_background != gui.game_backgrounds[game.title_id])
                             gui.current_background = gui.game_backgrounds[game.title_id];
                     }
                     if (ImGui::IsMouseClicked(0))
@@ -185,15 +228,9 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImGui::NextColumn();
             ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
-            if (ImGui::IsItemHovered()) {
-                if (host.cfg.show_game_background) {
-                    if (gui.user_backgrounds.find(host.cfg.background_image) != gui.user_backgrounds.end())
-                        gui.current_background = gui.user_backgrounds[host.cfg.background_image];
-                    else
-                        gui.current_background = nullptr;
-                }
-            }
-            ImGui::Selectable(game.title.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
+            if (ImGui::IsItemHovered() && gui.current_background != gui.user_backgrounds[host.cfg.background_image])
+                 gui.current_background = gui.user_backgrounds[host.cfg.background_image];
+            ImGui::Selectable(game.title.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, static_cast<float>(icon_size)));
             ImGui::NextColumn();
             if (std::find(std::begin(selected), std::end(selected), true) != std::end(selected)) {
                 gui.game_selector.selected_title_id = game.title_id;

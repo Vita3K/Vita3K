@@ -120,6 +120,7 @@ struct GuiState {
     GLuint display = 0;
     std::map<std::string, ImGui_Texture> game_backgrounds;
     std::map<std::string, ImGui_Texture> user_backgrounds;
+    bool delete_game_background = false;
 
     SceUID thread_watch_index = -1;
 

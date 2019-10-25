@@ -148,7 +148,7 @@ void init_background(GuiState &gui, const std::string &image_path) {
     stbi_image_free(data);
 }
 
-static void init_icons(GuiState &gui, HostState &host) {
+void init_icons(GuiState &gui, HostState &host) {
     for (Game &game : gui.game_selector.games) {
         int32_t width = 0;
         int32_t height = 0;
@@ -189,10 +189,8 @@ void load_game_background(GuiState &gui, HostState &host, const std::string &tit
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg.png");
             vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg0.png");
         } else {
-            if (gui.user_backgrounds.find(host.cfg.background_image) != gui.user_backgrounds.end())
+            if (gui.current_background != gui.user_backgrounds[host.cfg.background_image])
                 gui.current_background = gui.user_backgrounds[host.cfg.background_image];
-            else
-                gui.current_background = nullptr;
             LOG_WARN("Game background not found for title {}.", title_id);
             return;
         }
@@ -203,6 +201,7 @@ void load_game_background(GuiState &gui, HostState &host, const std::string &tit
         return;
     }
     gui.game_backgrounds[title_id].init(gui.imgui_state.get(), data, width, height);
+    gui.current_background = gui.game_backgrounds[title_id];
     stbi_image_free(data);
 }
 
