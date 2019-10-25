@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <mem/mem.h>
+#include <util/align.h>
 #include <util/log.h>
 
 #include <algorithm>
@@ -45,8 +46,13 @@ static void delete_memory(uint8_t *memory) {
 }
 
 static void alloc_inner(MemState &state, Address address, size_t page_count, Allocated::iterator block, const char *name) {
-    uint8_t *const memory = &state.memory[address & ~(state.page_size - 1)];
-    const size_t aligned_size = page_count * state.page_size;
+    // If we chopped off bytes when aligning, they would have spilled over to another page, so add it here
+    if (address % state.page_size != 0)
+        page_count++;
+
+    uint8_t *const memory = &state.memory[align_down(address, state.page_size)];
+
+    const size_t size = page_count * state.page_size;
 
     const Generation generation = ++state.generation;
     std::fill_n(block, page_count, generation);
@@ -55,12 +61,12 @@ static void alloc_inner(MemState &state, Address address, size_t page_count, All
     state.generation_names[generation] = name;
 
 #ifdef WIN32
-    const void *const ret = VirtualAlloc(memory, aligned_size, MEM_COMMIT, PAGE_READWRITE);
+    const void *const ret = VirtualAlloc(memory, size, MEM_COMMIT, PAGE_READWRITE);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", log_hex(GetLastError()));
 #else
-    mprotect(memory, aligned_size, PROT_READ | PROT_WRITE);
+    mprotect(memory, size, PROT_READ | PROT_WRITE);
 #endif
-    std::memset(memory, 0, aligned_size);
+    std::memset(memory, 0, size);
 }
 
 bool init(MemState &state) {
