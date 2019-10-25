@@ -12,7 +12,7 @@ matrix:
       before_script:
       - export CMAKE=cmake
       before_deploy:
-      - git tag "$TRAVIS_BRANCH-v$TRAVIS_BUILD_NUMBER"
+      - if [ $TRAVIS_BRANCH-v$TRAVIS_BUILD_NUMBER IS NOT present ]; then git tag "$TRAVIS_BRANCH-v$TRAVIS_BUILD_NUMBER"; fi
       - cd ${TRAVIS_BUILD_DIR}/build/bin
       - zip -r "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip" Vita3K.app
       deploy:
@@ -30,7 +30,7 @@ matrix:
       services: docker
       script: bash $TRAVIS_BUILD_DIR/.travis/linux/build.sh
       before_deploy:
-      - git tag "$TRAVIS_BRANCH-v$TRAVIS_BUILD_NUMBER"
+      - if [ $TRAVIS_BRANCH-v$TRAVIS_BUILD_NUMBER IS NOT present ]; then git tag "$TRAVIS_BRANCH-v$TRAVIS_BUILD_NUMBER"; fi
       - sudo chown -R travis:travis ${TRAVIS_BUILD_DIR}
       - cd ${TRAVIS_BUILD_DIR}/build/bin
       - zip -r "$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER.zip" .
