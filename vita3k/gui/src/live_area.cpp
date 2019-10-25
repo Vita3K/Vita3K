@@ -746,7 +746,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
     const auto title_id = gui.apps_list_opened[gui.current_app_selected];
     const VitaIoDevice app_device = title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
-    const auto is_background = (host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
+    const auto is_background = (gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
@@ -755,7 +755,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     ImGui::Begin("##live_area", &gui.live_area.live_area_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]],
+        ImGui::GetBackgroundDrawList()->AddImage((gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[gui.current_user_bg]],
             ImVec2(0.f, 32.f), display_size);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 180.f), 0.f, ImDrawCornerFlags_All);

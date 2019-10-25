@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -92,6 +92,9 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
         // TODO: Move app old to new path
         get_modules_list(gui, host);
         refresh_app_list(gui, host);
+        init_users(gui, host);
+        gui.live_area.app_selector = false;
+        gui.live_area.user_management = true;
         LOG_INFO("Successfully moved Vita3K path to: {}", string_utils::wide_to_utf(host.pref_path));
     }
 }
@@ -101,7 +104,7 @@ void get_modules_list(GuiState &gui, HostState &host) {
 
     const auto modules_path{ fs::path(host.pref_path) / "vs0/sys/external/" };
     if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
-        for (const auto &module : fs::recursive_directory_iterator(modules_path)) {
+        for (const auto &module : fs::directory_iterator(modules_path)) {
             if (module.path().extension() == ".suprx")
                 gui.modules.push_back({ module.path().filename().replace_extension().string(), false });
         }
@@ -309,41 +312,46 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (title / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Theme & Background");
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", host.cfg.theme_content_id.c_str());
-        if (host.cfg.theme_content_id != "default") {
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", gui.users[host.io.user_id].theme_id.c_str());
+        if (gui.users[host.io.user_id].theme_id != "default") {
             ImGui::Spacing();
             if (ImGui::Button("Reset Default Theme")) {
-                host.cfg.theme_content_id = "default";
-                host.cfg.use_theme_background = false;
+                gui.users[host.io.user_id].theme_id = "default";
+                gui.users[host.io.user_id].use_theme_bg = false;
                 if (init_theme(gui, host, "default"))
-                    host.cfg.use_theme_background = true;
-                host.cfg.user_start_background.clear();
-                host.cfg.start_background = "default";
+                    gui.users[host.io.user_id].use_theme_bg = true;
+                gui.users[host.io.user_id].start_path.clear();
+                gui.users[host.io.user_id].start_type = "default";
+                update_user(gui, host, host.io.user_id);
                 init_theme_start_background(gui, host, "default");
                 init_apps_icon(gui, host, gui.app_selector.sys_apps);
             }
             ImGui::SameLine();
         }
         if (!gui.theme_backgrounds.empty())
-            ImGui::Checkbox("Using theme background", &host.cfg.use_theme_background);
+            if (ImGui::Checkbox("Using theme background", &gui.users[host.io.user_id].use_theme_bg))
+                update_user(gui, host, host.io.user_id);
 
         if (!gui.user_backgrounds.empty()) {
             ImGui::Spacing();
             if (ImGui::Button("Clean User Backgrounds")) {
-                if (!gui.theme_backgrounds.empty())
-                    host.cfg.use_theme_background = true;
-                host.cfg.user_backgrounds.clear();
+                gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[gui.current_user_bg]] = {};
                 gui.user_backgrounds.clear();
+                if (!gui.theme_backgrounds.empty())
+                    gui.users[host.io.user_id].use_theme_bg = true;
+                gui.users[host.io.user_id].backgrounds.clear();
+                update_user(gui, host, host.io.user_id);
             }
         }
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current start background: %s", host.cfg.start_background.c_str());
-        if (((host.cfg.theme_content_id == "default") && (host.cfg.start_background != "default")) || ((host.cfg.theme_content_id != "default") && (host.cfg.start_background != "theme"))) {
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current start background: %s", gui.users[host.io.user_id].start_type.c_str());
+        if (((gui.users[host.io.user_id].theme_id == "default") && (gui.users[host.io.user_id].start_type != "default")) || ((gui.users[host.io.user_id].theme_id != "default") && (gui.users[host.io.user_id].start_type != "theme"))) {
             ImGui::Spacing();
             if (ImGui::Button("Reset Start Background")) {
-                host.cfg.user_start_background.clear();
-                init_theme_start_background(gui, host, host.cfg.theme_content_id.empty() ? "default" : host.cfg.theme_content_id);
-                host.cfg.start_background = host.cfg.theme_content_id.empty() || (host.cfg.theme_content_id == "default") ? "default" : "theme";
+                gui.users[host.io.user_id].start_path.clear();
+                init_theme_start_background(gui, host, gui.users[host.io.user_id].theme_id);
+                gui.users[host.io.user_id].start_type = (gui.users[host.io.user_id].theme_id == "default") ? "default" : "theme";
+                update_user(gui, host, host.io.user_id);
             }
         }
         if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty()) {

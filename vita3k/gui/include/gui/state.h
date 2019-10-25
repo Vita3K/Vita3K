@@ -134,6 +134,17 @@ struct NoticeInfo {
     std::string msg;
 };
 
+struct User {
+    std::string id;
+    std::string name;
+    std::string avatar;
+    std::string theme_id;
+    bool use_theme_bg;
+    std::string start_type;
+    std::string start_path;
+    std::vector<std::string> backgrounds;
+};
+
 struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
 
@@ -145,6 +156,9 @@ struct GuiState {
     gui::HelpMenuState help_menu;
     gui::LiveAreaState live_area;
     gui::AppsSelector app_selector;
+
+    std::map<std::string, User> users;
+    std::map<std::string, ImGui_Texture> users_avatar;
 
     std::string app_ver;
     bool content_reinstall_confirm = false;
@@ -158,8 +172,6 @@ struct GuiState {
     char disassembly_address[9] = "00000000";
     char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
-
-    std::string online_id;
 
     bool is_capturing_keys = false;
     int old_captured_key = 0;

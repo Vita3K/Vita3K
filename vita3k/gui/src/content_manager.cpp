@@ -85,7 +85,6 @@ struct SaveData {
 static std::vector<SaveData> save_data_list;
 
 static void get_save_data_list(GuiState &gui, HostState &host) {
-    host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
     save_data_list.clear();
 
     fs::path SAVE_PATH{ fs::path{ host.pref_path } / "ux0/user" / host.io.user_id / "savedata" };

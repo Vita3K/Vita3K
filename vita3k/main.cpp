@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
             ImGui::GetForegroundDrawList()->AddImage(gui.theme_backgrounds[0], ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
         else if (!gui.user_backgrounds.empty())
             // Display user background if exist
-            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.user_backgrounds[0]],
+            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[0]],
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
 
         host.display.condvar.notify_all();

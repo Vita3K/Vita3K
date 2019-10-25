@@ -18,212 +18,483 @@
 #include "private.h"
 
 #include <config/functions.h>
-#include <host/state.h>
+#include <gui/functions.h>
 #include <misc/cpp/imgui_stdlib.h>
+#include <util/log.h>
+#include <util/string_utils.h>
+
+#include <nfd.h>
+#include <pugixml.hpp>
+#include <stb_image.h>
 
 namespace gui {
 
-void init_user(GuiState &gui, HostState &host, const std::string &user_id) {
-    host.io.user_id = user_id;
-    host.io.user_name = host.cfg.online_id[std::stoi(user_id)];
+static bool init_avatar(GuiState &gui, HostState &host, const std::string &user_id, const std::string &avatar) {
+    gui.users_avatar[user_id] = {};
+    const auto avatar_path = avatar == "default" ? host.base_path + "/data/image/icon.png" : avatar;
+    const std::wstring avatar_path_wstr = string_utils::utf_to_wide(avatar_path);
+
+    if (!fs::exists(avatar_path_wstr)) {
+        LOG_WARN("Avatar image doesn't exist: {}.", avatar_path);
+        return false;
+    }
+
+    int32_t width = 0;
+    int32_t height = 0;
+
+#ifdef _WIN32
+    FILE *f = _wfopen(avatar_path_wstr.c_str(), L"rb");
+#else
+    FILE *f = fopen(avatar_path.c_str(), "rb");
+#endif
+
+    stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
+
+    if (!data) {
+        LOG_ERROR("Invalid or corrupted image: {}.", avatar_path);
+        return false;
+    }
+
+    gui.users_avatar[user_id].init(gui.imgui_state.get(), data, width, height);
+    stbi_image_free(data);
+    fclose(f);
+
+    return gui.users_avatar.find(user_id) != gui.users_avatar.end();
 }
 
+void init_users(GuiState &gui, HostState &host) {
+    gui.users.clear();
+    const auto user_path{ fs::path(host.pref_path) / "ux0/user" };
+    if (fs::exists(user_path) && !fs::is_empty(user_path)) {
+        for (const auto &path : fs::directory_iterator(user_path)) {
+            pugi::xml_document user_xml;
+            if (fs::is_directory(path) && user_xml.load_file(((path / "user.xml").c_str()))) {
+                const auto user_child = user_xml.child("user");
+
+                // Load user settings
+                const auto user_id = user_child.attribute("id").as_string();
+                auto &user = gui.users[user_id];
+                user.id = user_id;
+                if (!user_child.attribute("name").empty())
+                    user.name = user_child.attribute("name").as_string();
+                if (!user_child.child("avatar").text().empty()) {
+                    user.avatar = user_child.child("avatar").text().as_string();
+                    init_avatar(gui, host, user.id, user.avatar);
+                }
+
+                // Load theme settings
+                auto theme = user_child.child("theme");
+                if (!theme.attribute("use-background").empty())
+                    user.use_theme_bg = theme.attribute("use-background").as_bool();
+                if (!theme.child("content-id").text().empty())
+                    user.theme_id = theme.child("content-id").text().as_string();
+
+                // Load start screen settings
+                auto start = user_child.child("start-screen");
+                if (!start.attribute("type").empty())
+                    user.start_type = start.attribute("type").as_string();
+                if (!start.child("path").text().empty())
+                    user.start_path = start.child("path").text().as_string();
+
+                // Load backgrounds path
+                for (const auto &bg : user_child.child("backgrounds"))
+                    user.backgrounds.push_back(bg.text().as_string());
+            }
+        }
+    }
+}
+
+void update_user(GuiState &gui, HostState &host, const std::string &user_id) {
+    const auto user_path{ fs::path(host.pref_path) / "ux0/user" / user_id };
+    if (!fs::exists(user_path))
+        fs::create_directory(user_path);
+
+    const auto &user = gui.users[user_id];
+
+    pugi::xml_document user_xml;
+    auto declarationUser = user_xml.append_child(pugi::node_declaration);
+    declarationUser.append_attribute("version") = "1.0";
+    declarationUser.append_attribute("encoding") = "utf-8";
+
+    // Save user settings
+    auto user_child = user_xml.append_child("user");
+    user_child.append_attribute("id") = user.id.c_str();
+    user_child.append_attribute("name") = user.name.c_str();
+    user_child.append_child("avatar").append_child(pugi::node_pcdata).set_value(user.avatar.c_str());
+
+    // Save theme settings
+    auto theme = user_child.append_child("theme");
+    theme.append_attribute("use-background") = user.use_theme_bg;
+    theme.append_child("content-id").append_child(pugi::node_pcdata).set_value(user.theme_id.c_str());
+
+    // Save start screen settings
+    auto start_screen = user_child.append_child("start-screen");
+    start_screen.append_attribute("type") = user.start_type.c_str();
+    start_screen.append_child("path").append_child(pugi::node_pcdata).set_value(user.start_path.c_str());
+
+    // Save brackgrounds path
+    auto bg_path = user_child.append_child("backgrounds");
+    for (const auto &bg : user.backgrounds)
+        bg_path.append_child("background").append_child(pugi::node_pcdata).set_value(bg.c_str());
+
+    const auto save_xml = user_xml.save_file((user_path / "user.xml").c_str());
+    if (!save_xml)
+        LOG_ERROR("Fail save xml for user id: {}, name: {}, in path: {}", user.id, user.name, user_path.string());
+}
+
+void init_user(GuiState &gui, HostState &host, const std::string &user_id) {
+    host.io.user_id = user_id;
+    host.io.user_name = gui.users[user_id].name;
+    if (!gui.users[user_id].backgrounds.empty()) {
+        for (const auto &bg : gui.users[user_id].backgrounds)
+            init_user_background(gui, host, user_id, bg);
+    }
+    init_theme(gui, host, gui.users[user_id].theme_id);
+}
+
+void open_user(GuiState &gui, HostState &host) {
+    gui.live_area.user_management = false;
+
+    if (gui.users[host.io.user_id].start_type == "image")
+        init_user_start_background(gui, gui.users[host.io.user_id].start_path);
+    else
+        init_theme_start_background(gui, host, gui.users[host.io.user_id].theme_id);
+
+    if (gui.start_background)
+        gui.live_area.start_screen = true;
+    else
+        gui.live_area.app_selector = true;
+}
+
+static auto get_users_index(GuiState &gui, const std::string &user_name) {
+    const auto profils_index = std::find_if(gui.users.begin(), gui.users.end(), [&](const auto &u) {
+        return u.second.name == user_name;
+    });
+
+    return profils_index;
+}
+
+static std::string menu, del_menu, title, user_id;
+static User temp;
+
+void clear_temp(GuiState &gui) {
+    temp = {};
+    gui.users_avatar["temp"] = {};
+    gui.users_avatar.erase("temp");
+    user_id.clear();
+}
+
+#ifdef _WIN32
+static const char OS_PREFIX[] = "start ";
+#elif __APPLE__
+static const char OS_PREFIX[] = "open ";
+#else
+static const char OS_PREFIX[] = "xdg-open ";
+#endif
+
 void draw_user_management(GuiState &gui, HostState &host) {
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    ImGui::Begin("User Management", &gui.live_area.user_management, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::PopStyleColor();
+    const auto display_size = ImGui::GetIO().DisplaySize;
+    const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+    const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
+    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT);
 
-    const auto update_online_id = std::find(host.cfg.online_id.begin(), host.cfg.online_id.end(), gui.online_id);
-    static const fs::path user_path{ fs::path(host.pref_path) / "ux0/user" };
-    static const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
+    ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    ImGui::SetNextWindowBgAlpha(0.f);
+    ImGui::Begin("##user_management", &gui.live_area.user_management, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    // Add user
-    ImGui::InputTextWithHint("##online_id", "Write your online ID", &gui.online_id);
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Set your Online ID with a maximum of 16 characters.");
-    ImGui::SameLine();
-    if (ImGui::Button("Add Online ID") && !gui.online_id.empty())
-        ImGui::OpenPopup("Add Online ID");
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginPopupModal("Add Online ID", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::PopStyleColor();
+    if (!host.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
+        gui.live_area.information_bar = true;
 
-        if (gui.online_id.length() > 16)
-            ImGui::TextColored(GUI_COLOR_TEXT, "Error: Need reduce to length for online ID.\nCurrently the length is: %lu.", gui.online_id.length());
-        else if (update_online_id != host.cfg.online_id.end())
-            ImGui::TextColored(GUI_COLOR_TEXT, "Error: '%s' Online ID already exists.", gui.online_id.c_str());
-        else
-            ImGui::TextColored(GUI_COLOR_TEXT, "Success: '%s' Online ID added.", gui.online_id.c_str());
+    ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_HEIGHT), display_size, IM_COL32(10.f, 50.f, 140.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
-        ImGui::Separator();
-        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
-        if (ImGui::Button("OK", BUTTON_SIZE)) {
-            if (update_online_id == host.cfg.online_id.end() && !(gui.online_id.length() > 16)) {
-                host.cfg.online_id.push_back(gui.online_id);
-                host.cfg.user_id += ((int)host.cfg.online_id.size() - 1) - host.cfg.user_id;
-                host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
-                if (!fs::exists(user_path / host.io.user_id))
-                    fs::create_directories(user_path / host.io.user_id / "savedata");
-                gui.online_id.clear();
+    const auto user_path{ fs::path(host.pref_path) / "ux0/user" };
+    const auto AVATAR_SIZE = ImVec2(128 * SCAL.x, 128 * SCAL.y);
+    const auto SMALL_AVATAR_SIZE = (ImVec2(34.f * SCAL.x, 34.f * SCAL.y));
+    ImGui::SetWindowFontScale(1.4f * SCAL.x);
+    const auto calc_title = ImGui::CalcTextSize(title.c_str()).y / 2.f;
+    ImGui::SetCursorPos(ImVec2(54.f, (32.f * SCAL.y) - calc_title));
+    ImGui::TextColored(GUI_COLOR_TEXT, title.c_str());
+
+    const auto SIZE_USER = ImVec2(960.f * SCAL.x, 376.f * SCAL.y);
+    const auto POS_SEPARATOR = 68.f * SCAL.y;
+    const auto SPACE_AVATAR = AVATAR_SIZE.x + (20.f * SCAL.x);
+
+    ImGui::SetCursorPosY(POS_SEPARATOR);
+    ImGui::Separator();
+
+    if (menu.empty())
+        ImGui::SetNextWindowContentSize(ImVec2(SIZE_USER.x + ((gui.users.size() - 2.5f) * SPACE_AVATAR), 0.0f));
+    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (102.f * SCAL.y)), ImGuiCond_Always, ImVec2(0.5f, 0.f));
+    ImGui::BeginChild("##user_child", SIZE_USER, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+
+    const auto AVATAR_POS = ImVec2((SIZE_USER.x / 2) - (AVATAR_SIZE.x / 2.f), (((menu == "create" || menu == "edit") ? 48.f : 122.f) * SCAL.y));
+    const auto NEW_USER_POS = AVATAR_POS.x - (gui.users.size() ? SPACE_AVATAR : 0.f);
+    const auto DELETE_USER_POS = AVATAR_POS.x + (SPACE_AVATAR * (gui.users.size()));
+    const auto BUTTON_SIZE = ImVec2(220 * SCAL.x, 36 * SCAL.y);
+    const auto BUTTON_POS = ImVec2((SIZE_USER.x / 2.f) - (BUTTON_SIZE.x / 2.f), 314.f * SCAL.y);
+
+    if (menu.empty()) {
+        // Users list
+        title = "Select your user";
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+        ImGui::SetWindowFontScale(1.6f);
+        ImGui::SetCursorPos(ImVec2(NEW_USER_POS, AVATAR_POS.y));
+        if (ImGui::Selectable("+", false, ImGuiSelectableFlags_None, AVATAR_SIZE)) {
+            menu = "create";
+            auto id = 0;
+            for (const auto &user : gui.users) {
+                if (id != std::stoi(user.first))
+                    break;
+                else
+                    ++id;
             }
-            ImGui::CloseCurrentPopup();
+            user_id = fmt::format("{:0>2d}", id);
+            auto i = 1;
+            for (i; i < gui.users.size(); i++) {
+                const auto name = "User" + fmt::format("{}", i);
+                if (get_users_index(gui, name) == gui.users.end())
+                    break;
+            }
+            temp.id = user_id;
+            temp.name = "User" + fmt::format("{}", i);
+            temp.avatar = "default";
+            temp.theme_id = "default";
+            temp.use_theme_bg = true;
+            temp.start_type = "default";
+            init_avatar(gui, host, "temp", "default");
         }
-
-        ImGui::EndPopup();
-    } else
-        ImGui::PopStyleColor();
-
-    // User list
-    ImGui::PushItemWidth(300);
-    if (ImGui::ListBoxHeader("##online_id_list", (int)host.cfg.online_id.size(), 4)) {
-        for (auto i = 0; i < host.cfg.online_id.size(); i++) {
-            ImGui::TextColored(GUI_COLOR_TEXT, "User ID: %02d, Online ID: %s", i, host.cfg.online_id[i].c_str());
-        }
-        ImGui::ListBoxFooter();
-    }
-    ImGui::PopItemWidth();
-    ImGui::Spacing();
-    if (host.cfg.online_id.size() > 1) {
-        ImGui::PushItemWidth(210);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Select Your User.");
-        ImGui::Combo(
-            "##select_user", &host.cfg.user_id,
-            [](void *vec, int idx, const char **list_online_id) {
-                auto &vector = *static_cast<std::vector<std::string> *>(vec);
-                if (idx < 0 || idx >= static_cast<int>(vector.size())) {
-                    return false;
+        ImGui::SetWindowFontScale(0.9f);
+        const auto calc_text = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize("New User").x / 2.f);
+        ImGui::SetCursorPos(ImVec2(NEW_USER_POS + calc_text, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCAL.y)));
+        ImGui::TextColored(GUI_COLOR_TEXT, "New User");
+        ImGui::SetCursorPos(AVATAR_POS);
+        for (const auto &user : gui.users) {
+            ImGui::PushID(user.first.c_str());
+            const auto USER_POS = ImGui::GetCursorPos();
+            ImGui::SetCursorPos(ImVec2(USER_POS.x, USER_POS.y - BUTTON_SIZE.y));
+            if (ImGui::Button("Edit User", ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
+                user_id = user.first;
+                gui.users_avatar["temp"] = gui.users_avatar[user.first];
+                temp = gui.users[user.first];
+                menu = "edit";
+            }
+            if (gui.users_avatar.find(user.first) != gui.users_avatar.end()) {
+                ImGui::SetCursorPos(USER_POS);
+                ImGui::Image(gui.users_avatar[user.first], AVATAR_SIZE);
+            }
+            ImGui::SetCursorPos(USER_POS);
+            ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+            if (ImGui::Selectable("##avatar", false, ImGuiSelectableFlags_None, AVATAR_SIZE)) {
+                if (host.io.user_id != user.first)
+                    init_user(gui, host, user.first);
+                if (host.cfg.user_id != user.first) {
+                    host.cfg.user_id = user.first;
+                    config::serialize_config(host.cfg, host.cfg.config_path);
                 }
-                *list_online_id = vector.at(idx).c_str();
-                return true;
-            },
-            static_cast<void *>(&host.cfg.online_id), static_cast<int>(host.cfg.online_id.size()));
-        ImGui::SameLine();
-        ImGui::TextColored(GUI_COLOR_TEXT, "User ID: %02d", host.cfg.user_id);
+                open_user(gui, host);
+            }
+            ImGui::SetWindowFontScale(0.9f);
+            ImGui::PopStyleColor();
+            if (ImGui::BeginPopupContextItem("##user_context_menu")) {
+                if (ImGui::MenuItem("Open User Folder"))
+                    system((OS_PREFIX + (user_path / user.first).string()).c_str());
+                ImGui::EndPopup();
+            }
+            ImGui::PopID();
+            const auto POS_NAME = ImVec2(USER_POS.x + (5.f * SCAL.x), USER_POS.y + AVATAR_SIZE.y + (5.f * SCAL.y));
+            ImGui::SetCursorPos(POS_NAME);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", user.second.name.c_str());
+            ImGui::SetCursorPos(ImVec2(USER_POS.x + SPACE_AVATAR, USER_POS.y));
+        }
+        if (gui.users.size()) {
+            ImGui::SetCursorPos(ImVec2(DELETE_USER_POS, AVATAR_POS.y));
+            ImGui::SetWindowFontScale(1.6f);
+            if (ImGui::Selectable("-", false, ImGuiSelectableFlags_None, AVATAR_SIZE))
+                menu = "delete";
+            ImGui::PopStyleVar();
+            ImGui::SetWindowFontScale(0.9f);
+            const auto calc_del_text = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize("Delete User").x / 2.f);
+            ImGui::SetCursorPos(ImVec2(DELETE_USER_POS + calc_del_text, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCAL.y)));
+            ImGui::TextColored(GUI_COLOR_TEXT, "Delete User");
+        }
+    } else if ((menu == "create") || (menu == "edit")) {
+        title = menu == "create" ? "Create User" : "Edit User";
+        ImGui::SetWindowFontScale(0.6f);
+        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x, AVATAR_POS.y - BUTTON_SIZE.y));
+        if ((temp.avatar != "default") && ImGui::Button("Reset Avatar", ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
+            temp.avatar = "default";
+            init_avatar(gui, host, "temp", "default");
+        }
+        if (gui.users_avatar.find("temp") != gui.users_avatar.end()) {
+            ImGui::SetCursorPos(ImVec2(AVATAR_POS));
+            ImGui::Image(gui.users_avatar["temp"], AVATAR_SIZE);
+        }
+        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x, AVATAR_POS.y + AVATAR_SIZE.y));
+        if (ImGui::Button("Change Avatar", ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
+            nfdchar_t *avatar_path;
+            nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &avatar_path);
+
+            if ((result == NFD_OKAY) && init_avatar(gui, host, "temp", avatar_path))
+                temp.avatar = avatar_path;
+        }
+        ImGui::SetWindowFontScale(0.8f);
+        const auto INPUT_NAME_SIZE = 330.f * SCAL.x;
+        const auto INPUT_NAME_POS = ImVec2((SIZE_USER.x / 2.f) - (INPUT_NAME_SIZE / 2.f), 240.f * SCAL.y);
+        ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x, INPUT_NAME_POS.y - (30.f * SCAL.y)));
+        ImGui::TextColored(GUI_COLOR_TEXT, "Name");
+        ImGui::SetCursorPos(INPUT_NAME_POS);
+        ImGui::PushItemWidth(INPUT_NAME_SIZE);
+        ImGui::InputText("##user_name", &temp.name);
         ImGui::PopItemWidth();
-
-        // Delete User
-        ImGui::Spacing();
-        if (ImGui::Button("Delete Selected User"))
-            ImGui::OpenPopup("Delete User");
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-        if (ImGui::BeginPopupModal("Delete User", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::PopStyleColor();
-            const auto delete_online_id = std::find(host.cfg.online_id.begin(), host.cfg.online_id.end(), host.cfg.online_id[host.cfg.user_id]);
-
-            if (fs::exists(user_path / host.io.user_id)) {
-                ImGui::TextColored(GUI_COLOR_TEXT, "Do you want also delete folder for this user?\nUser ID: %s, Online ID: %s", host.io.user_id.c_str(), host.cfg.online_id[host.cfg.user_id].c_str());
-                ImGui::Separator();
-                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 100);
-                if (ImGui::Button("Yes", BUTTON_SIZE)) {
-                    fs::remove_all(user_path / host.io.user_id);
-                    host.cfg.online_id.erase(delete_online_id);
-                    if (host.cfg.user_id < static_cast<int>(host.cfg.online_id.size())) {
-                        auto o = host.cfg.user_id + 1, n = host.cfg.user_id;
-                        for (o, n; o < host.cfg.online_id.size() + 1 && n < host.cfg.online_id.size(); o++, n++) {
-                            auto old_user_id = fmt::format("{:0>2d}", o);
-                            auto new_user_id = fmt::format("{:0>2d}", n);
-                            if (fs::exists(user_path / old_user_id) && !fs::exists(user_path / new_user_id))
-                                fs::rename(user_path / old_user_id, user_path / new_user_id);
-                        }
-                    }
-                    ImGui::CloseCurrentPopup();
-                }
-
-                ImGui::SameLine();
-                if (ImGui::Button("No", BUTTON_SIZE)) {
-                    host.cfg.online_id.erase(delete_online_id);
-                    ImGui::CloseCurrentPopup();
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Cancel", BUTTON_SIZE)) {
-                    ImGui::CloseCurrentPopup();
-                }
-
-            } else {
-                ImGui::TextColored(GUI_COLOR_TEXT, "Do you really want delete this user?\nUser ID: %s, Online ID: %s", host.io.user_id.c_str(), host.cfg.online_id[host.cfg.user_id].c_str());
-                ImGui::Separator();
-                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 65);
-                if (ImGui::Button("Yes", BUTTON_SIZE)) {
-                    host.cfg.online_id.erase(delete_online_id);
-                    ImGui::CloseCurrentPopup();
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("No", BUTTON_SIZE)) {
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-
-            ImGui::EndPopup();
-        } else
-            ImGui::PopStyleColor();
-    }
-
-    // Rename User
-    ImGui::SameLine();
-    std::string rename_button = "Rename Main User";
-    if (host.cfg.user_id > 0)
-        rename_button = "Rename Selected User";
-    if (ImGui::Button(rename_button.c_str())) {
-        ImGui::OpenPopup("Rename Online ID");
-        if (!gui.online_id.empty())
-            gui.online_id.clear();
-        gui.online_id = host.cfg.online_id[host.cfg.user_id];
-    }
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginPopupModal("Rename Online ID", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::PopStyleColor();
-        ImGui::InputTextWithHint("##online_id", "Write change online ID", &gui.online_id);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Set your Online ID with a maximum of 16 characters.");
-        ImGui::Separator();
-        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 65);
-        if (ImGui::Button("Apply", BUTTON_SIZE))
-            ImGui::OpenPopup("Apply Rename Online ID");
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-        if (ImGui::BeginPopupModal("Apply Rename Online ID", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::PopStyleColor();
-
-            if (gui.online_id.empty())
-                ImGui::TextColored(GUI_COLOR_TEXT, "Error: Text is empty, write you Online ID.");
-            else if (gui.online_id.length() > 16)
-                ImGui::TextColored(GUI_COLOR_TEXT, "Error: Need reduce to length for online ID.\nCurrently the length is: %lu.", gui.online_id.length());
-            else if (update_online_id != host.cfg.online_id.end())
-                ImGui::TextColored(GUI_COLOR_TEXT, "Error: '%s' Online ID already exists.", gui.online_id.c_str());
-            else
-                ImGui::TextColored(GUI_COLOR_TEXT, "Success: '%s' Online ID renamed to '%s'.", host.cfg.online_id[host.cfg.user_id].c_str(), gui.online_id.c_str());
-
-            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
-            if (ImGui::Button("OK", BUTTON_SIZE)) {
-                if (gui.online_id.empty())
-                    gui.online_id = host.cfg.online_id[host.cfg.user_id];
-                else if (update_online_id == host.cfg.online_id.end() && !(gui.online_id.length() > 16)) {
-                    host.cfg.online_id[host.cfg.user_id].replace(host.cfg.online_id[host.cfg.user_id].begin(), host.cfg.online_id[host.cfg.user_id].end(), gui.online_id);
-                    gui.online_id = host.cfg.online_id[host.cfg.user_id];
-                }
-                ImGui::CloseCurrentPopup();
-            }
-
-            ImGui::EndPopup();
-        } else
-            ImGui::PopStyleColor();
-
-        ImGui::SameLine();
-        if (ImGui::Button("Close", BUTTON_SIZE)) {
-            gui.online_id.clear();
-            ImGui::CloseCurrentPopup();
+        const auto free_name = get_users_index(gui, temp.name) == gui.users.end();
+        const auto check_free_name = (menu == "create" ? free_name : (temp.name == gui.users[user_id].name) || free_name);
+        if (!check_free_name) {
+            ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x + INPUT_NAME_SIZE + 10.f, INPUT_NAME_POS.y));
+            ImGui::TextColored(GUI_COLOR_TEXT, "! This name is already in use.");
         }
-
-        ImGui::EndPopup();
-    } else
-        ImGui::PopStyleColor();
-
-    if (host.cfg.user_id != std::stoi(host.io.user_id)) {
-        init_user(gui, host, fmt::format("{:0>2d}", host.cfg.user_id));
-        if (host.cfg.overwrite_config)
+        ImGui::SetCursorPos(BUTTON_POS);
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+        if (!temp.name.empty() && check_free_name ? ImGui::Button("Confirm", BUTTON_SIZE) : ImGui::Selectable("Confirm", false, ImGuiSelectableFlags_Disabled, BUTTON_SIZE)) {
+            gui.users_avatar[user_id] = gui.users_avatar["temp"];
+            gui.users[user_id] = temp;
+            update_user(gui, host, user_id);
+            if (menu == "create")
+                menu = "confirm";
+            else {
+                clear_temp(gui);
+                menu.clear();
+            }
+        }
+        ImGui::PopStyleVar();
+    } else if (menu == "confirm") {
+        ImGui::SetWindowFontScale(0.8f);
+        const std::string msg = "The following user has been created";
+        const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize(msg.c_str()).x / 2.f);
+        ImGui::SetCursorPos(ImVec2(calc_text, (44.f * SCAL.y)));
+        ImGui::TextColored(GUI_COLOR_TEXT, msg.c_str());
+        ImGui::SetCursorPos(AVATAR_POS);
+        if (gui.users_avatar.find(user_id) != gui.users_avatar.end())
+            ImGui::Image(gui.users_avatar[user_id], AVATAR_SIZE);
+        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + (5.f * SCAL.x), AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCAL.y)));
+        ImGui::TextColored(GUI_COLOR_TEXT, gui.users[user_id].name.c_str());
+        ImGui::SetCursorPos(BUTTON_POS);
+        if (ImGui::Button("Ok", BUTTON_SIZE)) {
+            clear_temp(gui);
+            menu.clear();
+        }
+    } else if (menu == "delete") {
+        title = "Delete User";
+        if (user_id.empty()) {
+            ImGui::SetWindowFontScale(1.f * SCAL.x);
+            ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - (ImGui::CalcTextSize("Select the user you want delete.").x / 2.f), 5.f * SCAL.y));
+            const auto CHILD_DELETE_USER_SIZE = ImVec2(674 * SCAL.x, 308.f * SCAL.y);
+            const auto SELECT_SIZE = ImVec2(674.f * SCAL.x, 46.f * SCAL.y);
+            ImGui::TextColored(GUI_COLOR_TEXT, "Select the user you want delete.");
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
+            ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (168.f * SCAL.y)), ImGuiCond_Always, ImVec2(0.5f, 0.f));
+            ImGui::BeginChild("##delete_user_child", CHILD_DELETE_USER_SIZE, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+            ImGui::SetWindowFontScale(1.6f);
+            ImGui::Columns(2, nullptr, false);
+            ImGui::SetColumnWidth(0, SMALL_AVATAR_SIZE.x + (10.f * SCAL.x));
+            for (const auto &user : gui.users) {
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (SELECT_SIZE.y / 2.f) - (SMALL_AVATAR_SIZE.y / 2.f));
+                ImGui::Image(gui.users_avatar[user.first], SMALL_AVATAR_SIZE);
+                ImGui::NextColumn();
+                ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.0f, 0.5f));
+                if (ImGui::Selectable(user.second.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, SELECT_SIZE))
+                    user_id = user.first;
+                ImGui::NextColumn();
+                ImGui::PopStyleVar();
+            }
+            ImGui::Columns(1);
+            ImGui::EndChild();
+            ImGui::PopStyleVar();
+        } else {
+            ImGui::SetWindowFontScale(0.8f);
+            if (del_menu.empty()) {
+                ImGui::SetCursorPos(ImVec2(148.f * SCAL.x, 100.f * SCAL.y));
+                ImGui::TextColored(GUI_COLOR_TEXT, "The following user will be deleted.");
+                ImGui::SetCursorPos(ImVec2(194.f * SCAL.x, 148.f * SCAL.y));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.users[user_id].name.c_str());
+                ImGui::SetCursorPos(ImVec2(148.f * SCAL.x, 194.f * SCAL.y));
+                ImGui::TextWrapped("If you delete the user, that user's saved data, trophis will be deleted.");
+                ImGui::SetWindowFontScale(1.f);
+                ImGui::SetCursorPos(BUTTON_POS);
+                if (ImGui::Button("Delete", BUTTON_SIZE))
+                    del_menu = "warn";
+            } else if (del_menu == "warn") {
+                const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize("Are you sure you want to continue?").x / 2.f);
+                ImGui::SetCursorPos(ImVec2(calc_text, 146.f * SCAL.y));
+                ImGui::TextColored(GUI_COLOR_TEXT, "The user will be deleted.");
+                ImGui::SetCursorPosX(calc_text);
+                ImGui::TextColored(GUI_COLOR_TEXT, "Are you sure you want to continue?");
+                ImGui::SetCursorPos(BUTTON_POS);
+                ImGui::SetWindowFontScale(1.f);
+                ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - BUTTON_SIZE.x - 20.f, BUTTON_POS.y));
+                if (ImGui::Button("No", BUTTON_SIZE)) {
+                    user_id.clear();
+                    del_menu.clear();
+                }
+                ImGui::SameLine(0, 40.f * SCAL.x);
+                if (ImGui::Button("Yes", BUTTON_SIZE)) {
+                    fs::remove_all(user_path / user_id);
+                    gui.users_avatar.erase(user_id);
+                    gui.users.erase(get_users_index(gui, gui.users[user_id].name));
+                    if (user_id == host.io.user_id)
+                        host.io.user_id.clear();
+                    del_menu = "confirm";
+                }
+            } else if (del_menu == "confirm") {
+                ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - (ImGui::CalcTextSize("User Deleted.").x / 2.f), 146.f * SCAL.y));
+                ImGui::TextColored(GUI_COLOR_TEXT, "User Deleted.");
+                ImGui::SetWindowFontScale(1.f);
+                ImGui::SetCursorPos(BUTTON_POS);
+                if (ImGui::Button("Ok", BUTTON_SIZE)) {
+                    del_menu.clear();
+                    user_id.clear();
+                    if (!gui.users.size())
+                        menu.clear();
+                }
+            }
+        }
+    }
+    ImGui::EndChild();
+    ImGui::SetCursorPosY(WINDOW_SIZE.y - POS_SEPARATOR);
+    ImGui::Separator();
+    ImGui::SetWindowFontScale(1.f * SCAL.x);
+    const auto USER_ALREADY_INIT = host.cfg.user_id == host.io.user_id;
+    if ((menu.empty() && USER_ALREADY_INIT) || (!menu.empty() && (menu != "confirm") && del_menu.empty())) {
+        ImGui::SetCursorPos(ImVec2(54.f * SCAL.x, ImGui::GetCursorPosY() + (10.f * SCAL.y)));
+        if (ImGui::Button("Cancel", ImVec2(80.f * SCAL.x, 40.f * SCAL.y))) {
+            if (!menu.empty()) {
+                if ((menu == "create") || (menu == "edit"))
+                    clear_temp(gui);
+                if ((menu == "delete") && !user_id.empty())
+                    user_id.clear();
+                else
+                    menu.clear();
+            } else if (USER_ALREADY_INIT) {
+                gui.live_area.user_management = false;
+                gui.live_area.app_selector = true;
+            }
+        }
+    }
+    if (menu.empty()) {
+        ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize("Automatic User Login").x / 2.f), WINDOW_SIZE.y - 50.f * SCAL.y));
+        if (ImGui::Checkbox("Automatic User Login", &host.cfg.auto_user_login))
             config::serialize_config(host.cfg, host.cfg.config_path);
     }
-
+    if (!gui.users.empty() && (gui.users.find(host.cfg.user_id) != gui.users.end())) {
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - 220.f, WINDOW_SIZE.y - (POS_SEPARATOR / 2.f) - (SMALL_AVATAR_SIZE.y / 2.f)));
+        if (gui.users_avatar.find(host.cfg.user_id) != gui.users_avatar.end())
+            ImGui::Image(gui.users_avatar[host.cfg.user_id], SMALL_AVATAR_SIZE);
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - 180.f, WINDOW_SIZE.y - (POS_SEPARATOR / 2.f) - (ImGui::CalcTextSize(gui.users[host.cfg.user_id].name.c_str()).y / 2.f)));
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.users[host.cfg.user_id].name.c_str());
+    }
     ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 } // namespace gui

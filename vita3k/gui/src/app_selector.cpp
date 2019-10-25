@@ -132,7 +132,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     const auto MENUBAR_HEIGHT = 32.f * scal.y;
     const auto MENUBAR_BG_HEIGHT = !gui.live_area.information_bar ? 22.f : 32.f * scal.y;
 
-    const auto is_background = (host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
+    const auto is_background = (gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
@@ -167,7 +167,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         while (last_time["home"] + host.cfg.delay_background < current_time()) {
             last_time["home"] += host.cfg.delay_background;
 
-            if (host.cfg.use_theme_background) {
+            if (gui.users[host.io.user_id].use_theme_bg) {
                 if (gui.current_theme_bg < uint64_t(gui.theme_backgrounds.size() - 1))
                     ++gui.current_theme_bg;
                 else
@@ -184,7 +184,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     }
 
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]],
+        ImGui::GetBackgroundDrawList()->AddImage((gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[gui.current_user_bg]],
             ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawCornerFlags_All);
@@ -426,7 +426,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-                    ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && host.cfg.use_theme_background ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
+                    ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && gui.users[host.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
                     ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
                     ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
@@ -440,7 +440,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 } else {
                     ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * scal.x)).x / 2.f));
                     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * scal.x)));
-                    ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && host.cfg.use_theme_background ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
+                    ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && gui.users[host.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
                     ImGui::PopTextWrapPos();
                     ImGui::NextColumn();
                 }
