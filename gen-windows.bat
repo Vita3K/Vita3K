@@ -6,7 +6,7 @@ if errorlevel 1 set vs_version=Visual Studio 15 2017 Win64
 if errorlevel 2 set vs_version=Visual Studio 16 2019
 
 REM CI uses pre-built Boost
-IF "%CI%"=="" IF "%vs_version%"=="Visual Studio 15 2017 Win64" (
+IF "%CI%"=="" IF NOT EXIST external\boost-build (
 	REM Create build dir
 	mkdir external\boost-build
 	cd external\boost
