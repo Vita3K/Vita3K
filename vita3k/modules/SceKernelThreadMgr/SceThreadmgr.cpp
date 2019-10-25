@@ -28,6 +28,11 @@
 #include <chrono>
 #include <thread>
 
+inline uint64_t get_current_time() {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+}
+
 EXPORT(int, __sceKernelCreateLwMutex) {
     return UNIMPLEMENTED();
 }
@@ -471,7 +476,7 @@ EXPORT(int, sceKernelCloseSimpleEvent) {
 }
 
 EXPORT(int, sceKernelCloseTimer) {
-    return UNIMPLEMENTED();
+    return STUBBED("References not implemented.");
 }
 
 EXPORT(int, sceKernelCreateCallback) {
@@ -553,8 +558,10 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     return 0;
 }
 
-EXPORT(int, sceKernelDeleteTimer) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
+    host.kernel.timers.erase(timer_handle);
+
+    return 0;
 }
 
 EXPORT(int, sceKernelExitDeleteThread, int status) {
@@ -619,12 +626,22 @@ EXPORT(int, sceKernelGetThreadmgrUIDClass) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetTimerBaseWide) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetTimerBaseWide, SceUID timer_handle) {
+    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
+
+    if (!timer_info)
+        return -1;
+
+    return timer_info->time;
 }
 
-EXPORT(int, sceKernelGetTimerTimeWide) {
-    return UNIMPLEMENTED();
+EXPORT(uint64_t, sceKernelGetTimerTimeWide, SceUID timer_handle) {
+    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
+
+    if (!timer_info)
+        return -1;
+
+    return get_current_time() - timer_info->time;
 }
 
 EXPORT(int, sceKernelNotifyCallback) {
@@ -663,8 +680,25 @@ EXPORT(int, sceKernelOpenSimpleEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelOpenTimer) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelOpenTimer, const char *name) {
+    STUBBED("References not implemented.");
+
+    SceUID timer_handle = -1;
+    TimerPtr timer_info;
+
+    host.kernel.mutex.lock();
+    for (const auto &timer : host.kernel.timers) {
+        if (timer.second->name == name) {
+            timer_handle = timer.first;
+            timer_info = timer.second;
+            break;
+        }
+    }
+    host.kernel.mutex.unlock();
+
+    assert(timer_info->openable);
+
+    return timer_handle;
 }
 
 EXPORT(int, sceKernelPollSema) {
@@ -718,12 +752,28 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
     return semaphore_signal(host.kernel, export_name, thread_id, semaid, signal);
 }
 
-EXPORT(int, sceKernelStartTimer) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelStartTimer, SceUID timer_handle) {
+    const TimerPtr &timer_info = host.kernel.timers[timer_handle];
+
+    if (timer_info->is_started)
+        return false;
+
+    timer_info->is_started = true;
+    timer_info->time = get_current_time();
+
+    return true;
 }
 
-EXPORT(int, sceKernelStopTimer) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelStopTimer, SceUID timer_handle) {
+    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
+
+    if (!timer_info->is_started)
+        return false;
+
+    timer_info->is_started = false;
+    timer_info->time = get_current_time();
+
+    return true;
 }
 
 EXPORT(int, sceKernelSuspendThreadForVM) {

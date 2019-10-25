@@ -1012,7 +1012,7 @@ bool USSETranslatorVisitor::sop2(
         return true;
     }
 
-    static auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
+    auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
         switch (op) {
         case Opcode::FADD: {
             return m_b.createBinOp(spv::OpFAdd, type, lhs, rhs);

@@ -120,6 +120,7 @@ void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState 
     std::vector<uint8_t> texture_data_decompressed;
     std::vector<uint8_t> texture_pixels_lineared; // TODO Move to context to avoid frequent allocation?
     std::vector<uint32_t> palette_texture_pixels;
+    std::vector<uint8_t> yuv_texture_pixels;
 
     const void *pixels = nullptr;
 
@@ -182,14 +183,47 @@ void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState 
             const uint32_t *const palette_bytes = renderer::texture::get_texture_palette(gxm_texture, mem);
             palette_texture_pixels.resize(width * height * 4);
             if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
-                renderer::texture::palette_texture_to_rgba_8(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
+                renderer::texture::palette_texture_to_rgba_8(palette_texture_pixels.data(),
                     reinterpret_cast<const uint8_t *>(pixels), width, height, palette_bytes);
             } else {
-                renderer::texture::palette_texture_to_rgba_4(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
+                renderer::texture::palette_texture_to_rgba_4(palette_texture_pixels.data(),
                     reinterpret_cast<const uint8_t *>(pixels), width, height, palette_bytes);
             }
             pixels = palette_texture_pixels.data();
             stride = width;
+        }
+
+        if (gxm::is_yuv_format(fmt)) {
+            switch (fmt) {
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1: {
+                yuv_texture_pixels.resize(width * height * 3);
+                renderer::texture::yuv420_texture_to_rgb(yuv_texture_pixels.data(),
+                    reinterpret_cast<const uint8_t *>(pixels), width, height);
+                pixels = yuv_texture_pixels.data();
+                stride = width;
+                break;
+            }
+
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1:
+
+            case SCE_GXM_TEXTURE_FORMAT_YUYV422_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_UYVY422_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YUYV422_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_UYVY422_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC1:
+                assert(false);
+            default:
+                assert(false);
+            }
         }
 
         const GLenum format = translate_format(fmt);

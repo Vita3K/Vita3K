@@ -84,3 +84,6 @@
 [submodule "external/VulkanMemoryAllocator"]
 	path = external/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "external/ffmpeg"]
+	path = external/ffmpeg
+	url = https://github.com/Vita3K/ffmpeg-core.git

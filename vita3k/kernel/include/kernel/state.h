@@ -170,6 +170,52 @@ struct WaitingThreadState {
 
 typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
 
+struct AVCodecContext;
+struct AVCodecParserContext;
+
+struct DecoderState {
+    AVCodecContext *context{};
+    AVCodecParserContext *parser{};
+
+    uint32_t frame_width;
+    uint32_t frame_height;
+    uint32_t frame_ref_count;
+};
+
+typedef std::shared_ptr<DecoderState> DecoderPtr;
+typedef std::map<SceUID, DecoderPtr> DecoderStates;
+
+struct TimerState {
+    std::string name;
+
+    enum class ThreadBehaviour {
+        FIFO,
+        PRIORITY,
+    };
+
+    enum class NotifyBehaviour {
+        ALL,
+        ONLY_WAKE
+    };
+
+    enum class ResetBehaviour {
+        MANUAL,
+        AUTOMATIC,
+    };
+
+    bool openable = false;
+    ThreadBehaviour thread_behaviour = ThreadBehaviour::FIFO;
+    NotifyBehaviour notify_behaviour = NotifyBehaviour::ALL;
+    ResetBehaviour reset_behaviour = ResetBehaviour::MANUAL;
+
+    bool is_started = false;
+    bool repeats = false;
+    uint64_t time = 0;
+};
+
+typedef std::shared_ptr<TimerState> TimerPtr;
+typedef std::map<SceUID, TimerPtr> TimerStates;
+
 using LoadedSysmodules = std::vector<SceSysmoduleModuleId>;
 
 struct KernelState {
@@ -190,6 +236,8 @@ struct KernelState {
     LoadedSysmodules loaded_sysmodules;
     ExportNids export_nids;
     SceRtcTick base_tick;
+    DecoderStates decoders;
+    TimerStates timers;
     Ptr<uint32_t> process_param;
     bool wait_for_debugger = false;
 

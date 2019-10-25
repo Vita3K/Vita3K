@@ -49,6 +49,7 @@ add_library(
 	src/texture_cache.cpp
 	src/texture_format.cpp
 	src/texture_palette.cpp
+	src/texture_yuv.cpp
 	src/uniforms.cpp
 )
 
