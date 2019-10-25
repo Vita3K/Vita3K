@@ -302,11 +302,6 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         host.app_version = host.app_category = "N/A";
     }
 
-    if (std::stoi(host.io.user_id) != host.cfg.user_id) {
-        host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
-        host.io.user_name = host.cfg.online_id[host.cfg.user_id];
-    }
-
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
@@ -561,7 +556,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         auto arr = Ptr<uint8_t>(alloc(host.mem, buf.size(), "arg"));
         memcpy(arr.get(host.mem), buf.data(), buf.size());
         auto abc = arr.get(host.mem);
-        param.size = buf.size();
+        param.size = SceSize(buf.size());
         param.attr = arr.address();
     }
     if (start_thread(host.kernel, main_thread_id, param.size, Ptr<void>(param.attr)) < 0) {

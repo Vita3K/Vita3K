@@ -160,38 +160,6 @@ static void init_live_area_font(GuiState &gui, HostState &host) {
     gui.live_area_font_large = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 124.f, &font_config, large_font_chars);
 }
 
-static void init_user_backgrounds(GuiState &gui, HostState &host) {
-    for (const auto &background : host.cfg.user_backgrounds) {
-        const std::wstring background_wstr = string_utils::utf_to_wide(background);
-
-        if (!fs::exists(fs::path(background_wstr))) {
-            LOG_WARN("Image doesn't exist: {}.", background);
-            continue;
-        }
-
-        int32_t width = 0;
-        int32_t height = 0;
-
-#ifdef _WIN32
-        FILE *f = _wfopen(background_wstr.c_str(), L"rb");
-#else
-        FILE *f = fopen(background.c_str(), "rb");
-#endif
-
-        stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
-
-        if (!data) {
-            LOG_ERROR("Invalid or corrupted image: {}.", background);
-            continue;
-        }
-
-        gui.user_backgrounds[background].init(gui.imgui_state.get(), data, width, height);
-        stbi_image_free(data);
-    }
-
-    gui.current_user_bg = 0;
-}
-
 void init_apps_icon(GuiState &gui, HostState &host, const std::vector<App> &apps_list) {
     for (const App &app : apps_list) {
         int32_t width = 0;
@@ -443,7 +411,7 @@ void init(GuiState &gui, HostState &host) {
     init_style();
     init_font(gui, host);
     init_live_area_font(gui, host);
-    init_user(gui, host, fmt::format("{:0>2d}", host.cfg.user_id));
+    init_users(gui, host);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);
@@ -453,22 +421,16 @@ void init(GuiState &gui, HostState &host) {
     get_sys_apps_title(gui, host);
     init_apps_icon(gui, host, gui.app_selector.user_apps);
 
-    if (!host.cfg.user_backgrounds.empty())
-        init_user_backgrounds(gui, host);
-
-    init_theme(gui, host, host.cfg.theme_content_id.empty() ? "default" : host.cfg.theme_content_id);
-
-    if (host.cfg.start_background == "image")
-        init_user_start_background(gui, host.cfg.user_start_background);
-    else
-        init_theme_start_background(gui, host, host.cfg.theme_content_id);
-
-    if (!host.cfg.run_title_id && !host.cfg.vpk_path) {
+    const auto cmd = host.cfg.run_title_id || host.cfg.vpk_path;
+    if (!gui.users.empty() && (gui.users.find(host.cfg.user_id) != gui.users.end()) && (cmd || host.cfg.auto_user_login)) {
+        init_user(gui, host, host.cfg.user_id);
+        if (!cmd && host.cfg.auto_user_login) {
+            gui.live_area.information_bar = true;
+            open_user(gui, host);
+        }
+    } else {
         gui.live_area.information_bar = true;
-        if (gui.start_background)
-            gui.live_area.start_screen = true;
-        else
-            gui.live_area.app_selector = true;
+        gui.live_area.user_management = true;
     }
 
     // Initialize trophy callback

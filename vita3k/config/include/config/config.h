@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_INDIVIDUAL(code)                                                                         \
     code(bool, "log-imports", false, log_imports)                                                       \
-    code(bool, "stack-traceback", false, stack_traceback) \
+    code(bool, "stack-traceback", false, stack_traceback)                                               \
     code(bool, "log-exports", false, log_exports)                                                       \
     code(bool, "log-active-shaders", false, log_active_shaders)                                         \
     code(bool, "log-uniforms", false, log_uniforms)                                                     \
@@ -42,10 +42,6 @@
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(bool, "auto-lle", false, auto_lle)                                                             \
-    code(std::string, "user-start-background", std::string{}, user_start_background)                    \
-    code(std::string, "start-background",  std::string{"default"}, start_background)                    \
-    code(std::string, "theme-content-id", std::string{"default"}, theme_content_id)                     \
-    code(bool, "use-theme-background", false, use_theme_background)                                     \
     code(int, "delay-background", 4, delay_background)                                                  \
     code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
@@ -84,7 +80,8 @@
     code(int, "keyboard-rightstick-up", 12, keyboard_rightstick_up)										\
     code(int, "keyboard-rightstick-down", 14, keyboard_rightstick_down)									\
     code(int, "keyboard-button-psbutton", 19, keyboard_button_psbutton)									\
-    code(int, "user-id", 0, user_id)													\
+    code(std::string, "user-id", std::string{}, user_id)            									\
+    code(bool, "user-auto-connect", false, auto_user_login)												\
     code(bool, "dump-textures", false, dump_textures)
 
 
@@ -93,9 +90,7 @@
 // If you are going to implement a dynamic list in the YAML, add it here instead
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_VECTOR(code)                                                                             \
-    code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
-    code(std::vector<std::string>, "user-backgrounds",  std::vector<std::string>{}, user_backgrounds)   \
-    code(std::vector<std::string>, "online-id", std::vector<std::string>{"Vita3K"}, online_id)
+    code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)
 
 // Parent macro for easier generation
 #define CONFIG_LIST(code)                                                                               \

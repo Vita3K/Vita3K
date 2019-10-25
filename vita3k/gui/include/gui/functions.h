@@ -57,13 +57,17 @@ void init_themes(GuiState &gui, HostState &host);
 void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id);
 void init_trophy_collection(GuiState &gui, HostState &host);
 void init_user(GuiState &gui, HostState &host, const std::string &user_id);
+bool init_user_background(GuiState &gui, HostState &host, const std::string &user_id, const std::string &background_path);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
+void init_users(GuiState &gui, HostState &host);
 void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &trophy_id);
+void open_user(GuiState &gui, HostState &host);
 void pre_load_app(GuiState &gui, HostState &host, bool live_area);
 void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id);
 bool refresh_app_list(GuiState &gui, HostState &host);
 void update_apps_list_opened(GuiState &gui, const std::string &title_id);
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type);
+void update_user(GuiState &gui, HostState &host, const std::string &user_id);
 
 void draw_begin(GuiState &gui, HostState &host);
 void draw_end(GuiState &host, SDL_Window *window);

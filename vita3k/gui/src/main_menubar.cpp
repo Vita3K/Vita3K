@@ -72,7 +72,10 @@ static void draw_debug_menu(DebugMenuState &state) {
 static void draw_config_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginMenu("Configuration")) {
         ImGui::MenuItem("Settings", nullptr, &gui.configuration_menu.settings_dialog);
-        ImGui::MenuItem("User Management", nullptr, &gui.live_area.user_management);
+        if (ImGui::MenuItem("User Management", nullptr, &gui.live_area.user_management, (!gui.live_area.user_management && host.io.title_id.empty()))) {
+            gui.live_area.app_selector = false;
+            gui.live_area.information_bar = true;
+        }
         ImGui::EndMenu();
     }
 }
