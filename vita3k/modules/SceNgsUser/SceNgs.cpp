@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <util/log.h>
+#include <ngs/ngs.h>
 
 #include "SceNgs.h"
 
@@ -36,6 +37,9 @@ struct SceNgsBufferInfo {
     std::uint32_t size;
 };
 static_assert(sizeof(SceNgsBufferInfo) == 8);
+
+using SceNgsSynthSystemHandle = Ptr<emu::ngs::System>;
+} // namespace emu
 
 EXPORT(int, sceNgsAT9GetSectionDetails) {
     STUBBED("Hack");
@@ -88,13 +92,23 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsSystemGetRequiredMemorySize, void *params, uint32_t *size) {
-    *size = 1;
-    return STUBBED("size = 1");
+EXPORT(int, sceNgsSystemGetRequiredMemorySize, emu::ngs::SystemInitParameters *params, uint32_t *size) {
+    *size = sizeof(emu::ngs::System)                            // System struct size
+        + params->max_racks * sizeof(emu::ngs::Rack)            // Rack struct size
+        + params->max_voices * sizeof(emu::ngs::Voice);         // Voice struct size
+        + params->granularity * 0;                              // Size for temporary audio buffer, TODO.
+
+    return 0;
 }
 
-EXPORT(int, sceNgsSystemInit) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t memspace_size, emu::ngs::SystemInitParameters *params,
+    emu::SceNgsSynthSystemHandle *handle) {
+    if (!emu::ngs::init(host.mem, params, memspace, memspace_size)) {
+        return -1;      // TODO: Better error code
+    }
+
+    *handle = memspace.cast<emu::ngs::System>();
+    return 0;
 }
 
 EXPORT(int, sceNgsSystemLock) {
