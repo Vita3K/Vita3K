@@ -16,6 +16,10 @@ namespace emu::ngs {
 
     struct System;
 
+    struct Voice {
+        std::uint32_t holdit;
+    };
+
     struct Rack {
         System *mama;
         Address my_location;

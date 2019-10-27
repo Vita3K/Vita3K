@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <util/log.h>
+#include <ngs/ngs.h>
 
 #include "SceNgs.h"
 
@@ -89,9 +90,13 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsSystemGetRequiredMemorySize, void *params, uint32_t *size) {
-    *size = 1;
-    return STUBBED("size = 1");
+EXPORT(int, sceNgsSystemGetRequiredMemorySize, emu::ngs::SystemInitParameters *params, uint32_t *size) {
+    *size = sizeof(emu::ngs::System)                            // System struct size
+        + params->max_racks * sizeof(emu::ngs::Rack)            // Rack struct size
+        + params->max_voices * sizeof(emu::ngs::Voice);         // Voice struct size
+        + params->granularity * 0;                              // Size for temporary audio buffer, TODO.
+
+    return 0;
 }
 
 EXPORT(int, sceNgsSystemInit) {
