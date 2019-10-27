@@ -38,6 +38,8 @@ struct SceNgsBufferInfo {
     std::uint32_t size;
 };
 static_assert(sizeof(SceNgsBufferInfo) == 8);
+
+using SceNgsSynthSystemHandle = Ptr<emu::ngs::System>;
 } // namespace emu
 
 EXPORT(int, sceNgsAT9GetSectionDetails) {
@@ -99,8 +101,14 @@ EXPORT(int, sceNgsSystemGetRequiredMemorySize, emu::ngs::SystemInitParameters *p
     return 0;
 }
 
-EXPORT(int, sceNgsSystemInit) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t memspace_size, emu::ngs::SystemInitParameters *params,
+    emu::SceNgsSynthSystemHandle *handle) {
+    if (!emu::ngs::init(host.mem, params, memspace, memspace_size)) {
+        return -1;      // TODO: Better error code
+    }
+
+    *handle = memspace.cast<emu::ngs::System>();
+    return 0;
 }
 
 EXPORT(int, sceNgsSystemLock) {

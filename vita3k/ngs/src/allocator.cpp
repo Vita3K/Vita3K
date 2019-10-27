@@ -23,11 +23,18 @@ namespace emu::ngs {
                     division.size = blocks[i].size - size;
                     division.free = true;
 
-                    blocks.insert(blocks.begin() + i, division);
                     blocks[i].free = false;
                     blocks[i].size = size;
 
-                    return blocks[i].offset;
+                    const std::uint32_t offset = blocks[i].offset;
+
+                    if (blocks.capacity() == blocks.size()) {
+                        blocks.resize(blocks.size() + 1);
+                    }
+
+                    blocks.insert(blocks.begin() + i + 1, division);
+
+                    return offset;
                 }
             }
         }

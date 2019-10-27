@@ -5,6 +5,8 @@
 
 #include <mem/ptr.h>
 
+struct MemState;
+
 namespace emu::ngs {
     struct SystemInitParameters {
         std::int32_t max_racks;
@@ -47,5 +49,10 @@ namespace emu::ngs {
         std::int32_t sample_rate;
 
         Ptr<void> memspace;
+        SystemMemspaceBlockAllocator alloc;
+
+        explicit System(const Ptr<void> memspace, const std::uint32_t memspace_size);
     };
+
+    bool init(const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size);
 }

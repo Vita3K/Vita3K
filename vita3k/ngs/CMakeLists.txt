@@ -3,6 +3,7 @@ add_library(
 	STATIC
 	include/ngs/ngs.h
 	src/allocator.cpp
+	src/ngs.cpp
 )
 
 target_include_directories(ngs PUBLIC include)
