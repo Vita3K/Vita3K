@@ -57,7 +57,7 @@ std::string remove_device_from_path(const std::string &path, const VitaIoDevice 
     out = out.substr(device_length, out.size());
     if (!mod_path.empty())
         out.front() == '/' ? out = mod_path + out : out = mod_path + '/' + out;
-    if (out.front() == '/')
+    if (!out.empty() && out.front() == '/')
         out = out.substr(1, out.length());
 
     return out;
