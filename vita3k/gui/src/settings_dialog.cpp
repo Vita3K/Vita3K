@@ -105,7 +105,7 @@ static bool change_user_image_background(GuiState &gui, HostState &host) {
 }
 
 void get_modules_list(GuiState &gui, HostState &host) {
-    gui.modules_list.clear();
+    gui.modules.clear();
 
     const auto modules_path{ fs::path(host.pref_path) / "vs0/sys/external/" };
     if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
@@ -114,13 +114,18 @@ void get_modules_list(GuiState &gui, HostState &host) {
         for (fs::recursive_directory_iterator m(modules_path); m != end; ++m) {
             const fs::path lle = *m;
             if (m->path().extension() == ext)
-                gui.modules_list.push_back(lle.filename().replace_extension().string());
+                gui.modules.push_back({ lle.filename().replace_extension().string(), false });
         }
-    }
 
-    gui.modules_selected.resize(gui.modules_list.size());
-    for (size_t i = 0; i < gui.modules_list.size(); ++i)
-        gui.modules_selected[i] = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), gui.modules_list[i]) != host.cfg.lle_modules.end();
+        for (auto &m : gui.modules)
+            m.second = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), m.first) != host.cfg.lle_modules.end();
+
+        std::sort(gui.modules.begin(), gui.modules.end(), [](const auto &ma, const auto &mb) {
+            if (ma.second == mb.second)
+                return ma.first < mb.first;
+            return ma.second;
+        });
+    }
 }
 
 void draw_settings_dialog(GuiState &gui, HostState &host) {
@@ -133,23 +138,22 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     // Core
     if (ImGui::BeginTabItem("Core")) {
         ImGui::PopStyleColor();
-        if (!gui.modules_list.empty()) {
+        if (!gui.modules.empty()) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Module List");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::PushItemWidth(240);
-            if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules_list.size()), 6)) {
-                for (int m = 0; m < gui.modules_list.size(); m++) {
-                    const auto module = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), gui.modules_list[m]);
+            if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 8)) {
+                for (auto &m : gui.modules) {
+                    const auto module = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), m.first);
                     const bool module_existed = (module != host.cfg.lle_modules.end());
-                    if (!gui.module_search_bar.PassFilter(gui.modules_list[m].c_str()))
+                    if (!gui.module_search_bar.PassFilter(m.first.c_str()))
                         continue;
-                    if (ImGui::Selectable(gui.modules_list[m].c_str(), gui.modules_selected[m])) {
-                        gui.modules_selected[m] = !module_existed; // set manually, since vector<bool> is retarded
+                    if (ImGui::Selectable(m.first.c_str(), &m.second)) {
                         if (module_existed)
                             host.cfg.lle_modules.erase(module);
                         else
-                            host.cfg.lle_modules.push_back(gui.modules_list[m]);
+                            host.cfg.lle_modules.push_back(m.first);
                     }
                 }
                 ImGui::ListBoxFooter();
@@ -161,13 +165,17 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
                 host.cfg.lle_modules.clear();
-                std::fill(gui.modules_selected.begin(), gui.modules_selected.end(), false);
+                for (auto &m : gui.modules)
+                    m.second = false;
             }
+            ImGui::SameLine();
         } else {
             ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease dump decrypted modules from your PS Vita.");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Put decrypted modules inside 'vs0/sys/external/'.");
         }
+        if (ImGui::Button("Refresh list"))
+            get_modules_list(gui, host);
         ImGui::EndTabItem();
     } else {
         ImGui::PopStyleColor();
