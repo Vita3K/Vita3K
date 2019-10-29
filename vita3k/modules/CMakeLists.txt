@@ -169,4 +169,4 @@ add_library(modules STATIC
 	SceWlanBt/SceWlan.cpp SceWlanBt/SceWlan.h
 )
 target_include_directories(modules PUBLIC include)
-target_link_libraries(modules PUBLIC module ngs)
+target_link_libraries(modules PUBLIC module)
