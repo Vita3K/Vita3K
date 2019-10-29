@@ -1,7 +1,7 @@
 add_library(
 	ngs
 	STATIC
-	include/ngs/ngs.h
+	include/ngs/state.h
 	src/allocator.cpp
 	src/ngs.cpp
 )

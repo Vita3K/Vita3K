@@ -1,0 +1,116 @@
+#pragma once
+
+#include <array>
+#include <cstdint>
+#include <vector>
+
+#include <mem/ptr.h>
+
+struct MemState;
+
+namespace emu::ngs {
+    struct SystemInitParameters {
+        std::int32_t max_racks;
+        std::int32_t max_voices;
+        std::int32_t granularity;
+        std::int32_t sample_rate;
+        std::int32_t unk16;
+    };
+
+    struct System;
+
+    enum BussType {
+        BUSS_MASTER = 0,
+        BUSS_COMPRESSOR = 1,
+        BUSS_SIDE_CHAIN_COMPRESSOR = 2,
+        BUSS_DELAY = 3,
+        BUSS_DISTORTION = 4,
+        BUSS_ENVELOPE = 5,
+        BUSS_EQUALIZATION = 6,
+        BUSS_MIXER = 7,
+        BUSS_PAUSER = 8,
+        BUSS_PITCH_SHIFT = 9,
+        BUSS_REVERB = 10,
+        BUSS_SAS_EMULATION = 11,
+        BUSS_SIMPLE = 12,
+        BUSS_ATRAC9 = 13,
+        BUSS_SIMPLE_ATRAC9 = 14,
+        BUSS_SCREAM = 15,
+        BUSS_SCREAM_ATRAC9 = 16,
+        BUSS_TOTAL
+    };
+
+    static constexpr std::uint32_t TOTAL_BUSS_TYPES = BUSS_TOTAL;
+
+    struct VoiceDefinition {
+        BussType buss_type;
+    };
+
+    struct Voice {
+        std::uint32_t holdit;
+    };
+
+    struct MemspaceBlockAllocator {
+        struct Block {
+            std::uint32_t size;
+            std::uint32_t offset;
+            bool free;
+        };
+
+        std::vector<Block> blocks;      /// All block sorted by size
+
+        explicit MemspaceBlockAllocator() = default;
+        explicit MemspaceBlockAllocator(const std::uint32_t memspace_size);
+        
+        void init(const std::uint32_t memspace_size);
+
+        std::uint32_t alloc(const std::uint32_t size);
+        bool free(const std::uint32_t offset);
+    };
+
+    struct MempoolObject {
+        Ptr<void> memspace;
+        MemspaceBlockAllocator allocator;
+
+        explicit MempoolObject(const Ptr<void> memspace, const std::uint32_t memspace_size);
+        explicit MempoolObject() = default;
+
+        Ptr<void> alloc_raw(const std::uint32_t size);
+        bool free_raw(const Ptr<void> ptr);
+
+        template <typename T>
+        Ptr<T> alloc() {
+            return alloc_raw(sizeof(T)).cast<T>();
+        }
+
+        template <typename T>
+        bool free(const Ptr<T> ptr) {
+            return free_raw(ptr.cast<void>());
+        }
+    };
+
+    struct System;
+
+    struct Rack: public MempoolObject {
+        System *mama;
+
+        explicit Rack(System *mama, const Ptr<void> memspace, const std::uint32_t memspace_size);
+    };
+
+    struct System: public MempoolObject {
+        std::vector<Rack*> racks;
+        std::int32_t max_voices;
+        std::int32_t granularity;
+        std::int32_t sample_rate;
+
+        explicit System(const Ptr<void> memspace, const std::uint32_t memspace_size);
+    };
+
+    struct State: public MempoolObject {
+        std::array<Ptr<VoiceDefinition>, TOTAL_BUSS_TYPES> definitions;
+        std::vector<System*> systems;
+    };
+
+    bool init(State &ngs, MemState &mem);
+    bool init_system(State &ngs, const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size);
+}
