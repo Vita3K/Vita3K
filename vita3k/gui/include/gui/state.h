@@ -121,18 +121,16 @@ struct GuiState {
 
     std::string online_id;
 
-    std::vector<std::string> modules_list;
-    std::vector<bool> modules_selected;
+    std::vector<std::pair<std::string, bool>> modules;
     ImGuiTextFilter module_search_bar;
 
-    ImGuiTextFilter game_search_bar;
     ImTextureID current_background{};
+    bool delete_game_background = false;
+    bool delete_game_icon = false;
     GLuint display = 0;
     std::map<std::string, ImGui_Texture> game_backgrounds;
+    ImGuiTextFilter game_search_bar;
     std::map<std::string, ImGui_Texture> user_backgrounds;
-    bool delete_game_background = false;
-
-    bool delete_game_icon = false;
 
     SceUID thread_watch_index = -1;
 
