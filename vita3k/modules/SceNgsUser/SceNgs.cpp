@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <util/log.h>
-#include <ngs/ngs.h>
 
 #include "SceNgs.h"
 
@@ -103,7 +102,7 @@ EXPORT(int, sceNgsSystemGetRequiredMemorySize, emu::ngs::SystemInitParameters *p
 
 EXPORT(int, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t memspace_size, emu::ngs::SystemInitParameters *params,
     emu::SceNgsSynthSystemHandle *handle) {
-    if (!emu::ngs::init(host.mem, params, memspace, memspace_size)) {
+    if (!emu::ngs::init_system(host.ngs, host.mem, params, memspace, memspace_size)) {
         return -1;      // TODO: Better error code
     }
 
@@ -139,72 +138,72 @@ EXPORT(int, sceNgsVoiceBypassModule) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceDefGetAtrac9Voice) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetAtrac9Voice) {
+    return host.ngs.definitions[emu::ngs::BUSS_ATRAC9];
 }
 
-EXPORT(int, sceNgsVoiceDefGetCompressorBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetCompressorBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_COMPRESSOR];
 }
 
-EXPORT(int, sceNgsVoiceDefGetCompressorSideChainBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetCompressorSideChainBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_SIDE_CHAIN_COMPRESSOR];
 }
 
-EXPORT(int, sceNgsVoiceDefGetDelayBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetDelayBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_DELAY];
 }
 
-EXPORT(int, sceNgsVoiceDefGetDistortionBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetDistortionBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_DISTORTION];
 }
 
-EXPORT(int, sceNgsVoiceDefGetEnvelopeBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetEnvelopeBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_ENVELOPE];
 }
 
-EXPORT(int, sceNgsVoiceDefGetEqBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetEqBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_EQUALIZATION];
 }
 
-EXPORT(int, sceNgsVoiceDefGetMasterBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetMasterBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_MASTER];
 }
 
-EXPORT(int, sceNgsVoiceDefGetMixerBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetMixerBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_MIXER];
 }
 
-EXPORT(int, sceNgsVoiceDefGetPauserBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetPauserBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_PAUSER];
 }
 
-EXPORT(int, sceNgsVoiceDefGetPitchShiftBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetPitchShiftBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_PITCH_SHIFT];
 }
 
-EXPORT(int, sceNgsVoiceDefGetReverbBuss) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetReverbBuss) {
+    return host.ngs.definitions[emu::ngs::BUSS_REVERB];
 }
 
-EXPORT(int, sceNgsVoiceDefGetSasEmuVoice) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetSasEmuVoice) {
+    return host.ngs.definitions[emu::ngs::BUSS_SAS_EMULATION];
 }
 
-EXPORT(int, sceNgsVoiceDefGetScreamAtrac9Voice) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetScreamAtrac9Voice) {
+    return host.ngs.definitions[emu::ngs::BUSS_SCREAM_ATRAC9];
 }
 
-EXPORT(int, sceNgsVoiceDefGetScreamVoice) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetScreamVoice) {
+    return host.ngs.definitions[emu::ngs::BUSS_SCREAM];
 }
 
-EXPORT(int, sceNgsVoiceDefGetSimpleAtrac9Voice) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleAtrac9Voice) {
+    return host.ngs.definitions[emu::ngs::BUSS_SIMPLE_ATRAC9];
 }
 
-EXPORT(int, sceNgsVoiceDefGetSimpleVoice) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleVoice) {
+    return host.ngs.definitions[emu::ngs::BUSS_SIMPLE];
 }
 
 EXPORT(int, sceNgsVoiceDefGetTemplate1) {
