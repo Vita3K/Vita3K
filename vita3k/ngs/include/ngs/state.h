@@ -65,14 +65,25 @@ namespace emu::ngs {
 
     struct Rack;
 
+    enum VoiceState {
+        VOICE_STATE_AVAILABLE = 1 << 0,
+        VOICE_STATE_ACTIVE = 1 << 1,
+        VOICE_STATE_FINALIZING = 1 << 2,
+        VOICE_STATE_UNLOADING = 1 << 3,
+        VOICE_STATE_PENDING = 1 << 4,
+        VOICE_STATE_PAUSED = 1 << 5,
+        VOICE_STATE_KEY_OFF = 1 << 6
+    };
+
     struct Voice {
         Rack *parent;
 
         BufferParamsInfo info;
         std::vector<std::uint8_t> last_info;
+        VoiceState state;
 
-        enum flags {
-            PARAMS_LOCK = 1 << 0
+        enum Flags {
+            PARAMS_LOCK = 1 << 0,
         };
 
         std::uint8_t flags;

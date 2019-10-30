@@ -20,6 +20,7 @@ namespace emu::ngs {
 
     void Voice::init(Rack *mama) {
         parent = mama;
+        state = VoiceState::VOICE_STATE_AVAILABLE;
         flags = 0;
     }
 
@@ -99,7 +100,8 @@ namespace emu::ngs {
                 return false;
             }
 
-            voice.get(mem)->init(rack);
+            Voice *v = voice.get(mem);
+            v->init(rack);
         }
 
         // Initialize voice definition
