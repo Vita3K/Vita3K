@@ -39,6 +39,7 @@ struct SceNgsBufferInfo {
 static_assert(sizeof(SceNgsBufferInfo) == 8);
 
 using SceNgsSynthSystemHandle = Ptr<emu::ngs::System>;
+using SceNgsRackHandle = Ptr<emu::ngs::Rack>;
 } // namespace emu
 
 EXPORT(int, sceNgsAT9GetSectionDetails) {
@@ -71,7 +72,7 @@ EXPORT(int, sceNgsPatchRemoveRouting) {
 }
 
 EXPORT(int, sceNgsRackGetRequiredMemorySize, emu::SceNgsSynthSystemHandle sys_handle, emu::ngs::RackDescription *description, uint32_t *size) {
-    *size = sizeof(emu::ngs::Rack) + description->voice_count * sizeof(emu::ngs::Voice);
+    *size = emu::ngs::Rack::get_required_memspace_size(description);
     return 0;
 }
 
@@ -79,8 +80,19 @@ EXPORT(int, sceNgsRackGetVoiceHandle) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsRackInit) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsRackInit, emu::SceNgsSynthSystemHandle sys_handle, emu::ngs::BufferParamsInfo *info, const emu::ngs::RackDescription *description, emu::SceNgsRackHandle *handle) {
+    assert(sys_handle);
+    assert(info);
+    assert(description);
+
+    emu::ngs::System *system = sys_handle.get(host.mem);
+
+    if (!emu::ngs::init_rack(host.ngs, host.mem, system, info, description)) {
+        return -1;          // TODO: Correct error code?
+    }
+
+    *handle = info->data.cast<emu::ngs::Rack>();
+    return 0;
 }
 
 EXPORT(int, sceNgsRackRelease) {
@@ -92,7 +104,7 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
 }
 
 EXPORT(int, sceNgsSystemGetRequiredMemorySize, emu::ngs::SystemInitParameters *params, uint32_t *size) {
-    *size = sizeof(emu::ngs::System);                           // System struct size
+    *size = emu::ngs::System::get_required_memspace_size(params);           // System struct size
     return 0;
 }
 
