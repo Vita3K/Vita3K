@@ -17,6 +17,19 @@ namespace emu::ngs {
         , sample_rate(0) {
 
     }
+
+    void Voice::init(Rack *mama) {
+        parent = mama;
+        flags = 0;
+    }
+
+    std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {
+        return sizeof(System);
+    }
+
+    std::uint32_t Rack::get_required_memspace_size(RackDescription *description) {
+        return sizeof(emu::ngs::Rack) + description->voice_count * sizeof(emu::ngs::Voice);
+    }
     
     bool init(State &ngs, MemState &mem) {
         static constexpr std::uint32_t SIZE_OF_VOICE_DEFS = TOTAL_BUSS_TYPES * sizeof(VoiceDefinition);
@@ -59,8 +72,43 @@ namespace emu::ngs {
         sys->sample_rate = parameters->sample_rate;
 
         // Alloc first block for System struct
-        sys->alloc_raw(sizeof(System));
+        if (!sys->alloc_raw(sizeof(System))) {
+            return false;
+        }
+
         ngs.systems.push_back(sys);
+        return true;
+    }
+
+    bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description) {
+        Rack *rack = init_info->data.cast<Rack>().get(mem);
+        rack = new (rack) Rack(system, init_info->data, init_info->size);
+
+        // Alloc first block for Rack
+        if (!rack->alloc<Rack>()) {
+            return false;
+        }
+
+        // Alloc spaces for voice
+        rack->voices.resize(description->voice_count);
+
+        for (auto &voice: rack->voices) {
+            voice = rack->alloc<Voice>();
+
+            if (!voice) {
+                return false;
+            }
+
+            voice.get(mem)->init(rack);
+        }
+
+        // Initialize voice definition
+        rack->definition = description->definition.get(mem);
+        rack->channels_per_voice = description->channels_per_voice;
+        rack->max_patches_per_input = description->max_patches_per_input;
+        rack->patches_per_output = description->patches_per_output;
+
+        system->racks.push_back(rack);
 
         return true;
     }

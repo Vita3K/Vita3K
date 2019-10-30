@@ -38,7 +38,14 @@ struct SceNgsBufferInfo {
 static_assert(sizeof(SceNgsBufferInfo) == 8);
 
 using SceNgsSynthSystemHandle = Ptr<emu::ngs::System>;
+using SceNgsRackHandle = Ptr<emu::ngs::Rack>;
+using SceNgsVoiceHandle = Ptr<emu::ngs::Voice>;
+
 } // namespace emu
+
+static constexpr SceUInt32 SCE_NGS_OK = 0;
+static constexpr SceUInt32 SCE_NGS_ERROR = 0x804A0001;
+static constexpr SceUInt32 SCE_NGS_ERROR_INVALID_ARG = 0x804A0002;
 
 EXPORT(int, sceNgsAT9GetSectionDetails) {
     STUBBED("Hack");
@@ -70,17 +77,39 @@ EXPORT(int, sceNgsPatchRemoveRouting) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsRackGetRequiredMemorySize, uint32_t hSysHandle, void *unk, uint32_t *size) {
-    *size = 1;
-    return STUBBED("size = 1");
+EXPORT(int, sceNgsRackGetRequiredMemorySize, emu::SceNgsSynthSystemHandle sys_handle, emu::ngs::RackDescription *description, uint32_t *size) {
+    *size = emu::ngs::Rack::get_required_memspace_size(description);
+    return 0;
 }
 
-EXPORT(int, sceNgsRackGetVoiceHandle) {
-    return UNIMPLEMENTED();
+EXPORT(SceUInt32, sceNgsRackGetVoiceHandle, emu::SceNgsRackHandle rack_handle, const std::uint32_t index, emu::SceNgsVoiceHandle *voice_handle) {
+    emu::ngs::Rack *rack = rack_handle.get(host.mem);
+
+    if (!rack || !voice_handle) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    if (index >= rack->voices.size()) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    *voice_handle = rack->voices[index];
+    return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsRackInit) {
-    return UNIMPLEMENTED();
+EXPORT(SceUInt32, sceNgsRackInit, emu::SceNgsSynthSystemHandle sys_handle, emu::ngs::BufferParamsInfo *info, const emu::ngs::RackDescription *description, emu::SceNgsRackHandle *handle) {
+    assert(sys_handle);
+    assert(info);
+    assert(description);
+
+    emu::ngs::System *system = sys_handle.get(host.mem);
+
+    if (!emu::ngs::init_rack(host.ngs, host.mem, system, info, description)) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
+
+    *handle = info->data.cast<emu::ngs::Rack>();
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsRackRelease) {
@@ -92,22 +121,18 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
 }
 
 EXPORT(int, sceNgsSystemGetRequiredMemorySize, emu::ngs::SystemInitParameters *params, uint32_t *size) {
-    *size = sizeof(emu::ngs::System)                            // System struct size
-        + params->max_racks * sizeof(emu::ngs::Rack)            // Rack struct size
-        + params->max_voices * sizeof(emu::ngs::Voice);         // Voice struct size
-        + params->granularity * 0;                              // Size for temporary audio buffer, TODO.
-
+    *size = emu::ngs::System::get_required_memspace_size(params);           // System struct size
     return 0;
 }
 
-EXPORT(int, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t memspace_size, emu::ngs::SystemInitParameters *params,
+EXPORT(SceUInt32, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t memspace_size, emu::ngs::SystemInitParameters *params,
     emu::SceNgsSynthSystemHandle *handle) {
     if (!emu::ngs::init_system(host.ngs, host.mem, params, memspace, memspace_size)) {
-        return -1;      // TODO: Better error code
+        return RET_ERROR(SCE_NGS_ERROR);      // TODO: Better error code
     }
 
     *handle = memspace.cast<emu::ngs::System>();
-    return 0;
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsSystemLock) {
@@ -206,8 +231,8 @@ EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleVoice) {
     return host.ngs.definitions[emu::ngs::BUSS_SIMPLE];
 }
 
-EXPORT(int, sceNgsVoiceDefGetTemplate1) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetTemplate1) {
+    return host.ngs.definitions[emu::ngs::BUSS_NORMAL_PLAYER];
 }
 
 EXPORT(int, sceNgsVoiceGetInfo) {

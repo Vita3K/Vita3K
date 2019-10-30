@@ -17,6 +17,22 @@ namespace emu::ngs {
         std::int32_t unk16;
     };
 
+    struct VoiceDefinition;
+
+    struct RackDescription {
+        Ptr<VoiceDefinition> definition;
+        std::int32_t voice_count;
+        std::int32_t channels_per_voice;
+        std::int32_t max_patches_per_input;
+        std::int32_t patches_per_output;
+        Ptr<void> unk14;
+    };
+
+    struct BufferParamsInfo {
+        Ptr<void> data;
+        std::uint32_t size;
+    };
+
     struct System;
 
     enum BussType {
@@ -37,6 +53,7 @@ namespace emu::ngs {
         BUSS_SIMPLE_ATRAC9 = 14,
         BUSS_SCREAM = 15,
         BUSS_SCREAM_ATRAC9 = 16,
+        BUSS_NORMAL_PLAYER = 17,
         BUSS_TOTAL
     };
 
@@ -46,8 +63,21 @@ namespace emu::ngs {
         BussType buss_type;
     };
 
+    struct Rack;
+
     struct Voice {
-        std::uint32_t holdit;
+        Rack *parent;
+
+        BufferParamsInfo info;
+        std::vector<std::uint8_t> last_info;
+
+        enum flags {
+            PARAMS_LOCK = 1 << 0
+        };
+
+        std::uint8_t flags;
+
+        void init(Rack *mama);
     };
 
     struct MemspaceBlockAllocator {
@@ -93,8 +123,16 @@ namespace emu::ngs {
 
     struct Rack: public MempoolObject {
         System *mama;
+        VoiceDefinition *definition;
+        std::int32_t channels_per_voice;
+        std::int32_t max_patches_per_input;
+        std::int32_t patches_per_output;
+
+        std::vector<Ptr<Voice>> voices;
 
         explicit Rack(System *mama, const Ptr<void> memspace, const std::uint32_t memspace_size);
+
+        static std::uint32_t get_required_memspace_size(RackDescription *description);
     };
 
     struct System: public MempoolObject {
@@ -104,6 +142,7 @@ namespace emu::ngs {
         std::int32_t sample_rate;
 
         explicit System(const Ptr<void> memspace, const std::uint32_t memspace_size);
+        static std::uint32_t get_required_memspace_size(SystemInitParameters *parameters);
     };
 
     struct State: public MempoolObject {
@@ -113,4 +152,5 @@ namespace emu::ngs {
 
     bool init(State &ngs, MemState &mem);
     bool init_system(State &ngs, const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size);
+    bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description);
 }
