@@ -70,9 +70,9 @@ EXPORT(int, sceNgsPatchRemoveRouting) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsRackGetRequiredMemorySize, uint32_t hSysHandle, void *unk, uint32_t *size) {
-    *size = 1;
-    return STUBBED("size = 1");
+EXPORT(int, sceNgsRackGetRequiredMemorySize, emu::SceNgsSynthSystemHandle sys_handle, emu::ngs::RackDescription *description, uint32_t *size) {
+    *size = sizeof(emu::ngs::Rack) + description->voice_count * sizeof(emu::ngs::Voice);
+    return 0;
 }
 
 EXPORT(int, sceNgsRackGetVoiceHandle) {
@@ -92,11 +92,7 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
 }
 
 EXPORT(int, sceNgsSystemGetRequiredMemorySize, emu::ngs::SystemInitParameters *params, uint32_t *size) {
-    *size = sizeof(emu::ngs::System)                            // System struct size
-        + params->max_racks * sizeof(emu::ngs::Rack)            // Rack struct size
-        + params->max_voices * sizeof(emu::ngs::Voice);         // Voice struct size
-        + params->granularity * 0;                              // Size for temporary audio buffer, TODO.
-
+    *size = sizeof(emu::ngs::System);                           // System struct size
     return 0;
 }
 
@@ -206,8 +202,8 @@ EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleVoice) {
     return host.ngs.definitions[emu::ngs::BUSS_SIMPLE];
 }
 
-EXPORT(int, sceNgsVoiceDefGetTemplate1) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<emu::ngs::VoiceDefinition>, sceNgsVoiceDefGetTemplate1) {
+    return host.ngs.definitions[emu::ngs::BUSS_NORMAL_PLAYER];
 }
 
 EXPORT(int, sceNgsVoiceGetInfo) {
