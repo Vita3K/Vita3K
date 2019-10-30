@@ -40,7 +40,13 @@ static_assert(sizeof(SceNgsBufferInfo) == 8);
 
 using SceNgsSynthSystemHandle = Ptr<emu::ngs::System>;
 using SceNgsRackHandle = Ptr<emu::ngs::Rack>;
+using SceNgsVoiceHandle = Ptr<emu::ngs::Voice>;
+
 } // namespace emu
+
+static constexpr SceUInt32 SCE_NGS_OK = 0;
+static constexpr SceUInt32 SCE_NGS_ERROR = 0x804A0001;
+static constexpr SceUInt32 SCE_NGS_ERROR_INVALID_ARG = 0x804A0002;
 
 EXPORT(int, sceNgsAT9GetSectionDetails) {
     return UNIMPLEMENTED();
@@ -76,11 +82,22 @@ EXPORT(int, sceNgsRackGetRequiredMemorySize, emu::SceNgsSynthSystemHandle sys_ha
     return 0;
 }
 
-EXPORT(int, sceNgsRackGetVoiceHandle) {
-    return UNIMPLEMENTED();
+EXPORT(SceUInt32, sceNgsRackGetVoiceHandle, emu::SceNgsRackHandle rack_handle, const std::uint32_t index, emu::SceNgsVoiceHandle *voice_handle) {
+    emu::ngs::Rack *rack = rack_handle.get(host.mem);
+
+    if (!rack || !voice_handle) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    if (index >= rack->voices.size()) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    *voice_handle = rack->voices[index];
+    return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsRackInit, emu::SceNgsSynthSystemHandle sys_handle, emu::ngs::BufferParamsInfo *info, const emu::ngs::RackDescription *description, emu::SceNgsRackHandle *handle) {
+EXPORT(SceUInt32, sceNgsRackInit, emu::SceNgsSynthSystemHandle sys_handle, emu::ngs::BufferParamsInfo *info, const emu::ngs::RackDescription *description, emu::SceNgsRackHandle *handle) {
     assert(sys_handle);
     assert(info);
     assert(description);
@@ -88,11 +105,11 @@ EXPORT(SceInt32, sceNgsRackInit, emu::SceNgsSynthSystemHandle sys_handle, emu::n
     emu::ngs::System *system = sys_handle.get(host.mem);
 
     if (!emu::ngs::init_rack(host.ngs, host.mem, system, info, description)) {
-        return -1;          // TODO: Correct error code?
+        return RET_ERROR(SCE_NGS_ERROR);
     }
 
     *handle = info->data.cast<emu::ngs::Rack>();
-    return 0;
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsRackRelease) {
@@ -108,14 +125,14 @@ EXPORT(int, sceNgsSystemGetRequiredMemorySize, emu::ngs::SystemInitParameters *p
     return 0;
 }
 
-EXPORT(int, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t memspace_size, emu::ngs::SystemInitParameters *params,
+EXPORT(SceUInt32, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t memspace_size, emu::ngs::SystemInitParameters *params,
     emu::SceNgsSynthSystemHandle *handle) {
     if (!emu::ngs::init_system(host.ngs, host.mem, params, memspace, memspace_size)) {
-        return -1;      // TODO: Better error code
+        return RET_ERROR(SCE_NGS_ERROR);      // TODO: Better error code
     }
 
     *handle = memspace.cast<emu::ngs::System>();
-    return 0;
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsSystemLock) {
