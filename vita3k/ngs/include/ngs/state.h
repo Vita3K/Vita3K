@@ -17,6 +17,17 @@ namespace emu::ngs {
         std::int32_t unk16;
     };
 
+    struct VoiceDefinition;
+
+    struct RackDescription {
+        Ptr<VoiceDefinition> definition;
+        std::int32_t voice_count;
+        std::int32_t channels_per_voice;
+        std::int32_t max_patches_per_input;
+        std::int32_t patches_per_output;
+        Ptr<void> unk14;
+    };
+
     struct System;
 
     enum BussType {
@@ -37,6 +48,7 @@ namespace emu::ngs {
         BUSS_SIMPLE_ATRAC9 = 14,
         BUSS_SCREAM = 15,
         BUSS_SCREAM_ATRAC9 = 16,
+        BUSS_NORMAL_PLAYER = 17,
         BUSS_TOTAL
     };
 
@@ -93,6 +105,7 @@ namespace emu::ngs {
 
     struct Rack: public MempoolObject {
         System *mama;
+        std::vector<Ptr<Voice>> voices;
 
         explicit Rack(System *mama, const Ptr<void> memspace, const std::uint32_t memspace_size);
     };
