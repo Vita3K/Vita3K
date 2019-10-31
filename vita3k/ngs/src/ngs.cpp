@@ -6,7 +6,7 @@
 namespace emu::ngs {
     Rack::Rack(System *mama, const Ptr<void> memspace, const std::uint32_t memspace_size)
         : MempoolObject(memspace, memspace_size)
-        , mama(mama) {
+        , system(mama) {
 
     }
 
@@ -19,7 +19,7 @@ namespace emu::ngs {
     }
 
     void Voice::init(Rack *mama) {
-        parent = mama;
+        rack = mama;
         state = VoiceState::VOICE_STATE_AVAILABLE;
         flags = 0;
     }

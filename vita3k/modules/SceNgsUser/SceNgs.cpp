@@ -296,8 +296,18 @@ EXPORT(int, sceNgsVoicePause) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoicePlay) {
-    return UNIMPLEMENTED();
+EXPORT(SceUInt32, sceNgsVoicePlay, emu::SceNgsVoiceHandle handle) {
+    emu::ngs::Voice *voice = handle.get(host.mem);
+
+    if (!voice) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    if (!voice->rack->system->voice_scheduler.play(voice)) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoiceResume) {
