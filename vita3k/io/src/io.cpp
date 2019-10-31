@@ -152,8 +152,10 @@ static std::string translate_path(const char *path, VitaIoDevice &device, const 
         device = VitaIoDevice::ux0;
         break;
     }
+    case +VitaIoDevice::host0:
     case +VitaIoDevice::gro0:
     case +VitaIoDevice::grw0:
+    case +VitaIoDevice::imc0:
     case +VitaIoDevice::os0:
     case +VitaIoDevice::pd0:
     case +VitaIoDevice::sa0:
@@ -164,7 +166,8 @@ static std::string translate_path(const char *path, VitaIoDevice &device, const 
     case +VitaIoDevice::ur0:
     case +VitaIoDevice::ux0:
     case +VitaIoDevice::vd0:
-    case +VitaIoDevice::vs0: {
+    case +VitaIoDevice::vs0:
+    case +VitaIoDevice::xmc0: {
         relative_path = device::remove_device_from_path(relative_path, device);
         break;
     }
@@ -355,6 +358,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
 
     std::uint64_t last_access_time_ticks;
     std::uint64_t creation_time_ticks;
+    std::uint64_t last_modification_time_ticks;
 
 #ifdef WIN32
     WIN32_FIND_DATAW find_data;
@@ -366,6 +370,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
 
     last_access_time_ticks = convert_filetime(find_data.ftLastAccessTime);
     creation_time_ticks = convert_filetime(find_data.ftCreationTime);
+    last_modification_time_ticks = convert_filetime(find_data.ftLastWriteTime);
 #else
     struct stat sb;
     if (stat(file_path.generic_path().string().c_str(), &sb) < 0)
@@ -373,6 +378,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
 
     last_access_time_ticks = (uint64_t)sb.st_atime * VITA_CLOCKS_PER_SEC;
     creation_time_ticks = (uint64_t)sb.st_ctime * VITA_CLOCKS_PER_SEC;
+    last_modification_time_ticks = (uint64_t)sb.st_mtime * VITA_CLOCKS_PER_SEC;
 
 #undef st_atime
 #undef st_mtime
@@ -381,16 +387,18 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
 
     statp->st_mode = SCE_S_IRUSR | SCE_S_IRGRP | SCE_S_IROTH | SCE_S_IXUSR | SCE_S_IXGRP | SCE_S_IXOTH;
 
-    const auto last_modification_time_ticks = fs::last_write_time(file_path);
-
     if (fs::is_regular_file(file_path)) {
         statp->st_size = fs::file_size(file_path);
 
-        if (fd != invalid_fd)
+        if (fd != invalid_fd) {
             statp->st_attr = SCE_SO_IFREG;
+            statp->st_mode |= SCE_S_IFREG;
+        }
     }
-    if (fs::is_directory(file_path) && fd != invalid_fd)
+    if (fs::is_directory(file_path)) {
         statp->st_attr = SCE_SO_IFDIR;
+        statp->st_mode |= SCE_S_IFDIR;
+    }
 
     __RtcTicksToPspTime(&statp->st_atime, last_access_time_ticks);
     __RtcTicksToPspTime(&statp->st_mtime, last_modification_time_ticks);
@@ -479,16 +487,12 @@ SceUID read_dir(IOState &io, const SceUID fd, emu::SceIoDirent *dent, const std:
             const auto file_path = std::string(dir->second.get_vita_loc()) + '/' + d_name_utf8;
 
             LOG_TRACE("{}: Reading entry {} of fd: {}", export_name, file_path, log_hex(fd));
-            if (fs::is_regular_file(cur_path)) {
-                if (stat_file(io, file_path.c_str(), &dent->d_stat, pref_path, base_tick, export_name) < 0)
-                    return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
-            }
-            if (fs::is_directory(cur_path)) {
-                const auto dir_fd = open_dir(io, file_path.c_str(), pref_path, export_name);
-                return read_dir(io, dir_fd, dent, pref_path, base_tick, export_name);
-            }
+            if (stat_file(io, file_path.c_str(), &dent->d_stat, pref_path, base_tick, export_name) < 0)
+                return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
+            else
+                return 1; // move to the next file
         }
-        return 1; // move to the next file
+        return read_dir(io, fd, dent, pref_path, base_tick, export_name);
     }
 
     return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);

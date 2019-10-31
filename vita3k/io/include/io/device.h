@@ -39,8 +39,7 @@ inline VitaIoDevice get_device(const std::string &path) {
         return VitaIoDevice::_INVALID;
 
     const auto p = path.substr(0, colon);
-    const auto dev = VitaIoDevice::_from_string_nocase_nothrow(p.c_str());
-    if (VitaIoDevice::_is_valid(dev))
+    if (VitaIoDevice::_is_valid_nocase(p.c_str()))
         return VitaIoDevice::_from_string(p.c_str());
 
     return VitaIoDevice::_INVALID;
