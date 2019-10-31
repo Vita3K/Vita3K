@@ -20,7 +20,7 @@ https://developer.android.com/sdk/index.html
 Android NDK r15c or later
 https://developer.android.com/tools/sdk/ndk/index.html
 
-Minimum API level supported by SDL: 14 (Android 4.0.1)
+Minimum API level supported by SDL: 16 (Android 4.1)
 
 
 ================================================================================
@@ -174,7 +174,7 @@ http://ponystyle.com/blog/2010/03/26/dealing-with-asset-compression-in-android-a
  Pause / Resume behaviour
 ================================================================================
 
-If SDL is compiled with SDL_ANDROID_BLOCK_ON_PAUSE defined (the default),
+If SDL_HINT_ANDROID_BLOCK_ON_PAUSE hint is set (the default),
 the event loop will block itself when the app is paused (ie, when the user
 returns to the main Android dashboard). Blocking is better in terms of battery
 use, and it allows your app to spring back to life instantaneously after resume
@@ -380,13 +380,13 @@ https://developer.nvidia.com/tegra-graphics-debugger
 
 
 ================================================================================
- Why is API level 14 the minimum required?
+ Why is API level 16 the minimum required?
 ================================================================================
 
-The latest NDK toolchain doesn't support targeting earlier than API level 14.
+The latest NDK toolchain doesn't support targeting earlier than API level 16.
 As of this writing, according to https://developer.android.com/about/dashboards/index.html
-about 99% of the Android devices accessing Google Play support API level 14 or
-higher (October 2017).
+about 99% of the Android devices accessing Google Play support API level 16 or
+higher (January 2018).
 
 
 ================================================================================
@@ -407,6 +407,24 @@ screen each frame.
 
 Reference: http://www.khronos.org/registry/egl/specs/EGLTechNote0001.html
 
+
+================================================================================
+ Ending your application
+================================================================================
+
+Two legitimate ways:
+
+- return from your main() function. Java side will automatically terminate the
+Activity by calling Activity.finish().
+
+- Android OS can decide to terminate your application by calling onDestroy()
+(see Activity life cycle). Your application will receive a SDL_QUIT event you 
+can handle to save things and quit.
+
+Don't call exit() as it stops the activity badly.
+
+NB: "Back button" can be handled as a SDL_KEYDOWN/UP events, with Keycode
+SDLK_AC_BACK, for any purpose.
 
 ================================================================================
  Known issues
