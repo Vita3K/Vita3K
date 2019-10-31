@@ -76,7 +76,7 @@ namespace emu::ngs {
     };
 
     struct Voice {
-        Rack *parent;
+        Rack *rack;
 
         BufferParamsInfo info;
         std::vector<std::uint8_t> last_info;
@@ -88,7 +88,21 @@ namespace emu::ngs {
 
         std::uint8_t flags;
 
+        Voice *next_scheduled;
+
         void init(Rack *mama);
+    };
+
+    struct VoiceScheduler {
+        std::vector<Voice*> queue;
+
+    protected:
+        bool deque_voice(Voice *voice);
+
+    public:
+        bool play(Voice *voice);
+        bool pause(Voice *voice);
+        bool stop(Voice *voice);
     };
 
     struct MemspaceBlockAllocator {
@@ -133,7 +147,7 @@ namespace emu::ngs {
     struct System;
 
     struct Rack: public MempoolObject {
-        System *mama;
+        System *system;
         VoiceDefinition *definition;
         std::int32_t channels_per_voice;
         std::int32_t max_patches_per_input;
@@ -151,6 +165,8 @@ namespace emu::ngs {
         std::int32_t max_voices;
         std::int32_t granularity;
         std::int32_t sample_rate;
+
+        VoiceScheduler voice_scheduler;
 
         explicit System(const Ptr<void> memspace, const std::uint32_t memspace_size);
         static std::uint32_t get_required_memspace_size(SystemInitParameters *parameters);
