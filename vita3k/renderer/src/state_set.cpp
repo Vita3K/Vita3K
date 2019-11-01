@@ -348,8 +348,6 @@ COMMAND_SET_STATE(vertex_stream) {
         REPORT_MISSING(renderer.current_backend);
         break;
     }
-
-    delete stream_data;
 }
 
 COMMAND(handle_set_state) {

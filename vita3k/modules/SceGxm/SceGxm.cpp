@@ -407,7 +407,6 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     memcpy(ptr.get(host.mem), callbackData.get(host.mem), host.gxm.params.displayQueueCallbackDataSize);
 
     // Block future rendering by setting value2 of sync object
-    SceGxmSyncObject *oldBufferSync = Ptr<SceGxmSyncObject>(oldBuffer).get(host.mem);
     SceGxmSyncObject *newBufferSync = Ptr<SceGxmSyncObject>(newBuffer).get(host.mem);
 
     renderer::subject_in_progress(newBufferSync, renderer::SyncObjectSubject::DisplayQueue);
@@ -659,7 +658,6 @@ static int SDLCALL thread_function(void *data) {
         if (!display_callback)
             break;
 
-        SceGxmSyncObject *oldBuffer = Ptr<SceGxmSyncObject>(display_callback->old_buffer).get(*params.mem);
         SceGxmSyncObject *newBuffer = Ptr<SceGxmSyncObject>(display_callback->new_buffer).get(*params.mem);
 
         // Wait for fragment on the new buffer to finish

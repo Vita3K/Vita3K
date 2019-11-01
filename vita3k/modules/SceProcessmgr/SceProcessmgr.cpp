@@ -140,10 +140,10 @@ EXPORT(int, sceKernelLibcGmtime_r) {
 EXPORT(Ptr<struct tm>, sceKernelLibcLocaltime_r, const VitaTime *time, Ptr<struct tm> date) {
     const time_t plat_time = *time;
 
-#ifdef __unix__
-    localtime_r(&plat_time, date.get(host.mem));
-#elif defined(WIN32)
+#if defined(WIN32)
     localtime_s(date.get(host.mem), &plat_time);
+#else
+    localtime_r(&plat_time, date.get(host.mem));
 #endif
 
     return date;

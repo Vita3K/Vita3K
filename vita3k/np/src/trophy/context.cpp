@@ -13,9 +13,9 @@ namespace emu::np::trophy {
 Context::Context(const CommunicationID &comm_id, IOState &io, const SceUID trophy_stream,
     const std::string &output_progress_path)
     : comm_id(comm_id)
-    , io(io)
     , trophy_file_stream(trophy_stream)
-    , trophy_progress_output_file_path(output_progress_path) {
+    , trophy_progress_output_file_path(output_progress_path)
+    , io(io) {
     trophy_file.read_func = [&](void *dest, std::uint32_t amount) -> bool {
         return read_file(dest, this->io, this->trophy_file_stream, amount, "parse_trophy_file");
     };

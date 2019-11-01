@@ -93,10 +93,8 @@ bool USSETranslatorVisitor::vmov(
         return false;
     }
 
-    spv::Id conditional_result = 0;
     CompareMethod compare_method = CompareMethod::NE_ZERO;
     spv::Op compare_op = spv::OpAny;
-    bool is_float_type = true;
 
     if (is_conditional) {
         compare_method = static_cast<CompareMethod>((test_bit_2 << 1) | test_bit_1);

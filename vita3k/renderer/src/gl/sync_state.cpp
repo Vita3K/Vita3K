@@ -135,7 +135,6 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
 }
 
 void sync_clipping(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
-    const GLsizei display_w = state.color_surface.pbeEmitWords[0];
     const GLsizei display_h = state.color_surface.pbeEmitWords[1];
     const GLsizei scissor_x = state.region_clip_min.x;
     GLsizei scissor_y = 0;
@@ -328,7 +327,6 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
 
     // Textures.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
-    const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
     const SceGxmProgram &fragment_gxp = *gxm_fragment_program.program.get(mem);
     const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_gxp);
     for (size_t i = 0; i < fragment_gxp.parameter_count; ++i) {

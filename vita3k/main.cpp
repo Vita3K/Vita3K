@@ -113,7 +113,9 @@ int main(int argc, char *argv[]) {
     GuiState gui;
     gui::init(gui, host);
 
+#if DISCORD_RPC
     auto discord_rich_presence_old = host.cfg.discord_rich_presence;
+#endif
 
     // Application not provided via argument, show game selector
     while (run_type == app::AppRunType::Unknown) {

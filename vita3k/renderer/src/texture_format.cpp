@@ -432,8 +432,6 @@ static void decompress_block_dxt5(std::uint32_t x, std::uint32_t y, std::uint32_
 void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type) {
     std::uint32_t block_count_x = (width + 3) / 4;
     std::uint32_t block_count_y = (height + 3) / 4;
-    std::uint32_t block_width = (width < 4) ? width : 4;
-    std::uint32_t block_height = (height < 4) ? height : 4;
     std::uint32_t block_size = (bc_type > 1) ? 16 : 8;
 
     std::uint32_t temp_block_result[16] = {};
