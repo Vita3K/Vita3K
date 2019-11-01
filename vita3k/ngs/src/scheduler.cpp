@@ -1,4 +1,7 @@
-#include <ngs/state.h>
+#include <ngs/scheduler.h>
+#include <ngs/system.h>
+
+#include <algorithm>
 
 namespace emu::ngs {
     bool VoiceScheduler::deque_voice(Voice *voice) {

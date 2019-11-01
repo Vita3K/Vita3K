@@ -1,4 +1,7 @@
+#include <ngs/system.h>
 #include <ngs/state.h>
+#include <ngs/modules/atrac9.h>
+#include <ngs/modules/player.h>
 #include <mem/mem.h>
 
 #include <util/log.h>
@@ -24,16 +27,42 @@ namespace emu::ngs {
         flags = 0;
     }
 
+    BufferParamsInfo *Voice::lock_params(const MemState &mem) {
+        // Save a copy of previous set of data
+        if (flags & PARAMS_LOCK) {
+            return nullptr;
+        }
+
+        last_info.resize(info.size);
+        const std::uint8_t *current_data = info.data.cast<const std::uint8_t>().get(mem);
+        std::copy(current_data, current_data + info.size, &last_info[0]);
+
+        flags |= PARAMS_LOCK;
+
+        return &info;
+    }
+    
+    bool Voice::unlock_params() {
+        if (flags & PARAMS_LOCK) {
+            flags &= ~PARAMS_LOCK;
+            return true;
+        }
+
+        return false;
+    }
+
     std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {
         return sizeof(System);
     }
 
-    std::uint32_t Rack::get_required_memspace_size(RackDescription *description) {
-        return sizeof(emu::ngs::Rack) + description->voice_count * sizeof(emu::ngs::Voice);
+    std::uint32_t Rack::get_required_memspace_size(MemState &mem, RackDescription *description) {
+        return sizeof(emu::ngs::Rack) + description->voice_count * sizeof(emu::ngs::Voice) +
+            description->definition.get(mem)->get_buffer_parameter_size() * description->voice_count;
     }
     
     bool init(State &ngs, MemState &mem) {
-        static constexpr std::uint32_t SIZE_OF_VOICE_DEFS = TOTAL_BUSS_TYPES * sizeof(VoiceDefinition);
+        static constexpr std::uint32_t SIZE_OF_VOICE_DEFS = (TOTAL_BUSS_TYPES - 1) * sizeof(VoiceDefinition)
+            + sizeof(emu::ngs::atrac9::Module);
         static constexpr std::uint32_t SIZE_OF_GLOBAL_MEMSPACE = SIZE_OF_VOICE_DEFS;
 
         // Alloc the space for voice definition
@@ -48,15 +77,19 @@ namespace emu::ngs {
 
         // Create voice definition templates.
         for (std::size_t i = 0; i < ngs.definitions.size(); i++) {
-            ngs.definitions[i] = ngs.alloc<VoiceDefinition>();
+            if (i == emu::ngs::BUSS_ATRAC9 || i == emu::ngs::BUSS_NORMAL_PLAYER) {
+                continue;
+            }
+
+            ngs.definitions[i] = ngs.alloc_and_init<VoiceDefinition>(mem, static_cast<BussType>(i));
 
             if (!ngs.definitions[i]) {
                 return false;
             }
-
-            VoiceDefinition *definition = ngs.definitions[i].get(mem);
-            definition->buss_type = static_cast<BussType>(i);
         }
+
+        ngs.definitions[emu::ngs::BUSS_ATRAC9] = ngs.alloc_and_init<emu::ngs::atrac9::Module>(mem);
+        ngs.definitions[emu::ngs::BUSS_NORMAL_PLAYER] = ngs.alloc_and_init<emu::ngs::player::Module>(mem);
 
         return true;
     }
@@ -90,6 +123,8 @@ namespace emu::ngs {
             return false;
         }
 
+        rack->definition = description->definition.get(mem);
+
         // Alloc spaces for voice
         rack->voices.resize(description->voice_count);
 
@@ -102,10 +137,18 @@ namespace emu::ngs {
 
             Voice *v = voice.get(mem);
             v->init(rack);
+
+            // Allocate parameter buffer info for each voice
+            v->info.size = rack->definition->get_buffer_parameter_size();
+
+            if (v->info.size != 0) {
+                v->info.data = rack->alloc_raw(v->info.size);
+            } else {
+                v->info.data = 0;
+            }
         }
 
         // Initialize voice definition
-        rack->definition = description->definition.get(mem);
         rack->channels_per_voice = description->channels_per_voice;
         rack->max_patches_per_input = description->max_patches_per_input;
         rack->patches_per_output = description->patches_per_output;
