@@ -24,7 +24,7 @@ namespace emu::ngs {
         explicit VoiceDefinition(BussType buss_type) : buss_type(buss_type) {
         }
 
-        virtual void process(Voice *voice) {
+        virtual void process(const MemState &mem, Voice *voice) {
 
         }
 

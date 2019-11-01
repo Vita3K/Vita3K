@@ -2,6 +2,8 @@
 
 #include <vector>
 
+struct MemState;
+
 namespace emu::ngs {
     struct Voice;
 
@@ -15,5 +17,7 @@ namespace emu::ngs {
         bool play(Voice *voice);
         bool pause(Voice *voice);
         bool stop(Voice *voice);
+
+        void update(const MemState &mem);
     };
 }

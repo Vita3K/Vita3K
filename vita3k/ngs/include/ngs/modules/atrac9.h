@@ -29,7 +29,7 @@ namespace emu::ngs::atrac9 {
 
     struct Module: public emu::ngs::VoiceDefinition {
         explicit Module();
-        void process(Voice *voice) override;
+        void process(const MemState &mem, Voice *voice) override;
 
         std::size_t get_buffer_parameter_size() const override {
             return sizeof(Parameters);
