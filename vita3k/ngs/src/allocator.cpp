@@ -1,4 +1,4 @@
-#include <ngs/state.h>
+#include <ngs/mempool.h>
 #include <util/align.h>
 
 namespace emu::ngs {

@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <util/log.h>
+#include <ngs/system.h>
 
 #include "SceNgs.h"
 
@@ -30,12 +31,6 @@ struct SceNgsPatchInfo2 {
     std::int32_t unk[5];
 };
 static_assert(sizeof(SceNgsPatchInfo2) == 20);
-
-struct SceNgsBufferInfo {
-    Ptr<void> data;
-    std::uint32_t size;
-};
-static_assert(sizeof(SceNgsBufferInfo) == 8);
 
 using SceNgsSynthSystemHandle = Ptr<emu::ngs::System>;
 using SceNgsRackHandle = Ptr<emu::ngs::Rack>;
@@ -78,7 +73,7 @@ EXPORT(int, sceNgsPatchRemoveRouting) {
 }
 
 EXPORT(int, sceNgsRackGetRequiredMemorySize, emu::SceNgsSynthSystemHandle sys_handle, emu::ngs::RackDescription *description, uint32_t *size) {
-    *size = emu::ngs::Rack::get_required_memspace_size(description);
+    *size = emu::ngs::Rack::get_required_memspace_size(host.mem, description);
     return 0;
 }
 
@@ -271,13 +266,16 @@ EXPORT(int, sceNgsVoiceKill) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceLockParams, std::uint32_t voice, std::uint32_t unk1, std::uint32_t unk2, Ptr<SceNgsBufferInfo> buf) {
-    auto *buffer_info = buf.get(host.mem);
+EXPORT(SceUInt32, sceNgsVoiceLockParams, emu::SceNgsVoiceHandle voice_handle, std::uint32_t unk1, std::uint32_t unk2, Ptr<emu::ngs::BufferParamsInfo> buf) {
+    emu::ngs::Voice *voice = voice_handle.get(host.mem);
+    emu::ngs::BufferParamsInfo *info = voice->lock_params(host.mem);
 
-    buffer_info->data = alloc(host.mem, 10, "SceNgs buffer stub");
-    buffer_info->size = 10;
+    if (!info) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
 
-    return STUBBED("Ngs buffer stubbed");
+    *(buf.get(host.mem)) = *info;
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoicePatchSetVolume) {
@@ -330,8 +328,14 @@ EXPORT(int, sceNgsVoiceSetPreset) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceUnlockParams) {
-    return UNIMPLEMENTED();
+EXPORT(SceUInt32, sceNgsVoiceUnlockParams, emu::SceNgsVoiceHandle handle) {
+    emu::ngs::Voice *voice = handle.get(host.mem);
+
+    if (!voice->unlock_params()) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceSulphaNgsGetDefaultConfig) {
