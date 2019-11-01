@@ -78,3 +78,6 @@
 [submodule "external/VulkanMemoryAllocator"]
 	path = external/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "external/sdl"]
+	path = external/sdl
+	url = https://github.com/Vita3K/sdl
