@@ -150,8 +150,11 @@ EXPORT(int, sceNgsSystemUnlock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsSystemUpdate) {
-    return UNIMPLEMENTED();
+EXPORT(SceUInt32, sceNgsSystemUpdate, emu::SceNgsSynthSystemHandle handle) {
+    emu::ngs::System *sys = handle.get(host.mem);
+    sys->voice_scheduler.update(host.mem);
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoiceBypassModule) {

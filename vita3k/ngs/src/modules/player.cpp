@@ -5,7 +5,8 @@ namespace emu::ngs::player {
         : VoiceDefinition(emu::ngs::BUSS_NORMAL_PLAYER) {
     }
 
-    void Module::process(Voice *voice) {
-        
+    void Module::process(const MemState &mem, Voice *voice) {
+        Parameters *params = voice->get_parameters<Parameters>(mem);
+        int a = 5;
     }
 };

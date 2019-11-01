@@ -66,4 +66,11 @@ namespace emu::ngs {
 
         return true;
     }
+
+    void VoiceScheduler::update(const MemState &mem) {
+        for (emu::ngs::Voice *voice: queue) {
+            voice->state = emu::ngs::VOICE_STATE_ACTIVE;
+            voice->rack->definition->process(mem, voice);
+        }
+    }
 }

@@ -5,7 +5,8 @@ namespace emu::ngs::atrac9 {
         : VoiceDefinition(emu::ngs::BUSS_ATRAC9) {
     }
 
-    void Module::process(Voice *voice) {
-        
+    void Module::process(const MemState &mem, Voice *voice) {
+        Parameters *params = voice->get_parameters<Parameters>(mem);
+        int a = 5;
     }
 };
