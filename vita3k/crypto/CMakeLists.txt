@@ -1,7 +1,9 @@
 add_library(
 	crypto
 	STATIC
+	include/crypto/aes.h
 	include/crypto/hash.h
+	src/aes.cpp
 	src/hash.cpp
 )
 

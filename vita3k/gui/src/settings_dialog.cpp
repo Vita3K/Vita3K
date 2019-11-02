@@ -170,7 +170,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             }
             ImGui::SameLine();
         } else {
-            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease dump decrypted modules from your PS Vita.");
+            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease install the firmware");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Put decrypted modules inside 'vs0/sys/external/'.");
         }

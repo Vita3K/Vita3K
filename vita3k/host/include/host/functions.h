@@ -22,6 +22,8 @@
 
 struct SfoFile;
 
+void install_pup(const std::string &pup, const std::string &pref_path);
+
 namespace sfo {
 bool get_data_by_id(std::string &out_data, SfoFile &file, int id);
 bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &key);
