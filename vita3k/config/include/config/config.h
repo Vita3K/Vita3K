@@ -17,47 +17,152 @@
 
 #pragma once
 
-#include <util/fs.h>
+#include <config/yaml.h>
 
-#include <boost/optional.hpp>
+#include <psp2/system_param.h>
+#include <spdlog/spdlog.h>
 
-#include <string>
-#include <vector>
+// clang-format off
+// Options produced in config file; order is code(option_type, option_name, default_value)
+// When adding in a new macro for generation, ALL options must be stated.
+#define CONFIG_LIST(code)                                                                       \
+    code(std::vector<std::string>, lle_modules, std::vector<std::string>{})                     \
+    code(bool, log_imports, false)                                                              \
+    code(bool, log_exports, false)                                                              \
+    code(bool, log_active_shaders, false)                                                       \
+    code(bool, log_uniforms, false)                                                             \
+    code(bool, pstv_mode, false)                                                                \
+    code(bool, show_gui, true)                                                                  \
+    code(bool, show_game_background, false)                                                     \
+    code(int, icon_size, 64)                                                                    \
+    code(bool, archive_log, false)                                                              \
+    code(bool, texture_cache, true)                                                             \
+    code(int, sys_button, static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS))                \
+    code(int, sys_lang, static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US))                     \
+    code(std::string, background_image, std::string{})                                          \
+    code(float, background_alpha, .300f)                                                        \
+    code(int, log_level, spdlog::level::trace)                                                  \
+    code(std::string, pref_path, std::string{})                                                 \
+    code(bool, discord_rich_presence, true)                                                     \
+    code(bool, wait_for_debugger, false)                                                        \
+    code(bool, color_surface_debug, false)                                                      \
+    code(bool, hardware_flip, false)                                                            \
+    code(bool, performance_overlay, false)                                                      \
+    code(std::string, backend_renderer, "OpenGL")                                               \
+    code(int, user_id, 0)                                                                       \
+    code(std::vector<std::string>, online_id, std::vector<std::string>{"Vita3K"})
+// clang-format on
 
-using boost::optional;
-
-// Config options
-struct Config {
-    optional<std::string> vpk_path;
-    optional<std::string> run_title_id;
-    optional<std::string> recompile_shader_path;
-    bool log_imports = false;
-    bool log_exports = false;
-    bool log_active_shaders = false;
-    bool log_uniforms = false;
-    bool pstv_mode = false;
-    bool show_gui = false;
-    bool show_game_background = true;
-    int icon_size = 64;
-    bool archive_log = false;
-    bool texture_cache = true;
-    int sys_button = 1;
-    int sys_lang = 1;
-    std::string background_image = {};
-    float background_alpha = 0.300f;
-    int log_level = 0;
-    std::string pref_path = {};
+struct ConfigParent : YamlLoader {
+    // Settings not in the config.yml file
     fs::path config_path = {};
     bool overwrite_config = true;
     bool load_config = false;
-    bool discord_rich_presence = true;
-    bool wait_for_debugger = false;
-    bool color_surface_debug = false;
-    bool hardware_flip = false;
-    bool performance_overlay = false;
-    std::string backend_renderer = "OpenGL";
-    int user_id = 0;
-    std::vector<std::string> online_id = { "Vita3K" };
-    std::vector<std::string> lle_modules = {};
 
-}; // struct Config
+    ConfigParent &operator=(const ConfigParent &rhs) {
+        if (this != &rhs) {
+            yaml_node = rhs.yaml_node;
+
+            config_path = rhs.config_path;
+            overwrite_config = rhs.overwrite_config;
+            load_config = rhs.load_config;
+        }
+        return *this;
+    }
+
+    ConfigParent &operator=(ConfigParent &&rhs) noexcept {
+        yaml_node = rhs.yaml_node;
+
+        config_path = rhs.config_path;
+        overwrite_config = rhs.overwrite_config;
+        load_config = rhs.load_config;
+
+        return *this;
+    }
+};
+
+// Configuration File options
+struct Config : ConfigParent {
+private:
+    void update_members() {
+#define UPDATE_MEMBERS(option_type, option_name, option_default) \
+    option_name = yaml_node[#option_name].as<##option_type>();
+        CONFIG_LIST(UPDATE_MEMBERS)
+#undef UPDATE_MEMBERS
+    }
+
+public:
+    // Optional config settings
+    optional<std::string> vpk_path;
+    optional<std::string> run_title_id;
+    optional<std::string> recompile_shader_path;
+
+    Config &operator=(const Config &rhs) {
+        if (this != &rhs) {
+            yaml_node = get_as_node(rhs);
+
+            if (rhs.vpk_path.is_initialized())
+                vpk_path = rhs.vpk_path;
+            if (rhs.run_title_id.is_initialized())
+                run_title_id = rhs.run_title_id;
+            if (rhs.recompile_shader_path.is_initialized())
+                run_title_id = rhs.run_title_id;
+
+            config_path = rhs.config_path;
+            overwrite_config = rhs.overwrite_config;
+            load_config = rhs.load_config;
+
+            update_members();
+        }
+        return *this;
+    }
+
+    Config &operator=(Config &&rhs) noexcept {
+        yaml_node = get_as_node(rhs);
+
+        if (rhs.vpk_path.is_initialized())
+            vpk_path = rhs.vpk_path;
+        if (rhs.run_title_id.is_initialized())
+            run_title_id = rhs.run_title_id;
+        if (rhs.recompile_shader_path.is_initialized())
+            run_title_id = rhs.run_title_id;
+
+        config_path = rhs.config_path;
+        overwrite_config = rhs.overwrite_config;
+        load_config = rhs.load_config;
+
+        update_members();
+
+        return *this;
+    }
+
+    // Generate a YAML node based on the current values of the members.
+    YAML::Node get() const {
+        YAML::Node out;
+
+#define GEN_VALUES(option_type, option_name, option_default) \
+    out[#option_name] = option_name;
+        CONFIG_LIST(GEN_VALUES)
+#undef GEN_VALUES
+
+        return out;
+    }
+
+    YAML::Node get_as_node(const Config &rhs) {
+        auto out = rhs.yaml_node;
+
+#define GEN_VALUES(option_type, option_name, option_default) \
+    out[#option_name] = rhs.##option_name;
+        CONFIG_LIST(GEN_VALUES)
+#undef GEN_VALUES
+
+        return out;
+    }
+
+    void update_yaml() {
+        yaml_node = get();
+    }
+
+    // Generate members in the preprocessor
+    CONFIG_LIST(YAML_MEMBER)
+};
