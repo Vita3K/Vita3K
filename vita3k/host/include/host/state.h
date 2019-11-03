@@ -21,7 +21,7 @@
 #include <host/window.h>
 
 #include <audio/state.h>
-#include <config/config.h>
+#include <config/state.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
 #include <gxm/state.h>

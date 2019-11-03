@@ -7,7 +7,7 @@
 #include <renderer/gl/functions.h>
 #include <renderer/gl/types.h>
 
-#include <config/config.h>
+#include <config/state.h>
 #include <renderer/functions.h>
 #include <util/log.h>
 

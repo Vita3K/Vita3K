@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <config/config.h>
 #include <config/functions.h>
+#include <config/state.h>
 #include <config/version.h>
 
 #include <util/log.h>

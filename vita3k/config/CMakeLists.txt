@@ -3,6 +3,7 @@ add_library(
 	STATIC
 	include/config/config.h
 	include/config/functions.h
+	include/config/state.h
 	include/config/version.h
 	include/config/yaml.h
 	src/config.cpp

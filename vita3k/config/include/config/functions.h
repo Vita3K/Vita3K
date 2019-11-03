@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include <config/config.h>
 #include <util/exit_code.h>
 #include <util/fs.h>
 
+struct Config;
 class Root;
 
 namespace config {

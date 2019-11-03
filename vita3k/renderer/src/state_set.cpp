@@ -11,7 +11,7 @@
 #include <util/align.h>
 #include <util/log.h>
 
-#include <config/config.h>
+#include <config/state.h>
 
 namespace renderer {
 COMMAND_SET_STATE(region_clip) {
