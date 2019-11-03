@@ -26,7 +26,7 @@ class Root;
 namespace config {
 
 /**
-  * \brief Save emulator config to a YML file. Call this function if the Config needs to be updated.
+  * \brief Save emulator config to a YML file. Call this function if the YAML file needs to be updated.
   * \param cfg Config operations to save.
   * \param output_path The location to save the configuration file.
   * \return Success on saving the config file, otherwise Error.

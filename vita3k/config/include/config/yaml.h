@@ -17,12 +17,9 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include <util/fs.h>
-
-using boost::optional;
 
 // YAML Interface Struct
 // Creates a new YAML Node network.
@@ -47,6 +44,7 @@ struct YamlLoader {
         yaml_node = YAML::LoadFile(path.generic_path().string());
     }
 
+    // Check if a node exists, and return the current value in the node network
     template <typename T>
     T get_member(const std::string &name) {
         assert(yaml_node[name.c_str()].IsDefined()); // Ensure the option can be accessed!

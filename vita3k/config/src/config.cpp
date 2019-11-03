@@ -21,9 +21,7 @@
 
 #include <util/log.h>
 #include <util/string_utils.h>
-#include <util/vector_utils.h>
 
-#include <boost/optional/optional_io.hpp>
 #include <boost/program_options.hpp>
 
 #include <exception>
@@ -59,9 +57,11 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
 
     if (cfg.pref_path.empty())
         cfg.pref_path = root_pref_path;
-    if (!fs::exists(cfg.pref_path) && cfg.pref_path != root_pref_path) {
-        LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
-        return InvalidApplicationPath;
+    else {
+        if (!fs::exists(cfg.pref_path) && cfg.pref_path != root_pref_path) {
+            LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
+            return InvalidApplicationPath;
+        }
     }
 
     try {
@@ -86,21 +86,22 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     if (!fs::exists(output.parent_path()))
         fs::create_directories(output.parent_path());
 
-    // Update the YAML node
-    cfg.yaml_node = cfg.get();
+    cfg.update_yaml();
 
-    YAML::Emitter emitter;
-    emitter << YAML::BeginDoc;
-    emitter << cfg.yaml_node;
-    emitter << YAML::EndDoc;
+    if (!fs::exists(output) || YAML::Load(output.generic_path().string()) != cfg.yaml_node) {
+        YAML::Emitter emitter;
+        emitter << YAML::BeginDoc;
+        emitter << cfg.yaml_node;
+        emitter << YAML::EndDoc;
 
-    fs::ofstream fo(output);
-    if (!fo) {
-        return InvalidApplicationPath;
+        fs::ofstream fo(output);
+        if (!fo) {
+            return InvalidApplicationPath;
+        }
+
+        fo << emitter.c_str();
+        fo.close();
     }
-
-    fo << emitter.c_str();
-    fo.close();
 
     return Success;
 }
@@ -110,7 +111,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     Config command_line{};
     serialize_config(command_line, root_paths.get_base_path() / "data/config/default.yml");
 
-    // Load base path configuration by default; otherwise, use the default
+    // Load base path configuration by default; otherwise, move the default to the base path
     if (fs::exists(check_path(root_paths.get_base_path())))
         parse(cfg, root_paths.get_base_path(), root_paths.get_pref_path_string());
     else
@@ -202,7 +203,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         }
 
         // Merge configurations
-        cfg = command_line;
+        command_line.update_yaml();
+        cfg += command_line;
         if (cfg.pref_path.empty())
             cfg.pref_path = root_paths.get_pref_path_string();
 

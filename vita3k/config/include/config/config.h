@@ -21,10 +21,10 @@
 #include <spdlog/spdlog.h>
 
 // clang-format off
-// Options produced in config file; order is code(option_type, option_name, default_value)
+// Singular options produced in config file
+// Order is code(option_type, option_name, default_value)
 // When adding in a new macro for generation, ALL options must be stated.
-#define CONFIG_LIST(code)                                                                       \
-    code(std::vector<std::string>, lle_modules, std::vector<std::string>{})                     \
+#define CONFIG_INDIVIDUAL(code)                                                                 \
     code(bool, log_imports, false)                                                              \
     code(bool, log_exports, false)                                                              \
     code(bool, log_active_shaders, false)                                                       \
@@ -47,6 +47,19 @@
     code(bool, hardware_flip, false)                                                            \
     code(bool, performance_overlay, false)                                                      \
     code(std::string, backend_renderer, "OpenGL")                                               \
-    code(int, user_id, 0)                                                                       \
+    code(int, user_id, 0)
+
+// Vector members produced in the config file
+// Order is code(option_type, option_name, default_value)
+// If you are going to implement a dynamic list in the YAML, add it here instead
+// When adding in a new macro for generation, ALL options must be stated.
+#define CONFIG_VECTOR(code)                                                                     \
+    code(std::vector<std::string>, lle_modules, std::vector<std::string>{})                     \
     code(std::vector<std::string>, online_id, std::vector<std::string>{"Vita3K"})
+
+// Parent macro for easier generation
+#define CONFIG_LIST(code)                                                                       \
+    CONFIG_INDIVIDUAL(code)                                                                     \
+    CONFIG_VECTOR(code)
+
 // clang-format on
