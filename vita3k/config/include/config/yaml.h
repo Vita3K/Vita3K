@@ -40,16 +40,7 @@ struct YamlLoader {
         yaml_node = YAML::LoadFile(path.generic_path().string());
     }
 
-    void load_new_config(const fs::path &path) {
-        yaml_node = YAML::LoadFile(path.generic_path().string());
-    }
-
-    // Check if a node exists, and return the current value in the node network
-    template <typename T>
-    T get_member(const std::string &name) {
-        assert(yaml_node[name.c_str()].IsDefined()); // Ensure the option can be accessed!
-        return yaml_node[name.c_str()].as<T>();
-    }
+    virtual ~YamlLoader() = default;
 
     YamlLoader &operator=(const YamlLoader &rhs) {
         if (this != &rhs) {
@@ -61,6 +52,18 @@ struct YamlLoader {
     YamlLoader &operator=(YamlLoader &&rhs) noexcept {
         yaml_node = rhs.yaml_node;
         return *this;
+    }
+
+    virtual void load_new_config(const fs::path &path) {
+        yaml_node = YAML::LoadFile(path.generic_path().string());
+    }
+
+    // Check if a node index exists, and return the current value in the node network
+    template <typename T>
+    T get_member(const std::string &name) {
+        assert(!name.empty()); // Make sure the option is actually not empty
+        assert(yaml_node[name.c_str()].IsDefined()); // Ensure the option can be accessed!
+        return yaml_node[name.c_str()].as<T>();
     }
 
 // Generate a member list based on type, name and default values

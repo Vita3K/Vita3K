@@ -51,29 +51,17 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     try {
         cfg.load_new_config(loaded_path);
     } catch (YAML::Exception &exception) {
-        std::cerr << "Config file can't be loaded: Error: " << exception.what() << "\n";
+        LOG_ERROR("Config file can't be loaded: Error: {}", exception.what());
         return FileNotFound;
     }
 
     if (cfg.pref_path.empty())
         cfg.pref_path = root_pref_path;
     else {
-        if (!fs::exists(cfg.pref_path) && cfg.pref_path != root_pref_path) {
+        if (cfg.pref_path != root_pref_path && !fs::exists(cfg.pref_path)) {
             LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
             return InvalidApplicationPath;
         }
-    }
-
-    try {
-        // lle-modules
-        auto lle_modules_node = cfg.yaml_node["lle_modules"];
-
-        for (const auto &lle_module_node : lle_modules_node) {
-            cfg.lle_modules.push_back(lle_module_node.as<std::string>());
-        }
-    } catch (...) {
-        std::cerr << "LLE modules node listed in config file has invalid syntax, please check again!\n";
-        return InvalidApplicationPath;
     }
 
     return Success;
@@ -88,20 +76,18 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
 
     cfg.update_yaml();
 
-    if (!fs::exists(output) || YAML::Load(output.generic_path().string()) != cfg.yaml_node) {
-        YAML::Emitter emitter;
-        emitter << YAML::BeginDoc;
-        emitter << cfg.yaml_node;
-        emitter << YAML::EndDoc;
+    YAML::Emitter emitter;
+    emitter << YAML::BeginDoc;
+    emitter << cfg.yaml_node;
+    emitter << YAML::EndDoc;
 
-        fs::ofstream fo(output);
-        if (!fo) {
-            return InvalidApplicationPath;
-        }
-
-        fo << emitter.c_str();
-        fo.close();
+    fs::ofstream fo(output);
+    if (!fo) {
+        return InvalidApplicationPath;
     }
+
+    fo << emitter.c_str();
+    fo.close();
 
     return Success;
 }
@@ -127,25 +113,25 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         po::options_description input_desc("Input");
         input_desc.add_options()
-            ("input_vpk_path,i", po::value(&command_line.vpk_path), "path of app in .vpk format to install & run")
-            ("input_installed_id,r", po::value(&command_line.run_title_id), "title ID of installed app to run")
-            ("recompile_shader,s", po::value(&command_line.recompile_shader_path), "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit");
+            ("input-vpk-path,i", po::value(&command_line.vpk_path), "path of app in .vpk format to install & run")
+            ("input-installed-id,r", po::value(&command_line.run_title_id), "title ID of installed app to run")
+            ("recompile-shader,s", po::value(&command_line.recompile_shader_path), "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit");
 
         po::options_description config_desc("Configuration");
         config_desc.add_options()
-            ("archive_log,A", po::bool_switch(&command_line.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
-            ("backend_renderer,B", po::value(&command_line.backend_renderer), "Renderer backend to use, either \"OpenGL\" or \"Vulkan\"")
-            ("color_surface_debug,C", po::bool_switch(&command_line.color_surface_debug), "Save color surfaces")
-            ("config_location,c", po::value<fs::path>(&command_line.config_path), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault: <Vita3K folder>/config.yml")
-            ("keep_config,w", po::bool_switch(&command_line.overwrite_config)->default_value(true), "Do not modify the configuration file after loading.")
-            ("load_config,f", po::bool_switch(&command_line.load_config), "Load a configuration file. Setting __keep_config with this option preserves the configuration file.")
+            ((cfg[e_archive_log] + ",A").c_str(), po::bool_switch(&command_line.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
+            ((cfg[e_backend_renderer] + ",B").c_str(), po::value(&command_line.backend_renderer), "Renderer backend to use, either \"OpenGL\" or \"Vulkan\"")
+            ((cfg[e_color_surface_debug] + ",C").c_str(), po::bool_switch(&command_line.color_surface_debug), "Save color surfaces")
+            ("config-location,c", po::value<fs::path>(&command_line.config_path), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault loaded: <Vita3K>/config.yml \nDefaults: <Vita3K>/data/config/default.yml")
+            ("keep-config,w", po::bool_switch(&command_line.overwrite_config)->default_value(true), "Do not modify the configuration file after loading.")
+            ("load-config,f", po::bool_switch(&command_line.load_config), "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
 
-            ("lle_modules,m", po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: __lle_modules libscemp4,libngs")
-            ("log_level,l", po::value(&command_line.log_level), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
-            ("log_imports,I", po::bool_switch(&command_line.log_imports), "Log Imports")
-            ("log_exports,E", po::bool_switch(&command_line.log_exports), "Log Exports")
-            ("log_active_shaders,S", po::bool_switch(&command_line.log_active_shaders), "Log Active Shaders")
-            ("log_uniforms,U", po::bool_switch(&command_line.log_uniforms), "Log Uniforms");
+            ((cfg[e_lle_modules] + ",m").c_str(), po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
+            ((cfg[e_log_level] + ",l").c_str(), po::value(&command_line.log_level), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
+            ((cfg[e_log_imports] + ",I").c_str(), po::bool_switch(&command_line.log_imports), "Log Imports")
+            ((cfg[e_log_exports] + ",E").c_str(), po::bool_switch(&command_line.log_exports), "Log Exports")
+            ((cfg[e_log_active_shaders] + ",S").c_str(), po::bool_switch(&command_line.log_active_shaders), "Log Active Shaders")
+            ((cfg[e_log_uniforms] + ",U").c_str(), po::bool_switch(&command_line.log_uniforms), "Log Uniforms");
         // clang-format on
 
         // Positional args
@@ -178,7 +164,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
             std::cout << window_title << std::endl;
             return QuitRequested;
         }
-        if (var_map.count("recompile_shader")) {
+        if (var_map.count("recompile-shader")) {
             cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
             return QuitRequested;
         }
@@ -192,8 +178,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         }
 
         // Get LLE modules from the command line, otherwise get the modules from the YML file
-        if (var_map.count("lle_modules")) {
-            const auto lle_modules = var_map["lle_modules"].as<std::string>();
+        if (var_map.count(cfg[e_lle_modules])) {
+            const auto lle_modules = var_map[cfg[e_lle_modules]].as<std::string>();
             if (command_line.load_config) {
                 const auto command_line_lle = string_utils::split_string(lle_modules, ',');
                 command_line.lle_modules = vector_utils::merge_vectors(command_line.lle_modules, command_line_lle);
@@ -212,23 +198,23 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
 
-        LOG_INFO_IF(cfg.vpk_path, "input_vpk_path: {}", *cfg.vpk_path);
-        LOG_INFO_IF(cfg.run_title_id, "input_installed_id: {}", *cfg.run_title_id);
-        LOG_INFO("backend_renderer: {}", cfg.backend_renderer);
-        LOG_INFO("hardware_flip: {}", cfg.hardware_flip);
+        LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
+        LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
+        LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
+        LOG_INFO_IF(cfg.hardware_flip, "{}: enabled", cfg[e_hardware_flip]);
         if (!cfg.lle_modules.empty()) {
             std::string modules;
             for (const auto &mod : cfg.lle_modules) {
                 modules += mod + ",";
             }
             modules.pop_back();
-            LOG_INFO("lle_modules: {}", modules);
+            LOG_INFO("lle-modules: {}", modules);
         }
-        LOG_INFO("log_level: {}", cfg.log_level);
-        LOG_INFO("log_imports: {}", cfg.log_imports);
-        LOG_INFO("log_exports: {}", cfg.log_exports);
-        LOG_INFO("log_active_shaders: {}", cfg.log_active_shaders);
-        LOG_INFO("log_uniforms: {}", cfg.log_uniforms);
+        LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
+        LOG_INFO_IF(cfg.log_imports, "{}: enabled", cfg[e_log_imports]);
+        LOG_INFO_IF(cfg.log_exports, "{}: enabled", cfg[e_log_exports]);
+        LOG_INFO_IF(cfg.log_active_shaders, "{}: enabled", cfg[e_log_active_shaders]);
+        LOG_INFO_IF(cfg.log_uniforms, "{}: enabled", cfg[e_log_uniforms]);
 
     } catch (std::exception &e) {
         std::cerr << "error: " << e.what() << "\n";

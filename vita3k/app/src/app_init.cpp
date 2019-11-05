@@ -92,7 +92,7 @@ void update_viewport(HostState &state) {
     }
 }
 
-bool init(HostState &state, const Config &cfg, const Root &root_paths) {
+bool init(HostState &state, Config &cfg, const Root &root_paths) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);

@@ -22,44 +22,44 @@
 
 // clang-format off
 // Singular options produced in config file
-// Order is code(option_type, option_name, default_value)
+// Order is code(option_type, option_name, option_default, member_name)
 // When adding in a new macro for generation, ALL options must be stated.
-#define CONFIG_INDIVIDUAL(code)                                                                 \
-    code(bool, log_imports, false)                                                              \
-    code(bool, log_exports, false)                                                              \
-    code(bool, log_active_shaders, false)                                                       \
-    code(bool, log_uniforms, false)                                                             \
-    code(bool, pstv_mode, false)                                                                \
-    code(bool, show_gui, true)                                                                  \
-    code(bool, show_game_background, false)                                                     \
-    code(int, icon_size, 64)                                                                    \
-    code(bool, archive_log, false)                                                              \
-    code(bool, texture_cache, true)                                                             \
-    code(int, sys_button, static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS))                \
-    code(int, sys_lang, static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US))                     \
-    code(std::string, background_image, std::string{})                                          \
-    code(float, background_alpha, .300f)                                                        \
-    code(int, log_level, spdlog::level::trace)                                                  \
-    code(std::string, pref_path, std::string{})                                                 \
-    code(bool, discord_rich_presence, true)                                                     \
-    code(bool, wait_for_debugger, false)                                                        \
-    code(bool, color_surface_debug, false)                                                      \
-    code(bool, hardware_flip, false)                                                            \
-    code(bool, performance_overlay, false)                                                      \
-    code(std::string, backend_renderer, "OpenGL")                                               \
-    code(int, user_id, 0)
+#define CONFIG_INDIVIDUAL(code)                                                                         \
+    code(bool, "log-imports", false, log_imports)                                                       \
+    code(bool, "log-exports", false, log_exports)                                                       \
+    code(bool, "log-active-shaders", false, log_active_shaders)                                         \
+    code(bool, "log-uniforms", false, log_uniforms)                                                     \
+    code(bool, "pstv-mode", false, pstv_mode)                                                           \
+    code(bool, "show-gui", true, show_gui)                                                              \
+    code(bool, "show-game-background", false, show_game_background)                                     \
+    code(int, "icon-size", 64, icon_size)                                                               \
+    code(bool, "archive-log", false, archive_log)                                                       \
+    code(bool, "texture-cache", true, texture_cache)                                                    \
+    code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
+    code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
+    code(std::string, "background-image", std::string{}, background_image)                              \
+    code(float, "background-alpha", .300f, background_alpha)                                            \
+    code(int, "log-level", static_cast<int>(spdlog::level::trace), log_level)                           \
+    code(std::string, "pref-path", std::string{}, pref_path)                                            \
+    code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
+    code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
+    code(bool, "color-surface-debug", false, color_surface_debug)                                       \
+    code(bool, "hardware-flip", false, hardware_flip)                                                   \
+    code(bool, "performance-overlay", false, performance_overlay)                                       \
+    code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
+    code(int, "user-id", 0, user_id)
 
 // Vector members produced in the config file
 // Order is code(option_type, option_name, default_value)
 // If you are going to implement a dynamic list in the YAML, add it here instead
 // When adding in a new macro for generation, ALL options must be stated.
-#define CONFIG_VECTOR(code)                                                                     \
-    code(std::vector<std::string>, lle_modules, std::vector<std::string>{})                     \
-    code(std::vector<std::string>, online_id, std::vector<std::string>{"Vita3K"})
+#define CONFIG_VECTOR(code)                                                                             \
+    code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
+    code(std::vector<std::string>, "online-id", std::vector<std::string>{"Vita3K"}, online_id)
 
 // Parent macro for easier generation
-#define CONFIG_LIST(code)                                                                       \
-    CONFIG_INDIVIDUAL(code)                                                                     \
+#define CONFIG_LIST(code)                                                                               \
+    CONFIG_INDIVIDUAL(code)                                                                             \
     CONFIG_VECTOR(code)
 
 // clang-format on
