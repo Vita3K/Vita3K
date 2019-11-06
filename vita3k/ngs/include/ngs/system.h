@@ -41,6 +41,22 @@ namespace emu::ngs {
         std::int32_t unk16;
     };
 
+    struct Voice;
+
+    struct PatchSetupInfo {
+        Ptr<Voice> source;
+        std::int32_t source_output_index;
+        std::int32_t source_output_subindex;
+        Ptr<Voice> dest;
+        std::int32_t dest_input_index;
+    };
+
+    struct Patch {
+        std::int32_t output_index;
+        std::int32_t output_sub_index;
+        Voice *dest;
+    };
+
     struct VoiceDefinition;
 
     struct RackDescription {
@@ -84,10 +100,14 @@ namespace emu::ngs {
 
         std::uint8_t flags;
 
+        std::vector<Ptr<Patch>> outputs;
+
         void init(Rack *mama);
 
         BufferParamsInfo *lock_params(const MemState &mem);
         bool unlock_params();
+
+        Ptr<Patch> patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, Voice *dest);
 
         template <typename T>
         T *get_parameters(const MemState &mem) {
