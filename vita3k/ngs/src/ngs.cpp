@@ -25,6 +25,8 @@ namespace emu::ngs {
         rack = mama;
         state = VoiceState::VOICE_STATE_AVAILABLE;
         flags = 0;
+
+        outputs.resize(mama->patches_per_output);
     }
 
     BufferParamsInfo *Voice::lock_params(const MemState &mem) {
@@ -50,6 +52,38 @@ namespace emu::ngs {
 
         return false;
     }
+    
+    Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, Voice *dest) {
+        // Look if another patch has already been there
+        if (subindex == -1) {
+            for (std::int32_t i = 0; i < outputs.size(); i++) {
+                if (!outputs[i] || outputs[i].get(mem)->output_sub_index == -1) {
+                    subindex = i;
+                    break;
+                }
+            }
+        }
+
+        if (subindex >= outputs.size()) {
+            return {};
+        }
+
+        if (outputs[subindex] && outputs[subindex].get(mem)->output_sub_index != -1) {
+            return {};
+        }
+
+        if (!outputs[subindex]) {
+            outputs[subindex] = rack->alloc_and_init<Patch>(mem);
+        }
+
+        Patch *patch = outputs[subindex].get(mem);
+
+        patch->output_sub_index = subindex;
+        patch->output_index = index;
+        patch->dest = dest;
+
+        return outputs[subindex];
+    }
 
     std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {
         return sizeof(System);
@@ -57,7 +91,8 @@ namespace emu::ngs {
 
     std::uint32_t Rack::get_required_memspace_size(MemState &mem, RackDescription *description) {
         return sizeof(emu::ngs::Rack) + description->voice_count * sizeof(emu::ngs::Voice) +
-            description->definition.get(mem)->get_buffer_parameter_size() * description->voice_count;
+            description->definition.get(mem)->get_buffer_parameter_size() * description->voice_count +
+            description->patches_per_output * sizeof(emu::ngs::Patch);
     }
     
     bool init(State &ngs, MemState &mem) {
@@ -125,6 +160,11 @@ namespace emu::ngs {
 
         rack->definition = description->definition.get(mem);
 
+        // Initialize voice definition
+        rack->channels_per_voice = description->channels_per_voice;
+        rack->max_patches_per_input = description->max_patches_per_input;
+        rack->patches_per_output = description->patches_per_output;
+
         // Alloc spaces for voice
         rack->voices.resize(description->voice_count);
 
@@ -147,11 +187,6 @@ namespace emu::ngs {
                 v->info.data = 0;
             }
         }
-
-        // Initialize voice definition
-        rack->channels_per_voice = description->channels_per_voice;
-        rack->max_patches_per_input = description->max_patches_per_input;
-        rack->patches_per_output = description->patches_per_output;
 
         system->racks.push_back(rack);
 

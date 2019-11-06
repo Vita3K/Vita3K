@@ -5,11 +5,9 @@
 
 namespace emu::ngs {
     bool VoiceScheduler::deque_voice(Voice *voice) {
-        auto voice_in = std::lower_bound(queue.begin(), queue.end(), voice, [](const Voice *lhs, const Voice *rhs) {
-            return reinterpret_cast<std::uint64_t>(lhs) < reinterpret_cast<std::uint64_t>(rhs);
-        });
+        auto voice_in = std::find(queue.begin(), queue.end(), voice);
 
-        if (voice_in == queue.end() || *voice_in != voice) {
+        if (voice_in == queue.end()) {
             return false;
         }
 
@@ -17,7 +15,7 @@ namespace emu::ngs {
         return true;
     }
 
-    bool VoiceScheduler::play(Voice *voice) {
+    bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
         bool should_enqueue = (voice->state == emu::ngs::VOICE_STATE_PAUSED || voice->state == emu::ngs::VOICE_STATE_AVAILABLE);
 
         // Transition
@@ -30,10 +28,25 @@ namespace emu::ngs {
         }
 
         if (should_enqueue) {
-            queue.push_back(voice);
-            std::sort(queue.begin(), queue.end(), [](const Voice *lhs, const Voice *rhs) {
-                return reinterpret_cast<std::uint64_t>(lhs) < reinterpret_cast<std::uint64_t>(rhs);
-            });
+            std::int32_t lowest_dest_pos = queue.size();
+
+            // Check its dependencies position
+            for (const auto &patch: voice->outputs) {
+                if (!patch) {
+                    continue;
+                }
+
+                Voice *dest = patch.get(mem)->dest;
+                const std::int32_t pos = get_position(dest);
+
+                if (pos == -1) {
+                    continue;
+                }
+
+                lowest_dest_pos = std::min<std::int32_t>(lowest_dest_pos, pos);
+            }
+
+            queue.insert(queue.begin() + lowest_dest_pos, voice);
         }
 
         return true;
@@ -72,5 +85,71 @@ namespace emu::ngs {
             voice->state = emu::ngs::VOICE_STATE_ACTIVE;
             voice->rack->definition->process(mem, voice);
         }
+    }
+
+    std::int32_t VoiceScheduler::get_position(Voice *v) {
+        auto result = std::find(queue.begin(), queue.end(), v);
+
+        if (result != queue.end()) {
+            return static_cast<std::int32_t>(std::distance(queue.begin(), result));
+        }
+
+        return -1;
+    }
+
+    bool VoiceScheduler::resort_to_respect_dependencies(const MemState &mem, Voice *source) {
+        // Get my position
+        std::int32_t position = get_position(source);
+
+        if (position == -1) {
+            return false;
+        }
+
+        // Check all dependencies
+        for (const auto &patch: source->outputs) {
+            if (!patch) {
+                continue;
+            }
+
+            Voice *dest = patch.get(mem)->dest;
+            const std::int32_t dest_pos = get_position(dest);
+
+            if (position == -1) {
+                // Maybe not scheduled yet. Continue
+                continue;
+            }
+
+            if (dest_pos < position) {
+                // Switch to the end. Resort dependencies for this one that just got sorted too.
+                std::rotate(queue.begin() + dest_pos, queue.begin() + dest_pos + 1, queue.end());
+                resort_to_respect_dependencies(mem, dest);
+                position = get_position(source);
+            }
+        }
+
+        return true;
+    }
+
+    Ptr<Patch> VoiceScheduler::patch(const MemState &mem, PatchSetupInfo *info) {
+        // First, check if these two voices are scheduled yet
+        Voice *source = info->source.get(mem);
+        Voice *dest = info->dest.get(mem);
+
+        Ptr<Patch> patch = source->patch(mem, info->source_output_index, info->source_output_subindex, dest);
+
+        if (!patch) {
+            return patch;
+        }
+
+        const std::int32_t source_pos = get_position(source);
+        const std::int32_t dest_pos = get_position(dest);
+
+        if (source_pos == -1 || dest_pos == -1) {
+            // Later
+            return patch;
+        }
+
+        resort_to_respect_dependencies(mem, source);
+        return patch;
     }
 }

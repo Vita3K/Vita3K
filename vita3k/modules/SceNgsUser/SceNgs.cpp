@@ -36,6 +36,7 @@ static_assert(sizeof(SceNgsPatchInfo2) == 20);
 using SceNgsSynthSystemHandle = Ptr<emu::ngs::System>;
 using SceNgsRackHandle = Ptr<emu::ngs::Rack>;
 using SceNgsVoiceHandle = Ptr<emu::ngs::Voice>;
+using SceNgsPatchHandle = Ptr<emu::ngs::Patch>;
 
 } // namespace emu
 
@@ -55,8 +56,23 @@ EXPORT(int, sceNgsModuleGetPreset) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsPatchCreateRouting) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsPatchCreateRouting, emu::ngs::PatchSetupInfo *patch_info, emu::SceNgsPatchHandle *handle) {
+    assert(handle);
+    
+    // Make the scheduler order this right based on dependencies request
+    emu::ngs::Voice *source = patch_info->source.get(host.mem);
+    
+    if (!source) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
+
+    *handle = source->rack->system->voice_scheduler.patch(host.mem, patch_info);
+
+    if (!*handle) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsPatchGetInfo, std::uint32_t patch, Ptr<emu::SceNgsPatchInfo1> patch_info1_, Ptr<emu::SceNgsPatchInfo2> patch_info2_) {
@@ -304,7 +320,7 @@ EXPORT(SceUInt32, sceNgsVoicePlay, emu::SceNgsVoiceHandle handle) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    if (!voice->rack->system->voice_scheduler.play(voice)) {
+    if (!voice->rack->system->voice_scheduler.play(host.mem, voice)) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
 
