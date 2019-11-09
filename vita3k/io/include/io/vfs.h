@@ -24,8 +24,16 @@
 class VitaIoDevice;
 
 namespace vfs {
+
+struct SpaceInfo {
+    unsigned long long max_capacity;
+    unsigned long long used;
+    unsigned long long free;
+};
+
 using FileBuffer = std::vector<SceUInt8>;
 
 bool read_file(VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const fs::path &vfs_file_path);
 bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string &title_id, const fs::path &vfs_file_path);
+SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path, const std::string &pref_path);
 } // namespace vfs

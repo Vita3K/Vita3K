@@ -23,6 +23,7 @@
 #include <host/app_util.h>
 #include <io/device.h>
 #include <io/functions.h>
+#include <io/vfs.h>
 
 #include <cstring>
 
@@ -197,8 +198,10 @@ EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, e
     return 0;
 }
 
-EXPORT(int, sceAppUtilSaveDataGetQuota) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppUtilSaveDataGetQuota, SceSize *quotaSizeKiB, SceSize *usedSizeKiB, const SceAppUtilMountPoint *mountPoint) {
+    *quotaSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, host.io.device_paths.savedata0, host.pref_path).max_capacity / 1024;
+    *usedSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, host.io.device_paths.savedata0, host.pref_path).used / 1024;
+    return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataMount) {

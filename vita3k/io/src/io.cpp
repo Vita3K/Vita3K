@@ -71,6 +71,15 @@ bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::str
     return read_file(VitaIoDevice::ux0, buf, pref_path, fs::path("app") / title_id / vfs_file_path);
 }
 
+SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path, const std::string &pref_path) {
+    SpaceInfo space_info;
+    const auto host_path = device::construct_emulated_path(device, vfs_path, pref_path);
+    space_info.max_capacity = fs::space(host_path).capacity;
+    space_info.free = fs::space(host_path).available;
+    space_info.used = fs::space(host_path).capacity - space_info.free;
+    return space_info;
+}
+
 } // namespace vfs
 
 // ****************************
