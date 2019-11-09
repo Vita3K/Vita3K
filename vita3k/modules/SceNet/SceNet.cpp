@@ -277,7 +277,7 @@ EXPORT(unsigned short int, sceNetHtons, unsigned short int n) {
 EXPORT(Ptr<const char>, sceNetInetNtop, int af, const void *src, Ptr<char> dst, unsigned int size) {
     char *dst_ptr = dst.get(host.mem);
 #ifdef WIN32
-    const char *res = InetNtop(af, src, dst_ptr, size);
+    const char *res = InetNtop(af, const_cast<void *>(src), dst_ptr, size);
 #else
     const char *res = inet_ntop(af, src, dst_ptr, size);
 #endif
