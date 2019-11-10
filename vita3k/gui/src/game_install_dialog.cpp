@@ -33,12 +33,12 @@
 
 namespace gui {
 
-nfdchar_t *game_path = nullptr;
-static bool draw_file_dialog = true;
-static bool game_install_confirm = false;
-
 void draw_game_install_dialog(GuiState &gui, HostState &host) {
+    static nfdchar_t *game_path = nullptr;
     nfdresult_t result = NFD_CANCEL;
+
+    static bool draw_file_dialog = true;
+    static bool game_install_confirm = false;
 
     if (draw_file_dialog) {
         result = NFD_OpenDialog("vpk,zip", nullptr, &game_path);
@@ -70,14 +70,14 @@ void draw_game_install_dialog(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 65);
-        if (ImGui::Button("Yes", BUTTON_SIZE)) {
+        if (ImGui::Button("Yes", BUTTON_SIZE))
             if (install_vpk(host, gui, static_cast<fs::path>(game_path))) {
                 gui.game_reinstall_confirm = false;
                 game_install_confirm = true;
             }
-        }
         ImGui::SameLine();
         if (ImGui::Button("No", BUTTON_SIZE)) {
+            game_path = nullptr;
             gui.game_reinstall_confirm = false;
             gui.file_menu.game_install_dialog = false;
             draw_file_dialog = true;
@@ -98,6 +98,7 @@ void draw_game_install_dialog(GuiState &gui, HostState &host) {
         if (ImGui::Button("Ok", BUTTON_SIZE)) {
             game_install_confirm = false;
             draw_file_dialog = true;
+            game_path = nullptr;
             refresh_game_list(gui, host);
             gui.file_menu.game_install_dialog = false;
         }
@@ -106,7 +107,7 @@ void draw_game_install_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
 
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-    if (ImGui::BeginPopupModal("Game Installation Failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::BeginPopupModal("Game installation failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
         ImGui::TextColored(GUI_COLOR_TEXT, "Installation failed, please check the log for more information.");
         ImGui::Separator();
@@ -114,6 +115,7 @@ void draw_game_install_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
         if (ImGui::Button("Ok", BUTTON_SIZE)) {
             draw_file_dialog = true;
+            game_path = nullptr;
             gui.file_menu.game_install_dialog = false;
         }
         ImGui::EndPopup();

@@ -19,6 +19,7 @@ add_library(
 	src/common_dialog.cpp
 	src/condvars_dialog.cpp
 	src/eventflags_dialog.cpp
+	src/firmware_install_dialog.cpp
 	src/game_context_menu.cpp
 	src/game_install_dialog.cpp
 	src/game_selector.cpp
@@ -26,7 +27,6 @@ add_library(
 	src/imgui_impl_sdl_gl3.cpp
 	${IMGUI_IMPL_VULKAN_SOURCES}
 	src/imgui_impl_sdl.cpp
-	src/install_firmware_dialog.cpp
 	src/main_menubar.cpp
 	src/mutexes_dialog.cpp
 	src/perf_overlay.cpp
