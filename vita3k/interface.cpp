@@ -215,6 +215,7 @@ static auto pre_load_module(HostState &host, const std::vector<std::string> &lib
         vfs::FileBuffer module_buffer;
         Ptr<const void> lib_entry_point;
         bool res;
+        const auto MODULE_PATH_ABS = fmt::format("{}:{}", device._to_string(), module_path);
 
         if (device == VitaIoDevice::app0)
             res = vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path);
@@ -222,7 +223,7 @@ static auto pre_load_module(HostState &host, const std::vector<std::string> &lib
             res = vfs::read_file(device, module_buffer, host.pref_path, module_path);
 
         if (res) {
-            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), device._to_string() + module_path, host.cfg);
+            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), MODULE_PATH_ABS, host.cfg);
             if (module_id >= 0) {
                 const auto module = host.kernel.loaded_modules[module_id];
 
@@ -300,7 +301,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
     // Load pre-loaded libraries
     const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_module" };
-    if (fs::exists(module_app_path) && !fs::is_empty(module_app_path)) {
+    const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
+    if (is_app) {
         // Load application module
         const std::vector<std::string> lib_load_list = {
             "sce_module/libc.suprx",
@@ -309,13 +311,25 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         };
 
         pre_load_module(host, lib_load_list, VitaIoDevice::app0);
-    } else {
-        // Load Firmware module
-        const std::vector<std::string> lib_load_list = {
-            "sys/external/libc.suprx",
-            "sys/external/libfios2.suprx",
-            "sys/external/libult.suprx",
+    }
+
+    if (!gui.modules.empty()) {
+        // Load pre-loaded font fw libraries
+        std::vector<std::string> lib_load_list = {
+            "sys/external/libSceFt2.suprx",
+            "sys/external/libpvf.suprx",
         };
+
+        if (!is_app) {
+            // Load pre-loaded fw libraries if app libraries not exist
+            const std::vector<std::string> lib_load_list_to_add = {
+                "sys/external/libc.suprx",
+                "sys/external/libfios2.suprx",
+                "sys/external/libult.suprx"
+            };
+
+            lib_load_list.insert(lib_load_list.begin(), lib_load_list_to_add.begin(), lib_load_list_to_add.end());
+        }
 
         pre_load_module(host, lib_load_list, VitaIoDevice::vs0);
     }
