@@ -46,7 +46,7 @@ inline SysmodulePaths init_sysmodule_paths() {
     p[SCE_SYSMODULE_SULPHA] = { "libsulpha" };
     p[SCE_SYSMODULE_SAS] = { "libsas" };
     p[SCE_SYSMODULE_PGF] = { "libpgf" };
-    p[SCE_SYSMODULE_APPUTIL] = { "libapputil" };
+    p[SCE_SYSMODULE_APPUTIL] = { "apputil" };
     p[SCE_SYSMODULE_FIOS2] = { "libfios2" };
     p[SCE_SYSMODULE_IME] = { "libime" };
     p[SCE_SYSMODULE_NP_BASIC] = { "np_basic" };

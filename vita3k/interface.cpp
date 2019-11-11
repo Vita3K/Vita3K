@@ -22,6 +22,7 @@
 #include <host/functions.h>
 #include <host/load_self.h>
 #include <host/sfo.h>
+#include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/functions.h>
@@ -229,27 +230,73 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
     host.renderer->features.hardware_flip = host.cfg.hardware_flip;
 
-    // Load pre-loaded libraries
-    const char *const lib_load_list[] = {
-        "sce_module/libc.suprx",
-        "sce_module/libfios2.suprx",
-        "sce_module/libult.suprx",
-    };
+    static const auto sce_module_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_module" };
 
-    for (auto module_path : lib_load_list) {
-        vfs::FileBuffer module_buffer;
-        Ptr<const void> lib_entry_point;
+    if (fs::exists(sce_module_path)) {
+        // Load pre-loaded sce_module libraries if founded
+        const char *const lib_load_list[] = {
+            "sce_module/libc.suprx",
+            "sce_module/libface.suprx",
+            "sce_module/libfios2.suprx",
+            "sce_module/libsmart.suprx",
+            "sce_module/libult.suprx",
+        };
 
-        if (vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path)) {
-            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path, host.cfg);
-            if (module_id >= 0) {
-                const auto module = host.kernel.loaded_modules[module_id];
-                const auto module_name = module->module_name;
-                LOG_INFO("Pre-load module {} (at \"{}\") loaded", module_name, module_path);
-            } else
-                return FileNotFound;
-        } else {
-            LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
+        for (auto module_path : lib_load_list) {
+            vfs::FileBuffer module_buffer;
+            Ptr<const void> lib_entry_point;
+
+            if (vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path)) {
+                SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path, host.cfg);
+                if (module_id >= 0) {
+                    const auto module = host.kernel.loaded_modules[module_id];
+                    const auto module_name = module->module_name;
+                    LOG_INFO("Pre-load module {} (at \"{}\") loaded", module_name, module_path);
+                } else
+                    return FileNotFound;
+            } else {
+                LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
+            }
+        }
+    }
+
+    if (!gui.modules.empty()) {
+        // Load pre-loaded fw libraries if founded
+        std::vector<std::string> lib_load_list = {
+            "sys/external/libSceFt2.suprx",
+            "sys/external/libpvf.suprx",
+            //"sys/external/libscejpegarm.suprx", // VirtualAlloc failed 0x57
+            //"sys/external/libscejpegencarm.suprx", // VirtualAlloc failed 0x57
+        };
+
+        if (!fs::exists(sce_module_path)) {
+            static const char *const base_lib_fw_list[] = {
+                "sys/external/libc.suprx",
+                "sys/external/libfios2.suprx",
+                "sys/external/libult.suprx",
+            };
+            for (auto &f : base_lib_fw_list)
+                lib_load_list.push_back(f);
+            std::sort(lib_load_list.begin(), lib_load_list.end()); 
+        }
+
+        std::sort(lib_load_list.begin(), lib_load_list.end()); 
+
+        for (auto module_path : lib_load_list) {
+            vfs::FileBuffer module_buffer;
+            Ptr<const void> lib_entry_point;
+
+            if (vfs::read_file(VitaIoDevice::vs0, module_buffer, host.pref_path, module_path)) {
+                SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("vs0:") + module_path, host.cfg);
+                if (module_id >= 0) {
+                    const auto module = host.kernel.loaded_modules[module_id];
+                    const auto module_name = module->module_name;
+                    LOG_INFO("Pre-load module {} (at \"{}\") loaded", module_name, module_path);
+                } else
+                    return FileNotFound;
+            } else {
+                LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
+            }
         }
     }
 
