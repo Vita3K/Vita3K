@@ -424,8 +424,13 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
                 if (DUMP_SEGMENTS)
                     dump_segment(seg_bytes);
             }
+        } else {
+            LOG_CRITICAL("Unknown segment type {}", log_hex(seg_header.p_type));
         }
     }
+
+    for (const auto [seg, infos] : segment_reloc_info)
+        LOG_INFO("Loaded module segment {} @ [0x{:08X} - 0x{:08X}] (size: 0x{:08X}) of module {}", seg, infos.addr, infos.addr + infos.size, infos.size, self_path);
 
     const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
     const Ptr<const uint8_t> module_info_segment_address = Ptr<const uint8_t>(segment_reloc_info[module_info_segment_index].addr);
