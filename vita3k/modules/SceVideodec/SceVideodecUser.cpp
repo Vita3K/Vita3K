@@ -96,7 +96,7 @@ void send_decoder_data(MemState &mem, DecoderPtr &decoder_info, const emu::SceAv
         &packet->data, // uint8_t **poutbuf,
         &packet->size, // int *poutbuf_size,
         au_frame.data(), // const uint8_t *buf,
-        au_frame.size(), // int buf_size,
+        au->es.size, // int buf_size,
         pts, // int64_t pts,
         dts, // int64_t dts,
         0 // int64_t pos
@@ -109,24 +109,28 @@ void send_decoder_data(MemState &mem, DecoderPtr &decoder_info, const emu::SceAv
     av_packet_free(&packet);
 }
 
+inline void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest) {
+    for (uint32_t a = 0; a < frame->height; a++) {
+        memcpy(dest, &frame->data[0][frame->linesize[0] * a], frame->width);
+        dest += frame->width;
+    }
+    for (uint32_t a = 0; a < frame->height / 2; a++) {
+        memcpy(dest, &frame->data[1][frame->linesize[1] * a], frame->width / 2);
+        dest += frame->width / 2;
+    }
+    for (uint32_t a = 0; a < frame->height / 2; a++) {
+        memcpy(dest, &frame->data[2][frame->linesize[2] * a], frame->width / 2);
+        dest += frame->width / 2;
+    }
+}
+
 void receive_decoder_data(MemState &mem, DecoderPtr &decoder_info, emu::SceAvcdecArrayPicture *picture) {
     AVFrame *frame = av_frame_alloc();
 
     if (avcodec_receive_frame(decoder_info->context, frame) == 0) {
         emu::SceAvcdecFrame *avc_frame = &picture->pPicture.get(mem)[0].get(mem)->frame;
         auto *avc_data = reinterpret_cast<uint8_t *>(avc_frame->pPicture[0].get(mem));
-        for (uint32_t a = 0; a < frame->height; a++) {
-            memcpy(avc_data, &frame->data[0][frame->linesize[0] * a], frame->width);
-            avc_data += frame->width;
-        }
-        for (uint32_t a = 0; a < frame->height / 2; a++) {
-            memcpy(avc_data, &frame->data[1][frame->linesize[1] * a], frame->width / 2);
-            avc_data += frame->width / 2;
-        }
-        for (uint32_t a = 0; a < frame->height / 2; a++) {
-            memcpy(avc_data, &frame->data[2][frame->linesize[2] * a], frame->width / 2);
-            avc_data += frame->width / 2;
-        }
+        copy_yuv_data_from_frame(frame, avc_data);
         picture->numOfOutput++;
     }
 
@@ -139,7 +143,7 @@ EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, emu::SceAvcdecCtrl *dec
     SceUID handle = host.kernel.get_next_uid();
     decoder->handle = handle;
 
-    host.kernel.decoders[handle] = std::make_shared<DecoderState>();
+    host.kernel.decoders[handle] = std::make_shared<VideoDecoderState>();
     DecoderPtr &decoder_info = host.kernel.decoders[handle];
     decoder_info->frame_width = query->horizontal;
     decoder_info->frame_height = query->vertical;
