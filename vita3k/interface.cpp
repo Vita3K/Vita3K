@@ -384,10 +384,13 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         const auto module_start = module->module_start;
         const auto module_name = module->module_name;
 
+        if (!module_start)
+            continue;
+
         if (std::string(module->path) == EBOOT_PATH_ABS)
             continue;
 
-        LOG_DEBUG("Running module_start of library: {}", module_name);
+        LOG_DEBUG("Running module_start of library: {} at address {}", module_name, log_hex(module_start.address()));
 
         Ptr<void> argp = Ptr<void>();
         const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
