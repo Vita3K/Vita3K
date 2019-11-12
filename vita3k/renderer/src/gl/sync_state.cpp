@@ -119,7 +119,7 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
             context.viewport_flip[3] = 1.0f;
         }
 
-        glViewportIndexedf(0, x, y, w, h);
+        glViewportIndexedf(0, x, display_h - h - y, w, h);
         glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
     } else {
         if (hardware_flip) {
