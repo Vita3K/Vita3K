@@ -537,7 +537,7 @@ EXPORT(int, sceGxmEndCommandList) {
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotification *vertexNotification, const emu::SceGxmNotification *fragmentNotification) {
     const MemState &mem = host.mem;
     assert(context != nullptr);
-    assert(vertexNotification == nullptr);
+//    assert(vertexNotification == nullptr);
     //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.is_in_scene) {
@@ -559,6 +559,11 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotificatio
             nullptr, context->state.fragment_sync_object);
 
         renderer::subject_in_progress(sync, renderer::SyncObjectSubject::Fragment);
+    }
+
+    if (vertexNotification) {
+        volatile uint32_t *vertex_address = vertexNotification->address.get(host.mem);
+        *vertex_address = vertexNotification->value;
     }
 
     if (fragmentNotification) {
@@ -1794,10 +1799,10 @@ static int init_texture_base(const char *export_name, emu::SceGxmTexture *textur
             }
         } else if (gxm::is_yuv_format(tex_format)) {
             switch (tex_format) {
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1:
                 break;
             default:
-                LOG_WARN("Iniitlaized texture with untested YUV texture format: {}", log_hex(tex_format));
+                LOG_WARN("Initialized texture with untested YUV texture format: {}", log_hex(tex_format));
             }
         } else
             LOG_ERROR("Initialized texture with unsupported texture format: {}", log_hex(tex_format));

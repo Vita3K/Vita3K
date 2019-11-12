@@ -5,8 +5,7 @@
 #include <vector>
 #include <algorithm>
 
-namespace renderer {
-namespace texture {
+namespace renderer::texture {
 struct Color {
     uint8_t x = 0;
     uint8_t y = 0;
@@ -67,6 +66,5 @@ void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_
     for (size_t a = 0; a < yuvLayout.size(); a++) {
         dst_colors[a] = yuv_color_to_rgb(yuvLayout[a]);
     }
-}
 }
 }

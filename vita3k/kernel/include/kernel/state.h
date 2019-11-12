@@ -170,10 +170,12 @@ struct WaitingThreadState {
 
 typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
 
+struct AVPacket;
 struct AVCodecContext;
+struct AVFormatContext;
 struct AVCodecParserContext;
 
-struct DecoderState {
+struct VideoDecoderState {
     AVCodecContext *context{};
     AVCodecParserContext *parser{};
 
@@ -182,8 +184,32 @@ struct DecoderState {
     uint32_t frame_ref_count;
 };
 
-typedef std::shared_ptr<DecoderState> DecoderPtr;
+typedef std::shared_ptr<VideoDecoderState> DecoderPtr;
 typedef std::map<SceUID, DecoderPtr> DecoderStates;
+
+struct PlayerState {
+    Ptr<void> general_allocator;
+    Ptr<void> general_deallocator;
+    Ptr<void> texture_allocator;
+    Ptr<void> texture_deallocator;
+
+    std::string video_playing;
+    std::queue<std::string> videos_queue;
+
+    AVFormatContext *format{};
+    AVCodecContext *video_context{};
+    AVCodecContext *audio_context{};
+    int32_t video_stream_id = 0;
+    int32_t audio_stream_id = 0;
+
+    std::queue<AVPacket *> audio_packets;
+    std::queue<AVPacket *> video_packets;
+
+    std::mutex mutex;
+};
+
+typedef std::shared_ptr<PlayerState> PlayerPtr;
+typedef std::map<SceUID, PlayerPtr> PlayerStates;
 
 struct TimerState {
     std::string name;
@@ -237,6 +263,7 @@ struct KernelState {
     ExportNids export_nids;
     SceRtcTick base_tick;
     DecoderStates decoders;
+    PlayerStates players;
     TimerStates timers;
     Ptr<uint32_t> process_param;
     bool wait_for_debugger = false;

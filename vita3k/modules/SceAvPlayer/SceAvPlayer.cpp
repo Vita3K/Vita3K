@@ -17,8 +17,210 @@
 
 #include "SceAvPlayer.h"
 
-EXPORT(int, sceAvPlayerAddSource) {
-    return UNIMPLEMENTED();
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+}
+
+#include <util/log.h>
+#include <io/functions.h>
+#include <util/lock_and_find.h>
+#include <kernel/thread/thread_functions.h>
+
+#include <psp2/io/fcntl.h>
+
+#include <algorithm>
+
+namespace emu {
+    typedef Ptr<void> (*SceAvPlayerAllocator)(void *arguments, uint32_t alignment, uint32_t size);
+    typedef void (*SceAvPlayerDeallocator)(void *arguments, void *memory);
+
+    typedef int (*SceAvPlayerOpenFile)(void *arguments, const char *filename);
+    typedef int (*SceAvPlayerCloseFile)(void *arguments);
+    typedef int (*SceAvPlayerReadFile)(void *arguments, uint8_t *buffer, uint64_t offset, uint32_t size);
+    typedef uint64_t (*SceAvPlayerGetFileSize)(void *arguments);
+
+    typedef void (*SceAvPlayerEventCallback)(void *arguments, int32_t event_id, int32_t source_id, void *event_data);
+
+    enum class DebugLevel {
+        NONE,
+        INFO,
+        WARNINGS,
+        ALL,
+    };
+
+    struct SceAvPlayerMemoryAllocator {
+        Ptr<void> user_data;
+
+        // All of these should be cast to SceAvPlayerAllocator or SceAvPlayerDeallocator types.
+        Ptr<void> general_allocator;
+        Ptr<void> general_deallocator;
+        Ptr<void> texture_allocator;
+        Ptr<void> texture_deallocator;
+    };
+
+    struct SceAvPlayerFileManager {
+        Ptr<void> user_data;
+
+        // Cast to SceAvPlayerOpenFile, SceAvPlayerCloseFile, SceAvPlayerReadFile and SceAvPlayerGetFileSize.
+        Ptr<void> open_file;
+        Ptr<void> close_file;
+        Ptr<void> read_file;
+        Ptr<void> file_size;
+    };
+
+    struct SceAvPlayerEventManager {
+        Ptr<void> user_data;
+
+        // Cast to SceAvPlayerEventCallback.
+        Ptr<void> event_callback;
+    };
+
+    struct SceAvPlayerInfo {
+        SceAvPlayerMemoryAllocator memory_allocator;
+        SceAvPlayerFileManager file_manager;
+        SceAvPlayerEventManager event_manager;
+        DebugLevel debug_level;
+        uint32_t base_priority;
+        int32_t frame_buffer_count;
+        int32_t auto_start;
+        uint8_t unknown0[3];
+        uint32_t unknown1;
+    };
+
+    struct SceAvPlayerAudio {
+        uint16_t channels;
+        uint16_t unknown;
+        uint32_t sample_rate;
+        uint32_t size;
+        char language[4];
+    };
+
+    struct SceAvPlayerVideo {
+        uint32_t width;
+        uint32_t height;
+        float aspect_ratio;
+        char language[4];
+    };
+
+    struct SceAvPlayerTextPosition {
+        uint16_t top;
+        uint16_t left;
+        uint16_t bottom;
+        uint16_t right;
+    };
+
+    struct SceAvPlayerTimedText {
+        char language[4];
+        uint16_t text_size;
+        uint16_t font_size;
+        emu::SceAvPlayerTextPosition position;
+    };
+
+    union SceAvPlayerStreamDetails {
+        SceAvPlayerAudio audio;
+        SceAvPlayerVideo video;
+        SceAvPlayerTimedText text;
+    };
+
+    struct SceAvPlayerFrameInfo {
+        Ptr<uint8_t> data;
+        uint32_t unknown;
+        uint64_t timestamp;
+        emu::SceAvPlayerStreamDetails stream_details;
+    };
+}
+
+// yes this is in two places at once please forgive me for the time being
+inline void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest) {
+    for (uint32_t a = 0; a < frame->height; a++) {
+        memcpy(dest, &frame->data[0][frame->linesize[0] * a], frame->width);
+        dest += frame->width;
+    }
+    for (uint32_t a = 0; a < frame->height / 2; a++) {
+        memcpy(dest, &frame->data[1][frame->linesize[1] * a], frame->width / 2);
+        dest += frame->width / 2;
+    }
+    for (uint32_t a = 0; a < frame->height / 2; a++) {
+        memcpy(dest, &frame->data[2][frame->linesize[2] * a], frame->width / 2);
+        dest += frame->width / 2;
+    }
+}
+
+static void switch_video(const PlayerPtr &player, const std::string &new_video) {
+    player->video_playing = new_video;
+
+    int error;
+
+    player->format = avformat_alloc_context();
+    error = avformat_open_input(&player->format, new_video.c_str(), nullptr, nullptr);
+    assert(error == 0);
+
+    // Check if stream opened successfully...
+    error = avformat_find_stream_info(player->format, nullptr);
+    assert(error >= 0);
+
+    player->video_stream_id = av_find_best_stream(player->format, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    player->audio_stream_id = av_find_best_stream(player->format, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+
+    if (player->video_stream_id >= 0) {
+        AVStream *video_stream = player->format->streams[player->video_stream_id];
+        AVCodec *video_codec = avcodec_find_decoder(video_stream->codecpar->codec_id);
+        player->video_context = avcodec_alloc_context3(video_codec);
+        avcodec_parameters_to_context(player->video_context, video_stream->codecpar);
+        avcodec_open2(player->video_context, video_codec, nullptr);
+    }
+
+    if (player->audio_stream_id >= 0) {
+        AVStream *audio_stream = player->format->streams[player->audio_stream_id];
+        AVCodec *audio_codec = avcodec_find_decoder(audio_stream->codecpar->codec_id);
+        player->audio_context = avcodec_alloc_context3(audio_codec);
+        avcodec_parameters_to_context(player->audio_context, audio_stream->codecpar);
+        avcodec_open2(player->audio_context, audio_codec, nullptr);
+    }
+}
+
+static AVPacket *receive_packet(const PlayerPtr &player, AVMediaType media_type) {
+    int32_t stream_index = media_type == AVMEDIA_TYPE_VIDEO ? player->video_stream_id : player->audio_stream_id;
+    std::queue<AVPacket *> &this_queue
+        = media_type == AVMEDIA_TYPE_VIDEO ? player->video_packets : player->audio_packets;
+    std::queue<AVPacket *> &opposite_queue
+        = media_type == AVMEDIA_TYPE_VIDEO ? player->audio_packets : player->video_packets;
+
+    if (!this_queue.empty()) {
+        AVPacket *packet = this_queue.front();
+        this_queue.pop();
+        return packet;
+    }
+
+    while (true) {
+        AVPacket *packet = av_packet_alloc();
+        if (av_read_frame(player->format, packet) != 0)
+            return nullptr;
+
+        if (packet->stream_index == stream_index)
+            return packet;
+        else
+            opposite_queue.push(packet);
+    }
+}
+
+EXPORT(int, sceAvPlayerAddSource, SceUID player_handle, const char *path) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+
+    std::string expanded_path = expand_path(host.io, path, host.pref_path);
+    if (fs::exists(expanded_path)) {
+        LOG_INFO("Queued video: '{}'.", expanded_path);
+        if (player_info->video_playing.empty())
+            switch_video(player_info, expanded_path);
+        else
+            player_info->videos_queue.push(expanded_path);
+
+        return 0;
+    } else {
+        LOG_INFO("Cannot find video '{}'.", expanded_path);
+        return -1;
+    }
 }
 
 EXPORT(int, sceAvPlayerClose) {
@@ -37,28 +239,155 @@ EXPORT(int, sceAvPlayerEnableStream) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvPlayerGetAudioData) {
-    return UNIMPLEMENTED();
+// TODO cut down on copied code from GetVideoData
+EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, emu::SceAvPlayerFrameInfo *frame_info) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+
+    if (player_info->audio_stream_id < 0)
+        return false;
+
+    if (player_info->video_playing.empty())
+        return false;
+
+    int error;
+
+    AVPacket *packet{};
+    while (!packet) {
+        packet = receive_packet(player_info, AVMEDIA_TYPE_AUDIO);
+
+        if (!packet) {
+            if (player_info->videos_queue.empty()) {
+                // Stop playing videos or
+                player_info->video_playing = "";
+                return false;
+            } else {
+                // Play the next video (if there is any).
+                switch_video(player_info, player_info->videos_queue.front());
+                player_info->videos_queue.pop();
+            }
+        }
+    }
+
+    error = avcodec_send_packet(player_info->audio_context, packet);
+    assert(error == 0);
+    av_packet_free(&packet);
+
+    // Receive frame.
+    AVFrame *frame = av_frame_alloc();
+    error = avcodec_receive_frame(player_info->audio_context, frame);
+    if (error == 0) {
+        frame_info->timestamp = frame->best_effort_timestamp;
+        frame_info->stream_details.audio.channels = frame->channels;
+        frame_info->stream_details.audio.sample_rate = frame->sample_rate;
+        frame_info->stream_details.audio.size = frame->linesize[0];
+
+        frame_info->data = alloc(host.mem, frame->nb_samples * sizeof(float) * frame->channels, __FUNCTION__);
+        auto *avc_data = frame_info->data.cast<uint16_t>().get(host.mem);
+
+        // Rinne says pcm data is interleaved, I will assume it is float pcm for now...
+        LOG_WARN_IF(frame->format != AV_SAMPLE_FMT_FLTP, "Unknown audio format {}.", frame->format);
+        for (uint32_t a = 0; a < frame->nb_samples; a++) {
+            for (uint32_t b = 0; b < frame->channels; b++) {
+                auto *frame_data = reinterpret_cast<float *>(frame->data[b]);
+                float current_sample = frame_data[a];
+                uint16_t pcm_sample = current_sample * INT16_MAX;
+
+                avc_data[a * frame->channels + b] = pcm_sample;
+            }
+        }
+
+        strcpy(frame_info->stream_details.audio.language, "ENG");
+        av_frame_free(&frame);
+        return true;
+    }
+
+    av_frame_free(&frame);
+
+    return false;
 }
 
 EXPORT(int, sceAvPlayerGetStreamInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvPlayerGetVideoData) {
-    return UNIMPLEMENTED();
+EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, emu::SceAvPlayerFrameInfo *frame_info) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+
+    if (player_info->video_stream_id < 0)
+        return false;
+
+    if (player_info->video_playing.empty())
+        return false;
+
+    int error;
+
+    AVPacket *packet{};
+    while (!packet) {
+        packet = receive_packet(player_info, AVMEDIA_TYPE_VIDEO);
+
+        if (!packet) {
+            if (player_info->videos_queue.empty()) {
+                // Stop playing videos or
+                player_info->video_playing = "";
+                return false;
+            } else {
+                // Play the next video (if there is any).
+                switch_video(player_info, player_info->videos_queue.front());
+                player_info->videos_queue.pop();
+            }
+        }
+    }
+
+    error = avcodec_send_packet(player_info->video_context, packet);
+    assert(error == 0);
+    av_packet_free(&packet);
+
+    // Receive frame.
+    AVFrame *frame = av_frame_alloc();
+    error = avcodec_receive_frame(player_info->video_context, frame);
+    if (error == 0) {
+        uint32_t width = player_info->video_context->width;
+        uint32_t height = player_info->video_context->height;
+
+        frame_info->timestamp = frame->best_effort_timestamp;
+        frame_info->stream_details.video.width = width;
+        frame_info->stream_details.video.height = height;
+        frame_info->stream_details.video.aspect_ratio =
+            static_cast<float>(width) / static_cast<float>(height);
+        strcpy(frame_info->stream_details.video.language, "ENG");
+        frame_info->data = alloc(host.mem, width * height * 3 / 2, __FUNCTION__); // manual alloc to save time
+        copy_yuv_data_from_frame(frame, frame_info->data.get(host.mem));
+        av_frame_free(&frame);
+        return true;
+    }
+
+    av_frame_free(&frame);
+
+    return false;
 }
 
 EXPORT(int, sceAvPlayerGetVideoDataEx) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvPlayerInit) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceAvPlayerInit, emu::SceAvPlayerInfo *info) {
+    SceUID player_handle = host.kernel.get_next_uid();
+    host.kernel.players[player_handle] = std::make_shared<PlayerState>();
+    const PlayerPtr &player_info = host.kernel.players[player_handle];
+
+    player_info->general_allocator = info->memory_allocator.general_allocator;
+    player_info->general_deallocator = info->memory_allocator.general_deallocator;
+    player_info->texture_allocator = info->memory_allocator.texture_allocator;
+    player_info->texture_deallocator = info->memory_allocator.texture_deallocator;
+
+    // Result is defined as a void *, but I just call it SceUID because it is easier to deal with. Same size.
+    return player_handle;
 }
 
-EXPORT(int, sceAvPlayerIsActive) {
-    return UNIMPLEMENTED();
+EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+
+    return !player_info->video_playing.empty();
 }
 
 EXPORT(int, sceAvPlayerJumpToTime) {

@@ -200,6 +200,13 @@ static std::string translate_path(const char *path, VitaIoDevice &device, const 
     return relative_path;
 }
 
+std::string expand_path(IOState &io, const char *path, const std::string &pref_path) {
+    auto device = device::get_device(path);
+
+    const auto translated_path = translate_path(path, device, io.device_paths);
+    return device::construct_emulated_path(device, translated_path, pref_path).string();
+}
+
 SceUID open_file(IOState &io, const char *path, const int flags, const std::string &pref_path, const char *export_name) {
     auto device = device::get_device(path);
     if (device == VitaIoDevice::_INVALID)
