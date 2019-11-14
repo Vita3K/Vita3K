@@ -1,6 +1,7 @@
 #include <ngs/system.h>
 #include <ngs/state.h>
 #include <ngs/modules/atrac9.h>
+#include <ngs/modules/master.h>
 #include <ngs/modules/player.h>
 #include <mem/mem.h>
 
@@ -110,21 +111,9 @@ namespace emu::ngs {
 
         ngs.allocator.init(SIZE_OF_GLOBAL_MEMSPACE);
 
-        // Create voice definition templates.
-        for (std::size_t i = 0; i < ngs.definitions.size(); i++) {
-            if (i == emu::ngs::BUSS_ATRAC9 || i == emu::ngs::BUSS_NORMAL_PLAYER) {
-                continue;
-            }
-
-            ngs.definitions[i] = ngs.alloc_and_init<VoiceDefinition>(mem, static_cast<BussType>(i));
-
-            if (!ngs.definitions[i]) {
-                return false;
-            }
-        }
-
-        ngs.definitions[emu::ngs::BUSS_ATRAC9] = ngs.alloc_and_init<emu::ngs::atrac9::Module>(mem);
-        ngs.definitions[emu::ngs::BUSS_NORMAL_PLAYER] = ngs.alloc_and_init<emu::ngs::player::Module>(mem);
+        ngs.definitions[emu::ngs::BUSS_ATRAC9] = ngs.alloc_and_init<emu::ngs::atrac9::VoiceDefinition>(mem);
+        ngs.definitions[emu::ngs::BUSS_NORMAL_PLAYER] = ngs.alloc_and_init<emu::ngs::player::VoiceDefinition>(mem);
+        ngs.definitions[emu::ngs::BUSS_MASTER] = ngs.alloc_and_init<emu::ngs::master::VoiceDefinition>(mem);
 
         return true;
     }
@@ -158,7 +147,7 @@ namespace emu::ngs {
             return false;
         }
 
-        rack->definition = description->definition.get(mem);
+        rack->module = description->definition.get(mem)->new_module();
 
         // Initialize voice definition
         rack->channels_per_voice = description->channels_per_voice;
@@ -179,7 +168,7 @@ namespace emu::ngs {
             v->init(rack);
 
             // Allocate parameter buffer info for each voice
-            v->info.size = rack->definition->get_buffer_parameter_size();
+            v->info.size = description->definition.get(mem)->get_buffer_parameter_size();
 
             if (v->info.size != 0) {
                 v->info.data = rack->alloc_raw(v->info.size);

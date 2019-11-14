@@ -1,16 +1,16 @@
-#include <ngs/modules/player.h>
+#include <ngs/modules/master.h>
+#include <util/log.h>
 
-namespace emu::ngs::player {
+namespace emu::ngs::master {
     std::unique_ptr<emu::ngs::Module> VoiceDefinition::new_module() {
         return std::make_unique<Module>();
     }
     
     Module::Module() 
-        : emu::ngs::Module(emu::ngs::BUSS_NORMAL_PLAYER) {
+        : emu::ngs::Module(emu::ngs::BUSS_MASTER) {
     }
 
     void Module::process(const MemState &mem, Voice *voice) {
-        Parameters *params = voice->get_parameters<Parameters>(mem);
         int a = 5;
     }
 };

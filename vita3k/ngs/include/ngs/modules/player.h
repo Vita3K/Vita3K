@@ -31,12 +31,16 @@ namespace emu::ngs::player {
         std::int8_t unk63;
     };
 
-    struct Module: public emu::ngs::VoiceDefinition {
+    struct Module: public emu::ngs::Module {
         explicit Module();
         void process(const MemState &mem, Voice *voice) override;
+    };
 
+    struct VoiceDefinition: public emu::ngs::VoiceDefinition {
         std::size_t get_buffer_parameter_size() const override {
             return sizeof(Parameters);
         }
+
+        std::unique_ptr<emu::ngs::Module> new_module() override;
     };
 };

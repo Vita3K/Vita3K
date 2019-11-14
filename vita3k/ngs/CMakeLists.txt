@@ -2,6 +2,7 @@ add_library(
 	ngs
 	STATIC
 	include/ngs/modules/atrac9.h
+	include/ngs/modules/master.h
 	include/ngs/modules/player.h
 	include/ngs/common.h
 	include/ngs/mempool.h
@@ -9,6 +10,7 @@ add_library(
 	include/ngs/state.h
 	include/ngs/system.h
 	src/modules/atrac9.cpp
+	src/modules/master.cpp
 	src/modules/player.cpp
 	src/allocator.cpp
 	src/ngs.cpp
@@ -16,4 +18,4 @@ add_library(
 )
 
 target_include_directories(ngs PUBLIC include)
-target_link_libraries(ngs PRIVATE util mem)
+target_link_libraries(ngs PRIVATE util mem ffmpeg)
