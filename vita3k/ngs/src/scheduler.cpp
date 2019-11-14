@@ -83,7 +83,7 @@ namespace emu::ngs {
     void VoiceScheduler::update(const MemState &mem) {
         for (emu::ngs::Voice *voice: queue) {
             voice->state = emu::ngs::VOICE_STATE_ACTIVE;
-            voice->rack->definition->process(mem, voice);
+            voice->rack->module->process(mem, voice);
         }
     }
 

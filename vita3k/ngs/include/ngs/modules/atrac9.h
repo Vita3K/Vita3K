@@ -2,6 +2,10 @@
 
 #include <ngs/system.h>
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
+
 namespace emu::ngs::atrac9 {
     struct BufferParameter {
         Ptr<void> buffer;
@@ -27,12 +31,23 @@ namespace emu::ngs::atrac9 {
         std::int32_t unk5C;
     };
 
-    struct Module: public emu::ngs::VoiceDefinition {
+    struct Module: public emu::ngs::Module {
+    private:
+        AVCodecContext *context;
+        AVCodec *codec;
+
+        bool init();
+
+    public:
         explicit Module();
         void process(const MemState &mem, Voice *voice) override;
+    };
 
+    struct VoiceDefinition: public emu::ngs::VoiceDefinition {
         std::size_t get_buffer_parameter_size() const override {
             return sizeof(Parameters);
         }
+
+        std::unique_ptr<emu::ngs::Module> new_module() override;
     };
 };

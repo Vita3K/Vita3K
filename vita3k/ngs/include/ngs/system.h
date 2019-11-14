@@ -17,18 +17,22 @@ namespace emu::ngs {
         std::int32_t channel;
     };
 
-    struct VoiceDefinition {
+    struct Module {
         BussType buss_type;
 
-        explicit VoiceDefinition() = default;
-        explicit VoiceDefinition(BussType buss_type) : buss_type(buss_type) {
+        explicit Module() = default;
+        explicit Module(BussType buss_type) : buss_type(buss_type) {
         }
 
-        virtual void process(const MemState &mem, Voice *voice) {
+        virtual void process(const MemState &mem, Voice *voice) = 0;
+    };
 
+    struct VoiceDefinition {
+        virtual std::unique_ptr<Module> new_module() {
+            return nullptr;
         }
 
-        virtual std::size_t get_buffer_parameter_size() const {
+        virtual std::size_t get_buffer_parameter_size() const { 
             return 0;
         }
     };
@@ -124,7 +128,7 @@ namespace emu::ngs {
 
     struct Rack: public MempoolObject {
         System *system;
-        VoiceDefinition *definition;
+        std::unique_ptr<Module> module;
         std::int32_t channels_per_voice;
         std::int32_t max_patches_per_input;
         std::int32_t patches_per_output;
