@@ -205,7 +205,26 @@ struct PlayerState {
     std::queue<AVPacket *> audio_packets;
     std::queue<AVPacket *> video_packets;
 
-    std::mutex mutex;
+    // A ring buffer is used to lower the chances of a race condition between rendering and decoding thread.
+    constexpr static uint32_t RING_BUFFER_COUNT = 4;
+
+    uint32_t video_buffer_ring_index = 0;
+    uint32_t video_buffer_size = 0;
+    Ptr<uint8_t> video_buffer[RING_BUFFER_COUNT];
+
+    uint32_t audio_buffer_ring_index = 0;
+    uint32_t audio_buffer_size = 0;
+    Ptr<uint8_t> audio_buffer[RING_BUFFER_COUNT];
+
+    uint64_t last_timestamp = 0;
+    uint32_t last_channels = 0;
+    uint32_t last_sample_rate = 0;
+    uint32_t last_sample_count = 0;
+
+    bool do_loop = false;
+    bool is_odd_frame = false;
+    bool paused = false;
+    bool stopped = false;
 };
 
 typedef std::shared_ptr<PlayerState> PlayerPtr;

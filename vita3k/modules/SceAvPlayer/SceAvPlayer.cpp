@@ -31,6 +31,13 @@ extern "C" {
 
 #include <algorithm>
 
+// Some games seem to run at a 60fps loop when the video is really 30fps, leading to x2 speed. This should help.
+// If your computer sucks and your video actually runs at 4 fps no matter what, turn this off.
+constexpr bool HALF_FRAMERATE_AT_30FPS = true;
+
+// Defines stop/pause behaviour. If true, GetVideo/AudioData will return false when stopped (instead of returning the last frame).
+constexpr bool REJECT_DATA_ON_STOP = true;
+
 namespace emu {
     typedef Ptr<void> (*SceAvPlayerAllocator)(void *arguments, uint32_t alignment, uint32_t size);
     typedef void (*SceAvPlayerDeallocator)(void *arguments, void *memory);
@@ -131,6 +138,12 @@ namespace emu {
     };
 }
 
+inline bool is_effectively_30fps(AVRational frame_rate) {
+    float frame_rate_value = static_cast<float>(frame_rate.num) / static_cast<float>(frame_rate.den);
+
+    return frame_rate_value >= 29 && frame_rate_value <= 30;
+}
+
 // yes this is in two places at once please forgive me for the time being
 inline void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest) {
     for (uint32_t a = 0; a < frame->height; a++) {
@@ -147,12 +160,41 @@ inline void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest) {
     }
 }
 
+static void free_video(const PlayerPtr &player) {
+    if (player->video_context) {
+        avcodec_close(player->video_context);
+        avcodec_free_context(&player->video_context);
+    }
+
+    if (player->audio_context) {
+        avcodec_close(player->audio_context);
+        avcodec_free_context(&player->audio_context);
+    }
+
+    if (player->format) {
+        avformat_close_input(&player->format);
+    }
+
+    while (!player->video_packets.empty()) {
+        AVPacket *packet = player->video_packets.front();
+        av_packet_free(&packet);
+        player->video_packets.pop();
+    }
+
+    while (!player->audio_packets.empty()) {
+        AVPacket *packet = player->audio_packets.front();
+        av_packet_free(&packet);
+        player->audio_packets.pop();
+    }
+}
+
 static void switch_video(const PlayerPtr &player, const std::string &new_video) {
     player->video_playing = new_video;
 
     int error;
 
-    player->format = avformat_alloc_context();
+    free_video(player);
+
     error = avformat_open_input(&player->format, new_video.c_str(), nullptr, nullptr);
     assert(error == 0);
 
@@ -205,6 +247,49 @@ static AVPacket *receive_packet(const PlayerPtr &player, AVMediaType media_type)
     }
 }
 
+static Ptr<uint8_t> get_buffer(const PlayerPtr &player, AVMediaType media_type,
+    MemState &mem, uint32_t size, bool hold_frame = false) {
+    uint32_t &buffer_size =
+        media_type == AVMEDIA_TYPE_VIDEO ? player->video_buffer_size : player->audio_buffer_size;
+    uint32_t &ring_index =
+        media_type == AVMEDIA_TYPE_VIDEO ? player->video_buffer_ring_index : player->audio_buffer_ring_index;
+    Ptr<uint8_t> *buffers =
+        media_type == AVMEDIA_TYPE_VIDEO ? player->video_buffer : player->audio_buffer;
+
+    if (buffer_size < size) {
+        buffer_size = size;
+        for (uint32_t a = 0; a < PlayerState::RING_BUFFER_COUNT; a++) {
+            if (buffers[a])
+                free(mem, buffers[a]);
+            std::string alloc_name = fmt::format("AvPlayer {} Media Ring {}",
+                media_type == AVMEDIA_TYPE_VIDEO ? "Video" : "Audio", a);
+
+            buffers[a] = alloc(mem, size, alloc_name.c_str());
+        }
+    }
+
+    Ptr<uint8_t> buffer = buffers[ring_index % PlayerState::RING_BUFFER_COUNT];
+    if (!hold_frame)
+        ring_index++;
+    return buffer;
+}
+
+static void close(MemState &mem, const PlayerPtr &player) {
+    free_video(player);
+
+    player->video_playing = "";
+    player->videos_queue = { };
+
+    // Note that on shutdown these do not need to be called. free_video() is enough to function as a destructor.
+    for (uint32_t a = 0; a < PlayerState::RING_BUFFER_COUNT; a++) {
+        if (player->video_buffer[a])
+            free(mem, player->video_buffer[a]);
+        if (player->audio_buffer[a])
+            free(mem, player->audio_buffer[a]);
+    }
+
+}
+
 EXPORT(int, sceAvPlayerAddSource, SceUID player_handle, const char *path) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
 
@@ -223,12 +308,19 @@ EXPORT(int, sceAvPlayerAddSource, SceUID player_handle, const char *path) {
     }
 }
 
-EXPORT(int, sceAvPlayerClose) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAvPlayerClose, SceUID player_handle) {
+    const PlayerPtr &player_info = host.kernel.players[player_handle];
+    close(host.mem, player_info);
+
+    host.kernel.players.erase(player_handle);
+
+    return 0;
 }
 
-EXPORT(int, sceAvPlayerCurrentTime) {
-    return UNIMPLEMENTED();
+EXPORT(uint64_t, sceAvPlayerCurrentTime, SceUID player_handle) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+
+    return player_info->last_timestamp;
 }
 
 EXPORT(int, sceAvPlayerDisableStream) {
@@ -239,9 +331,10 @@ EXPORT(int, sceAvPlayerEnableStream) {
     return UNIMPLEMENTED();
 }
 
-// TODO cut down on copied code from GetVideoData
 EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, emu::SceAvPlayerFrameInfo *frame_info) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+
+    Ptr<uint8_t> buffer;
 
     if (player_info->audio_stream_id < 0)
         return false;
@@ -251,59 +344,79 @@ EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, emu::SceAvPlayerFram
 
     int error;
 
-    AVPacket *packet{};
-    while (!packet) {
-        packet = receive_packet(player_info, AVMEDIA_TYPE_AUDIO);
-
-        if (!packet) {
-            if (player_info->videos_queue.empty()) {
-                // Stop playing videos or
-                player_info->video_playing = "";
-                return false;
-            } else {
-                // Play the next video (if there is any).
-                switch_video(player_info, player_info->videos_queue.front());
-                player_info->videos_queue.pop();
-            }
+    if (player_info->paused || player_info->stopped) {
+        if (REJECT_DATA_ON_STOP) {
+            return false;
+        } else {
+            // This is probably incorrect and will make weird noises :P
+            buffer = get_buffer(player_info, AVMEDIA_TYPE_AUDIO,
+                host.mem, player_info->last_sample_count * sizeof(int16_t) * player_info->last_channels, true);
         }
-    }
+    } else {
+        AVPacket *packet{};
+        while (!packet) {
+            packet = receive_packet(player_info, AVMEDIA_TYPE_AUDIO);
 
-    error = avcodec_send_packet(player_info->audio_context, packet);
-    assert(error == 0);
-    av_packet_free(&packet);
-
-    // Receive frame.
-    AVFrame *frame = av_frame_alloc();
-    error = avcodec_receive_frame(player_info->audio_context, frame);
-    if (error == 0) {
-        frame_info->timestamp = frame->best_effort_timestamp;
-        frame_info->stream_details.audio.channels = frame->channels;
-        frame_info->stream_details.audio.sample_rate = frame->sample_rate;
-        frame_info->stream_details.audio.size = frame->linesize[0];
-
-        frame_info->data = alloc(host.mem, frame->nb_samples * sizeof(float) * frame->channels, __FUNCTION__);
-        auto *avc_data = frame_info->data.cast<uint16_t>().get(host.mem);
-
-        // Rinne says pcm data is interleaved, I will assume it is float pcm for now...
-        LOG_WARN_IF(frame->format != AV_SAMPLE_FMT_FLTP, "Unknown audio format {}.", frame->format);
-        for (uint32_t a = 0; a < frame->nb_samples; a++) {
-            for (uint32_t b = 0; b < frame->channels; b++) {
-                auto *frame_data = reinterpret_cast<float *>(frame->data[b]);
-                float current_sample = frame_data[a];
-                uint16_t pcm_sample = current_sample * INT16_MAX;
-
-                avc_data[a * frame->channels + b] = pcm_sample;
+            if (!packet) {
+                if (player_info->videos_queue.empty()) {
+                    // Stop playing videos or
+                    player_info->video_playing = "";
+                    return false;
+                } else {
+                    // Play the next video (if there is any).
+                    switch_video(player_info, player_info->videos_queue.front());
+                    player_info->videos_queue.pop();
+                }
             }
         }
 
-        strcpy(frame_info->stream_details.audio.language, "ENG");
+        error = avcodec_send_packet(player_info->audio_context, packet);
+        assert(error == 0);
+        av_packet_free(&packet);
+
+        // Receive frame.
+        AVFrame *frame = av_frame_alloc();
+        error = avcodec_receive_frame(player_info->audio_context, frame);
+
+        if (error == 0) {
+            LOG_WARN_IF(frame->format != AV_SAMPLE_FMT_FLTP, "Unknown audio format {}.", frame->format);
+
+            buffer = get_buffer(player_info, AVMEDIA_TYPE_AUDIO,
+                host.mem, frame->nb_samples * sizeof(float) * frame->channels, false);
+
+            auto *avc_data = buffer.cast<int16_t>().get(host.mem);
+
+            player_info->last_channels = frame->channels;
+            player_info->last_sample_count = frame->nb_samples;
+            player_info->last_sample_rate = frame->sample_rate;
+
+            // Rinne says pcm data is interleaved, I will assume it is float pcm for now...
+            for (uint32_t a = 0; a < frame->nb_samples; a++) {
+                for (uint32_t b = 0; b < frame->channels; b++) {
+                    auto *frame_data = reinterpret_cast<float *>(frame->data[b]);
+                    float current_sample = frame_data[a];
+                    int16_t pcm_sample = current_sample * INT16_MAX;
+
+                    avc_data[a * frame->channels + b] = pcm_sample;
+                }
+            }
+        }
+
         av_frame_free(&frame);
-        return true;
+
+        if (error != 0)
+            return false;
     }
 
-    av_frame_free(&frame);
+    frame_info->timestamp = player_info->last_timestamp;
+    frame_info->stream_details.audio.channels = player_info->last_channels;
+    frame_info->stream_details.audio.sample_rate = player_info->last_sample_rate;
+    frame_info->stream_details.audio.size = player_info->last_sample_count * sizeof(uint16_t);
+    frame_info->data = buffer;
 
-    return false;
+    strcpy(frame_info->stream_details.audio.language, "ENG");
+
+    return true;
 }
 
 EXPORT(int, sceAvPlayerGetStreamInfo) {
@@ -321,49 +434,70 @@ EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, emu::SceAvPlayerFram
 
     int error;
 
-    AVPacket *packet{};
-    while (!packet) {
-        packet = receive_packet(player_info, AVMEDIA_TYPE_VIDEO);
+    uint32_t width = player_info->video_context->width;
+    uint32_t height = player_info->video_context->height;
+    Ptr<uint8_t> buffer;
 
-        if (!packet) {
-            if (player_info->videos_queue.empty()) {
-                // Stop playing videos or
-                player_info->video_playing = "";
-                return false;
-            } else {
-                // Play the next video (if there is any).
-                switch_video(player_info, player_info->videos_queue.front());
-                player_info->videos_queue.pop();
+    AVRational frame_rate = player_info->format->streams[player_info->video_stream_id]->avg_frame_rate;
+
+    if (player_info->stopped || player_info->paused) {
+        if (REJECT_DATA_ON_STOP) {
+            return false;
+        } else {
+            buffer = get_buffer(player_info, AVMEDIA_TYPE_VIDEO, host.mem, width * height * 3 / 2, true);
+        }
+    } else if ((HALF_FRAMERATE_AT_30FPS && is_effectively_30fps(frame_rate) && player_info->is_odd_frame)) {
+        buffer = get_buffer(player_info, AVMEDIA_TYPE_VIDEO, host.mem, width * height * 3 / 2, true);
+    } else {
+        buffer = get_buffer(player_info, AVMEDIA_TYPE_VIDEO, host.mem, width * height * 3 / 2, false);
+
+        AVPacket *packet{};
+        while (!packet) {
+            packet = receive_packet(player_info, AVMEDIA_TYPE_VIDEO);
+
+            if (!packet) {
+                if (player_info->videos_queue.empty()) {
+                    // Stop playing videos or
+                    player_info->video_playing = "";
+                    return false;
+                } else {
+                    // Play the next video (if there is any).
+                    switch_video(player_info, player_info->videos_queue.front());
+                    player_info->videos_queue.pop();
+                }
             }
         }
-    }
 
-    error = avcodec_send_packet(player_info->video_context, packet);
-    assert(error == 0);
-    av_packet_free(&packet);
+        error = avcodec_send_packet(player_info->video_context, packet);
+        assert(error == 0);
+        av_packet_free(&packet);
 
-    // Receive frame.
-    AVFrame *frame = av_frame_alloc();
-    error = avcodec_receive_frame(player_info->video_context, frame);
-    if (error == 0) {
-        uint32_t width = player_info->video_context->width;
-        uint32_t height = player_info->video_context->height;
+        // Receive frame.
+        AVFrame *frame = av_frame_alloc();
+        error = avcodec_receive_frame(player_info->video_context, frame);
 
-        frame_info->timestamp = frame->best_effort_timestamp;
-        frame_info->stream_details.video.width = width;
-        frame_info->stream_details.video.height = height;
-        frame_info->stream_details.video.aspect_ratio =
-            static_cast<float>(width) / static_cast<float>(height);
-        strcpy(frame_info->stream_details.video.language, "ENG");
-        frame_info->data = alloc(host.mem, width * height * 3 / 2, __FUNCTION__); // manual alloc to save time
-        copy_yuv_data_from_frame(frame, frame_info->data.get(host.mem));
+        if (error == 0) {
+            copy_yuv_data_from_frame(frame, buffer.get(host.mem));
+            player_info->last_timestamp = frame->best_effort_timestamp;
+        }
+
         av_frame_free(&frame);
-        return true;
+
+        if (error != 0)
+            return false;
     }
 
-    av_frame_free(&frame);
+    frame_info->timestamp = player_info->last_timestamp;
+    frame_info->stream_details.video.width = width;
+    frame_info->stream_details.video.height = height;
+    frame_info->stream_details.video.aspect_ratio =
+        static_cast<float>(width) / static_cast<float>(height);
+    strcpy(frame_info->stream_details.video.language, "ENG");
+    frame_info->data = buffer;
 
-    return false;
+    player_info->is_odd_frame = !player_info->is_odd_frame;
+
+    return true;
 }
 
 EXPORT(int, sceAvPlayerGetVideoDataEx) {
@@ -374,6 +508,8 @@ EXPORT(SceUID, sceAvPlayerInit, emu::SceAvPlayerInfo *info) {
     SceUID player_handle = host.kernel.get_next_uid();
     host.kernel.players[player_handle] = std::make_shared<PlayerState>();
     const PlayerPtr &player_info = host.kernel.players[player_handle];
+
+    // Framebuffer count is defined in info. I'm being safe now and forcing it to 4 (even though its usually 2).
 
     player_info->general_allocator = info->memory_allocator.general_allocator;
     player_info->general_deallocator = info->memory_allocator.general_deallocator;
@@ -394,32 +530,47 @@ EXPORT(int, sceAvPlayerJumpToTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvPlayerPause) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAvPlayerPause, SceUID player_handle) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    player_info->paused = true;
+
+    return 0;
 }
 
 EXPORT(int, sceAvPlayerPostInit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvPlayerResume) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAvPlayerResume, SceUID player_handle) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    player_info->paused = false;
+
+    return 0;
 }
 
-EXPORT(int, sceAvPlayerSetLooping) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAvPlayerSetLooping, SceUID player_handle, bool do_loop) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    player_info->do_loop = do_loop;
+
+    return STUBBED("LOOPING NOT IMPLEMENTED");
 }
 
 EXPORT(int, sceAvPlayerSetTrickSpeed) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvPlayerStart) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAvPlayerStart, SceUID player_handle) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    player_info->stopped = false;
+
+    return 0;
 }
 
-EXPORT(int, sceAvPlayerStop) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAvPlayerStop, SceUID player_handle) {
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    player_info->stopped = true;
+
+    return 0;
 }
 
 EXPORT(int, sceAvPlayerStreamCount) {
