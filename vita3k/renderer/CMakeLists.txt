@@ -55,5 +55,5 @@ add_library(
 
 target_include_directories(renderer PUBLIC include)
 target_link_libraries(renderer PUBLIC crypto shader glutil threads config vita-headers util ${RENDERER_VULKAN_LIBRARIES})
-target_link_libraries(renderer PRIVATE sdl2 stb)
+target_link_libraries(renderer PRIVATE sdl2 stb ffmpeg)
 
