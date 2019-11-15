@@ -33,10 +33,10 @@ extern "C" {
 
 // Some games seem to run at a 60fps loop when the video is really 30fps, leading to x2 speed. This should help.
 // If your computer sucks and your video actually runs at 4 fps no matter what, turn this off.
-constexpr bool HALF_FRAMERATE_AT_30FPS = true;
+constexpr bool HALF_FRAMERATE_AT_30FPS = false;
 
 // Defines stop/pause behaviour. If true, GetVideo/AudioData will return false when stopped (instead of returning the last frame).
-constexpr bool REJECT_DATA_ON_STOP = true;
+constexpr bool REJECT_DATA_ON_PAUSE = true;
 
 namespace emu {
     typedef Ptr<void> (*SceAvPlayerAllocator)(void *arguments, uint32_t alignment, uint32_t size);
@@ -334,8 +334,6 @@ EXPORT(int, sceAvPlayerEnableStream) {
 EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, emu::SceAvPlayerFrameInfo *frame_info) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
 
-    Ptr<uint8_t> buffer;
-
     if (player_info->audio_stream_id < 0)
         return false;
 
@@ -344,8 +342,10 @@ EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, emu::SceAvPlayerFram
 
     int error;
 
-    if (player_info->paused || player_info->stopped) {
-        if (REJECT_DATA_ON_STOP) {
+    Ptr<uint8_t> buffer;
+
+    if (player_info->paused) {
+        if (REJECT_DATA_ON_PAUSE) {
             return false;
         } else {
             // This is probably incorrect and will make weird noises :P
@@ -440,8 +440,8 @@ EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, emu::SceAvPlayerFram
 
     AVRational frame_rate = player_info->format->streams[player_info->video_stream_id]->avg_frame_rate;
 
-    if (player_info->stopped || player_info->paused) {
-        if (REJECT_DATA_ON_STOP) {
+    if (player_info->paused) {
+        if (REJECT_DATA_ON_PAUSE) {
             return false;
         } else {
             buffer = get_buffer(player_info, AVMEDIA_TYPE_VIDEO, host.mem, width * height * 3 / 2, true);
@@ -561,14 +561,16 @@ EXPORT(int, sceAvPlayerSetTrickSpeed) {
 
 EXPORT(int, sceAvPlayerStart, SceUID player_handle) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
-    player_info->stopped = false;
+    switch_video(player_info, player_info->videos_queue.front());
+    player_info->videos_queue.pop();
 
     return 0;
 }
 
 EXPORT(int, sceAvPlayerStop, SceUID player_handle) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
-    player_info->stopped = true;
+    free_video(player_info);
+    player_info->video_playing = "";
 
     return 0;
 }

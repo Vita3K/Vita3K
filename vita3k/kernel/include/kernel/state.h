@@ -224,7 +224,6 @@ struct PlayerState {
     bool do_loop = false;
     bool is_odd_frame = false;
     bool paused = false;
-    bool stopped = false;
 };
 
 typedef std::shared_ptr<PlayerState> PlayerPtr;
