@@ -47,6 +47,8 @@ struct CPUState {
 
 // Log code for specified threads (arg to create_thread)
 static const bool LOG_CODE = true;
+static const bool TRACE_RETURN_VALUES = true;
+
 // Log code run on all threads
 static bool LOG_CODE_ALL = false;
 static bool LOG_MEM_ACCESS = false;
@@ -63,10 +65,18 @@ static bool is_thumb_mode(uc_engine *uc) {
     return mode & UC_MODE_THUMB;
 }
 
+static inline void func_trace(CPUState& state) {
+    if (TRACE_RETURN_VALUES)
+        if (is_returning(state.disasm))
+            LOG_TRACE("Returning, r0: {}", log_hex(read_reg(state, 0)));
+}
+
 static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     CPUState &state = *static_cast<CPUState *>(user_data);
     std::string disassembly = disassemble(state, address);
     LOG_TRACE("{}: {} {}", log_hex((uint64_t)uc), log_hex(address), disassembly);
+
+    func_trace(state);
 }
 
 static void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem) {
