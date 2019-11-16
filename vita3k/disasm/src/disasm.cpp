@@ -65,3 +65,7 @@ std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, ui
 
     return out.str();
 }
+
+bool is_returning(DisasmState& state) {
+    return std::string(state.insn->mnemonic).rfind("pop", 0) == 0;
+}
