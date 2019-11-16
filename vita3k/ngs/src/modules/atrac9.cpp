@@ -14,17 +14,23 @@ namespace emu::ngs::atrac9 {
 
     struct FFMPEG_ATRAC9Info {
         std::uint32_t version;
-        std::uint32_t info;
+        std::uint8_t magic;
+        std::uint8_t info1;
+        std::uint8_t info2;
+        std::uint8_t info3;
         std::uint32_t padding[2];
 
         explicit FFMPEG_ATRAC9Info()
             : version(2)
-            , info((1 << 15U) | 0xFE) {
+            , magic(0xFE)
+            , info1(0)
+            , info2(0)
+            , info3(0) {
         }
 
         void set_sample_rate_index(const std::uint8_t index) {
-            info &= ~(0b1111 << 8);
-            info |= ((index & 0b1111)) << 8;
+            info1 &= ~(0b1111 << 4);
+            info1 |= ((index & 0b1111) << 4);
         }
 
         bool set_sample_rate(const float rate) {
@@ -39,20 +45,24 @@ namespace emu::ngs::atrac9 {
         }
 
         void set_block_rate_index(const std::uint8_t index) {
-            info &= ~(0b111 << 12);
-            info |= ((index & 0b111) << 12);
+            info1 &= ~(0b111 << 1);
+            info1 |= ((index & 0b111) << 1);
         }
 
-        void set_avg_frame_size_in_bytes(const std::uint8_t size) {
-            info &= ~(0b11111111111 << 16);
-            info |= ((size & 0b11111111111) << 16);
+        void set_avg_frame_size_in_bytes(const std::uint16_t size) {
+            info2 = size & 0b11111111;
+
+            info3 &= ~(0b111 << 5);
+            info3 |= ((size & (0b111 << 8)) << 5);
         }
 
         void set_superframe_index(const std::uint8_t idx) {
-            info &= ~(0b11 << 27);
-            info |= ((idx & 0b11) << 27);
+            info3 &= ~(0b11 << 3);
+            info3 |= ((idx & 0b11) << 3);
         }
     };
+
+    static_assert(sizeof(FFMPEG_ATRAC9Info) == 16);
     
     Module::Module() 
         : emu::ngs::Module(emu::ngs::BUSS_ATRAC9)
@@ -63,7 +73,6 @@ namespace emu::ngs::atrac9 {
     }
 
     bool Module::init() {
-        // 
         codec = avcodec_find_decoder(AV_CODEC_ID_ATRAC9);
         
         if (!codec) {
@@ -80,12 +89,14 @@ namespace emu::ngs::atrac9 {
 
         return true;
     }
-    
-    void Module::process(const MemState &mem, Voice *voice) {av_log_set_level(AV_LOG_ERROR);
+
+    void Module::process(const MemState &mem, Voice *voice) {
+        // av_log_set_level(AV_LOG_ERROR);
         Parameters *params = voice->get_parameters<Parameters>(mem);
        
         // Let's open our context
         FFMPEG_ATRAC9Info info;
+
         if (!info.set_sample_rate(params->playback_frequency)) {
             LOG_ERROR("Frequency {} for ATRAC9 is not supported!", params->playback_frequency);
             return;
@@ -110,6 +121,8 @@ namespace emu::ngs::atrac9 {
 
         const int res = avcodec_open2(context, codec, nullptr);
 
-        int a = 5;
+        // Im just so happy right now that i figures out how FFMPEG parses these things. Let's get to work
+        AVPacket packet;
+        av_init_packet(&packet);
     }
 };
