@@ -45,6 +45,7 @@ ExitCode init(const Root &root_paths) {
 
     spdlog::set_error_handler([](const std::string &msg) {
         std::cerr << "spdlog error: " << msg << std::endl;
+        assert(0);
     });
 
     spdlog::flush_on(spdlog::level::debug);
