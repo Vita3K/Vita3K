@@ -44,8 +44,18 @@ static constexpr SceUInt32 SCE_NGS_OK = 0;
 static constexpr SceUInt32 SCE_NGS_ERROR = 0x804A0001;
 static constexpr SceUInt32 SCE_NGS_ERROR_INVALID_ARG = 0x804A0002;
 
-EXPORT(int, sceNgsAT9GetSectionDetails) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsAT9GetSectionDetails, const std::uint32_t samples_start, const std::uint32_t num_samples, const std::uint32_t info, void *answ) {
+    // Check magic!
+    if ((info & 0xFF) != 0xFE) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
+
+    const std::uint8_t sample_rate_index = ((info & (0b1111 << 12)) >> 12);
+    const std::uint8_t block_rate_index = ((info & (0b111 << 8)) >> 8);
+    const std::uint16_t frame_bytes = (((info & 0xFF0000) >> 16) << 3) | ((info & (0b111 << 29)) >> 29);
+    const std::uint8_t superframe_index = (info & (0b11 << 27)) >> 27;
+
+    return 0;
 }
 
 EXPORT(int, sceNgsModuleGetNumPresets) {
