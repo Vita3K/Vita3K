@@ -422,13 +422,20 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
         }
         case 2: {
             // TODO:
+
             const EntryFormat2 *const format2_entry = static_cast<const EntryFormat2 *>(entry);
 
             const auto symbol_seg = format2_entry->symbol_segment;
             const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
+            const Address s = (format2_entry->symbol_segment == 0xf) ? 0 : symbol_seg_start;
 
-            LOG_WARN("[FORMAT2/UNIMP]: code: {}, sym_seg: {}, sym_start: {}, offset: {}, a: {}",
-                format2_entry->code, symbol_seg, log_hex(symbol_seg_start), log_hex(format2_entry->offset), log_hex(format2_entry->addend));
+            LOG_WARN("[FORMAT2/UNIMP]: code: {}, sym_seg: {}, sym_start: {}, offset: {}, s: {}, a: {}",
+                format2_entry->code, symbol_seg, log_hex(symbol_seg_start), log_hex(format2_entry->offset), log_hex(s), log_hex(format2_entry->addend));
+
+            g_offset += format2_entry->offset;
+            g_saddr = s;
+            g_addend = format2_entry->addend;
+
             break;
         }
         case 3: {
