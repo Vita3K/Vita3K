@@ -316,7 +316,8 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             const Address p = patch_seg_start + format0_entry->offset;
             const Address a = format0_entry->addend;
 
-            LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, p: {}, a: {}. {}", format0_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), log_hex(patch_seg_start), log_hex(p), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(p).get(mem)));
+            LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0]: offset: {}, code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, patch_start: {}, s: {}, p: {}, a: {}. {}",
+                format0_entry->offset, format0_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), log_hex(p), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(p).get(mem)));
 
             if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format0_entry->code), s, a, p)) {
                 return false;
@@ -325,7 +326,8 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             const Address addr2 = p + format0_entry->dist2 * 2;
 
             if (format0_entry->code2 != 0) {
-                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0/2]: code: {}, sym_seg: {}, sym_start: {}, s: {}, patch_seg: {}, p: {}, a: {}. {}", format0_entry->code2, format0_entry->symbol_segment, symbol_seg_start, format0_entry->patch_segment, log_hex(patch_seg_start), log_hex(s), log_hex(addr2), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(addr2).get(mem)));
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0/2]: code: {}, sym_seg: {}, sym_start: {}, s: {}, patch_seg: {}, p: {}, a: {}. {}",
+                    format0_entry->code2, format0_entry->symbol_segment, symbol_seg_start, format0_entry->patch_segment, log_hex(patch_seg_start), log_hex(s), log_hex(addr2), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(addr2).get(mem)));
 
                 if (!relocate_entry(Ptr<uint32_t>(addr2).get(mem), static_cast<Code>(format0_entry->code2), s, a, addr2)) {
                     return false;
@@ -356,7 +358,8 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                 const Address p = patch_seg_start + offset;
                 const Address a = format1_entry->addend;
 
-                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}", format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}",
+                    format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
 
                 if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format1_entry->code), s, a, p)) {
                     return false;
@@ -399,7 +402,8 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                 const Address p = patch_seg_start + offset;
                 const Address a = 0;
 
-                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1_VAR_IMPORT]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}", format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1_VAR_IMPORT]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}",
+                    format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
 
                 if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format1_entry->code), s, a, p)) {
                     return false;
@@ -423,12 +427,14 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             const auto symbol_seg = format2_entry->symbol_segment;
             const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
 
-            LOG_WARN("[FORMAT2/UNIMP]: code: {}, sym_seg: {}, sym_start: {}, offset: {}, p: {}, a: {}", format2_entry->code, symbol_seg, log_hex(symbol_seg_start), log_hex(format2_entry->offset), log_hex(format2_entry->addend));
+            LOG_WARN("[FORMAT2/UNIMP]: code: {}, sym_seg: {}, sym_start: {}, offset: {}, a: {}",
+                format2_entry->code, symbol_seg, log_hex(symbol_seg_start), log_hex(format2_entry->offset), log_hex(format2_entry->addend));
             break;
         }
         case 3: {
             const EntryFormat3 *const format3_entry = static_cast<const EntryFormat3 *>(entry);
-            LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT3]: sym_seg: {}, mode: {} ({}), offset: {}, dist2: {}, addend: {}", log_hex(format3_entry->symbol_segment), format3_entry->mode, format3_entry->mode ? "THUMB" : "ARM", log_hex(format3_entry->offset), log_hex(format3_entry->dist2), log_hex(format3_entry->addend));
+            LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT3]: sym_seg: {}, mode: {} ({}), offset: {}, dist2: {}, addend: {}",
+                log_hex(format3_entry->symbol_segment), format3_entry->mode, format3_entry->mode ? "THUMB" : "ARM", log_hex(format3_entry->offset), log_hex(format3_entry->dist2), log_hex(format3_entry->addend));
 
             const auto symbol_seg = format3_entry->symbol_segment;
             const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
