@@ -216,13 +216,14 @@ struct PlayerState {
     uint32_t audio_buffer_size = 0;
     Ptr<uint8_t> audio_buffer[RING_BUFFER_COUNT];
 
+    uint64_t time_of_last_frame = 0;
+
     uint64_t last_timestamp = 0;
     uint32_t last_channels = 0;
     uint32_t last_sample_rate = 0;
     uint32_t last_sample_count = 0;
 
     bool do_loop = false;
-    bool is_odd_frame = false;
     bool paused = false;
 };
 
