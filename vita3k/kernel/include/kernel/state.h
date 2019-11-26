@@ -230,6 +230,12 @@ struct PlayerState {
 typedef std::shared_ptr<PlayerState> PlayerPtr;
 typedef std::map<SceUID, PlayerPtr> PlayerStates;
 
+struct MJpegState {
+    bool initialized = false;
+
+    AVCodecContext *decoder{};
+};
+
 struct TimerState {
     std::string name;
 
@@ -283,6 +289,7 @@ struct KernelState {
     SceRtcTick base_tick;
     DecoderStates decoders;
     PlayerStates players;
+    MJpegState mjpeg_state;
     TimerStates timers;
     Ptr<uint32_t> process_param;
     bool wait_for_debugger = false;

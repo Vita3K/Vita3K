@@ -34,7 +34,8 @@ void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_
         static_cast<int>(width * 3),
     };
 
-    sws_scale(context, slices, strides, 0, height, dst_slices, dst_strides);
+    int error = sws_scale(context, slices, strides, 0, height, dst_slices, dst_strides);
+    assert(error == height);
     sws_freeContext(context);
 }
 }
