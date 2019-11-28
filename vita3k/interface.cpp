@@ -85,6 +85,7 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
         LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
+        fclose(vpk_fp);
         return false;
     }
 
@@ -98,6 +99,7 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
         }
         if (fs::path(file_stat.m_filename) == "sce_module/steroid.suprx") {
             LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
+            fclose(vpk_fp);
             return false;
         }
         if (fs::path(file_stat.m_filename) == sfo_path) {
@@ -107,6 +109,7 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
 
     vfs::FileBuffer params;
     if (!read_file_from_zip(params, sfo_path, zip)) {
+        fclose(vpk_fp);
         return false;
     }
 
@@ -134,6 +137,7 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
             }
             if (status == gui::CANCEL_STATE) {
                 LOG_INFO("{} already installed, launching application...", host.io.title_id);
+                fclose(vpk_fp);
                 return true;
             } else if (status == gui::UNK_STATE) {
                 exit(0);
@@ -144,6 +148,7 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
             sfo::load(host.sfo_handle, params);
             sfo::get_data_by_key(gui.app_ver, host.sfo_handle, "APP_VER");
             gui.game_reinstall_confirm = true;
+            fclose(vpk_fp);
             return false;
         }
     }
@@ -168,6 +173,7 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     }
 
     LOG_INFO("{} installed succesfully!", host.io.title_id);
+    fclose(vpk_fp);
     return true;
 }
 
