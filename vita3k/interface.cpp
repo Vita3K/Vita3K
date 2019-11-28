@@ -172,7 +172,7 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
         }
     }
 
-    LOG_INFO("{} installed succesfully!", host.io.title_id);
+    LOG_INFO("{} [{}] installed succesfully!", host.io.title_id, host.game_title);
     fclose(vpk_fp);
     return true;
 }
