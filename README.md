@@ -14,7 +14,7 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS
 The emulator currently runs some homebrew programs. It is also able to load some decrypted commercial games.
 
 - [Homebrew compatibility database](https://github.com/Vita3K/homebrew-compatibility/issues)
-- [Commerical compatiblity database](https://github.com/Vita3K/compatibility/issues)
+- [Commercial compatibility database](https://github.com/Vita3K/compatibility/issues)
 
 [Alone with You](https://www.playstation.com/en-us/games/alone-with-you-psvita/) by **Benjamin Rivers**
 
