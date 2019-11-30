@@ -446,5 +446,4 @@ void install_pup(const std::string &pup, const std::string &pref_path) {
             fs::rename(file.path().string() + "fself", file.path().string());
         }
     }
-    fs::remove_all(pref_path + "/PUP_DEC");
 }

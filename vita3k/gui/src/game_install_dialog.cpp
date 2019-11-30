@@ -19,22 +19,15 @@
 #include "private.h"
 
 #include <gui/functions.h>
-#include <gui/state.h>
-
-#include <host/functions.h>
-#include <host/sfo.h>
-#include <host/state.h>
-
-#include <io/vfs.h>
-
-#include <util/log.h>
 
 #include <nfd.h>
 
 namespace gui {
 
+bool delete_game_file = false;
+nfdchar_t *game_path = nullptr;
+
 void draw_game_install_dialog(GuiState &gui, HostState &host) {
-    static nfdchar_t *game_path = nullptr;
     nfdresult_t result = NFD_CANCEL;
 
     static bool draw_file_dialog = true;
@@ -91,11 +84,19 @@ void draw_game_install_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginPopupModal("Game installation succes", &game_install_confirm, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 5);
         ImGui::TextColored(GUI_COLOR_TEXT, "Succesfully installed game.\n%s [%s] %s", host.io.title_id.c_str(), host.game_title.c_str(), host.game_version.c_str());
+        ImGui::Spacing();
         ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::Checkbox("Delete the package for the game installed?", &delete_game_file);
         ImGui::Spacing();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
         if (ImGui::Button("Ok", BUTTON_SIZE)) {
+            if (delete_game_file) {
+                fs::remove(fs::path(game_path));
+                delete_game_file = false;
+            }
             game_install_confirm = false;
             draw_file_dialog = true;
             game_path = nullptr;
@@ -110,10 +111,17 @@ void draw_game_install_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginPopupModal("Game installation failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
         ImGui::TextColored(GUI_COLOR_TEXT, "Installation failed, please check the log for more information.");
+        ImGui::Spacing();
         ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::Checkbox("Delete the package for the game that failed to install?", &delete_game_file);
         ImGui::Spacing();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
         if (ImGui::Button("Ok", BUTTON_SIZE)) {
+            if (delete_game_file) {
+                fs::remove(fs::path(game_path));
+                delete_game_file = false;
+            }
             draw_file_dialog = true;
             game_path = nullptr;
             gui.file_menu.game_install_dialog = false;
