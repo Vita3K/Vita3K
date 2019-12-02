@@ -177,31 +177,57 @@ void init_icons(GuiState &gui, HostState &host) {
     }
 }
 
-void load_game_background(GuiState &gui, HostState &host, const std::string &title_id) {
+void load_game_background(GuiState &gui, HostState &host) {
     int32_t width = 0;
     int32_t height = 0;
     vfs::FileBuffer buffer;
 
-    vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/pic0.png");
+    vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/pic0.png");
     if (buffer.empty()) {
-        if (vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/template.xml")) {
-            LOG_INFO("Game background found in template for title {}.", title_id);
-            vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg.png");
-            vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/bg0.png");
+        if (vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/livearea/contents/template.xml")) {
+            LOG_INFO("Game background found in template for title {}.", host.io.title_id);
+            vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/livearea/contents/bg.png");
+            vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/livearea/contents/bg0.png");
         } else {
             if (gui.current_background != gui.user_backgrounds[host.cfg.background_image])
                 gui.current_background = gui.user_backgrounds[host.cfg.background_image];
-            LOG_WARN("Game background not found for title {}.", title_id);
+            LOG_WARN("Game background not found for title {}.", host.io.title_id);
             return;
         }
     }
     stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
-        LOG_ERROR("Invalid game background for title {}.", title_id);
+        LOG_ERROR("Invalid game background for title {}.", host.io.title_id);
         return;
     }
-    gui.game_backgrounds[title_id].init(gui.imgui_state.get(), data, width, height);
-    gui.current_background = gui.game_backgrounds[title_id];
+    gui.game_backgrounds[host.io.title_id].init(gui.imgui_state.get(), data, width, height);
+    gui.current_background = gui.game_backgrounds[host.io.title_id];
+    stbi_image_free(data);
+}
+
+void load_manual(GuiState &gui, HostState &host, const std::string &image_name) {
+    int32_t width = 0;
+    int32_t height = 0;
+    vfs::FileBuffer buffer;
+    std::string manual_path = "sce_sys/manual/";
+
+    if (fs::exists(fs::path(host.pref_path) / "ux0/app" / host.io.title_id / manual_path / fmt::format("{:0>2d}", host.cfg.sys_lang)))
+        manual_path += fmt::format("{:0>2d}/", host.cfg.sys_lang);
+
+    manual_path += image_name;
+
+    vfs::read_app_file(buffer, host.pref_path, host.io.title_id, manual_path);
+    if (buffer.empty()) {
+        LOG_WARN("Manual not found for title {}.", host.io.title_id);
+        return;
+    }
+    stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+    if (!data) {
+        LOG_ERROR("Invalid manual image for title: {}", host.io.title_id);
+        return;
+    }
+    gui.manual[image_name].init(gui.imgui_state.get(), data, width, height);
+    gui.current_manual = gui.manual[image_name];
     stbi_image_free(data);
 }
 
@@ -237,7 +263,7 @@ ImTextureID load_image(GuiState &gui, const char *data, const std::size_t size) 
     int width;
     int height;
 
-    stbi_uc *img_data = stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(data), size, &width, &height,
+    stbi_uc *img_data = stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(data), static_cast<int>(size), &width, &height,
         nullptr, STBI_rgb_alpha);
 
     if (!data)

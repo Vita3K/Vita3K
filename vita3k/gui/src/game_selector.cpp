@@ -67,7 +67,6 @@ static constexpr auto MENUBAR_HEIGHT = 19;
 
 void draw_game_selector(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
-    static std::string title_id;
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
@@ -86,8 +85,8 @@ void draw_game_selector(GuiState &gui, HostState &host) {
     }
 
     if (gui.delete_game_icon) {
-        if (gui.game_selector.icons.find(title_id) != gui.game_selector.icons.end())
-            gui.game_selector.icons.erase(title_id);
+        if (gui.game_selector.icons.find(host.io.title_id) != gui.game_selector.icons.end())
+            gui.game_selector.icons.erase(host.io.title_id);
         gui.delete_game_icon = false;
     }
 
@@ -218,31 +217,31 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             if (!gui.game_search_bar.PassFilter(game.title.c_str()) && !gui.game_search_bar.PassFilter(game.title_id.c_str()))
                 continue;
             if (!fs::exists(fs::path(host.pref_path) / "ux0/app" / game.title_id)) {
-                title_id = game.title_id;
+                host.io.title_id = game.title_id;
                 LOG_ERROR("Game not found: {} [{}], deleting the entry for it.", game.title_id, game.title);
-                delete_game(gui, host, title_id);
+                delete_game(gui, host);
             }
             if (gui.game_selector.icons.find(game.title_id) != gui.game_selector.icons.end()) {
                 ImGui::Image(gui.game_selector.icons[game.title_id], ImVec2(icon_size, icon_size));
                 if (ImGui::IsItemHovered()) {
+                    host.io.title_id = game.title_id;
                     if (host.cfg.show_game_background) {
                         if (gui.game_backgrounds.find(game.title_id) == gui.game_backgrounds.end())
-                            load_game_background(gui, host, game.title_id);
+                            load_game_background(gui, host);
                         else if (gui.current_background != gui.game_backgrounds[game.title_id])
                             gui.current_background = gui.game_backgrounds[game.title_id];
                     }
                     if (ImGui::IsMouseClicked(0))
                         selected[0] = true;
-                    title_id = game.title_id;
                 }
                 ImGui::OpenPopupOnItemClick("#game_context_menu", 1);
             }
             ImGui::NextColumn();
             ImGui::Selectable(game.title_id.c_str(), &selected[1], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             if (ImGui::IsItemHovered())
-                title_id = game.title_id;
-            if (title_id == game.title_id)
-                game_context_menu(gui, host, selected, title_id);
+                host.io.title_id = game.title_id;
+            if (host.io.title_id == game.title_id)
+                game_context_menu(gui, host, selected);
             ImGui::NextColumn();
             ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();

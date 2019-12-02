@@ -18,31 +18,26 @@
 #include "private.h"
 
 #include <gui/functions.h>
-#include <gui/state.h>
-
-#include <host/state.h>
 
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#include <SDL_keycode.h>
+
 namespace gui {
 
-static bool delete_game_popup = false;
-static bool delete_savedata_popup = false;
-static bool check_savedata_and_shaderlog = false;
-
-void delete_game(GuiState &gui, HostState &host, const std::string &title_id) {
-    const fs::path game_path{ fs::path(host.pref_path) / "ux0/app" };
+void delete_game(GuiState &gui, HostState &host) {
+    const fs::path game_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
     for (const auto &game : gui.game_selector.games) {
         const auto games_index = std::find_if(gui.game_selector.games.begin(), gui.game_selector.games.end(), [&game](const Game &g) {
             return g.app_ver == game.app_ver && g.title == game.title && g.title_id == game.title_id;
         });
 
-        if (title_id == game.title_id) {
-            LOG_INFO_IF(fs::remove_all(game_path / game.title_id), "Successfully deleted '{} [{}]'.", game.title_id, game.title);
+        if (host.io.title_id == game.title_id) {
+            LOG_INFO_IF(fs::remove_all(game_path), "Successfully deleted '{} [{}]'.", game.title_id, game.title);
 
-            if (!fs::exists(game_path / game.title_id)) {
+            if (!fs::exists(game_path)) {
                 gui.delete_game_background = true;
                 gui.delete_game_icon = true;
                 gui.game_selector.games.erase(games_index);
@@ -52,12 +47,44 @@ void delete_game(GuiState &gui, HostState &host, const std::string &title_id) {
     }
 }
 
-void game_context_menu(GuiState &gui, HostState &host, bool *selected, const std::string &title_id) {
+static auto current_page_manual = 0;
+static std::vector<std::string> manual_page_list;
+static auto manual_page_count = 0;
+
+static bool get_manual_list(GuiState &gui, HostState &host) {
+    current_page_manual = 0;
+    gui.manual.clear();
+    manual_page_list.clear();
+
+    auto manual_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/manual/" };
+    if (fs::exists(manual_path / fmt::format("{:0>2d}", host.cfg.sys_lang)))
+        manual_path /= fmt::format("{:0>2d}", host.cfg.sys_lang);
+    if (fs::exists(manual_path) && !fs::is_empty(manual_path)) {
+        fs::directory_iterator end;
+        const std::string ext = ".png";
+        for (fs::directory_iterator m(manual_path); m != end; ++m) {
+            const fs::path manual = *m;
+            if (m->path().extension() == ext)
+                manual_page_list.push_back({ manual.filename().string() });
+        }
+        manual_page_count = (int)manual_page_list.size();
+    }
+
+    return !manual_page_list.empty();
+}
+
+static auto delete_game_popup = false;
+static auto delete_savedata_popup = false;
+static auto check_savedata_and_shaderlog = false;
+static auto manual_popup = false;
+static auto hiden_button = false;
+
+void game_context_menu(GuiState &gui, HostState &host, bool *selected) {
     const fs::path save_data_path{ fs::path(host.pref_path) / "ux0/user/00/savedata" };
     const fs::path shaderlog_path{ fs::path(host.base_path) / "shaderlog" };
 
     for (const auto &game : gui.game_selector.games) {
-        if (title_id == game.title_id) {
+        if (host.io.title_id == game.title_id) {
             // Context Game Menu
             if (ImGui::BeginPopupContextItem("#game_context_menu")) {
                 if (ImGui::MenuItem("Boot", game.title.c_str()))
@@ -79,6 +106,12 @@ void game_context_menu(GuiState &gui, HostState &host, bool *selected, const std
                         ImGui::LogFinish();
                     }
                     ImGui::EndMenu();
+                }
+                if (fs::exists(fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/manual") && ImGui::MenuItem("Manual")) {
+                    if (get_manual_list(gui, host))
+                        manual_popup = true;
+                    else
+                        LOG_WARN("Manual not found for title: {}", game.title_id);
                 }
                 if (ImGui::BeginMenu("Remove")) {
                     if (ImGui::MenuItem("Game"))
@@ -114,7 +147,7 @@ void game_context_menu(GuiState &gui, HostState &host, bool *selected, const std
                         fs::remove_all(save_data_path / game.title_id);
                         check_savedata_and_shaderlog = false;
                     }
-                    delete_game(gui, host, title_id);
+                    delete_game(gui, host);
                     delete_game_popup = false;
                     ImGui::CloseCurrentPopup();
                 }
@@ -164,6 +197,66 @@ void game_context_menu(GuiState &gui, HostState &host, bool *selected, const std
                 ImGui::EndPopup();
             } else
                 ImGui::PopStyleColor();
+
+            // Manual Popup
+            if (manual_popup)
+                ImGui::OpenPopup("Manual");
+            const auto display_size = ImGui::GetIO().DisplaySize;
+            ImGui::SetNextWindowPos(ImVec2(-5.0f, -5.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(display_size.x + 10.0f, display_size.y + 10.0f), ImGuiCond_Always);
+            if (ImGui::BeginPopupModal("Manual", &manual_popup, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
+                if (gui.manual.find(manual_page_list[current_page_manual]) == gui.manual.end())
+                    load_manual(gui, host, manual_page_list[current_page_manual]);
+                else if (gui.current_page_manual != gui.manual[manual_page_list[current_page_manual]])
+                    gui.current_page_manual = gui.manual[manual_page_list[current_page_manual]];
+
+                if (gui.current_page_manual)
+                    ImGui::GetWindowDrawList()->AddImage(reinterpret_cast<void *>(gui.current_page_manual), ImVec2(0, 0), display_size);
+                else
+                    manual_popup = false;
+
+                if (ImGui::IsMouseDoubleClicked(0)) {
+                    if (!hiden_button)
+                        hiden_button = true;
+                    else
+                        hiden_button = false;
+                }
+
+                if (current_page_manual > 0) {
+                    ImGui::SetCursorPos(ImVec2(10.0f, display_size.y - 30.0f));
+                    if (!hiden_button && ImGui::Button("<", BUTTON_SIZE) || ImGui::IsKeyPressed(SDL_SCANCODE_LEFT))
+                        --current_page_manual;
+                }
+                if (!hiden_button) {
+                    ImGui::SameLine();
+                    ImGui::SetCursorPos(ImVec2(display_size.x / 2 - 20.0f, display_size.y - 30.0f));
+                    const std::string slider = fmt::format("{}/{}", current_page_manual + 1, manual_page_count);
+                    if (ImGui::Button(slider.c_str(), BUTTON_SIZE))
+                        ImGui::OpenPopup("Slider Manual");
+                    ImGui::SetNextWindowPos(ImVec2(-5.0f, display_size.y - 50.0f), ImGuiCond_Always);
+                    ImGui::SetNextWindowSize(ImVec2(display_size.x + 10.0f, 40.0f), ImGuiCond_Always);
+                    if (ImGui::BeginPopupModal("Slider Manual", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
+                        ImGui::PushItemWidth(display_size.x - 10.0f);
+                        ImGui::SliderInt("##slider_current_manual", &current_page_manual, 0, manual_page_count - 1);
+                        ImGui::PopItemWidth();
+                        if (ImGui::IsItemDeactivated())
+                            ImGui::CloseCurrentPopup();
+                        ImGui::EndPopup();
+                    }
+                }
+                if (current_page_manual < manual_page_count - 1) {
+                    ImGui::SameLine();
+                    ImGui::SetCursorPos(ImVec2(display_size.x - 60.0f, display_size.y - 30.0f));
+                    if (!hiden_button && ImGui::Button(">", BUTTON_SIZE) || ImGui::IsKeyPressed(SDL_SCANCODE_RIGHT))
+                        ++current_page_manual;
+                }
+
+                ImGui::SetCursorPos(ImVec2(display_size.x - 60.0f, 20.0f));
+                if (!hiden_button && ImGui::Button("X", BUTTON_SIZE) || ImGui::IsKeyPressed(SDL_SCANCODE_H))
+                    manual_popup = false;
+
+                ImGui::EndPopup();
+            }
         }
     }
 }

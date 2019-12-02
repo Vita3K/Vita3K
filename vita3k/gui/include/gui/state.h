@@ -128,6 +128,10 @@ struct GuiState {
     ImTextureID current_background{};
     bool delete_game_background = false;
     bool delete_game_icon = false;
+
+    ImTextureID current_page_manual{};
+    std::map<std::string, ImGui_Texture> manual;
+
     GLuint display = 0;
     std::map<std::string, ImGui_Texture> game_backgrounds;
     ImGuiTextFilter game_search_bar;
