@@ -2,6 +2,8 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 
+#include <cstring>
+
 namespace renderer {
 /**
      * NOTE: If your backend doesn't use command queue, you can directly call it by adding a switch case and call that
