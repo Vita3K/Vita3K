@@ -657,7 +657,7 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
     });
 }
 
-static spv::Id create_uniform_block(spv::Builder &b, const int base_binding, const int size_vec4_granularity, const bool is_vert) {
+static spv::Id create_uniform_block(spv::Builder &b, const FeatureState &features, const int base_binding, const int size_vec4_granularity, const bool is_vert) {
     spv::Id f32_type = b.makeFloatType(32);
 
     spv::Id f32_v4_type = b.makeVectorType(f32_type, 4);
@@ -679,7 +679,8 @@ static spv::Id create_uniform_block(spv::Builder &b, const int base_binding, con
     // Default uniform buffer always has binding of 0
     const std::string buffer_var_name = fmt::format("buffer{}", base_binding);
     spv::Id default_buffer = b.createVariable(spv::StorageClassUniform, default_buffer_type, buffer_var_name.c_str());
-    b.addDecoration(default_buffer, spv::DecorationBinding, ((!is_vert) ? 15 : 0) + base_binding);
+    if (features.use_shader_binding)
+		b.addDecoration(default_buffer, spv::DecorationBinding, ((!is_vert) ? 15 : 0) + base_binding);
 
     b.addMemberDecoration(default_buffer_type, 0, spv::DecorationOffset, 0);
     b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
@@ -740,7 +741,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }, buffers);
 
     spv::Id ite_copy = b.createVariable(spv::StorageClassFunction, i32_type, "i");
-    std::array<const SceGxmProgramParameterContainer*, SCE_GXM_REAL_MAX_UNIFORM_BUFFER> all_buffers_in_register;
+    std::array<const SceGxmProgramParameterContainer *, SCE_GXM_REAL_MAX_UNIFORM_BUFFER> all_buffers_in_register;
 
     // Empty them out
     for (auto &buffer: all_buffers_in_register) {
@@ -823,7 +824,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             if (buffer_size != -1) {
                 const int base = gxp::get_uniform_buffer_base(program, parameter);
 
-                spv::Id block = create_uniform_block(b, (parameter.resource_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER,
+                spv::Id block = create_uniform_block(b, features, (parameter.resource_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER,
                     buffer_size, !program.is_fragment());
 
                 // We found it. Make things
@@ -840,12 +841,12 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (features.use_ubo) {
-        for (const auto &buffer_in_register: all_buffers_in_register) {
+        for (const auto &buffer_in_register : all_buffers_in_register) {
             if (buffer_in_register && buffer_in_register->size_in_f32 != 0) {
                 // Create an array of vec4
                 const int buffer_block_num = (buffer_in_register->container_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
                 const int total_vec4 = static_cast<int>((buffer_in_register->size_in_f32 + 3) / 4);
-                spv::Id default_buffer = create_uniform_block(b, buffer_block_num, total_vec4, !program.is_fragment());
+                spv::Id default_buffer = create_uniform_block(b, features, buffer_block_num, total_vec4, !program.is_fragment());
                 copy_uniform_block_to_register(b, spv_params.uniforms, default_buffer, ite_copy, buffer_in_register->base_sa_offset / 4, total_vec4);
             }
         }
