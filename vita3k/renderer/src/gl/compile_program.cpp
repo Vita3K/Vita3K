@@ -8,6 +8,7 @@
 #include <util/log.h>
 
 #include <vector>
+#include <gxm/functions.h>
 
 namespace renderer::gl {
 static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
@@ -50,6 +51,39 @@ static void bind_attribute_locations(GLuint gl_program, const GLVertexProgram &p
 
     for (const AttributeLocations::value_type &binding : program.attribute_locations) {
         glBindAttribLocation(gl_program, binding.first / sizeof(uint32_t), binding.second.c_str());
+    }
+}
+
+static void bind_uniform_block_locations(GLuint gl_program, const SceGxmProgram &program) {
+    std::string name_type = (program.is_vertex() ? "vert" : "frag");
+
+    for (uint16_t buffer_index = 0; buffer_index < SCE_GXM_REAL_MAX_UNIFORM_BUFFER; buffer_index++) {
+        const SceGxmProgramParameterContainer *container = gxp::get_container_by_index(program, buffer_index);
+
+        if (!container)
+            continue;
+
+        uint32_t binding = buffer_index + 1;
+        std::string buffer_name;
+
+        if (buffer_index == 14) {
+            buffer_name = fmt::format("{}_defaultUniformBuffer", name_type);
+            binding = 0;
+        } else {
+            buffer_name = fmt::format("{}_buffer{}", name_type, binding);
+        }
+
+        if (program.is_fragment())
+            binding += SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
+
+        GLuint index = glGetUniformBlockIndex(gl_program, buffer_name.c_str());
+
+        if (index == GL_INVALID_INDEX) {
+            LOG_ERROR("Missing buffer {} for container index {}.", buffer_name, buffer_index);
+            continue;
+        }
+
+        glUniformBlockBinding(gl_program, index, binding);
     }
 }
 
@@ -120,6 +154,11 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     bind_attribute_locations(program->get(), vertex_program);
 
     glLinkProgram(program->get());
+
+    if (features.use_shader_binding) {
+        bind_uniform_block_locations(program->get(), *vertex_program_gxm.program.get(mem));
+        bind_uniform_block_locations(program->get(), *fragment_program_gxm.program.get(mem));
+    }
 
     GLint log_length = 0;
     glGetProgramiv(program->get(), GL_INFO_LOG_LENGTH, &log_length);

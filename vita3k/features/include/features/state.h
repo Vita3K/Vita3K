@@ -9,6 +9,7 @@ struct FeatureState {
     bool hardware_flip = true; ///< Allow flipping in shader.
     bool use_ssbo = false;
     bool use_ubo = false;
+    bool use_shader_binding = false;
 
     bool is_programmable_blending_supported() const {
         return support_shader_interlock || support_texture_barrier || direct_fragcolor;
