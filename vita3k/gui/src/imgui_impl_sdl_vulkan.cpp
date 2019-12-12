@@ -415,12 +415,14 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state) {
 
     state.command_buffer.begin(begin_info);
 
+    // clang-format off
     const float matrix[] = {
         2.0f / draw_data->DisplaySize.x, 0, 0, 0,
         0, 2.0f / draw_data->DisplaySize.y, 0, 0,
         0, 0, 1, 0,
         -1, -1, 0, 1,
     };
+    // clang-format on
 
     state.command_buffer.updateBuffer(state.transformation_buffer, 0, sizeof(matrix), matrix);
 

@@ -363,7 +363,8 @@ static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, std::string 
 
 void extract_fat(const std::string &partition_path, const std::string &partition, const std::string &pref_path) {
     FILE *f = fopen((partition_path + "/" + partition).c_str(), "rb");
-    Fat16::Image img(f,
+    Fat16::Image img(
+        f,
         // Read hook
         [](void *userdata, void *buffer, std::uint32_t size) -> std::uint32_t {
             return static_cast<std::uint32_t>(fread(buffer, 1, size, (FILE *)userdata));

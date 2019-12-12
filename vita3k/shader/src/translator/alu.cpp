@@ -1122,7 +1122,7 @@ static optional<DualSrcLayout> get_dual_op1_src_layout(uint8_t count, Imm2 confi
         case 2: return optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::NONE, DualSrcId::NONE });
         case 3: return optional<DualSrcLayout>({ DualSrcId::INTERAL2, DualSrcId::NONE, DualSrcId::NONE });
         default:
-            return { };
+            return {};
         }
     case 2:
         switch (config) {
@@ -1130,7 +1130,7 @@ static optional<DualSrcLayout> get_dual_op1_src_layout(uint8_t count, Imm2 confi
         case 1: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
         case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::NONE });
         default:
-            return { };
+            return {};
         }
     case 3:
         switch (config) {
@@ -1139,13 +1139,13 @@ static optional<DualSrcLayout> get_dual_op1_src_layout(uint8_t count, Imm2 confi
         case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::UNIFIED });
         case 3: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
         default:
-            return { };
+            return {};
         }
     default:
-        return { };
+        return {};
     }
 
-    return { };
+    return {};
 }
 
 // Dual op2 layout depends on op1's src layout too...
@@ -1160,7 +1160,7 @@ static optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, uint8_
             case 2:
             case 3:
                 return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
-            default: return { };
+            default: return {};
             }
         case 2:
             switch (src_config) {
@@ -1169,7 +1169,7 @@ static optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, uint8_
             case 2:
             case 3:
                 return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
-            default: return { };
+            default: return {};
             }
         case 3:
             switch (src_config) {
@@ -1177,9 +1177,9 @@ static optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, uint8_
             case 1: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
             case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::INTERAL2 });
             case 3: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::INTERNAL1 });
-            default: return { };
+            default: return {};
             }
-        default: return { };
+        default: return {};
         }
     case 2:
         switch (op2_count) {
@@ -1188,16 +1188,16 @@ static optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, uint8_
             case 0: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::NONE, DualSrcId::NONE });
             case 1: return optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::NONE, DualSrcId::NONE });
             case 2: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
-            default: return { };
+            default: return {};
             }
         case 2:
             switch (src_config) {
             case 0: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERAL2, DualSrcId::NONE });
             case 1: return optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::INTERAL2, DualSrcId::NONE });
             case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL2, DualSrcId::UNIFIED, DualSrcId::NONE });
-            default: return { };
+            default: return {};
             }
-        default: return { };
+        default: return {};
         }
     case 3:
         switch (op2_count) {
@@ -1207,14 +1207,14 @@ static optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, uint8_
             case 1: return optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::NONE, DualSrcId::NONE });
             case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL2, DualSrcId::NONE, DualSrcId::NONE });
             case 3: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
-            default: return { };
+            default: return {};
             }
-        default: return { };
+        default: return {};
         }
-    default: return { };
+    default: return {};
     }
 
-    return { };
+    return {};
 }
 
 bool USSETranslatorVisitor::vdual(
@@ -1243,8 +1243,7 @@ bool USSETranslatorVisitor::vdual(
     Imm2 gpi1_slot_num,
     Imm2 gpi0_slot_num,
     Imm3 write_mask_non_gpi,
-    Imm7 unified_store_slot_num)
-{
+    Imm7 unified_store_slot_num) {
     Instruction op1;
     Instruction op2;
 
@@ -1333,7 +1332,7 @@ bool USSETranslatorVisitor::vdual(
     internal_dest.bank = RegisterBank::FPINTERNAL;
     internal_dest.num = prim_dest_num_gpi_case;
     internal_dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    
+
     // op1 is primary instruction. op2 is secondary.
     op1.opr.dest = prim_ustore ? unified_dest : internal_dest;
     op2.opr.dest = prim_ustore ? internal_dest : unified_dest;
@@ -1355,10 +1354,8 @@ bool USSETranslatorVisitor::vdual(
 
     Imm4 fixed_write_mask = write_mask_non_gpi | ((comp_count_type && dual_op1_ext_vec3_or_has_w_vec4) << 3u);
 
-    Imm4 op1_write_mask = prim_ustore ?
-        get_dual_op_write_mask(op1_info, op1.opr.dest.bank == RegisterBank::FPINTERNAL) : fixed_write_mask;
-    Imm4 op2_write_mask = prim_ustore ?
-        fixed_write_mask : get_dual_op_write_mask(op2_info, op2.opr.dest.bank == RegisterBank::FPINTERNAL);
+    Imm4 op1_write_mask = prim_ustore ? get_dual_op_write_mask(op1_info, op1.opr.dest.bank == RegisterBank::FPINTERNAL) : fixed_write_mask;
+    Imm4 op2_write_mask = prim_ustore ? fixed_write_mask : get_dual_op_write_mask(op2_info, op2.opr.dest.bank == RegisterBank::FPINTERNAL);
 
     auto create_srcs_from_layout = [&](std::array<DualSrcId, 3> layout, DualOpInfo code_info) {
         std::vector<Operand> srcs;
@@ -1395,8 +1392,7 @@ bool USSETranslatorVisitor::vdual(
                 break;
             case DualSrcId::INTERAL2:
                 op.bank = RegisterBank::FPINTERNAL;
-                op.num = code_info.src_count >= 2 ?
-                    (gpi2_slot_num_bit_1 << 1u | gpi2_slot_num_bit_0_or_unified_store_abs) : 2;
+                op.num = code_info.src_count >= 2 ? (gpi2_slot_num_bit_1 << 1u | gpi2_slot_num_bit_0_or_unified_store_abs) : 2;
                 op.swizzle = SWIZZLE_CHANNEL_4(X, Y, Z, W);
                 break;
             default:
@@ -1416,7 +1412,7 @@ bool USSETranslatorVisitor::vdual(
     std::string disasm_str = fmt::format("{:016x}: ", m_instr);
 
     auto do_dual_op = [&](Opcode code, std::vector<Operand> &ops, Operand &dest,
-        Imm4 write_mask_dest, const DualOpInfo &code_info) {
+                          Imm4 write_mask_dest, const DualOpInfo &code_info) {
         uint32_t write_mask_source = code_info.vector_load ? (0b1111u >> !comp_count_type) : 0b0001;
 
         spv::Id result;

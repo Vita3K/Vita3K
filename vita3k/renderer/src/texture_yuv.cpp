@@ -38,4 +38,4 @@ void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_
     assert(error == height);
     sws_freeContext(context);
 }
-}
+} // namespace renderer::texture

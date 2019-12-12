@@ -596,7 +596,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     if (first_pass == spv::NoResult) {
         return first_pass;
     }
-    
+
     const bool is_unsigned_integer_dtype = is_unsigned_integer_data_type(op.type);
     const bool is_signed_integer_dtype = is_signed_integer_data_type(op.type);
 

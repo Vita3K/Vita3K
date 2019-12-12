@@ -25,27 +25,27 @@ extern "C" {
 #include <climits>
 
 namespace emu {
-    struct SceJpegMJpegInitInfo {
-        uint32_t size;
-        int32_t decoder_count;
-        int32_t options;
-    };
+struct SceJpegMJpegInitInfo {
+    uint32_t size;
+    int32_t decoder_count;
+    int32_t options;
+};
 
-    struct SceJpegPitch {
-        uint32_t x;
-        uint32_t y;
-    };
+struct SceJpegPitch {
+    uint32_t x;
+    uint32_t y;
+};
 
-    struct SceJpegOutputInfo {
-        int32_t color_space;
-        uint16_t width;
-        uint16_t height;
-        uint32_t output_size;
-        uint32_t unknown1;
-        uint32_t unknown2;
-        SceJpegPitch pitch[4];
-    };
-}
+struct SceJpegOutputInfo {
+    int32_t color_space;
+    uint16_t width;
+    uint16_t height;
+    uint32_t output_size;
+    uint32_t unknown1;
+    uint32_t unknown2;
+    SceJpegPitch pitch[4];
+};
+} // namespace emu
 
 void init(MJpegState &state) {
     AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_MJPEG);

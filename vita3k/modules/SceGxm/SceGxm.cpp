@@ -537,7 +537,7 @@ EXPORT(int, sceGxmEndCommandList) {
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, const emu::SceGxmNotification *vertexNotification, const emu::SceGxmNotification *fragmentNotification) {
     const MemState &mem = host.mem;
     assert(context != nullptr);
-//    assert(vertexNotification == nullptr);
+    //assert(vertexNotification == nullptr);
     //assert(fragmentNotification == nullptr);
 
     if (!host.gxm.is_in_scene) {

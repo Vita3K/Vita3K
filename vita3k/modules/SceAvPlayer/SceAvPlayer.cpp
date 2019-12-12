@@ -22,15 +22,15 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
-#include <util/log.h>
 #include <io/functions.h>
-#include <util/lock_and_find.h>
 #include <kernel/thread/thread_functions.h>
+#include <util/lock_and_find.h>
+#include <util/log.h>
 
 #include <psp2/io/fcntl.h>
 
-#include <chrono>
 #include <algorithm>
+#include <chrono>
 
 // Uses a catchup video style if lag causes the video to go behind.
 constexpr bool CATCHUP_VIDEO_PLAYBACK = true;
@@ -39,108 +39,109 @@ constexpr bool CATCHUP_VIDEO_PLAYBACK = true;
 constexpr bool REJECT_DATA_ON_PAUSE = true;
 
 namespace emu {
-    typedef Ptr<void> (*SceAvPlayerAllocator)(void *arguments, uint32_t alignment, uint32_t size);
-    typedef void (*SceAvPlayerDeallocator)(void *arguments, void *memory);
+typedef Ptr<void> (*SceAvPlayerAllocator)(void *arguments, uint32_t alignment, uint32_t size);
+typedef void (*SceAvPlayerDeallocator)(void *arguments, void *memory);
 
-    typedef int (*SceAvPlayerOpenFile)(void *arguments, const char *filename);
-    typedef int (*SceAvPlayerCloseFile)(void *arguments);
-    typedef int (*SceAvPlayerReadFile)(void *arguments, uint8_t *buffer, uint64_t offset, uint32_t size);
-    typedef uint64_t (*SceAvPlayerGetFileSize)(void *arguments);
+typedef int (*SceAvPlayerOpenFile)(void *arguments, const char *filename);
+typedef int (*SceAvPlayerCloseFile)(void *arguments);
+typedef int (*SceAvPlayerReadFile)(void *arguments, uint8_t *buffer, uint64_t offset, uint32_t size);
+typedef uint64_t (*SceAvPlayerGetFileSize)(void *arguments);
 
-    typedef void (*SceAvPlayerEventCallback)(void *arguments, int32_t event_id, int32_t source_id, void *event_data);
+typedef void (*SceAvPlayerEventCallback)(void *arguments, int32_t event_id, int32_t source_id, void *event_data);
 
-    enum class DebugLevel {
-        NONE,
-        INFO,
-        WARNINGS,
-        ALL,
-    };
+enum class DebugLevel {
+    NONE,
+    INFO,
+    WARNINGS,
+    ALL,
+};
 
-    struct SceAvPlayerMemoryAllocator {
-        Ptr<void> user_data;
+struct SceAvPlayerMemoryAllocator {
+    Ptr<void> user_data;
 
-        // All of these should be cast to SceAvPlayerAllocator or SceAvPlayerDeallocator types.
-        Ptr<void> general_allocator;
-        Ptr<void> general_deallocator;
-        Ptr<void> texture_allocator;
-        Ptr<void> texture_deallocator;
-    };
+    // All of these should be cast to SceAvPlayerAllocator or SceAvPlayerDeallocator types.
+    Ptr<void> general_allocator;
+    Ptr<void> general_deallocator;
+    Ptr<void> texture_allocator;
+    Ptr<void> texture_deallocator;
+};
 
-    struct SceAvPlayerFileManager {
-        Ptr<void> user_data;
+struct SceAvPlayerFileManager {
+    Ptr<void> user_data;
 
-        // Cast to SceAvPlayerOpenFile, SceAvPlayerCloseFile, SceAvPlayerReadFile and SceAvPlayerGetFileSize.
-        Ptr<void> open_file;
-        Ptr<void> close_file;
-        Ptr<void> read_file;
-        Ptr<void> file_size;
-    };
+    // Cast to SceAvPlayerOpenFile, SceAvPlayerCloseFile, SceAvPlayerReadFile and SceAvPlayerGetFileSize.
+    Ptr<void> open_file;
+    Ptr<void> close_file;
+    Ptr<void> read_file;
+    Ptr<void> file_size;
+};
 
-    struct SceAvPlayerEventManager {
-        Ptr<void> user_data;
+struct SceAvPlayerEventManager {
+    Ptr<void> user_data;
 
-        // Cast to SceAvPlayerEventCallback.
-        Ptr<void> event_callback;
-    };
+    // Cast to SceAvPlayerEventCallback.
+    Ptr<void> event_callback;
+};
 
-    struct SceAvPlayerInfo {
-        SceAvPlayerMemoryAllocator memory_allocator;
-        SceAvPlayerFileManager file_manager;
-        SceAvPlayerEventManager event_manager;
-        DebugLevel debug_level;
-        uint32_t base_priority;
-        int32_t frame_buffer_count;
-        int32_t auto_start;
-        uint8_t unknown0[3];
-        uint32_t unknown1;
-    };
+struct SceAvPlayerInfo {
+    SceAvPlayerMemoryAllocator memory_allocator;
+    SceAvPlayerFileManager file_manager;
+    SceAvPlayerEventManager event_manager;
+    DebugLevel debug_level;
+    uint32_t base_priority;
+    int32_t frame_buffer_count;
+    int32_t auto_start;
+    uint8_t unknown0[3];
+    uint32_t unknown1;
+};
 
-    struct SceAvPlayerAudio {
-        uint16_t channels;
-        uint16_t unknown;
-        uint32_t sample_rate;
-        uint32_t size;
-        char language[4];
-    };
+struct SceAvPlayerAudio {
+    uint16_t channels;
+    uint16_t unknown;
+    uint32_t sample_rate;
+    uint32_t size;
+    char language[4];
+};
 
-    struct SceAvPlayerVideo {
-        uint32_t width;
-        uint32_t height;
-        float aspect_ratio;
-        char language[4];
-    };
+struct SceAvPlayerVideo {
+    uint32_t width;
+    uint32_t height;
+    float aspect_ratio;
+    char language[4];
+};
 
-    struct SceAvPlayerTextPosition {
-        uint16_t top;
-        uint16_t left;
-        uint16_t bottom;
-        uint16_t right;
-    };
+struct SceAvPlayerTextPosition {
+    uint16_t top;
+    uint16_t left;
+    uint16_t bottom;
+    uint16_t right;
+};
 
-    struct SceAvPlayerTimedText {
-        char language[4];
-        uint16_t text_size;
-        uint16_t font_size;
-        emu::SceAvPlayerTextPosition position;
-    };
+struct SceAvPlayerTimedText {
+    char language[4];
+    uint16_t text_size;
+    uint16_t font_size;
+    emu::SceAvPlayerTextPosition position;
+};
 
-    union SceAvPlayerStreamDetails {
-        SceAvPlayerAudio audio;
-        SceAvPlayerVideo video;
-        SceAvPlayerTimedText text;
-    };
+union SceAvPlayerStreamDetails {
+    SceAvPlayerAudio audio;
+    SceAvPlayerVideo video;
+    SceAvPlayerTimedText text;
+};
 
-    struct SceAvPlayerFrameInfo {
-        Ptr<uint8_t> data;
-        uint32_t unknown;
-        uint64_t timestamp;
-        emu::SceAvPlayerStreamDetails stream_details;
-    };
-}
+struct SceAvPlayerFrameInfo {
+    Ptr<uint8_t> data;
+    uint32_t unknown;
+    uint64_t timestamp;
+    emu::SceAvPlayerStreamDetails stream_details;
+};
+} // namespace emu
 
 static inline uint64_t current_time() {
     return std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        std::chrono::high_resolution_clock::now().time_since_epoch())
+        .count();
 }
 
 static inline bool needs_new_frame(uint64_t last_time, uint64_t frame_rate) {
@@ -258,12 +259,9 @@ static AVPacket *receive_packet(const PlayerPtr &player, AVMediaType media_type)
 
 static Ptr<uint8_t> get_buffer(const PlayerPtr &player, AVMediaType media_type,
     MemState &mem, uint32_t size, bool new_frame = true) {
-    uint32_t &buffer_size =
-        media_type == AVMEDIA_TYPE_VIDEO ? player->video_buffer_size : player->audio_buffer_size;
-    uint32_t &ring_index =
-        media_type == AVMEDIA_TYPE_VIDEO ? player->video_buffer_ring_index : player->audio_buffer_ring_index;
-    Ptr<uint8_t> *buffers =
-        media_type == AVMEDIA_TYPE_VIDEO ? player->video_buffer : player->audio_buffer;
+    uint32_t &buffer_size = media_type == AVMEDIA_TYPE_VIDEO ? player->video_buffer_size : player->audio_buffer_size;
+    uint32_t &ring_index = media_type == AVMEDIA_TYPE_VIDEO ? player->video_buffer_ring_index : player->audio_buffer_ring_index;
+    Ptr<uint8_t> *buffers = media_type == AVMEDIA_TYPE_VIDEO ? player->video_buffer : player->audio_buffer;
 
     if (buffer_size < size) {
         buffer_size = size;
@@ -351,7 +349,7 @@ static void close(MemState &mem, const PlayerPtr &player) {
     free_video(player);
 
     player->video_playing = "";
-    player->videos_queue = { };
+    player->videos_queue = {};
 
     // Note that on shutdown these do not need to be called. free_video() is enough to function as a destructor.
     for (uint32_t a = 0; a < PlayerState::RING_BUFFER_COUNT; a++) {
@@ -360,7 +358,6 @@ static void close(MemState &mem, const PlayerPtr &player) {
         if (player->audio_buffer[a])
             free(mem, player->audio_buffer[a]);
     }
-
 }
 
 EXPORT(int, sceAvPlayerAddSource, SceUID player_handle, const char *path) {
@@ -516,8 +513,7 @@ EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, emu::SceAvPlayerFram
     frame_info->timestamp = player_info->last_timestamp;
     frame_info->stream_details.video.width = width;
     frame_info->stream_details.video.height = height;
-    frame_info->stream_details.video.aspect_ratio =
-        static_cast<float>(width) / static_cast<float>(height);
+    frame_info->stream_details.video.aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
     strcpy(frame_info->stream_details.video.language, "ENG");
     frame_info->data = buffer;
 
