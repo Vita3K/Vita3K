@@ -35,11 +35,11 @@ typedef UINT32 uint32_t;
 #include <inttypes.h>
 #endif
 
-#define AES_ENCRYPT     1
-#define AES_DECRYPT     0
+#define AES_ENCRYPT 1
+#define AES_DECRYPT 0
 
-#define POLARSSL_ERR_AES_INVALID_KEY_LENGTH                -0x0020  /**< Invalid key length. */
-#define POLARSSL_ERR_AES_INVALID_INPUT_LENGTH              -0x0022  /**< Invalid data input length. */
+#define POLARSSL_ERR_AES_INVALID_KEY_LENGTH -0x0020 /**< Invalid key length. */
+#define POLARSSL_ERR_AES_INVALID_INPUT_LENGTH -0x0022 /**< Invalid data input length. */
 
 // Regular implementation
 //
@@ -49,11 +49,10 @@ typedef UINT32 uint32_t;
  */
 typedef struct
 {
-    int nr;                     /*!<  number of rounds  */
-    uint32_t *rk;               /*!<  AES round keys    */
-    uint32_t buf[68];           /*!<  unaligned data    */
-}
-aes_context;
+    int nr; /*!<  number of rounds  */
+    uint32_t *rk; /*!<  AES round keys    */
+    uint32_t buf[68]; /*!<  unaligned data    */
+} aes_context;
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,7 +67,7 @@ extern "C" {
  *
  * \return         0 if successful, or POLARSSL_ERR_AES_INVALID_KEY_LENGTH
  */
-int aes_setkey_enc( aes_context *ctx, const unsigned char *key, unsigned int keysize );
+int aes_setkey_enc(aes_context *ctx, const unsigned char *key, unsigned int keysize);
 
 /**
  * \brief          AES key schedule (decryption)
@@ -79,7 +78,7 @@ int aes_setkey_enc( aes_context *ctx, const unsigned char *key, unsigned int key
  *
  * \return         0 if successful, or POLARSSL_ERR_AES_INVALID_KEY_LENGTH
  */
-int aes_setkey_dec( aes_context *ctx, const unsigned char *key, unsigned int keysize );
+int aes_setkey_dec(aes_context *ctx, const unsigned char *key, unsigned int keysize);
 
 /**
  * \brief          AES-ECB block encryption/decryption
@@ -91,10 +90,10 @@ int aes_setkey_dec( aes_context *ctx, const unsigned char *key, unsigned int key
  *
  * \return         0 if successful
  */
-int aes_crypt_ecb( aes_context *ctx,
-                    int mode,
-                    const unsigned char input[16],
-                    unsigned char output[16] );
+int aes_crypt_ecb(aes_context *ctx,
+    int mode,
+    const unsigned char input[16],
+    unsigned char output[16]);
 
 /**
  * \brief          AES-CBC buffer encryption/decryption
@@ -110,12 +109,12 @@ int aes_crypt_ecb( aes_context *ctx,
  *
  * \return         0 if successful, or POLARSSL_ERR_AES_INVALID_INPUT_LENGTH
  */
-int aes_crypt_cbc( aes_context *ctx,
-                    int mode,
-                    size_t length,
-                    unsigned char iv[16],
-                    const unsigned char *input,
-                    unsigned char *output );
+int aes_crypt_cbc(aes_context *ctx,
+    int mode,
+    size_t length,
+    unsigned char iv[16],
+    const unsigned char *input,
+    unsigned char *output);
 
 /**
  * \brief          AES-CFB128 buffer encryption/decryption.
@@ -135,13 +134,13 @@ int aes_crypt_cbc( aes_context *ctx,
  *
  * \return         0 if successful
  */
-int aes_crypt_cfb128( aes_context *ctx,
-                       int mode,
-                       size_t length,
-                       size_t *iv_off,
-                       unsigned char iv[16],
-                       const unsigned char *input,
-                       unsigned char *output );
+int aes_crypt_cfb128(aes_context *ctx,
+    int mode,
+    size_t length,
+    size_t *iv_off,
+    unsigned char iv[16],
+    const unsigned char *input,
+    unsigned char *output);
 
 /**
  * \brief               AES-CTR buffer encryption/decryption
@@ -164,13 +163,13 @@ int aes_crypt_cfb128( aes_context *ctx,
  *
  * \return         0 if successful
  */
-int aes_crypt_ctr( aes_context *ctx,
-                       size_t length,
-                       size_t *nc_off,
-                       unsigned char nonce_counter[16],
-                       unsigned char stream_block[16],
-                       const unsigned char *input,
-                       unsigned char *output );
+int aes_crypt_ctr(aes_context *ctx,
+    size_t length,
+    size_t *nc_off,
+    unsigned char nonce_counter[16],
+    unsigned char stream_block[16],
+    const unsigned char *input,
+    unsigned char *output);
 
 void aes_cmac(aes_context *ctx, int length, unsigned char *input, unsigned char *output);
 

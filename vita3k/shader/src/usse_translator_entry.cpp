@@ -37,11 +37,11 @@ using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 template <typename V>
 boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
     static const std::vector<USSEMatcher<V>> table = {
-    // clang-format off
-    #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
+#define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
+        // clang-format off
 
-    // Vector move
-    /*
+        // Vector move
+        /*
                               00111 = op1
                                     ppp = pred (3 bits, ExtPredicate)
                                       s = skipinv (1 bit, bool)
@@ -67,11 +67,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                             qqqqqq = src0_n (6 bits)
                                                                                   uuuuuu = src1_n (6 bits)
                                                                                         vvvvvv = src2_n (6 bits)
-    */
-    INST(&V::vmov, "VMOV ()", "00111pppstrydecbmmaanoooiwwwwkllffgghhhhjjjjjjqqqqqquuuuuuvvvvvv"),
+        */
+        INST(&V::vmov, "VMOV ()", "00111pppstrydecbmmaanoooiwwwwkllffgghhhhjjjjjjqqqqqquuuuuuvvvvvv"),
 
-    // Vector multiply-add
-    /*
+        // Vector multiply-add
+        /*
                                00011 = opcode1
                                     ppp = pred (3 bits, ExtPredicate)
                                        s = skipinv (1 bit)
@@ -102,11 +102,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                     y = src0_swiz_ext (1 bit)
                                                                                      AAAA = src0_swiz (4 bits)
                                                                                          BBBBBB = src0_n (6 bits)
-    */
-    INST(&V::vmad, "VMAD ()", "00011pppsg1oderiiattnwwwwcbfhzkkjjllmmmmmmqqqquuuuvvxyAAAABBBBBB"),
-    
-    // Vector multiply-add (Normal version)
-    /*
+        */
+        INST(&V::vmad, "VMAD ()", "00011pppsg1oderiiattnwwwwcbfhzkkjjllmmmmmmqqqquuuuvvxyAAAABBBBBB"),
+
+        // Vector multiply-add (Normal version)
+        /*
                                 00000 = opcode1
                                       d = dat_fmt (1 bit)
                                       pp = pred (2 bits)
@@ -134,11 +134,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                               llllll = src0_n (6 bits)
                                                                                     qqqqqq = src1_n (6 bits)
                                                                                           uuuuuu = src2_n (6 bits)
-    */
-    INST(&V::vmad2, "VMAD2 ()", "00000dpps-ry-cbawwwineeeemmookttffgghhhhhhzzjjllllllqqqqqquuuuuu"),
+        */
+        INST(&V::vmad2, "VMAD2 ()", "00000dpps-ry-cbawwwineeeemmookttffgghhhhhhzzjjllllllqqqqqquuuuuu"),
 
-    // Vector operations except for MAD (F32)
-    /*
+        // Vector operations except for MAD (F32)
+        /*
                                      00001 = opcode1
                                           ppp = pred (3 bits, ExtPredicate)
                                              s = skipinv (1 bit, bool)
@@ -162,11 +162,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                       ggg = op2 (3 bits)
                                                                                          hhhhhh = src1_n (6 bits)
                                                                                                jjjjjj = src2_n (6 bits)
-    */
-    INST(&V::vnmad32, "VNMAD32 ()", "00001pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
+        */
+        INST(&V::vnmad32, "VNMAD32 ()", "00001pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
 
-    // Vector operations except for MAD (F16)
-    /*
+        // Vector operations except for MAD (F16)
+        /*
                                      00010 = opcode1
                                           ppp = pred (3 bits, ExtPredicate)
                                              s = skipinv (1 bit, bool)
@@ -190,11 +190,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                       ggg = op2 (3 bits)
                                                                                          hhhhhh = src1_n (6 bits)
                                                                                                jjjjjj = src2_n (6 bits)
-    */
-    INST(&V::vnmad16, "VNMAD16 ()", "00010pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
-    
-    // Vector pack/unpack
-    /*
+        */
+        INST(&V::vnmad16, "VNMAD16 ()", "00010pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
+
+        // Vector pack/unpack
+        /*
                               01000 = op1
                                     ppp = pred (3 bits, ExtPredicate)
                                       s = skipinv (1 bit, bool)
@@ -222,11 +222,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                       v = comp0_sel_bit1 (1 bit)
                                                                                         wwwwww = src2_n (6 bits)
                                                                                               x = comp_sel_0_bit0 (1 bit)
-    */
-    INST(&V::vpck, "VPCK ()", "01000pppsnuyderc-aaaffftttmmmmbbkkllgggggggoohiijjqqqqqqvwwwwwwx"),
+        */
+        INST(&V::vpck, "VPCK ()", "01000pppsnuyderc-aaaffftttmmmmbbkkllgggggggoohiijjqqqqqqvwwwwwwx"),
 
-    // Sum of Products
-    /*
+        // Sum of Products
+        /*
                               10000 = op1
                                     pp = pred (2 bits)
                                       c = cmod1 (1 bit)
@@ -255,11 +255,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                 y = dest_mod (1 bit)
                                                                                 zzzzzzz = src1_n (7 bits)
                                                                                         AAAAAAA = src2_n (7 bits)
-    */
-    INST(&V::sop2, "SOP2 ()", "10000ppcsnaaderbmooofllggghhhittkkjjqqqqqqquvvwwxyzzzzzzzAAAAAAA"),
-    
-    // Test Instructions
-    /*
+        */
+        INST(&V::sop2, "SOP2 ()", "10000ppcsnaaderbmooofllggghhhittkkjjqqqqqqquvvwwxyzzzzzzzAAAAAAA"),
+
+        // Test Instructions
+        /*
                               01001 = op1
                                     ppp = pred (3 bits)
                                       s = skipinv (1 bit)
@@ -287,11 +287,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                             uuuu = alu_op (4 bits)
                                                                                 jjjjjjj = src1_n (7 bits)
                                                                                         qqqqqqq = src2_n (7 bits)
-    */
-    INST(&V::vtst, "VTST ()", "01001ppps-oydrceavttiizzmhhhnnbbkkffgggggggwlluuuujjjjjjjqqqqqqq"),
+        */
+        INST(&V::vtst, "VTST ()", "01001ppps-oydrceavttiizzmhhhnnbbkkffgggggggwlluuuujjjjjjjqqqqqqq"),
 
-    // Test mask Instructions
-    /*
+        // Test mask Instructions
+        /*
                                     01111 = op1
                                           ppp = pred (3 bits)
                                             s = skipinv (1 bit)
@@ -320,11 +320,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                   gggg = alu_op (4 bits)
                                                                                       hhhhhhh = src1_n (7 bits)
                                                                                               jjjjjjj = src2_n (7 bits)
-    */
-    INST(&V::vtstmsk, "VTSTMSK ()", "01111ppps-oydtrcevuuiizzm-aa--bbnnkkfffffffwllgggghhhhhhhjjjjjjj"),
-    
-    // Bitwise Instructions
-    /*
+        */
+        INST(&V::vtstmsk, "VTSTMSK ()", "01111ppps-oydtrcevuuiizzm-aa--bbnnkkfffffffwllgggghhhhhhhjjjjjjj"),
+
+        // Bitwise Instructions
+        /*
                              01 = op1_cnst
                                ooo = op1 (3 bits)
                                   ppp = pred (3 bits)
@@ -349,21 +349,20 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                         lllllll = src2_sel (7 bits)
                                                                                qqqqqqq = src1_n (7 bits)
                                                                                     uuuuuuu = src2_n (7 bits)
-    */
-    INST(&V::vbw, "VBW ()", "01ooopppsnrydecxmmmmittttthhabkkffggjjjjjjjlllllllqqqqqqquuuuuuu"),
+        */
+        INST(&V::vbw, "VBW ()", "01ooopppsnrydecxmmmmittttthhabkkffggjjjjjjjlllllllqqqqqqquuuuuuu"),
 
-    // Phase
-    /*
+        // Phase
+        /*
                                11111 = op1
                                     ---- = don't care
                                         100 = phas
                                            ---------------------------------------------------- = don't care
-    */
-    INST(&V::phas, "PHAS ()", "11111----100----------------------------------------------------"),
+        */
+        INST(&V::phas, "PHAS ()", "11111----100----------------------------------------------------"),
 
-
-    // Nop
-    /*
+        // Nop
+        /*
                             11111 = op1
                                   ---- = don't care
                                       0 = opcat_extra
@@ -371,11 +370,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                         ----------- = don't care
                                                     101 = nop
                                                       -------------------------------------- = don't care
-    */
-    INST(&V::nop, "NOP ()", "11111----000-----------101--------------------------------------"),
-    
-    // Branch
-    /*
+        */
+        INST(&V::nop, "NOP ()", "11111----000-----------101--------------------------------------"),
+
+        // Branch
+        /*
                           11111 = op1
                                 ppp = pred (3 bits, ExtPredicate)
                                   s = syncend (1 bit)
@@ -394,11 +393,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                     i = any_inst (1 bit)
                                                                       l = all_inst (1 bit)
                                                                       oooooooooooooooooooo = br_off (20 bits)
-    */
-    INST(&V::br, "BR ()", "11111ppps000e-----wynba00r----------------iloooooooooooooooooooo"),
+        */
+        INST(&V::br, "BR ()", "11111ppps000e-----wynba00r----------------iloooooooooooooooooooo"),
 
-    // Sample Instructions
-    /*
+        // Sample Instructions
+        /*
                             11100 = op1
                                   ppp = pred (3 bits, ExtPredicate)
                                     s = skipinv (1 bit)
@@ -424,11 +423,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                         qqqqqqq = src0_n (7 bits)
                                                                               uuuuuuu = src1_n (7 bits)
                                                                                       vvvvvvv = src2_n (7 bits)
-    */
-    INST(&V::smp, "SMP ()", "11100pppsn-ymrceffaaddlltbbggkhhiijjoooooooqqqqqqquuuuuuuvvvvvvv"),
+        */
+        INST(&V::smp, "SMP ()", "11100pppsn-ymrceffaaddlltbbggkhhiijjoooooooqqqqqqquuuuuuuvvvvvvv"),
 
-    // SMLSI control instruction
-    /*
+        // SMLSI control instruction
+        /*
                                 11111 = op1
                                       010 = op2
                                         -- = don't care
@@ -447,22 +446,21 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                         aaaaaaaa = src0_inc (8 bits)
                                                                                 bbbbbbbb = src1_inc (8 bits)
                                                                                         ffffffff = src2_inc (8 bits)
-    */
-   
-    INST(&V::smlsi, "SMLSI ()", "11111010--01-n--ttttppppssssdrcieeeeeeeeaaaaaaaabbbbbbbbffffffff"),
+        */
+        INST(&V::smlsi, "SMLSI ()", "11111010--01-n--ttttppppssssdrcieeeeeeeeaaaaaaaabbbbbbbbffffffff"),
 
-    // Special
-    /*
+        // Special
+        /*
                                11111 = op1
                                     ---- = don't care
                                         s = special (1 bit, bool)
                                          cc = category (2 bits, SpecialCategory)
                                            ---------------------------------------------------- = don't care
-    */
-    INST(&V::spec, "SPEC ()", "11111----scc----------------------------------------------------"),
+        */
+        INST(&V::spec, "SPEC ()", "11111----scc----------------------------------------------------"),
 
-    // Vector Complex Instructions
-    /*
+        // Vector Complex Instructions
+        /*
                                 00110 = op1
                                       ppp = pred (3 bits, ExtPredicate)
                                         s = skipinv (1 bit, bool)
@@ -487,11 +485,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                     hhhhhhh = src1_n (7 bits)
                                                                                           --- = don't care
                                                                                             wwww = write_mask (4 bits)
-    */
-    INST(&V::vcomp, "VCOMP ()", "00110pppsddyenr-aaaaobbccmmff-ttkk--ggggggg-------hhhhhhh---wwww"),
+        */
+        INST(&V::vcomp, "VCOMP ()", "00110pppsddyenr-aaaaobbccmmff-ttkk--ggggggg-------hhhhhhh---wwww"),
 
-    // Vector Dot Product (single issue)
-    /*
+        // Vector Dot Product (single issue)
+        /*
                             00011 = opcode1
                                   ppp = pred (3 bits, ExtPredicate)
                                     s = skipinv (1 bit)
@@ -519,11 +517,11 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                 yyy = src0_swiz_y (3 bits)
                                                                                     xxx = src0_swiz_x (3 bits)
                                                                                       uuuuuu = src0_n (6 bits)
-    */
-    INST(&V::vdp, "VDP ()", "00011pppsc0oderiigaanwwwwbflllttkkhhjjjjjjzzzzmmmqqqyyyxxxuuuuuu"),
+        */
+        INST(&V::vdp, "VDP ()", "00011pppsc0oderiigaanwwwwbflllttkkhhjjjjjjzzzzmmmqqqyyyxxxuuuuuu"),
 
-    // Dual issue instruction
-    /*
+        // Dual issue instruction
+        /*
                                  0010 = op1
                                      c = comp_count_type (1 bit)
                                       g = gpi1_neg (1 bit)
@@ -551,8 +549,8 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                      xx = gpi0_slot_num (2 bits)
                                                                                        yyy = write_mask_non_gpi (3 bits)
                                                                                           zzzzzzz = unified_store_slot_num (7 bits)
-    */
-    INST(&V::vdual, "VDUAL ()", "0010cgsskdtpuuuunaaalriiiiwwwwmmffeebbbbbbbooohhjqvvxxyyyzzzzzzz"),
+        */
+        INST(&V::vdual, "VDUAL ()", "0010cgsskdtpuuuunaaalriiiiwwwwmmffeebbbbbbbooohhjqvvxxyyyzzzzzzz"),
 
         // clang-format on
     };

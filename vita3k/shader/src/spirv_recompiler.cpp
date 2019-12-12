@@ -937,7 +937,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     spv::Function *vert_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "vert_output_finalize", {},
         decorations, &vert_fin_block);
 
-    SceGxmVertexOutputTexCoordInfos coord_infos = { };
+    SceGxmVertexOutputTexCoordInfos coord_infos = {};
     SceGxmVertexProgramOutputs vertex_outputs = gxp::get_vertex_outputs(program, &coord_infos);
 
     auto set_property = [](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count) {

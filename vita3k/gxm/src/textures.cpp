@@ -33,8 +33,8 @@ bool is_paletted_format(SceGxmTextureFormat src) {
 bool is_yuv_format(SceGxmTextureFormat src) {
     const auto base_format = get_base_format(src);
 
-    return base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2 ||
-        base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3 ||
-        base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422;
+    return ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422));
 }
 } // namespace gxm

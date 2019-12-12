@@ -60,9 +60,9 @@ struct SceAvcdecFrame {
 };
 
 struct SceAvcdecPicture {
-    uint32_t       size;
+    uint32_t size;
     SceAvcdecFrame frame;
-    SceAvcdecInfo  info;
+    SceAvcdecInfo info;
 };
 
 struct SceAvcdecArrayPicture {
@@ -70,7 +70,7 @@ struct SceAvcdecArrayPicture {
     uint32_t numOfElm;
     Ptr<Ptr<emu::SceAvcdecPicture>> pPicture;
 };
-}
+} // namespace emu
 
 inline uint32_t calculate_buffer_size(uint32_t width, uint32_t height, uint32_t frameRefs) {
     return width * height * 3 / 2 * frameRefs;
@@ -292,8 +292,7 @@ EXPORT(int, sceAvcdecGetSeiUserDataNongameapp) {
 EXPORT(int, sceAvcdecQueryDecoderMemSize, uint32_t codec_type, const SceAvcdecQueryDecoderInfo *query_info, SceAvcdecDecoderInfo *decoder_info) {
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
 
-    decoder_info->frameMemSize =
-        calculate_buffer_size(query_info->horizontal, query_info->vertical, query_info->numOfRefFrames);
+    decoder_info->frameMemSize = calculate_buffer_size(query_info->horizontal, query_info->vertical, query_info->numOfRefFrames);
 
     return 0;
 }

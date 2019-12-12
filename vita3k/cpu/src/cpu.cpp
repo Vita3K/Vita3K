@@ -65,7 +65,7 @@ static bool is_thumb_mode(uc_engine *uc) {
     return mode & UC_MODE_THUMB;
 }
 
-static inline void func_trace(CPUState& state) {
+static inline void func_trace(CPUState &state) {
     if (TRACE_RETURN_VALUES)
         if (is_returning(state.disasm))
             LOG_TRACE("Returning, r0: {}", log_hex(read_reg(state, 0)));

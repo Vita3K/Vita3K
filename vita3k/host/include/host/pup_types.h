@@ -132,9 +132,8 @@ enum class CompressionType {
 };
 
 typedef std::unordered_map<
-KeyType, std::unordered_map<
-SceType, std::unordered_map<
-SelfType, std::vector<KeyEntry>>>> keystore;
+    KeyType, std::unordered_map<SceType, std::unordered_map<SelfType, std::vector<KeyEntry>>>>
+    keystore;
 
 class KeyStore {
 private:
@@ -146,7 +145,7 @@ public:
     }
 
     KeyEntry get(KeyType keytype, SceType scetype, uint64_t sysver = -1, int keyrev = -1, SelfType selftype = SelfType::NONE) {
-        KeyEntry empty_keys = {0, 0, 0, "", ""};
+        KeyEntry empty_keys = { 0, 0, 0, "", "" };
 
         auto key_type = store.find(keytype);
         if (key_type == store.end()) {
