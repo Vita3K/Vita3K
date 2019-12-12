@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,6 +59,11 @@ struct GamesSelector {
     SelectorState state = SELECT_APP;
 };
 
+struct LiveAreaState {
+    bool live_area_dialog = false;
+    bool manual_dialog = false;
+};
+
 struct FileMenuState {
     bool firmware_install_dialog = false;
     bool game_install_dialog = false;
@@ -105,6 +110,7 @@ struct GuiState {
     gui::DebugMenuState debug_menu;
     gui::ConfigurationMenuState configuration_menu;
     gui::HelpMenuState help_menu;
+    gui::LiveAreaState live_area;
     gui::GamesSelector game_selector;
 
     std::string app_ver;
@@ -132,6 +138,11 @@ struct GuiState {
     std::map<std::string, ImGui_Texture> game_backgrounds;
     ImGuiTextFilter game_search_bar;
     std::map<std::string, ImGui_Texture> user_backgrounds;
+
+    std::map<std::string, std::map<int, ImGui_Texture>> live_area_contents;
+    std::map<std::string, std::map<int, std::map<int, std::vector<ImGui_Texture>>>> live_items;
+
+    std::map<std::string, std::vector<ImGui_Texture>> manuals;
 
     SceUID thread_watch_index = -1;
 

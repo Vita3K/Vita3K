@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ bool refresh_game_list(GuiState &gui, HostState &host) {
         gui.current_background = gui.user_backgrounds[host.cfg.background_image];
     gui.game_selector.games.clear();
     gui.game_selector.icons.clear();
+    gui.live_area_contents.clear();
+    gui.live_items.clear();
     gui.delete_game_background = true;
 
     get_game_titles(gui, host);
@@ -225,6 +227,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                 ImGui::Image(gui.game_selector.icons[game.title_id], ImVec2(icon_size, icon_size));
                 if (ImGui::IsItemHovered()) {
                     host.io.title_id = game.title_id;
+                    host.game_title = game.title;
                     if (host.cfg.show_game_background) {
                         if (gui.game_backgrounds.find(game.title_id) == gui.game_backgrounds.end())
                             load_game_background(gui, host);
@@ -238,19 +241,25 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             }
             ImGui::NextColumn();
             ImGui::Selectable(game.title_id.c_str(), &selected[1], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
-            if (ImGui::IsItemHovered())
+            if (ImGui::IsItemHovered()) {
                 host.io.title_id = game.title_id;
+                host.game_title = game.title;
+            }
             if (host.io.title_id == game.title_id)
                 game_context_menu(gui, host);
             ImGui::NextColumn();
             ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
-            if (ImGui::IsItemHovered() && gui.current_background != gui.user_backgrounds[host.cfg.background_image])
+            if (ImGui::IsItemHovered() && (gui.current_background != gui.user_backgrounds[host.cfg.background_image]))
                 gui.current_background = gui.user_backgrounds[host.cfg.background_image];
             ImGui::Selectable(game.title.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, static_cast<float>(icon_size)));
             ImGui::NextColumn();
             if (std::find(std::begin(selected), std::end(selected), true) != std::end(selected)) {
-                gui.game_selector.selected_title_id = game.title_id;
+                if (host.cfg.show_live_area_screen) {
+                    init_live_area(gui, host);
+                    gui.live_area.live_area_dialog = true;
+                } else
+                    gui.game_selector.selected_title_id = game.title_id;
             }
         }
         ImGui::PopStyleColor(4);
