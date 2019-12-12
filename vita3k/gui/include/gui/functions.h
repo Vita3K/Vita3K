@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,8 @@ void get_modules_list(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);
 void init_background(GuiState &gui, const std::string &image_path);
 void init_icons(GuiState &gui, HostState &host);
+void init_live_area(GuiState &gui, HostState &host);
+bool init_manual(GuiState &gui, HostState &host);
 void load_game_background(GuiState &gui, HostState &host);
 bool refresh_game_list(GuiState &gui, HostState &host);
 
@@ -56,7 +58,7 @@ void draw_reinstall_dialog(GenericDialogState *status);
 void draw_trophies_unlocked(GuiState &gui, HostState &host);
 void draw_perf_overlay(GuiState &gui, HostState &host);
 
-ImTextureID load_image(GuiState &gui, const char *data, const std::size_t size);
+ImTextureID load_image(GuiState &gui, const char *data, const std::uint32_t size);
 
 } // namespace gui
 

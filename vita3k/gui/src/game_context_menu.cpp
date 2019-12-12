@@ -200,6 +200,10 @@ void game_context_menu(GuiState &gui, HostState &host) {
             }
             ImGui::EndMenu();
         }
+        if (!host.cfg.show_live_area_screen && ImGui::MenuItem("Live Area")) {
+            init_live_area(gui, host);
+            gui.live_area.live_area_dialog = true;
+        }
         if (ImGui::BeginMenu("Delete")) {
             if (ImGui::MenuItem("Game"))
                 delete_game_popup = true;

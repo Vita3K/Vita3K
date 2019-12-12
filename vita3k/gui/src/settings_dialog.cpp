@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2019 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -243,6 +243,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable Archiving Log.");
         ImGui::SameLine();
+        ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Enables Discord Rich Presence to show what game you're playing on discord");
         ImGui::Checkbox("Performance overlay", &host.cfg.performance_overlay);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Display performance information on the screen as an overlay.");
@@ -292,13 +295,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show GUI after booting a game.");
         ImGui::SameLine();
+        ImGui::Checkbox("Live Area Game Screen", &host.cfg.show_live_area_screen);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check the box to open Live Area by default when clicking on a game.\nIf disabled, use the right click on game to open it.");
         ImGui::Checkbox("Game Background", &host.cfg.show_game_background);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable viewing Game background.");
-        ImGui::SameLine();
-        ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enables Discord Rich Presence to show what game you're playing on discord");
         ImGui::Spacing();
         ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 32, 128);
         ImGui::Spacing();

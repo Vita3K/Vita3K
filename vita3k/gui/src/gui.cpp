@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -153,12 +153,17 @@ void init_icons(GuiState &gui, HostState &host) {
         int32_t width = 0;
         int32_t height = 0;
         vfs::FileBuffer buffer;
-        const std::string default_icon = "data/image/icon.png";
 
         vfs::read_app_file(buffer, host.pref_path, game.title_id, "sce_sys/icon0.png");
-        if (buffer.empty() && fs::exists(default_icon)) {
+
+        const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
+        const auto default_icon{ fs::path(host.base_path) / "data/image/icon.png" };
+
+        if ((buffer.empty() && (fs::exists(default_fw_icon) || fs::exists(default_icon)))) {
             LOG_INFO("Default icon found for title {}, {}.", game.title_id, game.title);
-            std::ifstream image_stream(default_icon, std::ios::binary | std::ios::ate);
+            std::ifstream image_stream(default_fw_icon.string(), std::ios::binary | std::ios::ate);
+            if (!fs::exists(default_fw_icon))
+                image_stream = std::ifstream(default_icon.string(), std::ios::binary | std::ios::ate);
             const std::size_t fsize = image_stream.tellg();
             buffer.resize(fsize);
             image_stream.seekg(0, std::ios::beg);
@@ -168,7 +173,7 @@ void init_icons(GuiState &gui, HostState &host) {
             continue;
         }
         stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-        if (width != 128 || height != 128) {
+        if (!data || width != 128 || height != 128) {
             LOG_ERROR("Invalid icon for title {}, {}.", game.title_id, game.title);
             continue;
         }
@@ -189,6 +194,7 @@ void load_game_background(GuiState &gui, HostState &host) {
         LOG_WARN("Game background not found for title {}.", host.io.title_id);
         return;
     }
+
     stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
         LOG_ERROR("Invalid game background for title {}.", host.io.title_id);
@@ -227,7 +233,7 @@ void get_game_titles(GuiState &gui, HostState &host) {
     }
 }
 
-ImTextureID load_image(GuiState &gui, const char *data, const std::size_t size) {
+ImTextureID load_image(GuiState &gui, const char *data, const std::uint32_t size) {
     int width;
     int height;
 
@@ -322,6 +328,11 @@ void draw_ui(GuiState &gui, HostState &host) {
         draw_controls_dialog(gui, host);
     if (gui.help_menu.about_dialog)
         draw_about_dialog(gui);
+
+    if (gui.live_area.live_area_dialog)
+        draw_live_area_dialog(gui, host);
+    if (gui.live_area.manual_dialog)
+        draw_manual_dialog(gui, host);
 
     ImGui::PopFont();
 }

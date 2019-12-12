@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,8 +30,9 @@
     code(bool, "log-active-shaders", false, log_active_shaders)                                         \
     code(bool, "log-uniforms", false, log_uniforms)                                                     \
     code(bool, "pstv-mode", false, pstv_mode)                                                           \
-    code(bool, "show-gui", true, show_gui)                                                              \
-    code(bool, "show-game-background", false, show_game_background)                                     \
+    code(bool, "show-gui", false, show_gui)                                                             \
+    code(bool, "show-game-background", true, show_game_background)                                      \
+    code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
     code(bool, "texture-cache", true, texture_cache)                                                    \
@@ -45,7 +46,7 @@
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
     code(bool, "hardware-flip", false, hardware_flip)                                                   \
-    code(bool, "performance-overlay", false, performance_overlay)                                       \
+    code(bool, "performance-overlay", true, performance_overlay)                                        \
     code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
     code(int, "user-id", 0, user_id)
 

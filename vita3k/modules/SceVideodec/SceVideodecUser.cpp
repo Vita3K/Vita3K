@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -110,15 +110,15 @@ void send_decoder_data(MemState &mem, DecoderPtr &decoder_info, const emu::SceAv
 }
 
 inline void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest) {
-    for (uint32_t a = 0; a < frame->height; a++) {
+    for (int32_t a = 0; a < frame->height; a++) {
         memcpy(dest, &frame->data[0][frame->linesize[0] * a], frame->width);
         dest += frame->width;
     }
-    for (uint32_t a = 0; a < frame->height / 2; a++) {
+    for (int32_t a = 0; a < frame->height / 2; a++) {
         memcpy(dest, &frame->data[1][frame->linesize[1] * a], frame->width / 2);
         dest += frame->width / 2;
     }
-    for (uint32_t a = 0; a < frame->height / 2; a++) {
+    for (int32_t a = 0; a < frame->height / 2; a++) {
         memcpy(dest, &frame->data[2][frame->linesize[2] * a], frame->width / 2);
         dest += frame->width / 2;
     }
