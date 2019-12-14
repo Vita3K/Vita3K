@@ -17,7 +17,7 @@
 
 #include <host/load_self.h>
 
-#include <config/config.h>
+#include <config/state.h>
 #include <kernel/relocation.h>
 #include <kernel/state.h>
 #include <kernel/types.h>

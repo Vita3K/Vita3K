@@ -17,47 +17,49 @@
 
 #pragma once
 
-#include <util/fs.h>
+#include <psp2/system_param.h>
+#include <spdlog/spdlog.h>
 
-#include <boost/optional.hpp>
+// clang-format off
+// Singular options produced in config file
+// Order is code(option_type, option_name, option_default, member_name)
+// When adding in a new macro for generation, ALL options must be stated.
+#define CONFIG_INDIVIDUAL(code)                                                                         \
+    code(bool, "log-imports", false, log_imports)                                                       \
+    code(bool, "log-exports", false, log_exports)                                                       \
+    code(bool, "log-active-shaders", false, log_active_shaders)                                         \
+    code(bool, "log-uniforms", false, log_uniforms)                                                     \
+    code(bool, "pstv-mode", false, pstv_mode)                                                           \
+    code(bool, "show-gui", true, show_gui)                                                              \
+    code(bool, "show-game-background", false, show_game_background)                                     \
+    code(int, "icon-size", 64, icon_size)                                                               \
+    code(bool, "archive-log", false, archive_log)                                                       \
+    code(bool, "texture-cache", true, texture_cache)                                                    \
+    code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
+    code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
+    code(std::string, "background-image", std::string{}, background_image)                              \
+    code(float, "background-alpha", .300f, background_alpha)                                            \
+    code(int, "log-level", static_cast<int>(spdlog::level::trace), log_level)                           \
+    code(std::string, "pref-path", std::string{}, pref_path)                                            \
+    code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
+    code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
+    code(bool, "color-surface-debug", false, color_surface_debug)                                       \
+    code(bool, "hardware-flip", false, hardware_flip)                                                   \
+    code(bool, "performance-overlay", false, performance_overlay)                                       \
+    code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
+    code(int, "user-id", 0, user_id)
 
-#include <string>
-#include <vector>
+// Vector members produced in the config file
+// Order is code(option_type, option_name, default_value)
+// If you are going to implement a dynamic list in the YAML, add it here instead
+// When adding in a new macro for generation, ALL options must be stated.
+#define CONFIG_VECTOR(code)                                                                             \
+    code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
+    code(std::vector<std::string>, "online-id", std::vector<std::string>{"Vita3K"}, online_id)
 
-using boost::optional;
+// Parent macro for easier generation
+#define CONFIG_LIST(code)                                                                               \
+    CONFIG_INDIVIDUAL(code)                                                                             \
+    CONFIG_VECTOR(code)
 
-// Config options
-struct Config {
-    optional<std::string> vpk_path;
-    optional<std::string> run_title_id;
-    optional<std::string> recompile_shader_path;
-    bool log_imports = false;
-    bool log_exports = false;
-    bool log_active_shaders = false;
-    bool log_uniforms = false;
-    bool pstv_mode = false;
-    bool show_gui = false;
-    bool show_game_background = true;
-    int icon_size = 64;
-    bool archive_log = false;
-    bool texture_cache = true;
-    int sys_button = 1;
-    int sys_lang = 1;
-    std::string background_image = {};
-    float background_alpha = 0.300f;
-    int log_level = 0;
-    std::string pref_path = {};
-    fs::path config_path = {};
-    bool overwrite_config = true;
-    bool load_config = false;
-    bool discord_rich_presence = true;
-    bool wait_for_debugger = false;
-    bool color_surface_debug = false;
-    bool hardware_flip = false;
-    bool performance_overlay = false;
-    std::string backend_renderer = "OpenGL";
-    int user_id = 0;
-    std::vector<std::string> online_id = { "Vita3K" };
-    std::vector<std::string> lle_modules = {};
-
-}; // struct Config
+// clang-format on

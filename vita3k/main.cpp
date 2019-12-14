@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
     }
 
     HostState host;
-    if (!app::init(host, std::move(cfg), root_paths)) {
+    if (!app::init(host, cfg, root_paths)) {
         app::error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
     }

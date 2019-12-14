@@ -17,8 +17,8 @@
 
 #include "private.h"
 
-#include <config/config.h>
 #include <config/functions.h>
+#include <config/state.h>
 
 #include <gui/functions.h>
 #include <gui/state.h>
