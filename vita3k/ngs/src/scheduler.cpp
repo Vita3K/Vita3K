@@ -135,7 +135,7 @@ namespace emu::ngs {
         Voice *source = info->source.get(mem);
         Voice *dest = info->dest.get(mem);
 
-        Ptr<Patch> patch = source->patch(mem, info->source_output_index, info->source_output_subindex, dest);
+        Ptr<Patch> patch = source->patch(mem, info->source_output_index, info->source_output_subindex, info->dest_input_index, dest);
 
         if (!patch) {
             return patch;
