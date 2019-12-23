@@ -7,6 +7,7 @@ namespace emu::ngs::master {
     public:
         explicit Module();
         void process(const MemState &mem, Voice *voice) override;
+        void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override;
     };
 
     struct VoiceDefinition: public emu::ngs::VoiceDefinition {

@@ -26,6 +26,7 @@ namespace emu::ngs {
         rack = mama;
         state = VoiceState::VOICE_STATE_AVAILABLE;
         flags = 0;
+        frame_count = 0;
 
         outputs.resize(mama->patches_per_output);
     }
@@ -48,13 +49,16 @@ namespace emu::ngs {
     bool Voice::unlock_params() {
         if (flags & PARAMS_LOCK) {
             flags &= ~PARAMS_LOCK;
+
+            // Reset the state, empty them out
+            voice_state_data.clear();
             return true;
         }
 
         return false;
     }
     
-    Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, Voice *dest) {
+    Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest) {
         // Look if another patch has already been there
         if (subindex == -1) {
             for (std::int32_t i = 0; i < outputs.size(); i++) {
@@ -81,9 +85,26 @@ namespace emu::ngs {
 
         patch->output_sub_index = subindex;
         patch->output_index = index;
+        patch->dest_index = dest_index;
         patch->dest = dest;
+        
+        // Set default value
+        patch->dest_data_type = AudioDataType::S16;
+        patch->dest_channels = 2;
+
+        dest->rack->module->get_expectation(&patch->dest_data_type, &patch->dest_channels);
 
         return outputs[subindex];
+    }
+
+    void Voice::receive(const std::int32_t index, std::uint8_t **data, const std::int16_t channel_count, const std::size_t size_each) {
+        // Try to copy the data
+        if (index >= inputs.size()) {
+            inputs.resize(index + 1);
+        }
+
+        inputs[index].resize(size_each * channel_count);
+        std::memcpy(&inputs[index][0], *data, size_each * channel_count);
     }
 
     std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {
