@@ -17,6 +17,11 @@ namespace emu::ngs {
         std::int32_t channel;
     };
 
+    enum AudioDataType {
+        S16 = 0,
+        F32 = 1
+    };
+
     struct Module {
         BussType buss_type;
 
@@ -25,6 +30,7 @@ namespace emu::ngs {
         }
 
         virtual void process(const MemState &mem, Voice *voice) = 0;
+        virtual void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) = 0;
     };
 
     struct VoiceDefinition {
@@ -58,6 +64,9 @@ namespace emu::ngs {
     struct Patch {
         std::int32_t output_index;
         std::int32_t output_sub_index;
+        std::int32_t dest_index;
+        std::int16_t dest_channels;
+        AudioDataType dest_data_type;
         Voice *dest;
     };
 
@@ -103,15 +112,30 @@ namespace emu::ngs {
         };
 
         std::uint8_t flags;
+        std::uint32_t frame_count;
 
         std::vector<Ptr<Patch>> outputs;
+        std::vector<std::uint8_t> voice_state_data;
+
+        using PCMBuf = std::vector<std::uint8_t>;
+        std::vector<PCMBuf> inputs;
 
         void init(Rack *mama);
 
         BufferParamsInfo *lock_params(const MemState &mem);
         bool unlock_params();
 
-        Ptr<Patch> patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, Voice *dest);
+        Ptr<Patch> patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest);
+        void receive(const std::int32_t index, std::uint8_t **data, const std::int16_t channel_count, const std::size_t size_each);
+
+        template <typename T>
+        T *get_state() {
+            if (voice_state_data.size() == 0) {
+                voice_state_data.resize(sizeof(T));
+            }
+
+            return reinterpret_cast<T*>(&voice_state_data[0]);
+        }
 
         template <typename T>
         T *get_parameters(const MemState &mem) {
@@ -151,7 +175,8 @@ namespace emu::ngs {
         explicit System(const Ptr<void> memspace, const std::uint32_t memspace_size);
         static std::uint32_t get_required_memspace_size(SystemInitParameters *parameters);
     };
-    
+
+    bool route(const MemState &mem, Voice *source, std::uint8_t **const output_data, const std::uint16_t output_channels, const std::uint32_t sample_count, const int freq, AudioDataType output_type);
     bool init_system(State &ngs, const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size);
     bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 namespace emu::ngs {
     enum BussType {
@@ -25,5 +26,7 @@ namespace emu::ngs {
         BUSS_TOTAL
     };
 
+    using PCMChannelBuf = std::vector<std::uint8_t>;
+    
     static constexpr std::uint32_t TOTAL_BUSS_TYPES = BUSS_TOTAL;
 }

@@ -17,6 +17,7 @@
 
 #include <util/log.h>
 #include <ngs/system.h>
+#include <ngs/modules/atrac9.h>
 
 #include "SceNgs.h"
 
@@ -43,18 +44,15 @@ using SceNgsPatchHandle = Ptr<emu::ngs::Patch>;
 static constexpr SceUInt32 SCE_NGS_OK = 0;
 static constexpr SceUInt32 SCE_NGS_ERROR = 0x804A0001;
 static constexpr SceUInt32 SCE_NGS_ERROR_INVALID_ARG = 0x804A0002;
+static constexpr SceUInt32 SCE_NGS_SIZE_MISMATCH = 0x804A000D;
 
-EXPORT(int, sceNgsAT9GetSectionDetails, const std::uint32_t samples_start, const std::uint32_t num_samples, const std::uint32_t info, void *answ) {
+EXPORT(int, sceNgsAT9GetSectionDetails, const std::uint32_t samples_start, const std::uint32_t num_samples, const std::uint32_t config_data, emu::ngs::atrac9::SkipBufferInfo *info) {
     // Check magic!
-    if ((info & 0xFF) != 0xFE) {
+    if ((config_data & 0xFF) != 0xFE && info) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
 
-    const std::uint8_t sample_rate_index = ((info & (0b1111 << 12)) >> 12);
-    const std::uint8_t block_rate_index = ((info & (0b111 << 8)) >> 8);
-    const std::uint16_t frame_bytes = (((info & 0xFF0000) >> 16) << 3) | ((info & (0b111 << 29)) >> 29);
-    const std::uint8_t superframe_index = (info & (0b11 << 27)) >> 27;
-
+    get_buffer_parameter(samples_start, num_samples, config_data, *info);
     return 0;
 }
 
@@ -279,8 +277,15 @@ EXPORT(int, sceNgsVoiceGetParamsOutOfRange) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceGetStateData) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsVoiceGetStateData, emu::SceNgsVoiceHandle voice_handle, const std::uint32_t unk, void *mem, const std::uint32_t space_size) {
+    emu::ngs::Voice *voice = voice_handle.get(host.mem);
+
+    if (voice->voice_state_data.size() != space_size) {
+        return RET_ERROR(SCE_NGS_SIZE_MISMATCH);
+    }
+
+    std::memcpy(mem, &voice->voice_state_data[0], space_size);
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoiceInit) {
