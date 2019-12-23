@@ -14,6 +14,7 @@ add_library(
 	src/modules/player.cpp
 	src/allocator.cpp
 	src/ngs.cpp
+	src/route.cpp
 	src/scheduler.cpp
 )
 
