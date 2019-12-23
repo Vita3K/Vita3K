@@ -40,33 +40,56 @@ namespace emu::ngs {
 
     bool route(const MemState &mem, Voice *source, std::uint8_t ** const output_data, const std::uint16_t output_channels, const std::uint32_t sample_count, const int freq, AudioDataType output_type) {
         const int output_channel_type = (output_channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
-
+        
         for (std::size_t i = 0; i < source->outputs.size(); i++) {
             Patch *patch = source->outputs[i].get(mem);
-            const int dest_channel_type = (patch->dest_channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
-
-            SwrContext *swr = swr_alloc();
-            av_opt_set_int(swr, "in_channel_layout", output_channel_type, 0);
-            av_opt_set_int(swr, "out_channel_layout", dest_channel_type,  0);
-            av_opt_set_int(swr, "in_sample_rate", freq, 0);
-            av_opt_set_int(swr, "out_sample_rate", freq, 0);
-            av_opt_set_sample_fmt(swr, "in_sample_fmt",  audio_data_type_to_sample_format(output_type), 0);
-            av_opt_set_sample_fmt(swr, "out_sample_fmt", audio_data_type_to_sample_format(patch->dest_data_type),  0);
-            swr_init(swr);
-
-            std::uint8_t *converted = nullptr;
-            av_samples_alloc(&converted, nullptr, patch->dest_channels, sample_count, audio_data_type_to_sample_format(patch->dest_data_type), 0);
-            const int result = swr_convert(swr, &converted, sample_count, const_cast<const std::uint8_t**>(output_data), sample_count);
-
-            if (result != sample_count) {
-                LOG_ERROR("Unable to fully resample and route!");
-                return false;
-            }
             
-            const std::uint32_t converted_channel_size = sample_count * audio_data_type_to_byte_count(patch->dest_data_type);
+            const std::uint32_t byte_per_dest_sample = audio_data_type_to_byte_count(patch->dest_data_type);
+            
+            if (output_data == nullptr) {
+                if (patch->dest->inputs.size() <= patch->dest_index || patch->dest->inputs[patch->dest_index].size() <= patch->dest_channels *
+                    byte_per_dest_sample * patch->dest->rack->system->granularity) {
+                    // Need more data.
+                    return false;
+                }
+            }
 
-            patch->dest->receive(patch->dest_index, &converted, output_channels, converted_channel_size);
-            av_freep(&converted);
+            const std::uint32_t converted_channel_size = sample_count * byte_per_dest_sample;
+
+            if (patch->dest->inputs.size() > patch->dest_index && patch->dest->inputs[patch->dest_index].size() != 0) {
+                Voice::PCMBuf &dest_buf = patch->dest->inputs[patch->dest_index];
+
+                // Delete last used samples
+                dest_buf.erase(dest_buf.begin(), dest_buf.begin() + std::min<std::size_t>(dest_buf.size(),
+                    patch->dest_channels * byte_per_dest_sample * patch->dest->rack->system->granularity));
+            }
+
+            if (output_data != nullptr) {
+                // Supply newly converted data
+                const int dest_channel_type = (patch->dest_channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
+
+                SwrContext *swr = swr_alloc();
+                av_opt_set_int(swr, "in_channel_layout", output_channel_type, 0);
+                av_opt_set_int(swr, "out_channel_layout", dest_channel_type,  0);
+                av_opt_set_int(swr, "in_sample_rate", freq, 0);
+                av_opt_set_int(swr, "out_sample_rate", freq, 0);
+                av_opt_set_sample_fmt(swr, "in_sample_fmt",  audio_data_type_to_sample_format(output_type), 0);
+                av_opt_set_sample_fmt(swr, "out_sample_fmt", audio_data_type_to_sample_format(patch->dest_data_type),  0);
+                swr_init(swr);
+
+                std::uint8_t *converted = nullptr;
+                av_samples_alloc(&converted, nullptr, patch->dest_channels, sample_count, audio_data_type_to_sample_format(patch->dest_data_type), 0);
+                const int result = swr_convert(swr, &converted, sample_count, const_cast<const std::uint8_t**>(output_data), sample_count);
+
+                if (result != sample_count) {
+                    LOG_ERROR("Unable to fully resample and route!");
+                    return false;
+                }
+
+                patch->dest->receive(patch->dest_index, &converted, output_channels, converted_channel_size);
+                
+                av_freep(&converted);
+            }
         }
 
         return true;
