@@ -115,7 +115,8 @@ namespace emu::ngs {
         std::uint32_t frame_count;
 
         std::vector<Ptr<Patch>> outputs;
-        std::vector<std::uint8_t> voice_state_data;
+        std::vector<std::uint8_t> voice_state_data;         ///< Voice state.
+        std::vector<std::uint8_t> extra_voice_data;         ///< Local data storage for module.
 
         using PCMBuf = std::vector<std::uint8_t>;
         std::vector<PCMBuf> inputs;

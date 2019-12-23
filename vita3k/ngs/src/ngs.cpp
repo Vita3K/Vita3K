@@ -103,8 +103,7 @@ namespace emu::ngs {
             inputs.resize(index + 1);
         }
 
-        inputs[index].resize(size_each * channel_count);
-        std::memcpy(&inputs[index][0], *data, size_each * channel_count);
+        inputs[index].insert(inputs[index].end(), *data, *data + size_each * channel_count);
     }
 
     std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {

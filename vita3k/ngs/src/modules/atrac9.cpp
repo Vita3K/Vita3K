@@ -155,67 +155,57 @@ namespace emu::ngs::atrac9 {
 
         const std::uint32_t block_align = calculate_block_align(params->config_data);
         const std::uint32_t superframe_size = calculate_superframe_size(params->config_data);
+        const std::uint32_t sample_per_superframe = calculate_sample_per_superframe(params->config_data);
 
-        if (voice->frame_count != 0) {
-            if (block_align <= voice->rack->system->granularity * 2 * params->channels * (voice->frame_count - 1)) {
-                // Reset the frame count
-                voice->frame_count = 0;
+        if (!route(mem, voice, nullptr, params->channels, sample_per_superframe, static_cast<int>(params[state->current_buffer].playback_frequency),
+            AudioDataType::F32)) {
+            // Ran out of data, supply new
+            // Decode new data and deliver them
+            // Let's open our context
+            FFMPEG_ATRAC9Info info;
+            info.config_data = params->config_data;
 
-                state->current_byte_position_in_buffer += superframe_size;
-                state->total_bytes_consumed += superframe_size;
+            // Block align is size of a superframe
+            context->block_align = block_align;
+            context->extradata_size = 12;
+            context->extradata = reinterpret_cast<std::uint8_t*>(&info);
 
-                if (state->current_byte_position_in_buffer == params->buffer_params[state->current_buffer].bytes_count) {
-                    state->current_buffer = params->buffer_params[state->current_buffer].next_buffer_index;
-                }
-            } else {
-                // No need to update. Return
-                voice->frame_count++;
+            int res = avcodec_open2(context, codec, nullptr);
+
+            AVPacket *packet = av_packet_alloc();
+
+            // If out of data, read a superframe
+            packet->size = superframe_size;
+            packet->data = reinterpret_cast<std::uint8_t*>(params->buffer_params[state->current_buffer].
+                buffer.get(mem)) + state->current_byte_position_in_buffer;
+
+            res = avcodec_send_packet(context, packet);
+            av_packet_free(&packet);
+
+            if (res != 0) {
+                LOG_ERROR("Unable to send ATRAC9 packet!");
                 return;
             }
-        }
 
-        // Decode new data and deliver them
-        // Let's open our context
-        FFMPEG_ATRAC9Info info;
-        info.config_data = params->config_data;
+            // Try to receive the frame
+            AVFrame *frame = av_frame_alloc();
+            res = avcodec_receive_frame(context, frame);
 
-        // Block align is size of a superframe
-        context->block_align = block_align;
-        context->extradata_size = 12;
-        context->extradata = reinterpret_cast<std::uint8_t*>(&info);
+            if (res != 0) {
+                LOG_ERROR("Unable to receive ATRAC9 frame!");
+                av_frame_free(&frame);
+                return;
+            }
 
-        int res = avcodec_open2(context, codec, nullptr);
+            route(mem, voice, frame->extended_data, params->channels, frame->nb_samples, static_cast<int>(params[state->current_buffer].playback_frequency),
+                AudioDataType::F32);
 
-        AVPacket *packet = av_packet_alloc();
+            state->samples_generated_since_key_on += sample_per_superframe;
+            state->bytes_consumed_since_key_on += superframe_size;
+            state->current_byte_position_in_buffer += superframe_size;
+            state->total_bytes_consumed += superframe_size;
 
-        // If out of data, read a superframe
-        packet->size = superframe_size;
-        packet->data = reinterpret_cast<std::uint8_t*>(params->buffer_params[state->current_buffer].
-            buffer.get(mem)) + state->current_byte_position_in_buffer;
-
-        res = avcodec_send_packet(context, packet);
-        av_packet_free(&packet);
-
-        if (res != 0) {
-            LOG_ERROR("Unable to send ATRAC9 packet!");
-            return;
-        }
-
-        // Try to receive the frame
-        AVFrame *frame = av_frame_alloc();
-        res = avcodec_receive_frame(context, frame);
-
-        if (res != 0) {
-            LOG_ERROR("Unable to receive ATRAC9 frame!");
             av_frame_free(&frame);
-            return;
         }
-
-        route(mem, voice, frame->extended_data, params->channels, calculate_sample_per_superframe(params->config_data),
-            static_cast<int>(params[state->current_buffer].playback_frequency), AudioDataType::F32);
-
-        av_frame_free(&frame);
-
-        voice->frame_count++;
     }
 };

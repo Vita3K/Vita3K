@@ -31,31 +31,23 @@ namespace emu::ngs::master {
 
         const std::uint32_t gran_byte_count = voice->rack->system->granularity * sizeof(std::int16_t) * 2;
 
-        if (voice->inputs[0].size() <= gran_byte_count * voice->frame_count) {
-            voice->frame_count = 0;
-        }
-
         for (std::int32_t i = 0; i < voice->inputs.size(); i++) {
-            for (std::int32_t j = 0; j < 2; j++) {
-                std::int16_t *samples_to_mix = reinterpret_cast<std::int16_t*>(&voice->inputs[i][voice->frame_count * gran_byte_count]);
-                std::int16_t *dest_samples = reinterpret_cast<std::int16_t*>(&voice->voice_state_data[0]);
+            std::int16_t *samples_to_mix = reinterpret_cast<std::int16_t*>(&voice->inputs[i][0]);
+            std::int16_t *dest_samples = reinterpret_cast<std::int16_t*>(&voice->voice_state_data[0]);
 
-                for (std::int32_t k = 0; k < voice->rack->system->granularity * 2; k++) {
-                    std::int32_t current_sample_mixed = dest_samples[k];
-                    current_sample_mixed += samples_to_mix[k];
+            for (std::int32_t k = 0; k < voice->rack->system->granularity * 2; k++) {
+                std::int32_t current_sample_mixed = dest_samples[k];
+                current_sample_mixed += samples_to_mix[k];
 
-                    // Clip the sample!
-                    if (current_sample_mixed > 32767)
-                        current_sample_mixed = 32767;
+                // Clip the sample!
+                if (current_sample_mixed > 32767)
+                    current_sample_mixed = 32767;
 
-                    if (current_sample_mixed < -32768)
-                        current_sample_mixed = -32768;
-                        
-                    dest_samples[k] = current_sample_mixed;
-                }
+                if (current_sample_mixed < -32768)
+                    current_sample_mixed = -32768;
+                    
+                dest_samples[k] = current_sample_mixed;
             }
         }
-        
-        voice->frame_count++;
     }
 };
