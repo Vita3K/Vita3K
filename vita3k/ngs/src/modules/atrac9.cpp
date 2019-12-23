@@ -205,6 +205,10 @@ namespace emu::ngs::atrac9 {
             state->current_byte_position_in_buffer += superframe_size;
             state->total_bytes_consumed += superframe_size;
 
+            if (state->bytes_consumed_since_key_on >= params->buffer_params[state->current_buffer].bytes_count) {
+                state->current_buffer = params->buffer_params[state->current_buffer].next_buffer_index;
+            }
+
             av_frame_free(&frame);
         }
     }
