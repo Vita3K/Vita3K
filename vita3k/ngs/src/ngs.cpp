@@ -22,6 +22,73 @@ namespace emu::ngs {
 
     }
 
+    void VoiceInputManager::init(const std::uint16_t total_input) {
+        inputs.resize(total_input);
+    }
+
+    VoiceInputManager::PCMBuf *VoiceInputManager::get_input_buffer_queue(const std::int32_t index, const std::int32_t subindex) {
+        if (index >= inputs.size()) {
+            return nullptr;
+        }
+
+        if (subindex >= inputs[index].bufs.size() || subindex < -1) {
+            return nullptr;
+        }
+
+        return &inputs[index].bufs[subindex];
+    }
+
+    std::int32_t VoiceInputManager::receive(const std::int32_t index, const std::int32_t subindex, std::uint8_t **data,
+        const std::int16_t channel_count, const std::size_t size_each) {
+        if (index >= inputs.size()) {
+            return -1;
+        }
+
+        std::int32_t dest_subindex = subindex;
+
+        if (subindex > 32) {
+            return -1;
+        }
+
+        if (subindex == -1) {
+            // Find a free subindex
+            for (std::int8_t i = 0; i < 32; i++) {
+                if (!(inputs[index].occupied & (1 << i))) {
+                    dest_subindex = i;
+                    inputs[index].occupied |= (1 << i);
+                    break;
+                }
+            }
+        }
+
+        if (dest_subindex == -1) {
+            LOG_ERROR("Out of input audio slot for this voice!");
+            return -1;
+        }
+
+        if (dest_subindex >= inputs[index].bufs.size()) {
+            inputs[index].bufs.resize(dest_subindex + 1);
+        }
+
+        inputs[index].bufs[dest_subindex].insert(inputs[index].bufs[dest_subindex].end(), *data,
+            *data + size_each * channel_count);
+
+        return dest_subindex;
+    }
+
+    bool VoiceInputManager::free_input(const std::int32_t index, const std::int32_t subindex) {
+        if (index >= inputs.size()) {
+            return false;
+        }
+
+        if (subindex > 32 || subindex < 0) {
+            return false;
+        }
+
+        inputs[index].occupied &= ~(1 << subindex);
+        return true;
+    }
+    
     void Voice::init(Rack *mama) {
         rack = mama;
         state = VoiceState::VOICE_STATE_AVAILABLE;
@@ -29,6 +96,7 @@ namespace emu::ngs {
         frame_count = 0;
 
         outputs.resize(mama->patches_per_output);
+        inputs.init(1);
     }
 
     BufferParamsInfo *Voice::lock_params(const MemState &mem) {
@@ -87,6 +155,7 @@ namespace emu::ngs {
         patch->output_index = index;
         patch->dest_index = dest_index;
         patch->dest = dest;
+        patch->dest_sub_index = -1;
         
         // Set default value
         patch->dest_data_type = AudioDataType::S16;
@@ -95,15 +164,6 @@ namespace emu::ngs {
         dest->rack->module->get_expectation(&patch->dest_data_type, &patch->dest_channels);
 
         return outputs[subindex];
-    }
-
-    void Voice::receive(const std::int32_t index, std::uint8_t **data, const std::int16_t channel_count, const std::size_t size_each) {
-        // Try to copy the data
-        if (index >= inputs.size()) {
-            inputs.resize(index + 1);
-        }
-
-        inputs[index].insert(inputs[index].end(), *data, *data + size_each * channel_count);
     }
 
     std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {
