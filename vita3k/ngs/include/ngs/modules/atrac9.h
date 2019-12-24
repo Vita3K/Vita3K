@@ -44,6 +44,7 @@ namespace emu::ngs::atrac9 {
         std::int32_t samples_generated_since_key_on;
         std::int32_t bytes_consumed_since_key_on;
         std::int32_t total_bytes_consumed;
+        std::int8_t current_loop_count;
     };
 
     struct Module: public emu::ngs::Module {

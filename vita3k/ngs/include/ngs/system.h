@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <vector>
+#include <mutex>
 
 #include <mem/ptr.h>
 
@@ -72,6 +73,7 @@ namespace emu::ngs {
         std::int16_t dest_channels;
         AudioDataType dest_data_type;
         Voice *dest;
+        Voice *source;
     };
 
     struct VoiceDefinition;
@@ -110,6 +112,23 @@ namespace emu::ngs {
         struct PCMSubInputs {    
             std::uint32_t occupied = 0;
             std::vector<PCMBuf> bufs;
+
+            struct Iterator {
+                std::int32_t dest_subindex;
+                PCMSubInputs *inputs;
+
+                explicit Iterator(PCMSubInputs *inputs, std::int32_t dest_subindex);
+                Iterator operator++();
+                bool operator !=(const Iterator &rhs) const;
+                PCMBuf &operator *();
+            };
+
+            Iterator begin();
+            Iterator end();
+
+            bool empty() const {
+                return (occupied == 0);
+            }
         };
 
         using PCMInputs = std::vector<PCMSubInputs>;
@@ -146,12 +165,14 @@ namespace emu::ngs {
         std::vector<std::uint8_t> extra_voice_data;         ///< Local data storage for module.
 
         VoiceInputManager inputs;
+        std::unique_ptr<std::mutex> voice_lock;
 
         void init(Rack *mama);
 
         BufferParamsInfo *lock_params(const MemState &mem);
         bool unlock_params();
 
+        bool remove_patch(const MemState &mem, const Ptr<Patch> patch);
         Ptr<Patch> patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest);
         
         template <typename T>
@@ -203,6 +224,8 @@ namespace emu::ngs {
     };
 
     bool route(const MemState &mem, Voice *source, std::uint8_t **const output_data, const std::uint16_t output_channels, const std::uint32_t sample_count, const int freq, AudioDataType output_type);
+    bool unroute_occupied(const MemState &mem, Voice *source);
+    
     bool init_system(State &ngs, const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size);
     bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description);
 }

@@ -12,6 +12,7 @@ namespace emu::ngs {
 
     struct VoiceScheduler {
         std::vector<Voice*> queue;
+        std::mutex lock;
 
     protected:
         bool deque_voice(Voice *voice);

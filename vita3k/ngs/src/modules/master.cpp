@@ -18,6 +18,9 @@ namespace emu::ngs::master {
     }
     
     void Module::process(const MemState &mem, Voice *voice) {
+        // Lock voice to avoid resource modificiation from other thread
+        const std::lock_guard<std::mutex> guard(*voice->voice_lock);
+
         // Merge all voices. This buss manually outputs 2 channels
         if (voice->voice_state_data.empty()) {
             voice->voice_state_data.resize(voice->rack->system->granularity * sizeof(std::uint16_t) * 2);
@@ -25,14 +28,14 @@ namespace emu::ngs::master {
 
         std::fill(voice->voice_state_data.begin(), voice->voice_state_data.end(), 0);
 
-        if (voice->inputs.inputs[0].bufs.size() == 0) {
+        if (voice->inputs.inputs[0].empty()) {
             return;
         }
 
         const std::uint32_t gran_byte_count = voice->rack->system->granularity * sizeof(std::int16_t) * 2;
 
-        for (std::int32_t i = 0; i < voice->inputs.inputs[0].bufs.size(); i++) {
-            std::int16_t *samples_to_mix = reinterpret_cast<std::int16_t*>(&voice->inputs.inputs[0].bufs[i][0]);
+        for (auto &buffer: voice->inputs.inputs[0]) {
+            std::int16_t *samples_to_mix = reinterpret_cast<std::int16_t*>(&buffer[0]);
             std::int16_t *dest_samples = reinterpret_cast<std::int16_t*>(&voice->voice_state_data[0]);
 
             for (std::int32_t k = 0; k < voice->rack->system->granularity * 2; k++) {

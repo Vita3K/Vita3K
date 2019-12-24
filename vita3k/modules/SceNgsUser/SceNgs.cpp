@@ -92,8 +92,18 @@ EXPORT(int, sceNgsPatchGetInfo, std::uint32_t patch, Ptr<emu::SceNgsPatchInfo1> 
     return STUBBED("2 in/out channels");
 }
 
-EXPORT(int, sceNgsPatchRemoveRouting) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsPatchRemoveRouting, emu::SceNgsPatchHandle patch_handle) {
+    emu::ngs::Patch *patch = patch_handle.get(host.mem);
+
+    if (!patch_handle.valid(host.mem) || !patch) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    if (!patch->source->remove_patch(host.mem, patch_handle)) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceNgsRackGetRequiredMemorySize, emu::SceNgsSynthSystemHandle sys_handle, emu::ngs::RackDescription *description, uint32_t *size) {
@@ -279,12 +289,8 @@ EXPORT(int, sceNgsVoiceGetParamsOutOfRange) {
 
 EXPORT(int, sceNgsVoiceGetStateData, emu::SceNgsVoiceHandle voice_handle, const std::uint32_t unk, void *mem, const std::uint32_t space_size) {
     emu::ngs::Voice *voice = voice_handle.get(host.mem);
-
-    if (voice->voice_state_data.size() != space_size) {
-        return RET_ERROR(SCE_NGS_SIZE_MISMATCH);
-    }
-
-    std::memcpy(mem, &voice->voice_state_data[0], space_size);
+    std::memcpy(mem, &voice->voice_state_data[0], std::min<std::size_t>(space_size, voice->voice_state_data.size()));
+    
     return SCE_NGS_OK;
 }
 
@@ -296,8 +302,18 @@ EXPORT(int, sceNgsVoiceKeyOff) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceKill) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsVoiceKill, emu::SceNgsVoiceHandle voice_handle) {
+    emu::ngs::Voice *voice = voice_handle.get(host.mem);
+
+    if (!voice) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    if (!voice->rack->system->voice_scheduler.stop(voice)) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
+
+    return 0;
 }
 
 EXPORT(SceUInt32, sceNgsVoiceLockParams, emu::SceNgsVoiceHandle voice_handle, std::uint32_t unk1, std::uint32_t unk2, Ptr<emu::ngs::BufferParamsInfo> buf) {

@@ -5,6 +5,7 @@
 
 namespace emu::ngs {
     bool VoiceScheduler::deque_voice(Voice *voice) {
+        const std::lock_guard<std::mutex> guard(lock);
         auto voice_in = std::find(queue.begin(), queue.end(), voice);
 
         if (voice_in == queue.end()) {
@@ -46,6 +47,7 @@ namespace emu::ngs {
                 lowest_dest_pos = std::min<std::int32_t>(lowest_dest_pos, pos);
             }
 
+            const std::lock_guard<std::mutex> guard(lock);
             queue.insert(queue.begin() + lowest_dest_pos, voice);
         }
 
@@ -81,6 +83,8 @@ namespace emu::ngs {
     }
 
     void VoiceScheduler::update(const MemState &mem) {
+        const std::lock_guard<std::mutex> guard(lock);
+
         for (emu::ngs::Voice *voice: queue) {
             voice->state = emu::ngs::VOICE_STATE_ACTIVE;
             voice->rack->module->process(mem, voice);
@@ -88,6 +92,7 @@ namespace emu::ngs {
     }
 
     std::int32_t VoiceScheduler::get_position(Voice *v) {
+        const std::lock_guard<std::mutex> guard(lock);
         auto result = std::find(queue.begin(), queue.end(), v);
 
         if (result != queue.end()) {
@@ -121,7 +126,11 @@ namespace emu::ngs {
 
             if (dest_pos < position) {
                 // Switch to the end. Resort dependencies for this one that just got sorted too.
-                std::rotate(queue.begin() + dest_pos, queue.begin() + dest_pos + 1, queue.end());
+                {
+                    const std::lock_guard<std::mutex> guard(lock);
+                    std::rotate(queue.begin() + dest_pos, queue.begin() + dest_pos + 1, queue.end());
+                }
+
                 resort_to_respect_dependencies(mem, dest);
                 position = get_position(source);
             }

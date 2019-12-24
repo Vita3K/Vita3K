@@ -81,14 +81,57 @@ namespace emu::ngs {
             return false;
         }
 
-        if (subindex > 32 || subindex < 0) {
+        if (subindex > 32) {
             return false;
+        }
+
+        if (subindex < 0) {
+            return true;
         }
 
         inputs[index].occupied &= ~(1 << subindex);
         return true;
     }
+
+    VoiceInputManager::PCMSubInputs::Iterator::Iterator(PCMSubInputs *inputs, const std::int32_t dest_subindex) 
+        : inputs(inputs)
+        , dest_subindex(dest_subindex) {
+
+    }
+
+    VoiceInputManager::PCMSubInputs::Iterator VoiceInputManager::PCMSubInputs::Iterator::operator++() {
+        do {
+            dest_subindex++;
+        } while (dest_subindex < inputs->bufs.size() && !(inputs->occupied & (1 << dest_subindex)));
+
+        return *this;
+    }
+
+    bool VoiceInputManager::PCMSubInputs::Iterator::operator !=(const VoiceInputManager::PCMSubInputs::Iterator &rhs) const {
+        return (dest_subindex != rhs.dest_subindex);
+    }
+
+    VoiceInputManager::PCMBuf &VoiceInputManager::PCMSubInputs::Iterator::operator *() {
+        return inputs->bufs[dest_subindex];
+    }
     
+    VoiceInputManager::PCMSubInputs::Iterator VoiceInputManager::PCMSubInputs::begin() {
+        std::int32_t subindex = static_cast<std::int32_t>(bufs.size());
+
+        for (std::int32_t i = 0; i < static_cast<std::int32_t>(bufs.size()); i++) {
+            if (occupied & (1 << i)) {
+                subindex = i;
+                break;
+            }
+        }
+
+        return Iterator(this, subindex);
+    }
+    
+    VoiceInputManager::PCMSubInputs::Iterator VoiceInputManager::PCMSubInputs::end() {
+        return Iterator(this, static_cast<std::int32_t>(bufs.size()));
+    }
+
     void Voice::init(Rack *mama) {
         rack = mama;
         state = VoiceState::VOICE_STATE_AVAILABLE;
@@ -97,9 +140,12 @@ namespace emu::ngs {
 
         outputs.resize(mama->patches_per_output);
         inputs.init(1);
+        voice_lock = std::make_unique<std::mutex>();
     }
 
     BufferParamsInfo *Voice::lock_params(const MemState &mem) {
+        const std::lock_guard<std::mutex> guard(*voice_lock);
+
         // Save a copy of previous set of data
         if (flags & PARAMS_LOCK) {
             return nullptr;
@@ -115,6 +161,8 @@ namespace emu::ngs {
     }
     
     bool Voice::unlock_params() {
+        const std::lock_guard<std::mutex> guard(*voice_lock);
+
         if (flags & PARAMS_LOCK) {
             flags &= ~PARAMS_LOCK;
 
@@ -127,6 +175,8 @@ namespace emu::ngs {
     }
     
     Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest) {
+        const std::lock_guard<std::mutex> guard(*voice_lock);
+
         // Look if another patch has already been there
         if (subindex == -1) {
             for (std::int32_t i = 0; i < outputs.size(); i++) {
@@ -156,6 +206,7 @@ namespace emu::ngs {
         patch->dest_index = dest_index;
         patch->dest = dest;
         patch->dest_sub_index = -1;
+        patch->source = this;
         
         // Set default value
         patch->dest_data_type = AudioDataType::S16;
@@ -164,6 +215,27 @@ namespace emu::ngs {
         dest->rack->module->get_expectation(&patch->dest_data_type, &patch->dest_channels);
 
         return outputs[subindex];
+    }
+
+    bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
+        const std::lock_guard<std::mutex> guard(*voice_lock);
+        auto iterator = std::find(outputs.begin(), outputs.end(), patch);
+
+        if (iterator == outputs.end()) {
+            return false;
+        }
+
+        // Try to unroute. Free the destination subindex
+        Patch *patch_info = patch.get(mem);
+
+        if (!patch_info) {
+            return false;
+        }
+
+        patch_info->dest->inputs.free_input(patch_info->dest_index, patch_info->dest_sub_index);
+        patch_info->output_sub_index = -1;
+
+        return true;
     }
 
     std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {
