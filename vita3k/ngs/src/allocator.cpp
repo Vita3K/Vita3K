@@ -1,7 +1,7 @@
 #include <ngs/mempool.h>
 #include <util/align.h>
 
-namespace emu::ngs {
+namespace ngs {
     MemspaceBlockAllocator::MemspaceBlockAllocator(const std::uint32_t memspace_size) {
         init(memspace_size);
     }

@@ -6,8 +6,8 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
-namespace emu::ngs::atrac9 {
-    std::unique_ptr<emu::ngs::Module> VoiceDefinition::new_module() {
+namespace ngs::atrac9 {
+    std::unique_ptr<ngs::Module> VoiceDefinition::new_module() {
         return std::make_unique<Module>();
     }
 
@@ -25,7 +25,7 @@ namespace emu::ngs::atrac9 {
     static_assert(sizeof(FFMPEG_ATRAC9Info) == 16);
     
     Module::Module() 
-        : emu::ngs::Module(emu::ngs::BUSS_ATRAC9)
+        : ngs::Module(ngs::BUSS_ATRAC9)
         , context(nullptr) {
         if (!init()) {
             LOG_WARN("ATRAC9 module is not supported!");
@@ -144,14 +144,17 @@ namespace emu::ngs::atrac9 {
     }
 
     void Module::process(const MemState &mem, Voice *voice) {
+        // Lock voice to avoid resource modificiation from other thread
+        const std::lock_guard<std::mutex> guard(*voice->voice_lock);
+
         Parameters *params = voice->get_parameters<Parameters>(mem);
         State *state = voice->get_state<State>();
-
-        assert(state);
 
         if (state->current_buffer == -1) {
             return;
         }
+
+        assert(state);
 
         const std::uint32_t block_align = calculate_block_align(params->config_data);
         const std::uint32_t superframe_size = calculate_superframe_size(params->config_data);
@@ -207,7 +210,17 @@ namespace emu::ngs::atrac9 {
 
             if (state->current_byte_position_in_buffer >= params->buffer_params[state->current_buffer].bytes_count) {
                 if (params->buffer_params[state->current_buffer].loop_count != -1) {
-                    state->current_buffer = params->buffer_params[state->current_buffer].next_buffer_index;
+                    state->current_loop_count++;
+
+                    if (state->current_loop_count > params->buffer_params[state->current_buffer].loop_count) {
+                        state->current_buffer = params->buffer_params[state->current_buffer].next_buffer_index;
+                        state->current_loop_count = 0;
+                        
+                        if (state->current_buffer == -1) {
+                            // Free all occupied input routes
+                            unroute_occupied(mem, voice);
+                        }
+                    }
                 }
 
                 state->current_byte_position_in_buffer = 0;

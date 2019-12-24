@@ -7,7 +7,7 @@ extern "C" {
 
 #include <util/log.h>
 
-namespace emu::ngs {
+namespace ngs {
     static AVSampleFormat audio_data_type_to_sample_format(AudioDataType data_type) {
         switch (data_type) {
         case AudioDataType::F32:
@@ -43,6 +43,10 @@ namespace emu::ngs {
         
         for (std::size_t i = 0; i < source->outputs.size(); i++) {
             Patch *patch = source->outputs[i].get(mem);
+
+            if (!patch || patch->output_sub_index == -1) {
+                continue;
+            }
             
             const std::uint32_t byte_per_dest_sample = audio_data_type_to_byte_count(patch->dest_data_type);
         
@@ -91,6 +95,21 @@ namespace emu::ngs {
                 
                 av_freep(&converted);
             }
+        }
+
+        return true;
+    }
+
+    bool unroute_occupied(const MemState &mem, Voice *source) {
+        for (std::size_t i = 0; i < source->outputs.size(); i++) {
+            Patch *patch = source->outputs[i].get(mem);
+
+            if (!patch || patch->output_sub_index == -1) {
+                continue;
+            }
+            
+            patch->dest->inputs.free_input(patch->dest_index, patch->dest_sub_index);
+            patch->dest_sub_index = -1;
         }
 
         return true;

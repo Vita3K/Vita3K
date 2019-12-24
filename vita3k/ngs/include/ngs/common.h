@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace emu::ngs {
+namespace ngs {
     enum BussType {
         BUSS_MASTER = 0,
         BUSS_COMPRESSOR = 1,

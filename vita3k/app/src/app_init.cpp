@@ -166,7 +166,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
     
-    if (!!emu::ngs::init(state.ngs, state.mem)) {
+    if (!!ngs::init(state.ngs, state.mem)) {
         LOG_ERROR("Failed to initialize ngs.");
         return false;
     }

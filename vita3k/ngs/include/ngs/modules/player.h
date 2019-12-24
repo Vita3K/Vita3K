@@ -2,7 +2,7 @@
 
 #include <ngs/system.h>
 
-namespace emu::ngs::player {
+namespace ngs::player {
     struct BufferParameter {
         Ptr<void> buffer;
         std::int32_t bytes_count;
@@ -15,7 +15,7 @@ namespace emu::ngs::player {
     static constexpr std::uint32_t MAX_BUFFER_PARAMS = 4;
 
     struct Parameters {
-        emu::ngs::ModuleParameterHeader header;
+        ngs::ModuleParameterHeader header;
         BufferParameter buffer_params[MAX_BUFFER_PARAMS];
         float playback_frequency;
         float playback_scalar;
@@ -31,7 +31,7 @@ namespace emu::ngs::player {
         std::int8_t unk63;
     };
 
-    struct Module: public emu::ngs::Module {
+    struct Module: public ngs::Module {
         explicit Module();
         void process(const MemState &mem, Voice *voice) override;
         void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override {
@@ -39,11 +39,11 @@ namespace emu::ngs::player {
         }
     };
 
-    struct VoiceDefinition: public emu::ngs::VoiceDefinition {
+    struct VoiceDefinition: public ngs::VoiceDefinition {
         std::size_t get_buffer_parameter_size() const override {
             return sizeof(Parameters);
         }
 
-        std::unique_ptr<emu::ngs::Module> new_module() override;
+        std::unique_ptr<ngs::Module> new_module() override;
     };
 };

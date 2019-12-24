@@ -3,8 +3,9 @@
 
 #include <algorithm>
 
-namespace emu::ngs {
+namespace ngs {
     bool VoiceScheduler::deque_voice(Voice *voice) {
+        const std::lock_guard<std::mutex> guard(lock);
         auto voice_in = std::find(queue.begin(), queue.end(), voice);
 
         if (voice_in == queue.end()) {
@@ -16,13 +17,13 @@ namespace emu::ngs {
     }
 
     bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
-        bool should_enqueue = (voice->state == emu::ngs::VOICE_STATE_PAUSED || voice->state == emu::ngs::VOICE_STATE_AVAILABLE);
+        bool should_enqueue = (voice->state == ngs::VOICE_STATE_PAUSED || voice->state == ngs::VOICE_STATE_AVAILABLE);
 
         // Transition
-        if (voice->state == emu::ngs::VOICE_STATE_ACTIVE || voice->state == emu::ngs::VOICE_STATE_PAUSED) {
-            voice->state = emu::ngs::VOICE_STATE_ACTIVE;
-        } else if (voice->state == emu::ngs::VOICE_STATE_AVAILABLE) {
-            voice->state = emu::ngs::VOICE_STATE_PENDING;
+        if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_PAUSED) {
+            voice->state = ngs::VOICE_STATE_ACTIVE;
+        } else if (voice->state == ngs::VOICE_STATE_AVAILABLE) {
+            voice->state = ngs::VOICE_STATE_PENDING;
         } else {
             return false;
         }
@@ -46,6 +47,7 @@ namespace emu::ngs {
                 lowest_dest_pos = std::min<std::int32_t>(lowest_dest_pos, pos);
             }
 
+            const std::lock_guard<std::mutex> guard(lock);
             queue.insert(queue.begin() + lowest_dest_pos, voice);
         }
 
@@ -53,12 +55,12 @@ namespace emu::ngs {
     }
 
     bool VoiceScheduler::pause(Voice *voice) {
-        if (voice->state == emu::ngs::VOICE_STATE_AVAILABLE || voice->state == emu::ngs::VOICE_STATE_PAUSED) {
+        if (voice->state == ngs::VOICE_STATE_AVAILABLE || voice->state == ngs::VOICE_STATE_PAUSED) {
             return true;
         }
 
-        if (voice->state == emu::ngs::VOICE_STATE_ACTIVE || voice->state == emu::ngs::VOICE_STATE_PENDING) {
-            voice->state = emu::ngs::VOICE_STATE_PAUSED;
+        if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_PENDING) {
+            voice->state = ngs::VOICE_STATE_PAUSED;
 
             // Remove from the list
             deque_voice(voice);
@@ -70,24 +72,27 @@ namespace emu::ngs {
     }
 
     bool VoiceScheduler::stop(Voice *voice) {
-        if (voice->state == emu::ngs::VOICE_STATE_AVAILABLE || voice->state == emu::ngs::VOICE_STATE_FINALIZING) {
+        if (voice->state == ngs::VOICE_STATE_AVAILABLE || voice->state == ngs::VOICE_STATE_FINALIZING) {
             return false;
         }
 
-        voice->state = emu::ngs::VOICE_STATE_AVAILABLE;
+        voice->state = ngs::VOICE_STATE_AVAILABLE;
         deque_voice(voice);
 
         return true;
     }
 
     void VoiceScheduler::update(const MemState &mem) {
-        for (emu::ngs::Voice *voice: queue) {
-            voice->state = emu::ngs::VOICE_STATE_ACTIVE;
+        const std::lock_guard<std::mutex> guard(lock);
+
+        for (ngs::Voice *voice: queue) {
+            voice->state = ngs::VOICE_STATE_ACTIVE;
             voice->rack->module->process(mem, voice);
         }
     }
 
     std::int32_t VoiceScheduler::get_position(Voice *v) {
+        const std::lock_guard<std::mutex> guard(lock);
         auto result = std::find(queue.begin(), queue.end(), v);
 
         if (result != queue.end()) {
@@ -121,7 +126,11 @@ namespace emu::ngs {
 
             if (dest_pos < position) {
                 // Switch to the end. Resort dependencies for this one that just got sorted too.
-                std::rotate(queue.begin() + dest_pos, queue.begin() + dest_pos + 1, queue.end());
+                {
+                    const std::lock_guard<std::mutex> guard(lock);
+                    std::rotate(queue.begin() + dest_pos, queue.begin() + dest_pos + 1, queue.end());
+                }
+
                 resort_to_respect_dependencies(mem, dest);
                 position = get_position(source);
             }

@@ -10,7 +10,7 @@
 
 struct MemState;
 
-namespace emu::ngs {
+namespace ngs {
     struct VoiceDefinition;
     struct System;
 

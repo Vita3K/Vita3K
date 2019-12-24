@@ -80,7 +80,7 @@ struct HostState {
     bool renderer_focused;
     IOState io;
     NetState net;
-    emu::ngs::State ngs;
+    ngs::State ngs;
     NpState np;
     DisplayState display;
     DialogState common_dialog;

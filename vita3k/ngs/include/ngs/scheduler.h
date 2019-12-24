@@ -5,13 +5,14 @@
 
 struct MemState;
 
-namespace emu::ngs {
+namespace ngs {
     struct PatchSetupInfo;
     struct Voice;
     struct Patch;
 
     struct VoiceScheduler {
         std::vector<Voice*> queue;
+        std::mutex lock;
 
     protected:
         bool deque_voice(Voice *voice);

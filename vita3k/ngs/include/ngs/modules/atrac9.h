@@ -5,7 +5,7 @@
 typedef struct AVCodecContext AVCodecContext;
 typedef struct AVCodec AVCodec;
 
-namespace emu::ngs::atrac9 {
+namespace ngs::atrac9 {
     struct BufferParameter {
         Ptr<void> buffer;
         std::int32_t bytes_count;
@@ -26,7 +26,7 @@ namespace emu::ngs::atrac9 {
     static constexpr std::uint32_t MAX_BUFFER_PARAMS = 4;
 
     struct Parameters {
-        emu::ngs::ModuleParameterHeader header;
+        ngs::ModuleParameterHeader header;
         BufferParameter buffer_params[MAX_BUFFER_PARAMS];
         float playback_frequency;
         float playback_scalar;
@@ -44,9 +44,10 @@ namespace emu::ngs::atrac9 {
         std::int32_t samples_generated_since_key_on;
         std::int32_t bytes_consumed_since_key_on;
         std::int32_t total_bytes_consumed;
+        std::int8_t current_loop_count;
     };
 
-    struct Module: public emu::ngs::Module {
+    struct Module: public ngs::Module {
     private:
         AVCodecContext *context;
         AVCodec *codec;
@@ -61,12 +62,12 @@ namespace emu::ngs::atrac9 {
         }
     };
 
-    struct VoiceDefinition: public emu::ngs::VoiceDefinition {
+    struct VoiceDefinition: public ngs::VoiceDefinition {
         std::size_t get_buffer_parameter_size() const override {
             return sizeof(Parameters);
         }
 
-        std::unique_ptr<emu::ngs::Module> new_module() override;
+        std::unique_ptr<ngs::Module> new_module() override;
     };
 
     void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t 

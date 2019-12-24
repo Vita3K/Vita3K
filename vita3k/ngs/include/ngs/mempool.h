@@ -5,7 +5,7 @@
 
 #include <mem/ptr.h>
 
-namespace emu::ngs {
+namespace ngs {
     struct MemspaceBlockAllocator {
         struct Block {
             std::uint32_t size;
@@ -49,7 +49,7 @@ namespace emu::ngs {
 
         template <typename T>
         bool free(const Ptr<T> ptr) {
-            return free_raw(ptr.cast<void>());
+            return free_raw(ptr.template cast<void>());
         }
     };    
 }
