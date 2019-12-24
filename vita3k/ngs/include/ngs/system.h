@@ -1,6 +1,9 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <vector>
+
 #include <mem/ptr.h>
 
 #include <ngs/scheduler.h>
@@ -65,6 +68,7 @@ namespace emu::ngs {
         std::int32_t output_index;
         std::int32_t output_sub_index;
         std::int32_t dest_index;
+        std::int32_t dest_sub_index;
         std::int16_t dest_channels;
         AudioDataType dest_data_type;
         Voice *dest;
@@ -100,6 +104,29 @@ namespace emu::ngs {
         VOICE_STATE_KEY_OFF = 1 << 6
     };
 
+    struct VoiceInputManager {
+        using PCMBuf = std::vector<std::uint8_t>;
+
+        struct PCMSubInputs {    
+            std::uint32_t occupied = 0;
+            std::vector<PCMBuf> bufs;
+        };
+
+        using PCMInputs = std::vector<PCMSubInputs>;
+
+        PCMInputs inputs;
+
+        void init(const std::uint16_t total_input);
+
+        PCMBuf *get_input_buffer_queue(const std::int32_t index, const std::int32_t subindex);
+
+        // Return subindex
+        std::int32_t receive(const std::int32_t index, const std::int32_t subindex, std::uint8_t **data,
+            const std::int16_t channel_count, const std::size_t size_each);
+
+        bool free_input(const std::int32_t index, const std::int32_t subindex);
+    };
+
     struct Voice {
         Rack *rack;
 
@@ -118,8 +145,7 @@ namespace emu::ngs {
         std::vector<std::uint8_t> voice_state_data;         ///< Voice state.
         std::vector<std::uint8_t> extra_voice_data;         ///< Local data storage for module.
 
-        using PCMBuf = std::vector<std::uint8_t>;
-        std::vector<PCMBuf> inputs;
+        VoiceInputManager inputs;
 
         void init(Rack *mama);
 
@@ -127,8 +153,7 @@ namespace emu::ngs {
         bool unlock_params();
 
         Ptr<Patch> patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest);
-        void receive(const std::int32_t index, std::uint8_t **data, const std::int16_t channel_count, const std::size_t size_each);
-
+        
         template <typename T>
         T *get_state() {
             if (voice_state_data.size() == 0) {

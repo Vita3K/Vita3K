@@ -45,10 +45,12 @@ namespace emu::ngs {
             Patch *patch = source->outputs[i].get(mem);
             
             const std::uint32_t byte_per_dest_sample = audio_data_type_to_byte_count(patch->dest_data_type);
-            
+        
+            VoiceInputManager::PCMBuf *input_buf = patch->dest->inputs.get_input_buffer_queue(patch->dest_index,
+                patch->dest_sub_index);
+
             if (output_data == nullptr) {
-                if (patch->dest->inputs.size() <= patch->dest_index || patch->dest->inputs[patch->dest_index].size() <= patch->dest_channels *
-                    byte_per_dest_sample * patch->dest->rack->system->granularity) {
+                if (!input_buf || input_buf->size() <= patch->dest_channels * byte_per_dest_sample * patch->dest->rack->system->granularity) {
                     // Need more data.
                     return false;
                 }
@@ -56,11 +58,9 @@ namespace emu::ngs {
 
             const std::uint32_t converted_channel_size = sample_count * byte_per_dest_sample;
 
-            if (patch->dest->inputs.size() > patch->dest_index && patch->dest->inputs[patch->dest_index].size() != 0) {
-                Voice::PCMBuf &dest_buf = patch->dest->inputs[patch->dest_index];
-
+            if (input_buf && input_buf->size() != 0) {
                 // Delete last used samples
-                dest_buf.erase(dest_buf.begin(), dest_buf.begin() + std::min<std::size_t>(dest_buf.size(),
+                input_buf->erase(input_buf->begin(), input_buf->begin() + std::min<std::size_t>(input_buf->size(),
                     patch->dest_channels * byte_per_dest_sample * patch->dest->rack->system->granularity));
             }
 
@@ -86,7 +86,8 @@ namespace emu::ngs {
                     return false;
                 }
 
-                patch->dest->receive(patch->dest_index, &converted, output_channels, converted_channel_size);
+                patch->dest_sub_index = patch->dest->inputs.receive(patch->dest_index, patch->dest_sub_index,
+                    &converted, output_channels, converted_channel_size);
                 
                 av_freep(&converted);
             }

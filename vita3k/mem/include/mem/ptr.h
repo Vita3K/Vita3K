@@ -59,6 +59,10 @@ public:
         }
     }
 
+    bool valid(const MemState &mem) const {
+        return (mem.allocated_pages[addr / mem.page_size] != 0);
+    }
+
     void reset() {
         addr = 0;
     }

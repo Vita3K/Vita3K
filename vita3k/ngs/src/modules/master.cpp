@@ -25,14 +25,14 @@ namespace emu::ngs::master {
 
         std::fill(voice->voice_state_data.begin(), voice->voice_state_data.end(), 0);
 
-        if (voice->inputs.size() == 0) {
+        if (voice->inputs.inputs[0].bufs.size() == 0) {
             return;
         }
 
         const std::uint32_t gran_byte_count = voice->rack->system->granularity * sizeof(std::int16_t) * 2;
 
-        for (std::int32_t i = 0; i < voice->inputs.size(); i++) {
-            std::int16_t *samples_to_mix = reinterpret_cast<std::int16_t*>(&voice->inputs[i][0]);
+        for (std::int32_t i = 0; i < voice->inputs.inputs[0].bufs.size(); i++) {
+            std::int16_t *samples_to_mix = reinterpret_cast<std::int16_t*>(&voice->inputs.inputs[0].bufs[i][0]);
             std::int16_t *dest_samples = reinterpret_cast<std::int16_t*>(&voice->voice_state_data[0]);
 
             for (std::int32_t k = 0; k < voice->rack->system->granularity * 2; k++) {
