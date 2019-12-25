@@ -207,6 +207,7 @@ bool run_thread(ThreadState &thread, bool callback) {
             }
 #endif
             if (res < 0) {
+                LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
                 return false;
             }
             if (callback) {

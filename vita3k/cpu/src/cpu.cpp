@@ -151,6 +151,25 @@ static void enable_vfp_fpu(uc_engine *uc) {
     assert(err == UC_ERR_OK);
 }
 
+static void log_error_details(CPUState &state, uc_err code) {
+    // I don't especially want the time logged for every line, but I also want it to print to the log file...
+    LOG_ERROR("Unicorn error {}. {}", log_hex(code), uc_strerror(code));
+
+    uint32_t pc = read_pc(state);
+    uint32_t sp = read_sp(state);
+    uint32_t lr = read_lr(state);
+    uint32_t registers[13];
+    for (size_t a = 0; a < 13; a++)
+        registers[a] = read_reg(state, a);
+
+    LOG_ERROR("Executing: {}", disassemble(state, pc));
+    LOG_ERROR("PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}", pc, sp, lr);
+    for (int a = 0; a < 6; a++) {
+        LOG_ERROR("r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}", a, registers[a], a + 6, registers[a + 6]);
+    }
+    LOG_ERROR("r12: 0x{:0>8x}", registers[12]);
+}
+
 CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
@@ -219,10 +238,7 @@ int run(CPUState &state, bool callback) {
     err = uc_emu_start(state.uc.get(), pc, state.entry_point & 0xfffffffe, 0, 0);
 
     if (err != UC_ERR_OK) {
-        std::uint32_t error_pc = read_pc(state);
-        uint32_t lr = read_lr(state);
-        LOG_CRITICAL("Unicorn error {} at: start PC: {} error PC {} LR: {}",
-            log_hex(err), log_hex(pc), log_hex(error_pc), log_hex(lr));
+        log_error_details(state, err);
 #ifdef USE_GDBSTUB
         trigger_breakpoint(state);
         return 0;
@@ -252,10 +268,7 @@ int step(CPUState &state, bool callback) {
     uc_err err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
 
     if (err != UC_ERR_OK) {
-        std::uint32_t error_pc = read_pc(state);
-        uint32_t lr = read_lr(state);
-        LOG_CRITICAL("Unicorn error {} at: start PC: {} error PC {} LR: {}",
-            log_hex(err), log_hex(pc), log_hex(error_pc), log_hex(lr));
+        log_error_details(state, err);
         return -1;
     }
     pc = read_pc(state);
