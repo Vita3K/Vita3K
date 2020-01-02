@@ -185,7 +185,7 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
     LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
 }
 
-bool create(WindowPtr &window, std::unique_ptr<State> &state) {
+bool create(WindowPtr &window, std::unique_ptr<State> &state, bool shader_optimization) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
 
     // Recursively create GL version until one accepts
@@ -230,6 +230,8 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     // Detect GPU and features
     const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
     const std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+    gl_state.features.shader_optimization = shader_optimization;
 
     LOG_INFO("GPU = {}", gpu_name);
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));

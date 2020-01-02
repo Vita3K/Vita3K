@@ -87,3 +87,9 @@
 [submodule "external/ffmpeg"]
 	path = external/ffmpeg
 	url = https://github.com/Vita3K/ffmpeg-core.git
+[submodule "external/SPIRV-Tools"]
+	path = external/SPIRV-Tools
+	url = https://github.com/KhronosGroup/SPIRV-Tools.git
+[submodule "external/SPIRV-Headers"]
+	path = external/SPIRV-Headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers.git

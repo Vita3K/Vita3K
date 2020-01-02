@@ -202,6 +202,13 @@ option(SPIRV_CROSS_ENABLE_C_API "Enable C API wrapper support in static library.
 option(SPIRV_CROSS_ENABLE_UTIL "Enable util module support." OFF)
 add_subdirectory(SPIRV-Cross)
 
+set(SPIRV_HEADERS_SKIP_EXAMPLES ON)
+set(SPIRV_HEADERS_SKIP_INSTALL ON)
+set(SPIRV_SKIP_TESTS ON)
+set(SPIRV_SKIP_EXECUTABLES ON)
+add_subdirectory(SPIRV-Headers)
+add_subdirectory(SPIRV-Tools)
+
 add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
 target_include_directories(dlmalloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc")
 target_compile_definitions(dlmalloc PUBLIC ONLY_MSPACES=1)

@@ -47,6 +47,7 @@
     code(bool, "hardware-flip", false, hardware_flip)                                                   \
     code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
+    code(bool, "shader-optimization", false, shader_optimization)                                        \
     code(int, "user-id", 0, user_id)
 
 // Vector members produced in the config file
