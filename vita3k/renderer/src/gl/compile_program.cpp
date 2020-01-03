@@ -155,7 +155,7 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
 
     glLinkProgram(program->get());
 
-    if (features.use_shader_binding) {
+    if (!features.use_shader_binding) {
         bind_uniform_block_locations(program->get(), *vertex_program_gxm.program.get(mem));
         bind_uniform_block_locations(program->get(), *fragment_program_gxm.program.get(mem));
     }
