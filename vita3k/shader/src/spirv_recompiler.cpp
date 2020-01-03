@@ -684,7 +684,7 @@ static spv::Id create_uniform_block(spv::Builder &b, const FeatureState &feature
 
     b.addMemberDecoration(default_buffer_type, 0, spv::DecorationOffset, 0);
     b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
-    b.addMemberName(default_buffer_type, 0, "buffer");
+    b.addMemberName(default_buffer_type, 0, "data");
 
     return default_buffer;
 }
