@@ -24,12 +24,15 @@
 #include <string>
 
 struct CPUState;
+struct CPUContext;
+
 template <typename T>
 class Resource;
 
 typedef Resource<Address> ThreadStack;
 typedef std::shared_ptr<ThreadStack> ThreadStackPtr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
+typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
 
 enum class ThreadToDo {
     exit,
@@ -43,6 +46,8 @@ struct ThreadState {
     int priority;
     int stack_size;
     CPUStatePtr cpu;
+    CPUContextPtr cpu_context;
+    CPUContext* fiber_context;
     ThreadToDo to_do = ThreadToDo::run;
     std::mutex mutex;
     std::condition_variable something_to_do;

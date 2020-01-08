@@ -102,6 +102,11 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         return SCE_KERNEL_ERROR_ERROR;
     }
 
+    thread->cpu_context = init_cpu_context();
+    if (!thread->cpu_context) {
+        return SCE_KERNEL_ERROR_ERROR;
+    }
+
     WaitingThreadState waiting{ name };
 
     const std::unique_lock<std::mutex> lock(kernel.mutex);

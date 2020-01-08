@@ -421,3 +421,40 @@ void log_mem_add(CPUState &state) {
     err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_MEM_WRITE, reinterpret_cast<void *>(&write_hook), &state, 1, 0);
     assert(err == UC_ERR_OK);
 }
+
+static void delete_cpu_context(CPUContext *ctx) {
+    delete ctx;
+}
+
+CPUContextPtr init_cpu_context() {
+    CPUContextPtr ctx(new CPUContext(), delete_cpu_context);
+    return ctx;
+}
+
+void save_context(CPUState &state, CPUContext &ctx) {
+
+    for (auto i = 0; i < 16; i++) {
+        ctx.cpu_registers[i] = read_reg(state, i);
+    }
+
+    ctx.pc = read_pc(state);
+    ctx.lr = read_lr(state);
+    ctx.sp = read_sp(state);
+
+}
+
+void load_context(CPUState &state, CPUContext &ctx) {
+
+    bool thumb_mode = is_thumb_mode(state.uc.get());
+    if (thumb_mode) {
+        ctx.pc |= 1;
+    }
+
+    for (auto i = 0; i < 16; i++) {
+        write_reg(state, i, ctx.cpu_registers[i]);
+    }
+
+    write_pc(state, ctx.pc);
+    write_lr(state, ctx.lr);
+    write_sp(state, ctx.sp);
+}
