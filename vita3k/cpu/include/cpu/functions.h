@@ -25,8 +25,18 @@
 struct CPUState;
 struct MemState;
 
+struct CPUContext {
+    uint32_t cpu_registers[16];
+    uint32_t sp;
+    uint32_t pc;
+    uint32_t lr;
+    uint32_t cpsr;
+};
+
 typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
+typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
+
 
 CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem);
 int run(CPUState &state, bool callback);
@@ -54,3 +64,7 @@ bool hit_breakpoint(CPUState &state);
 void trigger_breakpoint(CPUState &state);
 void log_code_add(CPUState &state);
 void log_mem_add(CPUState &state);
+
+CPUContextPtr init_cpu_context();
+void save_context(CPUState &state, CPUContext &ctx);
+void load_context(CPUState &state, CPUContext &ctx);
