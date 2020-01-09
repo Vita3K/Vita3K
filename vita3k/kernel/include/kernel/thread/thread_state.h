@@ -18,6 +18,7 @@
 #pragma once
 
 #include <mem/mem.h> // Address.
+#include <mem/ptr.h>
 
 #include <condition_variable>
 #include <mutex>
@@ -47,7 +48,7 @@ struct ThreadState {
     int stack_size;
     CPUStatePtr cpu;
     CPUContextPtr cpu_context;
-    CPUContext* fiber_context;
+    Ptr<void> fiber;
     ThreadToDo to_do = ThreadToDo::run;
     std::mutex mutex;
     std::condition_variable something_to_do;
