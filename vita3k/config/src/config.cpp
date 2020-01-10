@@ -22,14 +22,34 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <boost/program_options.hpp>
+#include <CLI11.hpp>
 
 #include <exception>
 #include <iostream>
 
-namespace po = boost::program_options;
-
 namespace config {
+
+static std::set<std::string> get_file_set(const fs::path &loc, bool dirs_only = true) {
+    std::set<std::string> cur_set{};
+    if (!fs::exists(loc)) {
+        return cur_set;
+    }
+
+    fs::directory_iterator it{ loc };
+    while (it != fs::directory_iterator{}) {
+        if (dirs_only) {
+            if (!it->path().empty() && fs::is_directory(it->path())) {
+                cur_set.insert(it->path().stem().string());
+            }
+        } else {
+            cur_set.insert(it->path().stem().string());
+        }
+
+        std::error_code err{};
+        it.increment(err);
+    }
+    return cur_set;
+}
 
 static fs::path check_path(const fs::path &output_path) {
     if (output_path.filename() != "config.yml") {
@@ -103,127 +123,125 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     else
         fs::copy(root_paths.get_base_path() / "data/config/default.yml", root_paths.get_base_path() / "config.yml");
 
+    // Declare all options
+    CLI::App app{ "Vita3K Command Line Interface", "Vita3K.exe" }; // "--help,-h" is automatically generated
+    app.allow_windows_style_options();
+    app.allow_extras();
+    app.enabled_by_default();
+    app.get_formatter()->column_width(38);
+
+    // clang-format off
+    const auto ver = app.add_flag("--version,-v", "Print the version string")
+        ->group("Options");
+
+    // Positional options
+    app.add_option("vpk-path", command_line.vpk_path, "Path of app in .vpk format to install & run")
+        ->default_str({});
+
+    // Grouped options
+    auto input = app.add_option_group("Input", "Special options for Vita3K");
+    input->add_option("--installed-id,-r", command_line.run_title_id, "Title ID of installed app to run")
+        ->default_str({})->check(CLI::IsMember(get_file_set(root_paths.get_pref_path() / "ux0/app")))->group("Input");
+    input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
+        ->default_str({})->group("Input");
+
+    auto config = app.add_option_group("Configuration", "Modify Vita3K's config.yml file");
+    config->add_flag("--" + cfg[e_archive_log] + ",-A", command_line.archive_log, "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
+        ->group("Logging");
+    config->add_option("--" + cfg[e_backend_renderer] + ",-B", command_line.backend_renderer, "Renderer backend to use")
+        ->ignore_case()->check(CLI::IsMember(std::set<std::string>{ "OpenGL", "Vulkan" }))->group("Vita Emulation");
+    config->add_flag("--" + cfg[e_color_surface_debug] + ",-C", command_line.color_surface_debug, "Save color surfaces")
+        ->group("Vita Emulation");
+    config->add_option("--config-location,-c", command_line.config_path, "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault loaded: <Vita3K>/config.yml \nDefaults: <Vita3K>/data/config/default.yml")
+        ->group("YML");
+    config->add_flag("!--keep-config,!-w", command_line.overwrite_config, "Do not modify the configuration file after loading.")
+        ->group("YML");
+    config->add_flag("--load-config,-f", command_line.load_config, "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
+        ->group("YML");
+
+    std::vector<std::string> lle_modules{};
+    config->add_option("--" + cfg[e_lle_modules] + ",-m", lle_modules, "Load given (decrypted) OS modules from disk.\nSeparate by commas to specify multiple modules. Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
+        ->group("Modules");
+    config->add_option("--" + cfg[e_log_level] + ",-l", command_line.log_level, "Logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
+        ->check(CLI::Range( 0, 6 ))->group("Logging");
+    config->add_flag("--" + cfg[e_log_imports] + ",-I", command_line.log_imports, "Log Imports")
+        ->group("Logging");
+    config->add_flag("--" + cfg[e_log_exports] + ",-E", command_line.log_exports, "Log Exports")
+        ->group("Logging");
+    config->add_flag("--" + cfg[e_log_active_shaders] + ",-S", command_line.log_active_shaders, "Log Active Shaders")
+        ->group("Logging");
+    config->add_flag("--" + cfg[e_log_uniforms] + ",-U", command_line.log_uniforms, "Log Uniforms")
+        ->group("Logging");
+    // clang-format on
+
+    // Parse the inputs
     try {
-        // Declare all options
-        // clang-format off
-        po::options_description generic_desc("Generic");
-        generic_desc.add_options()
-            ("help,h", "print this usage message")
-            ("version,v", "print version string");
-
-        po::options_description input_desc("Input");
-        input_desc.add_options()
-            ("input-vpk-path,i", po::value(&command_line.vpk_path), "path of app in .vpk format to install & run")
-            ("input-installed-id,r", po::value(&command_line.run_title_id), "title ID of installed app to run")
-            ("recompile-shader,s", po::value(&command_line.recompile_shader_path), "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit");
-
-        po::options_description config_desc("Configuration");
-        config_desc.add_options()
-            ((cfg[e_archive_log] + ",A").c_str(), po::bool_switch(&command_line.archive_log), "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
-            ((cfg[e_backend_renderer] + ",B").c_str(), po::value(&command_line.backend_renderer), "Renderer backend to use, either \"OpenGL\" or \"Vulkan\"")
-            ((cfg[e_color_surface_debug] + ",C").c_str(), po::bool_switch(&command_line.color_surface_debug), "Save color surfaces")
-            ("config-location,c", po::value<fs::path>(&command_line.config_path), "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault loaded: <Vita3K>/config.yml \nDefaults: <Vita3K>/data/config/default.yml")
-            ("keep-config,w", po::bool_switch(&command_line.overwrite_config)->default_value(true), "Do not modify the configuration file after loading.")
-            ("load-config,f", po::bool_switch(&command_line.load_config), "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
-            ("fullscreen,F", po::bool_switch(&command_line.fullscreen), "Starts the emulator in fullscreen mode.")
-
-            ((cfg[e_lle_modules] + ",m").c_str(), po::value<std::string>(), "Load given (decrypted) OS modules from disk. Separate by commas to specify multiple modules (no spaces). Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
-            ((cfg[e_log_level] + ",l").c_str(), po::value(&command_line.log_level), "logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
-            ((cfg[e_log_imports] + ",I").c_str(), po::bool_switch(&command_line.log_imports), "Log Imports")
-            ((cfg[e_log_exports] + ",E").c_str(), po::bool_switch(&command_line.log_exports), "Log Exports")
-            ((cfg[e_log_active_shaders] + ",S").c_str(), po::bool_switch(&command_line.log_active_shaders), "Log Active Shaders")
-            ((cfg[e_log_uniforms] + ",U").c_str(), po::bool_switch(&command_line.log_uniforms), "Log Uniforms");
-        // clang-format on
-
-        // Positional args
-        // Make .vpk (-i) argument the default
-        po::positional_options_description positional;
-        positional.add("input-vpk-path", 1);
-
-        // Options description instance which includes all the options
-        po::options_description all("All options");
-        all.add(generic_desc).add(input_desc).add(config_desc);
-
-        // Options description instance which will be shown to the user
-        po::options_description visible("Allowed options");
-        visible.add(generic_desc).add(input_desc).add(config_desc);
-
-        // Options description instance which includes options exposed in config file
-        po::options_description config_file("Config file options");
-        config_file.add(config_desc);
-
-        // Command-line argument parsing
-        po::variables_map var_map;
-        po::store(po::command_line_parser(argc, argv).options(all).positional(positional).run(), var_map);
-        po::notify(var_map);
-
-        if (var_map.count("help")) {
-            std::cout << visible << std::endl;
-            return QuitRequested;
+        app.parse(argc, argv);
+    } catch (CLI::ParseError &e) {
+        if (e.get_exit_code() != 0) {
+            std::cout << "CLI parsing error: " << e.what() << "\n";
+            return InitConfigFailed;
         }
-        if (var_map.count("version")) {
-            std::cout << window_title << std::endl;
-            return QuitRequested;
-        }
-        if (var_map.count("recompile-shader")) {
-            cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
-            return QuitRequested;
-        }
-        if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
-            if (command_line.config_path.empty()) {
-                command_line.config_path = root_paths.get_base_path();
-            } else {
-                if (parse(command_line, command_line.config_path, root_paths.get_pref_path_string()) != Success)
-                    return InitConfigFailed;
-            }
-        }
-
-        // Get LLE modules from the command line, otherwise get the modules from the YML file
-        if (var_map.count(cfg[e_lle_modules])) {
-            const auto lle_modules = var_map[cfg[e_lle_modules]].as<std::string>();
-            if (command_line.load_config) {
-                const auto command_line_lle = string_utils::split_string(lle_modules, ',');
-                command_line.lle_modules = vector_utils::merge_vectors(command_line.lle_modules, command_line_lle);
-            } else {
-                command_line.lle_modules = string_utils::split_string(lle_modules, ',');
-            }
-        }
-
-        // Merge configurations
-        command_line.update_yaml();
-        cfg += command_line;
-        if (cfg.pref_path.empty())
-            cfg.pref_path = root_paths.get_pref_path_string();
-
-        LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");
-
-        logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
-
-        LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
-        LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
-        LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
-        LOG_INFO_IF(cfg.hardware_flip, "{}: enabled", cfg[e_hardware_flip]);
-        if (!cfg.lle_modules.empty()) {
-            std::string modules;
-            for (const auto &mod : cfg.lle_modules) {
-                modules += mod + ",";
-            }
-            modules.pop_back();
-            LOG_INFO("lle-modules: {}", modules);
-        }
-        LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
-        LOG_INFO_IF(cfg.log_imports, "{}: enabled", cfg[e_log_imports]);
-        LOG_INFO_IF(cfg.log_exports, "{}: enabled", cfg[e_log_exports]);
-        LOG_INFO_IF(cfg.log_active_shaders, "{}: enabled", cfg[e_log_active_shaders]);
-        LOG_INFO_IF(cfg.log_uniforms, "{}: enabled", cfg[e_log_uniforms]);
-
-    } catch (std::exception &e) {
-        std::cerr << "error: " << e.what() << "\n";
-        return InitConfigFailed;
-    } catch (...) {
-        std::cerr << "Exception of unknown type!\n";
-        return InitConfigFailed;
     }
+
+    if (!app.get_help_ptr()->empty()) {
+        std::cout << app.help() << std::endl;
+        return QuitRequested;
+    }
+    if (!ver->empty()) {
+        std::cout << window_title << std::endl;
+        return QuitRequested;
+    }
+
+    if (command_line.recompile_shader_path.has_value()) {
+        cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
+        return QuitRequested;
+    }
+    if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
+        if (command_line.config_path.empty()) {
+            command_line.config_path = root_paths.get_base_path();
+        } else {
+            if (parse(command_line, command_line.config_path, root_paths.get_pref_path_string()) != Success)
+                return InitConfigFailed;
+        }
+    }
+
+    // Get LLE modules from the command line, otherwise get the modules from the YML file
+    if (!lle_modules.empty()) {
+        if (command_line.load_config) {
+            command_line.lle_modules = vector_utils::merge_vectors(command_line.lle_modules, lle_modules);
+        } else {
+            command_line.lle_modules = std::move(lle_modules);
+        }
+    }
+
+    // Merge configurations
+    command_line.update_yaml();
+    cfg += command_line;
+    if (cfg.pref_path.empty())
+        cfg.pref_path = root_paths.get_pref_path_string();
+
+    LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");
+
+    logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
+
+    LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
+    LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
+    LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
+    LOG_INFO_IF(cfg.hardware_flip, "{}: enabled", cfg[e_hardware_flip]);
+    if (!cfg.lle_modules.empty()) {
+        std::string modules;
+        for (const auto &mod : cfg.lle_modules) {
+            modules += mod + ",";
+        }
+        modules.pop_back();
+        LOG_INFO("lle-modules: {}", modules);
+    }
+    LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
+    LOG_INFO_IF(cfg.log_imports, "{}: enabled", cfg[e_log_imports]);
+    LOG_INFO_IF(cfg.log_exports, "{}: enabled", cfg[e_log_exports]);
+    LOG_INFO_IF(cfg.log_active_shaders, "{}: enabled", cfg[e_log_active_shaders]);
+    LOG_INFO_IF(cfg.log_uniforms, "{}: enabled", cfg[e_log_uniforms]);
 
     // Save any changes made in command-line arguments
     if (cfg.overwrite_config || !fs::exists(check_path(cfg.config_path))) {

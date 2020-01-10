@@ -14,3 +14,4 @@ configure_file(src/version.cpp.in version.cpp)
 
 target_include_directories(config PUBLIC include)
 target_link_libraries(config PUBLIC util yaml-cpp)
+target_link_libraries(config PRIVATE CLI11)
