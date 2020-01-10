@@ -36,14 +36,14 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-void delete_game(GuiState &gui, HostState &host, const std::string &title_id);
-void game_context_menu(GuiState &gui, HostState &host, bool *selected, const std::string &title_id);
+void delete_game(GuiState &gui, HostState &host);
+void game_context_menu(GuiState &gui, HostState &host);
 void get_game_titles(GuiState &gui, HostState &host);
 void get_modules_list(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);
 void init_background(GuiState &gui, const std::string &image_path);
 void init_icons(GuiState &gui, HostState &host);
-void load_game_background(GuiState &gui, HostState &host, const std::string &title_id);
+void load_game_background(GuiState &gui, HostState &host);
 bool refresh_game_list(GuiState &gui, HostState &host);
 
 void draw_begin(GuiState &gui, HostState &host);
