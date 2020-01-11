@@ -59,8 +59,8 @@ static const char *miniz_get_error(const ZipPtr &zip) {
 }
 
 static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const ZipPtr &zip) {
-    if (!mz_zip_reader_extract_file_to_callback(zip.get(), file.generic_path().string().c_str(), &write_to_buffer, &buf, 0)) {
-        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), file.generic_path().string());
+    if (!mz_zip_reader_extract_file_to_callback(zip.get(), file.generic_string().c_str(), &write_to_buffer, &buf, 0)) {
+        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), file.generic_string());
         return false;
     }
 
@@ -69,7 +69,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
 
 bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     if (!fs::exists(path)) {
-        LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_path().string());
+        LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_string());
         return false;
     }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
@@ -78,9 +78,9 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     FILE *vpk_fp;
 
 #ifdef WIN32
-    _wfopen_s(&vpk_fp, path.generic_path().wstring().c_str(), L"rb");
+    _wfopen_s(&vpk_fp, path.generic_wstring().c_str(), L"rb");
 #else
-    vpk_fp = fopen(path.generic_path().string().c_str(), "rb");
+    vpk_fp = fopen(path.generic_string().c_str(), "rb");
 #endif
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
@@ -167,8 +167,8 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
                 fs::create_directories(file_output.parent_path());
             }
 
-            LOG_INFO("Extracting {}", file_output.generic_path().string());
-            mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_path().string().c_str(), 0);
+            LOG_INFO("Extracting {}", file_output.string());
+            mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_string().c_str(), 0);
         }
     }
 

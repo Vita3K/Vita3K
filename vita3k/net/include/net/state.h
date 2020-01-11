@@ -18,15 +18,12 @@
 #pragma once
 
 #include <net/types.h>
+#include <util/preprocessor.h>
 
 #include <map>
 
 #ifdef WIN32
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Ws2tcpip.h>
-#include <winsock2.h>
 #undef s_addr
 typedef SOCKET abs_socket;
 typedef int socklen_t;

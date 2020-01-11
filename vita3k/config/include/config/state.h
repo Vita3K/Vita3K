@@ -23,6 +23,7 @@
 #include <util/fs.h>
 #include <util/optional.h>
 #include <util/vector_utils.h>
+#include <util/optional.h>
 
 // Enum based on members in Config file
 // Used for easier getting of options and their names for config files
@@ -39,7 +40,7 @@ enum file_config {
 } // namespace config
 
 // Configuration File options
-struct Config : YamlLoader {
+struct ConfigState : YamlLoader {
 private:
     // Privately update members
     // Use this function when the YAML file is updated before the members.
@@ -52,12 +53,12 @@ private:
     }
 
     // Perform comparisons with optional settings
-    void check_members(const Config &rhs) {
-        if (rhs.vpk_path.is_initialized())
+    void check_members(const ConfigState &rhs) {
+        if (rhs.vpk_path.has_value())
             vpk_path = rhs.vpk_path;
-        if (rhs.run_title_id.is_initialized())
+        if (rhs.run_title_id.has_value())
             run_title_id = rhs.run_title_id;
-        if (rhs.recompile_shader_path.is_initialized())
+        if (rhs.recompile_shader_path.has_value())
             run_title_id = rhs.run_title_id;
 
         if (!rhs.config_path.empty())
@@ -80,25 +81,25 @@ public:
     bool load_config = false;
     bool fullscreen = false;
 
-    Config() {
+    ConfigState() {
         update_yaml();
     }
 
-    ~Config() = default;
+    ~ConfigState() = default;
 
-    Config(const Config &rhs) {
+    ConfigState(const ConfigState &rhs) {
         yaml_node = rhs.get();
         check_members(rhs);
         update_members();
     }
 
-    Config(Config &&rhs) noexcept {
+    ConfigState(ConfigState &&rhs) noexcept {
         yaml_node = rhs.get();
         check_members(rhs);
         update_members();
     }
 
-    Config &operator=(const Config &rhs) {
+    ConfigState &operator=(const ConfigState &rhs) {
         if (this != &rhs) {
             yaml_node = rhs.get();
             check_members(rhs);
@@ -107,7 +108,7 @@ public:
         return *this;
     }
 
-    Config &operator=(Config &&rhs) noexcept {
+    ConfigState &operator=(ConfigState &&rhs) noexcept {
         yaml_node = rhs.get();
         check_members(rhs);
         update_members();
@@ -115,9 +116,9 @@ public:
     }
 
     // Merge two Config nodes, respecting both options and preferring the left-hand side
-    Config &operator+=(const Config &rhs) {
+    ConfigState &operator+=(const ConfigState &rhs) {
         bool init = false;
-        if (rhs.yaml_node == Config{}.get()) {
+        if (rhs.yaml_node == ConfigState{}.get()) {
             init = true;
         }
 
@@ -185,7 +186,7 @@ public:
 
     // Load a function to the node network, and then update the members
     void load_new_config(const fs::path &path) override {
-        yaml_node = YAML::LoadFile(path.generic_path().string());
+        yaml_node = YAML::LoadFile(path.generic_string());
         update_members();
     }
 

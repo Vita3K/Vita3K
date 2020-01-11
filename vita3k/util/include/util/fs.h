@@ -17,9 +17,20 @@
 
 #pragma once
 
-#include <boost/filesystem.hpp>
+#include <util/preprocessor.h>
 
+#ifdef COMPILE_MODERN_CPP
+#if VITA3K_CPP17
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif VITA3K_CPP14
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#endif
+#else
+#include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
+#endif
 
 class Root {
     fs::path base_path;
@@ -35,7 +46,7 @@ public:
     }
 
     std::string get_base_path_string() const {
-        return base_path.generic_path().string();
+        return base_path.generic_string();
     }
 
     void set_pref_path(const fs::path &p) {
@@ -47,7 +58,7 @@ public:
     }
 
     std::string get_pref_path_string() const {
-        return pref_path.generic_path().string();
+        return pref_path.generic_string();
     }
 }; // class root
 
@@ -59,14 +70,14 @@ namespace fs_utils {
   * \param  folder_path The sub-directory/sub-directories to output to.
   * \param  file_name   The name of the file.
   * \param  extension   The extension of the file (optional)
-  * \return A complete Boost.Filesystem file path normalized.
+  * \return A complete std::filesystem file path normalized.
   */
 inline fs::path construct_file_name(const fs::path &base_path, const fs::path &folder_path, const fs::path &file_name, const fs::path &extension = "") {
     fs::path full_file_path{ base_path / folder_path / file_name };
     if (!extension.empty())
         full_file_path.replace_extension(extension);
 
-    return full_file_path.generic_path();
+    return full_file_path;
 }
 
 } // namespace fs_utils

@@ -27,15 +27,13 @@
 #include <util/log.h>
 #include <util/preprocessor.h>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#else
+#ifndef WIN32
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
 
 #include <cassert>
+#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -55,13 +53,13 @@ static int io_error_impl(const int retval, const char *export_name, const char *
 namespace vfs {
 
 bool read_file(const VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const fs::path &vfs_file_path) {
-    const auto host_file_path = device::construct_emulated_path(device, vfs_file_path, pref_path).generic_path();
+    const auto host_file_path = device::construct_emulated_path(device, vfs_file_path, pref_path);
 
-    fs::ifstream f{ host_file_path, fs::ifstream::binary };
+    std::ifstream f{ host_file_path, std::ifstream::binary };
     if (!f)
         return false;
 
-    f.unsetf(fs::ifstream::skipws);
+    f.unsetf(std::ifstream::skipws);
     buf.reserve(fs::file_size(host_file_path));
     buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
     return true;
@@ -388,11 +386,11 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
 
 #ifdef WIN32
     struct _stat sb;
-    if (_wstat(file_path.generic_path().wstring().c_str(), &sb) < 0)
+    if (_wstat(file_path.generic_wstring().c_str(), &sb) < 0)
         return IO_ERROR_UNK();
 #else
     struct stat sb;
-    if (stat(file_path.generic_path().string().c_str(), &sb) < 0)
+    if (stat(file_path.generic_string().c_str(), &sb) < 0)
         return IO_ERROR_UNK();
 #endif
 
@@ -465,7 +463,6 @@ int remove_file(IOState &io, const char *file, const std::string &pref_path, con
         LOG_ERROR("File does not exist at path: {} (target path: {})", emulated_path.string(), file);
     }
 
-
     LOG_TRACE("{}: Removing file {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
 
     return fs::remove(emulated_path);
@@ -475,11 +472,9 @@ SceUID open_dir(IOState &io, const char *path, const std::string &pref_path, con
     auto device = device::get_device(path);
     const auto translated_path = translate_path(path, device, io.device_paths);
 
-    const auto dir_path = device::construct_emulated_path(device, translated_path, pref_path) / "/";
-    if (!fs::exists(dir_path)) {
-        LOG_ERROR("File does not exist at: {} (target path: {})", dir_path.string(), path);
+    const auto dir_path = device::construct_emulated_path(device, translated_path, pref_path);
+    if (!fs::exists(dir_path))
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
-    }
 
     const DirPtr opened = create_shared_dir(dir_path);
     if (!opened) {
@@ -517,7 +512,7 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::stri
         strncpy(dent->d_name, d_name_utf8.c_str(), sizeof(dent->d_name));
 
         const auto cur_path = dir->second.get_system_location() / d_name_utf8;
-        if (!(cur_path.filename_is_dot() || cur_path.filename_is_dot_dot())) {
+        if (cur_path.stem().string()[0] != '.') { // skip hidden files and dirent's '.' and '..'
             const auto file_path = std::string(dir->second.get_vita_loc()) + '/' + d_name_utf8;
 
             LOG_TRACE("{}: Reading entry {} of fd: {}", export_name, file_path, log_hex(fd));

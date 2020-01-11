@@ -37,7 +37,7 @@ struct YamlLoader {
     }
 
     explicit YamlLoader(const fs::path &path) {
-        yaml_node = YAML::LoadFile(path.generic_path().string());
+        yaml_node = YAML::LoadFile(path.generic_string());
     }
 
     virtual ~YamlLoader() = default;
@@ -55,7 +55,7 @@ struct YamlLoader {
     }
 
     virtual void load_new_config(const fs::path &path) {
-        yaml_node = YAML::LoadFile(path.generic_path().string());
+        yaml_node = YAML::LoadFile(path.generic_string());
     }
 
     // Check if a node index exists, and return the current value in the node network

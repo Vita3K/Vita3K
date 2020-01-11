@@ -21,10 +21,10 @@
 
 #include <string>
 
-struct Config;
+struct ConfigState;
 struct KernelState;
 struct MemState;
 template <class T>
 class Ptr;
 
-SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &path, const Config &cfg);
+SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &path, const ConfigState &cfg);

@@ -25,6 +25,7 @@
 #include <CLI11.hpp>
 
 #include <exception>
+#include <fstream>
 #include <iostream>
 
 namespace config {
@@ -61,17 +62,17 @@ static fs::path check_path(const fs::path &output_path) {
     return output_path;
 }
 
-static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string &root_pref_path) {
+static ExitCode parse(ConfigState &cfg, const fs::path &load_path, const std::string &root_pref_path) {
     const auto loaded_path = check_path(load_path);
     if (loaded_path.empty() || !fs::exists(loaded_path)) {
-        LOG_ERROR("Config file input path invalid (did you make sure to name the extension \".yml\"?)");
+        LOG_ERROR("ConfigState file input path invalid (did you make sure to name the extension \".yml\"?)");
         return FileNotFound;
     }
 
     try {
         cfg.load_new_config(loaded_path);
     } catch (YAML::Exception &exception) {
-        LOG_ERROR("Config file can't be loaded: Error: {}", exception.what());
+        LOG_ERROR("ConfigState file can't be loaded: Error: {}", exception.what());
         return FileNotFound;
     }
 
@@ -87,7 +88,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     return Success;
 }
 
-ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
+ExitCode serialize_config(ConfigState &cfg, const fs::path &output_path) {
     const auto output = check_path(output_path);
     if (output.empty())
         return InvalidApplicationPath;
@@ -101,7 +102,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     emitter << cfg.yaml_node;
     emitter << YAML::EndDoc;
 
-    fs::ofstream fo(output);
+    std::ofstream fo(output);
     if (!fo) {
         return InvalidApplicationPath;
     }
@@ -112,9 +113,9 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     return Success;
 }
 
-ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths) {
+ExitCode init_config(ConfigState &cfg, int argc, char **argv, const Root &root_paths) {
     // Always generate the default configuration file
-    Config command_line{};
+    ConfigState command_line{};
     serialize_config(command_line, root_paths.get_base_path() / "data/config/default.yml");
 
     // Load base path configuration by default; otherwise, move the default to the base path

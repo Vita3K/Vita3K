@@ -59,7 +59,7 @@ struct HostState {
     std::string base_path;
     std::string default_path;
     std::string pref_path;
-    Config cfg;
+    ConfigState cfg;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
     uint32_t fps = 0;

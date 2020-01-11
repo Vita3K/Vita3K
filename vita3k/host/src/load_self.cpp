@@ -27,7 +27,7 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <elfio/elf_types.hpp>
+#include <elf_types.hpp>
 #include <spdlog/fmt/fmt.h>
 // clang-format off
 #define SCE_ELF_DEFS_TARGET
@@ -57,7 +57,7 @@ using namespace ELFIO;
 static constexpr bool LOG_MODULE_LOADING = false;
 static constexpr bool DUMP_SEGMENTS = false;
 
-static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, const Config &cfg) {
+static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, const ConfigState &cfg) {
     struct VarImportsHeader {
         uint32_t unk : 7; // seems to always be 0x40
         uint32_t reloc_count : 17;
@@ -141,7 +141,7 @@ static uint32_t encode_arm_inst(uint8_t type, uint16_t immed, uint16_t reg) {
     }
 }
 
-static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem, const Config &cfg) {
+static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem, const ConfigState &cfg) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -169,7 +169,7 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
     return true;
 }
 
-static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, const Config &cfg) {
+static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, const ConfigState &cfg) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_imports_raw *const imports_begin = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_top);
     const sce_module_imports_raw *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
@@ -230,7 +230,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     return true;
 }
 
-static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const Config &cfg) {
+static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const ConfigState &cfg) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -255,7 +255,7 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
     return true;
 }
 
-static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const Config &cfg) {
+static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const ConfigState &cfg) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -288,7 +288,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
     return true;
 }
 
-static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, const MemState &mem, const Config &cfg) {
+static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, const MemState &mem, const ConfigState &cfg) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_exports_raw *const exports_begin = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_top);
     const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
@@ -323,7 +323,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
 /**
  * \return Negative on failure
  */
-SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const Config &cfg) {
+SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const ConfigState &cfg) {
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
@@ -428,9 +428,12 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
             LOG_CRITICAL("Unknown segment type {}", log_hex(seg_header.p_type));
         }
     }
-
+#if VITA3K_CPP17
     for (const auto [seg, infos] : segment_reloc_info)
         LOG_INFO("Loaded module segment {} @ [0x{:08X} - 0x{:08X}] (size: 0x{:08X}) of module {}", seg, infos.addr, infos.addr + infos.size, infos.size, self_path);
+#else
+    //for (const auto [seg, infos] : segment_reloc_info)
+#endif
 
     const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
     const Ptr<const uint8_t> module_info_segment_address = Ptr<const uint8_t>(segment_reloc_info[module_info_segment_index].addr);

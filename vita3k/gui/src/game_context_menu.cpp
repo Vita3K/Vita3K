@@ -122,7 +122,15 @@ static bool get_game_info(GuiState &gui, HostState &host) {
     const auto game_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
     if (fs::exists(game_path) && !fs::is_empty(game_path)) {
-        time_t updated = fs::last_write_time(game_path);
+#ifdef WIN32
+        struct _stat sb;
+        if (_wstat(game_path.generic_wstring().c_str(), &sb) < 0)
+            return false;
+
+        auto updated = sb.st_mtime;
+#else
+        std::time_t updated = fs::last_write_time(game_path);
+#endif
         game_info[UPDATED].second = std::asctime(std::localtime(&updated));
 
         fs::recursive_directory_iterator end;

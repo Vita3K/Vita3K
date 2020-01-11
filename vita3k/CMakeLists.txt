@@ -19,37 +19,15 @@ else()
 	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}")
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	set(LINUX TRUE)
+if(${STANDARD_NUM} LESS 14)
+	configure_boost()
 endif()
 
-macro(configure_boost)
-	message("configuring boost")
-
-	set(Boost_USE_STATIC_LIBS ON)
-	set(Boost_USE_MULTITHREADED ON)
-	set(BOOST_COMPONENTS filesystem program_options system)
-
-	find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
-
-	include_directories(${Boost_INCLUDE_DIRS})
-
-	if(Boost_FOUND)
-		message("Using Boost_VERSION: ${Boost_VERSION}")
-		message("Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
-		message("Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
-	else()
-		message("Boost library is not found")
-	endif()
-endmacro(configure_boost)
-
-configure_boost()
-
-if (USE_GDBSTUB)
+if(USE_GDBSTUB)
 	add_definitions(-DUSE_GDBSTUB)
 endif()
 
-if (USE_VULKAN)
+if(USE_VULKAN)
 	add_definitions(-DUSE_VULKAN)
 endif()
 
@@ -88,8 +66,11 @@ endif()
 add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
 
 target_link_libraries(vita3k PRIVATE app discord-rpc gui modules)
-if(LINUX)
-	target_link_libraries(vita3k PRIVATE stdc++fs)
+if(${STANDARD_NUM} GREATER 11)
+	target_compile_features(vita3k PUBLIC cxx_std_${STANDARD_NUM})
+	if(LINUX)
+		target_link_libraries(vita3k PRIVATE stdc++fs)
+	endif()
 endif()
 
 set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vita3K

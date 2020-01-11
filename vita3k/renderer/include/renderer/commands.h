@@ -21,8 +21,6 @@
 #include <cstdint>
 #include <vector>
 
-#include <boost/optional.hpp>
-
 struct GxmContextState;
 
 namespace renderer {

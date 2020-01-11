@@ -30,9 +30,11 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <algorithm>
 #include <nfd.h>
+
+#include <algorithm>
 #include <sstream>
+#include <system_error>
 
 namespace gui {
 
@@ -64,7 +66,7 @@ static bool change_pref_location(const std::string &input_path, const std::strin
         while (it != fs::directory_iterator{}) {
             // TODO: Move Vita directories
 
-            boost::system::error_code err;
+            std::error_code err{};
             it.increment(err);
         }
     } catch (const std::exception &err) {

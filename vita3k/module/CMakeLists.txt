@@ -16,7 +16,7 @@ add_library(
 )
 
 target_include_directories(module PUBLIC include)
-target_link_libraries(module PUBLIC host dlmalloc printf util)
+target_link_libraries(module PUBLIC host dlmalloc mem printf util)
 
 add_executable(
 	module-tests
@@ -24,5 +24,5 @@ add_executable(
 )
 
 target_include_directories(module-tests PRIVATE include)
-target_link_libraries(module-tests PRIVATE googletest util)
+target_link_libraries(module-tests PRIVATE cpu mem googletest util)
 add_test(NAME module COMMAND module-tests)

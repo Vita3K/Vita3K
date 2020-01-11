@@ -27,20 +27,21 @@
 
 typedef std::shared_ptr<FILE> FilePtr;
 
-// For opening Boost.Filesystem files, Boost returns wide strings for Windows, normal strings for other OS
+// std::filesystem returns wide strings for Windows, normal strings for other OS
+// Additionally, std::filesystem when iterating skips hidden files on all OS
 // Dirent and FILE only accept and return wide char strings for Windows, and normal for other OS
 #ifdef WIN32
 const wchar_t *translate_open_mode(const int flags);
 
 inline FilePtr create_shared_file(const fs::path &path, const int open_mode) {
-    const auto file = _wfopen(path.generic_path().wstring().c_str(), translate_open_mode(open_mode));
+    const auto file = _wfopen(path.generic_wstring().c_str(), translate_open_mode(open_mode));
     return file ? FilePtr(file, std::fclose) : FilePtr();
 }
 
 typedef std::shared_ptr<_WDIR> DirPtr;
 
 inline DirPtr create_shared_dir(const fs::path &path) {
-    return DirPtr(_wopendir(path.generic_path().wstring().c_str()), _wclosedir);
+    return DirPtr(_wopendir(path.generic_wstring().c_str()), _wclosedir);
 }
 
 inline std::string get_file_in_dir(const _wdirent *file) {
@@ -54,14 +55,14 @@ inline _wdirent *get_system_dir_ptr(const DirPtr &dir) {
 const char *translate_open_mode(const int flags);
 
 inline FilePtr create_shared_file(const fs::path &path, const int open_mode) {
-    const auto file = fopen(path.generic_path().string().c_str(), translate_open_mode(open_mode));
+    const auto file = fopen(path.generic_string().c_str(), translate_open_mode(open_mode));
     return file ? FilePtr(file, std::fclose) : FilePtr();
 }
 
 typedef std::shared_ptr<DIR> DirPtr;
 
 inline DirPtr create_shared_dir(const fs::path &path) {
-    return DirPtr(opendir(path.generic_path().string().c_str()), closedir);
+    return DirPtr(opendir(path.generic_string().c_str()), closedir);
 }
 
 inline std::string get_file_in_dir(dirent *file) {

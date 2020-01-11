@@ -372,7 +372,7 @@ COMMAND_SET_STATE(vertex_stream) {
 
 COMMAND(handle_set_state) {
     renderer::GXMState gxm_state_to_set = helper.pop<renderer::GXMState>();
-    using StateChangeHandlerFunc = std::function<void(renderer::State &, MemState &, Config &, CommandHelper &,
+    using StateChangeHandlerFunc = std::function<void(renderer::State &, MemState &, ConfigState &, CommandHelper &,
         Context *, GxmContextState *)>;
 
     static const std::map<renderer::GXMState, StateChangeHandlerFunc> handlers = {

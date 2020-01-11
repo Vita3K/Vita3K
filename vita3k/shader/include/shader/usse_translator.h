@@ -22,14 +22,14 @@
 #include <shader/usse_program_analyzer.h>
 #include <shader/usse_translator_types.h>
 #include <shader/usse_utilities.h>
+#include <util/preprocessor.h>
+#include <util/optional.h>
 
 #include <SPIRV/SpvBuilder.h>
-#include <boost/optional/optional.hpp>
 
 #include <array>
 #include <map>
 
-using boost::optional;
 struct FeatureState;
 
 namespace shader::usse {
@@ -118,7 +118,7 @@ public:
     /*
      * \brief Given an operand, load it and returns a SPIR-V vector with total components count equals to total bit set in
      *        write/dest mask
-     * 
+     *
      * \returns A copy of given operand
     */
     spv::Id load(Operand op, const Imm4 dest_mask, int shift_offset = 0);

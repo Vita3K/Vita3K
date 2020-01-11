@@ -51,10 +51,10 @@ int main(int argc, char *argv[]) {
     if (logging::init(root_paths) != Success)
         return InitConfigFailed;
 
-    Config cfg{};
+    ConfigState cfg{};
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
-            if (cfg.recompile_shader_path.is_initialized()) {
+            if (cfg.recompile_shader_path.has_value()) {
                 LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
                 shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
             }

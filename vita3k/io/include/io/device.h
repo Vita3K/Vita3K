@@ -117,7 +117,7 @@ inline std::string remove_duplicate_device(const std::string &path, VitaIoDevice
   * \param path The path of the file.
   * \param base_path The main output for the file.
   * \param ext The extension of the file (optional).
-  * \return A complete Boost.Filesystem path normalized.
+  * \return A complete std::filesystem path normalized.
   */
 inline fs::path construct_emulated_path(const VitaIoDevice dev, const fs::path &path, const std::string &base_path, const std::string &ext = "") {
     return fs_utils::construct_file_name(base_path, get_device_string(dev, false), path, ext);

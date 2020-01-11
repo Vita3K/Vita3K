@@ -35,6 +35,7 @@
 
 #include <fstream>
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace gui {
@@ -212,8 +213,7 @@ void get_game_titles(GuiState &gui, HostState &host) {
 
     fs::directory_iterator it{ app_path };
     while (it != fs::directory_iterator{}) {
-        if (!it->path().empty() && fs::is_directory(it->path())
-            && !it->path().filename_is_dot() && !it->path().filename_is_dot_dot()) {
+        if (!it->path().empty() && fs::is_directory(it->path())) { // hidden files are skipped under std::filesystem
             vfs::FileBuffer params;
             host.io.title_id = it->path().stem().generic_string();
             if (vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
@@ -228,8 +228,8 @@ void get_game_titles(GuiState &gui, HostState &host) {
             }
             gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io.title_id });
         }
-        boost::system::error_code er;
-        it.increment(er);
+        std::error_code err{};
+        it.increment(err);
     }
 }
 

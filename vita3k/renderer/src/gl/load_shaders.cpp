@@ -9,17 +9,18 @@
 #include <util/fs.h>
 #include <util/log.h>
 
+#include <fstream>
 #include <utility>
 
 namespace renderer::gl {
 static std::string load_shader(const char *hash, const char *extension, const char *base_path) {
     const auto shader_path = fs_utils::construct_file_name(base_path, "shaders", hash, extension);
-    fs::ifstream is(shader_path, fs::ifstream::binary);
+    std::ifstream is(shader_path, std::ifstream::binary);
     if (!is) {
         return std::string();
     }
 
-    is.seekg(0, fs::ifstream::end);
+    is.seekg(0, std::ifstream::end);
     const size_t size = is.tellg();
     is.seekg(0);
 
@@ -38,7 +39,7 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
     const auto shader_base_path = fs_utils::construct_file_name(base_path, shader_base_dir, hash, extension);
 
     // Dump missing shader GLSL.
-    fs::ofstream glsl_file(shader_base_path);
+    std::ofstream glsl_file(shader_base_path);
     if (glsl_file) {
         glsl_file << source;
         glsl_file.close();
@@ -50,13 +51,13 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
         out_path.replace_extension(ext);
 
         if (size == -1) {
-            fs::ofstream of{ out_path };
+            std::ofstream of{ out_path };
             if (!of.fail()) {
                 of << data; // This is a normal string
                 of.close();
             }
         } else {
-            fs::ofstream of{ out_path, fs::ofstream::binary };
+            std::ofstream of{ out_path, std::ofstream::binary };
             if (!of.fail()) {
                 of.write(data, size);
                 of.close();
