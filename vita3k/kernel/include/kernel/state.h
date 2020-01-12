@@ -274,6 +274,9 @@ struct KernelState {
     Blocks blocks;
     Blocks vm_blocks;
     ThreadToSlotToAddress tls;
+    Ptr<const void> tls_address;
+    unsigned int tls_psize;
+    unsigned int tls_msize;
     SemaphorePtrs semaphores;
     CondvarPtrs condvars;
     CondvarPtrs lwcondvars;
