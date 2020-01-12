@@ -6,6 +6,13 @@
 
 namespace emu {
 
+#define SCE_APPUTIL_NP_DRM_ADDCONT_ID_SIZE 17
+
+struct SceAppUtilDrmAddcontId {
+    SceChar8 data[SCE_APPUTIL_NP_DRM_ADDCONT_ID_SIZE];
+    SceChar8 padding[3];
+};
+
 struct SceAppUtilSaveDataSaveItem {
     const Ptr<char> dataPath;
     const Ptr<void> buf;

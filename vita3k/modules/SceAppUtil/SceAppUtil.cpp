@@ -23,6 +23,7 @@
 #include <host/app_util.h>
 #include <io/device.h>
 #include <io/functions.h>
+#include <io/io.h>
 #include <io/vfs.h>
 
 #include <cstring>
@@ -103,8 +104,16 @@ EXPORT(int, sceAppUtilDrmClose) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilDrmOpen) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppUtilDrmOpen, emu::SceAppUtilDrmAddcontId *dirName, SceAppUtilMountPoint *mountPoint) {
+    const auto drm_content_id_path{ fs::path(host.pref_path) / (+VitaIoDevice::ux0)._to_string() / host.io.device_paths.addcont0 / reinterpret_cast<char *>(dirName->data) };
+
+    if (dirName == nullptr)
+        SCE_APPUTIL_ERROR_NOT_INITIALIZED;
+
+    if (!fs::exists(drm_content_id_path) || (fs::is_empty(drm_content_id_path)))
+        return SCE_ERROR_ERRNO_ENOENT;
+
+    return 0;
 }
 
 EXPORT(int, sceAppUtilInit) {
