@@ -456,9 +456,16 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     //unk40
     //unk44
-    sceKernelModuleInfo->tlsInit = Ptr<const void>(module_info_segment_address + module_info->field_38);
+    sceKernelModuleInfo->tlsInit = Ptr<const void>((!module_info->field_38 ? 0 : (module_info_segment_address.address() + module_info->field_38)));
     sceKernelModuleInfo->tlsInitSize = module_info->field_3C;
     sceKernelModuleInfo->tlsAreaSize = module_info->field_40;
+
+    if (sceKernelModuleInfo->tlsInit) {
+        kernel.tls_address = sceKernelModuleInfo->tlsInit;
+        kernel.tls_psize = sceKernelModuleInfo->tlsInitSize;
+        kernel.tls_msize = sceKernelModuleInfo->tlsAreaSize;
+    }
+
     //SceSize tlsInitSize;
     //SceSize tlsAreaSize;
     strncpy(sceKernelModuleInfo->path, self_path.c_str(), 255);
