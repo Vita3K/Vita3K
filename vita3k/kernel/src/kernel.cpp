@@ -26,6 +26,8 @@
 
 #include <spdlog/fmt/fmt.h>
 
+#include <util/find.h>
+
 Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key) {
     SlotToAddress &slot_to_address = kernel.tls[thread_id];
 
@@ -34,13 +36,27 @@ Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID th
         return existing->second;
     }
 
-    auto alloc_name = fmt::format("TLS for thread #{}", thread_id);
-    // TODO Use a finer-grained allocator.
-    // TODO This is a memory leak.
-    const Ptr<Ptr<void>> address(alloc<Ptr<void>>(mem, alloc_name.c_str()));
-    slot_to_address.insert(SlotToAddress::value_type(key, address));
+    const ThreadStatePtr thread = util::find(thread_id, kernel.threads);
 
-    return address;
+    Address tls = read_TPIDRURO(*thread->cpu) - 0x800 + key * 4;
+
+    const Ptr<Ptr<void>> address(tls);
+          
+    if (!kernel.tls_address) {
+        return address;
+    } else {
+
+        auto alloc_name = fmt::format("TLS for thread #{} {}", thread_id, key);
+        // TODO Use a finer-grained allocator.
+        // TODO This is a memory leak.
+        Ptr<void> new_tls(alloc(mem, 4 * kernel.tls_msize, alloc_name.c_str()));
+        memset(new_tls.get(mem), 0, 4 * kernel.tls_psize);
+        memcpy(new_tls.get(mem), kernel.tls_address.get(mem), 4 * kernel.tls_psize);
+
+        *address.get(mem) = new_tls;
+        slot_to_address.insert(SlotToAddress::value_type(key, address));
+        return address;
+    }
 }
 
 void stop_all_threads(KernelState &kernel) {

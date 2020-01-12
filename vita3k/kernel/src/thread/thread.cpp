@@ -107,6 +107,12 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         return SCE_KERNEL_ERROR_ERROR;
     }
 
+    alloc_name = fmt::format("TLS for thread {} (#{})", name, thid);
+
+    auto tls_address = alloc(mem, 0x800, alloc_name.c_str()) + 0x800;
+    
+    write_TPIDRURO(*thread->cpu, tls_address);
+
     WaitingThreadState waiting{ name };
 
     const std::unique_lock<std::mutex> lock(kernel.mutex);
