@@ -38,8 +38,8 @@ typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
 
 CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem);
-int run(CPUState &state, bool callback);
-int step(CPUState &state, bool callback);
+int run(CPUState &state, bool callback, Address entry_point);
+int step(CPUState &state, bool callback, Address entry_point);
 void stop(CPUState &state);
 uint32_t read_reg(CPUState &state, size_t index);
 float read_float_reg(CPUState &state, size_t index);

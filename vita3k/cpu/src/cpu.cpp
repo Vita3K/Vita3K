@@ -41,7 +41,6 @@ struct CPUState {
     CallSVC call_svc;
     DisasmState disasm;
     UnicornPtr uc;
-    Address entry_point;
     bool did_break = false;
 };
 
@@ -174,7 +173,6 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
     state->call_svc = call_svc;
-    state->entry_point = pc;
 
     if (!init(state->disasm)) {
         return CPUStatePtr();
@@ -219,7 +217,7 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     return state;
 }
 
-int run(CPUState &state, bool callback) {
+int run(CPUState &state, bool callback, Address entry_point) {
     state.did_break = false;
     uint32_t pc = read_pc(state);
     bool thumb_mode = is_thumb_mode(state.uc.get());
@@ -227,7 +225,7 @@ int run(CPUState &state, bool callback) {
         pc |= 1;
     }
     if (callback) {
-        uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &state.entry_point);
+        uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &entry_point);
     }
     uc_err err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
     pc = read_pc(state);
@@ -235,7 +233,7 @@ int run(CPUState &state, bool callback) {
     if (thumb_mode) {
         pc |= 1;
     }
-    err = uc_emu_start(state.uc.get(), pc, state.entry_point & 0xfffffffe, 0, 0);
+    err = uc_emu_start(state.uc.get(), pc, entry_point & 0xfffffffe, 0, 0);
 
     if (err != UC_ERR_OK) {
         log_error_details(state, err);
@@ -252,17 +250,17 @@ int run(CPUState &state, bool callback) {
         pc |= 1;
     }
 
-    return pc == state.entry_point;
+    return pc == entry_point;
 }
 
-int step(CPUState &state, bool callback) {
+int step(CPUState &state, bool callback, Address entry_point) {
     uint32_t pc = read_pc(state);
     bool thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
         pc |= 1;
     }
     if (callback) {
-        uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &state.entry_point);
+        uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &entry_point);
     }
 
     uc_err err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
@@ -277,7 +275,7 @@ int step(CPUState &state, bool callback) {
         pc |= 1;
     }
 
-    return pc == state.entry_point;
+    return pc == entry_point;
 }
 
 void stop(CPUState &state) {

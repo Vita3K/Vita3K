@@ -80,6 +80,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 
     const ThreadStatePtr thread = std::make_shared<ThreadState>();
     thread->name = name;
+    thread->entry_point = entry_point.address();
     // TODO: needs testing
     if (init_priority & (SCE_KERNEL_DEFAULT_PRIORITY & 0xF0000000)) {
         thread->priority = init_priority - SCE_KERNEL_DEFAULT_PRIORITY + SCE_KERNEL_DEFAULT_PRIORITY_USER_INTERNAL;
@@ -208,10 +209,10 @@ bool run_thread(ThreadState &thread, bool callback) {
         case ThreadToDo::step:
             lock.unlock();
             if (thread.to_do == ThreadToDo::step) {
-                res = step(*thread.cpu, callback);
+                res = step(*thread.cpu, callback, thread.entry_point);
                 thread.to_do = ThreadToDo::wait;
             } else
-                res = run(*thread.cpu, callback);
+                res = run(*thread.cpu, callback, thread.entry_point);
 #ifdef USE_GDBSTUB
             if (hit_breakpoint(*thread.cpu)) {
                 thread.to_do = ThreadToDo::wait;
