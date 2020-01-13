@@ -196,6 +196,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<emu::SceMsgDialogParam> param) {
 
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     host.common_dialog.type = MESSAGE_DIALOG;
+    host.common_dialog.msg.has_progress_bar = false;
 
     host.common_dialog.msg.mode = p->mode;
     host.common_dialog.msg.status = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
@@ -293,11 +294,25 @@ EXPORT(int, sceMsgDialogInit, const Ptr<emu::SceMsgDialogParam> param) {
         host.common_dialog.msg.btn_num = 0;
         break;
     case SCE_MSG_DIALOG_MODE_PROGRESS_BAR:
-        // TODO: Properly implement this
-        LOG_WARN("Progressbar message dialog used.");
         pp = p->progBarParam.get(host.mem);
-        host.common_dialog.msg.message = reinterpret_cast<char *>(pp->msg.get(host.mem));
         host.common_dialog.msg.btn_num = 0;
+        host.common_dialog.msg.has_progress_bar = true;
+        if (pp->msg.get(host.mem) != nullptr) {
+            host.common_dialog.msg.message = reinterpret_cast<char *>(pp->msg.get(host.mem));
+        } else {
+            switch (pp->sysMsgParam.sysMsgType) {
+            case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT:
+            case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_SMALL:
+                host.common_dialog.msg.message = "Please Wait.";
+                break;
+            case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
+                host.common_dialog.msg.message = "Please Wait";
+                host.common_dialog.msg.btn_num = 1;
+                host.common_dialog.msg.btn[0] = "CANCEL";
+                host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+                break;
+            }
+        }
         break;
     case SCE_MSG_DIALOG_MODE_INVALID:
     default:
@@ -308,16 +323,43 @@ EXPORT(int, sceMsgDialogInit, const Ptr<emu::SceMsgDialogParam> param) {
     return 0;
 }
 
-EXPORT(int, sceMsgDialogProgressBarInc) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceMsgDialogProgressBarInc, SceMsgDialogProgressBarTarget target, SceUInt32 delta) {
+    if (host.common_dialog.type != MESSAGE_DIALOG) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
+    }
+
+    if (host.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+    }
+    host.common_dialog.msg.bar_rate += delta;
+    return 0;
 }
 
-EXPORT(int, sceMsgDialogProgressBarSetMsg) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceMsgDialogProgressBarSetMsg, SceMsgDialogProgressBarTarget target, const SceChar8 *msg) {
+    if (host.common_dialog.type != MESSAGE_DIALOG) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
+    }
+
+    if (host.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+    }
+    host.common_dialog.msg.message = reinterpret_cast<const char *>(msg);
+    return 0;
 }
 
-EXPORT(int, sceMsgDialogProgressBarSetValue) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceMsgDialogProgressBarSetValue, SceMsgDialogProgressBarTarget target, SceUInt32 rate) {
+    if (host.common_dialog.type != MESSAGE_DIALOG) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
+    }
+
+    if (host.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
+    }
+    host.common_dialog.msg.bar_rate = rate;
+    if (host.common_dialog.msg.bar_rate > 100) {
+        host.common_dialog.msg.bar_rate = 100;
+    }
+    return 0;
 }
 
 EXPORT(int, sceMsgDialogTerm) {
