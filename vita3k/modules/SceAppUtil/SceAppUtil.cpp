@@ -155,7 +155,7 @@ static std::string construct_savedata0_path(const std::string &data, const char 
     return device::construct_normalized_path(VitaIoDevice::savedata0, data, ext);
 }
 
-static std::string construct_slotparam_path(const unsigned int data) {
+std::string construct_slotparam_path(const unsigned int data) {
     return construct_savedata0_path("SlotParam_" + std::to_string(data), "bin");
 }
 
@@ -190,8 +190,18 @@ EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, e
     }
 
     if (slot) {
+        SceDateTime modified_time;
+        std::time_t time = std::time(0);
+        tm *local = localtime(&time);
+        modified_time.year = local->tm_year + 1900;
+        modified_time.month = local->tm_mon + 1;
+        modified_time.day = local->tm_mday;
+        modified_time.hour = local->tm_hour;
+        modified_time.minute = local->tm_min;
+        modified_time.second = local->tm_sec;
+        slot->slotParam.get(host.mem)->modifiedTime = modified_time;
         fd = open_file(host.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY, host.pref_path, export_name);
-        write_file(fd, &slot->slotParam, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
+        write_file(fd, slot->slotParam.get(host.mem), sizeof(emu::SceAppUtilSaveDataSlotParam), host.io, export_name);
         close_file(host.io, fd, export_name);
     }
 
@@ -208,9 +218,9 @@ EXPORT(int, sceAppUtilSaveDataMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
+EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, emu::SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
     const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
+    write_file(fd, param, sizeof(emu::SceAppUtilSaveDataSlotParam), host.io, export_name);
     close_file(host.io, fd, export_name);
     return 0;
 }
@@ -220,11 +230,11 @@ EXPORT(int, sceAppUtilSaveDataSlotDelete, unsigned int slotId, SceAppUtilSaveDat
     return 0;
 }
 
-EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
+EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, emu::SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
     const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    read_file(param, host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+    read_file(param, host.io, fd, sizeof(emu::SceAppUtilSaveDataSlotParam), export_name);
     close_file(host.io, fd, export_name);
     return 0;
 }
@@ -233,11 +243,11 @@ EXPORT(int, sceAppUtilSaveDataSlotSearch) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilSaveDataSlotSetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
+EXPORT(int, sceAppUtilSaveDataSlotSetParam, unsigned int slotId, emu::SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
     const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY, host.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
+    write_file(fd, param, sizeof(emu::SceAppUtilSaveDataSlotParam), host.io, export_name);
     close_file(host.io, fd, export_name);
     return 0;
 }
