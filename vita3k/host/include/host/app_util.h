@@ -25,10 +25,37 @@ struct SceAppUtilSaveDataFile {
     uint8_t reserved[32];
 };
 
+struct SceAppUtilSaveDataSlotParam {
+    SceAppUtilSaveDataSlotStatus status;
+    char title[64];
+    char subTitle[128];
+    char detail[512];
+    char iconPath[64];
+    int userParam;
+    SceSize sizeKB;
+    SceDateTime modifiedTime;
+    uint8_t reserved[48];
+};
+
 struct SceAppUtilSaveDataFileSlot {
     unsigned int id;
-    Ptr<SceAppUtilSaveDataSlotParam> slotParam;
+    Ptr<emu::SceAppUtilSaveDataSlotParam> slotParam;
     uint8_t reserved[32];
+};
+
+struct SceAppUtilSaveDataSlotEmptyParam {
+    Ptr<char> title;
+    Ptr<char> iconPath;
+    Ptr<void> iconBuf;
+    SceSize iconBufSize;
+    uint8_t reserved[32];
+};
+
+struct SceAppUtilSaveDataSlot {
+    SceAppUtilSaveDataSlotId id;
+    SceAppUtilSaveDataSlotStatus status;
+    int userParam;
+    Ptr<emu::SceAppUtilSaveDataSlotEmptyParam> emptyParam;
 };
 
 struct SceAppUtilSaveDataRemoveItem {
@@ -37,3 +64,5 @@ struct SceAppUtilSaveDataRemoveItem {
     uint8_t reserved[36];
 };
 } // namespace emu
+
+std::string construct_slotparam_path(const unsigned int data);
