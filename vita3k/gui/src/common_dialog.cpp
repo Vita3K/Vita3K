@@ -60,10 +60,22 @@ static void draw_ime_dialog(DialogState &common_dialog) {
 }
 
 static void draw_message_dialog(DialogState &common_dialog) {
+    const ImVec2 PROGRESS_BAR_SIZE = ImVec2(120.f, 5.f);
     ImGui::SetNextWindowPosCenter();
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("Message Dialog");
     ImGui::Text("%s", common_dialog.msg.message.c_str());
+    if (common_dialog.msg.has_progress_bar) {
+        const char dummy_buf[32] = "";
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_PROGRESS_BAR_BG);
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - PROGRESS_BAR_SIZE.x / 2);
+        ImGui::ProgressBar(common_dialog.msg.bar_rate / 100.f, PROGRESS_BAR_SIZE, dummy_buf);
+        ImGui::PopStyleColor(2);
+        std::string progress = std::to_string(static_cast<int>(common_dialog.msg.bar_rate)).append("%");
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - ImGui::CalcTextSize(progress.c_str()).x / 2);
+        ImGui::Text("%s", progress.c_str());
+    }
     for (int i = 0; i < common_dialog.msg.btn_num; i++) {
         if (ImGui::Button(common_dialog.msg.btn[i].c_str())) {
             common_dialog.msg.status = common_dialog.msg.btn_val[i];
