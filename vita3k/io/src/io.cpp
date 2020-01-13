@@ -141,7 +141,7 @@ bool init_savedata_game_path(IOState &io, const fs::path &pref_path) {
     return true;
 }
 
-static std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths) {
+std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths) {
     auto relative_path = device::remove_duplicate_device(path, device);
 
     switch (device) {

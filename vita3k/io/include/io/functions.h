@@ -25,6 +25,8 @@
 #include <psp2/io/stat.h>
 
 #include <io/types.h>
+#include <io/state.h>
+#include <io/vfs.h>
 
 #include <util/fs.h>
 
@@ -39,6 +41,7 @@ bool init_savedata_game_path(IOState &io, const fs::path &pref_path);
 bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path);
 
 std::string expand_path(IOState &io, const char *path, const std::string &pref_path);
+std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths);
 
 SceUID open_file(IOState &io, const char *path, const int flags, const std::string &pref_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
