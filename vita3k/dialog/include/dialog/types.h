@@ -17,11 +17,83 @@
 
 #pragma once
 
+#include <host/app_util.h>
 #include <mem/ptr.h>
 #include <psp2/ime_dialog.h>
 #include <psp2/message_dialog.h>
 
 namespace emu {
+
+typedef enum SceSaveDataDialogMode {
+    SCE_SAVEDATA_DIALOG_MODE_FIXED = 1,
+    SCE_SAVEDATA_DIALOG_MODE_LIST = 2,
+    SCE_SAVEDATA_DIALOG_MODE_USER_MSG = 3,
+    SCE_SAVEDATA_DIALOG_MODE_SYSTEM_MSG = 4,
+    SCE_SAVEDATA_DIALOG_MODE_ERROR_CODE = 5,
+    SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR = 6
+} SceSaveDataDialogMode;
+
+typedef enum SceSaveDataDialogFocusPos {
+    SCE_SAVEDATA_DIALOG_FOCUS_POS_LISTHEAD = 0,
+    SCE_SAVEDATA_DIALOG_FOCUS_POS_LISTTAIL = 1,
+    SCE_SAVEDATA_DIALOG_FOCUS_POS_EMPTYHEAD = 2,
+    SCE_SAVEDATA_DIALOG_FOCUS_POS_EMPTYTAIL = 3,
+    SCE_SAVEDATA_DIALOG_FOCUS_POS_DATAHEAD = 4,
+    SCE_SAVEDATA_DIALOG_FOCUS_POS_DATATAIL = 5,
+    SCE_SAVEDATA_DIALOG_FOCUS_POS_DATALATEST = 6,
+    SCE_SAVEDATA_DIALOG_FOCUS_POS_DATAOLDEST = 7,
+    SCE_SAVEDATA_DIALOG_FOCUS_POS_ID = 8
+} SceSaveDataDialogFocusPos;
+
+typedef enum SceSaveDataDialogListItemStyle {
+    SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE_SUBTITLE = 0,
+    SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_SUBTITLE_DATE = 1,
+    SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE = 2
+} SceSaveDataDialogListItemStyle;
+
+typedef enum SceSaveDataDialogType {
+    SCE_SAVEDATA_DIALOG_TYPE_SAVE = 1,
+    SCE_SAVEDATA_DIALOG_TYPE_LOAD = 2,
+    SCE_SAVEDATA_DIALOG_TYPE_DELETE = 3
+} SceSaveDataDialogType;
+
+typedef enum SceSaveDataDialogButtonType {
+    SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK = 0,
+    SCE_SAVEDATA_DIALOG_BUTTON_TYPE_YESNO = 1,
+    SCE_SAVEDATA_DIALOG_BUTTON_TYPE_NONE = 2
+} SceSaveDataDialogButtonType;
+
+typedef enum SceSaveDataDialogSystemMessageType {
+    SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NODATA = 1,
+    SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_CONFIRM = 2,
+    SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_OVERWRITE = 3,
+    SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NOSPACE = 4,
+    SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS = 5,
+    SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_FINISHED = 6,
+    SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_CONFIRM_CANCEL = 7,
+    SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_FILE_CORRUPTED = 8,
+    SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NOSPACE_CONTINUABLE = 9,
+    SCE_SAVEDATE_DIALOG_SYSMSG_TYPE_NODATA_IMPORT = 12
+} SceSaveDataDialogSystemMessageType;
+
+typedef enum SceSaveDataDialogProgressBarType {
+    SCE_SAVEDATA_DIALOG_PROGRESSBAR_TYPE_PERCENTAGE = 0
+} SceSaveDataDialogProgressBarType;
+
+typedef enum SceSaveDataDialogEnvFlag {
+    SCE_SAVEDATA_DIALOG_ENV_FLAG_DEFAULT = 0
+} SceSaveDataDialogEnvFlag;
+
+typedef enum SceSaveDataDialogButtonId {
+    SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID = 0,
+    SCE_SAVEDATA_DIALOG_BUTTON_ID_OK = 1,
+    SCE_SAVEDATA_DIALOG_BUTTON_ID_YES = 1,
+    SCE_SAVEDATA_DIALOG_BUTTON_ID_NO = 2
+} SceSaveDataDialogButtonId;
+
+typedef enum SceSaveDataDialogProgressBarTarget {
+    SCE_SAVEDATA_DIALOG_PROGRESSBAR_TARGET_BAR_DEFAULT = 0
+} SceSaveDataDialogProgressBarTarget;
 
 struct SceCommonDialogParam {
     Ptr<SceCommonDialogInfobarParam> infobarParam;
@@ -102,6 +174,94 @@ struct SceMsgDialogParam {
     Ptr<SceMsgDialogErrorCodeParam> errorCodeParam;
     Ptr<emu::SceMsgDialogProgressBarParam> progBarParam;
     SceInt32 flag;
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogFixedParam {
+    emu::SceAppUtilSaveDataSlot targetSlot;
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogListParam {
+    const Ptr<emu::SceAppUtilSaveDataSlot> slotList;
+    SceUInt slotListSize;
+    SceSaveDataDialogFocusPos focusPos;
+    SceAppUtilSaveDataSlotId focusId;
+    const Ptr<SceChar8> listTitle;
+    SceSaveDataDialogListItemStyle itemStyle;
+    SceChar8 reserved[28];
+};
+
+struct SceSaveDataDialogUserMessageParam {
+    SceSaveDataDialogButtonType buttonType;
+    const Ptr<SceChar8> msg;
+    emu::SceAppUtilSaveDataSlot targetSlot;
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogSystemMessageParam {
+    SceSaveDataDialogSystemMessageType sysMsgType;
+    SceInt32 value;
+    emu::SceAppUtilSaveDataSlot targetSlot;
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogErrorCodeParam {
+    SceInt32 errorCode;
+    emu::SceAppUtilSaveDataSlot targetSlot;
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogProgressBarParam {
+    SceSaveDataDialogProgressBarType barType;
+    SceSaveDataDialogSystemMessageParam sysMsgParam;
+    const Ptr<SceChar8> msg;
+    emu::SceAppUtilSaveDataSlot targetSlot;
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogAppSubDirParam {
+    SceChar8 srcDir[64];
+    SceChar8 dstDir[64];
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogSlotConfigParam {
+    const Ptr<SceAppUtilMountPoint> mountPoint;
+    const Ptr<SceSaveDataDialogAppSubDirParam> appSubDir;
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogParam {
+    SceUInt32 sdkVersion;
+    SceCommonDialogParam commonParam;
+    SceSaveDataDialogMode mode;
+    SceSaveDataDialogType dispType;
+    Ptr<emu::SceSaveDataDialogFixedParam> fixedParam;
+    Ptr<emu::SceSaveDataDialogListParam> listParam;
+    Ptr<emu::SceSaveDataDialogUserMessageParam> userMsgParam;
+    Ptr<emu::SceSaveDataDialogSystemMessageParam> sysMsgParam;
+    Ptr<emu::SceSaveDataDialogErrorCodeParam> errorCodeParam;
+    Ptr<emu::SceSaveDataDialogProgressBarParam> progressBarParam;
+    Ptr<emu::SceSaveDataDialogSlotConfigParam> slotConfParam;
+    SceSaveDataDialogEnvFlag flag;
+    Ptr<void> userdata;
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogSlotInfo {
+    SceUInt32 isExist;
+    emu::SceAppUtilSaveDataSlotParam *slotParam;
+    SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogResult {
+    SceInt32 mode;
+    SceInt32 result;
+    SceInt32 buttonId;
+    SceInt32 slotId;
+    Ptr<SceSaveDataDialogSlotInfo> slotInfo;
+    Ptr<void> userdata;
     SceChar8 reserved[32];
 };
 } // namespace emu
