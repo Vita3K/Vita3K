@@ -81,7 +81,7 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
 
 static void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem) {
     const char *const name = mem_name(address, mem);
-        LOG_TRACE("{}: {} {} bytes, address {} ( {} ), value {}", log_hex((uint64_t)uc), type, size, log_hex(address), name, log_hex(value));
+    LOG_TRACE("{}: {} {} bytes, address {} ( {} ), value {}", log_hex((uint64_t)uc), type, size, log_hex(address), name, log_hex(value));
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -346,7 +346,7 @@ uint32_t read_cpsr(CPUState &state) {
     return value;
 }
 
-uint32_t read_TPIDRURO(CPUState &state) {
+uint32_t read_tpidruro(CPUState &state) {
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_C13_C0_3, &value);
     assert(err == UC_ERR_OK);
@@ -393,7 +393,7 @@ void write_cpsr(CPUState &state, uint32_t value) {
     assert(err == UC_ERR_OK);
 }
 
-void write_TPIDRURO(CPUState &state, uint32_t value) {
+void write_tpidruro(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_C13_C0_3, &value);
     assert(err == UC_ERR_OK);
 }
@@ -439,13 +439,7 @@ static void delete_cpu_context(CPUContext *ctx) {
     delete ctx;
 }
 
-CPUContextPtr init_cpu_context() {
-    CPUContextPtr ctx(new CPUContext(), delete_cpu_context);
-    return ctx;
-}
-
 void save_context(CPUState &state, CPUContext &ctx) {
-
     for (auto i = 0; i < 16; i++) {
         ctx.cpu_registers[i] = read_reg(state, i);
     }
@@ -453,11 +447,9 @@ void save_context(CPUState &state, CPUContext &ctx) {
     ctx.pc = read_pc(state);
     ctx.lr = read_lr(state);
     ctx.sp = read_sp(state);
-
 }
 
 void load_context(CPUState &state, CPUContext &ctx) {
-
     bool thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
         ctx.pc |= 1;
