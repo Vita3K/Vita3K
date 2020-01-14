@@ -25,7 +25,6 @@
 
 #include <psp2/kernel/error.h>
 
-
 namespace emu {
 typedef struct SceFiber {
     Ptr<SceFiberEntry> entry;
@@ -46,15 +45,14 @@ EXPORT(int, _sceFiberAttachContextAndSwitch) {
 }
 
 EXPORT(SceInt32, _sceFiberInitializeImpl, emu::SceFiber *fiber, char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
-    
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
-    
+
     fiber->entry = entry;
-    strncpy(fiber->name,name,32);
+    strncpy(fiber->name, name, 32);
     fiber->argOnInitialize = argOnInitialize;
     fiber->addrContext = addrContext.address();
     fiber->sizeContext = sizeContext;
@@ -78,7 +76,7 @@ EXPORT(int, sceFiberGetInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceUInt32, sceFiberGetSelf, emu::SceFiber* fiber) {
+EXPORT(SceUInt32, sceFiberGetSelf, emu::SceFiber *fiber) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     *fiber = *thread->fiber.cast<emu::SceFiber>().get(host.mem);
@@ -103,7 +101,6 @@ EXPORT(int, sceFiberRenameSelf) {
 }
 
 EXPORT(SceInt32, sceFiberReturnToThread, SceUInt32 argOnReturn, Ptr<SceUInt32> argOnRun) {
-
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     save_context(*(thread->cpu), (thread->fiber.cast<emu::SceFiber>().get(host.mem)->cpu));
@@ -119,7 +116,6 @@ EXPORT(SceInt32, sceFiberReturnToThread, SceUInt32 argOnReturn, Ptr<SceUInt32> a
 }
 
 EXPORT(SceUInt32, sceFiberRun, Ptr<emu::SceFiber> fiber_ptr, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
-
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     save_context(*(thread->cpu), *(thread->cpu_context));
@@ -157,11 +153,11 @@ EXPORT(SceUInt32, sceFiberSwitch, Ptr<emu::SceFiber> fiber_ptr, SceUInt32 argOnR
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     save_context(*(thread->cpu), (thread->fiber.cast<emu::SceFiber>().get(host.mem)->cpu));
-    
+
     bool suspended = false;
 
     emu::SceFiber *fiber = fiber_ptr.get(host.mem);
-    
+
     if (fiber->entry.address() == fiber->cpu.pc) {
         fiber->cpu.cpu_registers[1] = argOnRunTo;
     } else {
@@ -171,13 +167,12 @@ EXPORT(SceUInt32, sceFiberSwitch, Ptr<emu::SceFiber> fiber_ptr, SceUInt32 argOnR
             *(Ptr<SceUInt32>(previousArgOnRun).get(host.mem)) = argOnRunTo;
         }
     }
-    
+
     load_context(*(thread->cpu), fiber->cpu);
 
     thread->fiber = fiber_ptr.cast<void>();
 
     return suspended ? SCE_KERNEL_OK : fiber->cpu.cpu_registers[0];
-
 }
 
 BRIDGE_IMPL(_sceFiberAttachContextAndRun)

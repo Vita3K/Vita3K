@@ -33,6 +33,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <memory>
 
 struct ThreadParams {
     KernelState *kernel = nullptr;
@@ -102,7 +103,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         return SCE_KERNEL_ERROR_ERROR;
     }
 
-    thread->cpu_context = init_cpu_context();
+    thread->cpu_context = std::make_unique<CPUContext>();
     if (!thread->cpu_context) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -110,8 +111,8 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     alloc_name = fmt::format("TLS for thread {} (#{})", name, thid);
 
     auto tls_address = alloc(mem, 0x800, alloc_name.c_str()) + 0x800;
-    
-    write_TPIDRURO(*thread->cpu, tls_address);
+
+    write_tpidruro(*thread->cpu, tls_address);
 
     WaitingThreadState waiting{ name };
 

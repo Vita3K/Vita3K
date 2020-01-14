@@ -37,7 +37,6 @@ typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
 
-
 CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem);
 int run(CPUState &state, bool callback);
 int step(CPUState &state, bool callback);
@@ -49,7 +48,7 @@ uint32_t read_pc(CPUState &state);
 uint32_t read_lr(CPUState &state);
 uint32_t read_fpscr(CPUState &state);
 uint32_t read_cpsr(CPUState &state);
-uint32_t read_TPIDRURO(CPUState &state);
+uint32_t read_tpidruro(CPUState &state);
 void write_reg(CPUState &state, size_t index, uint32_t value);
 void write_float_reg(CPUState &state, size_t index, float value);
 void write_sp(CPUState &state, uint32_t value);
@@ -57,7 +56,7 @@ void write_pc(CPUState &state, uint32_t value);
 void write_lr(CPUState &state, uint32_t value);
 void write_fpscr(CPUState &state, uint32_t value);
 void write_cpsr(CPUState &state, uint32_t value);
-void write_TPIDRURO(CPUState &state, uint32_t value);
+void write_tpidruro(CPUState &state, uint32_t value);
 
 // Debugging helpers
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size = nullptr);
@@ -67,6 +66,5 @@ void trigger_breakpoint(CPUState &state);
 void log_code_add(CPUState &state);
 void log_mem_add(CPUState &state);
 
-CPUContextPtr init_cpu_context();
 void save_context(CPUState &state, CPUContext &ctx);
 void load_context(CPUState &state, CPUContext &ctx);

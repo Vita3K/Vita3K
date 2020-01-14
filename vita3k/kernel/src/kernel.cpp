@@ -38,14 +38,13 @@ Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID th
 
     const ThreadStatePtr thread = util::find(thread_id, kernel.threads);
 
-    Address tls = read_TPIDRURO(*thread->cpu) - 0x800 + key * 4;
+    Address tls = read_tpidruro(*thread->cpu) - 0x800 + key * 4;
 
     const Ptr<Ptr<void>> address(tls);
-          
+
     if (!kernel.tls_address) {
         return address;
     } else {
-
         auto alloc_name = fmt::format("TLS for thread #{} {}", thread_id, key);
         // TODO Use a finer-grained allocator.
         // TODO This is a memory leak.
