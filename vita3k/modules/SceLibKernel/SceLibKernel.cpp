@@ -31,6 +31,7 @@
 #include <rtc/rtc.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/resource.h>
 
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/modulemgr.h>
@@ -1107,8 +1108,27 @@ EXPORT(int, sceKernelGetThreadId) {
     return thread_id;
 }
 
-EXPORT(int, sceKernelGetThreadInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetThreadInfo, SceUID thid, SceKernelThreadInfo* info) {
+    STUBBED("STUB");
+
+    if (!info)
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+
+    // TODO: SCE_KERNEL_ERROR_ILLEGAL_CONTEXT check
+
+    if (info->size > 0x80)
+        return SCE_KERNEL_ERROR_NOSYS;
+
+    const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
+
+    strncpy(info->name, thread->name.c_str(), 0x1f);
+    info->stack = reinterpret_cast<void*>(thread->stack.get()->get());
+    info->stackSize = thread->stack_size;
+    info->initPriority = thread->priority;
+    info->currentPriority = thread->priority;
+    info->entry = reinterpret_cast<SceKernelThreadEntry>(thread->entry_point);
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelGetThreadRunStatus) {
