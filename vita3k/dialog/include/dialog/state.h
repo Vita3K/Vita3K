@@ -20,11 +20,14 @@
 #include <dialog/types.h>
 #include <psp2/ime_dialog.h>
 
+#include <io/vfs.h>
+
 enum DialogType {
     NO_DIALOG,
     IME_DIALOG,
     MESSAGE_DIALOG,
-    TROPHY_SETUP_DIALOG
+    TROPHY_SETUP_DIALOG,
+    SAVEDATA_DIALOG
 };
 
 struct ImeState {
@@ -44,10 +47,46 @@ struct MsgState {
     std::string btn[3];
     uint32_t btn_val[3];
     uint32_t status;
+    uint32_t bar_rate = 0;
+    bool has_progress_bar = false;
 };
 
 struct TrophyState {
     uint32_t tick;
+};
+
+struct SavedataState {
+    uint8_t btn_num = 0;
+    std::string btn[2];
+    uint32_t btn_val[2];
+    uint32_t button_id = emu::SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+
+    std::vector<vfs::FileBuffer> icon_buffer;
+    std::vector<bool> icon_loaded;
+
+    uint32_t mode;
+    uint32_t mode_to_display;
+
+    uint32_t display_type;
+    std::vector<uint32_t> slot_id;
+    std::vector<emu::SceSaveDataDialogSlotInfo> slot_info;
+    Ptr<void> userdata;
+
+    std::string msg;
+    std::vector<std::string> title;
+    std::vector<std::string> subtitle;
+    std::vector<std::string> details;
+    std::vector<SceDateTime> date;
+    std::vector<bool> has_date = { false };
+
+    uint32_t bar_rate = 0;
+    bool has_progress_bar = false;
+
+    emu::SceAppUtilSaveDataSlotEmptyParam *list_empty_param = nullptr;
+    uint32_t slot_list_size = 0;
+    uint32_t list_style;
+    std::string list_title;
+    uint32_t selected_save = 0;
 };
 
 struct DialogState {
@@ -57,4 +96,5 @@ struct DialogState {
     ImeState ime;
     MsgState msg;
     TrophyState trophy;
+    SavedataState savedata;
 };
