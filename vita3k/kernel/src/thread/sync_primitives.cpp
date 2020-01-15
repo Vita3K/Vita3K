@@ -85,9 +85,9 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
     std::unique_lock<std::mutex> &primitive_lock, SyncPrimitive &primitive,
     const WaitingThreadData &data, const char *export_name, SceUInt *const timeout) {
     if (timeout && *timeout > 0) {
-        auto status = thread->something_to_do.wait_for(thread_lock, std::chrono::microseconds{ *timeout });
+        auto status = thread->something_to_do.wait_for(thread_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->to_do == ThreadToDo::run; });
 
-        if (status == std::cv_status::timeout) {
+        if (!status) {
             *timeout = 0; // Time run out, so remaining time is 0
 
             thread->to_do = ThreadToDo::run;
@@ -98,8 +98,7 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
             return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
         }
     } else {
-        thread->something_to_do.wait(thread_lock);
-        thread->to_do = ThreadToDo::run;
+        thread->something_to_do.wait(thread_lock, [&] { return thread->to_do == ThreadToDo::run; });
     }
 
     return SCE_KERNEL_OK;
@@ -514,12 +513,12 @@ int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id,
     condvar->waiting_threads.emplace(data);
     condition_variable_lock.unlock();
 
-	if (auto error = handle_timeout(thread, thread_lock, condition_variable_lock, *condvar, data, export_name, timeout))
-		return error;
+    if (auto error = handle_timeout(thread, thread_lock, condition_variable_lock, *condvar, data, export_name, timeout))
+        return error;
 
-	thread_lock.unlock();
+    thread_lock.unlock();
 
-	return mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex, weight, timeout, false);
+    return mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex, weight, timeout, false);
 }
 
 int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, Condvar::SignalTarget signal_target, SyncWeight weight) {
