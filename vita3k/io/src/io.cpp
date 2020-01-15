@@ -377,25 +377,20 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
     std::uint64_t last_modification_time_ticks;
 
 #ifdef WIN32
-    WIN32_FIND_DATAW find_data;
-    const auto handle = FindFirstFileW(file_path.generic_path().wstring().c_str(), &find_data);
-    if (handle == INVALID_HANDLE_VALUE)
-        return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
-
-    FindClose(handle);
-
-    last_access_time_ticks = convert_filetime(find_data.ftLastAccessTime);
-    creation_time_ticks = convert_filetime(find_data.ftCreationTime);
-    last_modification_time_ticks = convert_filetime(find_data.ftLastWriteTime);
+    struct _stat sb;
+    if (_wstat(file_path.generic_path().wstring().c_str(), &sb) < 0)
+        return IO_ERROR_UNK();
 #else
     struct stat sb;
     if (stat(file_path.generic_path().string().c_str(), &sb) < 0)
         return IO_ERROR_UNK();
+#endif
 
     last_access_time_ticks = (uint64_t)sb.st_atime * VITA_CLOCKS_PER_SEC;
     creation_time_ticks = (uint64_t)sb.st_ctime * VITA_CLOCKS_PER_SEC;
     last_modification_time_ticks = (uint64_t)sb.st_mtime * VITA_CLOCKS_PER_SEC;
 
+#ifndef WIN32
 #undef st_atime
 #undef st_mtime
 #undef st_ctime
