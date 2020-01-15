@@ -514,7 +514,12 @@ int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id,
     condvar->waiting_threads.emplace(data);
     condition_variable_lock.unlock();
 
-    return handle_timeout(thread, thread_lock, condition_variable_lock, *condvar, data, export_name, timeout);
+	if (auto error = handle_timeout(thread, thread_lock, condition_variable_lock, *condvar, data, export_name, timeout))
+		return error;
+
+	thread_lock.unlock();
+
+	return mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex, weight, timeout, false);
 }
 
 int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, Condvar::SignalTarget signal_target, SyncWeight weight) {
