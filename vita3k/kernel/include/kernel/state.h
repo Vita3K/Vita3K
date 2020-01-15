@@ -35,7 +35,8 @@ struct ThreadState;
 
 struct SDL_Thread;
 
-typedef std::map<SceUID, Ptr<void>> Blocks;
+typedef std::shared_ptr<emu::SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
+typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
 typedef std::map<SceUID, SlotToAddress> ThreadToSlotToAddress;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;

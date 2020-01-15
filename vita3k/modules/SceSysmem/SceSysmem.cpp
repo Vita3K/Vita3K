@@ -20,6 +20,9 @@
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/sysmem.h>
 
+#include <kernel/state.h>
+#include <kernel/types.h>
+
 namespace emu {
 struct SceKernelAllocMemBlockOpt;
 }
@@ -39,7 +42,13 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
 
     KernelState *const state = &host.kernel;
     const SceUID uid = state->get_next_uid();
-    state->blocks.insert(Blocks::value_type(uid, address));
+
+    const SceKernelMemBlockInfoPtr sceKernelMemBlockInfo = std::make_shared<emu::SceKernelMemBlockInfo>();
+    sceKernelMemBlockInfo->type = type;
+    sceKernelMemBlockInfo->mappedBase = address;
+    sceKernelMemBlockInfo->mappedSize = size;
+    sceKernelMemBlockInfo->size = sizeof(emu::SceKernelMemBlockInfo);
+     state->blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
 
     return uid;
 }
@@ -56,8 +65,13 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, int size) {
 
     KernelState *const state = &host.kernel;
     const SceUID uid = state->get_next_uid();
-    state->blocks.insert(Blocks::value_type(uid, address));
-    state->vm_blocks.insert(Blocks::value_type(uid, address));
+
+    const SceKernelMemBlockInfoPtr sceKernelMemBlockInfo = std::make_shared<emu::SceKernelMemBlockInfo>();
+    sceKernelMemBlockInfo->mappedBase = address;
+    sceKernelMemBlockInfo->mappedSize = size;
+    sceKernelMemBlockInfo->size = sizeof(emu::SceKernelMemBlockInfo);
+    state->blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
+    state->vm_blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
 
     return uid;
 }
@@ -89,7 +103,7 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
     const Blocks::const_iterator block = state->blocks.find(uid);
     assert(block != state->blocks.end());
 
-    free(host.mem, block->second.address());
+    free(host.mem, block->second->mappedBase);
     state->blocks.erase(block);
 
     return SCE_KERNEL_OK;
@@ -102,7 +116,7 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     const Blocks::const_iterator block = state->vm_blocks.find(uid);
     assert(block != state->vm_blocks.end());
 
-    free(host.mem, block->second.address());
+    free(host.mem, block->second->mappedBase);
     state->blocks.erase(block);
     state->vm_blocks.erase(block);
 
@@ -128,13 +142,25 @@ EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
         return SCE_KERNEL_ERROR_INVALID_UID;
     }
 
-    *basep = block->second;
+    *basep = block->second->mappedBase.address();
 
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelGetMemBlockInfoByAddr) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, emu::SceKernelMemBlockInfo * info) {
+       
+    assert(addr >= 0);
+    assert(info != nullptr);
+
+    const KernelState *const state = &host.kernel;
+    for (Blocks::const_iterator it = state->blocks.begin(); it != state->blocks.end(); ++it) {
+        if (it->second->mappedBase.address() < addr && (it->second->mappedBase.address() + it->second->mappedSize > addr)) {
+            memcpy(info, it->second.get(), sizeof(emu::SceKernelMemBlockInfo));
+            return SCE_KERNEL_OK;
+        }
+    }
+
+    return SCE_KERNEL_ERROR_BLOCK_ERROR;
 }
 
 EXPORT(int, sceKernelGetMemBlockInfoByRange) {
