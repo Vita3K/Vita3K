@@ -55,6 +55,8 @@ struct DisplayState {
 
 struct HostState {
     std::string game_version;
+    std::string game_category;
+    std::string game_short_title;
     std::string game_title;
     std::string base_path;
     std::string default_path;

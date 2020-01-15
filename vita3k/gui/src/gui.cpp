@@ -241,13 +241,17 @@ void get_game_titles(GuiState &gui, HostState &host) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
                 sfo::get_data_by_key(host.game_version, sfo_handle, "APP_VER");
+                sfo::get_data_by_key(host.game_category, sfo_handle, "CATEGORY");
+                if (!sfo::get_data_by_key(host.game_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
+                    sfo::get_data_by_key(host.game_short_title, sfo_handle, "STITLE");
+                if (!sfo::get_data_by_key(host.game_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
                     sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
                 std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
             } else {
-                host.game_title = host.io.title_id; // Use TitleID as Title
-                host.game_version = "N/A";
+                host.game_short_title = host.game_title = host.io.title_id; // Use TitleID as Short title and Title
+                host.game_version = host.game_category = "N/A";
             }
-            gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io.title_id });
+            gui.game_selector.games.push_back({ host.game_version, host.game_category, host.game_short_title, host.game_title, host.io.title_id });
         }
         boost::system::error_code er;
         it.increment(er);
