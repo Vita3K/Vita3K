@@ -1,6 +1,7 @@
 #pragma once
 #include <mem/ptr.h>
 
+#include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/types.h>
 
@@ -57,6 +58,15 @@ struct SceKernelModuleInfo {
     char path[256];
     SceKernelSegmentInfo segments[MODULE_INFO_NUM_SEGMENTS];
     SceUInt type; //!< 6 = user-mode PRX?
+};
+
+struct SceKernelMemBlockInfo {
+    SceSize size;
+    Ptr<void> mappedBase;
+    SceSize mappedSize;
+    int memoryType;
+    SceUInt32 access;
+    SceKernelMemBlockType type;
 };
 
 // We only use workarea for uid
