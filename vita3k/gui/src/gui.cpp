@@ -125,7 +125,28 @@ static void init_font(GuiState &gui, HostState &host) {
     ImGuiIO &io = ImGui::GetIO();
     ImFontConfig font_config{};
     gui.monospaced_font = io.Fonts->AddFontDefault();
-    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16, &font_config, io.Fonts->GetGlyphRangesJapanese());
+    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16.f, &font_config, io.Fonts->GetGlyphRangesJapanese());
+}
+
+static void init_live_area_font(GuiState &gui, HostState &host) {
+    const auto font_path{ fs::path(host.pref_path) / "sa0/data/font/pvf/jpn0.pvf" };
+
+    // check existence of font file
+    if (!fs::exists(font_path)) {
+        LOG_WARN("Could not find font file at \"{}\", falling back to default live area font.", font_path.string());
+        return;
+    }
+
+    // read font
+    const auto font_file_size = fs::file_size(font_path);
+    gui.live_area_font_data.resize(font_file_size);
+    std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
+    font_stream.read(gui.live_area_font_data.data(), font_file_size);
+
+    // add it to imgui
+    ImGuiIO &io = ImGui::GetIO();
+    ImFontConfig font_config{};
+    gui.live_area_font = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 19.2f, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
 void init_background(GuiState &gui, const std::string &image_path) {
@@ -220,7 +241,7 @@ void get_game_titles(GuiState &gui, HostState &host) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
                 sfo::get_data_by_key(host.game_version, sfo_handle, "APP_VER");
-                sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
+                    sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
                 std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
             } else {
                 host.game_title = host.io.title_id; // Use TitleID as Title
@@ -256,6 +277,7 @@ void init(GuiState &gui, HostState &host) {
 
     init_style();
     init_font(gui, host);
+    init_live_area_font(gui, host);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);
@@ -287,6 +309,17 @@ void draw_end(GuiState &gui, SDL_Window *window) {
     ImGui::Render();
     ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
     SDL_GL_SwapWindow(window);
+}
+
+void draw_live_area(GuiState &gui, HostState &host) {
+    ImGui::PushFont(gui.live_area_font);
+
+    if (gui.live_area.live_area_dialog)
+        draw_live_area_dialog(gui, host);
+    if (gui.live_area.manual_dialog)
+        draw_manual_dialog(gui, host);
+
+    ImGui::PopFont();
 }
 
 void draw_ui(GuiState &gui, HostState &host) {
@@ -329,11 +362,6 @@ void draw_ui(GuiState &gui, HostState &host) {
 
     if (gui.help_menu.about_dialog)
         draw_about_dialog(gui);
-
-    if (gui.live_area.live_area_dialog)
-        draw_live_area_dialog(gui, host);
-    if (gui.live_area.manual_dialog)
-        draw_manual_dialog(gui, host);
 
     ImGui::PopFont();
 }

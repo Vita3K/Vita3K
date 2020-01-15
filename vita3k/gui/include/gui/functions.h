@@ -50,6 +50,7 @@ bool refresh_game_list(GuiState &gui, HostState &host);
 
 void draw_begin(GuiState &gui, HostState &host);
 void draw_end(GuiState &host, SDL_Window *window);
+void draw_live_area(GuiState &gui, HostState &host);
 void draw_ui(GuiState &gui, HostState &host);
 
 void draw_common_dialog(GuiState &gui, HostState &host);

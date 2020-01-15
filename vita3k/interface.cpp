@@ -298,8 +298,8 @@ bool handle_events(HostState &host, GuiState &gui) {
             return false;
 
         case SDL_KEYDOWN:
-            if (event.key.keysym.scancode) {
-                if (event.key.keysym.scancode == SDL_SCANCODE_G || event.key.keysym.scancode == SDL_SCANCODE_F11 || event.key.keysym.scancode == SDL_SCANCODE_T || event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+            if (gui.controls_menu.is_capturing_keys && event.key.keysym.scancode) {
+                if ((event.key.keysym.scancode == SDL_SCANCODE_G) || (event.key.keysym.scancode == SDL_SCANCODE_F11) || (event.key.keysym.scancode == SDL_SCANCODE_T) || (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)) {
                     LOG_ERROR("Key is reserved!");
                     gui.controls_menu.captured_key = gui.controls_menu.old_captured_key;
                     gui.controls_menu.is_capturing_keys = false;
@@ -308,17 +308,20 @@ bool handle_events(HostState &host, GuiState &gui) {
                     gui.controls_menu.is_capturing_keys = false;
                 }
             }
-            if (event.key.keysym.sym == SDLK_g) {
-                auto &display = host.display;
-
+            if (!gui.game_selector.selected_title_id.empty()) {
                 // toggle gui state
-                bool old_imgui_render = display.imgui_render.load();
-                while (!display.imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
+                if (event.key.keysym.sym == SDLK_g)
+                    host.display.imgui_render = !host.display.imgui_render;
+                // Show/Hide Live Area during game run
+                // TODO pause game running                
+                if (!gui.live_area.manual_dialog && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {                    
+                    if (gui.live_area_contents.find(host.io.title_id) == gui.live_area_contents.end())
+                        gui::init_live_area(gui, host);
+                    gui.live_area.live_area_dialog = !gui.live_area.live_area_dialog;                    
                 }
             }
-            if (event.key.keysym.sym == SDLK_t) {
+            if (event.key.keysym.sym == SDLK_t)
                 toggle_touchscreen();
-            }
             if (event.key.keysym.sym == SDLK_F11) {
                 host.display.fullscreen = !host.display.fullscreen;
 
@@ -358,13 +361,9 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
         app::error_dialog(message, host.window.get());
         return ModuleLoadFailed;
     }
-    if (!host.cfg.show_gui) {
-        auto &imgui_render = host.display.imgui_render;
 
-        bool old_imgui_render = imgui_render.load();
-        while (!imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
-        }
-    }
+    if (!host.cfg.show_gui)
+        host.display.imgui_render = false;
 
 #ifdef USE_GDBSTUB
     server_open(host);
