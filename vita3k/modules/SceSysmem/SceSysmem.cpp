@@ -48,7 +48,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     sceKernelMemBlockInfo->mappedBase = address;
     sceKernelMemBlockInfo->mappedSize = size;
     sceKernelMemBlockInfo->size = sizeof(emu::SceKernelMemBlockInfo);
-     state->blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
+    state->blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
 
     return uid;
 }
@@ -147,8 +147,7 @@ EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, emu::SceKernelMemBlockInfo * info) {
-       
+EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, emu::SceKernelMemBlockInfo *info) {
     assert(addr >= 0);
     assert(info != nullptr);
 
