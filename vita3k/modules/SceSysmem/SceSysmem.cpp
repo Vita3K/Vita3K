@@ -103,7 +103,7 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
     const Blocks::const_iterator block = state->blocks.find(uid);
     assert(block != state->blocks.end());
 
-    free(host.mem, block->second->mappedBase);
+    free(host.mem, block->second->mappedBase.address());
     state->blocks.erase(block);
 
     return SCE_KERNEL_OK;
@@ -116,7 +116,7 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     const Blocks::const_iterator block = state->vm_blocks.find(uid);
     assert(block != state->vm_blocks.end());
 
-    free(host.mem, block->second->mappedBase);
+    free(host.mem, block->second->mappedBase.address());
     state->blocks.erase(block);
     state->vm_blocks.erase(block);
 
