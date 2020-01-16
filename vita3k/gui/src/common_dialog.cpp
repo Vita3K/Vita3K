@@ -19,12 +19,11 @@
 
 #include <gui/functions.h>
 
-#include <util/string_utils.h>
 #include <gui/imgui_impl_sdl.h>
+#include <util/string_utils.h>
 
 #include <SDL.h>
 #include <stb_image.h>
-
 
 namespace gui {
 

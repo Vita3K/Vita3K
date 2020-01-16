@@ -24,8 +24,8 @@
 #include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
 
-#include <io/types.h>
 #include <io/state.h>
+#include <io/types.h>
 #include <io/vfs.h>
 
 #include <util/fs.h>

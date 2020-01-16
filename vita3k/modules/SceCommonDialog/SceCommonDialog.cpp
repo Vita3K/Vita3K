@@ -17,8 +17,8 @@
 
 #include "SceCommonDialog.h"
 
-#include <host/app_util.h>
 #include <dialog/types.h>
+#include <host/app_util.h>
 #include <host/functions.h>
 #include <io/device.h>
 #include <io/functions.h>
