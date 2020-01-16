@@ -1108,7 +1108,7 @@ EXPORT(int, sceKernelGetThreadId) {
     return thread_id;
 }
 
-EXPORT(int, sceKernelGetThreadInfo, SceUID thid, SceKernelThreadInfo* info) {
+EXPORT(int, sceKernelGetThreadInfo, SceUID thid, SceKernelThreadInfo *info) {
     STUBBED("STUB");
 
     if (!info)
@@ -1122,7 +1122,7 @@ EXPORT(int, sceKernelGetThreadInfo, SceUID thid, SceKernelThreadInfo* info) {
     const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
 
     strncpy(info->name, thread->name.c_str(), 0x1f);
-    info->stack = reinterpret_cast<void*>(thread->stack.get()->get());
+    info->stack = reinterpret_cast<void *>(thread->stack.get()->get());
     info->stackSize = thread->stack_size;
     info->initPriority = thread->priority;
     info->currentPriority = thread->priority;
