@@ -112,11 +112,11 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
     return false;
 }
 
-bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend) {
+bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend, bool shader_optimization) {
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();
-        if (!gl::create(window, state))
+        if (!gl::create(window, state, shader_optimization))
             return false;
         break;
 #ifdef USE_VULKAN

@@ -30,6 +30,7 @@
 
 #include <SPIRV/SpvBuilder.h>
 #include <SPIRV/disassemble.h>
+#include <spirv-tools/optimizer.hpp>
 #include <boost/optional.hpp>
 #include <spirv_glsl.hpp>
 
@@ -1029,13 +1030,44 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     return vert_fin_func;
 }
 
+static SpirvCode optimize_shader_spirv(const SpirvCode &input) {
+    SpirvCode result;
+
+    // target should change depending on backend, but everything goes through SPIRV-Cross now so its not a big deal now
+    const spv_target_env target = SPV_ENV_OPENGL_4_1;
+
+    // need to use c api to get diagnostic information
+    spv_context validator = spvContextCreate(target);
+    spv_diagnostic diagnostic{};
+    spv_result_t validator_result = spvValidateBinary(validator, input.data(), input.size(), &diagnostic);
+    if (validator_result != SPV_SUCCESS) {
+        LOG_WARN("Validator failed. {} (pos: {})",
+            diagnostic->error, diagnostic->position.index);
+    }
+    spvDiagnosticDestroy(diagnostic);
+    spvContextDestroy(validator);
+
+    spvtools::OptimizerOptions optimizer_options;
+    optimizer_options.set_run_validator(false);
+
+    spvtools::Optimizer optimizer(target);
+
+    optimizer.RegisterPerformancePasses();
+    optimizer.Run(input.data(), input.size(), &result, optimizer_options);
+
+    return result;
+}
+
 static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
     SpirvCode spirv;
 
     emu::SceGxmProgramType program_type = program.get_type();
 
+    // opengl 4.1 semantics require v 1.0
+    const uint32_t spirv_version = 0x10000;
+
     spv::SpvBuildLogger spv_logger;
-    spv::Builder b(SPV_VERSION, 0x1337 << 12, &spv_logger);
+    spv::Builder b(spirv_version, 0x1337 << 12, &spv_logger);
     b.setSourceFile(shader_hash);
     b.setEmitOpLines();
     b.addSourceExtension("gxp");
@@ -1106,6 +1138,9 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
         LOG_ERROR("SPIR-V Error:\n{}", spirv_log);
 
     b.dump(spirv);
+
+    if (features.shader_optimization)
+        spirv = optimize_shader_spirv(spirv);
 
     if (LOG_SHADER_CODE || force_shader_debug) {
         spirv_disasm_print(spirv, spirv_dump);
