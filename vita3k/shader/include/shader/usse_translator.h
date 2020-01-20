@@ -594,7 +594,7 @@ public:
         Imm7 src0_n,
         Imm7 src1_n,
         Imm7 src2_n);
-        
+
     bool nop();
     bool phas();
 

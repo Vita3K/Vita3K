@@ -117,7 +117,6 @@ COMMAND_SET_STATE(uniform_buffer) {
     }
 }
 
-
 COMMAND_SET_STATE(viewport) {
     state->viewport.enable = helper.pop<SceGxmViewportMode>();
     const bool set_viewport_param = helper.pop<bool>();

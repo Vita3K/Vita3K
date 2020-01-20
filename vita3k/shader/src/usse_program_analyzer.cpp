@@ -15,9 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/usse_program_analyzer.h>
-#include <gxm/types.h>
 #include <gxm/functions.h>
+#include <gxm/types.h>
+#include <shader/usse_program_analyzer.h>
 
 #include <cassert>
 
@@ -120,34 +120,35 @@ int match_uniform_buffer_with_buffer_size(const SceGxmProgram &program, const Sc
 }
 
 void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes) {
-    const std::uint64_t *secondary_program_insts = reinterpret_cast<const std::uint64_t*>(
-        reinterpret_cast<const std::uint8_t*>(&program.secondary_program_offset) + program.secondary_program_offset);
+    const std::uint64_t *secondary_program_insts = reinterpret_cast<const std::uint64_t *>(
+        reinterpret_cast<const std::uint8_t *>(&program.secondary_program_offset) + program.secondary_program_offset);
 
     const std::uint64_t *primary_program_insts = program.primary_program_start();
     shader::usse::UniformBufferMap buffers;
 
     std::fill(sizes.begin(), sizes.end(), 0);
-    
+
     // The array size is the size of the uniform buffer in bytes. If you encounter it as 64
     // bytes, usually you have to count it inside shader since it's a filler for uniform buffer
     // debug symbols being stripped.
     // So for the best, just analyze the shader and get the maximum data it will fetch
-    
+
     // Analyze the shader to get maximum uniform buffer data
     // Analyze secondary program
     shader::usse::data_analyze(
         static_cast<shader::usse::USSEOffset>((program.secondary_program_offset_end + 4 - program.secondary_program_offset)) / 8,
-        [&](shader::usse::USSEOffset off) -> std::uint64_t { 
+        [&](shader::usse::USSEOffset off) -> std::uint64_t {
             return secondary_program_insts[off];
-        }, buffers);
+        },
+        buffers);
 
     // Analyze primary program
     shader::usse::data_analyze(
         static_cast<shader::usse::USSEOffset>(program.primary_program_instr_count),
-        [&](shader::usse::USSEOffset off) -> std::uint64_t { 
+        [&](shader::usse::USSEOffset off) -> std::uint64_t {
             return primary_program_insts[off];
-        }, buffers);
-
+        },
+        buffers);
 
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
