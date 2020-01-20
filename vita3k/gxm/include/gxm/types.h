@@ -11,7 +11,7 @@
 #include <mutex>
 
 #define SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX 0xE
-#define SCE_GXM_REAL_MAX_UNIFORM_BUFFER 15  // Include default
+#define SCE_GXM_REAL_MAX_UNIFORM_BUFFER 15 // Include default
 
 namespace renderer {
 struct FragmentProgram;
@@ -300,7 +300,7 @@ enum SceGxmFragmentProgramInputs : int {
 };
 
 struct SceGxmUniformBufferInfo {
-    std::uint16_t reside_buffer;    // If reside buffer = 0, this is a in memory buffer. Likely SSBO
+    std::uint16_t reside_buffer; // If reside buffer = 0, this is a in memory buffer. Likely SSBO
     std::uint16_t base_offset;
     std::uint32_t unk0;
 };

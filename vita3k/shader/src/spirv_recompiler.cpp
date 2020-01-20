@@ -622,7 +622,6 @@ static void get_parameter_type_store_and_name(const SceGxmProgramParameter &para
     default:
         break;
     }
-
 }
 
 /**
@@ -650,8 +649,7 @@ static size_t calculate_variable_size(const SceGxmProgramParameter &parameter, c
 static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_bank, spv::Id block, spv::Id ite, const int start, const int vec4_count) {
     utils::make_for_loop(builder, ite, builder.makeIntConstant(0), builder.makeIntConstant(vec4_count), [&]() {
         spv::Id to_copy = builder.createAccessChain(spv::StorageClassUniform, block, { builder.makeIntConstant(0), ite });
-        spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, builder.getTypeId(ite), ite,
-            builder.makeIntConstant(start)) });
+        spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, builder.getTypeId(ite), ite, builder.makeIntConstant(start)) });
 
         builder.createStore(builder.createLoad(to_copy), dest);
     });
@@ -680,7 +678,7 @@ static spv::Id create_uniform_block(spv::Builder &b, const FeatureState &feature
     const std::string buffer_var_name = fmt::format("buffer{}", base_binding);
     spv::Id default_buffer = b.createVariable(spv::StorageClassUniform, default_buffer_type, buffer_var_name.c_str());
     if (features.use_shader_binding)
-		b.addDecoration(default_buffer, spv::DecorationBinding, ((!is_vert) ? 15 : 0) + base_binding);
+        b.addDecoration(default_buffer, spv::DecorationBinding, ((!is_vert) ? 15 : 0) + base_binding);
 
     b.addMemberDecoration(default_buffer_type, 0, spv::DecorationOffset, 0);
     b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
@@ -720,8 +718,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     SamplerMap samplers;
     UniformBufferMap buffers;
 
-    const std::uint64_t *secondary_program_insts = reinterpret_cast<const std::uint64_t*>(
-        reinterpret_cast<const std::uint8_t*>(&program.secondary_program_offset) + program.secondary_program_offset);
+    const std::uint64_t *secondary_program_insts = reinterpret_cast<const std::uint64_t *>(
+        reinterpret_cast<const std::uint8_t *>(&program.secondary_program_offset) + program.secondary_program_offset);
 
     const std::uint64_t *primary_program_insts = program.primary_program_start();
 
@@ -729,22 +727,24 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     // Analyze secondary program
     usse::data_analyze(
         static_cast<shader::usse::USSEOffset>((program.secondary_program_offset_end + 4 - program.secondary_program_offset)) / 8,
-        [&](usse::USSEOffset off) -> std::uint64_t { 
+        [&](usse::USSEOffset off) -> std::uint64_t {
             return secondary_program_insts[off];
-        }, buffers);
+        },
+        buffers);
 
     // Analyze primary program
     usse::data_analyze(
         static_cast<shader::usse::USSEOffset>(program.primary_program_instr_count),
-        [&](usse::USSEOffset off) -> std::uint64_t { 
+        [&](usse::USSEOffset off) -> std::uint64_t {
             return primary_program_insts[off];
-        }, buffers);
+        },
+        buffers);
 
     spv::Id ite_copy = b.createVariable(spv::StorageClassFunction, i32_type, "i");
     std::array<const SceGxmProgramParameterContainer *, SCE_GXM_REAL_MAX_UNIFORM_BUFFER> all_buffers_in_register;
 
     // Empty them out
-    for (auto &buffer: all_buffers_in_register) {
+    for (auto &buffer : all_buffers_in_register) {
         buffer = nullptr;
     }
 

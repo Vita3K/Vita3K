@@ -650,7 +650,8 @@ bool USSETranslatorVisitor::vldst(
     const int total_number_to_fetch_in_vec4_granularity = total_bytes_fo_fetch / 16;
     const int total_number_to_fetch_left_in_f32 = (total_bytes_fo_fetch - total_number_to_fetch_in_vec4_granularity * 16) / 4;
     const int total_number_to_fetch_left_in_native_format = (total_bytes_fo_fetch - total_number_to_fetch_in_vec4_granularity * 16
-         - total_number_to_fetch_left_in_f32 * 4) / get_data_type_size(type_to_ldst);
+                                                                - total_number_to_fetch_left_in_f32 * 4)
+        / get_data_type_size(type_to_ldst);
 
     Operand to_store;
 
@@ -683,7 +684,7 @@ bool USSETranslatorVisitor::vldst(
 
     auto fetch_ublock_data = [&](int base, int off_vec4, int num_comp) {
         spv::Id to_load = spv::NoResult;
-        
+
         if ((base & 3) == 0) {
             // Aligned. We can load directly
             to_load = m_b.createAccessChain(spv::StorageClassUniform, buffer, { zero, m_b.makeIntConstant(off_vec4) });
@@ -738,7 +739,7 @@ bool USSETranslatorVisitor::vldst(
         // Load the rest of the one unaligned as F32 if possible
         spv::Id to_load = fetch_ublock_data(src1_n, (src1_n / 4) + total_number_to_fetch_in_vec4_granularity, total_number_to_fetch_left_in_f32);
         std::uint8_t mask = mask_fetch[total_number_to_fetch_left_in_f32];
-        
+
         store(to_store, to_load, mask);
     }
 

@@ -341,9 +341,8 @@ int get_uniform_buffer_base(const SceGxmProgram &program, const SceGxmProgramPar
     auto container = get_container_by_index(program, 19);
     int base = (container ? container->base_sa_offset : 0);
 
-    const SceGxmUniformBufferInfo *info = reinterpret_cast<const SceGxmUniformBufferInfo*>(
-        reinterpret_cast<const std::uint8_t*>(&program.uniform_buffer_offset) + program.uniform_buffer_offset
-    );
+    const SceGxmUniformBufferInfo *info = reinterpret_cast<const SceGxmUniformBufferInfo *>(
+        reinterpret_cast<const std::uint8_t *>(&program.uniform_buffer_offset) + program.uniform_buffer_offset);
 
     if (program.uniform_buffer_count == 1) {
         base += info->base_offset;

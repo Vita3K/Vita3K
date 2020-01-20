@@ -1,9 +1,9 @@
 #pragma once
 
 #include <SPIRV/SpvBuilder.h>
+#include <shader/usse_program_analyzer.h>
 #include <shader/usse_translator_types.h>
 #include <shader/usse_types.h>
-#include <shader/usse_program_analyzer.h>
 
 #include <gxm/types.h>
 
@@ -38,7 +38,7 @@ void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite,
 
     b.setBuildPoint(&blocks.head);
     spv::Id compare_result = b.createOp(spv::OpSLessThan, b.makeBoolType(), { iterator, iterator_limit });
-    
+
     b.createLoopMerge(&blocks.merge, &blocks.continue_target, spv::LoopControlMaskNone, 0);
     b.createConditionalBranch(compare_result, &blocks.body, &blocks.merge);
 
@@ -50,10 +50,10 @@ void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite,
     b.createStore(add_to_me, iterator);
 
     b.createBranch(&blocks.continue_target);
-    
+
     b.setBuildPoint(&blocks.continue_target);
     b.createBranch(&blocks.head);
-    
+
     b.setBuildPoint(&blocks.merge);
     b.closeLoop();
 }

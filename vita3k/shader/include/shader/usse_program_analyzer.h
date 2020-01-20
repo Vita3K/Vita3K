@@ -19,8 +19,8 @@
 
 #include <array>
 #include <cstdint>
-#include <queue>
 #include <map>
+#include <queue>
 #include <tuple>
 
 using UniformBufferSizes = std::array<std::uint32_t, 15>;
@@ -85,7 +85,7 @@ void data_analyze(USSEOffset end_offset, F read_func, UniformBufferMap &buffer_m
     int cursor = 0;
     int offset = 0;
     int size = 0;
-    
+
     for (USSEOffset i = 0; i < end_offset; i++) {
         // Analyze for any existing memory uniform buffer
         if (is_buffer_fetch_or_store(read_func(i), base, cursor, offset, size)) {

@@ -246,13 +246,13 @@ std::int64_t byte_swap(std::int64_t val) {
 void float_to_half(const float *src, std::uint16_t *dest, const int total) {
     float toconvert[8] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     int i = 0;
-    
+
     while (i < total) {
         memcpy(toconvert, src, std::min<int>(8, total - i) * sizeof(float));
 
         __m256 float_vector = _mm256_load_ps(toconvert);
         __m128i half_vector = _mm256_cvtps_ph(float_vector, 0);
-        _mm_storeu_si128((__m128i*)dest, half_vector);
+        _mm_storeu_si128((__m128i *)dest, half_vector);
 
         i += 8;
         src += 8;
