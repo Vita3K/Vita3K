@@ -25,9 +25,9 @@
 #include <kernel/thread/thread_functions.h>
 #include <renderer/functions.h>
 #include <renderer/types.h>
+#include <util/bytes.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
-#include <util/bytes.h>
 
 #include <psp2/kernel/error.h>
 
@@ -605,8 +605,8 @@ EXPORT(int, sceGxmFragmentProgramGetPassType) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmFragmentProgramGetProgram) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<const SceGxmProgram>, sceGxmFragmentProgramGetProgram, const SceGxmFragmentProgram *fragmentProgram) {
+    return fragmentProgram->program;
 }
 
 EXPORT(int, sceGxmFragmentProgramIsEnabled) {
@@ -1198,7 +1198,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
 EXPORT(int, sceGxmSetFragmentUniformBuffer, SceGxmContext *context, int index, Ptr<void> data) {
     assert(context != nullptr);
     assert(data);
-    
+
     context->state.fragment_uniform_buffers[index] = data;
     return 0;
 }
@@ -1281,7 +1281,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
 
     // Component size is in bytes
     int comp_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>(param_type));
-    const std::uint8_t *source = reinterpret_cast<const std::uint8_t*>(sourceData);
+    const std::uint8_t *source = reinterpret_cast<const std::uint8_t *>(sourceData);
     std::vector<std::uint8_t> converted_data;
 
     if (parameter->type == SCE_GXM_PARAMETER_TYPE_F16) {
@@ -1290,13 +1290,13 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
         // TODO (pent0): Check more.
         // AVX conversion requires number of dest aligned to 8
         converted_data.resize(((componentCount + 7) / 8) * 8 * 2);
-        float_to_half(sourceData, reinterpret_cast<std::uint16_t*>(converted_data.data()), componentCount);
+        float_to_half(sourceData, reinterpret_cast<std::uint16_t *>(converted_data.data()), componentCount);
 
         source = converted_data.data();
     }
 
     if (parameter->array_size == 1 || parameter->component_count == 1) {
-        // Case 1: No array. Only a single vector. Don't apply any alignment 
+        // Case 1: No array. Only a single vector. Don't apply any alignment
         // Case 2: Array but component count equals to 1. This case, a scalar array, align it to 32-bit bound
         if (parameter->component_count == 1) {
             // Apply 32 bit alignment, by making each component has 4 bytes
@@ -1320,7 +1320,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
         // wtf
         const int vec_to_start_write = componentOffset / parameter->component_count;
         int component_cursor_inside_vector = (componentOffset % parameter->component_count);
-        std::uint8_t *dest = reinterpret_cast<uint8_t*>(uniformBuffer) + parameter->resource_index * sizeof(float)
+        std::uint8_t *dest = reinterpret_cast<uint8_t *>(uniformBuffer) + parameter->resource_index * sizeof(float)
             + vec_to_start_write * (size + align_bytes) + component_cursor_inside_vector * comp_size;
 
         int component_to_copy_remain_per_elem = parameter->component_count - component_cursor_inside_vector;
@@ -1377,7 +1377,7 @@ EXPORT(int, sceGxmSetVertexTexture) {
 EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, int index, Ptr<void> data) {
     assert(context != nullptr);
     assert(data);
-    
+
     context->state.vertex_uniform_buffers[index] = data;
     return 0;
 }
@@ -2272,8 +2272,8 @@ EXPORT(int, sceGxmVertexFence) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<const SceGxmProgram>, sceGxmVertexProgramGetProgram, Ptr<const SceGxmVertexProgram> vertex_program) {
-    return vertex_program.get(host.mem)->program;
+EXPORT(Ptr<const SceGxmProgram>, sceGxmVertexProgramGetProgram, const SceGxmVertexProgram *vertexProgram) {
+    return vertexProgram->program;
 }
 
 EXPORT(int, sceGxmWaitEvent) {
