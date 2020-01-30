@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 set -ex
 
 BOOST_FOUND="$(cmake --find-package -DNAME=Boost -DCOMPILER_ID=GNU -DLANGUAGE=C -DMODE=EXIST)"
