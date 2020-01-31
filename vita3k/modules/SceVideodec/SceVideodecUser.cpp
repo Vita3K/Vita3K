@@ -17,13 +17,61 @@
 
 #include "SceVideodecUser.h"
 
-#include <psp2/videodec.h>
-
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
-namespace emu {
+enum SceVideodecType {
+    SCE_VIDEODEC_TYPE_HW_AVCDEC = 0x1001
+};
+
+struct SceVideodecTimeStamp {
+    uint32_t upper;
+    uint32_t lower;
+};
+
+struct SceAvcdecFrameOptionRGBA {
+    uint8_t alpha;
+    uint8_t cscCoefficient;
+    uint8_t reserved[14];
+};
+
+union SceAvcdecFrameOption {
+    uint8_t                  reserved[16];
+    SceAvcdecFrameOptionRGBA rgba;
+};
+
+struct SceAvcdecQueryDecoderInfo {
+    uint32_t horizontal;
+    uint32_t vertical;
+    uint32_t numOfRefFrames;  //!< Number of reference frames
+};
+
+struct SceAvcdecDecoderInfo {
+    uint32_t frameMemSize;
+};
+
+struct SceAvcdecInfo {
+    uint32_t numUnitsInTick;
+    uint32_t timeScale;
+    uint8_t  fixedFrameRateFlag;
+
+    uint8_t  aspectRatioIdc;
+    uint16_t sarWidth;
+    uint16_t sarHeight;
+
+    uint8_t  colourPrimaries;
+    uint8_t  transferCharacteristics;
+    uint8_t  matrixCoefficients;
+
+    uint8_t  videoFullRangeFlag;
+
+    uint8_t  picStruct[2];
+    uint8_t  ctType;
+
+    SceVideodecTimeStamp pts;
+};
+
 struct SceAvcdecBuf {
     Ptr<void> pBuf;
     uint32_t size;
@@ -31,13 +79,13 @@ struct SceAvcdecBuf {
 
 struct SceAvcdecCtrl {
     uint32_t handle;
-    emu::SceAvcdecBuf frameBuf;
+    SceAvcdecBuf frameBuf;
 };
 
 struct SceAvcdecAu {
     SceVideodecTimeStamp pts;
     SceVideodecTimeStamp dts;
-    emu::SceAvcdecBuf es;
+    SceAvcdecBuf es;
 };
 
 struct SceAvcdecFrame {
@@ -68,15 +116,14 @@ struct SceAvcdecPicture {
 struct SceAvcdecArrayPicture {
     uint32_t numOfOutput;
     uint32_t numOfElm;
-    Ptr<Ptr<emu::SceAvcdecPicture>> pPicture;
+    Ptr<Ptr<SceAvcdecPicture>> pPicture;
 };
-} // namespace emu
 
 inline uint32_t calculate_buffer_size(uint32_t width, uint32_t height, uint32_t frameRefs) {
     return width * height * 3 / 2 * frameRefs;
 }
 
-void send_decoder_data(MemState &mem, DecoderPtr &decoder_info, const emu::SceAvcdecAu *au) {
+void send_decoder_data(MemState &mem, DecoderPtr &decoder_info, const SceAvcdecAu *au) {
     int error = 0;
 
     std::vector<uint8_t> au_frame(au->es.size + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -124,11 +171,11 @@ inline void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest) {
     }
 }
 
-void receive_decoder_data(MemState &mem, DecoderPtr &decoder_info, emu::SceAvcdecArrayPicture *picture) {
+void receive_decoder_data(MemState &mem, DecoderPtr &decoder_info, SceAvcdecArrayPicture *picture) {
     AVFrame *frame = av_frame_alloc();
 
     if (avcodec_receive_frame(decoder_info->context, frame) == 0) {
-        emu::SceAvcdecFrame *avc_frame = &picture->pPicture.get(mem)[0].get(mem)->frame;
+        SceAvcdecFrame *avc_frame = &picture->pPicture.get(mem)[0].get(mem)->frame;
         auto *avc_data = reinterpret_cast<uint8_t *>(avc_frame->pPicture[0].get(mem));
         copy_yuv_data_from_frame(frame, avc_data);
         picture->numOfOutput++;
@@ -137,7 +184,7 @@ void receive_decoder_data(MemState &mem, DecoderPtr &decoder_info, emu::SceAvcde
     av_frame_free(&frame);
 }
 
-EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, emu::SceAvcdecCtrl *decoder, const SceAvcdecQueryDecoderInfo *query) {
+EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, SceAvcdecCtrl *decoder, const SceAvcdecQueryDecoderInfo *query) {
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
 
     SceUID handle = host.kernel.get_next_uid();
@@ -185,7 +232,7 @@ EXPORT(int, sceAvcdecCscInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvcdecDecode, emu::SceAvcdecCtrl *decoder, const emu::SceAvcdecAu *au, emu::SceAvcdecArrayPicture *picture) {
+EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
     DecoderPtr &decoder_info = host.kernel.decoders[decoder->handle];
 
     // TODO: decoding can be done async I think
@@ -211,14 +258,14 @@ EXPORT(int, sceAvcdecDecodeAuNongameapp) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvcdecDecodeAvailableSize, emu::SceAvcdecCtrl *decoder) {
+EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
     DecoderPtr &decoder_info = host.kernel.decoders[decoder->handle];
 
     return calculate_buffer_size(
         decoder_info->frame_width, decoder_info->frame_height, decoder_info->frame_ref_count);
 }
 
-EXPORT(int, sceAvcdecDecodeFlush, emu::SceAvcdecCtrl *decoder) {
+EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
     auto &decoder_info = host.kernel.decoders[decoder->handle];
 
     avcodec_flush_buffers(decoder_info->context);
@@ -254,7 +301,7 @@ EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvcdecDecodeStop, emu::SceAvcdecCtrl *decoder, emu::SceAvcdecArrayPicture *picture) {
+EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *picture) {
     auto &decoder_info = host.kernel.decoders[decoder->handle];
 
     receive_decoder_data(host.mem, decoder_info, picture);
@@ -270,7 +317,7 @@ EXPORT(int, sceAvcdecDecodeWithWorkPicture) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvcdecDeleteDecoder, emu::SceAvcdecCtrl *decoder) {
+EXPORT(int, sceAvcdecDeleteDecoder, SceAvcdecCtrl *decoder) {
     auto &decoder_info = host.kernel.decoders[decoder->handle];
 
     avcodec_close(decoder_info->context);

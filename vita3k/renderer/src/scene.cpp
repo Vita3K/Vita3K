@@ -21,8 +21,8 @@
 namespace renderer {
 COMMAND(handle_set_context) {
     const RenderTarget *rt = helper.pop<const RenderTarget *>();
-    const emu::SceGxmColorSurface *color_surface = helper.pop<emu::SceGxmColorSurface *>();
-    const emu::SceGxmDepthStencilSurface *depth_stencil_surface = helper.pop<emu::SceGxmDepthStencilSurface *>();
+    const SceGxmColorSurface *color_surface = helper.pop<SceGxmColorSurface *>();
+    const SceGxmDepthStencilSurface *depth_stencil_surface = helper.pop<SceGxmDepthStencilSurface *>();
 
     if (rt) {
         render_context->current_render_target = rt;

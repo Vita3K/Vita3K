@@ -11,5 +11,5 @@ add_library(
 )
 
 target_include_directories(app PUBLIC include)
-target_link_libraries(app PUBLIC discord-rpc host vita-headers)
+target_link_libraries(app PUBLIC discord-rpc host)
 target_link_libraries(app PRIVATE gui)

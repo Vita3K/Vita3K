@@ -1,7 +1,5 @@
 #pragma once
 
-#include <gxm/types.h>
-#include <psp2/gxm.h>
 #include <renderer/commands.h>
 #include <renderer/types.h>
 
@@ -10,10 +8,6 @@ struct MemState;
 struct FeatureState;
 struct Config;
 
-namespace emu {
-struct SceGxmBlendInfo;
-}
-
 namespace renderer {
 struct Context;
 struct FragmentProgram;
@@ -21,7 +15,7 @@ struct RenderTarget;
 struct State;
 struct VertexProgram;
 
-bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
+bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 void finish(State &state, Context &context);
 
@@ -75,7 +69,7 @@ void set_stencil_func(State &state, Context *ctx, GxmContextState *gxm_context, 
 void set_stencil_ref(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, unsigned char sref);
 void set_program(State &state, Context *ctx, GxmContextState *gxm_context, Ptr<const void> program, const bool is_fragment);
 void set_cull_mode(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmCullMode cull);
-void set_fragment_texture(State &state, Context *ctx, GxmContextState *gxm_context, const std::uint32_t tex_index, const emu::SceGxmTexture tex);
+void set_fragment_texture(State &state, Context *ctx, GxmContextState *gxm_context, const std::uint32_t tex_index, const SceGxmTexture tex);
 void set_viewport(State &state, Context *ctx, GxmContextState *gxm_context, float xOffset, float yOffset, float zOffset, float xScale, float yScale, float zScale);
 void set_viewport_enable(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmViewportMode enable);
 void set_region_clip(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax);
@@ -83,7 +77,7 @@ void set_two_sided_enable(State &state, Context *ctx, GxmContextState *gxm_conte
 void set_uniform(State &state, Context *ctx, const bool is_vertex_uniform, const SceGxmProgramParameter *parameter, const void *data);
 void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_num, const std::uint16_t buffer_size, const void *data);
 
-void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, emu::SceGxmColorSurface *color_surface, emu::SceGxmDepthStencilSurface *depth_stencil_surface);
+void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, SceGxmColorSurface *color_surface, SceGxmDepthStencilSurface *depth_stencil_surface);
 void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len, const void *data);
 void draw(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count);
 void sync_surface_data(State &state, Context *ctx, GxmContextState *gxm_context);
@@ -146,7 +140,7 @@ namespace texture {
 void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
 void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
 void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_t height);
-const uint32_t *get_texture_palette(const emu::SceGxmTexture &texture, const MemState &mem);
+const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
 
 /**
  * \brief Decompresses all the blocks of a DXT compressed texture and stores the resulting pixels in 'image'.
@@ -164,7 +158,7 @@ void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const 
 void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 
-void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem);
+void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 bool is_compressed_format(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height, size_t &source_size);
 

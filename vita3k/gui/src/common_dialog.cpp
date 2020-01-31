@@ -26,7 +26,6 @@
 #include <stb_image.h>
 
 namespace gui {
-
 static void draw_ime_dialog(DialogState &common_dialog) {
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin(common_dialog.ime.title.c_str());
@@ -119,7 +118,7 @@ static void draw_savedata_dialog_list(DialogState &common_dialog, GuiState &gui,
         common_dialog.savedata.selected_save = loop_index;
         common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
         common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        common_dialog.savedata.mode_to_display = emu::SCE_SAVEDATA_DIALOG_MODE_FIXED;
+        common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
     }
     ImGui::SameLine();
     ImGui::SetWindowFontScale(1.5f);
@@ -129,7 +128,7 @@ static void draw_savedata_dialog_list(DialogState &common_dialog, GuiState &gui,
     }
     ImGui::SetWindowFontScale(1.2f);
     switch (common_dialog.savedata.list_style) {
-    case emu::SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE_SUBTITLE:
+    case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE_SUBTITLE:
         if (common_dialog.savedata.has_date[loop_index]) {
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - WINDOW_SIZE.x + THUMBNAIL_SIZE.x + 10 + 5, WINDOW_SIZE.y - WINDOW_SIZE.y + (save_index * THUMBNAIL_SIZE.y) + 24));
             ImGui::Text("%d/%02d/%02d  %02d:%02d", common_dialog.savedata.date[loop_index].year, common_dialog.savedata.date[loop_index].month,
@@ -140,7 +139,7 @@ static void draw_savedata_dialog_list(DialogState &common_dialog, GuiState &gui,
             ImGui::Text(common_dialog.savedata.subtitle[loop_index].c_str());
         }
         break;
-    case emu::SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_SUBTITLE_DATE:
+    case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_SUBTITLE_DATE:
         if (!common_dialog.savedata.subtitle[loop_index].empty()) {
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - WINDOW_SIZE.x + THUMBNAIL_SIZE.x + 10 + 5, WINDOW_SIZE.y - WINDOW_SIZE.y + (save_index * THUMBNAIL_SIZE.y) + 24));
             ImGui::Text(common_dialog.savedata.subtitle[loop_index].c_str());
@@ -151,7 +150,7 @@ static void draw_savedata_dialog_list(DialogState &common_dialog, GuiState &gui,
                 common_dialog.savedata.date[loop_index].day, common_dialog.savedata.date[loop_index].hour, common_dialog.savedata.date[loop_index].minute);
         }
         break;
-    case emu::SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE:
+    case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE:
         if (common_dialog.savedata.has_date[loop_index]) {
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - WINDOW_SIZE.x + THUMBNAIL_SIZE.x + 10 + 5, WINDOW_SIZE.y - WINDOW_SIZE.y + (save_index * THUMBNAIL_SIZE.y) + 24));
             ImGui::Text("%d/%02d/%02d  %02d:%02d", common_dialog.savedata.date[loop_index].year, common_dialog.savedata.date[loop_index].month,
@@ -191,14 +190,14 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
     int existing_saves_count = 0;
 
     switch (common_dialog.savedata.mode_to_display) {
-    case emu::SCE_SAVEDATA_DIALOG_MODE_LIST:
+    case SCE_SAVEDATA_DIALOG_MODE_LIST:
         ImGui::SetNextWindowPosCenter();
         ImGui::SetNextWindowSize(WINDOW_SIZE);
         ImGui::Begin("##Savedata Dialog", nullptr, ImGuiWindowFlags_NoDecoration);
         ImGui::SetWindowFontScale(1.5f);
         if (ImGui::Button("X", ImVec2(40, 30))) {
             common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-            common_dialog.savedata.button_id = emu::SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+            common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
             common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
         }
         ImGui::SameLine();
@@ -208,11 +207,11 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
         ImGui::BeginChild("##Selectables", ImVec2(0, 0), false, ImGuiWindowFlags_NoDecoration);
         for (int i = 0; i < common_dialog.savedata.slot_list_size; i++) {
             switch (common_dialog.savedata.display_type) {
-            case emu::SCE_SAVEDATA_DIALOG_TYPE_SAVE:
+            case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
                 draw_savedata_dialog_list(common_dialog, gui, WINDOW_SIZE, THUMBNAIL_SIZE, i, i);
                 break;
-            case emu::SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            case emu::SCE_SAVEDATA_DIALOG_TYPE_DELETE:
+            case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
+            case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
                 if (common_dialog.savedata.slot_info[i].isExist == 1) {
                     draw_savedata_dialog_list(common_dialog, gui, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count);
                     existing_saves_count++;
@@ -220,7 +219,7 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
                 break;
             }
         }
-        if (common_dialog.savedata.display_type != emu::SCE_SAVEDATA_DIALOG_TYPE_SAVE) {
+        if (common_dialog.savedata.display_type != SCE_SAVEDATA_DIALOG_TYPE_SAVE) {
             if (existing_saves_count == 0) {
                 ImGui::SetWindowFontScale(1.5f);
                 ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize("There is no saved data.").x / 2 - 10, WINDOW_SIZE.y / 2 - ImGui::CalcTextSize("There is no saved data.").y / 2 - 25));
@@ -231,7 +230,7 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
         ImGui::End();
         break;
     default:
-    case emu::SCE_SAVEDATA_DIALOG_MODE_FIXED:
+    case SCE_SAVEDATA_DIALOG_MODE_FIXED:
         ImGui::SetNextWindowPosCenter();
         ImGui::SetNextWindowSize(WINDOW_SIZE);
         ImGui::Begin("##Savedata Dialog", nullptr, ImGuiWindowFlags_NoDecoration);

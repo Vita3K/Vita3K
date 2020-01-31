@@ -1,10 +1,14 @@
 #pragma once
 
 #include <mem/ptr.h>
+#include <util/types.h>
 
-#include <psp2/apputil.h>
-
-namespace emu {
+typedef unsigned int SceAppUtilBootAttribute;
+typedef unsigned int SceAppUtilAppEventType;
+typedef unsigned int SceAppUtilSaveDataSlotId;
+typedef unsigned int SceAppUtilSaveDataSlotStatus;
+typedef unsigned int SceAppUtilAppParamId;
+typedef unsigned int SceAppUtilBgdlStatusType;
 
 #define SCE_APPUTIL_NP_DRM_ADDCONT_ID_SIZE 17
 
@@ -46,7 +50,7 @@ struct SceAppUtilSaveDataSlotParam {
 
 struct SceAppUtilSaveDataFileSlot {
     unsigned int id;
-    Ptr<emu::SceAppUtilSaveDataSlotParam> slotParam;
+    Ptr<SceAppUtilSaveDataSlotParam> slotParam;
     uint8_t reserved[32];
 };
 
@@ -62,7 +66,7 @@ struct SceAppUtilSaveDataSlot {
     SceAppUtilSaveDataSlotId id;
     SceAppUtilSaveDataSlotStatus status;
     int userParam;
-    Ptr<emu::SceAppUtilSaveDataSlotEmptyParam> emptyParam;
+    Ptr<SceAppUtilSaveDataSlotEmptyParam> emptyParam;
 };
 
 struct SceAppUtilSaveDataRemoveItem {
@@ -70,6 +74,5 @@ struct SceAppUtilSaveDataRemoveItem {
     int mode;
     uint8_t reserved[36];
 };
-} // namespace emu
 
 std::string construct_slotparam_path(const unsigned int data);

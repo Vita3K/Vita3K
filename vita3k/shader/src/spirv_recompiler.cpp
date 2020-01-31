@@ -688,7 +688,7 @@ static spv::Id create_uniform_block(spv::Builder &b, const FeatureState &feature
 }
 
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
-    const FeatureState &features, TranslationState &translation_state, emu::SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
+    const FeatureState &features, TranslationState &translation_state, SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
@@ -930,7 +930,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    if (program_type == emu::SceGxmProgramType::Vertex && features.hardware_flip) {
+    if (program_type == SceGxmProgramType::Vertex && features.hardware_flip) {
         // Create variable that helps us do flipping
         // TODO: Not emit this on Vulkan or DirectX
         spv::Id f32 = b.makeFloatType(32);
@@ -940,7 +940,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         translation_state.flip_vec_id = flip_vec;
     }
 
-    if (program_type == emu::SceGxmProgramType::Fragment) {
+    if (program_type == SceGxmProgramType::Fragment) {
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
     }
 
@@ -1094,7 +1094,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
     SpirvCode spirv;
 
-    emu::SceGxmProgramType program_type = program.get_type();
+    SceGxmProgramType program_type = program.get_type();
 
     spv::SpvBuildLogger spv_logger;
     spv::Builder b(SPV_VERSION, 0x1337 << 12, &spv_logger);
@@ -1116,11 +1116,11 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     default:
         LOG_ERROR("Unknown GXM program type");
     // fallthrough
-    case emu::Vertex:
+    case Vertex:
         entry_point_name = "main_vs";
         execution_model = spv::ExecutionModelVertex;
         break;
-    case emu::Fragment:
+    case Fragment:
         entry_point_name = "main_fs";
         execution_model = spv::ExecutionModelFragment;
         break;
@@ -1152,7 +1152,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     generate_shader_body(b, parameters, program, features, utils, end_hook_func, texture_queries);
 
     // Execution modes
-    if (program_type == emu::SceGxmProgramType::Fragment) {
+    if (program_type == SceGxmProgramType::Fragment) {
         b.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);
 
         if (program.is_native_color() && features.should_use_shader_interlock()) {

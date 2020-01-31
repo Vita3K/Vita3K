@@ -71,11 +71,11 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
 
 std::string load_shader(const SceGxmProgram &program, const FeatureState &features, const char *base_path, const char *title_id) {
     const Sha256Hash hash_bytes = sha256(&program, program.size);
-    auto shader_type_to_str = [](emu::SceGxmProgramType type) {
-        return type == emu::Vertex ? "vert" : type == emu::Fragment ? "frag" : "unknown";
+    auto shader_type_to_str = [](SceGxmProgramType type) {
+        return type == Vertex ? "vert" : type == Fragment ? "frag" : "unknown";
     };
 
-    emu::SceGxmProgramType program_type = program.get_type();
+    SceGxmProgramType program_type = program.get_type();
     const char *shader_type_str = shader_type_to_str(program_type);
 
     const Sha256HashText hash_text = hex(hash_bytes);

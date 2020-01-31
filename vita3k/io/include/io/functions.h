@@ -20,9 +20,6 @@
 #undef st_atime
 #undef st_ctime
 #undef st_mtime
-#include <psp2/io/dirent.h>
-#include <psp2/io/fcntl.h>
-#include <psp2/io/stat.h>
 
 #include <io/state.h>
 #include <io/types.h>
@@ -54,7 +51,7 @@ int close_file(IOState &io, SceUID fd, const char *export_name);
 int remove_file(IOState &io, const char *file, const std::string &pref_path, const char *export_name);
 
 SceUID open_dir(IOState &io, const char *path, const std::string &pref_path, const char *export_name);
-SceUID read_dir(IOState &io, SceUID fd, emu::SceIoDirent *dent, const std::string &pref_path, const SceUInt64 base_tick, const char *export_name);
+SceUID read_dir(IOState &io, SceUID fd, SceIoDirent *dent, const std::string &pref_path, const SceUInt64 base_tick, const char *export_name);
 int create_dir(IOState &io, const char *dir, int mode, const std::string &pref_path, const char *export_name, const bool recursive = false);
 int close_dir(IOState &io, SceUID fd, const char *export_name);
 int remove_dir(IOState &io, const char *dir, const std::string &pref_path, const char *export_name);

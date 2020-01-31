@@ -20,7 +20,65 @@
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
 
-#include <psp2/net/netctl.h>
+#define SCE_NETCTL_INFO_SSID_LEN_MAX 32
+#define SCE_NETCTL_INFO_CONFIG_NAME_LEN_MAX 64
+
+enum SceNetCtlState {
+    SCE_NETCTL_STATE_DISCONNECTED,
+    SCE_NETCTL_STATE_CONNECTING,
+    SCE_NETCTL_STATE_FINALIZING,
+    SCE_NETCTL_STATE_CONNECTED
+};
+
+enum SceNetCtlInfoType {
+    SCE_NETCTL_INFO_GET_CNF_NAME = 1,
+    SCE_NETCTL_INFO_GET_DEVICE,
+    SCE_NETCTL_INFO_GET_ETHER_ADDR,
+    SCE_NETCTL_INFO_GET_MTU,
+    SCE_NETCTL_INFO_GET_LINK,
+    SCE_NETCTL_INFO_GET_BSSID,
+    SCE_NETCTL_INFO_GET_SSID,
+    SCE_NETCTL_INFO_GET_WIFI_SECURITY,
+    SCE_NETCTL_INFO_GET_RSSI_DBM,
+    SCE_NETCTL_INFO_GET_RSSI_PERCENTAGE,
+    SCE_NETCTL_INFO_GET_CHANNEL,
+    SCE_NETCTL_INFO_GET_IP_CONFIG,
+    SCE_NETCTL_INFO_GET_DHCP_HOSTNAME,
+    SCE_NETCTL_INFO_GET_PPPOE_AUTH_NAME,
+    SCE_NETCTL_INFO_GET_IP_ADDRESS,
+    SCE_NETCTL_INFO_GET_NETMASK,
+    SCE_NETCTL_INFO_GET_DEFAULT_ROUTE,
+    SCE_NETCTL_INFO_GET_PRIMARY_DNS,
+    SCE_NETCTL_INFO_GET_SECONDARY_DNS,
+    SCE_NETCTL_INFO_GET_HTTP_PROXY_CONFIG,
+    SCE_NETCTL_INFO_GET_HTTP_PROXY_SERVER,
+    SCE_NETCTL_INFO_GET_HTTP_PROXY_PORT,
+};
+
+typedef union SceNetCtlInfo {
+    char cnf_name[SCE_NETCTL_INFO_CONFIG_NAME_LEN_MAX + 1];
+    unsigned int device;
+    SceNetEtherAddr ether_addr;
+    unsigned int mtu;
+    unsigned int link;
+    SceNetEtherAddr bssid;
+    char ssid[SCE_NETCTL_INFO_SSID_LEN_MAX + 1];
+    unsigned int wifi_security;
+    unsigned int rssi_dbm;
+    unsigned int rssi_percentage;
+    unsigned int channel;
+    unsigned int ip_config;
+    char dhcp_hostname[256];
+    char pppoe_auth_name[128];
+    char ip_address[16];
+    char netmask[16];
+    char default_route[16];
+    char primary_dns[16];
+    char secondary_dns[16];
+    unsigned int http_proxy_config;
+    char http_proxy_server[256];
+    unsigned int http_proxy_port;
+} SceNetCtlInfo;
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {
     return UNIMPLEMENTED();
@@ -108,7 +166,7 @@ EXPORT(int, sceNetCtlInetGetState, uint32_t *state) {
 EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, uint32_t *cid) {
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     *cid = host.kernel.get_next_uid();
-    emu::SceNetCtlCallback sceNetCtlCallback;
+    SceNetCtlCallback sceNetCtlCallback;
     sceNetCtlCallback.pc = callback.address();
     sceNetCtlCallback.data = data.address();
     host.net.cbs.emplace(*cid, sceNetCtlCallback);

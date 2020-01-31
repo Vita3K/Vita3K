@@ -17,16 +17,16 @@
 
 #pragma once
 
+#include <util/types.h>
 #include <np/common.h>
 #include <np/trophy/trp_parser.h>
-#include <psp2/types.h>
 
 #include <array>
 #include <cstdint>
 
 struct IOState;
 
-namespace emu::np::trophy {
+namespace np::trophy {
 
 using ContextHandle = std::int32_t;
 
@@ -74,7 +74,7 @@ struct Context {
     bool load_trophy_progress_file(const SceUID &progress_input_file);
 
     bool init_info_from_trp();
-    bool unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const bool force_unlock = false);
+    bool unlock_trophy(std::int32_t id, np::NpTrophyError *err, const bool force_unlock = false);
 
     const int total_trophy_unlocked();
     bool get_trophy_description(const std::int32_t id, std::string &name, std::string &detail);
@@ -83,4 +83,4 @@ struct Context {
         const std::string &output_progress_path);
 };
 
-} // namespace emu::np::trophy
+} // namespace np::trophy
