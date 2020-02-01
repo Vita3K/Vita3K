@@ -26,11 +26,9 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     glCompileShader(shader->get());
 
     GLint log_length = 0;
-    GLint status = 0;
-    glGetShaderiv(shader->get(), GL_COMPILE_STATUS, &status);
     glGetShaderiv(shader->get(), GL_INFO_LOG_LENGTH, &log_length);
 
-    if (!status) {
+    if (log_length > 1) {
         std::vector<GLchar> log;
         log.resize(log_length);
         glGetShaderInfoLog(shader->get(), log_length, nullptr, log.data());
@@ -163,11 +161,9 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     }
 
     GLint log_length = 0;
-    GLint status = 0;
-    glGetProgramiv(program->get(), GL_LINK_STATUS, &status);
     glGetProgramiv(program->get(), GL_INFO_LOG_LENGTH, &log_length);
 
-    if (!status) {
+    if (log_length > 1) {
         std::vector<GLchar> log;
         log.resize(log_length);
         glGetProgramInfoLog(program->get(), log_length, nullptr, log.data());
