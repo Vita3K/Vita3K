@@ -28,6 +28,7 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     GLint log_length = 0;
     glGetShaderiv(shader->get(), GL_INFO_LOG_LENGTH, &log_length);
 
+    // Intel driver returns an info log length of at least 1 even if it is empty.
     if (log_length > 1) {
         std::vector<GLchar> log;
         log.resize(log_length);
@@ -163,6 +164,7 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     GLint log_length = 0;
     glGetProgramiv(program->get(), GL_INFO_LOG_LENGTH, &log_length);
 
+    // Intel driver returns an info log length of at least 1 even if it is empty.
     if (log_length > 1) {
         std::vector<GLchar> log;
         log.resize(log_length);
