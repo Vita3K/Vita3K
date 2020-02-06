@@ -62,7 +62,8 @@ EXPORT(int, sceDisplayGetResolutionInfoInternal) {
 }
 
 EXPORT(int, sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync) {
-    assert(pParam != nullptr); // Todo: pParam can be NULL, in that case black screen is shown
+    if (pParam == nullptr)
+        return SCE_DISPLAY_ERROR_OK;
     if (pParam->size != sizeof(SceDisplayFrameBuf)) {
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
     }
