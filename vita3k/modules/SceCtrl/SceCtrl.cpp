@@ -19,10 +19,6 @@
 
 #include <util/log.h>
 
-#include <psp2/common_dialog.h>
-#include <psp2/ctrl.h>
-#include <psp2/kernel/error.h>
-
 #include <SDL_gamecontroller.h>
 #include <SDL_haptic.h>
 #include <SDL_keyboard.h>
@@ -32,6 +28,102 @@
 
 // TODO Move elsewhere.
 static uint64_t timestamp;
+
+enum SceCtrlErrorCode {
+    SCE_CTRL_ERROR_INVALID_ARG   = 0x80340001,
+    SCE_CTRL_ERROR_PRIV_REQUIRED = 0x80340002,
+    SCE_CTRL_ERROR_NO_DEVICE     = 0x80340020,
+    SCE_CTRL_ERROR_NOT_SUPPORTED = 0x80340021,
+    SCE_CTRL_ERROR_INVALID_MODE  = 0x80340022,
+    SCE_CTRL_ERROR_FATAL         = 0x803400FF
+};
+
+enum SceCtrlExternalInputMode {
+    SCE_CTRL_TYPE_UNPAIRED  = 0, //!< Unpaired controller
+    SCE_CTRL_TYPE_PHY       = 1, //!< Physical controller for VITA
+    SCE_CTRL_TYPE_VIRT      = 2, //!< Virtual controller for PSTV
+    SCE_CTRL_TYPE_DS3       = 4, //!< DualShock 3
+    SCE_CTRL_TYPE_DS4       = 8  //!< DualShock 4
+};
+
+enum SceCtrlButtons {
+    SCE_CTRL_SELECT      = 0x00000001,            //!< Select button.
+    SCE_CTRL_L3          = 0x00000002,            //!< L3 button.
+    SCE_CTRL_R3          = 0x00000004,            //!< R3 button.
+    SCE_CTRL_START       = 0x00000008,            //!< Start button.
+    SCE_CTRL_UP          = 0x00000010,            //!< Up D-Pad button.
+    SCE_CTRL_RIGHT       = 0x00000020,            //!< Right D-Pad button.
+    SCE_CTRL_DOWN        = 0x00000040,            //!< Down D-Pad button.
+    SCE_CTRL_LEFT        = 0x00000080,            //!< Left D-Pad button.
+    SCE_CTRL_LTRIGGER    = 0x00000100,            //!< Left trigger.
+    SCE_CTRL_L2          = SCE_CTRL_LTRIGGER,     //!< L2 button.
+    SCE_CTRL_RTRIGGER    = 0x00000200,            //!< Right trigger.
+    SCE_CTRL_R2          = SCE_CTRL_RTRIGGER,     //!< R2 button.
+    SCE_CTRL_L1          = 0x00000400,            //!< L1 button.
+    SCE_CTRL_R1          = 0x00000800,            //!< R1 button.
+    SCE_CTRL_TRIANGLE    = 0x00001000,            //!< Triangle button.
+    SCE_CTRL_CIRCLE      = 0x00002000,            //!< Circle button.
+    SCE_CTRL_CROSS       = 0x00004000,            //!< Cross button.
+    SCE_CTRL_SQUARE      = 0x00008000,            //!< Square button.
+    SCE_CTRL_INTERCEPTED = 0x00010000,            //!< Input not available because intercepted by another application
+    SCE_CTRL_PSBUTTON    = SCE_CTRL_INTERCEPTED,  //!< Playstation (Home) button.
+    SCE_CTRL_HEADPHONE   = 0x00080000,            //!< Headphone plugged in.
+    SCE_CTRL_VOLUP       = 0x00100000,            //!< Volume up button.
+    SCE_CTRL_VOLDOWN     = 0x00200000,            //!< Volume down button.
+    SCE_CTRL_POWER       = 0x40000000             //!< Power button.
+};
+
+struct SceCtrlPortInfo {
+    uint8_t port[5];  //!< Controller type of each port (See ::SceCtrlExternalInputMode)
+    uint8_t unk[11];  //!< Unknown
+};
+
+struct SceCtrlActuator {
+    unsigned char small; //!< Vibration strength of the small motor
+    unsigned char large; //!< Vibration strength of the large motor
+    uint8_t unk[6];      //!< Unknown
+};
+
+struct SceCtrlData {
+    /** The current read frame. */
+    uint64_t	timeStamp;
+    /** Bit mask containing zero or more of ::SceCtrlButtons. */
+    unsigned int 	buttons;
+    /** Left analogue stick, X axis. */
+    unsigned char 	lx;
+    /** Left analogue stick, Y axis. */
+    unsigned char 	ly;
+    /** Right analogue stick, X axis. */
+    unsigned char 	rx;
+    /** Right analogue stick, Y axis. */
+    unsigned char 	ry;
+    /** Up button */
+    uint8_t		up;
+    /** Right button */
+    uint8_t		right;
+    /** Down button */
+    uint8_t		down;
+    /** Left button */
+    uint8_t		left;
+    /** Left trigger (L2) */
+    uint8_t		lt;
+    /** Right trigger (R2) */
+    uint8_t		rt;
+    /** Left button (L1) */
+    uint8_t		l1;
+    /** Right button (R1) */
+    uint8_t		r1;
+    /** Triangle button */
+    uint8_t		triangle;
+    /** Circle button */
+    uint8_t		circle;
+    /** Cross button */
+    uint8_t		cross;
+    /** Square button */
+    uint8_t		square;
+    /** Reserved. */
+    uint8_t 	reserved[4];
+};
 
 struct KeyBinding {
     SDL_Scancode scancode;

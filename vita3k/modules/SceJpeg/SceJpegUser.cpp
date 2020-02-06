@@ -24,7 +24,6 @@ extern "C" {
 
 #include <climits>
 
-namespace emu {
 struct SceJpegMJpegInitInfo {
     uint32_t size;
     int32_t decoder_count;
@@ -45,7 +44,6 @@ struct SceJpegOutputInfo {
     uint32_t unknown2;
     SceJpegPitch pitch[4];
 };
-} // namespace emu
 
 void init(MJpegState &state) {
     AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_MJPEG);
@@ -134,7 +132,7 @@ EXPORT(int, sceJpegFinishMJpeg) {
 }
 
 EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
-    int32_t format, int32_t mode, emu::SceJpegOutputInfo *output) {
+    int32_t format, int32_t mode, SceJpegOutputInfo *output) {
     MJpegState &state = host.kernel.mjpeg_state;
 
     AVFrame *frame = decode(state, jpeg_data, jpeg_size);
@@ -156,7 +154,7 @@ EXPORT(int, sceJpegInitMJpeg, int32_t decoder_count) {
     return 0;
 }
 
-EXPORT(int, sceJpegInitMJpegWithParam, const emu::SceJpegMJpegInitInfo *info) {
+EXPORT(int, sceJpegInitMJpegWithParam, const SceJpegMJpegInitInfo *info) {
     init(host.kernel.mjpeg_state);
 
     return 0;

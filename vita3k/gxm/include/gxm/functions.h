@@ -1,15 +1,14 @@
 #pragma once
 
 #include <gxm/types.h>
-#include <psp2/gxm.h>
 
 #include <string>
 
 namespace gxm {
 // Textures.
-size_t get_width(const emu::SceGxmTexture *texture);
-size_t get_height(const emu::SceGxmTexture *texture);
-SceGxmTextureFormat get_format(const emu::SceGxmTexture *texture);
+size_t get_width(const SceGxmTexture *texture);
+size_t get_height(const SceGxmTexture *texture);
+SceGxmTextureFormat get_format(const SceGxmTexture *texture);
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
 bool is_paletted_format(SceGxmTextureFormat src);
 bool is_yuv_format(SceGxmTextureFormat src);

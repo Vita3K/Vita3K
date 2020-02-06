@@ -26,7 +26,7 @@ EXPORT(int, sceNpTrophyAbortHandle) {
     return 0;
 }
 
-EXPORT(int, sceNpTrophyCreateContext, emu::np::trophy::ContextHandle *context, const emu::np::CommunicationID *comm_id,
+EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const np::CommunicationID *comm_id,
     void *comm_sign, const std::uint64_t options) {
     if (!host.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
@@ -36,17 +36,17 @@ EXPORT(int, sceNpTrophyCreateContext, emu::np::trophy::ContextHandle *context, c
         return SCE_NP_TROPHY_ERROR_INVALID_NPCOMMID;
     }
 
-    emu::np::NpTrophyError err = emu::np::NpTrophyError::TROPHY_ERROR_NONE;
+    np::NpTrophyError err = np::NpTrophyError::TROPHY_ERROR_NONE;
     *context = create_trophy_context(host.np, host.io, host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg.sys_lang),
         &err);
 
-    if (*context == emu::np::trophy::INVALID_CONTEXT_HANDLE) {
+    if (*context == np::trophy::INVALID_CONTEXT_HANDLE) {
         switch (err) {
-        case emu::np::NpTrophyError::TROPHY_CONTEXT_EXIST: {
+        case np::NpTrophyError::TROPHY_CONTEXT_EXIST: {
             return SCE_NP_TROPHY_ERROR_CONTEXT_ALREADY_EXISTS;
         }
 
-        case emu::np::NpTrophyError::TROPHY_CONTEXT_FILE_NON_EXIST: {
+        case np::NpTrophyError::TROPHY_CONTEXT_FILE_NON_EXIST: {
             return SCE_NP_TROPHY_ERROR_TRP_FILE_NOT_FOUND;
         }
 
@@ -55,7 +55,7 @@ EXPORT(int, sceNpTrophyCreateContext, emu::np::trophy::ContextHandle *context, c
         }
     }
 
-    emu::np::trophy::Context *ctx_ptr = get_trophy_context(host.np.trophy_state, *context);
+    np::trophy::Context *ctx_ptr = get_trophy_context(host.np.trophy_state, *context);
     LOG_TRACE("Trophy context for {}_{:0>2d} create successfuly!", ctx_ptr->comm_id.data, ctx_ptr->comm_id.num);
 
     return 0;
@@ -69,7 +69,7 @@ EXPORT(int, sceNpTrophyCreateHandle, SceNpTrophyHandle *handle) {
     return 0;
 }
 
-EXPORT(int, sceNpTrophyDestroyContext, emu::np::trophy::ContextHandle handle) {
+EXPORT(int, sceNpTrophyDestroyContext, np::trophy::ContextHandle handle) {
     const bool result = destroy_trophy_context(host.np.trophy_state, handle);
 
     if (!result) {
@@ -84,7 +84,7 @@ EXPORT(int, sceNpTrophyDestroyHandle, SceNpTrophyHandle handle) {
     return 0;
 }
 
-static int copy_file_data_from_trophy_file(emu::np::trophy::Context *context, const char *filename, void *buffer,
+static int copy_file_data_from_trophy_file(np::trophy::Context *context, const char *filename, void *buffer,
     SceSize *size) {
     // Search for ICON0.PNG in the trophy file
     const std::int32_t file_index = context->trophy_file.search_file(filename);
@@ -128,12 +128,12 @@ static int copy_file_data_from_trophy_file(emu::np::trophy::Context *context, co
     if (!size) {                                                                                  \
         return SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT;                                              \
     }                                                                                             \
-    emu::np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle); \
+    np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle); \
     if (!context) {                                                                               \
         return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;                                               \
     }
 
-EXPORT(int, sceNpTrophyGetGameIcon, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
+EXPORT(int, sceNpTrophyGetGameIcon, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     void *buffer, SceSize *size) {
     NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)
     return copy_file_data_from_trophy_file(context, "ICON0.PNG", buffer, size);
@@ -151,12 +151,12 @@ EXPORT(int, sceNpTrophyGetGroupInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTrophyGetTrophyIcon, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
+EXPORT(int, sceNpTrophyGetTrophyIcon, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     SceNpTrophyID trophy_id, void *buffer, SceSize *size) {
     NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)
 
     // Trophy should only be in this region
-    if (trophy_id < 0 || trophy_id >= emu::np::trophy::MAX_TROPHIES) {
+    if (trophy_id < 0 || trophy_id >= np::trophy::MAX_TROPHIES) {
         return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
     }
 
@@ -169,8 +169,8 @@ EXPORT(int, sceNpTrophyGetTrophyInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTrophyGetTrophyUnlockState, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
-    emu::np::trophy::TrophyFlagArray *flag_array, std::uint32_t *count) {
+EXPORT(int, sceNpTrophyGetTrophyUnlockState, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
+    np::trophy::TrophyFlagArray *flag_array, std::uint32_t *count) {
     if (!host.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
@@ -180,13 +180,13 @@ EXPORT(int, sceNpTrophyGetTrophyUnlockState, emu::np::trophy::ContextHandle cont
     }
 
     // Get context
-    emu::np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
+    np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
     if (!context) {
         return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
 
     *count = context->trophy_count;
-    std::memcpy(flag_array, context->trophy_progress, sizeof(emu::np::trophy::TrophyFlagArray));
+    std::memcpy(flag_array, context->trophy_progress, sizeof(np::trophy::TrophyFlagArray));
 
     return 0;
 }
@@ -220,10 +220,10 @@ static void trophy_unlocked(const NpTrophyUnlockCallbackData &callback_data, con
     LOG_TRACE("Detail: {}", callback_data.description);
 }
 
-static int do_trophy_callback(HostState &host, emu::np::trophy::Context *context, SceNpTrophyID trophy_id) {
+static int do_trophy_callback(HostState &host, np::trophy::Context *context, SceNpTrophyID trophy_id) {
     NpTrophyUnlockCallbackData callback_data;
 
-    if (context->trophy_kinds[trophy_id] == emu::np::trophy::TrophyType::INVALID) {
+    if (context->trophy_kinds[trophy_id] == np::trophy::TrophyType::INVALID) {
         // Yes this ID is not present. So return INVALID_ID
         return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
     }
@@ -252,35 +252,35 @@ static int do_trophy_callback(HostState &host, emu::np::trophy::Context *context
     return 0;
 }
 
-EXPORT(int, sceNpTrophyUnlockTrophy, emu::np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
+EXPORT(int, sceNpTrophyUnlockTrophy, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     SceNpTrophyID trophy_id, SceNpTrophyID *platinum_id) {
     if (!host.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
 
     // Trophy should only be in this region
-    if (trophy_id < 0 || trophy_id >= emu::np::trophy::MAX_TROPHIES) {
+    if (trophy_id < 0 || trophy_id >= np::trophy::MAX_TROPHIES) {
         return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
     }
 
     // Get context
-    emu::np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
+    np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
     if (!context) {
         return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
 
-    emu::np::NpTrophyError error;
+    np::NpTrophyError error;
     if (!context->unlock_trophy(trophy_id, &error)) {
         switch (error) {
-        case emu::np::NpTrophyError::TROPHY_PLATINUM_IS_UNBREAKABLE: {
+        case np::NpTrophyError::TROPHY_PLATINUM_IS_UNBREAKABLE: {
             return SCE_NP_TROPHY_ERROR_PLATINUM_CANNOT_UNLOCK;
         }
 
-        case emu::np::NpTrophyError::TROPHY_ALREADY_UNLOCKED: {
+        case np::NpTrophyError::TROPHY_ALREADY_UNLOCKED: {
             return SCE_NP_TROPHY_ERROR_TROPHY_ALREADY_UNLOCKED;
         }
 
-        case emu::np::NpTrophyError::TROPHY_ID_INVALID: {
+        case np::NpTrophyError::TROPHY_ID_INVALID: {
             return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
         }
 

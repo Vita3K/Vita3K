@@ -22,8 +22,6 @@
 #include <glutil/object_array.h>
 #include <renderer/types.h>
 
-#include <psp2/gxm.h>
-
 #include <renderer/texture_cache_state.h>
 
 #include <map>

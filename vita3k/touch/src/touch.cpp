@@ -17,9 +17,6 @@
 
 #include <touch/touch.h>
 
-#include <psp2/common_dialog.h>
-#include <psp2/touch.h>
-
 #include <SDL_events.h>
 
 #include <cstring>

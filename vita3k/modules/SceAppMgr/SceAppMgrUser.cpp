@@ -19,7 +19,27 @@
 
 #include <host/functions.h>
 
-#include <psp2/appmgr.h>
+enum SceAppMgrErrorCode {
+    SCE_APPMGR_ERROR_BUSY               = 0x80802000, //!< Busy
+    SCE_APPMGR_ERROR_STATE              = 0x80802013, //!< Invalid state
+    SCE_APPMGR_ERROR_NULL_POINTER       = 0x80802016, //!< NULL pointer
+    SCE_APPMGR_ERROR_INVALID            = 0x8080201A, //!< Invalid param
+    SCE_APPMGR_ERROR_TOO_LONG_ARGV      = 0x8080201D, //!< argv is too long
+    SCE_APPMGR_ERROR_INVALID_SELF_PATH  = 0x8080201E, //!< Invalid SELF path
+    SCE_APPMGR_ERROR_BGM_PORT_BUSY      = 0x80803000  //!< BGM port was occupied and could not be secured
+};
+
+enum SceAppMgrSystemEventType {
+    SCE_APPMGR_SYSTEMEVENT_ON_RESUME             = 0x10000003,
+    SCE_APPMGR_SYSTEMEVENT_ON_STORE_PURCHASE     = 0x10000004,
+    SCE_APPMGR_SYSTEMEVENT_ON_NP_MESSAGE_ARRIVED = 0x10000005,
+    SCE_APPMGR_SYSTEMEVENT_ON_STORE_REDEMPTION   = 0x10000006
+};
+
+struct SceAppMgrSystemEvent {
+    int     systemEvent;   //!< One of ::SceAppMgrSystemEventType
+    uint8_t reserved[60];  //!< Reserved data
+};
 
 EXPORT(int, _sceAppMgrGetAppState, void *appState, uint32_t len, uint32_t version) {
     memset(appState, 0, len);

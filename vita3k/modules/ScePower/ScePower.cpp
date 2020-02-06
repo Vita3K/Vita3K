@@ -17,12 +17,22 @@
 
 #include "ScePower.h"
 
+#include <util/types.h>
+
 #include <SDL_power.h>
-#include <psp2/power.h>
 
 #include <climits>
 
 #define LOW_BATTERY_PERCENT 10
+
+enum ScePowerErrorCode {
+    SCE_POWER_ERROR_INVALID_VALUE           = 0x802B0000,
+    SCE_POWER_ERROR_ALREADY_REGISTERED      = 0x802B0001,
+    SCE_POWER_ERROR_CALLBACK_NOT_REGISTERED = 0x802B0002,
+    SCE_POWER_ERROR_CANT_SUSPEND            = 0x802B0003,
+    SCE_POWER_ERROR_NO_BATTERY              = 0x802B0100,
+    SCE_POWER_ERROR_DETECTING               = 0x802B0101
+};
 
 EXPORT(int, scePowerBatteryUpdateInfo) {
     return UNIMPLEMENTED();

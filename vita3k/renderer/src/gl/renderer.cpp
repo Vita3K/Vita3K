@@ -29,11 +29,11 @@ bool init(GLTextureCacheState &cache) {
     };
 
     cache.configure_texture_callback = [](const std::size_t index, const void *texture) {
-        configure_bound_texture(*reinterpret_cast<const emu::SceGxmTexture *>(texture));
+        configure_bound_texture(*reinterpret_cast<const SceGxmTexture *>(texture));
     };
 
     cache.upload_texture_callback = [](const std::size_t index, const void *texture, const MemState &mem) {
-        upload_bound_texture(*reinterpret_cast<const emu::SceGxmTexture *>(texture), mem);
+        upload_bound_texture(*reinterpret_cast<const SceGxmTexture *>(texture), mem);
     };
 
     return cache.textures.init(glGenTextures, glDeleteTextures);
@@ -351,7 +351,7 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     return true;
 }
 
-bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
+bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
     fp = std::make_unique<GLFragmentProgram>();

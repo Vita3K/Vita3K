@@ -18,7 +18,6 @@
 #pragma once
 
 #include <dialog/types.h>
-#include <psp2/ime_dialog.h>
 
 #include <io/vfs.h>
 
@@ -59,7 +58,7 @@ struct SavedataState {
     uint8_t btn_num = 0;
     std::string btn[2];
     uint32_t btn_val[2];
-    uint32_t button_id = emu::SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+    uint32_t button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
 
     std::vector<vfs::FileBuffer> icon_buffer;
     std::vector<bool> icon_loaded;
@@ -69,7 +68,7 @@ struct SavedataState {
 
     uint32_t display_type;
     std::vector<uint32_t> slot_id;
-    std::vector<emu::SceSaveDataDialogSlotInfo> slot_info;
+    std::vector<SceSaveDataDialogSlotInfo> slot_info;
     Ptr<void> userdata;
 
     std::string msg;
@@ -82,7 +81,7 @@ struct SavedataState {
     uint32_t bar_rate = 0;
     bool has_progress_bar = false;
 
-    emu::SceAppUtilSaveDataSlotEmptyParam *list_empty_param = nullptr;
+    SceAppUtilSaveDataSlotEmptyParam *list_empty_param = nullptr;
     uint32_t slot_list_size = 0;
     uint32_t list_style;
     std::string list_title;

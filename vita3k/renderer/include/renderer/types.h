@@ -4,8 +4,7 @@
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 #include <renderer/commands.h>
-
-#include <psp2/gxm.h>
+#include <gxm/types.h>
 
 #include <array>
 #include <map>
@@ -16,6 +15,8 @@
 
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
+
+struct SceGxmProgram;
 
 // Copy from host/window.h for the moment.
 struct SDL_Window;

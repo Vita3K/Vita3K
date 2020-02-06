@@ -72,9 +72,6 @@
 [submodule "external/unicorn-src"]
 	path = external/unicorn-src
 	url = https://github.com/unicorn-engine/unicorn
-[submodule "external/vita-headers"]
-	path = external/vita-headers
-	url = https://github.com/vitasdk/vita-headers
 [submodule "external/vita-toolchain"]
 	path = external/vita-toolchain
 	url = https://github.com/Vita3K/vita-toolchain

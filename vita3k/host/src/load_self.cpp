@@ -437,7 +437,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     const uint8_t *const module_info_segment_bytes = module_info_segment_address.get(mem);
     const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module_info_segment_bytes + module_info_offset);
 
-    const SceKernelModuleInfoPtr sceKernelModuleInfo = std::make_shared<emu::SceKernelModuleInfo>();
+    const SceKernelModuleInfoPtr sceKernelModuleInfo = std::make_shared<SceKernelModuleInfo>();
     sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
     strncpy(sceKernelModuleInfo->module_name, module_info->name, 28);
     //unk28
@@ -481,7 +481,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
             continue;
         }
 
-        emu::SceKernelSegmentInfo &segment = sceKernelModuleInfo->segments[segment_index];
+        SceKernelSegmentInfo &segment = sceKernelModuleInfo->segments[segment_index];
         segment.size = sizeof(segment);
         segment.vaddr = it->second.addr;
         segment.memsz = segments[segment_index].p_memsz;

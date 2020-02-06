@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <psp2/types.h>
+#include <util/types.h>
 
 #include <string>
 

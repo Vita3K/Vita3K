@@ -153,9 +153,6 @@ else()
 	target_link_libraries(unicorn INTERFACE "${UNICORN_LIB}")
 endif()
 
-add_library(vita-headers INTERFACE)
-target_include_directories(vita-headers INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-headers/include")
-
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
 

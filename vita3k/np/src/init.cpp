@@ -19,7 +19,7 @@
 #include <np/functions.h>
 #include <np/state.h>
 
-bool init(NpState &state, const emu::np::CommunicationID *comm_id) {
+bool init(NpState &state, const np::CommunicationID *comm_id) {
     state.inited = true;
 
     if (comm_id) {

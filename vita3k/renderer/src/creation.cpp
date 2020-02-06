@@ -82,7 +82,7 @@ COMMAND(handle_destroy_render_target) {
 }
 
 // Client
-bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
+bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     switch (state.current_backend) {
     case Backend::OpenGL: {
         return gl::create(fp, static_cast<gl::GLState &>(state), program, blend, gxp_ptr_map, base_path, title_id);

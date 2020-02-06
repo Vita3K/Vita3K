@@ -17,9 +17,8 @@
 
 #pragma once
 
-#include <psp2/types.h>
-
 #include <util/fs.h>
+#include <util/types.h>
 
 class VitaIoDevice;
 

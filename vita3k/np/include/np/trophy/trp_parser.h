@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-namespace emu::np::trophy {
+namespace np::trophy {
 
 struct TRPEntry {
     std::string filename;
@@ -48,4 +48,4 @@ struct TRPFile {
     const std::int32_t search_file(const char *name);
 };
 
-} // namespace emu::np::trophy
+} // namespace np::trophy

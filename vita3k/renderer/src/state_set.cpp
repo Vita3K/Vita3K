@@ -311,7 +311,7 @@ COMMAND_SET_STATE(stencil_ref) {
 
 COMMAND_SET_STATE(fragment_texture) {
     const std::uint32_t texture_index = helper.pop<std::uint32_t>();
-    emu::SceGxmTexture texture = helper.pop<emu::SceGxmTexture>();
+    SceGxmTexture texture = helper.pop<SceGxmTexture>();
 
     state->fragment_textures[texture_index] = texture;
     switch (renderer.current_backend) {

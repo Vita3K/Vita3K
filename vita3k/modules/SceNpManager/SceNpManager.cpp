@@ -71,12 +71,12 @@ EXPORT(int, sceNpGetServiceState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpInit, emu::np::CommunicationConfig *comm_config, void *dontcare) {
+EXPORT(int, sceNpInit, np::CommunicationConfig *comm_config, void *dontcare) {
     if (host.np.inited) {
         return SCE_NP_ERROR_ALREADY_INITIALIZED;
     }
 
-    const emu::np::CommunicationID *comm_id = (comm_config) ? comm_config->comm_id.get(host.mem) : nullptr;
+    const np::CommunicationID *comm_id = (comm_config) ? comm_config->comm_id.get(host.mem) : nullptr;
 
     if (!init(host.np, comm_id)) {
         return SCE_NP_ERROR_NOT_INITIALIZED;
@@ -126,7 +126,7 @@ EXPORT(int, sceNpManagerGetNpId, SceNpId *id) {
 EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> data) {
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
     uint32_t cid = host.kernel.get_next_uid();
-    emu::SceNpServiceStateCallback sceNpServiceStateCallback;
+    SceNpServiceStateCallback sceNpServiceStateCallback;
     sceNpServiceStateCallback.pc = callback.address();
     sceNpServiceStateCallback.data = data.address();
     host.np.cbs.emplace(cid, sceNpServiceStateCallback);

@@ -20,13 +20,11 @@
 #undef st_atime
 #undef st_ctime
 #undef st_mtime
-#include <psp2/io/dirent.h>
-#include <psp2/io/fcntl.h>
-#include <psp2/io/stat.h>
 
+#include <io/types.h>
 #include <util/fs.h>
 
-typedef SceUInt8 TtyType;
+typedef uint8_t TtyType;
 
 inline constexpr TtyType TTY_UNKNOWN = 0b00;
 inline constexpr TtyType TTY_IN = 0b01;

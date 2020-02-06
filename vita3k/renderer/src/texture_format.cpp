@@ -19,7 +19,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <psp2/gxm.h>
+
+#include <gxm/types.h>
 
 namespace renderer::texture {
 

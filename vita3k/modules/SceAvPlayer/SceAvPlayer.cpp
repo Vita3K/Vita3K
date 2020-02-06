@@ -27,8 +27,6 @@ extern "C" {
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <psp2/io/fcntl.h>
-
 #include <algorithm>
 #include <chrono>
 
@@ -38,7 +36,6 @@ constexpr bool CATCHUP_VIDEO_PLAYBACK = true;
 // Defines stop/pause behaviour. If true, GetVideo/AudioData will return false when stopped (instead of returning the last frame).
 constexpr bool REJECT_DATA_ON_PAUSE = true;
 
-namespace emu {
 typedef Ptr<void> (*SceAvPlayerAllocator)(void *arguments, uint32_t alignment, uint32_t size);
 typedef void (*SceAvPlayerDeallocator)(void *arguments, void *memory);
 
@@ -121,7 +118,7 @@ struct SceAvPlayerTimedText {
     char language[4];
     uint16_t text_size;
     uint16_t font_size;
-    emu::SceAvPlayerTextPosition position;
+    SceAvPlayerTextPosition position;
 };
 
 union SceAvPlayerStreamDetails {
@@ -134,9 +131,8 @@ struct SceAvPlayerFrameInfo {
     Ptr<uint8_t> data;
     uint32_t unknown;
     uint64_t timestamp;
-    emu::SceAvPlayerStreamDetails stream_details;
+    SceAvPlayerStreamDetails stream_details;
 };
-} // namespace emu
 
 static inline uint64_t current_time() {
     return std::chrono::duration_cast<std::chrono::microseconds>(
@@ -402,7 +398,7 @@ EXPORT(int, sceAvPlayerEnableStream) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, emu::SceAvPlayerFrameInfo *frame_info) {
+EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, SceAvPlayerFrameInfo *frame_info) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
 
     if (player_info->audio_stream_id < 0)
@@ -494,7 +490,7 @@ EXPORT(int, sceAvPlayerGetStreamInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, emu::SceAvPlayerFrameInfo *frame_info) {
+EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, SceAvPlayerFrameInfo *frame_info) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
 
     if (player_info->video_stream_id < 0)
@@ -524,7 +520,7 @@ EXPORT(int, sceAvPlayerGetVideoDataEx) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceUID, sceAvPlayerInit, emu::SceAvPlayerInfo *info) {
+EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
     SceUID player_handle = host.kernel.get_next_uid();
     host.kernel.players[player_handle] = std::make_shared<PlayerState>();
     const PlayerPtr &player_info = host.kernel.players[player_handle];

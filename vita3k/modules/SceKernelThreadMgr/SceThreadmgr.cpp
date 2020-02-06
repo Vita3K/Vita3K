@@ -23,7 +23,6 @@
 #include <util/lock_and_find.h>
 
 #include <SDL_timer.h>
-#include <psp2/kernel/error.h>
 
 #include <chrono>
 #include <thread>

@@ -21,9 +21,7 @@
 #include <kernel/types.h>
 #include <mem/ptr.h>
 
-#include <psp2/rtc.h>
-#include <psp2/sysmodule.h>
-#include <psp2/types.h>
+#include <rtc/rtc.h>
 
 #include <atomic>
 #include <map>
@@ -35,7 +33,7 @@ struct ThreadState;
 
 struct SDL_Thread;
 
-typedef std::shared_ptr<emu::SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
+typedef std::shared_ptr<SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
 typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
 typedef std::map<SceUID, SlotToAddress> ThreadToSlotToAddress;
@@ -43,7 +41,7 @@ typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
 typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
-typedef std::shared_ptr<emu::SceKernelModuleInfo> SceKernelModuleInfoPtr;
+typedef std::shared_ptr<SceKernelModuleInfo> SceKernelModuleInfoPtr;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
 typedef std::map<uint32_t, Address> ExportNids;
 
@@ -160,10 +158,6 @@ struct Condvar : SyncPrimitive {
 };
 typedef std::shared_ptr<Condvar> CondvarPtr;
 typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
-
-namespace emu {
-typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
-}
 
 struct WaitingThreadState {
     std::string name; // for debugging

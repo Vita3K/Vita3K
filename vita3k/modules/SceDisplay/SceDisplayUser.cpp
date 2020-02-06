@@ -17,9 +17,25 @@
 
 #include "SceDisplayUser.h"
 
-#include <psp2/display.h>
+enum SceDisplaySetBufSync {
+    SCE_DISPLAY_SETBUF_IMMEDIATE = 0,
+    SCE_DISPLAY_SETBUF_NEXTFRAME = 1
+};
 
-namespace emu {
+enum SceDisplayErrorCode {
+    SCE_DISPLAY_ERROR_OK                    = 0,
+    SCE_DISPLAY_ERROR_INVALID_HEAD          = 0x80290000,
+    SCE_DISPLAY_ERROR_INVALID_VALUE         = 0x80290001,
+    SCE_DISPLAY_ERROR_INVALID_ADDR          = 0x80290002,
+    SCE_DISPLAY_ERROR_INVALID_PIXELFORMAT   = 0x80290003,
+    SCE_DISPLAY_ERROR_INVALID_PITCH         = 0x80290004,
+    SCE_DISPLAY_ERROR_INVALID_RESOLUTION    = 0x80290005,
+    SCE_DISPLAY_ERROR_INVALID_UPDATETIMING  = 0x80290006,
+    SCE_DISPLAY_ERROR_NO_FRAME_BUFFER       = 0x80290007,
+    SCE_DISPLAY_ERROR_NO_PIXEL_DATA         = 0x80290008,
+    SCE_DISPLAY_ERROR_NO_OUTPUT_SIGNAL      = 0x80290009
+};
+
 struct SceDisplayFrameBuf {
     uint32_t size = 0;
     Ptr<const void> base;
@@ -28,9 +44,6 @@ struct SceDisplayFrameBuf {
     uint32_t width = 0;
     uint32_t height = 0;
 };
-} // namespace emu
-
-using namespace emu;
 
 EXPORT(int, sceDisplayGetFrameBuf) {
     return UNIMPLEMENTED();
@@ -48,9 +61,9 @@ EXPORT(int, sceDisplayGetResolutionInfoInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceDisplaySetFrameBuf, const emu::SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync) {
+EXPORT(int, sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync) {
     assert(pParam != nullptr); // Todo: pParam can be NULL, in that case black screen is shown
-    if (pParam->size != sizeof(emu::SceDisplayFrameBuf)) {
+    if (pParam->size != sizeof(SceDisplayFrameBuf)) {
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
     }
     if (!pParam->base) {
