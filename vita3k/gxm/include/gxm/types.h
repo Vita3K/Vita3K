@@ -1265,7 +1265,7 @@ struct SceGxmProgram {
     std::uint8_t unk13;
 
 private:
-    std::uint8_t type{ 0 }; // shader profile, seems to contain more info in bits after the first(bitfield?)
+    std::uint8_t type = 0; // shader profile, seems to contain more info in bits after the first(bitfield?)
 public:
     std::uint8_t unk15;
     std::uint8_t unk16;
@@ -1335,9 +1335,8 @@ public:
         return (uint64_t *)((uint8_t *)&secondary_program_offset_end + secondary_program_offset_end);
     }
     bool is_native_color() const {
-        if (!type) {
+        if (!this)
             return false;
-        }
         return ((type >> 6) & 1);
     }
     bool is_reg_format() const {
