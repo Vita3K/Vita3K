@@ -17,9 +17,6 @@
 
 #include "SceAppUtil.h"
 
-#include <psp2/apputil.h>
-#include <psp2/system_param.h>
-
 #include <host/app_util.h>
 #include <io/device.h>
 #include <io/functions.h>
@@ -27,6 +24,53 @@
 #include <io/vfs.h>
 
 #include <cstring>
+
+#define SCE_SYSTEM_PARAM_USERNAME_MAXSIZE 17
+
+enum SceSystemParamId {
+    SCE_SYSTEM_PARAM_ID_LANG = 1,
+    SCE_SYSTEM_PARAM_ID_ENTER_BUTTON,
+    SCE_SYSTEM_PARAM_ID_USERNAME,
+    SCE_SYSTEM_PARAM_ID_DATE_FORMAT,
+    SCE_SYSTEM_PARAM_ID_TIME_FORMAT,
+    SCE_SYSTEM_PARAM_ID_TIME_ZONE,
+    SCE_SYSTEM_PARAM_ID_DAYLIGHT_SAVINGS,
+    SCE_SYSTEM_PARAM_ID_MAX_VALUE = 0xFFFFFFFF
+};
+
+enum SceAppUtilSaveDataRemoveMode {
+    SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT = 0,
+    SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_NO_SLOT = 1
+};
+
+enum SceAppUtilSaveDataSaveMode {
+    SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE = 0,
+    SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_DIRECTORY = 2
+};
+
+enum SceAppUtilErrorCode {
+    SCE_APPUTIL_ERROR_PARAMETER                   = 0x80100600,
+    SCE_APPUTIL_ERROR_NOT_INITIALIZED             = 0x80100601,
+    SCE_APPUTIL_ERROR_NO_MEMORY                   = 0x80100602,
+    SCE_APPUTIL_ERROR_BUSY                        = 0x80100603,
+    SCE_APPUTIL_ERROR_NOT_MOUNTED                 = 0x80100604,
+    SCE_APPUTIL_ERROR_NO_PERMISSION               = 0x80100605,
+    SCE_APPUTIL_ERROR_PASSCODE_MISMATCH           = 0x80100606,
+    SCE_APPUTIL_ERROR_APPEVENT_PARSE_INVALID_DATA = 0x80100620,
+    SCE_APPUTIL_ERROR_SAVEDATA_SLOT_EXISTS        = 0x80100640,
+    SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND     = 0x80100641,
+    SCE_APPUTIL_ERROR_SAVEDATA_NO_SPACE_QUOTA     = 0x80100642,
+    SCE_APPUTIL_ERROR_SAVEDATA_NO_SPACE_FS        = 0x80100643,
+    SCE_APPUTIL_ERROR_DRM_NO_ENTITLEMENT          = 0x80100660,
+    SCE_APPUTIL_ERROR_PHOTO_DEVICE_NOT_FOUND      = 0x80100680,
+    SCE_APPUTIL_ERROR_MUSIC_DEVICE_NOT_FOUND      = 0x80100685,
+    SCE_APPUTIL_ERROR_MOUNT_LIMIT_OVER            = 0x80100686,
+    SCE_APPUTIL_ERROR_STACKSIZE_TOO_SHORT         = 0x801006A0
+};
+
+struct SceAppUtilSaveDataMountPoint {
+    uint8_t data[16];
+};
 
 EXPORT(int, sceAppUtilAddCookieWebBrowser) {
     return UNIMPLEMENTED();
@@ -104,7 +148,7 @@ EXPORT(int, sceAppUtilDrmClose) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilDrmOpen, emu::SceAppUtilDrmAddcontId *dirName, SceAppUtilMountPoint *mountPoint) {
+EXPORT(int, sceAppUtilDrmOpen, SceAppUtilDrmAddcontId *dirName, SceAppUtilMountPoint *mountPoint) {
     const auto drm_content_id_path{ fs::path(host.pref_path) / (+VitaIoDevice::ux0)._to_string() / host.io.device_paths.addcont0 / reinterpret_cast<char *>(dirName->data) };
 
     if (dirName == nullptr)
@@ -168,7 +212,7 @@ std::string construct_slotparam_path(const unsigned int data) {
     return construct_savedata0_path("SlotParam_" + std::to_string(data), "bin");
 }
 
-EXPORT(int, sceAppUtilSaveDataDataRemove, emu::SceAppUtilSaveDataFileSlot *slot, emu::SceAppUtilSaveDataRemoveItem *files, unsigned int fileNum, SceAppUtilSaveDataMountPoint *mountPoint) {
+EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataRemoveItem *files, unsigned int fileNum, SceAppUtilSaveDataMountPoint *mountPoint) {
     for (unsigned int i = 0; i < fileNum; i++) {
         remove_file(host.io, construct_savedata0_path(files[i].dataPath.get(host.mem)).c_str(), host.pref_path, export_name);
     }
@@ -179,7 +223,7 @@ EXPORT(int, sceAppUtilSaveDataDataRemove, emu::SceAppUtilSaveDataFileSlot *slot,
     return 0;
 }
 
-EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, emu::SceAppUtilSaveDataFile *files, unsigned int fileNum, SceAppUtilSaveDataMountPoint *mountPoint, SceSize *requiredSizeKB) {
+EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataFile *files, unsigned int fileNum, SceAppUtilSaveDataMountPoint *mountPoint, SceSize *requiredSizeKB) {
     SceUID fd;
 
     for (unsigned int i = 0; i < fileNum; i++) {
@@ -210,7 +254,7 @@ EXPORT(int, sceAppUtilSaveDataDataSave, emu::SceAppUtilSaveDataFileSlot *slot, e
         modified_time.second = local->tm_sec;
         slot->slotParam.get(host.mem)->modifiedTime = modified_time;
         fd = open_file(host.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY, host.pref_path, export_name);
-        write_file(fd, slot->slotParam.get(host.mem), sizeof(emu::SceAppUtilSaveDataSlotParam), host.io, export_name);
+        write_file(fd, slot->slotParam.get(host.mem), sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
         close_file(host.io, fd, export_name);
     }
 
@@ -227,9 +271,9 @@ EXPORT(int, sceAppUtilSaveDataMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, emu::SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
+EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
     const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-    write_file(fd, param, sizeof(emu::SceAppUtilSaveDataSlotParam), host.io, export_name);
+    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
     close_file(host.io, fd, export_name);
     return 0;
 }
@@ -239,11 +283,11 @@ EXPORT(int, sceAppUtilSaveDataSlotDelete, unsigned int slotId, SceAppUtilSaveDat
     return 0;
 }
 
-EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, emu::SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
+EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
     const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    read_file(param, host.io, fd, sizeof(emu::SceAppUtilSaveDataSlotParam), export_name);
+    read_file(param, host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
     close_file(host.io, fd, export_name);
     return 0;
 }
@@ -252,11 +296,11 @@ EXPORT(int, sceAppUtilSaveDataSlotSearch) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilSaveDataSlotSetParam, unsigned int slotId, emu::SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
+EXPORT(int, sceAppUtilSaveDataSlotSetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
     const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY, host.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    write_file(fd, param, sizeof(emu::SceAppUtilSaveDataSlotParam), host.io, export_name);
+    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
     close_file(host.io, fd, export_name);
     return 0;
 }

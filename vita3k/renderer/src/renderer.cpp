@@ -83,7 +83,7 @@ void set_cull_mode(State &state, Context *ctx, GxmContextState *gxm_context, Sce
     }
 }
 
-void set_fragment_texture(State &state, Context *ctx, GxmContextState *gxm_context, const std::uint32_t tex_index, const emu::SceGxmTexture tex) {
+void set_fragment_texture(State &state, Context *ctx, GxmContextState *gxm_context, const std::uint32_t tex_index, const SceGxmTexture tex) {
     switch (state.current_backend) {
     default:
         renderer::add_state_set_command(ctx, renderer::GXMState::FragmentTexture, tex_index, tex);
@@ -125,7 +125,7 @@ void set_two_sided_enable(State &state, Context *ctx, GxmContextState *gxm_conte
     }
 }
 
-void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, emu::SceGxmColorSurface *color_surface, emu::SceGxmDepthStencilSurface *depth_stencil_surface) {
+void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, SceGxmColorSurface *color_surface, SceGxmDepthStencilSurface *depth_stencil_surface) {
     switch (state.current_backend) {
     default:
         renderer::add_command(ctx, renderer::CommandOpcode::SetContext, nullptr, target, color_surface, depth_stencil_surface);

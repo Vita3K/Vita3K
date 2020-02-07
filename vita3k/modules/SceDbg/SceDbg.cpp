@@ -22,8 +22,6 @@
 
 #include <kernel/functions.h>
 
-#include <psp2/kernel/error.h>
-
 EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop, const char *component, module::vargs messages) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 

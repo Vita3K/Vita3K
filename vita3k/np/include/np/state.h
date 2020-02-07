@@ -26,19 +26,17 @@
 #include <mutex>
 #include <vector>
 
-namespace emu {
 struct SceNpServiceStateCallback {
     Address pc;
     Address data;
 };
-} // namespace emu
 
-typedef std::map<int, emu::SceNpServiceStateCallback> np_callbacks;
+typedef std::map<int, SceNpServiceStateCallback> np_callbacks;
 
 struct NpTrophyUnlockCallbackData {
     std::string trophy_name;
     std::string description;
-    emu::np::trophy::TrophyType trophy_kind;
+    np::trophy::TrophyType trophy_kind;
     std::vector<std::uint8_t> icon_buf;
 };
 
@@ -48,7 +46,7 @@ struct NpTrophyState {
     bool inited = false;
     std::mutex access_mutex;
 
-    std::vector<emu::np::trophy::Context> contexts;
+    std::vector<np::trophy::Context> contexts;
     NpTrophyUnlockCallback trophy_unlock_callback;
 };
 
@@ -58,5 +56,5 @@ struct NpState {
     int state = -1;
 
     NpTrophyState trophy_state;
-    emu::np::CommunicationID comm_id;
+    np::CommunicationID comm_id;
 };

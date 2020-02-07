@@ -11,7 +11,7 @@
 namespace renderer::gl {
 namespace texture {
 
-void bind_texture(GLTextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem) {
+void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     glBindTexture(GL_TEXTURE_2D, cache.textures[0]);
@@ -23,7 +23,7 @@ static bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt
     return (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P8 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8);
 }
 
-void configure_bound_texture(const emu::SceGxmTexture &gxm_texture) {
+void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
@@ -109,7 +109,7 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
     return 0;
 }
 
-void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState &mem) {
+void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);

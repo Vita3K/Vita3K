@@ -59,7 +59,8 @@ static void delete_cpu_state(CPUState *state) {
 static bool is_thumb_mode(uc_engine *uc) {
     size_t mode = 0;
     const uc_err err = uc_query(uc, UC_QUERY_MODE, &mode);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     return mode & UC_MODE_THUMB;
 }
@@ -114,14 +115,16 @@ static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
             const Address svc_address = pc - 2;
             uint16_t svc_instruction = 0;
             uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
-            assert(err == UC_ERR_OK);
+            if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
             const uint8_t imm = svc_instruction & 0xff;
             state.call_svc(state, imm, pc);
         } else {
             const Address svc_address = pc - 4;
             uint32_t svc_instruction = 0;
             uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
-            assert(err == UC_ERR_OK);
+            if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
             const uint32_t imm = svc_instruction & 0xffffff;
             state.call_svc(state, imm, pc);
         }
@@ -137,17 +140,20 @@ static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
 static void enable_vfp_fpu(uc_engine *uc) {
     uint64_t c1_c0_2 = 0;
     uc_err err = uc_reg_read(uc, UC_ARM_REG_C1_C0_2, &c1_c0_2);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     c1_c0_2 |= (0xf << 20);
 
     err = uc_reg_write(uc, UC_ARM_REG_C1_C0_2, &c1_c0_2);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     const uint64_t fpexc = 0xf0000000;
 
     err = uc_reg_write(uc, UC_ARM_REG_FPEXC, &fpexc);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 static void log_error_details(CPUState &state, uc_err code) {
@@ -180,7 +186,8 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
 
     uc_engine *temp_uc = nullptr;
     uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &temp_uc);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     state->uc = UnicornPtr(temp_uc, uc_close);
     temp_uc = nullptr;
@@ -196,21 +203,26 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     }
 
     err = uc_hook_add(state->uc.get(), &hh, UC_HOOK_INTR, reinterpret_cast<void *>(&intr_hook), state.get(), 1, 0);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_SP, &sp);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     // Don't map the null page into unicorn so that unicorn returns access error instead of
     // crashing the whole emulator on invalid access
     err = uc_mem_map_ptr(state->uc.get(), mem.page_size, GB(4) - mem.page_size, UC_PROT_ALL, &mem.memory[mem.page_size]);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_PC, &pc);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     err = uc_reg_write(state->uc.get(), UC_ARM_REG_LR, &pc);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     enable_vfp_fpu(state->uc.get());
 
@@ -280,7 +292,8 @@ int step(CPUState &state, bool callback, Address entry_point) {
 
 void stop(CPUState &state) {
     const uc_err err = uc_emu_stop(state.uc.get());
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 uint32_t read_reg(CPUState &state, size_t index) {
@@ -288,7 +301,8 @@ uint32_t read_reg(CPUState &state, size_t index) {
 
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_R0 + static_cast<int>(index), &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     return value;
 }
@@ -300,14 +314,16 @@ float read_float_reg(CPUState &state, size_t index) {
 
     const int single_index = static_cast<int>(index / 2);
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_D0 + single_index, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
     return value.f[index % 2];
 }
 
 uint32_t read_sp(CPUState &state) {
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_SP, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     return value;
 }
@@ -315,7 +331,8 @@ uint32_t read_sp(CPUState &state) {
 uint32_t read_pc(CPUState &state) {
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_PC, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     return value;
 }
@@ -323,7 +340,8 @@ uint32_t read_pc(CPUState &state) {
 uint32_t read_lr(CPUState &state) {
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_LR, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     return value;
 }
@@ -331,7 +349,8 @@ uint32_t read_lr(CPUState &state) {
 uint32_t read_fpscr(CPUState &state) {
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_FPSCR, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     return value;
 }
@@ -339,7 +358,8 @@ uint32_t read_fpscr(CPUState &state) {
 uint32_t read_cpsr(CPUState &state) {
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_CPSR, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     return value;
 }
@@ -347,7 +367,8 @@ uint32_t read_cpsr(CPUState &state) {
 uint32_t read_tpidruro(CPUState &state) {
     uint32_t value = 0;
     const uc_err err = uc_reg_read(state.uc.get(), UC_ARM_REG_C13_C0_3, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     return value;
 }
@@ -356,44 +377,52 @@ void write_reg(CPUState &state, size_t index, uint32_t value) {
     assert(index >= 0);
 
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_R0 + static_cast<int>(index), &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 void write_float_reg(CPUState &state, size_t index, float value) {
     assert(index >= 0);
 
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_R0 + static_cast<int>(index), &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 void write_sp(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_SP, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 void write_pc(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_PC, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 void write_lr(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 void write_fpscr(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_FPSCR, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 void write_cpsr(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_CPSR, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 void write_tpidruro(CPUState &state, uint32_t value) {
     const uc_err err = uc_reg_write(state.uc.get(), UC_ARM_REG_C13_C0_3, &value);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 bool hit_breakpoint(CPUState &state) {
@@ -421,16 +450,19 @@ void log_code_add(CPUState &state) {
     uc_hook hh = 0;
     const uc_err err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_CODE, reinterpret_cast<void *>(&code_hook), &state, 1, 0);
 
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 void log_mem_add(CPUState &state) {
     uc_hook hh = 0;
     uc_err err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_MEM_READ, reinterpret_cast<void *>(&read_hook), &state, 1, 0);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 
     err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_MEM_WRITE, reinterpret_cast<void *>(&write_hook), &state, 1, 0);
-    assert(err == UC_ERR_OK);
+    if (err != UC_ERR_OK)
+        LOG_ERROR("uc_reg_write returns an error");
 }
 
 static void delete_cpu_context(CPUContext *ctx) {

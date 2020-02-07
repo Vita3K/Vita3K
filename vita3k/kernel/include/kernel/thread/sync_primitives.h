@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <psp2/types.h>
-
 #include <kernel/state.h>
 
 enum class SyncWeight {

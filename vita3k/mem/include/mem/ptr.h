@@ -52,6 +52,10 @@ public:
     }
 
     T *get(const MemState &mem) const {
+        // if addr is null, addr == 0 -> EXEC_BAD_ACCESS
+        if (!(bool)this) {
+            return nullptr;
+        }
         if (addr == 0) {
             return nullptr;
         } else {
@@ -64,7 +68,7 @@ public:
     }
 
     explicit operator bool() const {
-        return addr != 0;
+        return (addr != 0 && addr > 0x100);  // for EXEC_BAD_ACCESS 0x8
     }
 
     Ptr &operator=(const Address &address) {

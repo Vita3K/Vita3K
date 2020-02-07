@@ -21,10 +21,8 @@
 #include <glutil/object.h>
 #include <gxm/types.h>
 
-#include "state.h"
-#include "types.h"
-
-#include <psp2/gxm.h>
+#include <renderer/gl/state.h>
+#include <renderer/gl/types.h>
 
 #include <map>
 #include <memory>
@@ -53,7 +51,7 @@ bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int 
 bool create(WindowPtr &window, std::unique_ptr<renderer::State> &state);
 bool create(std::unique_ptr<Context> &context);
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
-bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const emu::SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
+bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip);
 void sync_rendertarget(const GLRenderTarget &rt);
@@ -94,9 +92,9 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
 namespace texture {
 
 // Textures.
-void bind_texture(GLTextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem);
-void configure_bound_texture(const emu::SceGxmTexture &gxm_texture);
-void upload_bound_texture(const emu::SceGxmTexture &gxm_texture, const MemState &mem);
+void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem);
+void configure_bound_texture(const SceGxmTexture &gxm_texture);
+void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem);
 
 // Texture formats.
 const GLint *translate_swizzle(SceGxmTextureFormat fmt);

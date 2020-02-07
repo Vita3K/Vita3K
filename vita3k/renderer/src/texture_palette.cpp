@@ -38,7 +38,7 @@ void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, 
     }
 }
 
-const uint32_t *get_texture_palette(const emu::SceGxmTexture &texture, const MemState &mem) {
+const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem) {
     const Ptr<const uint32_t> palette_ptr(texture.palette_addr << 6);
     return palette_ptr.get(mem);
 }

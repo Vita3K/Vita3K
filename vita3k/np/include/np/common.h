@@ -21,7 +21,7 @@
 #include <cstring>
 #include <mem/ptr.h>
 
-namespace emu::np {
+namespace np {
 
 struct CommunicationID {
     char data[9];
@@ -49,4 +49,4 @@ enum class NpTrophyError {
     TROPHY_PLATINUM_IS_UNBREAKABLE = 5, // Platinum is unbreakable
 };
 
-} // namespace emu::np
+} // namespace np

@@ -21,20 +21,20 @@
 #include <np/common.h>
 #include <string>
 
-namespace emu::np {
+namespace np {
 struct CommunicationID;
-}
+} // namespace np
 
-namespace emu::np::trophy {
+namespace np::trophy {
 using ContextHandle = std::int32_t;
 struct Context;
-} // namespace emu::np::trophy
+} // namespace np
 
 struct NpState;
 struct NpTrophyState;
 struct IOState;
 
-bool init(NpState &state, const emu::np::CommunicationID *comm_id);
+bool init(NpState &state, const np::CommunicationID *comm_id);
 bool deinit(NpState &state);
 
 bool init(NpTrophyState &state);
@@ -51,8 +51,8 @@ bool deinit(NpTrophyState &state);
  * 
  * \returns uint32_t(-1) on failure, else the handle to the context.
  */
-emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path,
-    const emu::np::CommunicationID *custom_comm, const std::uint32_t lang, emu::np::NpTrophyError *error);
+np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path,
+    const np::CommunicationID *custom_comm, const std::uint32_t lang, np::NpTrophyError *error);
 
-emu::np::trophy::Context *get_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle);
-bool destroy_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle);
+np::trophy::Context *get_trophy_context(NpTrophyState &state, const np::trophy::ContextHandle handle);
+bool destroy_trophy_context(NpTrophyState &state, const np::trophy::ContextHandle handle);

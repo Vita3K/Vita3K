@@ -18,8 +18,6 @@
 #include <host/state.h>
 #include <kernel/thread/thread_functions.h>
 
-#include <psp2/sysmodule.h>
-
 #include <vector>
 
 static constexpr auto SYSMODULE_COUNT = 0x56;

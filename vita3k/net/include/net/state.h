@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <net/types.h>
+
 #include <map>
 
 #ifdef WIN32
@@ -38,17 +40,8 @@ typedef int socklen_t;
 typedef int abs_socket;
 #endif
 
-#include <mem/mem.h> // Address.
-
-namespace emu {
-struct SceNetCtlCallback {
-    Address pc;
-    Address data;
-};
-} // namespace emu
-
 typedef std::map<int, abs_socket> sockets;
-typedef std::map<int, emu::SceNetCtlCallback> callbacks;
+typedef std::map<int, SceNetCtlCallback> callbacks;
 
 struct NetState {
     bool inited = false;

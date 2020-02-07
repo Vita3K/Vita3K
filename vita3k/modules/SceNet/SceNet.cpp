@@ -17,8 +17,8 @@
 
 #include "SceNet.h"
 
+#include <net/types.h>
 #include <net/functions.h>
-#include <psp2/net/net.h>
 
 #ifdef WIN32
 #include <iphlpapi.h>
