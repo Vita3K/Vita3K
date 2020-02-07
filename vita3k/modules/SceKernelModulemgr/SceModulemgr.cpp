@@ -16,10 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceModulemgr.h"
-#include "kernel/state.h"
-
-#include <psp2/kernel/error.h>
-#include <psp2/kernel/modulemgr.h>
+#include <kernel/state.h>
 
 EXPORT(int, _sceKernelCloseModule) {
     return UNIMPLEMENTED();

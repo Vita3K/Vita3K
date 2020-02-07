@@ -17,15 +17,15 @@
 
 #pragma once
 
+#include <util/types.h>
+
+#include <SDL_audio.h>
+
 #include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <vector>
-
-#include <psp2/types.h>
-
-#include <SDL_audio.h>
 
 typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
 typedef std::function<void(SceUID)> ResumeAudioThread;

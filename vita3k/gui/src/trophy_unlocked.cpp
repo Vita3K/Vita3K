@@ -64,22 +64,22 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
     std::string trophy_kind_s = "?";
 
     switch (callback_data.trophy_kind) {
-    case emu::np::trophy::TrophyType::PLATINUM: {
+    case np::trophy::TrophyType::PLATINUM: {
         trophy_kind_s = "Platinum";
         break;
     }
 
-    case emu::np::trophy::TrophyType::BRONZE: {
+    case np::trophy::TrophyType::BRONZE: {
         trophy_kind_s = "Bronze";
         break;
     }
 
-    case emu::np::trophy::TrophyType::SILVER: {
+    case np::trophy::TrophyType::SILVER: {
         trophy_kind_s = "Silver";
         break;
     }
 
-    case emu::np::trophy::TrophyType::GOLD: {
+    case np::trophy::TrophyType::GOLD: {
         trophy_kind_s = "Gold";
         break;
     }

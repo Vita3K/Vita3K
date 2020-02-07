@@ -19,7 +19,35 @@
 
 #include <util/lock_and_find.h>
 
-#include <psp2/audioout.h>
+enum SceAudioOutMode {
+    SCE_AUDIO_OUT_MODE_MONO    = 0,
+    SCE_AUDIO_OUT_MODE_STEREO  = 1
+};
+
+enum SceAudioOutPortType {
+    //! Used for main audio output, freq must be set to 48000 Hz
+    SCE_AUDIO_OUT_PORT_TYPE_MAIN    = 0,
+    //! Used for Background Music port
+    SCE_AUDIO_OUT_PORT_TYPE_BGM     = 1,
+    //! Used for voice chat port
+    SCE_AUDIO_OUT_PORT_TYPE_VOICE   = 2
+};
+
+enum SceAudioOutErrorCode {
+    SCE_AUDIO_OUT_ERROR_NOT_OPENED          = 0x80260001,
+    SCE_AUDIO_OUT_ERROR_BUSY                = 0x80260002,
+    SCE_AUDIO_OUT_ERROR_INVALID_PORT        = 0x80260003,
+    SCE_AUDIO_OUT_ERROR_INVALID_POINTER     = 0x80260004,
+    SCE_AUDIO_OUT_ERROR_PORT_FULL           = 0x80260005,
+    SCE_AUDIO_OUT_ERROR_INVALID_SIZE        = 0x80260006,
+    SCE_AUDIO_OUT_ERROR_INVALID_FORMAT      = 0x80260007,
+    SCE_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ = 0x80260008,
+    SCE_AUDIO_OUT_ERROR_INVALID_VOLUME      = 0x80260009,
+    SCE_AUDIO_OUT_ERROR_INVALID_PORT_TYPE   = 0x8026000A,
+    SCE_AUDIO_OUT_ERROR_INVALID_FX_TYPE     = 0x8026000B,
+    SCE_AUDIO_OUT_ERROR_INVALID_CONF_TYPE   = 0x8026000C,
+    SCE_AUDIO_OUT_ERROR_OUT_OF_MEMORY       = 0x8026000D
+};
 
 EXPORT(int, sceAudioOutGetAdopt) {
     return UNIMPLEMENTED();

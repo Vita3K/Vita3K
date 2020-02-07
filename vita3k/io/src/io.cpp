@@ -474,7 +474,7 @@ SceUID open_dir(IOState &io, const char *path, const std::string &pref_path, con
     return fd;
 }
 
-SceUID read_dir(IOState &io, const SceUID fd, emu::SceIoDirent *dent, const std::string &pref_path, const SceUInt64 base_tick, const char *export_name) {
+SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::string &pref_path, const SceUInt64 base_tick, const char *export_name) {
     assert(dent != nullptr);
 
     memset(dent->d_name, '\0', sizeof(dent->d_name));

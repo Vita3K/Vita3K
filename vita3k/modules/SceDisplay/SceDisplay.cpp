@@ -19,7 +19,19 @@
 
 #include <host/functions.h>
 
-#include <psp2/display.h>
+enum SceDisplayErrorCode {
+    SCE_DISPLAY_ERROR_OK                    = 0,
+    SCE_DISPLAY_ERROR_INVALID_HEAD          = 0x80290000,
+    SCE_DISPLAY_ERROR_INVALID_VALUE         = 0x80290001,
+    SCE_DISPLAY_ERROR_INVALID_ADDR          = 0x80290002,
+    SCE_DISPLAY_ERROR_INVALID_PIXELFORMAT   = 0x80290003,
+    SCE_DISPLAY_ERROR_INVALID_PITCH         = 0x80290004,
+    SCE_DISPLAY_ERROR_INVALID_RESOLUTION    = 0x80290005,
+    SCE_DISPLAY_ERROR_INVALID_UPDATETIMING  = 0x80290006,
+    SCE_DISPLAY_ERROR_NO_FRAME_BUFFER       = 0x80290007,
+    SCE_DISPLAY_ERROR_NO_PIXEL_DATA         = 0x80290008,
+    SCE_DISPLAY_ERROR_NO_OUTPUT_SIGNAL      = 0x80290009
+};
 
 static int display_wait(HostState &host) {
     std::unique_lock<std::mutex> lock(host.display.mutex);

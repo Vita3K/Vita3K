@@ -249,7 +249,7 @@ void sync_front_depth_bias(const GxmContextState &state) {
 
 void sync_texture(GLContext &context, const GxmContextState &state, const MemState &mem, std::size_t index,
     bool enable_texture_cache) {
-    const emu::SceGxmTexture &texture = state.fragment_textures[index];
+    const SceGxmTexture &texture = state.fragment_textures[index];
 
     if (texture.data_addr == 0) {
         LOG_WARN("Texture has null data.");
@@ -286,7 +286,7 @@ void sync_blending(const GxmContextState &state, const MemState &mem) {
 void sync_vertex_attributes(GLContext &context, const GxmContextState &state, const MemState &mem) {
     // Vertex attributes.
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
-    for (const emu::SceGxmVertexAttribute &attribute : vertex_program.attributes) {
+    for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
         const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
         const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
         const GLenum type = attribute_format_to_gl_type(attribute_format);

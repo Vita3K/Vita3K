@@ -27,7 +27,7 @@ static TextureCacheHash hash_data(const void *data, size_t size) {
 #endif
 }
 
-static TextureCacheHash hash_palette_data(const emu::SceGxmTexture &texture, size_t count, const MemState &mem) {
+static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t count, const MemState &mem) {
     const uint32_t *const palette_bytes = get_texture_palette(texture, mem);
     if (!palette_bytes) {
         LOG_WARN("hash_palette_data called with null palette_bytes, returning 0");
@@ -38,7 +38,7 @@ static TextureCacheHash hash_palette_data(const emu::SceGxmTexture &texture, siz
     return palette_hash;
 }
 
-static TextureCacheHash hash_texture_data(const emu::SceGxmTexture &texture, const MemState &mem) {
+static TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat format = gxm::get_format(&texture);
@@ -78,7 +78,7 @@ static size_t find_lru(const TextureCacheTimestamps &timestamps, TextureCacheTim
     return oldest_index;
 }
 
-void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &gxm_texture, const MemState &mem) {
+void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     size_t index = 0;
@@ -91,7 +91,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const emu::SceGxmTexture &
     // Try to find GXM texture in cache.
     size_t cached_gxm_texture_index = -1;
     for (size_t a = 0; a < cache.used; a++) {
-        if (memcmp(&cache.gxm_textures[a], &gxm_texture, sizeof(emu::SceGxmTexture)) == 0) {
+        if (memcmp(&cache.gxm_textures[a], &gxm_texture, sizeof(SceGxmTexture)) == 0) {
             cached_gxm_texture_index = a;
             break;
         }

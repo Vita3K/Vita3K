@@ -17,10 +17,6 @@
 
 #include <kernel/thread/sync_primitives.h>
 
-#include <psp2/kernel/error.h>
-#include <psp2/kernel/threadmgr.h>
-#include <psp2/types.h>
-
 #include <cpu/functions.h>
 #include <kernel/state.h>
 #include <kernel/types.h>

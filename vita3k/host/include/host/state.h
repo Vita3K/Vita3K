@@ -37,8 +37,6 @@
 #include <gdbstub/state.h>
 #endif
 
-#include <psp2/display.h>
-
 #include <atomic>
 #include <memory>
 #include <string>

@@ -6,4 +6,4 @@ src/rtc.cpp
 )
 
 target_include_directories(rtc PUBLIC include)
-target_link_libraries(rtc PUBLIC util vita-headers)
+target_link_libraries(rtc PUBLIC util)

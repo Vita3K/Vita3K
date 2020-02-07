@@ -17,19 +17,19 @@
 
 #include "SceSysmem.h"
 
-#include <psp2/kernel/error.h>
-#include <psp2/kernel/sysmem.h>
-
 #include <kernel/state.h>
 #include <kernel/types.h>
 
-namespace emu {
 struct SceKernelAllocMemBlockOpt;
-}
 
-using namespace emu;
+struct SceKernelFreeMemorySizeInfo {
+    int size;         //!< sizeof(SceKernelFreeMemorySizeInfo)
+    int size_user;    //!< Free memory size for *_USER_RW memory
+    int size_cdram;   //!< Free memory size for USER_CDRAM_RW memory
+    int size_phycont; //!< Free memory size for USER_MAIN_PHYCONT_*_RW memory
+};
 
-EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, int size, emu::SceKernelAllocMemBlockOpt *optp) {
+EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, int size, SceKernelAllocMemBlockOpt *optp) {
     MemState &mem = host.mem;
     assert(name != nullptr);
     assert(type != 0);
@@ -43,11 +43,11 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     KernelState *const state = &host.kernel;
     const SceUID uid = state->get_next_uid();
 
-    const SceKernelMemBlockInfoPtr sceKernelMemBlockInfo = std::make_shared<emu::SceKernelMemBlockInfo>();
+    const SceKernelMemBlockInfoPtr sceKernelMemBlockInfo = std::make_shared<SceKernelMemBlockInfo>();
     sceKernelMemBlockInfo->type = type;
     sceKernelMemBlockInfo->mappedBase = address;
     sceKernelMemBlockInfo->mappedSize = size;
-    sceKernelMemBlockInfo->size = sizeof(emu::SceKernelMemBlockInfo);
+    sceKernelMemBlockInfo->size = sizeof(SceKernelMemBlockInfo);
     state->blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
 
     return uid;
@@ -66,10 +66,10 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, int size) {
     KernelState *const state = &host.kernel;
     const SceUID uid = state->get_next_uid();
 
-    const SceKernelMemBlockInfoPtr sceKernelMemBlockInfo = std::make_shared<emu::SceKernelMemBlockInfo>();
+    const SceKernelMemBlockInfoPtr sceKernelMemBlockInfo = std::make_shared<SceKernelMemBlockInfo>();
     sceKernelMemBlockInfo->mappedBase = address;
     sceKernelMemBlockInfo->mappedSize = size;
-    sceKernelMemBlockInfo->size = sizeof(emu::SceKernelMemBlockInfo);
+    sceKernelMemBlockInfo->size = sizeof(SceKernelMemBlockInfo);
     state->blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
     state->vm_blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
 
@@ -147,14 +147,14 @@ EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, emu::SceKernelMemBlockInfo *info) {
+EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, SceKernelMemBlockInfo *info) {
     assert(addr >= 0);
     assert(info != nullptr);
 
     const KernelState *const state = &host.kernel;
     for (Blocks::const_iterator it = state->blocks.begin(); it != state->blocks.end(); ++it) {
         if (it->second->mappedBase.address() < addr && (it->second->mappedBase.address() + it->second->mappedSize > addr)) {
-            memcpy(info, it->second.get(), sizeof(emu::SceKernelMemBlockInfo));
+            memcpy(info, it->second.get(), sizeof(SceKernelMemBlockInfo));
             return SCE_KERNEL_OK;
         }
     }

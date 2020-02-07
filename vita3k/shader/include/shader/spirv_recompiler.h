@@ -1,7 +1,6 @@
 #pragma once
 
 #include <gxm/types.h>
-#include <psp2/gxm.h>
 #include <shader/usse_translator_types.h>
 #include <shader/usse_types.h>
 

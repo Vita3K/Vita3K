@@ -17,8 +17,6 @@
 
 #include "SceLibRng.h"
 
-#include <psp2/kernel/error.h>
-
 #include <algorithm>
 #include <random>
 

@@ -18,11 +18,20 @@
 #include "SceProcessmgr.h"
 
 #include <io/functions.h>
-#include <psp2/kernel/error.h>
-#include <psp2/kernel/processmgr.h>
 #include <rtc/rtc.h>
 
 #include <ctime>
+
+enum SceKernelPowerTickType {
+    /** Cancel all timers */
+        SCE_KERNEL_POWER_TICK_DEFAULT               = 0,
+    /** Cancel automatic suspension timer */
+        SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND  = 1,
+    /** Cancel OLED-off timer */
+        SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF      = 4,
+    /** Cancel OLED dimming timer */
+        SCE_KERNEL_POWER_TICK_DISABLE_OLED_DIMMING  = 6
+};
 
 struct VitaTimeval {
     uint32_t tv_sec;

@@ -5,11 +5,10 @@
 #include <np/state.h>
 #include <np/trophy/context.h>
 
-#include <psp2/types.h>
 #include <pugixml.hpp>
 #include <spdlog/fmt/fmt.h>
 
-namespace emu::np::trophy {
+namespace np::trophy {
 Context::Context(const CommunicationID &comm_id, IOState &io, const SceUID trophy_stream,
     const std::string &output_progress_path)
     : comm_id(comm_id)
@@ -27,7 +26,7 @@ Context::Context(const CommunicationID &comm_id, IOState &io, const SceUID troph
 
 #define SET_TROPHY_BIT(arr, bit) arr[bit >> 5] |= (1 << (bit & 31))
 
-static bool read_trophy_entry_to_buffer(emu::np::trophy::TRPFile &trophy_file, const char *fname, std::string &buffer) {
+static bool read_trophy_entry_to_buffer(np::trophy::TRPFile &trophy_file, const char *fname, std::string &buffer) {
     // Read the trophy config
     const std::int32_t eidx = trophy_file.search_file(fname);
 
@@ -85,20 +84,20 @@ bool Context::init_info_from_trp() {
             }
 
             if (type == "P") {
-                trophy_kinds[id] = emu::np::trophy::TrophyType::PLATINUM;
+                trophy_kinds[id] = np::trophy::TrophyType::PLATINUM;
                 platinum_trophy_id = id;
             }
 
             if (type == "G") {
-                trophy_kinds[id] = emu::np::trophy::TrophyType::GOLD;
+                trophy_kinds[id] = np::trophy::TrophyType::GOLD;
             }
 
             if (type == "S") {
-                trophy_kinds[id] = emu::np::trophy::TrophyType::SILVER;
+                trophy_kinds[id] = np::trophy::TrophyType::SILVER;
             }
 
             if (type == "B") {
-                trophy_kinds[id] = emu::np::trophy::TrophyType::BRONZE;
+                trophy_kinds[id] = np::trophy::TrophyType::BRONZE;
             }
 
             trophy_count++;
@@ -174,18 +173,18 @@ bool Context::load_trophy_progress_file(const SceUID &progress_input_file) {
     return true;
 }
 
-bool Context::unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const bool force_unlock) {
-    if (id < 0 || id >= emu::np::trophy::MAX_TROPHIES || trophy_kinds[id] == emu::np::trophy::TrophyType::INVALID) {
+bool Context::unlock_trophy(std::int32_t id, np::NpTrophyError *err, const bool force_unlock) {
+    if (id < 0 || id >= np::trophy::MAX_TROPHIES || trophy_kinds[id] == np::trophy::TrophyType::INVALID) {
         if (err) {
-            *err = emu::np::NpTrophyError::TROPHY_ID_INVALID;
+            *err = np::NpTrophyError::TROPHY_ID_INVALID;
         }
 
         return false;
     }
 
-    if (trophy_kinds[id] == emu::np::trophy::TrophyType::PLATINUM && !force_unlock) {
+    if (trophy_kinds[id] == np::trophy::TrophyType::PLATINUM && !force_unlock) {
         if (err) {
-            *err = emu::np::NpTrophyError::TROPHY_PLATINUM_IS_UNBREAKABLE;
+            *err = np::NpTrophyError::TROPHY_PLATINUM_IS_UNBREAKABLE;
         }
 
         return false;
@@ -193,7 +192,7 @@ bool Context::unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const 
 
     if (trophy_progress[id >> 5] & (1 << (id & 31))) {
         if (err) {
-            *err = emu::np::NpTrophyError::TROPHY_ALREADY_UNLOCKED;
+            *err = np::NpTrophyError::TROPHY_ALREADY_UNLOCKED;
         }
 
         return false;
@@ -202,7 +201,7 @@ bool Context::unlock_trophy(std::int32_t id, emu::np::NpTrophyError *err, const 
     SET_TROPHY_BIT(trophy_progress, id);
 
     if (err) {
-        *err = emu::np::NpTrophyError::TROPHY_ERROR_NONE;
+        *err = np::NpTrophyError::TROPHY_ERROR_NONE;
     }
 
     save_trophy_progress_file();
@@ -265,21 +264,21 @@ bool Context::get_trophy_description(const std::int32_t id, std::string &name, s
 
     return false;
 }
-} // namespace emu::np::trophy
+} // namespace np::trophy
 
-emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path,
-    const emu::np::CommunicationID *custom_comm, const std::uint32_t lang, emu::np::NpTrophyError *error) {
+np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path,
+    const np::CommunicationID *custom_comm, const std::uint32_t lang, np::NpTrophyError *error) {
     if (!custom_comm) {
         custom_comm = &np.comm_id;
     }
 
     if (error)
-        *error = emu::np::NpTrophyError::TROPHY_ERROR_NONE;
+        *error = np::NpTrophyError::TROPHY_ERROR_NONE;
 
 #define TROPHY_RET_ERROR(err)                 \
     if (error)                                \
-        *error = emu::np::NpTrophyError::err; \
-    return emu::np::trophy::INVALID_CONTEXT_HANDLE
+        *error = np::NpTrophyError::err; \
+    return np::trophy::INVALID_CONTEXT_HANDLE
 
     // Check if a context has already been created for this communication ID
     for (std::size_t i = 0; i < np.trophy_state.contexts.size(); i++) {
@@ -306,7 +305,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
     trophy_progress_save_file += "TROPUSR.DAT";
     const SceUID trophy_progress_file_inp = open_file(io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, pref_path, "create_trophy_context");
 
-    emu::np::trophy::Context *new_context = nullptr;
+    np::trophy::Context *new_context = nullptr;
 
     // Yesss, we can now go fully creative
     // Check for free slot first
@@ -324,7 +323,7 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
     if (!new_context) {
         // Yikes. Create new one.
         np.trophy_state.contexts.emplace_back(*custom_comm, io, trophy_file, trophy_progress_save_file);
-        np.trophy_state.contexts.back().id = static_cast<emu::np::trophy::ContextHandle>(np.trophy_state.contexts.size());
+        np.trophy_state.contexts.back().id = static_cast<np::trophy::ContextHandle>(np.trophy_state.contexts.size());
 
         new_context = &np.trophy_state.contexts.back();
         new_context->pref_path = pref_path;
@@ -345,16 +344,16 @@ emu::np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, c
     return new_context->id;
 }
 
-emu::np::trophy::Context *get_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle) {
-    if (handle < 0 || handle > static_cast<emu::np::trophy::ContextHandle>(state.contexts.size())) {
+np::trophy::Context *get_trophy_context(NpTrophyState &state, const np::trophy::ContextHandle handle) {
+    if (handle < 0 || handle > static_cast<np::trophy::ContextHandle>(state.contexts.size())) {
         return nullptr;
     }
 
     return &state.contexts[handle - 1];
 }
 
-bool destroy_trophy_context(NpTrophyState &state, const emu::np::trophy::ContextHandle handle) {
-    if (handle < 0 || handle > static_cast<emu::np::trophy::ContextHandle>(state.contexts.size())) {
+bool destroy_trophy_context(NpTrophyState &state, const np::trophy::ContextHandle handle) {
+    if (handle < 0 || handle > static_cast<np::trophy::ContextHandle>(state.contexts.size())) {
         return false;
     }
 

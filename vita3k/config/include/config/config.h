@@ -17,7 +17,8 @@
 
 #pragma once
 
-#include <psp2/system_param.h>
+#include <util/system.h>
+
 #include <spdlog/spdlog.h>
 
 // clang-format off

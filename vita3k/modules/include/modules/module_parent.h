@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <psp2/sysmodule.h>
-#include <psp2/types.h>
+#include <util/types.h>
+#include <kernel/types.h>
 
 struct CPUState;
 struct HostState;
