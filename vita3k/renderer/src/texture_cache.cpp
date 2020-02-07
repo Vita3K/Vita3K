@@ -29,6 +29,11 @@ static TextureCacheHash hash_data(const void *data, size_t size) {
 
 static TextureCacheHash hash_palette_data(const emu::SceGxmTexture &texture, size_t count, const MemState &mem) {
     const uint32_t *const palette_bytes = get_texture_palette(texture, mem);
+    if (!palette_bytes) {
+        LOG_WARN("hash_palette_data called with null palette_bytes, returning 0");
+        TextureCacheHash i = 0;
+        return i;
+    }
     const TextureCacheHash palette_hash = hash_data(palette_bytes, count * sizeof(uint32_t));
     return palette_hash;
 }

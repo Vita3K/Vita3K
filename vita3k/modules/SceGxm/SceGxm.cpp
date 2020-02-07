@@ -333,13 +333,21 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, emu::SceGxmDepthStencilSurface *surfa
     assert(surface != nullptr);
     assert(surfaceType == SCE_GXM_DEPTH_STENCIL_SURFACE_TILED);
     assert(strideInSamples > 0);
-    assert(depthData);
-
+    // DONT ASSERT depthData
+    
     // TODO What to do here?
     memset(surface, 0, sizeof(*surface));
     surface->depthData = depthData;
     surface->stencilData = stencilData;
 
+    if (!depthData) {
+        // This doesnt matter how to, but we need a valid ptr
+        // Leave codes below here, I doubt about if we really need 960 * 544 * sizeof(float)
+        // They both work
+        // Ptr<void> i;
+        // surface->depthData = i;
+        depthData = alloc(host.mem, 960 * 544 * sizeof(float), "depthData");
+    }
     return 0;
 }
 
@@ -1037,6 +1045,10 @@ EXPORT(Ptr<const char>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramPa
 }
 
 EXPORT(unsigned int, sceGxmProgramParameterGetResourceIndex, const SceGxmProgramParameter *parameter) {
+    if (!parameter) {
+        LOG_WARN("sceGxmProgramParameterGetResourceIndex passwd an empty parameter, returning resource_index as 0");
+        return 0;
+    }
     return parameter->resource_index;
 }
 
@@ -1794,7 +1806,13 @@ EXPORT(Ptr<void>, sceGxmTextureGetPalette, const emu::SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetStride, const emu::SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return UNIMPLEMENTED();
+    
+    const SceGxmTextureFormat fmt = gxm::get_format(texture);
+    const auto base_format = gxm::get_base_format(fmt);
+    size_t bpp = renderer::texture::bits_per_pixel(base_format);
+    size_t stride = (gxm ::get_width(texture) + 7) & ~7;
+    
+    return stride * bpp / 8;
 }
 
 EXPORT(int, sceGxmTextureGetType, const emu::SceGxmTexture *texture) {
@@ -1843,10 +1861,14 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary) {
 
 static int init_texture_base(const char *export_name, emu::SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat tex_format, unsigned int width, unsigned int height, unsigned int mipCount,
     const SceGxmTextureType &texture_type) {
+    
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     } else if (!data) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        LOG_WARN("init_texture_base with null data, assigning new ptr to data");
+        Ptr<void> i;
+        data = i;
+        // return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     } else if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }

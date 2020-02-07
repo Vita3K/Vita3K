@@ -52,6 +52,10 @@ public:
     }
 
     T *get(const MemState &mem) const {
+        // if addr is null, addr == 0 -> EXEC_BAD_ACCESS
+        if (!addr) {
+            return nullptr;
+        }
         if (addr == 0) {
             return nullptr;
         } else {

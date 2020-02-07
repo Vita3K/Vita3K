@@ -390,6 +390,9 @@ public:
         return (uint64_t *)((uint8_t *)&secondary_program_offset_end + secondary_program_offset_end);
     }
     bool is_native_color() const {
+        if (!type) {
+            return false;
+        }
         return ((type >> 6) & 1);
     }
     bool is_reg_format() const {
