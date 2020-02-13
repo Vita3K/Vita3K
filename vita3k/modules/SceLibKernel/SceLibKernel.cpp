@@ -97,40 +97,40 @@ EXPORT(int, sceClibMemchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibMemcmp, const void *ptr1, const void *ptr2, SceSize num) {
-    return memcmp(ptr1, ptr2, num);
+EXPORT(int, sceClibMemcmp, const void *s1, const void *s2, SceSize len) {
+    return memcmp(s1, s2, len);
 }
 
 EXPORT(int, sceClibMemcmpConstTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<void>, sceClibMemcpy, Ptr<void> destination, const void *source, SceSize num) {
-    memcpy(destination.get(host.mem), source, num);
-    return destination;
+EXPORT(Ptr<void>, sceClibMemcpy, Ptr<void> dst, const void *src, SceSize len) {
+    memcpy(dst.get(host.mem), src, len);
+    return dst;
 }
 
 EXPORT(int, sceClibMemcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> destination, const void *source, SceSize num) {
-    memcpy(destination.get(host.mem), source, num);
-    return destination;
+EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const void *src, SceSize len) {
+    memcpy(dst.get(host.mem), src, len);
+    return dst;
 }
 
-EXPORT(Ptr<void>, sceClibMemmove, Ptr<void> destination, const void *source, SceSize num) {
-    memmove(destination.get(host.mem), source, num);
-    return destination;
+EXPORT(Ptr<void>, sceClibMemmove, Ptr<void> dst, const void *src, SceSize len) {
+    memmove(dst.get(host.mem), src, len);
+    return dst;
 }
 
 EXPORT(int, sceClibMemmoveChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<void>, sceClibMemset, Ptr<void> s, int c, SceSize n) {
-    memset(s.get(host.mem), c, n);
-    return s;
+EXPORT(Ptr<void>, sceClibMemset, Ptr<void> dst, int ch, SceSize len) {
+    memset(dst.get(host.mem), ch, len);
+    return dst;
 }
 
 EXPORT(int, sceClibMemsetChk) {
@@ -190,7 +190,7 @@ EXPORT(int, sceClibMspaceReallocalign) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibPrintf, const char *format, module::vargs args) {
+EXPORT(int, sceClibPrintf, const char *fmt, module::vargs args) {
     std::vector<char> buffer(1024);
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
@@ -199,7 +199,7 @@ EXPORT(int, sceClibPrintf, const char *format, module::vargs args) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    const int result = utils::snprintf(buffer.data(), buffer.size(), format, *(thread->cpu), host.mem, args);
+    const int result = utils::snprintf(buffer.data(), buffer.size(), fmt, *(thread->cpu), host.mem, args);
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
@@ -210,14 +210,14 @@ EXPORT(int, sceClibPrintf, const char *format, module::vargs args) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceClibSnprintf, char *dest, SceSize size, const char *format, module::vargs args) {
+EXPORT(int, sceClibSnprintf, char *dst, SceSize dst_max_size, const char *fmt, module::vargs args) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    int result = utils::snprintf(dest, size, format, *(thread->cpu), host.mem, args);
+    int result = utils::snprintf(dst, dst_max_size, fmt, *(thread->cpu), host.mem, args);
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
@@ -239,40 +239,42 @@ EXPORT(Ptr<char>, sceClibStrchr, const char *str, int c) {
     return Ptr<char>(res, host.mem);
 }
 
-EXPORT(int, sceClibStrcmp, const char *string1, const char *string2) {
-    return strcmp(string1, string2);
+EXPORT(int, sceClibStrcmp, const char *s1, const char *s2) {
+    return strcmp(s1, s2);
 }
 
 EXPORT(int, sceClibStrcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrlcat) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, sceClibStrlcat, char *dst, const char *src, SceSize len) {
+    const char *res = strncat(dst, src, len);
+    return Ptr<char>(res, host.mem);
 }
 
 EXPORT(int, sceClibStrlcatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrlcpy) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, sceClibStrlcpy, char *dst, const char *src, SceSize len) {
+    const char *res = strncpy(dst, src, len);
+    return Ptr<char>(res, host.mem);
 }
 
 EXPORT(int, sceClibStrlcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrncasecmp, const char *string1, const char *string2, int count) {
+EXPORT(int, sceClibStrncasecmp, const char *s1, const char *s2, SceSize len) {
 #ifdef WIN32
-    return _strnicmp(string1, string2, count);
+    return _strnicmp(s1, s2, len);
 #else
-    return strncasecmp(string1, string2, count);
+    return strncasecmp(s1, s2, len);
 #endif
 }
 
-EXPORT(Ptr<char>, sceClibStrncat, char *destination, const char *source, uint32_t num) {
-    const char *res = strncat(destination, source, num);
+EXPORT(Ptr<char>, sceClibStrncat, char *dst, const char *src, SceSize len) {
+    const char *res = strncat(dst, src, len);
     return Ptr<char>(res, host.mem);
 }
 
@@ -280,12 +282,12 @@ EXPORT(int, sceClibStrncatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibStrncmp, const char *str1, const char *str2, uint32_t num) {
-    return strncmp(str1, str2, num);
+EXPORT(int, sceClibStrncmp, const char *s1, const char *s2, SceSize len) {
+    return strncmp(s1, s2, len);
 }
 
-EXPORT(Ptr<char>, sceClibStrncpy, char *destination, const char *source, uint32_t num) {
-    const char *res = strncpy(destination, source, num);
+EXPORT(Ptr<char>, sceClibStrncpy, char *dst, const char *src, SceSize len) {
+    const char *res = strncpy(dst, src, len);
     return Ptr<char>(res, host.mem);
 }
 
@@ -293,17 +295,17 @@ EXPORT(int, sceClibStrncpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(uint32_t, sceClibStrnlen, const char *str, uint32_t maxlen) {
-    return static_cast<uint32_t>(strnlen(str, maxlen));
+EXPORT(uint32_t, sceClibStrnlen, const char *s1, SceSize maxlen) {
+    return static_cast<uint32_t>(strnlen(s1, maxlen));
 }
 
-EXPORT(Ptr<char>, sceClibStrrchr, const char *str, int character) {
-    const char *res = strrchr(str, character);
+EXPORT(Ptr<char>, sceClibStrrchr, const char *src, int ch) {
+    const char *res = strrchr(src, ch);
     return Ptr<char>(res, host.mem);
 }
 
-EXPORT(Ptr<char>, sceClibStrstr, const char *haystack, const char *needle) {
-    const char *res = strstr(haystack, needle);
+EXPORT(Ptr<char>, sceClibStrstr, const char *s1, const char *s2) {
+    const char *res = strstr(s1, s2);
     return Ptr<char>(res, host.mem);
 }
 
@@ -311,12 +313,12 @@ EXPORT(int64_t, sceClibStrtoll, const char *str, char **endptr, int base) {
     return strtoll(str, endptr, base);
 }
 
-EXPORT(int, sceClibTolower, int c) {
-    return tolower(c);
+EXPORT(int, sceClibTolower, char ch) {
+    return tolower(ch);
 }
 
-EXPORT(int, sceClibToupper, int c) {
-    return toupper(c);
+EXPORT(int, sceClibToupper, char ch) {
+    return toupper(ch);
 }
 
 EXPORT(int, sceClibVdprintf) {
@@ -327,8 +329,20 @@ EXPORT(int, sceClibVprintf) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibVsnprintf) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibVsnprintf, char *dst, SceSize dst_max_size, const char *fmt, module::vargs args) {
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+
+    int result = utils::snprintf(dst, dst_max_size, fmt, *(thread->cpu), host.mem, args);
+
+    if (!result) {
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    }
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceClibVsnprintfChk) {
@@ -1199,7 +1213,7 @@ bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleIn
         }
 
         auto *data = new char[static_cast<int>(size) + 1]; // null-terminated char array
-        if (read_file(data, host.io, file, size, export_name) < 0) {
+        if (read_file(data, host.io, file, SceSize(size), export_name) < 0) {
             delete[] data;
             error_val = RET_ERROR(static_cast<int>(size));
             return false;
