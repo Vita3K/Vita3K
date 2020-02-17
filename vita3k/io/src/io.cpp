@@ -209,8 +209,10 @@ std::string expand_path(IOState &io, const char *path, const std::string &pref_p
 
 SceUID open_file(IOState &io, const char *path, const int flags, const std::string &pref_path, const char *export_name) {
     auto device = device::get_device(path);
-    if (device == VitaIoDevice::_INVALID)
+    if (device == VitaIoDevice::_INVALID) {
+        LOG_ERROR("Cannot find device for path: {}", path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     if (device == VitaIoDevice::tty0 || device == VitaIoDevice::tty1) {
         assert(flags >= 0);
@@ -230,14 +232,18 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::stri
     }
 
     const auto translated_path = translate_path(path, device, io.device_paths);
-    if (translated_path.empty())
+    if (translated_path.empty()) {
+        LOG_ERROR("Cannot translate path: {}", path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     const auto system_path = device::construct_emulated_path(device, translated_path, pref_path);
 
     // Do not allow any new files if they do not have a write flag.
-    if (!fs::exists(system_path) && !can_write(flags))
+    if (!fs::exists(system_path) && !can_write(flags)) {
+        LOG_ERROR("Missing file at {} (target path: {})", system_path.string(), path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     const auto normalized_path = device::construct_normalized_path(device, translated_path);
 
@@ -352,13 +358,17 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
     fs::path file_path = "";
     if (fd == invalid_fd) {
         auto device = device::get_device(file);
-        if (device == VitaIoDevice::_INVALID)
+        if (device == VitaIoDevice::_INVALID) {
+            LOG_ERROR("Cannot find device for path: {}", file);
             return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+        }
 
         const auto translated_path = translate_path(file, device, io.device_paths);
         file_path = device::construct_emulated_path(device, translated_path, pref_path);
-        if (!fs::exists(file_path))
+        if (!fs::exists(file_path)) {
+            LOG_ERROR("Missing file at {} (target path: {})", file_path.string(), file);
             return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+        }
 
         LOG_TRACE("{}: Statting file: {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
     } else { // We have previously opened and defined the location
@@ -439,13 +449,22 @@ int close_file(IOState &io, const SceUID fd, const char *export_name) {
 
 int remove_file(IOState &io, const char *file, const std::string &pref_path, const char *export_name) {
     auto device = device::get_device(file);
-    if (device == VitaIoDevice::_INVALID)
+    if (device == VitaIoDevice::_INVALID) {
+        LOG_ERROR("Cannot find device for path: {}", file);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     const auto translated_path = translate_path(file, device, io.device_paths);
-    const auto emulated_path = device::construct_emulated_path(device, translated_path, pref_path);
-    if (translated_path.empty() || !fs::exists(emulated_path) || fs::is_directory(emulated_path))
+    if (translated_path.empty()) {
+        LOG_ERROR("Cannot translate path: {}", translated_path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+
+    const auto emulated_path = device::construct_emulated_path(device, translated_path, pref_path);
+    if (!fs::exists(emulated_path) || fs::is_directory(emulated_path)) {
+        LOG_ERROR("File does not exist at path: {} (target path: {})", emulated_path.string(), file);
+    }
+
 
     LOG_TRACE("{}: Removing file {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
 
@@ -457,12 +476,16 @@ SceUID open_dir(IOState &io, const char *path, const std::string &pref_path, con
     const auto translated_path = translate_path(path, device, io.device_paths);
 
     const auto dir_path = device::construct_emulated_path(device, translated_path, pref_path) / "/";
-    if (!fs::exists(dir_path))
+    if (!fs::exists(dir_path)) {
+        LOG_ERROR("File does not exist at: {} (target path: {})", dir_path.string(), path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     const DirPtr opened = create_shared_dir(dir_path);
-    if (!opened)
+    if (!opened) {
+        LOG_ERROR("Failed to open directory at: {} (target path: {})", dir_path.string(), path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     const auto normalized = device::construct_normalized_path(device, translated_path);
     const DirStats d{ path, normalized, dir_path, opened };
@@ -512,8 +535,10 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::stri
 int create_dir(IOState &io, const char *dir, int mode, const std::string &pref_path, const char *export_name, const bool recursive) {
     auto device = device::get_device(dir);
     const auto translated_path = translate_path(dir, device, io.device_paths);
-    if (translated_path.empty())
+    if (translated_path.empty()) {
+        LOG_ERROR("Failed to translate path: {}", dir);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     const auto emulated_path = device::construct_emulated_path(device, translated_path, pref_path);
     if (recursive)
@@ -525,8 +550,10 @@ int create_dir(IOState &io, const char *dir, int mode, const std::string &pref_p
 
     LOG_TRACE("{}: Creating new dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
 
-    if (!fs::create_directory(emulated_path))
+    if (!fs::create_directory(emulated_path)) {
+        LOG_ERROR("Failed to create directory at {} (target path: {})", emulated_path.string(), dir);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     return 0;
 }
@@ -547,12 +574,16 @@ int close_dir(IOState &io, const SceUID fd, const char *export_name) {
 
 int remove_dir(IOState &io, const char *dir, const std::string &pref_path, const char *export_name) {
     auto device = device::get_device(dir);
-    if (device == VitaIoDevice::_INVALID)
+    if (device == VitaIoDevice::_INVALID) {
+        LOG_ERROR("Cannot find device for path: {}", dir);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     const auto translated_path = translate_path(dir, device, io.device_paths);
-    if (translated_path.empty())
+    if (translated_path.empty()) {
+        LOG_ERROR("Cannot translate path: {}", dir);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
 
     LOG_TRACE("{}: Removing dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
 
