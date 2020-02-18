@@ -290,7 +290,7 @@ void draw_end(GuiState &gui, SDL_Window *window) {
 }
 
 void draw_ui(GuiState &gui, HostState &host) {
-    draw_main_menu_bar(gui);
+    draw_main_menu_bar(gui, host);
 
     ImGui::PushFont(gui.monospaced_font);
 
