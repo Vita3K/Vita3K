@@ -16,8 +16,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceLibc.h"
+
 #include <io/functions.h>
 #include <util/log.h>
+#include <util/lock_and_find.h>
+
+#include <dlmalloc.h>
+#include <v3kprintf.h>
 
 Ptr<void> g_dso;
 
@@ -756,8 +761,14 @@ EXPORT(int, mbtowc) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, memalign) {
-    return UNIMPLEMENTED();
+// TODO: most of this stuff is guessed- on the bus right now, I should look it up on google XD
+EXPORT(Ptr<void>, memalign, uint32_t alignment, uint32_t size) {
+    Address address = alloc(host.mem, size, "memalign");
+
+    STUBBED("No actual alignment.");
+    LOG_WARN_IF(address % alignment != 0, "Address {} does not fit alignment of {}.", log_hex(address), alignment);
+
+    return Ptr<void>(address);
 }
 
 EXPORT(int, memchr) {
@@ -848,9 +859,24 @@ EXPORT(int, perror) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, printf, char *fmt, va_list va_args) {
-    LOG_INFO("{}", fmt);
-    return 0;
+EXPORT(int, printf, const char *format, module::vargs args) {
+    std::vector<char> buffer(1024);
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+
+    const int result = utils::snprintf(buffer.data(), buffer.size(), format, *(thread->cpu), host.mem, args);
+
+    if (!result) {
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    }
+
+        LOG_INFO("{}", buffer.data());
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, printf_s) {
