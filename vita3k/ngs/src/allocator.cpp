@@ -7,9 +7,10 @@ namespace ngs {
     }
 
     void MemspaceBlockAllocator::init(const std::uint32_t memspace_size) {
-        Block main_block;
+        Block main_block = { };
         main_block.offset = 0;
         main_block.size = memspace_size;
+        main_block.free = true;
 
         blocks.push_back(main_block);
     }
