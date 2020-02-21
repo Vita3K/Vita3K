@@ -36,7 +36,7 @@ bool init(GLTextureCacheState &cache) {
         upload_bound_texture(*reinterpret_cast<const SceGxmTexture *>(texture), mem);
     };
 
-    return cache.textures.init(glGenTextures, glDeleteTextures);
+    return cache.textures.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
 }
 } // namespace texture
 
@@ -254,7 +254,7 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
     }
 
     if (choosen_minor_version >= 3) {
-        glDebugMessageCallback(debug_output_callback, nullptr);
+        glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
     }
 
     int total_extensions = 0;
@@ -300,8 +300,8 @@ bool create(std::unique_ptr<Context> &context) {
     context = std::make_unique<GLContext>();
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    return !(!texture::init(gl_context->texture_cache) || !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) || !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)
-        || !gl_context->uniform_buffer.init(glGenBuffers, glDeleteBuffers));
+    return !(!texture::init(gl_context->texture_cache) || !gl_context->vertex_array.init(reinterpret_cast<renderer::Generator *>(glGenVertexArrays), reinterpret_cast<renderer::Deleter *>(glDeleteVertexArrays)) || !gl_context->element_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)) || !gl_context->stream_vertex_buffers.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers))
+        || !gl_context->uniform_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)));
 }
 
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {
@@ -310,7 +310,7 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     rt = std::make_unique<GLRenderTarget>();
     GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
 
-    if (!render_target->renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) || !render_target->framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
+    if (!render_target->renderbuffers.init(reinterpret_cast<renderer::Generator *>(glGenRenderbuffers), reinterpret_cast<renderer::Deleter *>(glDeleteRenderbuffers)) || !render_target->framebuffer.init(reinterpret_cast<renderer::Generator *>(glGenFramebuffers), reinterpret_cast<renderer::Deleter *>(glDeleteFramebuffers))) {
         return false;
     }
 
@@ -318,7 +318,7 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
 
     if (features.is_programmable_blending_need_to_bind_color_attachment()) {
         depth_fb_index = 0;
-        render_target->color_attachment.init(glGenTextures, glDeleteTextures);
+        render_target->color_attachment.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
 
         glBindTexture(GL_TEXTURE_2D, render_target->color_attachment[0]);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, params.width, params.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
