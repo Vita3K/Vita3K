@@ -22,12 +22,14 @@
 #include <array>
 #include <cassert>
 
+namespace renderer {
+typedef void Generator(GLsizei, GLuint *);
+typedef void Deleter(GLsizei, const GLuint *);
+} // namespace renderer
+
 template <size_t Size>
 class GLObjectArray {
 public:
-    typedef void Generator(GLsizei, GLuint *);
-    typedef void Deleter(GLsizei, const GLuint *);
-
     GLObjectArray() {
         names.fill(0);
     }
@@ -38,7 +40,7 @@ public:
         names.fill(0);
     }
 
-    bool init(Generator *generator, Deleter *deleter) {
+    bool init(renderer::Generator *generator, renderer::Deleter *deleter) {
         assert(generator != nullptr);
         assert(deleter != nullptr);
         this->deleter = deleter;
@@ -65,5 +67,5 @@ private:
     const GLObjectArray &operator=(const GLObjectArray &);
 
     Names names;
-    Deleter *deleter = nullptr;
+    renderer::Deleter *deleter = nullptr;
 };
