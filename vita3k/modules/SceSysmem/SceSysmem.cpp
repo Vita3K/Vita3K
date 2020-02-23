@@ -23,9 +23,9 @@
 struct SceKernelAllocMemBlockOpt;
 
 struct SceKernelFreeMemorySizeInfo {
-    int size;         //!< sizeof(SceKernelFreeMemorySizeInfo)
-    int size_user;    //!< Free memory size for *_USER_RW memory
-    int size_cdram;   //!< Free memory size for USER_CDRAM_RW memory
+    int size; //!< sizeof(SceKernelFreeMemorySizeInfo)
+    int size_user; //!< Free memory size for *_USER_RW memory
+    int size_cdram; //!< Free memory size for USER_CDRAM_RW memory
     int size_phycont; //!< Free memory size for USER_MAIN_PHYCONT_*_RW memory
 };
 

@@ -275,8 +275,8 @@ np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const 
     if (error)
         *error = np::NpTrophyError::TROPHY_ERROR_NONE;
 
-#define TROPHY_RET_ERROR(err)                 \
-    if (error)                                \
+#define TROPHY_RET_ERROR(err)            \
+    if (error)                           \
         *error = np::NpTrophyError::err; \
     return np::trophy::INVALID_CONTEXT_HANDLE
 

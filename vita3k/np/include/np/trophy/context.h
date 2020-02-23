@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include <util/types.h>
 #include <np/common.h>
 #include <np/trophy/trp_parser.h>
+#include <util/types.h>
 
 #include <array>
 #include <cstdint>

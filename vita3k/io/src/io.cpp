@@ -465,7 +465,6 @@ int remove_file(IOState &io, const char *file, const std::string &pref_path, con
         LOG_ERROR("File does not exist at path: {} (target path: {})", emulated_path.string(), file);
     }
 
-
     LOG_TRACE("{}: Removing file {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
 
     return fs::remove(emulated_path);

@@ -22,7 +22,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-typedef void (SceFiberEntry)(SceUInt32 argOnInitialize, SceUInt32 argOnRun);
+typedef void(SceFiberEntry)(SceUInt32 argOnInitialize, SceUInt32 argOnRun);
 
 struct SceFiberOptParam {
     char reserved[128];

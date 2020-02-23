@@ -24,13 +24,13 @@
 
 enum SceKernelPowerTickType {
     /** Cancel all timers */
-        SCE_KERNEL_POWER_TICK_DEFAULT               = 0,
+    SCE_KERNEL_POWER_TICK_DEFAULT = 0,
     /** Cancel automatic suspension timer */
-        SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND  = 1,
+    SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND = 1,
     /** Cancel OLED-off timer */
-        SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF      = 4,
+    SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF = 4,
     /** Cancel OLED dimming timer */
-        SCE_KERNEL_POWER_TICK_DISABLE_OLED_DIMMING  = 6
+    SCE_KERNEL_POWER_TICK_DISABLE_OLED_DIMMING = 6
 };
 
 struct VitaTimeval {

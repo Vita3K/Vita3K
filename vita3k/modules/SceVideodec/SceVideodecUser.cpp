@@ -37,14 +37,14 @@ struct SceAvcdecFrameOptionRGBA {
 };
 
 union SceAvcdecFrameOption {
-    uint8_t                  reserved[16];
+    uint8_t reserved[16];
     SceAvcdecFrameOptionRGBA rgba;
 };
 
 struct SceAvcdecQueryDecoderInfo {
     uint32_t horizontal;
     uint32_t vertical;
-    uint32_t numOfRefFrames;  //!< Number of reference frames
+    uint32_t numOfRefFrames; //!< Number of reference frames
 };
 
 struct SceAvcdecDecoderInfo {
@@ -54,20 +54,20 @@ struct SceAvcdecDecoderInfo {
 struct SceAvcdecInfo {
     uint32_t numUnitsInTick;
     uint32_t timeScale;
-    uint8_t  fixedFrameRateFlag;
+    uint8_t fixedFrameRateFlag;
 
-    uint8_t  aspectRatioIdc;
+    uint8_t aspectRatioIdc;
     uint16_t sarWidth;
     uint16_t sarHeight;
 
-    uint8_t  colourPrimaries;
-    uint8_t  transferCharacteristics;
-    uint8_t  matrixCoefficients;
+    uint8_t colourPrimaries;
+    uint8_t transferCharacteristics;
+    uint8_t matrixCoefficients;
 
-    uint8_t  videoFullRangeFlag;
+    uint8_t videoFullRangeFlag;
 
-    uint8_t  picStruct[2];
-    uint8_t  ctType;
+    uint8_t picStruct[2];
+    uint8_t ctType;
 
     SceVideodecTimeStamp pts;
 };

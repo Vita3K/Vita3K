@@ -25,24 +25,24 @@
 struct SDL_TouchFingerEvent;
 
 enum SceTouchErrorCode {
-    SCE_TOUCH_ERROR_INVALID_ARG   = 0x80350001,
+    SCE_TOUCH_ERROR_INVALID_ARG = 0x80350001,
     SCE_TOUCH_ERROR_PRIV_REQUIRED = 0x80350002,
-    SCE_TOUCH_ERROR_FATAL         = 0x803500FF
+    SCE_TOUCH_ERROR_FATAL = 0x803500FF
 };
 
 enum SceTouchPortType {
-    SCE_TOUCH_PORT_FRONT   = 0,
-    SCE_TOUCH_PORT_BACK    = 1,
+    SCE_TOUCH_PORT_FRONT = 0,
+    SCE_TOUCH_PORT_BACK = 1,
     SCE_TOUCH_PORT_MAX_NUM = 2
 };
 
 struct SceTouchReport {
-    SceUInt8    id;
-    SceUInt8    force;
-    SceInt16    x;
-    SceInt16    y;
-    SceUInt8    reserved[8];
-    SceUInt16   info;
+    SceUInt8 id;
+    SceUInt8 force;
+    SceInt16 x;
+    SceInt16 y;
+    SceUInt8 reserved[8];
+    SceUInt16 info;
 };
 
 struct SceTouchPanelInfo {
@@ -60,10 +60,10 @@ struct SceTouchPanelInfo {
 };
 
 struct SceTouchData {
-    SceUInt64       timeStamp;
-    SceUInt32       status;
-    SceUInt32       reportNum;
-    SceTouchReport  report[SCE_TOUCH_MAX_REPORT];
+    SceUInt64 timeStamp;
+    SceUInt32 status;
+    SceUInt32 reportNum;
+    SceTouchReport report[SCE_TOUCH_MAX_REPORT];
 };
 
 int handle_touch_event(SDL_TouchFingerEvent &finger);
