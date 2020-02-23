@@ -19,4 +19,4 @@ add_library(
 )
 
 target_include_directories(ngs PUBLIC include)
-target_link_libraries(ngs PRIVATE util mem ffmpeg)
+target_link_libraries(ngs PRIVATE util mem codec)

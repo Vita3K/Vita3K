@@ -2,8 +2,7 @@
 
 #include <ngs/system.h>
 
-typedef struct AVCodecContext AVCodecContext;
-typedef struct AVCodec AVCodec;
+#include <codec/state.h>
 
 namespace ngs::atrac9 {
     struct BufferParameter {
@@ -49,10 +48,7 @@ namespace ngs::atrac9 {
 
     struct Module: public ngs::Module {
     private:
-        AVCodecContext *context;
-        AVCodec *codec;
-
-        bool init();
+        std::unique_ptr<Atrac9DecoderState> decoder;
 
     public:
         explicit Module();

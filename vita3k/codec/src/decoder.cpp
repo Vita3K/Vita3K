@@ -6,8 +6,8 @@ extern "C" {
 
 #include <cassert>
 
-DecoderSize DecoderState::get_size() {
-    return { 0, 0 };
+uint32_t DecoderState::get(DecoderQuery query) {
+    return 0;
 }
 
 void DecoderState::configure(void *options) {

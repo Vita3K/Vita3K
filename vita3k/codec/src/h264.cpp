@@ -25,8 +25,12 @@ uint32_t H264DecoderState::buffer_size(DecoderSize size) {
     return size.width * size.height * 3 / 2;
 }
 
-DecoderSize H264DecoderState::get_size() {
-    return { static_cast<uint32_t>(context->width), static_cast<uint32_t>(context->height) };
+uint32_t H264DecoderState::get(DecoderQuery query) {
+    switch (query) {
+        case DecoderQuery::WIDTH: return context->width;
+        case DecoderQuery::HEIGHT: return context->height;
+        default: return 0;
+    }
 }
 
 void H264DecoderState::send(const uint8_t *data, uint32_t size) {
@@ -65,7 +69,7 @@ void H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
     }
 
     if (size)
-        *size = get_size();
+        *size = { static_cast<uint32_t>(context->width), static_cast<uint32_t>(context->height) };
 
     av_frame_free(&frame);
 }

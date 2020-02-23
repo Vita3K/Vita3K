@@ -11,16 +11,39 @@ struct AVCodecContext;
 struct AVFormatContext;
 struct AVCodecParserContext;
 
-struct DecoderSize {
-    uint32_t width;
-    uint32_t height;
+union DecoderSize {
+    struct {
+        uint32_t width;
+        uint32_t height;
+    };
+    struct {
+        uint32_t samples;
+    };
+};
+
+// glGet sort of API to use virtual stuff
+enum class DecoderQuery {
+    // Video
+    WIDTH,
+    HEIGHT,
+
+    // Audio
+    CHANNELS,
+    BIT_RATE,
+    SAMPLE_RATE,
+
+    AT9_BLOCK_ALIGN,
+    AT9_SAMPLE_PER_SUPERFRAME,
+    AT9_FRAMES_IN_SUPERFRAME,
+    AT9_SUPERFRAME_SIZE,
 };
 
 struct DecoderState {
     AVCodecContext *context{};
 
-    virtual DecoderSize get_size();
+    virtual uint32_t get(DecoderQuery query);
 
+    // TODO: proper error handling (return bool?)
     virtual void flush();
     virtual void send(const uint8_t *data, uint32_t size) = 0;
     virtual void receive(uint8_t *data, DecoderSize *size = nullptr) = 0;
@@ -44,10 +67,10 @@ struct H264DecoderState : public DecoderState {
 
     static uint32_t buffer_size(DecoderSize size);
 
-    DecoderSize get_size() override;
+    uint32_t get(DecoderQuery query) override;
 
     void send(const uint8_t *data, uint32_t size) override;
-    void receive(uint8_t *data, DecoderSize *size) override;
+    void receive(uint8_t *data, DecoderSize *size = nullptr) override;
     void configure(void *options) override;
 
     H264DecoderState(uint32_t width, uint32_t height);
@@ -56,7 +79,7 @@ struct H264DecoderState : public DecoderState {
 
 struct MjpegDecoderState : public DecoderState {
     void send(const uint8_t *data, uint32_t size) override;
-    void receive(uint8_t *data, DecoderSize *size) override;
+    void receive(uint8_t *data, DecoderSize *size = nullptr) override;
 
     MjpegDecoderState();
 };
@@ -64,7 +87,20 @@ struct MjpegDecoderState : public DecoderState {
 struct Atrac9DecoderState : public DecoderState {
     AVCodecContext *context{};
 
-    Atrac9DecoderState();
+    uint32_t config_data;
+
+    uint32_t get_channel_count();
+    uint32_t get_sample_per_superframe();
+    uint32_t get_block_align();
+    uint32_t get_frames_in_superframe();
+    uint32_t get_superframe_size();
+
+    uint32_t get(DecoderQuery query) override;
+
+    void send(const uint8_t *data, uint32_t size) override;
+    void receive(uint8_t *data, DecoderSize *size = nullptr) override;
+
+    Atrac9DecoderState(uint32_t config_data);
 };
 
 struct PlayerState {
@@ -106,4 +142,5 @@ struct PlayerState {
 };
 
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height);
+void convert_f32_to_s16(const float *f32, int16_t *s16, uint32_t channels, uint32_t samples, uint32_t freq);
 void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest);

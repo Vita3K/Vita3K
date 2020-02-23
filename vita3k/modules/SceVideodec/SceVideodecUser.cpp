@@ -185,7 +185,8 @@ EXPORT(int, sceAvcdecDecodeAuNongameapp) {
 EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
     const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
 
-    return H264DecoderState::buffer_size(decoder_info->get_size());
+    return H264DecoderState::buffer_size(
+        { decoder_info->get(DecoderQuery::WIDTH), decoder_info->get(DecoderQuery::HEIGHT) });
 }
 
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
