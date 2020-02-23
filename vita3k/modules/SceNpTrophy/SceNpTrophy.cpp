@@ -121,16 +121,16 @@ static int copy_file_data_from_trophy_file(np::trophy::Context *context, const c
     return 0;
 }
 
-#define NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)                                            \
-    if (!host.np.trophy_state.inited) {                                                           \
-        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;                                               \
-    }                                                                                             \
-    if (!size) {                                                                                  \
-        return SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT;                                              \
-    }                                                                                             \
+#define NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)                                       \
+    if (!host.np.trophy_state.inited) {                                                      \
+        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;                                          \
+    }                                                                                        \
+    if (!size) {                                                                             \
+        return SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT;                                         \
+    }                                                                                        \
     np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle); \
-    if (!context) {                                                                               \
-        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;                                               \
+    if (!context) {                                                                          \
+        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;                                          \
     }
 
 EXPORT(int, sceNpTrophyGetGameIcon, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,

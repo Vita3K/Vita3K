@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <util/types.h>
 #include <kernel/types.h>
+#include <util/types.h>
 
 struct CPUState;
 struct HostState;

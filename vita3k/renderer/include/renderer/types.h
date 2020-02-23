@@ -3,8 +3,8 @@
 #include <crypto/hash.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
-#include <renderer/commands.h>
 #include <gxm/types.h>
+#include <renderer/commands.h>
 
 #include <array>
 #include <map>

@@ -1,6 +1,5 @@
 #pragma once
 
-
 enum SceSystemParamLang {
     SCE_SYSTEM_PARAM_LANG_JAPANESE,
     SCE_SYSTEM_PARAM_LANG_ENGLISH_US,

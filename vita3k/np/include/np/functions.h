@@ -28,7 +28,7 @@ struct CommunicationID;
 namespace np::trophy {
 using ContextHandle = std::int32_t;
 struct Context;
-} // namespace np
+} // namespace np::trophy
 
 struct NpState;
 struct NpTrophyState;

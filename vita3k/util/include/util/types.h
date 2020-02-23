@@ -227,5 +227,5 @@ typedef int SceUID;
 typedef int ScePID;
 #define PSP2_KERNEL_PROCESS_ID_SELF 0 //!< Current running process ID is always 0
 
-typedef char* SceName;
+typedef char *SceName;
 #define PSP2_UID_NAMELEN 31 //!< Maximum length for kernel object names
