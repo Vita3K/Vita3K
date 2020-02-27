@@ -329,6 +329,12 @@ void draw_ui(GuiState &gui, HostState &host) {
     if (gui.help_menu.about_dialog)
         draw_about_dialog(gui);
 
+    ImGui::PopFont();
+}
+
+void draw_live_area(GuiState &gui, HostState &host) {
+    ImGui::PushFont(gui.normal_font);
+
     if (gui.live_area.live_area_dialog)
         draw_live_area_dialog(gui, host);
     if (gui.live_area.manual_dialog)

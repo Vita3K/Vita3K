@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "private.h"
+#include "interface.h"
 
 #include <gui/functions.h>
 
@@ -657,7 +658,14 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
     ImGui::GetWindowDrawList()->AddRect(pos_GATE, ImVec2(pos_GATE.x + scal_GATE_size.x, pos_GATE.y + scal_GATE_size.y), IM_COL32(192, 192, 192, 255), 10.0f, ImDrawCornerFlags_All, 10.0f);
 
     ImGui::SetCursorPos(ImVec2(pos_GATE.x + (100.0f * scal.x), pos_GATE.y + (120.0f * scal.y)));
-    if (ImGui::Button("Start", BUTTON_SIZE)) {
+    
+    std::string state = "Start";
+    if (gui.game_selector.selected_title_id == host.io.title_id)
+        state = "Resume";
+    
+    if (ImGui::Button(state.c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(SDL_SCANCODE_X)) {
+        if (!gui.game_selector.selected_title_id.empty() && (gui.game_selector.selected_title_id != host.io.title_id))
+            exit_app(host, gui);
         gui.game_selector.selected_title_id = host.io.title_id;
         gui.live_area.live_area_dialog = false;
     }
@@ -751,8 +759,13 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
         }
 
         ImGui::SetCursorPos(ImVec2(display_size.x - (140.0f * scal.x), 14.0f * scal.y));
-        if (ImGui::Button("X", BUTTON_SIZE) || ImGui::IsKeyPressed(SDL_SCANCODE_H))
+        if (ImGui::Button("X", BUTTON_SIZE) || ImGui::IsKeyPressed(SDL_SCANCODE_C)) {
             gui.live_area.live_area_dialog = false;
+            if (!gui.game_selector.selected_title_id.empty()) {
+                exit_app(host, gui);
+            }
+        }
+
     }
 
     ImGui::End();

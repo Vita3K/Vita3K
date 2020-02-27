@@ -17,7 +17,10 @@
 
 #include "interface.h"
 
+#include <app/functions.h>
+#include <app/screen_render.h>
 #include <config/functions.h>
+#include <config/version.h>
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/load_self.h>
@@ -177,15 +180,15 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     return true;
 }
 
-static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {
+static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path) {
     if (path.empty())
         return InvalidApplicationPath;
 
-    if (run_type == app::AppRunType::Vpk) {
+    if (host.run_type == app::AppRunType::Vpk) {
         if (!install_vpk(host, gui, path)) {
             return FileNotFound;
         }
-    } else if (run_type == app::AppRunType::Extracted) {
+    } else if (host.run_type == app::AppRunType::Extracted) {
         host.io.title_id = string_utils::wide_to_utf(path);
     }
 
@@ -233,7 +236,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     init_device_paths(host.io);
     init_savedata_game_path(host.io, host.pref_path);
 
-    host.renderer->features.hardware_flip = host.cfg.hardware_flip;
+    //host.renderer->features.hardware_flip = host.cfg.hardware_flip;
 
     // Load pre-loaded libraries
     const char *const lib_load_list[] = {
@@ -286,6 +289,47 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
     }
 }
 
+void exit_app(HostState &host, GuiState &gui) {
+    stop_all_threads(host.kernel);
+    gui.game_selector.selected_title_id.clear();
+    host.run_type = app::AppRunType::Unknown;
+    //memset(&host.audio, 0 , sizeof(AudioState));
+    //memset(&host.kernel, 0 , sizeof(KernelState));
+    //memset(&host.mem, 0 , sizeof(MemState));
+    //memset(&host.display, 0, sizeof(DisplayState));
+    //memset(&host.renderer, 0 , sizeof(RendererPtr));
+    host.kernel.threads.clear();
+    host.kernel.waiting_threads.clear();
+    host.kernel.running_threads.clear();
+    host.kernel.tls.clear();
+    host.kernel.tls_address.reset();
+    host.kernel.tls_msize = 0;
+    host.kernel.tls_psize = 0;
+    host.kernel.export_nids.clear();
+    host.kernel.blocks.clear();
+
+    for (auto &aloc : host.mem.allocated_pages)
+        if ((aloc != 0) && (aloc != 1))
+            aloc = 0;
+    /*host.mem.memory.reset();
+    const size_t length = GB(4);
+    host.mem.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, length, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+    LOG_CRITICAL_IF(!host.mem.memory, "VirtualAlloc failed: {}", log_hex(GetLastError()));
+    DWORD old_protect = 0;
+    const BOOL ret = VirtualProtect(host.mem.memory.get(), host.mem.page_size, PAGE_NOACCESS, &old_protect);
+    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", log_hex(GetLastError()));*/
+    host.mem.generation = 0;
+    host.mem.generation_names.clear();
+    const Generation generation = ++host.mem.generation;
+    const std::lock_guard<std::mutex> lock(host.mem.generation_mutex);
+    host.mem.generation_names[generation] = "NULL";
+
+    app::gl_screen_renderer gl_renderer;
+    gl_renderer.destroy();
+    gui.imgui_state->do_clear_screen = true;
+    SDL_SetWindowTitle(host.window.get(), window_title);
+}
+
 bool handle_events(HostState &host, GuiState &gui) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -299,6 +343,12 @@ bool handle_events(HostState &host, GuiState &gui) {
             return false;
 
         case SDL_KEYDOWN:
+            if (!gui.game_selector.selected_title_id.empty() && event.key.keysym.sym == SDLK_h) {
+                if (host.cfg.show_live_area_screen)
+                    gui.live_area.live_area_dialog = !gui.live_area.live_area_dialog;
+                else
+                    exit_app(host, gui);
+            }
             if (event.key.keysym.sym == SDLK_g) {
                 auto &display = host.display;
 
@@ -340,8 +390,8 @@ bool handle_events(HostState &host, GuiState &gui) {
     return true;
 }
 
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {
-    if (load_app_impl(entry_point, host, gui, path, run_type) != Success) {
+ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path) {
+    if (load_app_impl(entry_point, host, gui, path) != Success) {
         std::string message = "Failed to load \"";
         message += string_utils::wide_to_utf(path);
         message += "\"";
@@ -352,9 +402,9 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
     if (!host.cfg.show_gui) {
         auto &imgui_render = host.display.imgui_render;
 
+        // Disable gui state
         bool old_imgui_render = imgui_render.load();
-        while (!imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render)) {
-        }
+        imgui_render.compare_exchange_weak(old_imgui_render, !old_imgui_render);
     }
 
 #ifdef USE_GDBSTUB

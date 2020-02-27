@@ -77,16 +77,17 @@ int main(int argc, char *argv[]) {
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    app::AppRunType run_type;
+    HostState host;
+
     if (cfg.run_title_id)
-        run_type = app::AppRunType::Extracted;
+        host.run_type = app::AppRunType::Extracted;
     else if (cfg.vpk_path)
-        run_type = app::AppRunType::Vpk;
+        host.run_type = app::AppRunType::Vpk;
     else
-        run_type = app::AppRunType::Unknown;
+        host.run_type = app::AppRunType::Unknown;
 
     std::wstring vpk_path_wide;
-    if (run_type == app::AppRunType::Vpk) {
+    if (host.run_type == app::AppRunType::Vpk) {
         vpk_path_wide = string_utils::utf_to_wide(*cfg.vpk_path);
     } else {
         SDL_Event ev;
@@ -100,11 +101,10 @@ int main(int argc, char *argv[]) {
     }
 
     // TODO: Clean this, ie. make load_app overloads called depending on run type
-    if (run_type == app::AppRunType::Extracted) {
+    if (host.run_type == app::AppRunType::Extracted) {
         vpk_path_wide = string_utils::utf_to_wide(*cfg.run_title_id);
     }
 
-    HostState host;
     if (!app::init(host, cfg, root_paths)) {
         app::error_dialog("Host initialisation failed.", host.window.get());
         return HostInitFailed;
@@ -117,66 +117,77 @@ int main(int argc, char *argv[]) {
     auto discord_rich_presence_old = host.cfg.discord_rich_presence;
 #endif
 
-    // Application not provided via argument, show game selector
-    while (run_type == app::AppRunType::Unknown) {
-        if (handle_events(host, gui)) {
-            gui::draw_begin(gui, host);
+    app::gl_screen_renderer gl_renderer;
 
+    while (handle_events(host, gui)) {
+        gui::draw_begin(gui, host);
+
+        //LOG_DEBUG("kernel size, threads: {}, run threads: {}", host.mem.allocated_pages.size(), host.kernel.running_threads.size());
+        gui::draw_live_area(gui, host);
+        //LOG_DEBUG("mem, allocated_pages: {}", host.mem.size());
+        // Application not provided via argument, show game selector
+        if (host.run_type == app::AppRunType::Unknown) {
 #if DISCORD_RPC
             discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
             gui::draw_ui(gui, host);
             gui::draw_game_selector(gui, host);
 
-            gui::draw_end(gui, host.window.get());
+            // TODO: Clean this, ie. make load_app overloads called depending on run type
+            if (!gui.game_selector.selected_title_id.empty()) {
+                vpk_path_wide = string_utils::utf_to_wide(gui.game_selector.selected_title_id);
+                host.run_type = app::AppRunType::Extracted;
+            }
         } else {
-            return QuitRequested;
+            if (host.kernel.threads.empty()) {
+                auto pos = 0;
+                for (auto &aloc : host.mem.allocated_pages) {
+                    if (aloc != 0)
+                        LOG_DEBUG("aloc: {}, pos: {}", aloc, pos);
+                    ++pos;
+                }
+                for (auto &gen_name : host.mem.generation_names) {
+                    if (!gen_name.second.empty())
+                        LOG_DEBUG("gen_name: {} & {}, pos: {}", gen_name.first, gen_name.second, pos);
+                    ++pos;
+                }
+
+                //LOG_DEBUG("page size: {}", host.mem.page_size);
+                Ptr<const void> entry_point;
+                if (const auto err = load_app(entry_point, host, gui, vpk_path_wide) != Success)
+                    return err;
+                if (const auto err = run_app(host, entry_point) != Success)
+                    return err;
+
+                gui.imgui_state->do_clear_screen = false;
+
+                if (!gl_renderer.init(host.base_path))
+                    return RendererInitFailed;
+            }
+
+            // Driver acto!
+            renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
+                host.io.title_id.c_str());
+
+            gl_renderer.render(host);
+
+            // Calculate FPS
+            app::calculate_fps(host);
+
+            gui::draw_common_dialog(gui, host);
+
+            if (host.cfg.performance_overlay)
+                gui::draw_perf_overlay(gui, host);
+
+            gui::draw_trophies_unlocked(gui, host);
+            if (host.display.imgui_render) {
+                gui::draw_ui(gui, host);
+            }
+
+            host.display.condvar.notify_all();
+            app::set_window_title(host);
         }
-
-        // TODO: Clean this, ie. make load_app overloads called depending on run type
-        if (!gui.game_selector.selected_title_id.empty()) {
-            vpk_path_wide = string_utils::utf_to_wide(gui.game_selector.selected_title_id);
-            run_type = app::AppRunType::Extracted;
-        }
-    }
-
-    Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, host, gui, vpk_path_wide, run_type) != Success)
-        return err;
-    if (const auto err = run_app(host, entry_point) != Success)
-        return err;
-
-    gui.imgui_state->do_clear_screen = false;
-
-    app::gl_screen_renderer gl_renderer;
-
-    if (!gl_renderer.init(host.base_path))
-        return RendererInitFailed;
-
-    while (handle_events(host, gui)) {
-        // Driver acto!
-        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.title_id.c_str());
-
-        gl_renderer.render(host);
-
-        // Calculate FPS
-        app::calculate_fps(host);
-
-        gui::draw_begin(gui, host);
-        gui::draw_common_dialog(gui, host);
-
-        if (host.cfg.performance_overlay)
-            gui::draw_perf_overlay(gui, host);
-
-        gui::draw_trophies_unlocked(gui, host);
-        if (host.display.imgui_render) {
-            gui::draw_ui(gui, host);
-        }
-
-        host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());
-        app::set_window_title(host);
     }
 
 #ifdef WIN32

@@ -30,7 +30,7 @@ class Root;
 namespace app {
 
 /// Describes the state of the application to be run
-enum class AppRunType {
+enum AppRunType {
     /// Run type is unknown
     Unknown,
     /// Extracted, files are as they are on console
