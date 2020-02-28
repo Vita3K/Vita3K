@@ -28,7 +28,8 @@ using UniformBufferSizes = std::array<std::uint32_t, 15>;
 struct SceGxmProgramParameter;
 struct SceGxmProgram;
 
-namespace shader::usse {
+namespace shader {
+namespace usse {
 /**
  * \brief Check if an instruction is a branch.
  * 
@@ -189,4 +190,5 @@ void analyze(USSEOffset end_offset, F read_func, H handler_func) {
     // Add dummy block
     handler_func({ end_offset + 1, 0, 0, -1 });
 }
-} // namespace shader::usse
+} // namespace usse
+} // namespace shader

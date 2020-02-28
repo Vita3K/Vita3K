@@ -23,12 +23,11 @@
 #include <util/fs.h>
 #include <util/optional.h>
 #include <util/vector_utils.h>
-#include <util/optional.h>
 
 // Enum based on members in Config file
 // Used for easier getting of options and their names for config files
 namespace config {
-enum file_config {
+enum class file_config {
 #define GENERATE_ENUM(option_type, option_name, option_default, member_name) \
     e_##member_name,
 
@@ -54,11 +53,11 @@ private:
 
     // Perform comparisons with optional settings
     void check_members(const ConfigState &rhs) {
-        if (rhs.vpk_path.has_value())
+        if (rhs.vpk_path)
             vpk_path = rhs.vpk_path;
-        if (rhs.run_title_id.has_value())
+        if (rhs.run_title_id)
             run_title_id = rhs.run_title_id;
-        if (rhs.recompile_shader_path.has_value())
+        if (rhs.recompile_shader_path)
             run_title_id = rhs.run_title_id;
 
         if (!rhs.config_path.empty())
@@ -151,7 +150,7 @@ public:
         switch (name) {
             CONFIG_LIST(SWITCH_NAMES)
 
-        case config::_INVALID:
+        case config::file_config::_INVALID:
         default: {
             return nullptr;
         }
@@ -163,7 +162,7 @@ public:
     // If the YAML looks outdated, call update_yaml() first, and then use this operator
     template <typename T>
     T get_from_yaml(const config::file_config &name) const {
-        return get_member<T>(this[name]);
+        return get_member<T>(this[static_cast<int>(name)]);
     }
 
     // Generate a YAML node based on the current values of the members.

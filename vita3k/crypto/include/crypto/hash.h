@@ -19,6 +19,8 @@
 
 #include <array>
 
+#include <util/preprocessor.h>
+
 using Sha256Hash = std::array<uint8_t, 32>;
 
 Sha256Hash sha256(const void *data, size_t size);
@@ -27,7 +29,7 @@ typedef std::array<char, 65> Sha256HashText;
 void hex_buf(const std::uint8_t *hash, char *dst, const std::size_t source_size);
 
 template <size_t N>
-constexpr std::array<char, (N * 2) + 1> hex(const std::array<uint8_t, N> &hash) {
+VITA3K_CONSTEXPR_FUNC std::array<char, (N * 2) + 1> hex(const std::array<uint8_t, N> &hash) {
     std::array<char, (N * 2) + 1> dst;
     hex_buf(hash.data(), &dst[0], N);
 

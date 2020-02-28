@@ -39,7 +39,7 @@ COMMAND_SET_STATE(region_clip) {
 }
 
 COMMAND_SET_STATE(program) {
-    const Ptr<const void> program = helper.pop<Ptr<const void>>();
+    const auto program = helper.pop<Ptr<const void>>();
     const bool is_fragment = helper.pop<bool>();
 
     if (is_fragment) {
@@ -75,12 +75,12 @@ COMMAND_SET_STATE(program) {
 COMMAND_SET_STATE(uniform) {
     const bool is_vertex = helper.pop<bool>();
     const SceGxmProgramParameter *parameter = helper.pop<SceGxmProgramParameter *>();
-    const void *data = helper.pop<const void *>();
+    auto *data = helper.pop<void *>();
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::UniformSetRequest request{ parameter, data };
-        gl::GLContext *gl_context = reinterpret_cast<gl::GLContext *>(render_context);
+        auto gl_context = reinterpret_cast<gl::GLContext *>(render_context);
 
         if (is_vertex) {
             gl_context->vertex_set_requests.push_back(std::move(request));
@@ -100,13 +100,13 @@ COMMAND_SET_STATE(uniform) {
 COMMAND_SET_STATE(uniform_buffer) {
     const bool is_vertex = helper.pop<bool>();
     const int block_num = helper.pop<int>();
-    const std::uint32_t size = helper.pop<std::uint32_t>();
-    const void *data = helper.pop<const void *>();
+    const auto size = helper.pop<std::uint32_t>();
+    auto *data = helper.pop<void *>();
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), is_vertex, block_num, size, data);
-        delete data;
+        free(data);
 
         break;
     }

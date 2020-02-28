@@ -34,7 +34,7 @@ public:
             queue_.pop();
         }
         cond_.notify_one();
-        return std::make_unique<T>(item);
+        return std::unique_ptr<T>(new T(item));
     }
 
     void push(const T &item) {

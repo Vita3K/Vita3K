@@ -8,7 +8,8 @@
 #include <mem/ptr.h>
 #include <util/log.h>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 namespace texture {
 
 void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
@@ -255,4 +256,5 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 }
 
 } // namespace texture
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

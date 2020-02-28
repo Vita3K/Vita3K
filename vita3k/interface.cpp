@@ -179,11 +179,11 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
 
 static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {
     if (path.empty())
-        return InvalidApplicationPath;
+        return ExitCode::InvalidApplicationPath;
 
     if (run_type == app::AppRunType::Vpk) {
         if (!install_vpk(host, gui, path)) {
-            return FileNotFound;
+            return ExitCode::FileNotFound;
         }
     } else if (run_type == app::AppRunType::Extracted) {
         host.io.title_id = string_utils::wide_to_utf(path);
@@ -221,8 +221,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
         const auto log_name{ log_directory / (string_utils::remove_special_chars(host.game_title) + " - [" + host.io.title_id + "].log") };
-        if (logging::add_sink(log_name) != Success)
-            return InitConfigFailed;
+        if (logging::add_sink(log_name) != ExitCode::Success)
+            return ExitCode::InitConfigFailed;
     }
 
     LOG_INFO("Title: {}", host.game_title);
@@ -253,7 +253,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
                 LOG_INFO("Pre-load module {} (at \"{}\") loaded", module->module_name, module_path);
             } else
-                return FileNotFound;
+                return ExitCode::FileNotFound;
         } else {
             LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
         }
@@ -268,11 +268,11 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
             LOG_INFO("Main executable {} ({}) loaded", module->module_name, EBOOT_PATH);
         } else
-            return FileNotFound;
+            return ExitCode::FileNotFound;
     } else
-        return FileNotFound;
+        return ExitCode::FileNotFound;
 
-    return Success;
+    return ExitCode::Success;
 }
 
 static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
@@ -350,13 +350,13 @@ bool handle_events(HostState &host, GuiState &gui) {
 }
 
 ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {
-    if (load_app_impl(entry_point, host, gui, path, run_type) != Success) {
+    if (load_app_impl(entry_point, host, gui, path, run_type) != ExitCode::Success) {
         std::string message = "Failed to load \"";
         message += string_utils::wide_to_utf(path);
         message += "\"";
         message += "\nSee console output for details.";
         app::error_dialog(message, host.window.get());
-        return ModuleLoadFailed;
+        return ExitCode::ModuleLoadFailed;
     }
     if (!host.cfg.show_gui) {
         auto &imgui_render = host.display.imgui_render;
@@ -375,7 +375,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
         discord::update_presence(host.io.title_id, host.game_title);
 #endif
 
-    return Success;
+    return ExitCode::Success;
 }
 
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
@@ -388,7 +388,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
     if (main_thread_id < 0) {
         app::error_dialog("Failed to init main thread.", host.window.get());
-        return InitThreadFailed;
+        return ExitCode::InitThreadFailed;
     }
 
     const ThreadStatePtr main_thread = util::find(main_thread_id, host.kernel.threads);
@@ -419,8 +419,8 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
     if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
         app::error_dialog("Failed to run main thread.", host.window.get());
-        return RunThreadFailed;
+        return ExitCode::RunThreadFailed;
     }
 
-    return Success;
+    return ExitCode::Success;
 }

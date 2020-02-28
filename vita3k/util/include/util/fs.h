@@ -17,16 +17,12 @@
 
 #pragma once
 
-#include <util/preprocessor.h>
-
-#ifdef COMPILE_MODERN_CPP
 #if VITA3K_CPP17
 #include <filesystem>
 namespace fs = std::filesystem;
 #elif VITA3K_CPP14
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
-#endif
 #else
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;

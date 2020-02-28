@@ -17,16 +17,17 @@
 
 #pragma once
 
-#include <util/types.h>
 #include <np/common.h>
 #include <np/trophy/trp_parser.h>
+#include <util/types.h>
 
 #include <array>
 #include <cstdint>
 
 struct IOState;
 
-namespace np::trophy {
+namespace np {
+namespace trophy {
 
 using ContextHandle = std::int32_t;
 
@@ -83,4 +84,5 @@ struct Context {
         const std::string &output_progress_path);
 };
 
-} // namespace np::trophy
+} // namespace trophy
+} // namespace np

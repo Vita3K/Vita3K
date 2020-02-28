@@ -9,7 +9,8 @@
 
 #include <algorithm>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 template <class T>
 static void uniform_4(GLint location, GLsizei count, const T *value);
 
@@ -263,4 +264,5 @@ bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int 
 
     return true;
 }
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

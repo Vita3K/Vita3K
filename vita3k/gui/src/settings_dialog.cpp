@@ -66,7 +66,11 @@ static bool change_pref_location(const std::string &input_path, const std::strin
         while (it != fs::directory_iterator{}) {
             // TODO: Move Vita directories
 
+#if VITA3K_CPP17 || VITA3K_CPP14
             std::error_code err{};
+#else
+            boost::system::error_code err{};
+#endif
             it.increment(err);
         }
     } catch (const std::exception &err) {
@@ -131,7 +135,7 @@ void get_modules_list(GuiState &gui, HostState &host) {
         for (auto &m : gui.modules)
             m.second = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), m.first) != host.cfg.lle_modules.end();
 
-        std::sort(gui.modules.begin(), gui.modules.end(), [](const auto &ma, const auto &mb) {
+        std::sort(gui.modules.begin(), gui.modules.end(), [](const std::pair<std::string, bool> &ma, const std::pair<std::string, bool> &mb) {
             if (ma.second == mb.second)
                 return ma.first < mb.first;
             return ma.second;

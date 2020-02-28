@@ -24,5 +24,6 @@ target_include_directories(util PUBLIC include)
 target_link_libraries(util PUBLIC spdlog)
 
 if(${STANDARD_NUM} LESS 14)
+	target_include_directories(util PUBLIC ${Boost_INCLUDE_DIR})
 	target_link_libraries(util PUBLIC ${Boost_LIBRARIES})
 endif()

@@ -22,11 +22,8 @@
 
 #include <host/functions.h>
 #include <host/state.h>
-
 #include <io/vfs.h>
-
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <pugixml.hpp>
 #include <sstream>
@@ -127,11 +124,17 @@ static bool get_game_info(GuiState &gui, HostState &host) {
         if (_wstat(game_path.generic_wstring().c_str(), &sb) < 0)
             return false;
 
-        auto updated = sb.st_mtime;
+        game_info[UPDATED].second = std::asctime(std::localtime(&sb.st_mtime));
 #else
-        std::time_t updated = fs::last_write_time(game_path);
+        auto fs_time = fs::last_write_time(game_path);
+
+#if VITA3K_CPP17 || VITA3K_CPP14
+        auto mod = decltype(fs_time)::clock::to_time_t(fs_time);
+        game_info[UPDATED].second = std::asctime(std::localtime(&mod));
+#else
+        game_info[UPDATED].second = std::asctime(std::localtime(&fs_time));
 #endif
-        game_info[UPDATED].second = std::asctime(std::localtime(&updated));
+#endif
 
         fs::recursive_directory_iterator end;
         for (fs::recursive_directory_iterator g(game_path); g != end; ++g) {

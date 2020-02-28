@@ -20,7 +20,8 @@
 
 #include <util/log.h>
 
-namespace shader::usse {
+namespace shader {
+namespace usse {
 
 //
 // Decoder helpers
@@ -129,10 +130,10 @@ static RegisterBank decode_src12_bank(Imm2 src12_bank, Imm1 bank_ext) {
 
 Swizzle4 decode_swizzle4(uint32_t encoded_swizzle) {
     return {
-        (SwizzleChannel)((encoded_swizzle & 0b000'000'000'111) >> 0),
-        (SwizzleChannel)((encoded_swizzle & 0b000'000'111'000) >> 3),
-        (SwizzleChannel)((encoded_swizzle & 0b000'111'000'000) >> 6),
-        (SwizzleChannel)((encoded_swizzle & 0b111'000'000'000) >> 9),
+        (SwizzleChannel)((encoded_swizzle & 0b000000000111) >> 0),
+        (SwizzleChannel)((encoded_swizzle & 0b000000111000) >> 3),
+        (SwizzleChannel)((encoded_swizzle & 0b000111000000) >> 6),
+        (SwizzleChannel)((encoded_swizzle & 0b111000000000) >> 9),
     };
 }
 
@@ -446,4 +447,5 @@ usse::RegisterFlags decode_modifier(usse::Imm2 mod) {
     return static_cast<usse::RegisterFlags>(0);
 }
 
-} // namespace shader::usse
+} // namespace usse
+} // namespace shader

@@ -228,7 +228,11 @@ void get_game_titles(GuiState &gui, HostState &host) {
             }
             gui.game_selector.games.push_back({ host.game_version, host.game_title, host.io.title_id });
         }
+#if VITA3K_CPP17 || VITA3K_CPP14
         std::error_code err{};
+#else
+        boost::system::error_code err{};
+#endif
         it.increment(err);
     }
 }

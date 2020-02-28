@@ -29,7 +29,8 @@
 #include <string>
 #include <vector>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 struct GLState : public renderer::State {
     GLContextPtr context;
 
@@ -38,4 +39,5 @@ struct GLState : public renderer::State {
     ProgramCache program_cache;
 };
 
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

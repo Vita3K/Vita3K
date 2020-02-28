@@ -22,7 +22,8 @@
 
 #include <cstring>
 
-namespace np::trophy {
+namespace np {
+namespace trophy {
 
 static constexpr std::uint32_t NP_TRP_HEADER_MAGIC = 0x004DA2DC;
 
@@ -139,4 +140,5 @@ const std::int32_t TRPFile::search_file(const char *name) {
     return -1;
 }
 
-} // namespace np::trophy
+} // namespace trophy
+} // namespace np

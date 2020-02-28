@@ -48,7 +48,7 @@ else()
         set(STANDARD_NUM 14)
     endif()
     if(WIN32)
-        set(CMAKE_CXX_FLAGS ${STANDARD_FLAG})
+        add_definitions("${STANDARD_FLAG}")
     endif()
 endif()
 
@@ -56,7 +56,7 @@ set(CMAKE_CXX_STANDARD ${STANDARD_NUM})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 if(NOT WIN32)
-    list(APPEND CMAKE_CXX_FLAGS ${STANDARD_FLAG})
+    list(APPEND CMAKE_CXX_FLAGS "${STANDARD_FLAG}")
 endif()
 
 if(WIN32)
@@ -64,12 +64,9 @@ if(WIN32)
                     "/Zc:__cplusplus" # Force defining and building as C++
                     "/EHsc" # C functions wrapped in extern "C" don't throw an exception
                     /D "WIN32" # Force definition of WIN32 macro (needed for submodules)
+                    /D "_WINSOCK_DEPRECATED_NO_WARNINGS"
                     /D "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS"
                     /D "_CRT_SECURE_NO_WARNINGS")
-endif()
-
-if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$"))
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -mavx -mf16c")
 endif()
 
 add_subdirectory(external)

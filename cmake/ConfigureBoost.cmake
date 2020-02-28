@@ -68,6 +68,8 @@ function(pre_configure_boost)
 			execute_process(COMMAND ${B2_EXEC}
 				link=static
 				threading=multi
+				variant=release
+				debug-symbols=on
 				cxxstd=${BOOST_CXX_STANDARD}
 				-j4
 				--build-dir=${BOOST_BUILDDIR}
@@ -105,15 +107,22 @@ endfunction()
 function(configure_boost)
 	set(Boost_USE_STATIC_LIBS ON)
 	set(Boost_USE_MULTITHREADED ON)
+	set(Boost_USE_RELEASE_LIBS ON)
+	if(CI)
+		set(Boost_USE_DEBUG_LIBS OFF)
+	endif()
 	set(Boost_NO_BOOST_CMAKE ON)
 
 	find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
 
-	add_definitions(-DBOOST_NO_CXX11_SCOPED_ENUMS -DBOOST_NO_SCOPED_ENUMS)
+	add_compile_options(-DBOOST_NO_CXX11_SCOPED_ENUMS -DBOOST_NO_SCOPED_ENUMS)
 
 	message(STATUS "Using Boost_VERSION: ${Boost_VERSION}")
 	message(STATUS "Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
 	message(STATUS "Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
 
-	include_directories(${Boost_INCLUDE_DIRS})
+	foreach(component ${BOOST_COMPONENTS})
+		list(APPEND ${Boost_LIBRARIES} "Boost::${component}")
+	endforeach()
+	set(Boost_LIBRARIES ${Boost_LIBRARIES} PARENT_SCOPE)
 endfunction(configure_boost)

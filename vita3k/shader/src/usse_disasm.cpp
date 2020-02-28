@@ -8,7 +8,9 @@
 
 using namespace shader::usse;
 
-namespace shader::usse::disasm {
+namespace shader {
+namespace usse {
+namespace disasm {
 
 std::string *disasm_storage = nullptr;
 
@@ -230,4 +232,6 @@ std::string swizzle_to_str(Swizzle<s> swizz, Imm4 write_mask, uint32_t shift) {
     return swizzstr;
 }
 
-} // namespace shader::usse::disasm
+} // namespace disasm
+} // namespace usse
+} // namespace shader

@@ -25,8 +25,6 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-using namespace std::string_literals;
-
 namespace gui {
 
 bool refresh_game_list(GuiState &gui, HostState &host) {

@@ -102,7 +102,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         return SCE_KERNEL_ERROR_ERROR;
     }
 
-    thread->cpu_context = std::make_unique<CPUContext>();
+    thread->cpu_context = std::unique_ptr<CPUContext>(new CPUContext());
     if (!thread->cpu_context) {
         return SCE_KERNEL_ERROR_ERROR;
     }

@@ -12,7 +12,8 @@
 
 #include <cmath>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 
 static GLenum translate_depth_func(SceGxmDepthFunc depth_func) {
     R_PROFILE(__func__);
@@ -348,4 +349,5 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
 
     return true;
 }
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

@@ -28,7 +28,8 @@
 
 #include <map>
 
-namespace shader::usse {
+namespace shader {
+namespace usse {
 
 template <typename Visitor>
 using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
@@ -586,10 +587,17 @@ optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
     };
 #undef INST
 
-    const auto matches_instruction = [instruction](const auto &matcher) { return matcher.Matches(instruction); };
+    const auto matches_instruction = [instruction](const USSEMatcher<V> &matcher) { return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? optional<const USSEMatcher<V>>(*iter) : std::nullopt;
+    return iter != table.end() ? optional<const USSEMatcher<V>>(*iter) :
+#if VITA3K_CPP17
+                               std::nullopt;
+#elif VITA3K_CPP14
+                               std::experimental::nullopt;
+#else
+                               boost::none;
+#endif
 }
 
 //
@@ -664,7 +672,7 @@ spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &blo
         }
 
         // Construct the IF
-        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+        cond_builder = std::unique_ptr<spv::Builder::If>(new spv::Builder::If(pred_v, spv::SelectionControlMaskNone, b));
     }
 
     const auto last_pc = cur_pc;
@@ -681,7 +689,7 @@ spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &blo
 
             // Recompile the instruction, to the current block
             auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
-            if (decoder.has_value())
+            if (decoder)
                 decoder.value().call(visitor, cur_instr);
             else
                 LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
@@ -757,4 +765,5 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     b.leaveFunction();
 }
 
-} // namespace shader::usse
+} // namespace usse
+} // namespace shader

@@ -100,7 +100,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProg
 bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     switch (state.current_backend) {
     case Backend::OpenGL: {
-        return gl::create(vp, static_cast<gl::GLState &>(state), program, gxp_ptr_map, base_path, title_id);
+        return gl::create(vp, dynamic_cast<gl::GLState &>(state), program, gxp_ptr_map, base_path, title_id);
     }
 
     default: {
@@ -115,13 +115,13 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
 bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend) {
     switch (backend) {
     case Backend::OpenGL:
-        state = std::make_unique<gl::GLState>();
+        state = std::unique_ptr<gl::GLState>(new gl::GLState());
         if (!gl::create(window, state))
             return false;
         break;
 #ifdef USE_VULKAN
     case Backend::Vulkan:
-        state = std::make_unique<vulkan::VulkanState>();
+        state = std::unique_ptr<gl::GLState>(new gl::GLState());
         if (!vulkan::create(window, state))
             return false;
         break;

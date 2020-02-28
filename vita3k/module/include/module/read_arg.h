@@ -21,6 +21,7 @@
 #include "bridge_types.h"
 
 #include <cpu/functions.h>
+#include <util/preprocessor.h>
 
 namespace module {
 class vargs;
@@ -28,14 +29,14 @@ class vargs;
 
 // Read 32-bit (or smaller) values from a single register.
 template <typename T>
-std::enable_if_t<sizeof(T) <= 4, T> read_from_gpr(CPUState &cpu, const ArgLayout &arg) {
+typename std::enable_if<sizeof(T) <= 4, T>::type read_from_gpr(CPUState &cpu, const ArgLayout &arg) {
     const uint32_t reg = read_reg(cpu, arg.offset);
     return static_cast<T>(reg);
 }
 
 // Read 64-bit values from 2 registers.
 template <typename T>
-std::enable_if_t<sizeof(T) == 8, T> read_from_gpr(CPUState &cpu, const ArgLayout &arg) {
+typename std::enable_if<sizeof(T) == 8, T>::type read_from_gpr(CPUState &cpu, const ArgLayout &arg) {
     const uint64_t lo32 = read_reg(cpu, arg.offset);
     const uint64_t hi32 = read_reg(cpu, arg.offset + 1);
     const uint64_t both = lo32 | (hi32 << 32);
@@ -50,7 +51,7 @@ T read_from_fp(CPUState &cpu, const ArgLayout &arg) {
 }
 
 // Read variable from register or stack, as specified by arg layout.
-template <typename T>
+template <typename T, typename std::enable_if<!std::is_same<T, module::vargs>::value>::type * = nullptr>
 T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
     switch (arg.location) {
     case ArgLocation::gpr:
@@ -61,10 +62,15 @@ T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
         return *Ptr<T>(address_on_stack).get(mem);
     }
     case ArgLocation::fp:
-        if constexpr (std::is_same_v<T, float>)
-            return read_from_fp<T>(cpu, arg);
+        VITA3K_IF_CONSTEXPR(std::is_same<T, float>::value)
+        return read_from_fp<T>(cpu, arg);
     }
 
+    return T();
+}
+
+template <typename T, typename std::enable_if<std::is_same<T, module::vargs>::value>::type * = nullptr>
+T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
     return T();
 }
 
@@ -77,9 +83,10 @@ Arg read(CPUState &cpu, const ArgsLayout<Args...> &args, const LayoutArgsState &
 
     // Note (bentokun): The else block was intentionally made to workaround evaluation
     // fault where MSVC evaluates the rest of the function when the Arg type is vargs
-    if constexpr (std::is_same_v<Arg, module::vargs>) {
+    VITA3K_IF_CONSTEXPR(std::is_same<Arg, module::vargs>::value) {
         return make_vargs<Arg>(state);
-    } else {
+    }
+    else {
         const ArmType bridged = read<ArmType>(cpu, args[index], mem);
         return BridgeTypes<Arg>::arm_to_host(bridged, mem);
     }

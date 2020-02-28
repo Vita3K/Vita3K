@@ -42,8 +42,8 @@ std::vector<spdlog::sink_ptr> sinks;
 ExitCode init(const Root &root_paths) {
     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 
-    if (add_sink(root_paths.get_base_path_string() / LOG_FILE_NAME) != Success)
-        return InitConfigFailed;
+    if (add_sink(root_paths.get_base_path_string() / LOG_FILE_NAME) != ExitCode::Success)
+        return ExitCode::InitConfigFailed;
 
     spdlog::set_error_handler([](const std::string &msg) {
         std::cerr << "spdlog error: " << msg << std::endl;
@@ -51,7 +51,7 @@ ExitCode init(const Root &root_paths) {
     });
 
     spdlog::flush_on(spdlog::level::debug);
-    return Success;
+    return ExitCode::Success;
 }
 
 void set_level(spdlog::level::level_enum log_level) {
@@ -67,7 +67,7 @@ ExitCode add_sink(const fs::path &log_path) {
 #endif
     } catch (const spdlog::spdlog_ex &ex) {
         std::cerr << "File log initialization failed: " << ex.what() << std::endl;
-        return InitConfigFailed;
+        return ExitCode::InitConfigFailed;
     }
 
 #ifdef _MSC_VER
@@ -78,7 +78,7 @@ ExitCode add_sink(const fs::path &log_path) {
 
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("vita3k logger", begin(sinks), end(sinks)));
     spdlog::set_pattern(LOG_PATTERN);
-    return Success;
+    return ExitCode::Success;
 }
 
 typedef std::set<std::string> NameSet;

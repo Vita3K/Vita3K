@@ -137,20 +137,25 @@ struct CommandHelper {
     }
 };
 
-template <typename Head, typename... Args>
-bool do_command_push_data(CommandHelper &helper, Head arg1, Args... args2) {
+template <typename Head, typename... Args, typename std::enable_if<0 == sizeof...(Args)>::type * = nullptr>
+bool do_command_push_data(CommandHelper &helper, Head arg1) {
     if (!helper.push(arg1)) {
         return false;
-    }
-
-    if constexpr (sizeof...(args2) > 0) {
-        return do_command_push_data(helper, args2...);
     }
 
     return true;
 }
 
-template <typename... Args>
+template <typename Head, typename... Args, typename std::enable_if<(0 < sizeof...(Args))>::type * = nullptr>
+bool do_command_push_data(CommandHelper &helper, Head arg1, Args... args2) {
+    if (!helper.push(arg1)) {
+        return false;
+    }
+
+    return do_command_push_data(helper, args2...);
+}
+
+template <typename... Args, typename std::enable_if<(0 < sizeof...(Args))>::type * = nullptr>
 Command *make_command(const CommandOpcode opcode, int *status, Args... arguments) {
     Command *new_command = new Command;
     new_command->opcode = opcode;
@@ -159,12 +164,22 @@ Command *make_command(const CommandOpcode opcode, int *status, Args... arguments
 
     CommandHelper helper(new_command);
 
-    if constexpr (sizeof...(arguments) > 0) {
-        if (!do_command_push_data(helper, arguments...)) {
-            delete new_command;
-            return nullptr;
-        }
+    if (!do_command_push_data(helper, arguments...)) {
+        delete new_command;
+        return nullptr;
     }
+
+    return new_command;
+}
+
+template <typename... Args, typename std::enable_if<(0 == sizeof...(Args))>::type * = nullptr>
+Command *make_command(const CommandOpcode opcode, int *status) {
+    Command *new_command = new Command;
+    new_command->opcode = opcode;
+    new_command->status = status;
+    new_command->next = nullptr;
+
+    CommandHelper helper(new_command);
 
     return new_command;
 }

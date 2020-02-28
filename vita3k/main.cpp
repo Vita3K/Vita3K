@@ -48,19 +48,20 @@ int main(int argc, char *argv[]) {
     if (!fs::exists(root_paths.get_pref_path()))
         fs::create_directories(root_paths.get_pref_path());
 
-    if (logging::init(root_paths) != Success)
-        return InitConfigFailed;
+    if (logging::init(root_paths) != ExitCode::Success)
+        return static_cast<int>(ExitCode::InitConfigFailed);
 
     ConfigState cfg{};
-    if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
-        if (err == QuitRequested) {
-            if (cfg.recompile_shader_path.has_value()) {
+    auto err = config::init_config(cfg, argc, argv, root_paths);
+    if (err != ExitCode::Success) {
+        if (err == ExitCode::QuitRequested) {
+            if (cfg.recompile_shader_path) {
                 LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
                 shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
             }
-            return Success;
+            return static_cast<int>(ExitCode::Success);
         }
-        return InitConfigFailed;
+        return static_cast<int>(ExitCode::InitConfigFailed);
     }
 
     LOG_INFO("{}", window_title);
@@ -72,7 +73,7 @@ int main(int argc, char *argv[]) {
     std::atexit(SDL_Quit);
     if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC | SDL_INIT_VIDEO) < 0) {
         app::error_dialog("SDL initialisation failed.");
-        return SDLInitFailed;
+        return static_cast<int>(ExitCode::SDLInitFailed);
     }
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
     HostState host;
     if (!app::init(host, cfg, root_paths)) {
         app::error_dialog("Host initialisation failed.", host.window.get());
-        return HostInitFailed;
+        return static_cast<int>(ExitCode::HostInitFailed);
     }
 
     GuiState gui;
@@ -130,7 +131,7 @@ int main(int argc, char *argv[]) {
 
             gui::draw_end(gui, host.window.get());
         } else {
-            return QuitRequested;
+            return static_cast<int>(ExitCode::QuitRequested);
         }
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
@@ -141,17 +142,19 @@ int main(int argc, char *argv[]) {
     }
 
     Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, host, gui, vpk_path_wide, run_type) != Success)
-        return err;
-    if (const auto err = run_app(host, entry_point) != Success)
-        return err;
+    err = load_app(entry_point, host, gui, vpk_path_wide, run_type);
+    if (err != ExitCode::Success)
+        return static_cast<int>(err);
+    err = run_app(host, entry_point);
+    if (err != ExitCode::Success)
+        return static_cast<int>(err);
 
     gui.imgui_state->do_clear_screen = false;
 
     app::gl_screen_renderer gl_renderer;
 
     if (!gl_renderer.init(host.base_path))
-        return RendererInitFailed;
+        return static_cast<int>(ExitCode::RendererInitFailed);
 
     while (handle_events(host, gui)) {
         // Driver acto!
@@ -185,5 +188,5 @@ int main(int argc, char *argv[]) {
 
     app::destroy(host, gui.imgui_state.get());
 
-    return Success;
+    return static_cast<int>(ExitCode::Success);
 }

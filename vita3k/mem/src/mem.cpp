@@ -18,11 +18,9 @@
 #include <mem/mem.h>
 #include <util/align.h>
 #include <util/log.h>
-#include <util/preprocessor.h>
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
 #include <cstring>
 
 #ifndef WIN32

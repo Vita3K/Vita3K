@@ -1,6 +1,6 @@
 #pragma once
 
-enum ExitCode {
+enum class ExitCode {
     Success = 0,
     QuitRequested,
     FileNotFound,

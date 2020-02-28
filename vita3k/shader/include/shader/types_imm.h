@@ -2,7 +2,8 @@
 
 #include <cstdint>
 
-namespace shader::usse {
+namespace shader {
+namespace usse {
 
 using Imm1 = uint8_t;
 using Imm2 = uint8_t;
@@ -69,4 +70,5 @@ using Imm62 = uint64_t;
 using Imm63 = uint64_t;
 using Imm64 = uint64_t;
 
-} // namespace shader::usse
+} // namespace usse
+} // namespace shader

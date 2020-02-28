@@ -8,7 +8,8 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-namespace renderer::texture {
+namespace renderer {
+namespace texture {
 void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_t height) {
     SwsContext *context = sws_getContext(width, height, AV_PIX_FMT_YUV420P, width, height, AV_PIX_FMT_RGB24,
         0, nullptr, nullptr, nullptr);
@@ -38,4 +39,5 @@ void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_
     assert(error == height);
     sws_freeContext(context);
 }
-} // namespace renderer::texture
+} // namespace texture
+} // namespace renderer

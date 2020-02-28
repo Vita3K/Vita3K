@@ -8,4 +8,4 @@ add_library(
 )
 
 target_include_directories(crypto PUBLIC include)
-target_link_libraries(crypto PRIVATE crypto-algorithms)
+target_link_libraries(crypto PRIVATE crypto-algorithms util)

@@ -3,7 +3,8 @@
 #include <gxm/functions.h>
 #include <util/log.h>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 namespace texture {
 
 // SceGxmTextureSwizzle1Mode
@@ -560,4 +561,5 @@ GLenum translate_minmag_filter(SceGxmTextureFilter src) {
 }
 
 } // namespace texture
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

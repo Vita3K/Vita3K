@@ -33,7 +33,8 @@ struct GxmContextState;
 struct MemState;
 struct FeatureState;
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 
 // Compile program.
 SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_cache, ShaderCache &fragment_cache,
@@ -109,4 +110,5 @@ size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 bool init(GLTextureCacheState &cache);
 
 } // namespace texture
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

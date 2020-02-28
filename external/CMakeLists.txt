@@ -38,6 +38,7 @@ target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf"
 add_library(elfio INTERFACE)
 target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio/elfio")
 
+option(SPDLOG_BUILD_EXAMPLES "Build examples" OFF)
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
 target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1 SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
@@ -82,6 +83,7 @@ elseif(LINUX)
 	target_link_libraries(nativefiledialog ${GTK3_LIBRARIES})
 endif()
 
+option(BUILD_EXAMPLES "Build the examples project as well" OFF)
 add_subdirectory(libfat16)
 
 # The imgui target is including both imgui and imgui_club.
@@ -192,16 +194,6 @@ add_subdirectory(pugixml)
 
 add_library(CLI11 INTERFACE)
 target_include_directories(CLI11 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cli11")
-if(${STANDARD_NUM} GREATER 11)
-	if(${STANDARD_NUM} GREATER 14)
-		target_compile_definitions(CLI11 INTERFACE CLI11_STD_OPTIONAL=1)
-	else()
-		target_compile_definitions(CLI11 INTERFACE CLI11_STD_OPTIONAL=0 CLI11_STD_EXPERIMENTAL_OPTIONAL=1)
-	endif()
-else()
-	target_link_libraries(CLI11 PRIVATE ${Boost_LIBRARIES})
-	target_compile_definitions(CLI11 INTERFACE CLI11_STD_OPTIONAL=0 CLI11_STD_EXPERIMENTAL_OPTIONAL=0 CLI11_BOOST_OPTIONAL=1)
-endif()
 
 if(USE_VULKAN)
 	find_package(Vulkan REQUIRED)

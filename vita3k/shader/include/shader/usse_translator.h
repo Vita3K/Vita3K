@@ -22,7 +22,6 @@
 #include <shader/usse_program_analyzer.h>
 #include <shader/usse_translator_types.h>
 #include <shader/usse_utilities.h>
-#include <util/preprocessor.h>
 #include <util/optional.h>
 
 #include <SPIRV/SpvBuilder.h>
@@ -32,7 +31,8 @@
 
 struct FeatureState;
 
-namespace shader::usse {
+namespace shader {
+namespace usse {
 
 // For debugging SPIR-V output
 static uint32_t instr_idx = 0;
@@ -643,4 +643,5 @@ struct USSERecompiler final {
     spv::Function *get_or_recompile_block(const usse::USSEBlock &block);
 };
 
-} // namespace shader::usse
+} // namespace usse
+} // namespace shader

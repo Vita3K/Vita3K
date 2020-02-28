@@ -52,6 +52,7 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
 
         if (result == NFD_OKAY) {
             install_pup(fw_path, host.pref_path);
+            LOG_INFO("Extraction complete!");
             get_firmware_version(host);
         } else if (result == NFD_CANCEL) {
             gui.file_menu.firmware_install_dialog = false;

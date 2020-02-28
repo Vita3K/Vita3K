@@ -21,6 +21,12 @@ endif()
 
 if(${STANDARD_NUM} LESS 14)
 	configure_boost()
+else()
+	add_compile_options(-DVITA3K_CPP${STANDARD_NUM})
+endif()
+
+if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$"))
+    add_compile_options(-msse2 -mavx -mf16c)
 endif()
 
 if(USE_GDBSTUB)

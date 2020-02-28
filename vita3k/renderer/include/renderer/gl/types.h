@@ -35,7 +35,8 @@ typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 
 struct SceGxmProgramParameter;
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0; ///< The slot that has our color attachment (for programmable blending) - image2D.
 static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER = 12; ///< The slot that has our color attachment (for programmable blending) - sampler2D.
 
@@ -57,7 +58,7 @@ typedef std::map<GLuint, GLenum> UniformTypes;
 
 struct UniformSetRequest {
     const SceGxmProgramParameter *parameter;
-    const void *data;
+    void *data;
 };
 
 struct GLTextureCacheState : public renderer::TextureCacheState {
@@ -108,4 +109,5 @@ struct GLRenderTarget : public renderer::RenderTarget {
     GLObjectArray<1> framebuffer;
     GLObjectArray<1> color_attachment;
 };
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

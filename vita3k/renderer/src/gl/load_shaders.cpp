@@ -12,10 +12,11 @@
 #include <fstream>
 #include <utility>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 static std::string load_shader(const char *hash, const char *extension, const char *base_path) {
     const auto shader_path = fs_utils::construct_file_name(base_path, "shaders", hash, extension);
-    std::ifstream is(shader_path, std::ifstream::binary);
+    std::ifstream is(shader_path.generic_string(), std::ifstream::binary);
     if (!is) {
         return std::string();
     }
@@ -39,7 +40,7 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
     const auto shader_base_path = fs_utils::construct_file_name(base_path, shader_base_dir, hash, extension);
 
     // Dump missing shader GLSL.
-    std::ofstream glsl_file(shader_base_path);
+    std::ofstream glsl_file(shader_base_path.generic_string());
     if (glsl_file) {
         glsl_file << source;
         glsl_file.close();
@@ -47,17 +48,17 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
 
     const auto write_data_with_ext = [&](const char *ext, const char *data, const std::int64_t size) {
         // Dump missing shader binary.
-        fs::path out_path{ shader_base_path };
+        fs::path out_path{ shader_base_path.generic_string() };
         out_path.replace_extension(ext);
 
         if (size == -1) {
-            std::ofstream of{ out_path };
+            std::ofstream of{ out_path.generic_string() };
             if (!of.fail()) {
                 of << data; // This is a normal string
                 of.close();
             }
         } else {
-            std::ofstream of{ out_path, std::ofstream::binary };
+            std::ofstream of{ out_path.generic_string(), std::ofstream::binary };
             if (!of.fail()) {
                 of.write(data, size);
                 of.close();
@@ -73,7 +74,7 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
 std::string load_shader(const SceGxmProgram &program, const FeatureState &features, const char *base_path, const char *title_id) {
     const Sha256Hash hash_bytes = sha256(&program, program.size);
     auto shader_type_to_str = [](SceGxmProgramType type) {
-        return type == Vertex ? "vert" : type == Fragment ? "frag" : "unknown";
+        return type == Vertex ? "vert" : static_cast<SyncObjectSubject>(type) == Fragment ? "frag" : "unknown";
     };
 
     SceGxmProgramType program_type = program.get_type();
@@ -97,4 +98,5 @@ std::string load_shader(const SceGxmProgram &program, const FeatureState &featur
     return source;
 }
 
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

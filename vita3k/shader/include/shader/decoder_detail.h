@@ -13,6 +13,17 @@
 #include <cassert>
 #include <tuple>
 
+#if VITA3K_CPP17 || VITA3K_CPP14
+using std::integer_sequence;
+using std::make_index_sequence;
+#else
+#include <boost/mp11/integer_sequence.hpp>
+using boost::mp11::integer_sequence;
+
+#include <boost/mp11/bind.hpp>
+using boost::mp11::make_index_sequence;
+#endif
+
 namespace shader {
 namespace decoder {
 namespace detail {
@@ -35,7 +46,7 @@ private:
      * A '0' in a bitstring indicates that a zero must be present at that bit position.
      * A '1' in a bitstring indicates that a one must be present at that bit position.
      */
-    static auto GetMaskAndExpect(const char *const bitstring) {
+    static std::tuple<opcode_type, opcode_type> GetMaskAndExpect(const char *const bitstring) {
         const auto one = static_cast<opcode_type>(1);
         opcode_type mask = 0, expect = 0;
         for (size_t i = 0; i < opcode_bitsize; i++) {
@@ -62,7 +73,7 @@ private:
      * An argument is specified by a continuous string of the same character.
      */
     template <size_t N>
-    static auto GetArgInfo(const char *const bitstring) {
+    static std::tuple<std::array<opcode_type, N>, std::array<size_t, N>> GetArgInfo(const char *const bitstring) {
         const auto one = static_cast<opcode_type>(1);
         std::array<opcode_type, N> masks = {};
         std::array<size_t, N> shifts = {};
@@ -111,7 +122,7 @@ private:
     template <typename Visitor, typename... Args, typename CallRetT>
     struct VisitorCaller<CallRetT (Visitor::*)(Args...)> {
         template <size_t... iota>
-        static auto Make(std::integer_sequence<size_t, iota...>,
+        static std::function<CallRetT(Visitor &, opcode_type)> Make(integer_sequence<size_t, iota...>,
             CallRetT (Visitor::*const fn)(Args...),
             const std::array<opcode_type, sizeof...(iota)> arg_masks,
             const std::array<size_t, sizeof...(iota)> arg_shifts) {
@@ -128,7 +139,7 @@ private:
     template <typename Visitor, typename... Args, typename CallRetT>
     struct VisitorCaller<CallRetT (Visitor::*)(Args...) const> {
         template <size_t... iota>
-        static auto Make(std::integer_sequence<size_t, iota...>,
+        static std::function<CallRetT(Visitor &, opcode_type)> Make(integer_sequence<size_t, iota...>,
             CallRetT (Visitor::*const fn)(Args...) const,
             const std::array<opcode_type, sizeof...(iota)> arg_masks,
             const std::array<size_t, sizeof...(iota)> arg_shifts) {
@@ -151,12 +162,16 @@ public:
      * See also: GetMaskAndExpect and GetArgInfo for format of bitstring.
      */
     template <typename FnT>
-    static auto GetMatcher(FnT fn, const char *const name, const char *const bitstring) {
+    static MatcherT GetMatcher(FnT fn, const char *const name, const char *const bitstring) {
         constexpr size_t args_count = util::FunctionInfo<FnT>::args_count;
-        using Iota = std::make_index_sequence<args_count>;
+        using Iota = make_index_sequence<args_count>;
 
-        const auto [mask, expect] = GetMaskAndExpect(bitstring);
-        const auto [arg_masks, arg_shifts] = GetArgInfo<args_count>(bitstring);
+        const auto mask_and_expect = GetMaskAndExpect(bitstring);
+        const auto mask = std::get<0>(mask_and_expect), expect = std::get<1>(mask_and_expect);
+        const auto arg_info = GetArgInfo<args_count>(bitstring);
+        const auto arg_masks = std::get<0>(arg_info);
+        const auto arg_shifts = std::get<1>(arg_info);
+
         const auto proxy_fn = VisitorCaller<FnT>::Make(Iota(), fn, arg_masks, arg_shifts);
 
         return MatcherT(name, mask, expect, proxy_fn);

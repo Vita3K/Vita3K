@@ -22,7 +22,8 @@
 
 #include <gxm/types.h>
 
-namespace renderer::texture {
+namespace renderer {
+namespace texture {
 
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
@@ -473,4 +474,5 @@ void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const 
     }
 }
 
-} // namespace renderer::texture
+} // namespace texture
+} // namespace renderer
