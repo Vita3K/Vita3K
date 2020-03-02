@@ -1,9 +1,9 @@
 @echo off
 
 echo Please choose your preferred Visual Studio version.
-choice /c 79 /n /t 3 /d 7 /m "Press '7' for VS 2017 or '9' for VS 2019: "
-if errorlevel 1 set vs_version=Visual Studio 15 2017 Win64
-if errorlevel 2 set vs_version=Visual Studio 16 2019
+choice /c 97 /n /t 3 /d 7 /m "Press '9' for VS 2019 or '7' for VS 2017: "
+if errorlevel 1 set vs_version=Visual Studio 16 2019
+if errorlevel 2 set vs_version=Visual Studio 15 2017 Win64
 
 REM CI uses pre-built Boost
 IF "%CI%"=="" IF NOT EXIST external\boost-build (
