@@ -1,38 +1,34 @@
 version: '{build}'
 
-image: Visual Studio 2017
+image: Visual Studio 2019
 
 environment:
   global:
-    BOOST_ROOT: C:\Libraries\boost_1_67_0
-    BOOST_INCLUDEDIR: C:\Libraries\boost_1_67_0\boost
-    BOOST_LIBRARYDIR: C:\Libraries\boost_1_67_0\lib64-msvc-14.1
+    BOOST_ROOT: C:\Libraries\boost_1_71_0
+    BOOST_INCLUDEDIR: C:\Libraries\boost_1_71_0\boost
+    BOOST_LIBRARYDIR: C:\Libraries\boost_1_71_0\lib64-msvc-14.2
 
 install:
  - ps: | # Set env vars for versioning
     $commit_date = $env:APPVEYOR_REPO_COMMIT_TIMESTAMP.Substring(0,10)
     $commit_sha = $env:APPVEYOR_REPO_COMMIT.Substring(0,8)
     $commit_tag = $(git describe --tags $(git rev-list --tags --max-count=1))
-    
+
     $env:AVVER = "{0}-{1}" -f $commit_tag, $env:APPVEYOR_BUILD_NUMBER
     $env:BUILD = "Vita3K-{0}-{1}-{2}_win64.7z" -f $commit_tag, $commit_date, $commit_sha
  - git submodule update --init --recursive
- - gen-windows.bat
+ - gen-windows
 
-# Set target platform
-platform: x64 
+platform: x64
 
-# Set solution configuration
-configuration: Release 
- 
+configuration: Release
+
 build:
   parallel: true
-  project: build-windows/Vita3K.sln
-  verbosity: normal
+  project: build-windows\Vita3K.sln
   
-after_build:
- - ps: | # Package artifact
-    7z a -m0=LZMA2 -mx9 $env:BUILD .\build-windows\bin\Release\*
+after_build: # Package artifact
+ - ps: 7z a -m0=LZMA2 -mx9 $env:BUILD .\build-windows\bin\$env:CONFIGURATION\*
 
 test: off
 
@@ -40,6 +36,5 @@ artifacts:
  - path: $(BUILD)
    name: Vita3K
 
-on_finish:
- - ps: | # Bump AppVeyor Version
-    update-appveyorbuild -version $env:AVVER
+on_finish: # Bump AppVeyor Version
+ - ps: update-appveyorbuild -version $env:AVVER
