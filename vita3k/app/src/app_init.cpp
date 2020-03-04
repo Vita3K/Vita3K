@@ -124,7 +124,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         backend = renderer::Backend::Vulkan;
 #endif
 
-    SDL_WindowFlags window_type;
+    int window_type = 0;
     switch (backend) {
     case renderer::Backend::OpenGL:
         window_type = SDL_WINDOW_OPENGL;
@@ -139,6 +139,10 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         break;
     }
 
+    if (cfg.fullscreen) {
+        state.display.fullscreen = true;
+        window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    }
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.base_path, state.pref_path)) {
         return false;

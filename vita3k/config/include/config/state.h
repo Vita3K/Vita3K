@@ -65,6 +65,7 @@ private:
 
         overwrite_config = rhs.overwrite_config;
         load_config = rhs.load_config;
+        fullscreen = rhs.fullscreen;
     }
 
 public:
@@ -77,6 +78,7 @@ public:
     fs::path config_path = {};
     bool overwrite_config = true;
     bool load_config = false;
+    bool fullscreen = false;
 
     Config() {
         update_yaml();
