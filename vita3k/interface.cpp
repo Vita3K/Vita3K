@@ -250,8 +250,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
             SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path, host.cfg);
             if (module_id >= 0) {
                 const auto module = host.kernel.loaded_modules[module_id];
-                const auto module_name = module->module_name;
-                LOG_INFO("Pre-load module {} (at \"{}\") loaded", module_name, module_path);
+
+                LOG_INFO("Pre-load module {} (at \"{}\") loaded", module->module_name, module_path);
             } else
                 return FileNotFound;
         } else {
@@ -265,9 +265,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
-            const auto module_name = module->module_name;
 
-            LOG_INFO("Main executable {} ({}) loaded", module_name, EBOOT_PATH);
+            LOG_INFO("Main executable {} ({}) loaded", module->module_name, EBOOT_PATH);
         } else
             return FileNotFound;
     } else
@@ -390,15 +389,12 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         const auto module_start = module->module_start;
         const auto module_name = module->module_name;
 
-        if (!module_start)
-            continue;
-
-        if (std::string(module->path) == EBOOT_PATH_ABS)
+        if (!module_start || (std::string(module->path) == EBOOT_PATH_ABS))
             continue;
 
         LOG_DEBUG("Running module_start of library: {} at address {}", module_name, log_hex(module_start.address()));
 
-        Ptr<void> argp = Ptr<void>();
+        auto argp = Ptr<void>();
         const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
             call_import, false);
         const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
