@@ -29,22 +29,16 @@ namespace ngs {
     struct Module {
         BussType buss_type;
 
-        explicit Module() = default;
-        explicit Module(BussType buss_type) : buss_type(buss_type) {
-        }
+        explicit Module(BussType buss_type) : buss_type(buss_type) { }
+        virtual ~Module() = default;
 
         virtual void process(const MemState &mem, Voice *voice) = 0;
         virtual void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) = 0;
     };
 
     struct VoiceDefinition {
-        virtual std::unique_ptr<Module> new_module() {
-            return nullptr;
-        }
-
-        virtual std::size_t get_buffer_parameter_size() const { 
-            return 0;
-        }
+        virtual std::unique_ptr<Module> new_module() = 0;
+        virtual std::size_t get_buffer_parameter_size() const = 0;
     };
 
     struct SystemInitParameters {
@@ -75,8 +69,6 @@ namespace ngs {
         Voice *dest;
         Voice *source;
     };
-
-    struct VoiceDefinition;
 
     struct RackDescription {
         Ptr<VoiceDefinition> definition;
@@ -140,7 +132,7 @@ namespace ngs {
         PCMBuf *get_input_buffer_queue(const std::int32_t index, const std::int32_t subindex);
 
         // Return subindex
-        std::int32_t receive(const std::int32_t index, const std::int32_t subindex, std::uint8_t **data,
+        std::int32_t receive(const std::int32_t index, const std::int32_t subindex, const std::uint8_t **data,
             const std::int16_t channel_count, const std::size_t size_each);
 
         bool free_input(const std::int32_t index, const std::int32_t subindex);
@@ -223,9 +215,12 @@ namespace ngs {
         static std::uint32_t get_required_memspace_size(SystemInitParameters *parameters);
     };
 
-    bool route(const MemState &mem, Voice *source, std::uint8_t **const output_data, const std::uint16_t output_channels, const std::uint32_t sample_count, const int freq, AudioDataType output_type);
+    bool route(const MemState &mem, Voice *source, const std::uint8_t *output_data, const std::uint16_t output_channels,
+        const std::uint32_t sample_count, const int freq, AudioDataType output_type);
     bool unroute_occupied(const MemState &mem, Voice *source);
     
     bool init_system(State &ngs, const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size);
     bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description);
+
+    Ptr<VoiceDefinition> get_voice_definition(State &ngs, MemState &mem, ngs::BussType type);
 }

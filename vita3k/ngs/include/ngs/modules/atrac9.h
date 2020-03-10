@@ -53,19 +53,14 @@ namespace ngs::atrac9 {
     public:
         explicit Module();
         void process(const MemState &mem, Voice *voice) override;
-        void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override {
-            
-        }
+        void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override { }
     };
 
     struct VoiceDefinition: public ngs::VoiceDefinition {
-        std::size_t get_buffer_parameter_size() const override {
-            return sizeof(Parameters);
-        }
-
         std::unique_ptr<ngs::Module> new_module() override;
+        std::size_t get_buffer_parameter_size() const override;
     };
 
-    void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t 
-        num_samples, const std::uint32_t info, SkipBufferInfo &parameter); 
+    void get_buffer_parameter(std::uint32_t start_sample, std::uint32_t
+        num_samples, std::uint32_t info, SkipBufferInfo &parameter);
 };

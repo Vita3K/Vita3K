@@ -1,5 +1,7 @@
 #include <codec/state.h>
 
+#include <util/log.h>
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
@@ -33,7 +35,7 @@ uint32_t H264DecoderState::get(DecoderQuery query) {
     }
 }
 
-void H264DecoderState::send(const uint8_t *data, uint32_t size) {
+bool H264DecoderState::send(const uint8_t *data, uint32_t size) {
     int error = 0;
 
     std::vector<uint8_t> au_frame(size + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -51,27 +53,42 @@ void H264DecoderState::send(const uint8_t *data, uint32_t size) {
         dts == ~0ull ? AV_NOPTS_VALUE : dts, // int64_t dts,
         0 // int64_t pos
     );
-    assert(error >= 0);
-
-    error = avcodec_send_packet(context, packet);
-    assert(error == 0);
-
-    av_packet_free(&packet);
-}
-
-void H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
-    AVFrame *frame = av_frame_alloc();
-
-    if (avcodec_receive_frame(context, frame) == 0) {
-        if (data) {
-            copy_yuv_data_from_frame(frame, data);
-        }
+    if (error < 0) {
+        LOG_WARN("Error parsing H264 packet: {}.", log_hex(static_cast<uint32_t>(error)));
+        av_packet_free(&packet);
+        return false;
     }
 
-    if (size)
-        *size = { static_cast<uint32_t>(context->width), static_cast<uint32_t>(context->height) };
+    error = avcodec_send_packet(context, packet);
+    av_packet_free(&packet);
+    if (error < 0) {
+        LOG_WARN("Error sending H264 packet: {}.", log_hex(static_cast<uint32_t>(error)));
+        return false;
+    }
+
+    return true;
+}
+
+bool H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
+    AVFrame *frame = av_frame_alloc();
+
+    int error = avcodec_receive_frame(context, frame);
+    if (error < 0) {
+        LOG_WARN("Error receiving H264 frame: {}.", log_hex(static_cast<uint32_t>(error)));
+        av_frame_free(&frame);
+        return false;
+    }
+
+    if (data) {
+        copy_yuv_data_from_frame(frame, data);
+    }
+
+    if (size) {
+        *size = {static_cast<uint32_t>(context->width), static_cast<uint32_t>(context->height)};
+    }
 
     av_frame_free(&frame);
+    return true;
 }
 
 void H264DecoderState::configure(void *options) {

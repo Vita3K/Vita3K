@@ -9,7 +9,7 @@ namespace ngs::master {
     }
     
     Module::Module() 
-        : ngs::Module(ngs::BUSS_MASTER) {
+        : ngs::Module(ngs::BussType::BUSS_MASTER) {
     }
 
     void Module::get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) {

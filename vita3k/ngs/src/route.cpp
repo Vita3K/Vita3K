@@ -19,7 +19,8 @@ namespace ngs {
         return 2;
     }
 
-    bool route(const MemState &mem, Voice *source, std::uint8_t ** const output_data, const std::uint16_t output_channels, const std::uint32_t sample_count, const int freq, AudioDataType output_type) {
+    bool route(const MemState &mem, Voice *source, const std::uint8_t *output_data, const std::uint16_t output_channels,
+        const std::uint32_t sample_count, const int freq, AudioDataType output_type) {
         for (std::size_t i = 0; i < source->outputs.size(); i++) {
             Patch *patch = source->outputs[i].get(mem);
 
@@ -48,15 +49,8 @@ namespace ngs {
             }
 
             if (output_data != nullptr) {
-                // Supply newly converted data
-                std::vector<int16_t> s16_data(sample_count);
-                int16_t *data_ptr = s16_data.data();
-
-                // TODO: error reporting
-                convert_f32_to_s16(reinterpret_cast<float *>(output_data), data_ptr, output_channels, sample_count, freq);
-
                 patch->dest_sub_index = patch->dest->inputs.receive(patch->dest_index, patch->dest_sub_index,
-                    reinterpret_cast<uint8_t **>(&data_ptr), output_channels, converted_channel_size);
+                    &output_data, output_channels, converted_channel_size);
             }
         }
 

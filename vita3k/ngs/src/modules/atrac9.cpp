@@ -6,8 +6,12 @@ namespace ngs::atrac9 {
     std::unique_ptr<ngs::Module> VoiceDefinition::new_module() {
         return std::make_unique<Module>();
     }
+
+    std::size_t VoiceDefinition::get_buffer_parameter_size() const {
+        return sizeof(Parameters);
+    }
     
-    Module::Module() : ngs::Module(ngs::BUSS_ATRAC9) { }
+    Module::Module() : ngs::Module(ngs::BussType::BUSS_ATRAC9) { }
 
     void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t 
         num_samples, const std::uint32_t info, SkipBufferInfo &parameter) {
@@ -58,23 +62,21 @@ namespace ngs::atrac9 {
         // making this maybe to early...
         decoder = std::make_unique<Atrac9DecoderState>(params->config_data);
 
-        if (!route(mem, voice, nullptr, params->channels, decoder->get_sample_per_superframe(),
+        if (!route(mem, voice, nullptr, params->channels, decoder->get_samples_per_superframe(),
             static_cast<int>(params[state->current_buffer].playback_frequency), AudioDataType::F32)) {
             // Ran out of data, supply new
             // Decode new data and deliver them
             // Let's open our context
             auto *input = params->buffer_params[state->current_buffer].buffer.cast<uint8_t>().get(mem)
                 + state->current_byte_position_in_buffer;
-            std::vector<uint8_t> output();
+            std::vector<uint8_t> output(decoder->get_samples_per_superframe() * sizeof(int16_t));
             decoder->send(input, decoder->get_superframe_size());
-            decoder->receive(nullptr);
+            decoder->receive(output.data(), nullptr);
 
-            assert(false);
+            route(mem, voice, output.data(), params->channels, decoder->get_samples_per_superframe(),
+                static_cast<int>(params[state->current_buffer].playback_frequency), AudioDataType::F32);
 
-//            route(mem, voice, frame->extended_data, params->channels, frame->nb_samples, static_cast<int>(params[state->current_buffer].playback_frequency),
-//                AudioDataType::F32);
-
-            state->samples_generated_since_key_on += decoder->get_sample_per_superframe();
+            state->samples_generated_since_key_on += decoder->get_samples_per_superframe();
             state->bytes_consumed_since_key_on += decoder->get_superframe_size();
             state->current_byte_position_in_buffer += decoder->get_superframe_size();
             state->total_bytes_consumed += decoder->get_superframe_size();

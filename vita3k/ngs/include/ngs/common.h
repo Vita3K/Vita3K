@@ -4,7 +4,7 @@
 #include <vector>
 
 namespace ngs {
-    enum BussType {
+    enum class BussType {
         BUSS_MASTER = 0,
         BUSS_COMPRESSOR = 1,
         BUSS_SIDE_CHAIN_COMPRESSOR = 2,
@@ -22,11 +22,8 @@ namespace ngs {
         BUSS_SIMPLE_ATRAC9 = 14,
         BUSS_SCREAM = 15,
         BUSS_SCREAM_ATRAC9 = 16,
-        BUSS_NORMAL_PLAYER = 17,
-        BUSS_TOTAL
+        BUSS_NORMAL_PLAYER = 17
     };
 
     using PCMChannelBuf = std::vector<std::uint8_t>;
-    
-    static constexpr std::uint32_t TOTAL_BUSS_TYPES = BUSS_TOTAL;
 }

@@ -761,7 +761,6 @@ EXPORT(int, mbtowc) {
     return UNIMPLEMENTED();
 }
 
-// TODO: most of this stuff is guessed- on the bus right now, I should look it up on google XD
 EXPORT(Ptr<void>, memalign, uint32_t alignment, uint32_t size) {
     Address address = alloc(host.mem, size, "memalign");
 
@@ -779,7 +778,7 @@ EXPORT(int, memcmp) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(void, memcpy, void *destination, const void *source, size_t num) {
+EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
     memcpy(destination, source, num);
 }
 
@@ -787,7 +786,7 @@ EXPORT(int, memcpy_s) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(void, memmove, void *destination, const void *source, size_t num) {
+EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
     memmove(destination, source, num);
 }
 
@@ -795,7 +794,7 @@ EXPORT(int, memmove_s) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(void, memset, Ptr<void> str, int c, size_t n) {
+EXPORT(void, memset, Ptr<void> str, int c, uint32_t n) {
     memset(str.get(host.mem), c, n);
 }
 

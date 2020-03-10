@@ -3,24 +3,21 @@
 #include <ngs/modules/atrac9.h>
 #include <ngs/modules/master.h>
 #include <ngs/modules/player.h>
+#include <ngs/modules/reverb.h>
 #include <mem/mem.h>
 
 #include <util/log.h>
 
 namespace ngs {
     Rack::Rack(System *mama, const Ptr<void> memspace, const std::uint32_t memspace_size)
-        : MempoolObject(memspace, memspace_size)
-        , system(mama) {
-
-    }
+        : MempoolObject(memspace, memspace_size),
+        system(mama) { }
 
     System::System(const Ptr<void> memspace, const std::uint32_t memspace_size)
         : MempoolObject(memspace, memspace_size)
         , max_voices(0)
         , granularity(0)
-        , sample_rate(0) {
-
-    }
+        , sample_rate(0) { }
 
     void VoiceInputManager::init(const std::uint16_t total_input) {
         inputs.resize(total_input);
@@ -38,7 +35,7 @@ namespace ngs {
         return &inputs[index].bufs[subindex];
     }
 
-    std::int32_t VoiceInputManager::receive(const std::int32_t index, const std::int32_t subindex, std::uint8_t **data,
+    std::int32_t VoiceInputManager::receive(const std::int32_t index, const std::int32_t subindex, const std::uint8_t **data,
         const std::int16_t channel_count, const std::size_t size_each) {
         if (index >= inputs.size()) {
             return -1;
@@ -151,9 +148,11 @@ namespace ngs {
             return nullptr;
         }
 
-        last_info.resize(info.size);
-        const std::uint8_t *current_data = info.data.cast<const std::uint8_t>().get(mem);
-        std::copy(current_data, current_data + info.size, &last_info[0]);
+        if (info.data) {
+            const std::uint8_t *current_data = info.data.cast<const std::uint8_t>().get(mem);
+            last_info.resize(info.size);
+            std::copy(current_data, current_data + info.size, last_info.data());
+        }
 
         flags |= PARAMS_LOCK;
 
@@ -243,14 +242,17 @@ namespace ngs {
     }
 
     std::uint32_t Rack::get_required_memspace_size(MemState &mem, RackDescription *description) {
+        uint32_t buffer_size = 0;
+        if (description->definition)
+            buffer_size = description->definition.get(mem)->get_buffer_parameter_size() * description->voice_count;
+
         return sizeof(ngs::Rack) + description->voice_count * sizeof(ngs::Voice) +
-            description->definition.get(mem)->get_buffer_parameter_size() * description->voice_count +
-            description->patches_per_output * sizeof(ngs::Patch);
+            buffer_size + description->patches_per_output * sizeof(ngs::Patch);
     }
     
     bool init(State &ngs, MemState &mem) {
-        static constexpr std::uint32_t SIZE_OF_VOICE_DEFS = (TOTAL_BUSS_TYPES - 1) * sizeof(VoiceDefinition)
-            + sizeof(ngs::atrac9::Module);
+        // this looks strange... maybe catch in review?
+        static constexpr std::uint32_t SIZE_OF_VOICE_DEFS = sizeof(ngs::atrac9::Module);
         static constexpr std::uint32_t SIZE_OF_GLOBAL_MEMSPACE = SIZE_OF_VOICE_DEFS;
 
         // Alloc the space for voice definition
@@ -262,10 +264,6 @@ namespace ngs {
         }
 
         ngs.allocator.init(SIZE_OF_GLOBAL_MEMSPACE);
-
-        ngs.definitions[ngs::BUSS_ATRAC9] = ngs.alloc_and_init<ngs::atrac9::VoiceDefinition>(mem);
-        ngs.definitions[ngs::BUSS_NORMAL_PLAYER] = ngs.alloc_and_init<ngs::player::VoiceDefinition>(mem);
-        ngs.definitions[ngs::BUSS_MASTER] = ngs.alloc_and_init<ngs::master::VoiceDefinition>(mem);
 
         return true;
     }
@@ -299,7 +297,10 @@ namespace ngs {
             return false;
         }
 
-        rack->module = description->definition.get(mem)->new_module();
+        if (description->definition)
+            rack->module = description->definition.get(mem)->new_module();
+        else
+            rack->module = nullptr;
 
         // Initialize voice definition
         rack->channels_per_voice = description->channels_per_voice;
@@ -320,7 +321,10 @@ namespace ngs {
             v->init(rack);
 
             // Allocate parameter buffer info for each voice
-            v->info.size = description->definition.get(mem)->get_buffer_parameter_size();
+            if (description->definition)
+                v->info.size = description->definition.get(mem)->get_buffer_parameter_size();
+            else
+                v->info.size = 0;
 
             if (v->info.size != 0) {
                 v->info.data = rack->alloc_raw(v->info.size);
@@ -332,5 +336,22 @@ namespace ngs {
         system->racks.push_back(rack);
 
         return true;
+    }
+
+    Ptr<VoiceDefinition> get_voice_definition(State &ngs, MemState &mem, ngs::BussType type) {
+        switch (type) {
+            case ngs::BussType::BUSS_ATRAC9:
+                return ngs.alloc_and_init<ngs::atrac9::VoiceDefinition>(mem);
+            case ngs::BussType::BUSS_NORMAL_PLAYER:
+                return ngs.alloc_and_init<ngs::player::VoiceDefinition>(mem);
+            case ngs::BussType::BUSS_MASTER:
+                return ngs.alloc_and_init<ngs::master::VoiceDefinition>(mem);
+            case ngs::BussType::BUSS_REVERB:
+                return ngs.alloc_and_init<ngs::reverb::VoiceDefinition>(mem);
+
+            default:
+                LOG_ERROR("Missing voice definition for Buss Type {}.", static_cast<uint32_t>(type));
+                return Ptr<VoiceDefinition>();
+        }
     }
 }

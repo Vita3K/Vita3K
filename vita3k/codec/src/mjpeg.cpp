@@ -5,6 +5,8 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+#include <util/log.h>
+
 #include <cassert>
 
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height) {
@@ -37,7 +39,7 @@ void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint3
     sws_freeContext(context);
 }
 
-void MjpegDecoderState::send(const uint8_t *data, uint32_t size) {
+bool MjpegDecoderState::send(const uint8_t *data, uint32_t size) {
     std::vector<uint8_t> jpeg_buffer(size + AV_INPUT_BUFFER_PADDING_SIZE);
     std::memcpy(jpeg_buffer.data(), data, size);
 
@@ -45,14 +47,23 @@ void MjpegDecoderState::send(const uint8_t *data, uint32_t size) {
     packet->data = jpeg_buffer.data();
     packet->size = size;
     int error = avcodec_send_packet(context, packet);
-    assert(error == 0);
     av_packet_free(&packet);
+
+    if (error < 0) {
+        LOG_WARN("Error sending Mjpeg packet: {}.", log_hex(static_cast<uint32_t>(error)));
+        return false;
+    }
+    return true;
 }
 
-void MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
+bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
     AVFrame *frame = av_frame_alloc();
     int error = avcodec_receive_frame(context, frame);
-    assert(error == 0);
+    if (error < 0) {
+        LOG_WARN("Error receiving Mjpeg frame: {}.", log_hex(static_cast<uint32_t>(error)));
+        av_frame_free(&frame);
+        return false;
+    }
 
     if (data) {
         uint8_t *channels[] = {
@@ -77,6 +88,8 @@ void MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
     }
 
     av_frame_free(&frame);
+
+    return true;
 }
 
 MjpegDecoderState::MjpegDecoderState() {

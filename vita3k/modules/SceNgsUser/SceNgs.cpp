@@ -193,75 +193,75 @@ EXPORT(int, sceNgsVoiceBypassModule) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetAtrac9Voice) {
-    return host.ngs.definitions[ngs::BUSS_ATRAC9];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_ATRAC9);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetCompressorBuss) {
-    return host.ngs.definitions[ngs::BUSS_COMPRESSOR];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_COMPRESSOR);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetCompressorSideChainBuss) {
-    return host.ngs.definitions[ngs::BUSS_SIDE_CHAIN_COMPRESSOR];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_SIDE_CHAIN_COMPRESSOR);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetDelayBuss) {
-    return host.ngs.definitions[ngs::BUSS_DELAY];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_DELAY);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetDistortionBuss) {
-    return host.ngs.definitions[ngs::BUSS_DISTORTION];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_DISTORTION);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetEnvelopeBuss) {
-    return host.ngs.definitions[ngs::BUSS_ENVELOPE];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_ENVELOPE);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetEqBuss) {
-    return host.ngs.definitions[ngs::BUSS_EQUALIZATION];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_EQUALIZATION);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetMasterBuss) {
-    return host.ngs.definitions[ngs::BUSS_MASTER];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_MASTER);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetMixerBuss) {
-    return host.ngs.definitions[ngs::BUSS_MIXER];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_MIXER);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetPauserBuss) {
-    return host.ngs.definitions[ngs::BUSS_PAUSER];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_PAUSER);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetPitchShiftBuss) {
-    return host.ngs.definitions[ngs::BUSS_PITCH_SHIFT];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_PITCH_SHIFT);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetReverbBuss) {
-    return host.ngs.definitions[ngs::BUSS_REVERB];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_REVERB);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetSasEmuVoice) {
-    return host.ngs.definitions[ngs::BUSS_SAS_EMULATION];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_SAS_EMULATION);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetScreamAtrac9Voice) {
-    return host.ngs.definitions[ngs::BUSS_SCREAM_ATRAC9];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_SCREAM_ATRAC9);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetScreamVoice) {
-    return host.ngs.definitions[ngs::BUSS_SCREAM];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_SCREAM);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleAtrac9Voice) {
-    return host.ngs.definitions[ngs::BUSS_SIMPLE_ATRAC9];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_SIMPLE_ATRAC9);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleVoice) {
-    return host.ngs.definitions[ngs::BUSS_SIMPLE];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_SIMPLE);
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetTemplate1) {
-    return host.ngs.definitions[ngs::BUSS_NORMAL_PLAYER];
+    return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_NORMAL_PLAYER);
 }
 
 EXPORT(int, sceNgsVoiceGetInfo) {
