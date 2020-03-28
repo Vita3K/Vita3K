@@ -59,7 +59,6 @@ static void draw_config_menu(ConfigurationMenuState &state) {
 static void draw_help_menu(HelpMenuState &state) {
     if (ImGui::BeginMenu("Help")) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
-        ImGui::MenuItem("Controls", nullptr, &state.controls_dialog);
         ImGui::MenuItem("About", nullptr, &state.about_dialog);
         ImGui::PopStyleColor();
         ImGui::EndMenu();

@@ -89,7 +89,6 @@ struct ConfigurationMenuState {
 };
 
 struct HelpMenuState {
-    bool controls_dialog = false;
     bool about_dialog = false;
 };
 

@@ -125,54 +125,12 @@ struct SceCtrlData {
     uint8_t 	reserved[4];
 };
 
-struct KeyBinding {
-    SDL_Scancode scancode;
-    uint32_t button;
-};
 
 struct ControllerBinding {
     SDL_GameControllerButton controller;
     uint32_t button;
 };
-/*
-static const KeyBinding key_bindings[] = {
-    { SDL_SCANCODE_RSHIFT, SCE_CTRL_SELECT },
-    { SDL_SCANCODE_RETURN, SCE_CTRL_START },
-    { SDL_SCANCODE_UP, SCE_CTRL_UP },
-    { SDL_SCANCODE_RIGHT, SCE_CTRL_RIGHT },
-    { SDL_SCANCODE_DOWN, SCE_CTRL_DOWN },
-    { SDL_SCANCODE_LEFT, SCE_CTRL_LEFT },
-    { SDL_SCANCODE_Q, SCE_CTRL_LTRIGGER },
-    { SDL_SCANCODE_E, SCE_CTRL_RTRIGGER },
-    { SDL_SCANCODE_V, SCE_CTRL_TRIANGLE },
-    { SDL_SCANCODE_C, SCE_CTRL_CIRCLE },
-    { SDL_SCANCODE_X, SCE_CTRL_CROSS },
-    { SDL_SCANCODE_Z, SCE_CTRL_SQUARE },
-    { SDL_SCANCODE_H, SCE_CTRL_PSBUTTON },
-};
 
-static const KeyBinding key_bindings_ext[] = {
-    { SDL_SCANCODE_RSHIFT, SCE_CTRL_SELECT },
-    { SDL_SCANCODE_RETURN, SCE_CTRL_START },
-    { SDL_SCANCODE_UP, SCE_CTRL_UP },
-    { SDL_SCANCODE_RIGHT, SCE_CTRL_RIGHT },
-    { SDL_SCANCODE_DOWN, SCE_CTRL_DOWN },
-    { SDL_SCANCODE_LEFT, SCE_CTRL_LEFT },
-    { SDL_SCANCODE_Q, SCE_CTRL_L1 },
-    { SDL_SCANCODE_E, SCE_CTRL_R1 },
-    { SDL_SCANCODE_U, SCE_CTRL_L2 },
-    { SDL_SCANCODE_O, SCE_CTRL_R2 },
-    { SDL_SCANCODE_F, SCE_CTRL_L3 },
-    { SDL_SCANCODE_H, SCE_CTRL_R3 },
-    { SDL_SCANCODE_V, SCE_CTRL_TRIANGLE },
-    { SDL_SCANCODE_C, SCE_CTRL_CIRCLE },
-    { SDL_SCANCODE_X, SCE_CTRL_CROSS },
-    { SDL_SCANCODE_Z, SCE_CTRL_SQUARE },
-    { SDL_SCANCODE_H, SCE_CTRL_PSBUTTON },
-};
-*/
-// static const size_t key_binding_count = sizeof(key_bindings) / sizeof(key_bindings[0]);
-// static const size_t key_binding_ext_count = sizeof(key_bindings_ext) / sizeof(key_bindings_ext[0]);
 
 static const ControllerBinding controller_bindings[] = {
     { SDL_CONTROLLER_BUTTON_BACK, SCE_CTRL_SELECT },

@@ -263,79 +263,79 @@ static char const *SDL_key_to_string[]{
 namespace gui {
 
 static void check_for_sdlrange(GuiState &gui, HostState &host) {
-    if (host.cfg.keyboard_button_select	< 0 || host.cfg.keyboard_button_select > 257) {
+    if (host.cfg.keyboard_button_select	< 0 || host.cfg.keyboard_button_select > 231) {
         host.cfg.keyboard_button_select = 0; 
 	}
-    if (host.cfg.keyboard_button_start < 0 || host.cfg.keyboard_button_start > 257) {
+    if (host.cfg.keyboard_button_start < 0 || host.cfg.keyboard_button_start > 231) {
         host.cfg.keyboard_button_start = 0;
     }
-    if (host.cfg.keyboard_button_up < 0 || host.cfg.keyboard_button_up > 257) {
+    if (host.cfg.keyboard_button_up < 0 || host.cfg.keyboard_button_up > 231) {
         host.cfg.keyboard_button_up = 0;
     }
-    if (host.cfg.keyboard_button_right < 0 || host.cfg.keyboard_button_right > 257) {
+    if (host.cfg.keyboard_button_right < 0 || host.cfg.keyboard_button_right > 231) {
         host.cfg.keyboard_button_right = 0;
     }
-    if (host.cfg.keyboard_button_down < 0 || host.cfg.keyboard_button_down > 257) {
+    if (host.cfg.keyboard_button_down < 0 || host.cfg.keyboard_button_down > 231) {
         host.cfg.keyboard_button_down = 0;
     }
-    if (host.cfg.keyboard_button_left < 0 || host.cfg.keyboard_button_left > 257) {
+    if (host.cfg.keyboard_button_left < 0 || host.cfg.keyboard_button_left > 231) {
         host.cfg.keyboard_button_left = 0;
     }
-    if (host.cfg.keyboard_button_l1 < 0 || host.cfg.keyboard_button_l1 > 257) {
+    if (host.cfg.keyboard_button_l1 < 0 || host.cfg.keyboard_button_l1 > 231) {
         host.cfg.keyboard_button_l1 = 0;
     }
-    if (host.cfg.keyboard_button_r1 < 0 || host.cfg.keyboard_button_r1 > 257) {
+    if (host.cfg.keyboard_button_r1 < 0 || host.cfg.keyboard_button_r1 > 231) {
         host.cfg.keyboard_button_r1 = 0;
     }
-    if (host.cfg.keyboard_button_l2 < 0 || host.cfg.keyboard_button_l2 > 257) {
+    if (host.cfg.keyboard_button_l2 < 0 || host.cfg.keyboard_button_l2 > 231) {
         host.cfg.keyboard_button_l2 = 0;
     }
-    if (host.cfg.keyboard_button_r2 < 0 || host.cfg.keyboard_button_r2 > 257) {
+    if (host.cfg.keyboard_button_r2 < 0 || host.cfg.keyboard_button_r2 > 231) {
         host.cfg.keyboard_button_r2 = 0;
     }
-    if (host.cfg.keyboard_button_l3 < 0 || host.cfg.keyboard_button_l3 > 257) {
+    if (host.cfg.keyboard_button_l3 < 0 || host.cfg.keyboard_button_l3 > 231) {
         host.cfg.keyboard_button_l3 = 0;
     }
-    if (host.cfg.keyboard_button_r3 < 0 || host.cfg.keyboard_button_r3 > 257) {
+    if (host.cfg.keyboard_button_r3 < 0 || host.cfg.keyboard_button_r3 > 231) {
         host.cfg.keyboard_button_r3 = 0;
     }
-    if (host.cfg.keyboard_button_triangle < 0 || host.cfg.keyboard_button_triangle > 257) {
+    if (host.cfg.keyboard_button_triangle < 0 || host.cfg.keyboard_button_triangle > 231) {
         host.cfg.keyboard_button_triangle = 0;
     }
-    if (host.cfg.keyboard_button_circle < 0 || host.cfg.keyboard_button_circle > 257) {
+    if (host.cfg.keyboard_button_circle < 0 || host.cfg.keyboard_button_circle > 231) {
         host.cfg.keyboard_button_circle = 0;
     }
-    if (host.cfg.keyboard_button_cross < 0 || host.cfg.keyboard_button_cross > 257) {
+    if (host.cfg.keyboard_button_cross < 0 || host.cfg.keyboard_button_cross > 231) {
         host.cfg.keyboard_button_cross = 0;
     }
-    if (host.cfg.keyboard_button_square < 0 || host.cfg.keyboard_button_square > 257) {
+    if (host.cfg.keyboard_button_square < 0 || host.cfg.keyboard_button_square > 231) {
         host.cfg.keyboard_button_square = 0;
     }
-    if (host.cfg.keyboard_leftstick_left < 0 || host.cfg.keyboard_leftstick_left > 257) {
+    if (host.cfg.keyboard_leftstick_left < 0 || host.cfg.keyboard_leftstick_left > 231) {
         host.cfg.keyboard_leftstick_left = 0;
     }
-    if (host.cfg.keyboard_leftstick_right < 0 || host.cfg.keyboard_leftstick_right > 257) {
+    if (host.cfg.keyboard_leftstick_right < 0 || host.cfg.keyboard_leftstick_right > 231) {
         host.cfg.keyboard_leftstick_right = 0;
     }
-    if (host.cfg.keyboard_leftstick_up < 0 || host.cfg.keyboard_leftstick_up > 257) {
+    if (host.cfg.keyboard_leftstick_up < 0 || host.cfg.keyboard_leftstick_up > 231) {
         host.cfg.keyboard_leftstick_up = 0;
     }
-    if (host.cfg.keyboard_leftstick_down < 0 || host.cfg.keyboard_leftstick_down > 257) {
+    if (host.cfg.keyboard_leftstick_down < 0 || host.cfg.keyboard_leftstick_down > 231) {
         host.cfg.keyboard_leftstick_down = 0;
     }
-    if (host.cfg.keyboard_rightstick_left < 0 || host.cfg.keyboard_rightstick_left > 257) {
+    if (host.cfg.keyboard_rightstick_left < 0 || host.cfg.keyboard_rightstick_left > 231) {
         host.cfg.keyboard_rightstick_left = 0;
     }
-    if (host.cfg.keyboard_rightstick_right < 0 || host.cfg.keyboard_rightstick_right > 257) {
+    if (host.cfg.keyboard_rightstick_right < 0 || host.cfg.keyboard_rightstick_right > 231) {
         host.cfg.keyboard_rightstick_right = 0;
     }
-    if (host.cfg.keyboard_rightstick_up < 0 || host.cfg.keyboard_rightstick_up > 257) {
+    if (host.cfg.keyboard_rightstick_up < 0 || host.cfg.keyboard_rightstick_up > 231) {
         host.cfg.keyboard_rightstick_up = 0;
     }
-    if (host.cfg.keyboard_rightstick_down < 0 || host.cfg.keyboard_rightstick_down > 257) {
+    if (host.cfg.keyboard_rightstick_down < 0 || host.cfg.keyboard_rightstick_down > 231) {
         host.cfg.keyboard_rightstick_down = 0;
     }
-    if (host.cfg.keyboard_button_psbutton < 0 || host.cfg.keyboard_button_psbutton > 257) {
+    if (host.cfg.keyboard_button_psbutton < 0 || host.cfg.keyboard_button_psbutton > 231) {
         host.cfg.keyboard_button_psbutton = 0;
     }
 }
@@ -349,8 +349,8 @@ static void remapper_button(GuiState &gui, HostState &host, int *button) {
             *button = gui.capturedKey;
             check_for_sdlrange(gui, host);
         }
+		config::serialize_config(host.cfg, host.cfg.config_path);
     }
-    config::serialize_config(host.cfg, host.cfg.config_path);
 }
 
 void draw_controls_dialog(GuiState &gui, HostState &host) {
