@@ -24,6 +24,7 @@
 #include <gui/state.h>
 
 #include <host/state.h>
+#include <interface.h>
 
 #include <misc/cpp/imgui_stdlib.h>
 
@@ -334,9 +335,16 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     } else {
         ImGui::PopStyleColor();
     }
-
-    // Debug
+    //Controls
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    if (ImGui::BeginTabItem("Controls")) {
+        //ImGui::PopStyleColor();
+        
+	} else {
+        ImGui::PopStyleColor();
+    }
+        // Debug
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
         ImGui::Checkbox("Log Imports", &host.cfg.log_imports);
