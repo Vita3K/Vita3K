@@ -40,6 +40,7 @@ add_library(
 	src/threads_dialog.cpp
 	src/allocations_dialog.cpp
 	src/disassembly_dialog.cpp
+	src/controls_dialog.cpp
 	src/about_dialog.cpp
 	src/trophy_unlocked.cpp
 )

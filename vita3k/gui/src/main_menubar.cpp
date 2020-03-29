@@ -56,6 +56,15 @@ static void draw_config_menu(ConfigurationMenuState &state) {
     }
 }
 
+static void draw_controls_menu(ControlMenuState &state) {
+    if (ImGui::BeginMenu("Controls")) {
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+        ImGui::MenuItem("Keyboard Controls", nullptr, &state.controls_dialog);
+        ImGui::PopStyleColor();
+        ImGui::EndMenu();
+    }
+}
+
 static void draw_help_menu(HelpMenuState &state) {
     if (ImGui::BeginMenu("Help")) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
@@ -72,8 +81,9 @@ void draw_main_menu_bar(GuiState &gui) {
         draw_file_menu(gui.file_menu);
         draw_debug_menu(gui.debug_menu);
         draw_config_menu(gui.configuration_menu);
+		draw_controls_menu(gui.controls_menu);
         draw_help_menu(gui.help_menu);
-
+        
         ImGui::PopStyleColor();
         ImGui::EndMainMenuBar();
     }
