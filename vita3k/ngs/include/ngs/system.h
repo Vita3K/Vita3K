@@ -63,11 +63,13 @@ namespace ngs {
         std::int32_t output_index;
         std::int32_t output_sub_index;
         std::int32_t dest_index;
-        std::int32_t dest_sub_index;
+        std::int16_t output_channels;
         std::int16_t dest_channels;
         AudioDataType dest_data_type;
         Voice *dest;
         Voice *source;
+
+        float volume_matrix[2][2];
     };
 
     struct RackDescription {
@@ -99,43 +101,16 @@ namespace ngs {
     };
 
     struct VoiceInputManager {
-        using PCMBuf = std::vector<std::uint8_t>;
-
-        struct PCMSubInputs {    
-            std::uint32_t occupied = 0;
-            std::vector<PCMBuf> bufs;
-
-            struct Iterator {
-                std::int32_t dest_subindex;
-                PCMSubInputs *inputs;
-
-                explicit Iterator(PCMSubInputs *inputs, std::int32_t dest_subindex);
-                Iterator operator++();
-                bool operator !=(const Iterator &rhs) const;
-                PCMBuf &operator *();
-            };
-
-            Iterator begin();
-            Iterator end();
-
-            bool empty() const {
-                return (occupied == 0);
-            }
-        };
-
-        using PCMInputs = std::vector<PCMSubInputs>;
+        using PCMInput = std::vector<std::uint8_t>;
+        using PCMInputs = std::vector<PCMInput>;
 
         PCMInputs inputs;
 
-        void init(const std::uint16_t total_input);
+        void init(const std::uint32_t granularity, const std::uint16_t total_input);
+        void reset_inputs();
 
-        PCMBuf *get_input_buffer_queue(const std::int32_t index, const std::int32_t subindex);
-
-        // Return subindex
-        std::int32_t receive(const std::int32_t index, const std::int32_t subindex, const std::uint8_t **data,
-            const std::int16_t channel_count, const std::size_t size_each);
-
-        bool free_input(const std::int32_t index, const std::int32_t subindex);
+        PCMInput *get_input_buffer_queue(const std::int32_t index);
+        std::int32_t receive(Patch *patch, const std::uint8_t **data);
     };
 
     struct Voice {
@@ -152,7 +127,9 @@ namespace ngs {
         std::uint8_t flags;
         std::uint32_t frame_count;
 
-        std::vector<Ptr<Patch>> outputs;
+        using Patches = std::vector<Ptr<Patch>>;
+
+        std::array<Patches, MAX_OUTPUT_PORT> patches;
         std::vector<std::uint8_t> voice_state_data;         ///< Voice state.
         std::vector<std::uint8_t> extra_voice_data;         ///< Local data storage for module.
 
@@ -215,10 +192,14 @@ namespace ngs {
         static std::uint32_t get_required_memspace_size(SystemInitParameters *parameters);
     };
 
-    bool route(const MemState &mem, Voice *source, const std::uint8_t *output_data, const std::uint16_t output_channels,
-        const std::uint32_t sample_count, const int freq, AudioDataType output_type);
-    bool unroute_occupied(const MemState &mem, Voice *source);
-    
+    /**
+     * \brief Returns if one of the dest voice expecting data from the specified output port,
+     *        needs more data.
+     */
+    bool one_dest_voice_need_more_data(const MemState &mem, Voice *source_voice, const std::uint8_t output_port);
+    bool deliver_data(const MemState &mem, Voice *source, const std::uint8_t output_port,
+        const std::uint8_t *data_to_deliver);
+
     bool init_system(State &ngs, const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size);
     bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description);
 
