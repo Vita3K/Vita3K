@@ -26,4 +26,5 @@ namespace ngs {
     };
 
     using PCMChannelBuf = std::vector<std::uint8_t>;
+    static constexpr std::uint32_t MAX_OUTPUT_PORT = 4;
 }
