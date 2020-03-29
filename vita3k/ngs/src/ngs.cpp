@@ -19,114 +19,71 @@ namespace ngs {
         , granularity(0)
         , sample_rate(0) { }
 
-    void VoiceInputManager::init(const std::uint16_t total_input) {
+    void VoiceInputManager::init(const std::uint32_t granularity, const std::uint16_t total_input) {
         inputs.resize(total_input);
+
+        for (auto &input: inputs) {
+            // PCM16 and maximum channel count
+            input.resize(granularity * 4);
+        }
+
+        reset_inputs();
     }
 
-    VoiceInputManager::PCMBuf *VoiceInputManager::get_input_buffer_queue(const std::int32_t index, const std::int32_t subindex) {
+    void VoiceInputManager::reset_inputs() {
+        for (auto &input: inputs) {
+            std::fill(input.begin(), input.end(), 0);
+        }
+    }
+
+    VoiceInputManager::PCMInput *VoiceInputManager::get_input_buffer_queue(const std::int32_t index) {
         if (index >= inputs.size()) {
             return nullptr;
         }
 
-        if (subindex >= inputs[index].bufs.size() || subindex < -1) {
-            return nullptr;
-        }
-
-        return &inputs[index].bufs[subindex];
+        return &inputs[index];
     }
 
-    std::int32_t VoiceInputManager::receive(const std::int32_t index, const std::int32_t subindex, const std::uint8_t **data,
-        const std::int16_t channel_count, const std::size_t size_each) {
-        if (index >= inputs.size()) {
+    std::int32_t VoiceInputManager::receive(ngs::Patch *patch, const std::uint8_t **data) {
+        PCMInput *input = get_input_buffer_queue(patch->dest_index);
+
+        if (!input) {
             return -1;
         }
 
-        std::int32_t dest_subindex = subindex;
+        std::int16_t *dest_buffer = reinterpret_cast<std::int16_t*>(input->data());
+        const std::int16_t *data_to_mix_in = reinterpret_cast<const std::int16_t*>(*data);
 
-        if (subindex > 32) {
-            return -1;
-        }
+        // Try mixing, also with the use of this volume matrix
+        // Dest is our voice to receive this data.
+        for (std::int32_t k = 0; k < patch->dest->rack->system->granularity; k++) {
+            // General mixing case, pretty straight foward
+            for (std::uint8_t i = 0; i < patch->dest_channels; i++) {
+                std::int32_t sample_to_be_mixed = static_cast<std::int32_t>(data_to_mix_in[k * patch->output_channels + i]
+                    * patch->volume_matrix[i][i]);
 
-        if (subindex == -1) {
-            // Find a free subindex
-            for (std::int8_t i = 0; i < 32; i++) {
-                if (!(inputs[index].occupied & (1 << i))) {
-                    dest_subindex = i;
-                    inputs[index].occupied |= (1 << i);
-                    break;
+                if (patch->output_channels != patch->dest_channels) {
+                    if ((patch->output_channels == 2) && (patch->dest_channels == 1)) {
+                        sample_to_be_mixed = static_cast<std::int32_t>((sample_to_be_mixed + data_to_mix_in[k * 2 + 1]
+                            * patch->volume_matrix[1][0]) / 2);
+                    } else {
+                        sample_to_be_mixed = static_cast<std::int32_t>(data_to_mix_in[k] * patch->volume_matrix[0][i]);
+                    }
                 }
+
+                std::int32_t mixed_sample = dest_buffer[k * patch->dest_channels + i] + sample_to_be_mixed;
+
+                if (mixed_sample > 32767)
+                    mixed_sample = 32767;
+
+                if (mixed_sample < -32768)
+                    mixed_sample = -32768;
+
+                dest_buffer[k * patch->dest_channels + i] = mixed_sample;
             }
         }
 
-        if (dest_subindex == -1) {
-            LOG_ERROR("Out of input audio slot for this voice!");
-            return -1;
-        }
-
-        if (dest_subindex >= inputs[index].bufs.size()) {
-            inputs[index].bufs.resize(dest_subindex + 1);
-        }
-
-        inputs[index].bufs[dest_subindex].insert(inputs[index].bufs[dest_subindex].end(), *data,
-            *data + size_each * channel_count);
-
-        return dest_subindex;
-    }
-
-    bool VoiceInputManager::free_input(const std::int32_t index, const std::int32_t subindex) {
-        if (index >= inputs.size()) {
-            return false;
-        }
-
-        if (subindex > 32) {
-            return false;
-        }
-
-        if (subindex < 0) {
-            return true;
-        }
-
-        inputs[index].occupied &= ~(1 << subindex);
-        return true;
-    }
-
-    VoiceInputManager::PCMSubInputs::Iterator::Iterator(PCMSubInputs *inputs, const std::int32_t dest_subindex) 
-        : inputs(inputs)
-        , dest_subindex(dest_subindex) {
-
-    }
-
-    VoiceInputManager::PCMSubInputs::Iterator VoiceInputManager::PCMSubInputs::Iterator::operator++() {
-        do {
-            dest_subindex++;
-        } while (dest_subindex < inputs->bufs.size() && !(inputs->occupied & (1 << dest_subindex)));
-
-        return *this;
-    }
-
-    bool VoiceInputManager::PCMSubInputs::Iterator::operator !=(const VoiceInputManager::PCMSubInputs::Iterator &rhs) const {
-        return (dest_subindex != rhs.dest_subindex);
-    }
-
-    VoiceInputManager::PCMBuf &VoiceInputManager::PCMSubInputs::Iterator::operator *() {
-        return inputs->bufs[dest_subindex];
-    }
-    
-    VoiceInputManager::PCMSubInputs::Iterator VoiceInputManager::PCMSubInputs::begin() {
-        std::int32_t subindex = static_cast<std::int32_t>(bufs.size());
-
-        for (std::int32_t i = 0; i < static_cast<std::int32_t>(bufs.size()); i++) {
-            if (occupied & (1 << i)) {
-                subindex = i;
-                break;
-            }
-        }
-
-        return Iterator(this, subindex);
-    }
-    
-    VoiceInputManager::PCMSubInputs::Iterator VoiceInputManager::PCMSubInputs::end() {
-        return Iterator(this, static_cast<std::int32_t>(bufs.size()));
+        return 0;
     }
 
     void Voice::init(Rack *mama) {
@@ -135,8 +92,10 @@ namespace ngs {
         flags = 0;
         frame_count = 0;
 
-        outputs.resize(mama->patches_per_output);
-        inputs.init(1);
+        for (std::uint32_t i = 0; i < MAX_OUTPUT_PORT; i++)
+            patches[i].resize(mama->patches_per_output);
+    
+        inputs.init(rack->system->granularity, 1);
         voice_lock = std::make_unique<std::mutex>();
     }
 
@@ -176,36 +135,48 @@ namespace ngs {
     Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest) {
         const std::lock_guard<std::mutex> guard(*voice_lock);
 
+        if (index >= MAX_OUTPUT_PORT) {
+            // We don't have enough port for you!
+            return {};
+        }
+
         // Look if another patch has already been there
         if (subindex == -1) {
-            for (std::int32_t i = 0; i < outputs.size(); i++) {
-                if (!outputs[i] || outputs[i].get(mem)->output_sub_index == -1) {
+            for (std::int32_t i = 0; i < patches[index].size(); i++) {
+                if (!patches[index][i] || (patches[index])[i].get(mem)->output_sub_index == -1) {
                     subindex = i;
                     break;
                 }
             }
         }
 
-        if (subindex >= outputs.size()) {
+        if (subindex >= patches[index].size()) {
             return {};
         }
 
-        if (outputs[subindex] && outputs[subindex].get(mem)->output_sub_index != -1) {
+        if (patches[index][subindex] && patches[index][subindex].get(mem)->output_sub_index != -1) {
+            // You just hit an occupied subindex! You won't get to eat, stay in detention.
             return {};
         }
 
-        if (!outputs[subindex]) {
-            outputs[subindex] = rack->alloc_and_init<Patch>(mem);
+        if (!patches[index][subindex]) {
+            // Create the patch incase it's not yet existed
+            patches[index][subindex] = rack->alloc_and_init<Patch>(mem);
         }
 
-        Patch *patch = outputs[subindex].get(mem);
+        Patch *patch = patches[index][subindex].get(mem);
 
         patch->output_sub_index = subindex;
         patch->output_index = index;
         patch->dest_index = dest_index;
         patch->dest = dest;
-        patch->dest_sub_index = -1;
         patch->source = this;
+
+        // Default output channel count
+        patch->output_channels = 2;
+
+        AudioDataType source_data_type;
+        rack->module->get_expectation(&source_data_type, &patch->output_channels);
         
         // Set default value
         patch->dest_data_type = AudioDataType::S16;
@@ -213,25 +184,32 @@ namespace ngs {
 
         dest->rack->module->get_expectation(&patch->dest_data_type, &patch->dest_channels);
 
-        return outputs[subindex];
+        // Initialize the matrix
+        patch->volume_matrix[0][1] = 1.0f;
+        patch->volume_matrix[0][0] = 1.0f;
+        patch->volume_matrix[1][0] = 1.0f;
+        patch->volume_matrix[1][1] = 1.0f;
+
+        return patches[index][subindex];
     }
 
     bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
         const std::lock_guard<std::mutex> guard(*voice_lock);
-        auto iterator = std::find(outputs.begin(), outputs.end(), patch);
+        for (std::uint8_t i = 0; i < patches.size(); i++) {
+            auto iterator = std::find(patches[i].begin(), patches[i].end(), patch);
 
-        if (iterator == outputs.end()) {
-            return false;
+            if (iterator == patches[i].end()) {
+                return false;
+            }
         }
 
-        // Try to unroute. Free the destination subindex
+        // Try to unroute. Free the destination index
         Patch *patch_info = patch.get(mem);
 
         if (!patch_info) {
             return false;
         }
 
-        patch_info->dest->inputs.free_input(patch_info->dest_index, patch_info->dest_sub_index);
         patch_info->output_sub_index = -1;
 
         return true;
@@ -244,15 +222,16 @@ namespace ngs {
     std::uint32_t Rack::get_required_memspace_size(MemState &mem, RackDescription *description) {
         uint32_t buffer_size = 0;
         if (description->definition)
-            buffer_size = description->definition.get(mem)->get_buffer_parameter_size() * description->voice_count;
+            buffer_size = static_cast<std::uint32_t>(description->definition.get(mem)->get_buffer_parameter_size() * description->voice_count);
 
         return sizeof(ngs::Rack) + description->voice_count * sizeof(ngs::Voice) +
-            buffer_size + description->patches_per_output * sizeof(ngs::Patch);
+            buffer_size + description->patches_per_output * MAX_OUTPUT_PORT * 
+                          description->voice_count * sizeof(ngs::Patch);
     }
     
     bool init(State &ngs, MemState &mem) {
         // this looks strange... maybe catch in review?
-        static constexpr std::uint32_t SIZE_OF_VOICE_DEFS = sizeof(ngs::atrac9::Module);
+        static constexpr std::uint32_t SIZE_OF_VOICE_DEFS = sizeof(ngs::atrac9::VoiceDefinition) * 50;
         static constexpr std::uint32_t SIZE_OF_GLOBAL_MEMSPACE = SIZE_OF_VOICE_DEFS;
 
         // Alloc the space for voice definition
@@ -322,7 +301,7 @@ namespace ngs {
 
             // Allocate parameter buffer info for each voice
             if (description->definition)
-                v->info.size = description->definition.get(mem)->get_buffer_parameter_size();
+                v->info.size = static_cast<std::uint32_t>(description->definition.get(mem)->get_buffer_parameter_size());
             else
                 v->info.size = 0;
 
