@@ -81,9 +81,9 @@ void draw_main_menu_bar(GuiState &gui) {
         draw_file_menu(gui.file_menu);
         draw_debug_menu(gui.debug_menu);
         draw_config_menu(gui.configuration_menu);
-		draw_controls_menu(gui.controls_menu);
+        draw_controls_menu(gui.controls_menu);
         draw_help_menu(gui.help_menu);
-        
+
         ImGui::PopStyleColor();
         ImGui::EndMainMenuBar();
     }

@@ -323,11 +323,11 @@ void draw_ui(GuiState &gui, HostState &host) {
         draw_profiles_manager_dialog(gui, host);
     if (gui.configuration_menu.settings_dialog)
         draw_settings_dialog(gui, host);
-	
-	if (gui.controls_menu.controls_dialog)
+
+    if (gui.controls_menu.controls_dialog)
         draw_controls_dialog(gui, host);
-    
-	if (gui.help_menu.about_dialog)
+
+    if (gui.help_menu.about_dialog)
         draw_about_dialog(gui);
 
     if (gui.live_area.live_area_dialog)

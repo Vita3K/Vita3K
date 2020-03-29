@@ -114,12 +114,11 @@ struct GuiState {
     bool renderer_focused = true;
     gui::FileMenuState file_menu;
     gui::DebugMenuState debug_menu;
-    gui::ConfigurationMenuState configuration_menu;   
-	gui::ControlMenuState controls_menu; 
+    gui::ConfigurationMenuState configuration_menu;
+    gui::ControlMenuState controls_menu;
     gui::HelpMenuState help_menu;
     gui::LiveAreaState live_area;
     gui::GamesSelector game_selector;
- 
 
     std::string app_ver;
     bool game_reinstall_confirm = false;

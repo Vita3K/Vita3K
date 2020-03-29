@@ -335,7 +335,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     } else {
         ImGui::PopStyleColor();
     }
-   
+
     // Debug
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
     if (ImGui::BeginTabItem("Debug")) {

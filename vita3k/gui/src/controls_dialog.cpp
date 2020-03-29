@@ -56,7 +56,7 @@ static void remapper_button(GuiState &gui, HostState &host, int *button, char *b
             if (*button < 0 || *button > 231)
                 *button = 0;
         }
-		config::serialize_config(host.cfg, host.cfg.config_path);
+        config::serialize_config(host.cfg, host.cfg.config_path);
     }
 }
 
