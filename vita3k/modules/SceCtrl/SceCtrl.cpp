@@ -187,22 +187,6 @@ static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode 
 static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, HostState &host) {
     const uint8_t *const keys = SDL_GetKeyboardState(nullptr);
     if (ext == true) {
-        if (keys[host.cfg.keyboard_button_select])
-            *buttons |= SCE_CTRL_SELECT;
-        if (keys[host.cfg.keyboard_button_start])
-            *buttons |= SCE_CTRL_START;
-        if (keys[host.cfg.keyboard_button_up])
-            *buttons |= SCE_CTRL_UP;
-        if (keys[host.cfg.keyboard_button_right])
-            *buttons |= SCE_CTRL_RIGHT;
-        if (keys[host.cfg.keyboard_button_down])
-            *buttons |= SCE_CTRL_DOWN;
-        if (keys[host.cfg.keyboard_button_left])
-            *buttons |= SCE_CTRL_LEFT;
-        if (keys[host.cfg.keyboard_button_l1])
-            *buttons |= SCE_CTRL_L1;
-        if (keys[host.cfg.keyboard_button_r1])
-            *buttons |= SCE_CTRL_R1;
         if (keys[host.cfg.keyboard_button_l2])
             *buttons |= SCE_CTRL_L2;
         if (keys[host.cfg.keyboard_button_r2])
@@ -211,16 +195,6 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, HostState
             *buttons |= SCE_CTRL_L3;
         if (keys[host.cfg.keyboard_button_r3])
             *buttons |= SCE_CTRL_R3;
-        if (keys[host.cfg.keyboard_button_triangle])
-            *buttons |= SCE_CTRL_TRIANGLE;
-        if (keys[host.cfg.keyboard_button_circle])
-            *buttons |= SCE_CTRL_CIRCLE;
-        if (keys[host.cfg.keyboard_button_cross])
-            *buttons |= SCE_CTRL_CROSS;
-        if (keys[host.cfg.keyboard_button_square])
-            *buttons |= SCE_CTRL_SQUARE;
-        if (keys[host.cfg.keyboard_button_psbutton])
-            *buttons |= SCE_CTRL_PSBUTTON;
     } else {
         if (keys[host.cfg.keyboard_button_select])
             *buttons |= SCE_CTRL_SELECT;
