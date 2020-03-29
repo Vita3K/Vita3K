@@ -24,7 +24,6 @@
 #include <gui/state.h>
 
 #include <host/state.h>
-#include <interface.h>
 
 #include <misc/cpp/imgui_stdlib.h>
 
