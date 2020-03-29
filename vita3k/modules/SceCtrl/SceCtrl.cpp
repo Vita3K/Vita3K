@@ -186,7 +186,7 @@ static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode 
 
 static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, HostState &host) {
     const uint8_t *const keys = SDL_GetKeyboardState(nullptr);
-    if (ext == true) {
+    if (ext) {
         if (keys[host.cfg.keyboard_button_l2])
             *buttons |= SCE_CTRL_L2;
         if (keys[host.cfg.keyboard_button_r2])
