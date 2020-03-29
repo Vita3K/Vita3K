@@ -16,13 +16,15 @@ struct FFMPEGAtrac9Info {
     uint32_t padding;
 };
 
-void convert_f32_to_s16(const float *f32, int16_t *s16, uint32_t channels, uint32_t samples, uint32_t freq) {
-    const int channel_type = channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+void convert_f32_to_s16(const float *f32, int16_t *s16, uint32_t dest_channels, uint32_t source_channels, uint32_t samples, uint32_t freq) {
+    const int source_channel_type = source_channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+    const int dest_channel_type = dest_channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
     SwrContext *swr = swr_alloc_set_opts(nullptr,
-        channel_type, AV_SAMPLE_FMT_S16, freq,
-        channel_type, AV_SAMPLE_FMT_FLTP, freq,
+        dest_channel_type, AV_SAMPLE_FMT_S16, freq,
+        source_channel_type, AV_SAMPLE_FMT_FLTP, freq,
         0, nullptr);
+
     swr_init(swr);
 
     const int result = swr_convert(swr, (uint8_t **)&s16, samples, (const uint8_t**)(f32), samples);
@@ -147,7 +149,7 @@ bool Atrac9DecoderState::receive(uint8_t *data, DecoderSize *size) {
     if (data) {
         convert_f32_to_s16(
             reinterpret_cast<float *>(frame->extended_data),
-            reinterpret_cast<int16_t *>(data),
+            reinterpret_cast<int16_t *>(data), 2,
             frame->channels, frame->nb_samples, frame->sample_rate);
     }
 
