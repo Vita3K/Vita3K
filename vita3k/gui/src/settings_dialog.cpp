@@ -482,7 +482,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         remapper_button(gui, host, &host.cfg.keyboard_rightstick_down);
         ImGui::Text("%-16s", "Right stick right");
         ImGui::SameLine();
-        ImGui::Dummy(ImVec2(7.0f, 7.0f));
+        ImGui::Dummy(ImVec2(0.3f, 0.3f));
         ImGui::SameLine();
         remapper_button(gui, host, &host.cfg.keyboard_rightstick_right);
         ImGui::Text("%-16s", "Right stick left");
