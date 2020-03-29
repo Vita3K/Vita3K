@@ -11,7 +11,9 @@ namespace ngs::atrac9 {
         return sizeof(Parameters);
     }
     
-    Module::Module() : ngs::Module(ngs::BussType::BUSS_ATRAC9) { }
+    Module::Module() : ngs::Module(ngs::BussType::BUSS_ATRAC9)
+                     , decoded_samples_pending(0)
+                     , decoded_passed(0) { }
 
     void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t 
         num_samples, const std::uint32_t info, SkipBufferInfo &parameter) {
@@ -55,31 +57,31 @@ namespace ngs::atrac9 {
 
         assert(state);
 
-//        const std::uint32_t block_align = calculate_block_align(params->config_data);
-//        const std::uint32_t superframe_size = calculate_superframe_size(params->config_data);
-//        const std::uint32_t sample_per_superframe = calculate_sample_per_superframe(params->config_data);
+        //const std::uint32_t block_align = calculate_block_align(params->config_data);
+        //const std::uint32_t superframe_size = calculate_superframe_size(params->config_data);
+        //const std::uint32_t sample_per_superframe = calculate_sample_per_superframe(params->config_data);
 
         // making this maybe to early...
         decoder = std::make_unique<Atrac9DecoderState>(params->config_data);
 
-        if (!route(mem, voice, nullptr, params->channels, decoder->get_samples_per_superframe(),
-            static_cast<int>(params[state->current_buffer].playback_frequency), AudioDataType::F32)) {
+        if (static_cast<std::int32_t>(decoded_samples_pending) < voice->rack->system->granularity) {
             // Ran out of data, supply new
             // Decode new data and deliver them
             // Let's open our context
             auto *input = params->buffer_params[state->current_buffer].buffer.cast<uint8_t>().get(mem)
                 + state->current_byte_position_in_buffer;
-            std::vector<uint8_t> output(decoder->get_samples_per_superframe() * sizeof(int16_t));
-            decoder->send(input, decoder->get_superframe_size());
-            decoder->receive(output.data(), nullptr);
 
-            route(mem, voice, output.data(), params->channels, decoder->get_samples_per_superframe(),
-                static_cast<int>(params[state->current_buffer].playback_frequency), AudioDataType::F32);
+            decoded_pending.resize(decoder->get_samples_per_superframe() * sizeof(int16_t) * 2);
+            decoder->send(input, decoder->get_superframe_size());
+            decoder->receive(decoded_pending.data(), nullptr);
 
             state->samples_generated_since_key_on += decoder->get_samples_per_superframe();
             state->bytes_consumed_since_key_on += decoder->get_superframe_size();
             state->current_byte_position_in_buffer += decoder->get_superframe_size();
             state->total_bytes_consumed += decoder->get_superframe_size();
+
+            decoded_samples_pending += decoder->get_samples_per_superframe();
+            decoded_passed = 0;
 
             if (state->current_byte_position_in_buffer >= params->buffer_params[state->current_buffer].bytes_count) {
                 if (params->buffer_params[state->current_buffer].loop_count != -1) {
@@ -88,10 +90,11 @@ namespace ngs::atrac9 {
                     if (state->current_loop_count > params->buffer_params[state->current_buffer].loop_count) {
                         state->current_buffer = params->buffer_params[state->current_buffer].next_buffer_index;
                         state->current_loop_count = 0;
+                        state->current_byte_position_in_buffer = 0;
                         
                         if (state->current_buffer == -1) {
                             // Free all occupied input routes
-                            unroute_occupied(mem, voice);
+                            //unroute_occupied(mem, voice);
                         }
                     }
                 }
@@ -99,5 +102,17 @@ namespace ngs::atrac9 {
                 state->current_byte_position_in_buffer = 0;
             }
         }
+
+        const std::uint8_t *data_ptr = decoded_pending.data() + params->channels * sizeof(std::int16_t) *
+            decoded_passed;
+
+        const std::uint32_t samples_to_be_passed = voice->rack->system->granularity;
+
+        deliver_data(mem, voice, 0, data_ptr);
+
+        decoded_samples_pending = (decoded_samples_pending < samples_to_be_passed) ? 0 :
+            (decoded_samples_pending - samples_to_be_passed);
+
+        decoded_passed += samples_to_be_passed;
     }
 };

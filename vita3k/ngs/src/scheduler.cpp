@@ -29,22 +29,24 @@ namespace ngs {
         }
 
         if (should_enqueue) {
-            std::int32_t lowest_dest_pos = queue.size();
+            std::int32_t lowest_dest_pos = static_cast<std::int32_t>(queue.size());
 
             // Check its dependencies position
-            for (const auto &patch: voice->outputs) {
-                if (!patch) {
-                    continue;
+            for (std::uint8_t i = 0; i < voice->patches.size(); i++) {
+                for (const auto &patch: voice->patches[i]) {
+                    if (!patch) {
+                        continue;
+                    }
+
+                    Voice *dest = patch.get(mem)->dest;
+                    const std::int32_t pos = get_position(dest);
+
+                    if (pos == -1) {
+                        continue;
+                    }
+
+                    lowest_dest_pos = std::min<std::int32_t>(lowest_dest_pos, pos);
                 }
-
-                Voice *dest = patch.get(mem)->dest;
-                const std::int32_t pos = get_position(dest);
-
-                if (pos == -1) {
-                    continue;
-                }
-
-                lowest_dest_pos = std::min<std::int32_t>(lowest_dest_pos, pos);
             }
 
             const std::lock_guard<std::mutex> guard(lock);
@@ -85,6 +87,11 @@ namespace ngs {
     void VoiceScheduler::update(const MemState &mem) {
         const std::lock_guard<std::mutex> guard(lock);
 
+        // Do a first routine to clear inputs from previous update session
+        for (ngs::Voice *voice: queue) {
+            voice->inputs.reset_inputs();
+        }
+
         for (ngs::Voice *voice: queue) {
             voice->state = ngs::VOICE_STATE_ACTIVE;
             voice->rack->module->process(mem, voice);
@@ -111,28 +118,30 @@ namespace ngs {
         }
 
         // Check all dependencies
-        for (const auto &patch: source->outputs) {
-            if (!patch) {
-                continue;
-            }
-
-            Voice *dest = patch.get(mem)->dest;
-            const std::int32_t dest_pos = get_position(dest);
-
-            if (position == -1) {
-                // Maybe not scheduled yet. Continue
-                continue;
-            }
-
-            if (dest_pos < position) {
-                // Switch to the end. Resort dependencies for this one that just got sorted too.
-                {
-                    const std::lock_guard<std::mutex> guard(lock);
-                    std::rotate(queue.begin() + dest_pos, queue.begin() + dest_pos + 1, queue.end());
+        for (std::uint8_t i = 0; i < source->patches.size(); i++) {
+            for (const auto &patch: source->patches[i]) {
+                if (!patch) {
+                    continue;
                 }
 
-                resort_to_respect_dependencies(mem, dest);
-                position = get_position(source);
+                Voice *dest = patch.get(mem)->dest;
+                const std::int32_t dest_pos = get_position(dest);
+
+                if (position == -1) {
+                    // Maybe not scheduled yet. Continue
+                    continue;
+                }
+
+                if (dest_pos < position) {
+                    // Switch to the end. Resort dependencies for this one that just got sorted too.
+                    {
+                        const std::lock_guard<std::mutex> guard(lock);
+                        std::rotate(queue.begin() + dest_pos, queue.begin() + dest_pos + 1, queue.end());
+                    }
+
+                    resort_to_respect_dependencies(mem, dest);
+                    position = get_position(source);
+                }
             }
         }
 

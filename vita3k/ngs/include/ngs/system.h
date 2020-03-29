@@ -192,11 +192,6 @@ namespace ngs {
         static std::uint32_t get_required_memspace_size(SystemInitParameters *parameters);
     };
 
-    /**
-     * \brief Returns if one of the dest voice expecting data from the specified output port,
-     *        needs more data.
-     */
-    bool one_dest_voice_need_more_data(const MemState &mem, Voice *source_voice, const std::uint8_t output_port);
     bool deliver_data(const MemState &mem, Voice *source, const std::uint8_t output_port,
         const std::uint8_t *data_to_deliver);
 

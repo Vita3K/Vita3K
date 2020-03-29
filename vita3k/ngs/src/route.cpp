@@ -19,54 +19,22 @@ namespace ngs {
         return 2;
     }
 
-    bool route(const MemState &mem, Voice *source, const std::uint8_t *output_data, const std::uint16_t output_channels,
-        const std::uint32_t sample_count, const int freq, AudioDataType output_type) {
-        for (std::size_t i = 0; i < source->outputs.size(); i++) {
-            Patch *patch = source->outputs[i].get(mem);
-
-            if (!patch || patch->output_sub_index == -1) {
-                continue;
-            }
-            
-            const std::uint32_t byte_per_dest_sample = audio_data_type_to_byte_count(patch->dest_data_type);
-        
-            VoiceInputManager::PCMBuf *input_buf = patch->dest->inputs.get_input_buffer_queue(patch->dest_index,
-                patch->dest_sub_index);
-
-            if (output_data == nullptr) {
-                if (!input_buf || input_buf->size() <= patch->dest_channels * byte_per_dest_sample * patch->dest->rack->system->granularity) {
-                    // Need more data.
-                    return false;
-                }
-            }
-
-            const std::uint32_t converted_channel_size = sample_count * byte_per_dest_sample;
-
-            if (input_buf && input_buf->size() != 0) {
-                // Delete last used samples
-                input_buf->erase(input_buf->begin(), input_buf->begin() + std::min<std::size_t>(input_buf->size(),
-                    patch->dest_channels * byte_per_dest_sample * patch->dest->rack->system->granularity));
-            }
-
-            if (output_data != nullptr) {
-                patch->dest_sub_index = patch->dest->inputs.receive(patch->dest_index, patch->dest_sub_index,
-                    &output_data, output_channels, converted_channel_size);
-            }
+    bool deliver_data(const MemState &mem, Voice *source, const std::uint8_t output_port,
+        const std::uint8_t *output_data) {
+        if (!output_data) {
+            return false;
         }
 
-        return true;
-    }
-
-    bool unroute_occupied(const MemState &mem, Voice *source) {
-        for (std::size_t i = 0; i < source->outputs.size(); i++) {
-            Patch *patch = source->outputs[i].get(mem);
+        for (std::size_t i = 0; i < source->patches[output_port].size(); i++) {
+            Patch *patch = source->patches[output_port][i].get(mem);
 
             if (!patch || patch->output_sub_index == -1) {
                 continue;
             }
             
-            patch->dest->inputs.free_input(patch->dest_index, patch->dest_sub_index);
-            patch->dest_sub_index = -1;
+            if (output_data != nullptr) {
+                patch->dest->inputs.receive(patch, &output_data);
+            }
         }
 
         return true;

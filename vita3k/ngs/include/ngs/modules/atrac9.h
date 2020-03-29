@@ -50,6 +50,10 @@ namespace ngs::atrac9 {
     private:
         std::unique_ptr<Atrac9DecoderState> decoder;
 
+        PCMChannelBuf decoded_pending;
+        std::uint32_t decoded_samples_pending;
+        std::uint32_t decoded_passed;
+
     public:
         explicit Module();
         void process(const MemState &mem, Voice *voice) override;
