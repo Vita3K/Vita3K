@@ -81,7 +81,7 @@ void draw_controls_dialog(GuiState &gui, HostState &host) {
     remapper_button(gui, host, &host.cfg.keyboard_button_left, "D-pad left", ImVec2(7.0f, 7.0f));
     if (host.cfg.pstv_mode) {
         remapper_button(gui, host, &host.cfg.keyboard_button_l1, "L1 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R2 button", ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R1 button", ImVec2(7.0f, 7.0f));
         remapper_button(gui, host, &host.cfg.keyboard_button_l2, "L2 button", ImVec2(7.0f, 7.0f));
         remapper_button(gui, host, &host.cfg.keyboard_button_r2, "R2 button", ImVec2(7.0f, 7.0f));
         remapper_button(gui, host, &host.cfg.keyboard_button_l3, "L3 button", ImVec2(7.0f, 7.0f));
