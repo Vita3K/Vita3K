@@ -22,8 +22,6 @@
 #include <host/state.h>
 #include <interface.h>
 
-
-
 namespace gui {
 
 static char const *SDL_key_to_string[]{ "[unset]", "[unknown]", "[unknown]", "[unknown]", "A", "B", "C", "D", "E", "F", "G",
@@ -44,244 +42,61 @@ static char const *SDL_key_to_string[]{ "[unset]", "[unknown]", "[unknown]", "[u
     "Keypad Mem+", "Keypad Mem-", "Keypad Mem*", "Keypad Mem/", "Keypad +/-", "Keypad Clear", "Keypad ClearEntry", "Keypad Binary", "Keypad Octal",
     "Keypad Dec", "Keypad HexaDec", "[unset]", "[unset]", "LCtrl", "LShift", "LAlt", "Win/Cmd", "RCtrl", "RShift", "RAlt", "RWin/Cmd" };
 
-
-static void check_for_sdlrange(GuiState &gui, HostState &host) {
-    if (host.cfg.keyboard_button_select	< 0 || host.cfg.keyboard_button_select > 231) {
-        host.cfg.keyboard_button_select = 0; 
-	}
-    if (host.cfg.keyboard_button_start < 0 || host.cfg.keyboard_button_start > 231) {
-        host.cfg.keyboard_button_start = 0;
-    }
-    if (host.cfg.keyboard_button_up < 0 || host.cfg.keyboard_button_up > 231) {
-        host.cfg.keyboard_button_up = 0;
-    }
-    if (host.cfg.keyboard_button_right < 0 || host.cfg.keyboard_button_right > 231) {
-        host.cfg.keyboard_button_right = 0;
-    }
-    if (host.cfg.keyboard_button_down < 0 || host.cfg.keyboard_button_down > 231) {
-        host.cfg.keyboard_button_down = 0;
-    }
-    if (host.cfg.keyboard_button_left < 0 || host.cfg.keyboard_button_left > 231) {
-        host.cfg.keyboard_button_left = 0;
-    }
-    if (host.cfg.keyboard_button_l1 < 0 || host.cfg.keyboard_button_l1 > 231) {
-        host.cfg.keyboard_button_l1 = 0;
-    }
-    if (host.cfg.keyboard_button_r1 < 0 || host.cfg.keyboard_button_r1 > 231) {
-        host.cfg.keyboard_button_r1 = 0;
-    }
-    if (host.cfg.keyboard_button_l2 < 0 || host.cfg.keyboard_button_l2 > 231) {
-        host.cfg.keyboard_button_l2 = 0;
-    }
-    if (host.cfg.keyboard_button_r2 < 0 || host.cfg.keyboard_button_r2 > 231) {
-        host.cfg.keyboard_button_r2 = 0;
-    }
-    if (host.cfg.keyboard_button_l3 < 0 || host.cfg.keyboard_button_l3 > 231) {
-        host.cfg.keyboard_button_l3 = 0;
-    }
-    if (host.cfg.keyboard_button_r3 < 0 || host.cfg.keyboard_button_r3 > 231) {
-        host.cfg.keyboard_button_r3 = 0;
-    }
-    if (host.cfg.keyboard_button_triangle < 0 || host.cfg.keyboard_button_triangle > 231) {
-        host.cfg.keyboard_button_triangle = 0;
-    }
-    if (host.cfg.keyboard_button_circle < 0 || host.cfg.keyboard_button_circle > 231) {
-        host.cfg.keyboard_button_circle = 0;
-    }
-    if (host.cfg.keyboard_button_cross < 0 || host.cfg.keyboard_button_cross > 231) {
-        host.cfg.keyboard_button_cross = 0;
-    }
-    if (host.cfg.keyboard_button_square < 0 || host.cfg.keyboard_button_square > 231) {
-        host.cfg.keyboard_button_square = 0;
-    }
-    if (host.cfg.keyboard_leftstick_left < 0 || host.cfg.keyboard_leftstick_left > 231) {
-        host.cfg.keyboard_leftstick_left = 0;
-    }
-    if (host.cfg.keyboard_leftstick_right < 0 || host.cfg.keyboard_leftstick_right > 231) {
-        host.cfg.keyboard_leftstick_right = 0;
-    }
-    if (host.cfg.keyboard_leftstick_up < 0 || host.cfg.keyboard_leftstick_up > 231) {
-        host.cfg.keyboard_leftstick_up = 0;
-    }
-    if (host.cfg.keyboard_leftstick_down < 0 || host.cfg.keyboard_leftstick_down > 231) {
-        host.cfg.keyboard_leftstick_down = 0;
-    }
-    if (host.cfg.keyboard_rightstick_left < 0 || host.cfg.keyboard_rightstick_left > 231) {
-        host.cfg.keyboard_rightstick_left = 0;
-    }
-    if (host.cfg.keyboard_rightstick_right < 0 || host.cfg.keyboard_rightstick_right > 231) {
-        host.cfg.keyboard_rightstick_right = 0;
-    }
-    if (host.cfg.keyboard_rightstick_up < 0 || host.cfg.keyboard_rightstick_up > 231) {
-        host.cfg.keyboard_rightstick_up = 0;
-    }
-    if (host.cfg.keyboard_rightstick_down < 0 || host.cfg.keyboard_rightstick_down > 231) {
-        host.cfg.keyboard_rightstick_down = 0;
-    }
-    if (host.cfg.keyboard_button_psbutton < 0 || host.cfg.keyboard_button_psbutton > 231) {
-        host.cfg.keyboard_button_psbutton = 0;
-    }
-}
-
-static void remapper_button(GuiState &gui, HostState &host, int *button) {
+static void remapper_button(GuiState &gui, HostState &host, int *button, char *button_name, ImVec2 *spacing) {
+    ImGui::Text("%-16s", button_name);
+    ImGui::SameLine();
+    ImGui::Dummy(*spacing);
+    ImGui::SameLine();
     if (ImGui::Button(SDL_key_to_string[*button])) {
-        gui.oldCapturedKey = *button;
-        gui.isCapturingKeys = true;
-        while (gui.isCapturingKeys == true) {
+        gui.controls_menu.old_captured_key = *button;
+        gui.controls_menu.is_capturing_keys = true;
+        while (gui.controls_menu.is_capturing_keys == true) {
             handle_events(host, gui);
-            *button = gui.capturedKey;
-            check_for_sdlrange(gui, host);
+            *button = gui.controls_menu.captured_key;
+            if (*button < 0 || *button > 231)
+                *button = 0;
         }
 		config::serialize_config(host.cfg, host.cfg.config_path);
     }
 }
 
 void draw_controls_dialog(GuiState &gui, HostState &host) {
-    check_for_sdlrange(gui, host);
     float width = ImGui::GetWindowWidth() / 1.35f;
     float height = ImGui::GetWindowHeight() / 1.25f;
     ImGui::SetNextWindowSize(ImVec2(width, height));
     ImGui::SetNextWindowPosCenter();
     ImGui::Begin("Controls", &gui.controls_menu.controls_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR_OPTIONS, "%-16s    %-16s", "Button", "Mapped button");
-    ImGui::Text("%-16s", "Left stick up");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_up);
-    ImGui::Text("%-16s", "Left stick down");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_down);
-    ImGui::Text("%-16s", "Left stick right");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_right);
-    ImGui::Text("%-16s", "Left stick left");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_left);
-    ImGui::Text("%-16s", "Right stick up");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_up);
-    ImGui::Text("%-16s", "Right stick down");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_down);
-    ImGui::Text("%-16s", "Right stick right");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(0.3f, 0.3f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_right);
-    ImGui::Text("%-16s", "Right stick left");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_left);
-    ImGui::Text("%-16s", "D-pad up");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_up);
-    ImGui::Text("%-16s", "D-pad down");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_down);
-    ImGui::Text("%-16s", "D-pad right");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_right);
-    ImGui::Text("%-16s", "D-pad left");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_left);
+    remapper_button(gui, host, &host.cfg.keyboard_leftstick_up, "Left stick up", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_leftstick_down, "Left stick down", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_leftstick_right, "Left stick right", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_leftstick_left, "Left stick left", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_rightstick_up, "Right stick up", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_rightstick_down, "Right stick down", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_rightstick_right, "Right stick right", &ImVec2(0.3f, 0.3f));
+    remapper_button(gui, host, &host.cfg.keyboard_rightstick_left, "Right stick left", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_up, "D-pad up", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_down, "D-pad down", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_right, "D-pad right", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_left, "D-pad left", &ImVec2(7.0f, 7.0f));
     if (host.cfg.pstv_mode) {
-        ImGui::Text("%-16s", "L1 button");
-        ImGui::SameLine();
-        ImGui::Dummy(ImVec2(7.0f, 7.0f));
-        ImGui::SameLine();
-        remapper_button(gui, host, &host.cfg.keyboard_button_l1);
-        ImGui::Text("%-16s", "R1 button");
-        ImGui::SameLine();
-        ImGui::Dummy(ImVec2(7.0f, 7.0f));
-        ImGui::SameLine();
-        remapper_button(gui, host, &host.cfg.keyboard_button_r1);
-        ImGui::Text("%-16s", "L2 button");
-        ImGui::SameLine();
-        ImGui::Dummy(ImVec2(7.0f, 7.0f));
-        ImGui::SameLine();
-        remapper_button(gui, host, &host.cfg.keyboard_button_l2);
-        ImGui::Text("%-16s", "R2 button");
-        ImGui::SameLine();
-        ImGui::Dummy(ImVec2(7.0f, 7.0f));
-        ImGui::SameLine();
-        remapper_button(gui, host, &host.cfg.keyboard_button_r2);
-        ImGui::Text("%-16s", "L3 button");
-        ImGui::SameLine();
-        ImGui::Dummy(ImVec2(7.0f, 7.0f));
-        ImGui::SameLine();
-        remapper_button(gui, host, &host.cfg.keyboard_button_l3);
-        ImGui::Text("%-16s", "R3 button");
-        ImGui::SameLine();
-        ImGui::Dummy(ImVec2(7.0f, 7.0f));
-        ImGui::SameLine();
-        remapper_button(gui, host, &host.cfg.keyboard_button_r3);
+        remapper_button(gui, host, &host.cfg.keyboard_button_l1, "L1 button", &ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R2 button", &ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg.keyboard_button_l2, "L2 button", &ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg.keyboard_button_r2, "R2 button", &ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg.keyboard_button_l3, "L3 button", &ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg.keyboard_button_r3, "R3 button", &ImVec2(7.0f, 7.0f));
     } else {
-        ImGui::Text("%-16s", "L button");
-        ImGui::SameLine();
-        ImGui::Dummy(ImVec2(7.0f, 7.0f));
-        ImGui::SameLine();
-        remapper_button(gui, host, &host.cfg.keyboard_button_l1);
-        ImGui::Text("%-16s", "R button");
-        ImGui::SameLine();
-        ImGui::Dummy(ImVec2(7.0f, 7.0f));
-        ImGui::SameLine();
-        remapper_button(gui, host, &host.cfg.keyboard_button_r1);
+        remapper_button(gui, host, &host.cfg.keyboard_button_l1, "L button", &ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R button", &ImVec2(7.0f, 7.0f));
     }
-    ImGui::Text("%-16s", "Square button");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_square);
-    ImGui::Text("%-16s", "Cross button");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_cross);
-    ImGui::Text("%-16s", "Circle button");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_circle);
-    ImGui::Text("%-16s", "Triangle button");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_triangle);
-    ImGui::Text("%-16s", "Start button");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_start);
-    ImGui::Text("%-16s", "Select button");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_select);
-    ImGui::Text("%-16s", "PS button");
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(7.0f, 7.0f));
-    ImGui::SameLine();
-    remapper_button(gui, host, &host.cfg.keyboard_button_psbutton);
+    remapper_button(gui, host, &host.cfg.keyboard_button_square, "Square button", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_cross, "Cross button", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_circle, "Circle button", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_triangle, "Triangle button", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_start, "Start button", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_select, "Select button", &ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_psbutton, "PS Button", &ImVec2(7.0f, 7.0f));
     ImGui::Separator();
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR_OPTIONS, "%-16s", "GUI");
     ImGui::Text("%-16s    %-16s", "Toggle Touch", "T");

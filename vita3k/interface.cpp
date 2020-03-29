@@ -301,11 +301,11 @@ bool handle_events(HostState &host, GuiState &gui) {
             if (event.key.keysym.scancode) {
                 if (event.key.keysym.scancode == SDL_SCANCODE_G || event.key.keysym.scancode == SDL_SCANCODE_F11 || event.key.keysym.scancode == SDL_SCANCODE_T || event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                     LOG_ERROR("Key is reserved!");
-                    gui.capturedKey = gui.oldCapturedKey;
-                    gui.isCapturingKeys = false;
+                    gui.controls_menu.captured_key = gui.controls_menu.old_captured_key;
+                    gui.controls_menu.is_capturing_keys = false;
                 } else {
-                    gui.capturedKey = static_cast<int>(event.key.keysym.scancode);
-                    gui.isCapturingKeys = false;
+                    gui.controls_menu.captured_key = static_cast<int>(event.key.keysym.scancode);
+                    gui.controls_menu.is_capturing_keys = false;
                 }
             }
             if (event.key.keysym.sym == SDLK_g) {

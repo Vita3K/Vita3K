@@ -90,6 +90,9 @@ struct ConfigurationMenuState {
 
 struct ControlMenuState {
     bool controls_dialog = false;
+    bool is_capturing_keys = false;
+    int old_captured_key = 0;
+    int captured_key = 0;
 };
 
 struct HelpMenuState {
@@ -125,11 +128,6 @@ struct GuiState {
     MemoryEditor gxp_shader_editor;
     size_t memory_editor_start = 0;
     size_t memory_editor_count = 0;
-
-    bool isButtonClicked = false;
-    bool isCapturingKeys = false;
-    int oldCapturedKey = 0;
-    int capturedKey = 0;
 
     std::string disassembly_arch = "THUMB";
     char disassembly_address[9] = "00000000";
