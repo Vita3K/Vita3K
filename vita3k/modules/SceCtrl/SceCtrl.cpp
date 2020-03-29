@@ -195,7 +195,7 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, HostState
             *buttons |= SCE_CTRL_L3;
         if (keys[host.cfg.keyboard_button_r3])
             *buttons |= SCE_CTRL_R3;
-    } else {
+    } 
         if (keys[host.cfg.keyboard_button_select])
             *buttons |= SCE_CTRL_SELECT;
         if (keys[host.cfg.keyboard_button_start])
@@ -222,7 +222,6 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, HostState
             *buttons |= SCE_CTRL_SQUARE;
         if (keys[host.cfg.keyboard_button_psbutton])
             *buttons |= SCE_CTRL_PSBUTTON;
-    }
 
     axes[0] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_left), static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_right));
     axes[1] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_up), static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_down));
