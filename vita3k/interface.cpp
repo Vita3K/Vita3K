@@ -17,7 +17,6 @@
 
 #include "interface.h"
 
-#include <iostream>
 #include <config/functions.h>
 #include <gui/functions.h>
 #include <host/functions.h>
@@ -303,7 +302,7 @@ bool handle_events(HostState &host, GuiState &gui) {
                 if (event.key.keysym.scancode == SDL_SCANCODE_G || event.key.keysym.scancode == SDL_SCANCODE_F11 || event.key.keysym.scancode == SDL_SCANCODE_T || event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                     LOG_ERROR("Key is reserved!");
                     gui.capturedKey = gui.oldCapturedKey;
-					gui.isCapturingKeys = false;
+                    gui.isCapturingKeys = false;
                 } else {
                     gui.capturedKey = static_cast<int>(event.key.keysym.scancode);
                     gui.isCapturingKeys = false;

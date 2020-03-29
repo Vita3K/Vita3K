@@ -112,7 +112,6 @@ struct GuiState {
     gui::LiveAreaState live_area;
     gui::GamesSelector game_selector;
 
-	
     std::string app_ver;
     bool game_reinstall_confirm = false;
 
@@ -121,12 +120,10 @@ struct GuiState {
     size_t memory_editor_start = 0;
     size_t memory_editor_count = 0;
 
-
-	bool isButtonClicked = false; 
-	bool isCapturingKeys = false; 
-	int oldCapturedKey = 0;
-	int capturedKey = 0; 
-	 
+    bool isButtonClicked = false;
+    bool isCapturingKeys = false;
+    int oldCapturedKey = 0;
+    int capturedKey = 0;
 
     std::string disassembly_arch = "THUMB";
     char disassembly_address[9] = "00000000";
