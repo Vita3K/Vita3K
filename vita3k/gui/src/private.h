@@ -39,7 +39,7 @@ const ImVec4 GUI_PROGRESS_BAR = RGBA_TO_FLOAT(118, 150, 55, 255);
 
 #undef RGBA_TO_FLOAT
 
-void draw_main_menu_bar(GuiState &gui);
+void draw_main_menu_bar(GuiState &gui, HostState &host);
 void draw_firmware_install_dialog(GuiState &gui, HostState &host);
 void draw_game_install_dialog(GuiState &gui, HostState &host);
 void draw_threads_dialog(GuiState &gui, HostState &host);

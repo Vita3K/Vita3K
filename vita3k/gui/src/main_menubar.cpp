@@ -19,10 +19,22 @@
 
 #include "private.h"
 
+#ifdef _WIN32
+static const char OS_PREFIX[] = "start ";
+#elif __APPLE__
+static const char OS_PREFIX[] = "open ";
+#else
+static const char OS_PREFIX[] = "xdg-open ";
+#endif
+
 namespace gui {
 
-static void draw_file_menu(FileMenuState &state) {
+static void draw_file_menu(FileMenuState &state, HostState &host) {
     if (ImGui::BeginMenu("File")) {
+        if (ImGui::MenuItem("Open Pref Path")) {
+            system((OS_PREFIX + host.pref_path).c_str());
+        }
+        ImGui::Separator();
         ImGui::MenuItem("Install Firmware", nullptr, &state.firmware_install_dialog);
         ImGui::MenuItem("Install Game", nullptr, &state.game_install_dialog);
         ImGui::EndMenu();
@@ -66,11 +78,11 @@ static void draw_help_menu(HelpMenuState &state) {
     }
 }
 
-void draw_main_menu_bar(GuiState &gui) {
+void draw_main_menu_bar(GuiState &gui, HostState &host) {
     if (ImGui::BeginMainMenuBar()) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
-        draw_file_menu(gui.file_menu);
+        draw_file_menu(gui.file_menu, host);
         draw_debug_menu(gui.debug_menu);
         draw_config_menu(gui.configuration_menu);
         draw_help_menu(gui.help_menu);
