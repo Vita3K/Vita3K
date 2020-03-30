@@ -75,7 +75,7 @@
     code(int, "keyboard-rightstick-up", 12, keyboard_rightstick_up)										\
     code(int, "keyboard-rightstick-down", 14, keyboard_rightstick_down)									\
     code(int, "keyboard-button-psbutton", 19, keyboard_button_psbutton)									\
-	code(int, "user-id", 0, user_id) 
+    code(int, "user-id", 0, user_id) 
 
 
 // Vector members produced in the config file
