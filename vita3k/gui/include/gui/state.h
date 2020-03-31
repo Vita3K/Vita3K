@@ -88,8 +88,14 @@ struct ConfigurationMenuState {
     bool settings_dialog = false;
 };
 
-struct HelpMenuState {
+struct ControlMenuState {
     bool controls_dialog = false;
+    bool is_capturing_keys = false;
+    int old_captured_key = 0;
+    int captured_key = 0;
+};
+
+struct HelpMenuState {
     bool about_dialog = false;
 };
 
@@ -109,6 +115,7 @@ struct GuiState {
     gui::FileMenuState file_menu;
     gui::DebugMenuState debug_menu;
     gui::ConfigurationMenuState configuration_menu;
+    gui::ControlMenuState controls_menu;
     gui::HelpMenuState help_menu;
     gui::LiveAreaState live_area;
     gui::GamesSelector game_selector;

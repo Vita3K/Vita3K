@@ -125,54 +125,12 @@ struct SceCtrlData {
     uint8_t 	reserved[4];
 };
 
-struct KeyBinding {
-    SDL_Scancode scancode;
-    uint32_t button;
-};
 
 struct ControllerBinding {
     SDL_GameControllerButton controller;
     uint32_t button;
 };
 
-static const KeyBinding key_bindings[] = {
-    { SDL_SCANCODE_RSHIFT, SCE_CTRL_SELECT },
-    { SDL_SCANCODE_RETURN, SCE_CTRL_START },
-    { SDL_SCANCODE_UP, SCE_CTRL_UP },
-    { SDL_SCANCODE_RIGHT, SCE_CTRL_RIGHT },
-    { SDL_SCANCODE_DOWN, SCE_CTRL_DOWN },
-    { SDL_SCANCODE_LEFT, SCE_CTRL_LEFT },
-    { SDL_SCANCODE_Q, SCE_CTRL_LTRIGGER },
-    { SDL_SCANCODE_E, SCE_CTRL_RTRIGGER },
-    { SDL_SCANCODE_V, SCE_CTRL_TRIANGLE },
-    { SDL_SCANCODE_C, SCE_CTRL_CIRCLE },
-    { SDL_SCANCODE_X, SCE_CTRL_CROSS },
-    { SDL_SCANCODE_Z, SCE_CTRL_SQUARE },
-    { SDL_SCANCODE_H, SCE_CTRL_PSBUTTON },
-};
-
-static const KeyBinding key_bindings_ext[] = {
-    { SDL_SCANCODE_RSHIFT, SCE_CTRL_SELECT },
-    { SDL_SCANCODE_RETURN, SCE_CTRL_START },
-    { SDL_SCANCODE_UP, SCE_CTRL_UP },
-    { SDL_SCANCODE_RIGHT, SCE_CTRL_RIGHT },
-    { SDL_SCANCODE_DOWN, SCE_CTRL_DOWN },
-    { SDL_SCANCODE_LEFT, SCE_CTRL_LEFT },
-    { SDL_SCANCODE_Q, SCE_CTRL_L1 },
-    { SDL_SCANCODE_E, SCE_CTRL_R1 },
-    { SDL_SCANCODE_U, SCE_CTRL_L2 },
-    { SDL_SCANCODE_O, SCE_CTRL_R2 },
-    { SDL_SCANCODE_F, SCE_CTRL_L3 },
-    { SDL_SCANCODE_H, SCE_CTRL_R3 },
-    { SDL_SCANCODE_V, SCE_CTRL_TRIANGLE },
-    { SDL_SCANCODE_C, SCE_CTRL_CIRCLE },
-    { SDL_SCANCODE_X, SCE_CTRL_CROSS },
-    { SDL_SCANCODE_Z, SCE_CTRL_SQUARE },
-    { SDL_SCANCODE_H, SCE_CTRL_PSBUTTON },
-};
-
-static const size_t key_binding_count = sizeof(key_bindings) / sizeof(key_bindings[0]);
-static const size_t key_binding_ext_count = sizeof(key_bindings_ext) / sizeof(key_bindings_ext[0]);
 
 static const ControllerBinding controller_bindings[] = {
     { SDL_CONTROLLER_BUTTON_BACK, SCE_CTRL_SELECT },
@@ -226,20 +184,49 @@ static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode 
     return temp;
 }
 
-static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext) {
+static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, HostState &host) {
     const uint8_t *const keys = SDL_GetKeyboardState(nullptr);
-    const size_t selected_key_binding_count = ext ? key_binding_ext_count : key_binding_count;
-    for (int i = 0; i < selected_key_binding_count; ++i) {
-        const KeyBinding &binding = ext ? key_bindings_ext[i] : key_bindings[i];
-        if (keys[binding.scancode]) {
-            *buttons |= binding.button;
-        }
-    }
+    if (ext) {
+        if (keys[host.cfg.keyboard_button_l2])
+            *buttons |= SCE_CTRL_L2;
+        if (keys[host.cfg.keyboard_button_r2])
+            *buttons |= SCE_CTRL_R2;
+        if (keys[host.cfg.keyboard_button_l3])
+            *buttons |= SCE_CTRL_L3;
+        if (keys[host.cfg.keyboard_button_r3])
+            *buttons |= SCE_CTRL_R3;
+    } 
+        if (keys[host.cfg.keyboard_button_select])
+            *buttons |= SCE_CTRL_SELECT;
+        if (keys[host.cfg.keyboard_button_start])
+            *buttons |= SCE_CTRL_START;
+        if (keys[host.cfg.keyboard_button_up])
+            *buttons |= SCE_CTRL_UP;
+        if (keys[host.cfg.keyboard_button_right])
+            *buttons |= SCE_CTRL_RIGHT;
+        if (keys[host.cfg.keyboard_button_down])
+            *buttons |= SCE_CTRL_DOWN;
+        if (keys[host.cfg.keyboard_button_left])
+            *buttons |= SCE_CTRL_LEFT;
+        if (keys[host.cfg.keyboard_button_l1])
+            *buttons |= SCE_CTRL_LTRIGGER;
+        if (keys[host.cfg.keyboard_button_r1])
+            *buttons |= SCE_CTRL_RTRIGGER;
+        if (keys[host.cfg.keyboard_button_triangle])
+            *buttons |= SCE_CTRL_TRIANGLE;
+        if (keys[host.cfg.keyboard_button_circle])
+            *buttons |= SCE_CTRL_CIRCLE;
+        if (keys[host.cfg.keyboard_button_cross])
+            *buttons |= SCE_CTRL_CROSS;
+        if (keys[host.cfg.keyboard_button_square])
+            *buttons |= SCE_CTRL_SQUARE;
+        if (keys[host.cfg.keyboard_button_psbutton])
+            *buttons |= SCE_CTRL_PSBUTTON;
 
-    axes[0] += keys_to_axis(keys, SDL_SCANCODE_A, SDL_SCANCODE_D);
-    axes[1] += keys_to_axis(keys, SDL_SCANCODE_W, SDL_SCANCODE_S);
-    axes[2] += keys_to_axis(keys, SDL_SCANCODE_J, SDL_SCANCODE_L);
-    axes[3] += keys_to_axis(keys, SDL_SCANCODE_I, SDL_SCANCODE_K);
+    axes[0] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_left), static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_right));
+    axes[1] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_up), static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_down));
+    axes[2] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_rightstick_left), static_cast<SDL_Scancode>(host.cfg.keyboard_rightstick_right));
+    axes[3] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_rightstick_up), static_cast<SDL_Scancode>(host.cfg.keyboard_rightstick_down));
 }
 
 static float axis_to_axis(int16_t axis) {
@@ -354,7 +341,7 @@ static int peek_buffer(HostState &host, int port, SceCtrlData *&pad_data, int co
     std::array<float, 4> axes;
     axes.fill(0);
     if (port == 1) {
-        apply_keyboard(&pad_data->buttons, axes.data(), ext);
+        apply_keyboard(&pad_data->buttons, axes.data(), ext, host);
     }
     for (const auto &controller : state.controllers) {
         if (controller.second.port == port) {
