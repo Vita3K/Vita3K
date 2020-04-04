@@ -16,7 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <host/load_self.h>
-
+#include <app/functions.h>
 #include <config/state.h>
 #include <kernel/relocation.h>
 #include <kernel/state.h>
@@ -344,10 +344,10 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     }
     
     if (self_path == "app0:sce_module/steroid.suprx") {
-        LOG_CRITICAL("You're trying to load a vitamin dump. It is not supported.");
+        app::error_dialog("You're trying to load a vitamin dump. It is not supported.", nullptr);
         return -1;
     }
-
+    
     const uint8_t *const elf_bytes = self_bytes + self_header.elf_offset;
     const Elf32_Ehdr &elf = *reinterpret_cast<const Elf32_Ehdr *>(elf_bytes);
     const uint32_t module_info_offset = elf.e_entry & 0x3fffffff;
