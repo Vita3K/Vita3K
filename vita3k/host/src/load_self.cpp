@@ -342,6 +342,11 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         LOG_CRITICAL("SELF {} header type {} is not supported.", self_path, self_header.header_type);
         return -1;
     }
+    
+    if (self_path == "app0:sce_module/steroid.suprx") {
+        LOG_CRITICAL("You're trying to load a vitamin dump. It is not supported.");
+        return -1;
+    }
 
     const uint8_t *const elf_bytes = self_bytes + self_header.elf_offset;
     const Elf32_Ehdr &elf = *reinterpret_cast<const Elf32_Ehdr *>(elf_bytes);
