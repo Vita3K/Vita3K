@@ -27,7 +27,9 @@
 
 namespace gui {
 
-static int current_page;
+static int32_t current_page;
+static std::map<std::string, std::map<std::string, ImVec2>> size_page;
+static std::map<std::string, std::pair<bool, bool>> zoom;
 
 bool init_manual(GuiState &gui, HostState &host) {
     current_page = 0;
@@ -51,9 +53,8 @@ bool init_manual(GuiState &gui, HostState &host) {
             }
         }
 
+        int32_t width, height;
         for (auto p = 0; p < manual_page_list.size(); p++) {
-            int32_t width = 0;
-            int32_t height = 0;
             vfs::FileBuffer buffer;
             std::string app_manual_path = manual_path.string();
 
@@ -70,10 +71,14 @@ bool init_manual(GuiState &gui, HostState &host) {
                 LOG_ERROR("Invalid manual image for title: {} [{}].", host.io.title_id, host.game_title);
                 return false;
             }
-
             gui.manuals[host.io.title_id][p].init(gui.imgui_state.get(), data, width, height);
             stbi_image_free(data);
         }
+        size_page[host.io.title_id]["mini"] = size_page[host.io.title_id]["current"] = height < width ? ImVec2(float(width), float(height)) : ImVec2(float(width * (width / 960.f)), float(height / (height / 544.f)));
+        size_page[host.io.title_id]["max"] = ImVec2(float(width), float(height));
+        if (height > width)
+            zoom[host.io.title_id].first = true;
+
     }
     return gui.manuals.find(host.io.title_id) != gui.manuals.end();
 }
@@ -82,44 +87,47 @@ static auto hiden_button = false;
 
 void draw_manual_dialog(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
-    ImGui::SetNextWindowPos(ImVec2(-5.0f, -5.0f), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(display_size.x + 10.0f, display_size.y + 10.0f), ImGuiCond_Always);
-    ImGui::Begin("Manual", &gui.live_area.manual_dialog, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::SetNextWindowPos(ImVec2(-5.f, -1.f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(display_size.x + 10.f, display_size.y + 2.f), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.999f);
+    ImGui::Begin("##manual", &gui.live_area.manual_dialog, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::SetNextWindowPosCenter();
+    if (zoom[host.io.title_id].first && ImGui::IsMouseDoubleClicked(0)) {        
+        zoom[host.io.title_id].second ? size_page[host.io.title_id]["current"] = size_page[host.io.title_id]["mini"] : size_page[host.io.title_id]["current"] = size_page[host.io.title_id]["max"];
+        zoom[host.io.title_id].second = !zoom[host.io.title_id].second;
+    }
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+    const auto size_child = ImVec2(size_page[host.io.title_id]["current"].x * scal.x, size_page[host.io.title_id]["mini"].y * scal.y);
+    ImGui::BeginChild("##manual_child", size_child, false, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | (zoom[host.io.title_id].second ? ImGuiWindowFlags_AlwaysVerticalScrollbar : ImGuiWindowFlags_NoScrollbar));
 
     if (gui.manuals.find(host.io.title_id) != gui.manuals.end())
-        ImGui::GetWindowDrawList()->AddImage(gui.manuals[host.io.title_id][current_page], ImVec2(0, 0), display_size);
+        ImGui::Image(gui.manuals[host.io.title_id][current_page], ImVec2(size_page[host.io.title_id]["current"].x * scal.x, size_page[host.io.title_id]["current"].y * scal.y));
 
-    if (ImGui::IsMouseDoubleClicked(0)) {
-        if (!hiden_button)
-            hiden_button = true;
-        else
-            hiden_button = false;
-    }
+    if (ImGui::IsMouseClicked(1))
+        hiden_button = !hiden_button;
+    
+    const auto BUTTON_SIZE = ImVec2(65.f * scal.x, 30.f * scal.y);
 
-    const auto BUTTON_SIZE = ImVec2(80.f * scal.x, 30.f * scal.y);
-
-    ImGui::SetCursorPos(ImVec2(display_size.x - (80.0f * scal.x), 10.0f * scal.y));
-    if (!hiden_button && ImGui::Button("X", BUTTON_SIZE) || ImGui::IsKeyPressed(SDL_SCANCODE_H))
+    ImGui::SetCursorPos(ImVec2(size_child.x - ((!zoom[host.io.title_id].second ? 70.0f : 85.f) * scal.x), 10.0f * scal.y));
+    if (!hiden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton))
         gui.live_area.manual_dialog = false;
 
     const auto wheel_counter = ImGui::GetIO().MouseWheel;
     if (current_page > 0) {
-        ImGui::SetCursorPos(ImVec2(10.0f * scal.x, display_size.y - (40.0f * scal.y)));
-        if ((!hiden_button && ImGui::Button("<", BUTTON_SIZE)) || ImGui::IsKeyPressed(SDL_SCANCODE_LEFT) || (wheel_counter == 1))
+        ImGui::SetCursorPos(ImVec2(5.0f * scal.x, size_child.y - (40.0f * scal.y)));
+        if ((!hiden_button && !zoom[host.io.title_id].second && ImGui::Button("<", BUTTON_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_left) || ImGui::IsKeyPressed(host.cfg.keyboard_button_left) || (!zoom[host.io.title_id].second && wheel_counter == 1))
             --current_page;
     }
-    if (!hiden_button) {
-        ImGui::SameLine();
-        ImGui::SetCursorPos(ImVec2(display_size.x / 2 - (40.0f * scal.x), display_size.y - (40.0f * scal.y)));
-        const std::string slider = fmt::format("{}/{}", current_page + 1, (int)gui.manuals[host.io.title_id].size());
+    if (!hiden_button && !zoom[host.io.title_id].second) {
+        ImGui::SetCursorPos(ImVec2(size_child.x / 2.f - ((BUTTON_SIZE.x / 2.f) * scal.x), display_size.y - (40.f * scal.y)));
+        const std::string slider = fmt::format("{:0>2d}/{:0>2d}", current_page + 1, (int32_t)gui.manuals[host.io.title_id].size());
         if (ImGui::Button(slider.c_str(), BUTTON_SIZE))
             ImGui::OpenPopup("Manual Slider");
-        ImGui::SetNextWindowPos(ImVec2(-5.0f, display_size.y - 50.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(-5.0f, size_child.y - 50.0f), ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2(display_size.x + 10.0f, 40.0f), ImGuiCond_Always);
         if (ImGui::BeginPopupModal("Manual Slider", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
             ImGui::PushItemWidth(display_size.x - 10.0f);
-            ImGui::SliderInt("##slider_current_manual", &current_page, 0, (int)gui.manuals[host.io.title_id].size() - 1);
+            ImGui::SliderInt("##slider_current_manual", &current_page, 0, (int32_t)gui.manuals[host.io.title_id].size() - 1, slider.c_str());
             ImGui::PopItemWidth();
             if (ImGui::IsItemDeactivated())
                 ImGui::CloseCurrentPopup();
@@ -127,12 +135,11 @@ void draw_manual_dialog(GuiState &gui, HostState &host) {
         }
     }
     if (current_page < (int)gui.manuals[host.io.title_id].size() - 1) {
-        ImGui::SameLine();
-        ImGui::SetCursorPos(ImVec2(display_size.x - (80.0f * scal.x), display_size.y - (40.0f * scal.y)));
-        if ((!hiden_button && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(SDL_SCANCODE_RIGHT) || (wheel_counter == -1))
+        ImGui::SetCursorPos(ImVec2(size_child.x - (70.f * scal.x), display_size.y - (40.0f * scal.y)));
+        if ((!hiden_button && !zoom[host.io.title_id].second && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(host.cfg.keyboard_button_right) || (!zoom[host.io.title_id].second && (wheel_counter == -1)))
             ++current_page;
     }
-
+    ImGui::EndChild();
     ImGui::End();
 }
 

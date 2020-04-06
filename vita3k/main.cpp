@@ -125,6 +125,7 @@ int main(int argc, char *argv[]) {
 #if DISCORD_RPC
             discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
+            gui::draw_live_area(gui, host);
             gui::draw_ui(gui, host);
             gui::draw_game_selector(gui, host);
 
@@ -165,6 +166,7 @@ int main(int argc, char *argv[]) {
 
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
+        gui::draw_live_area(gui, host);
 
         if (host.cfg.performance_overlay)
             gui::draw_perf_overlay(gui, host);

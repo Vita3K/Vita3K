@@ -146,8 +146,8 @@ struct GuiState {
     ImGuiTextFilter game_search_bar;
     std::map<std::string, ImGui_Texture> user_backgrounds;
 
-    std::map<std::string, std::map<int, ImGui_Texture>> live_area_contents;
-    std::map<std::string, std::map<int, std::map<int, std::vector<ImGui_Texture>>>> live_items;
+    std::map<std::string, std::map<std::string, ImGui_Texture>> live_area_contents;
+    std::map<std::string, std::map<std::string, std::map<std::string, std::vector<ImGui_Texture>>>> live_items;
 
     std::map<std::string, std::vector<ImGui_Texture>> manuals;
 
@@ -165,5 +165,7 @@ struct GuiState {
     // imgui
     ImFont *normal_font{};
     ImFont *monospaced_font{};
+    ImFont *live_area_font{};
     std::vector<char> font_data;
+    std::vector<char> live_area_font_data;
 };
