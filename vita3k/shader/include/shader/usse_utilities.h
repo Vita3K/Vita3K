@@ -9,7 +9,9 @@
 
 struct FeatureState;
 
-namespace shader::usse::utils {
+namespace shader {
+namespace usse {
+namespace utils {
 
 struct SpirvUtilFunctions {
     spv::Function *pack_f16{ nullptr };
@@ -57,4 +59,6 @@ void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite,
     b.setBuildPoint(&blocks.merge);
     b.closeLoop();
 }
-} // namespace shader::usse::utils
+} // namespace utils
+} // namespace usse
+} // namespace shader

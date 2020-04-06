@@ -24,6 +24,7 @@
 #include <shader/usse_disasm.h>
 #include <shader/usse_types.h>
 #include <util/log.h>
+#include <util/optional.h>
 
 using namespace shader;
 using namespace usse;
@@ -1339,8 +1340,8 @@ bool USSETranslatorVisitor::vdual(
 
     const auto op1_info = op_info.at(op1.opcode);
     const auto op2_info = op_info.at(op2.opcode);
-    const optional<DualSrcLayout> op1_layout = get_dual_op1_src_layout(op1_info.src_count, src_config);
-    const optional<DualSrcLayout> op2_layout = get_dual_op2_src_layout(op1_info.src_count, op2_info.src_count, src_config);
+    const auto op1_layout = get_dual_op1_src_layout(op1_info.src_count, src_config);
+    const auto op2_layout = get_dual_op2_src_layout(op1_info.src_count, op2_info.src_count, src_config);
 
     if (!op1_layout) {
         LOG_ERROR("Missing dual for op1 layout.");

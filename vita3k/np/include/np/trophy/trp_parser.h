@@ -22,7 +22,8 @@
 #include <string>
 #include <vector>
 
-namespace np::trophy {
+namespace np {
+namespace trophy {
 
 struct TRPEntry {
     std::string filename;
@@ -48,4 +49,5 @@ struct TRPFile {
     const std::int32_t search_file(const char *name);
 };
 
-} // namespace np::trophy
+} // namespace trophy
+} // namespace np

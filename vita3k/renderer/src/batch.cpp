@@ -16,9 +16,9 @@ void complete_command(State &state, CommandHelper &helper, const int code) {
     state.command_finish_one.notify_all();
 }
 
-void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list, const char *base_path,
+void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, ConfigState &config, CommandList &command_list, const char *base_path,
     const char *title_id) {
-    using CommandHandlerFunc = std::function<void(renderer::State &, MemState &, Config &,
+    using CommandHandlerFunc = std::function<void(renderer::State &, MemState &, ConfigState &,
         CommandHelper &, const FeatureState &, Context *, GxmContextState *, const char *, const char *)>;
 
     static std::map<CommandOpcode, CommandHandlerFunc> handlers = {
@@ -57,7 +57,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
     } while (true);
 }
 
-void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path,
+void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, ConfigState &config, const char *base_path,
     const char *title_id) {
     std::uint32_t processed_count = 0;
 

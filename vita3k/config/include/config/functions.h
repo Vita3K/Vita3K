@@ -20,8 +20,8 @@
 #include <util/exit_code.h>
 #include <util/fs.h>
 
-struct Config;
 class Root;
+struct ConfigState;
 
 namespace config {
 
@@ -31,7 +31,7 @@ namespace config {
   * \param output_path The location to save the configuration file.
   * \return Success on saving the config file, otherwise Error.
   */
-ExitCode serialize_config(Config &cfg, const fs::path &output_path);
+ExitCode serialize_config(ConfigState &cfg, const fs::path &output_path);
 
 /**
   * \brief Initializes config system, parsing command-line args and handling some basic ones:
@@ -40,6 +40,6 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path);
   * \param root_paths Root location used throughout Vita3K.
   * \return Success for completion, QuitRequest if Help or Version is requested, otherwise Error.
   */
-ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths);
+ExitCode init_config(ConfigState &cfg, int argc, char **argv, const Root &root_paths);
 
 } // namespace config

@@ -20,15 +20,14 @@
 #include <config/config.h>
 #include <config/yaml.h>
 
+#include <util/fs.h>
+#include <util/optional.h>
 #include <util/vector_utils.h>
-
-#include <boost/optional.hpp>
-
-using boost::optional;
 
 // Enum based on members in Config file
 // Used for easier getting of options and their names for config files
-enum file_config {
+namespace config {
+enum class file_config {
 #define GENERATE_ENUM(option_type, option_name, option_default, member_name) \
     e_##member_name,
 
@@ -37,9 +36,10 @@ enum file_config {
         _INVALID
 #undef GENERATE_ENUM
 };
+} // namespace config
 
 // Configuration File options
-struct Config : YamlLoader {
+struct ConfigState : YamlLoader {
 private:
     // Privately update members
     // Use this function when the YAML file is updated before the members.
@@ -52,12 +52,12 @@ private:
     }
 
     // Perform comparisons with optional settings
-    void check_members(const Config &rhs) {
-        if (rhs.vpk_path.is_initialized())
+    void check_members(const ConfigState &rhs) {
+        if (rhs.vpk_path)
             vpk_path = rhs.vpk_path;
-        if (rhs.run_title_id.is_initialized())
+        if (rhs.run_title_id)
             run_title_id = rhs.run_title_id;
-        if (rhs.recompile_shader_path.is_initialized())
+        if (rhs.recompile_shader_path)
             run_title_id = rhs.run_title_id;
 
         if (!rhs.config_path.empty())
@@ -80,25 +80,25 @@ public:
     bool load_config = false;
     bool fullscreen = false;
 
-    Config() {
+    ConfigState() {
         update_yaml();
     }
 
-    ~Config() = default;
+    ~ConfigState() = default;
 
-    Config(const Config &rhs) {
+    ConfigState(const ConfigState &rhs) {
         yaml_node = rhs.get();
         check_members(rhs);
         update_members();
     }
 
-    Config(Config &&rhs) noexcept {
+    ConfigState(ConfigState &&rhs) noexcept {
         yaml_node = rhs.get();
         check_members(rhs);
         update_members();
     }
 
-    Config &operator=(const Config &rhs) {
+    ConfigState &operator=(const ConfigState &rhs) {
         if (this != &rhs) {
             yaml_node = rhs.get();
             check_members(rhs);
@@ -107,7 +107,7 @@ public:
         return *this;
     }
 
-    Config &operator=(Config &&rhs) noexcept {
+    ConfigState &operator=(ConfigState &&rhs) noexcept {
         yaml_node = rhs.get();
         check_members(rhs);
         update_members();
@@ -115,9 +115,9 @@ public:
     }
 
     // Merge two Config nodes, respecting both options and preferring the left-hand side
-    Config &operator+=(const Config &rhs) {
+    ConfigState &operator+=(const ConfigState &rhs) {
         bool init = false;
-        if (rhs.yaml_node == Config{}.get()) {
+        if (rhs.yaml_node == ConfigState{}.get()) {
             init = true;
         }
 
@@ -142,15 +142,15 @@ public:
     }
 
     // Return the name of the configuration as named in the config file
-    std::string operator[](const file_config &name) const {
+    std::string operator[](const config::file_config &name) const {
 #define SWITCH_NAMES(option_type, option_name, option_default, member_name) \
-    case file_config::e_##member_name:                                      \
+    case config::file_config::e_##member_name:                              \
         return option_name;
 
         switch (name) {
             CONFIG_LIST(SWITCH_NAMES)
 
-        case _INVALID:
+        case config::file_config::_INVALID:
         default: {
             return nullptr;
         }
@@ -161,8 +161,8 @@ public:
     // Return the value of the YAML node
     // If the YAML looks outdated, call update_yaml() first, and then use this operator
     template <typename T>
-    T get_from_yaml(const file_config &name) const {
-        return get_member<T>(this[name]);
+    T get_from_yaml(const config::file_config &name) const {
+        return get_member<T>(this[static_cast<int>(name)]);
     }
 
     // Generate a YAML node based on the current values of the members.
@@ -185,7 +185,7 @@ public:
 
     // Load a function to the node network, and then update the members
     void load_new_config(const fs::path &path) override {
-        yaml_node = YAML::LoadFile(path.generic_path().string());
+        yaml_node = YAML::LoadFile(path.generic_string());
         update_members();
     }
 

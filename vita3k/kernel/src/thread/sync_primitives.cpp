@@ -544,7 +544,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
         if (waiting_thread_iter != condvar->waiting_threads.end()) {
             LOG_ERROR("{}: Target thread {} not found", export_name, waiting_thread->name);
         } else {
-            waiting_thread_data = *waiting_thread_iter;
+            waiting_thread_data = waiting_thread_iter;
         }
 
         if (!condvar->waiting_threads.remove(waiting_thread_data))

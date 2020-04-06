@@ -55,6 +55,7 @@ spv::Id USSETranslatorVisitor::swizzle_to_spv_comp(spv::Id composite, spv::Id ty
     case SwizzleChannel::_2: break;
 
     case SwizzleChannel::_H: break;
+    default: ;
     }
 
     LOG_WARN("Swizzle channel {} unsupported", static_cast<Imm4>(swizzle));

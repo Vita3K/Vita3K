@@ -10,7 +10,8 @@
 #include <gxm/functions.h>
 #include <vector>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     R_PROFILE(__func__);
 
@@ -187,4 +188,5 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
 
     return program;
 }
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

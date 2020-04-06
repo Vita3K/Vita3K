@@ -19,7 +19,7 @@
 
 #include <string>
 
-struct Config;
+struct ConfigState;
 struct HostState;
 struct SDL_Window;
 struct ImGui_State;
@@ -39,7 +39,7 @@ enum class AppRunType {
     Vpk,
 };
 
-bool init(HostState &state, Config &cfg, const Root &root_paths);
+bool init(HostState &state, ConfigState &cfg, const Root &root_paths);
 void destroy(HostState &host, ImGui_State *imgui);
 void update_viewport(HostState &state);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);

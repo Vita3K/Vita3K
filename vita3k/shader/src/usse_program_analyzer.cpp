@@ -23,7 +23,8 @@
 
 #include <shader/usse_types.h>
 
-namespace shader::usse {
+namespace shader {
+namespace usse {
 bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off) {
     const std::uint32_t high = (inst >> 32);
     const std::uint32_t low = static_cast<std::uint32_t>(inst);
@@ -173,4 +174,5 @@ void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &
         }
     }
 }
-} // namespace shader::usse
+} // namespace usse
+} // namespace shader

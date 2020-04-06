@@ -1,24 +1,9 @@
-include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
-
-function(check_submodules_present)
-    file(READ "${CMAKE_SOURCE_DIR}/.gitmodules" gitmodules)
-    string(REGEX MATCHALL "path *= *[^ \t\r\n]*" gitmodules ${gitmodules})
-    foreach(module ${gitmodules})
-        string(REGEX REPLACE "path *= *" "" module ${module})
-        if (NOT EXISTS "${CMAKE_SOURCE_DIR}/${module}/.git")
-            message(FATAL_ERROR "Git submodule ${module} not found. "
-                    "Please run: git submodule update --init --recursive")
-        endif()
-    endforeach()
-endfunction()
-check_submodules_present()
-
 # Fix a glslang hack
 # See https://github.com/KhronosGroup/glslang/issues/1015 and https://github.com/Vita3K/Vita3K/pull/369 for details
 if(NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	if(WIN32)
 		set(CMAKE_INSTALL_PREFIX "C:/Program Files/${PROJECT_NAME}" CACHE STRING "Default install prefix is: C:/Program Files" FORCE)
-	elseif(UNIX)
+	elseif(LINUX)
 		set(CMAKE_INSTALL_PREFIX /usr/local CACHE STRING "Default install prefix is: /usr/local" FORCE)
 	endif()
 endif()
@@ -51,8 +36,9 @@ add_library(printf INTERFACE)
 target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf")
 
 add_library(elfio INTERFACE)
-target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio")
+target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio/elfio")
 
+option(SPDLOG_BUILD_EXAMPLES "Build examples" OFF)
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
 target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1 SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
@@ -83,7 +69,7 @@ if(WIN32)
 elseif(APPLE)
 	add_library(nativefiledialog STATIC nativefiledialog-cmake/src/nfd_cocoa.m nativefiledialog-cmake/src/nfd_common.c)
 	target_include_directories(nativefiledialog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog-cmake/src/include")
-elseif(UNIX)
+elseif(LINUX)
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 
@@ -97,6 +83,7 @@ elseif(UNIX)
 	target_link_libraries(nativefiledialog ${GTK3_LIBRARIES})
 endif()
 
+option(BUILD_EXAMPLES "Build the examples project as well" OFF)
 add_subdirectory(libfat16)
 
 # The imgui target is including both imgui and imgui_club.
@@ -134,7 +121,7 @@ if(APPLE)
 elseif(WIN32)
 	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/windows/include")
 	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/windows/unicorn.lib")
-elseif(UNIX)
+elseif(LINUX)
 	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn-src/include")
 	externalproject_add(
 		unicorn_build
@@ -169,7 +156,7 @@ add_library(rpcs3 INTERFACE)
 target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")
 
 add_library(discord-rpc INTERFACE)
-if (USE_DISCORD_RICH_PRESENCE)
+if(USE_DISCORD_RICH_PRESENCE)
 	target_compile_definitions(discord-rpc INTERFACE DISCORD_RPC=NDEBUG)
 endif()
 target_include_directories(discord-rpc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/discord-rpc/include")
@@ -177,7 +164,7 @@ if(APPLE)
 	target_link_libraries(discord-rpc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/discord-rpc-lib/libdiscord-rpc-mac.a")
 elseif(WIN32)
 	target_link_libraries(discord-rpc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/discord-rpc-lib/discord-rpc.lib")
-elseif(UNIX)
+elseif(LINUX)
 	target_link_libraries(discord-rpc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/discord-rpc-lib/libdiscord-rpc-linux.a")
 endif()
 
@@ -205,7 +192,10 @@ target_compile_definitions(dlmalloc PUBLIC ONLY_MSPACES=1)
 
 add_subdirectory(pugixml)
 
-if (USE_VULKAN)
+add_library(CLI11 INTERFACE)
+target_include_directories(CLI11 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cli11")
+
+if(USE_VULKAN)
 	find_package(Vulkan REQUIRED)
 	add_library(vulkan INTERFACE)
 	target_include_directories(vulkan INTERFACE ${Vulkan_INCLUDE_DIRS})

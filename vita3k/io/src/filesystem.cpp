@@ -19,7 +19,7 @@
 #include <io/util.h>
 
 #ifdef WIN32
-// To open wide files for Boost.Filesystem, we also need the appropriate wide mode flags for Windows, and normal flags for other OS
+// To open wide files for std::filesystem, we also need the appropriate wide mode flags for Windows, and normal flags for other OS
 const wchar_t *translate_open_mode(const int flags) {
     if (flags & SCE_O_WRONLY) {
         if (flags & SCE_O_RDONLY) {

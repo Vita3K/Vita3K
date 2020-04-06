@@ -48,7 +48,7 @@ struct bf_t : bf_base<T, N> {
     };
 
     template <typename T2>
-    struct extract_impl<T2, std::enable_if_t<std::is_unsigned<T2>::value>> {
+    struct extract_impl<T2, typename std::enable_if<std::is_unsigned<T2>::value>::type> {
         // Load unsigned value
         static constexpr T2 extract(const T &data) {
             // Vita3K change: bf_t::vmask to ((1 << bf_t::bitsize) - 1))
@@ -57,7 +57,7 @@ struct bf_t : bf_base<T, N> {
     };
 
     template <typename T2>
-    struct extract_impl<T2, std::enable_if_t<std::is_signed<T2>::value>> {
+    struct extract_impl<T2, typename std::enable_if<std::is_signed<T2>::value>::type> {
         // Load signed value (sign-extended)
         static constexpr T2 extract(const T &data) {
             return static_cast<T2>(static_cast<type>(static_cast<utype>(data) << (bf_t::bitmax - bitpos - N)) >> (bf_t::bitmax - N));

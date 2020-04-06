@@ -39,11 +39,11 @@
 #endif
 
 #ifdef USE_VULKAN
+#include <SDL_vulkan.h>
 #include <renderer/vulkan/functions.h>
 #endif
 
 #include <SDL_video.h>
-#include <SDL_vulkan.h>
 #include <microprofile.h>
 
 namespace app {
@@ -92,7 +92,7 @@ void update_viewport(HostState &state) {
     }
 }
 
-bool init(HostState &state, Config &cfg, const Root &root_paths) {
+bool init(HostState &state, ConfigState &cfg, const Root &root_paths) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
@@ -150,7 +150,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
 
 #if DISCORD_RPC
     discord::init();
-    if (cfg.discord_rich_presence) {
+    if (state.cfg.discord_rich_presence) {
         discord::update_presence("");
     }
 #endif

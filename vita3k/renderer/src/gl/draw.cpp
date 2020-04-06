@@ -13,7 +13,8 @@
 #include <features/state.h>
 #include <gxm/functions.h>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     R_PROFILE(__func__);
 
@@ -95,14 +96,14 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
             gl::set_uniform(program_id, vertex_program_gxp, vertex_gl_statics, mem, vertex_uniform.parameter, vertex_uniform.data,
                 log_uniforms);
 
-            delete vertex_uniform.data;
+            free(vertex_uniform.data);
         }
 
         for (auto &fragment_uniform : context.fragment_set_requests) {
             gl::set_uniform(program_id, fragment_program_gxp, fragment_gl_statics, mem, fragment_uniform.parameter,
                 fragment_uniform.data, log_uniforms);
 
-            delete fragment_uniform.data;
+            free(fragment_uniform.data);
         }
     }
 
@@ -154,4 +155,5 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     state.last_draw_vertex_program = state.vertex_program;
     state.last_draw_fragment_program = state.fragment_program;
 }
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

@@ -34,7 +34,7 @@ bool get_data_by_id(std::string &out_data, SfoFile &file, int id) {
 
 bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &key) {
     auto res = std::find_if(file.entries.begin(), file.entries.end(),
-        [key](auto et) { return et.data.first == key; });
+        [key](const SfoFile::SfoEntry &et) { return et.data.first == key; });
 
     if (res == file.entries.end()) {
         return false;
@@ -44,7 +44,7 @@ bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &ke
     return true;
 }
 
-bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
+bool load(SfoFile &sfile, const vfs::FileBuffer &content) {
     if (content.empty()) {
         return false;
     }

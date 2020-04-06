@@ -81,10 +81,15 @@ public:
         file_info.file_mode = SCE_SO_IFDIR | SCE_SO_IROTH;
         file_info.access_mode = SCE_S_IFDIR | SCE_S_IRUSR;
     }
-
-    auto get_dir_ptr() const {
+#ifdef WIN32
+    _wdirent *get_dir_ptr() const {
         return get_system_dir_ptr(dir_ptr);
     }
+#else
+    dirent *get_dir_ptr() const {
+        return get_system_dir_ptr(dir_ptr);
+    }
+#endif
 
     bool is_directory() const {
         return file_info.file_mode & SCE_SO_IFDIR;

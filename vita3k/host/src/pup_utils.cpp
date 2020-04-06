@@ -15,16 +15,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <crypto/aes.h>
-#include <fat16/fat16.h>
 #include <host/pup_types.h>
+
 #include <util/string_utils.h>
 
+#include <crypto/aes.h>
+#include <fat16/fat16.h>
 #include <self.h>
 
 #include <fstream>
 
 // Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
+
+namespace SceUtils {
 
 void register_keys(KeyStore &SCE_KEYS) {
     SCE_KEYS.register_keys(
@@ -309,10 +312,15 @@ void register_keys(KeyStore &SCE_KEYS) {
 }
 
 static void extract_file(Fat16::Image &img, Fat16::Entry &entry, const std::string &path) {
-    const std::u16string filename_16 = entry.get_filename();
-    const std::string filename = path + std::string(filename_16.begin(), filename_16.end());
+    auto filename = path + entry.get_filename();
+    if (!fs::path(filename).has_extension()) {
+        if (filename.back() == '/') { // actually a folder
+            fs::create_directories(filename);
+            return;
+        }
+    }
 
-    FILE *f = fopen(filename.c_str(), "wb");
+    const auto f = fopen(filename.c_str(), "wb");
 
     static constexpr std::uint32_t CHUNK_SIZE = 0x10000;
 
@@ -323,7 +331,7 @@ static void extract_file(Fat16::Image &img, Fat16::Entry &entry, const std::stri
     std::uint32_t offset = 0;
 
     while (size_left != 0) {
-        std::uint32_t size_to_take = std::min<std::uint32_t>(CHUNK_SIZE, size_left);
+        const auto size_to_take = std::min<std::uint32_t>(CHUNK_SIZE, size_left);
         if (img.read_from_cluster(&temp_buf[0], offset, entry.entry.starting_cluster, size_to_take) != size_to_take) {
             break;
         }
@@ -337,7 +345,7 @@ static void extract_file(Fat16::Image &img, Fat16::Entry &entry, const std::stri
     fclose(f);
 }
 
-static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, std::string dir_path) {
+static void traverse_directory(Fat16::Image &img, Fat16::Entry &mee, const std::string &dir_path) {
     fs::create_directories(dir_path);
 
     while (img.get_next_entry(mee)) {
@@ -349,9 +357,9 @@ static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, std::string 
                 if (!img.get_first_entry_dir(mee, baby))
                     break;
 
-                auto dir_name = mee.get_filename();
+                std::string dir_name = mee.get_filename();
 
-                traverse_directory(img, baby, dir_path + "/" + std::string(dir_name.begin(), dir_name.end()) + "/");
+                traverse_directory(img, baby, dir_path + "/" + dir_name);
             }
         }
 
@@ -394,7 +402,7 @@ void make_fself(const std::string &input_file, const std::string &output_file) {
     filein.read(&input[0], file_size);
     filein.close();
 
-    ElfHeader ehdr = ElfHeader(&input[0]);
+    auto ehdr = ElfHeader(&input[0]);
 
     SCE_header hdr = { 0 };
     hdr.magic = SCE_MAGIC;
@@ -444,7 +452,7 @@ void make_fself(const std::string &input_file, const std::string &output_file) {
     control_7.common.size = sizeof(control_7);
 
     char empty_buffer[ElfHeader::Size] = { 0 };
-    ElfHeader myhdr = ElfHeader(empty_buffer);
+    auto myhdr = ElfHeader(empty_buffer);
     memcpy(&myhdr.e_ident_1, "\177ELF\1\1\1", 8);
     myhdr.e_type = ehdr.e_type;
     myhdr.e_machine = 0x28;
@@ -464,7 +472,7 @@ void make_fself(const std::string &input_file, const std::string &output_file) {
 
     fileout.seekp(hdr.phdr_offset, std::ios_base::beg);
     for (int i = 0; i < ehdr.e_phnum; ++i) {
-        ElfPhdr phdr = ElfPhdr(&input[0] + ehdr.e_phoff + ehdr.e_phentsize * i);
+        auto phdr = ElfPhdr(&input[0] + ehdr.e_phoff + ehdr.e_phentsize * i);
         if (phdr.p_align > 0x1000)
             phdr.p_align = 0x1000;
         fileout.write((char *)&phdr, sizeof(phdr));
@@ -472,7 +480,7 @@ void make_fself(const std::string &input_file, const std::string &output_file) {
 
     fileout.seekp(hdr.section_info_offset, std::ios_base::beg);
     for (int i = 0; i < ehdr.e_phnum; ++i) {
-        ElfPhdr phdr = ElfPhdr(&input[0] + ehdr.e_phoff + ehdr.e_phentsize * i);
+        auto phdr = ElfPhdr(&input[0] + ehdr.e_phoff + ehdr.e_phentsize * i);
         segment_info segment_info = { 0 };
         segment_info.offset = offset_to_real_elf + phdr.p_offset;
         segment_info.length = phdr.p_filesz;
@@ -538,7 +546,7 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
     aes_setkey_dec(&aes_ctx, key_bytes, 256);
     aes_crypt_cbc(&aes_ctx, AES_DECRYPT, 64, iv_bytes, dec_in, dec);
 
-    MetadataInfo metadata_info = MetadataInfo((char *)dec);
+    auto metadata_info = MetadataInfo((char *)dec);
 
     std::vector<unsigned char> dec1(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
     std::vector<unsigned char> input_data(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
@@ -548,7 +556,7 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
 
     unsigned char dec2[MetadataHeader::Size];
     std::copy(&dec1[0], &dec1[MetadataHeader::Size], dec2);
-    MetadataHeader metadata_hdr = MetadataHeader((char *)dec2);
+    auto metadata_hdr = MetadataHeader((char *)dec2);
 
     std::vector<SceSegment> segs;
     const auto start = MetadataHeader::Size + metadata_hdr.section_count * MetadataSection::Size;
@@ -562,7 +570,7 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
     for (uint32_t i = 0; i < metadata_hdr.section_count; i++) {
         std::vector<unsigned char> dec3((MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size));
         memcpy(&dec3[0], &dec1[0] + (MetadataHeader::Size + i * MetadataSection::Size), (MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size));
-        MetadataSection metsec = MetadataSection((char *)&dec3[0]);
+        auto metsec = MetadataSection((char *)&dec3[0]);
 
         if (metsec.encryption == EncryptionType::AES128CTR) {
             segs.push_back({ metsec.offset, metsec.seg_idx, metsec.size, metsec.compression == CompressionType::DEFLATE, vault[metsec.key_idx], vault[metsec.iv_idx] });
@@ -576,29 +584,31 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader
         file.seekg(32);
         char selfheaderbuffer[SelfHeader::Size];
         file.read(selfheaderbuffer, SelfHeader::Size);
-        SelfHeader self_hdr = SelfHeader(selfheaderbuffer);
+        auto self_hdr = SelfHeader(selfheaderbuffer);
 
         file.seekg(self_hdr.appinfo_offset);
         char appinfobuffer[AppInfoHeader::Size];
         file.read(appinfobuffer, AppInfoHeader::Size);
-        AppInfoHeader appinfo_hdr = AppInfoHeader(appinfobuffer);
+        auto appinfo_hdr = AppInfoHeader(appinfobuffer);
 
         return { appinfo_hdr.sys_version, appinfo_hdr.self_type };
     } else if (sce_hdr.sce_type == SceType::SRVK) {
         file.seekg(sce_hdr.header_length);
         char srvkheaderbuffer[SrvkHeader::Size];
         file.read(srvkheaderbuffer, SrvkHeader::Size);
-        SrvkHeader srvk = SrvkHeader(srvkheaderbuffer);
+        auto srvk = SrvkHeader(srvkheaderbuffer);
 
         return { srvk.sys_version, SelfType::NONE };
     } else if (sce_hdr.sce_type == SceType::SPKG) {
         file.seekg(sce_hdr.header_length);
         char spkgheaderbuffer[SpkgHeader::Size];
         file.read(spkgheaderbuffer, SpkgHeader::Size);
-        SpkgHeader spkg = SpkgHeader(spkgheaderbuffer);
+        auto spkg = SpkgHeader(spkgheaderbuffer);
         return { spkg.update_version << 16, SelfType::NONE };
     } else {
         LOG_ERROR("Unknown system version for type {}", static_cast<int>(sce_hdr.sce_type));
         return {};
     }
 }
+
+} // namespace SceUtils

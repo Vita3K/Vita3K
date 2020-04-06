@@ -23,6 +23,7 @@
 
 #include <rtc/rtc.h>
 
+#include <algorithm>
 #include <atomic>
 #include <map>
 #include <mutex>
@@ -76,12 +77,20 @@ struct WaitingThreadData {
     bool operator==(const ThreadStatePtr &rhs) const {
         return thread == rhs;
     }
+
+    bool operator!=(const WaitingThreadData &rhs) const {
+        return !(*this == rhs);
+    }
+
+    bool operator!=(const ThreadStatePtr &rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 class WaitingThreadQueue : public std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>, std::greater<WaitingThreadData>> {
 public:
-    auto begin() const { return this->c.begin(); }
-    auto end() const { return this->c.end(); }
+    WaitingThreadData begin() const { return *this->c.begin(); }
+    WaitingThreadData end() const { return *this->c.end(); }
     bool remove(const WaitingThreadData &value) {
         auto it = std::find(this->c.begin(), this->c.end(), value);
         if (it != this->c.end()) {
@@ -92,11 +101,11 @@ public:
             return false;
         }
     }
-    auto find(const WaitingThreadData &value) {
-        return std::find(this->c.begin(), this->c.end(), value);
+    WaitingThreadData find(const WaitingThreadData &value) {
+        return *std::find(this->c.begin(), this->c.end(), value);
     }
-    auto find(const ThreadStatePtr &value) {
-        return std::find(this->c.begin(), this->c.end(), value);
+    WaitingThreadData find(const ThreadStatePtr &value) {
+        return *std::find(this->c.begin(), this->c.end(), value);
     }
 };
 

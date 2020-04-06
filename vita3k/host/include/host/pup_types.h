@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#pragma once
+
 #include <host/functions.h>
 #include <util/log.h>
 
@@ -24,6 +26,8 @@
 
 #define SCE_MAGIC 0x00454353
 #define HEADER_LENGTH 0x1000
+
+namespace SceUtils {
 
 struct KeyEntry {
     uint64_t minver;
@@ -131,9 +135,7 @@ enum class CompressionType {
     DEFLATE = 2
 };
 
-typedef std::unordered_map<
-    KeyType, std::unordered_map<SceType, std::unordered_map<SelfType, std::vector<KeyEntry>>>>
-    keystore;
+typedef std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::vector<KeyEntry>>>> keystore;
 
 class KeyStore {
 private:
@@ -141,23 +143,23 @@ private:
 
 public:
     void register_keys(KeyType keytype, SceType scetype, int keyrev, std::string key, std::string iv, uint64_t minver = 0, uint64_t maxver = 0xffffffffffffffff, SelfType selftype = SelfType::NONE) {
-        store[keytype][scetype][selftype].push_back({ minver, maxver, keyrev, key, iv });
+        store[static_cast<int>(keytype)][static_cast<int>(scetype)][static_cast<int>(selftype)].push_back({ minver, maxver, keyrev, key, iv });
     }
 
     KeyEntry get(KeyType keytype, SceType scetype, uint64_t sysver = -1, int keyrev = -1, SelfType selftype = SelfType::NONE) {
         KeyEntry empty_keys = { 0, 0, 0, "", "" };
 
-        auto key_type = store.find(keytype);
+        auto key_type = store.find(static_cast<int>(keytype));
         if (key_type == store.end()) {
             LOG_ERROR("Cannot find any keys for this key type");
             return empty_keys;
         }
-        auto sce_type = key_type->second.find(scetype);
+        auto sce_type = key_type->second.find(static_cast<int>(scetype));
         if (sce_type == key_type->second.end()) {
             LOG_ERROR("Cannot find any keys for this SCE type");
             return empty_keys;
         }
-        auto self_type = sce_type->second.find(selftype);
+        auto self_type = sce_type->second.find(static_cast<int>(selftype));
         if (self_type == sce_type->second.end()) {
             LOG_ERROR("Cannot find any keys for this SELF type");
             return empty_keys;
@@ -166,7 +168,7 @@ public:
         auto &key_entries = *self_type;
 
         for (auto item : key_entries.second) {
-            if (sysver < 0 || (sysver >= item.minver && sysver <= item.maxver) && (keyrev < 0 || keyrev == item.keyrev)) {
+            if (sysver < 0 || ((sysver >= item.minver && sysver <= item.maxver) && (keyrev < 0 || keyrev == item.keyrev))) {
                 return item;
             }
         }
@@ -207,8 +209,8 @@ public:
         if (version != 3) {
             LOG_ERROR("Invalid SCE version");
         }
-        this->sce_type = SceType(_sce_type);
-        this->platform = SelfPlatform(_platform);
+        this->sce_type = static_cast<SceType>(_sce_type);
+        this->platform = static_cast<SelfPlatform>(_platform);
     };
 };
 
@@ -263,7 +265,7 @@ public:
         memcpy(&sys_version, &data[16], 8);
         memcpy(&field_18, &data[24], 8);
 
-        this->self_type = SelfType(_self_type);
+        this->self_type = static_cast<SelfType>(_self_type);
     };
 };
 
@@ -351,8 +353,8 @@ public:
         memcpy(&_plaintext, &data[24], 4);
         memcpy(&field_1C, &data[28], 4);
 
-        this->compressed = SecureBool(_compressed);
-        this->plaintext = SecureBool(_plaintext);
+        this->compressed = static_cast<SecureBool>(_compressed);
+        this->plaintext = static_cast<SecureBool>(_plaintext);
     }
 };
 
@@ -437,9 +439,9 @@ public:
         memcpy(&iv_idx, &data[40], 4);
         memcpy(&_compression, &data[44], 4);
 
-        this->hash = HashType(hashtype);
-        this->encryption = EncryptionType(_encryption);
-        this->compression = CompressionType(_compression);
+        this->hash = static_cast<HashType>(hashtype);
+        this->encryption = static_cast<EncryptionType>(_encryption);
+        this->compression = static_cast<CompressionType>(_compression);
     }
 };
 
@@ -516,7 +518,7 @@ public:
         memcpy(&field_70, &data[112], 8);
         memcpy(&field_78, &data[120], 8);
 
-        this->type = SpkgType(_pkg_type);
+        this->type = static_cast<SpkgType>(_pkg_type);
     }
 };
 
@@ -549,7 +551,7 @@ public:
         memcpy(&size, &data[4], 4);
         memcpy(&more, &data[8], 8);
 
-        this->type = ControlType(control_type);
+        this->type = static_cast<ControlType>(control_type);
     }
 };
 
@@ -616,3 +618,5 @@ void extract_fat(const std::string &partition_path, const std::string &partition
 void make_fself(const std::string &input_file, const std::string &output_file);
 std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr);
 std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, int klictxt = 0);
+
+} // namespace SceUtils

@@ -1189,7 +1189,7 @@ EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time)
 bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, HostState &host, const char *export_name, const char *path, int &error_val) {
     const auto &loaded_modules = host.kernel.loaded_modules;
 
-    auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [path](const auto &p) {
+    auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [path](const std::pair<int, SceKernelModuleInfoPtr> &p) {
         return std::string(p.second->path) == path;
     });
 

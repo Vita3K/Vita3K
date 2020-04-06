@@ -19,7 +19,8 @@
 
 #include <cstdint>
 
-namespace shader::usse {
+namespace shader {
+namespace usse {
 // Thanks motoharu for original reversing work.
 static const std::uint32_t NaN_raw = 0x7FFF7FFF;
 static const std::uint32_t neg_NaN_raw = 0xFFFFFFFF;
@@ -428,4 +429,5 @@ static const float f16_constant_table_bank3[] = {
     0.0f,
     0.0f
 };
-}; // namespace shader::usse
+} // namespace usse
+}; // namespace shader

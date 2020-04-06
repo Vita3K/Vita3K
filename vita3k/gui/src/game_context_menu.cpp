@@ -22,11 +22,8 @@
 
 #include <host/functions.h>
 #include <host/state.h>
-
 #include <io/vfs.h>
-
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <pugixml.hpp>
 #include <sstream>
@@ -122,8 +119,22 @@ static bool get_game_info(GuiState &gui, HostState &host) {
     const auto game_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
     if (fs::exists(game_path) && !fs::is_empty(game_path)) {
-        time_t updated = fs::last_write_time(game_path);
-        game_info[UPDATED].second = std::asctime(std::localtime(&updated));
+#ifdef WIN32
+        struct _stat sb;
+        if (_wstat(game_path.generic_wstring().c_str(), &sb) < 0)
+            return false;
+
+        game_info[UPDATED].second = std::asctime(std::localtime(&sb.st_mtime));
+#else
+        auto fs_time = fs::last_write_time(game_path);
+
+#if VITA3K_CPP17 || VITA3K_CPP14
+        auto mod = decltype(fs_time)::clock::to_time_t(fs_time);
+        game_info[UPDATED].second = std::asctime(std::localtime(&mod));
+#else
+        game_info[UPDATED].second = std::asctime(std::localtime(&fs_time));
+#endif
+#endif
 
         fs::recursive_directory_iterator end;
         for (fs::recursive_directory_iterator g(game_path); g != end; ++g) {

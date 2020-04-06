@@ -59,8 +59,8 @@ static const char *miniz_get_error(const ZipPtr &zip) {
 }
 
 static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const ZipPtr &zip) {
-    if (!mz_zip_reader_extract_file_to_callback(zip.get(), file.generic_path().string().c_str(), &write_to_buffer, &buf, 0)) {
-        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), file.generic_path().string());
+    if (!mz_zip_reader_extract_file_to_callback(zip.get(), file.generic_string().c_str(), &write_to_buffer, &buf, 0)) {
+        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), file.generic_string());
         return false;
     }
 
@@ -69,7 +69,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
 
 bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     if (!fs::exists(path)) {
-        LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_path().string());
+        LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_string());
         return false;
     }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
@@ -78,9 +78,9 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     FILE *vpk_fp;
 
 #ifdef WIN32
-    _wfopen_s(&vpk_fp, path.generic_path().wstring().c_str(), L"rb");
+    _wfopen_s(&vpk_fp, path.generic_wstring().c_str(), L"rb");
 #else
-    vpk_fp = fopen(path.generic_path().string().c_str(), "rb");
+    vpk_fp = fopen(path.generic_string().c_str(), "rb");
 #endif
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
@@ -167,8 +167,8 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
                 fs::create_directories(file_output.parent_path());
             }
 
-            LOG_INFO("Extracting {}", file_output.generic_path().string());
-            mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_path().string().c_str(), 0);
+            LOG_INFO("Extracting {}", file_output.string());
+            mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_string().c_str(), 0);
         }
     }
 
@@ -179,11 +179,11 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
 
 static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {
     if (path.empty())
-        return InvalidApplicationPath;
+        return ExitCode::InvalidApplicationPath;
 
     if (run_type == app::AppRunType::Vpk) {
         if (!install_vpk(host, gui, path)) {
-            return FileNotFound;
+            return ExitCode::FileNotFound;
         }
     } else if (run_type == app::AppRunType::Extracted) {
         host.io.title_id = string_utils::wide_to_utf(path);
@@ -221,8 +221,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
         const auto log_name{ log_directory / (string_utils::remove_special_chars(host.game_title) + " - [" + host.io.title_id + "].log") };
-        if (logging::add_sink(log_name) != Success)
-            return InitConfigFailed;
+        if (logging::add_sink(log_name) != ExitCode::Success)
+            return ExitCode::InitConfigFailed;
     }
 
     LOG_INFO("Title: {}", host.game_title);
@@ -253,7 +253,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
                 LOG_INFO("Pre-load module {} (at \"{}\") loaded", module->module_name, module_path);
             } else
-                return FileNotFound;
+                return ExitCode::FileNotFound;
         } else {
             LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
         }
@@ -268,11 +268,11 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
 
             LOG_INFO("Main executable {} ({}) loaded", module->module_name, EBOOT_PATH);
         } else
-            return FileNotFound;
+            return ExitCode::FileNotFound;
     } else
-        return FileNotFound;
+        return ExitCode::FileNotFound;
 
-    return Success;
+    return ExitCode::Success;
 }
 
 static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
@@ -353,13 +353,13 @@ bool handle_events(HostState &host, GuiState &gui) {
 }
 
 ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {
-    if (load_app_impl(entry_point, host, gui, path, run_type) != Success) {
+    if (load_app_impl(entry_point, host, gui, path, run_type) != ExitCode::Success) {
         std::string message = "Failed to load \"";
         message += string_utils::wide_to_utf(path);
         message += "\"";
         message += "\nSee console output for details.";
         app::error_dialog(message, host.window.get());
-        return ModuleLoadFailed;
+        return ExitCode::ModuleLoadFailed;
     }
 
     if (!host.cfg.show_gui)
@@ -374,7 +374,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
         discord::update_presence(host.io.title_id, host.game_title);
 #endif
 
-    return Success;
+    return ExitCode::Success;
 }
 
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
@@ -387,7 +387,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
     if (main_thread_id < 0) {
         app::error_dialog("Failed to init main thread.", host.window.get());
-        return InitThreadFailed;
+        return ExitCode::InitThreadFailed;
     }
 
     const ThreadStatePtr main_thread = util::find(main_thread_id, host.kernel.threads);
@@ -418,8 +418,8 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
     if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
         app::error_dialog("Failed to run main thread.", host.window.get());
-        return RunThreadFailed;
+        return ExitCode::RunThreadFailed;
     }
 
-    return Success;
+    return ExitCode::Success;
 }

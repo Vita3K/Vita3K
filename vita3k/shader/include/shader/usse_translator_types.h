@@ -9,7 +9,8 @@ namespace spv {
 class Builder;
 }
 
-namespace shader::usse {
+namespace shader {
+namespace usse {
 
 using SpirvCode = std::vector<uint32_t>;
 using SpirvVarRegBank = spv::Id;
@@ -62,4 +63,5 @@ struct NonDependentTextureQueryCallInfo {
 using NonDependentTextureQueryCallInfos = std::vector<NonDependentTextureQueryCallInfo>;
 using SamplerMap = std::unordered_map<std::uint32_t, spv::Id>;
 
-} // namespace shader::usse
+} // namespace usse
+} // namespace shader

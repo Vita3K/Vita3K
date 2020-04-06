@@ -6,7 +6,7 @@
 struct GxmContextState;
 struct MemState;
 struct FeatureState;
-struct Config;
+struct ConfigState;
 
 namespace renderer {
 struct Context;
@@ -39,8 +39,8 @@ void subject_in_progress(SceGxmSyncObject *sync_object, const SyncObjectSubject 
 int wait_for_status(State &state, int *result_code);
 void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, GxmContextState *gxm_context_state, CommandList &command_list);
-void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list, const char *base_path, const char *title_id);
-void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path, const char *title_id);
+void process_batch(State &state, MemState &mem, ConfigState &config, CommandList &command_list, const char *base_path, const char *title_id);
+void process_batches(State &state, const FeatureState &features, MemState &mem, ConfigState &config, const char *base_path, const char *title_id);
 bool init(WindowPtr &window, std::unique_ptr<State> &state, Backend backend);
 
 /**

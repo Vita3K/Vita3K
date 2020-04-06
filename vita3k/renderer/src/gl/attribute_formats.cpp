@@ -3,7 +3,8 @@
 
 #include <util/log.h>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
     R_PROFILE(__func__);
 
@@ -46,4 +47,5 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format) {
         return GL_FALSE;
     }
 }
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

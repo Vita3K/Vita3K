@@ -6,6 +6,7 @@ add_library(
     include/shader/types_imm.h
 	include/shader/matcher.h
 	include/shader/decoder_detail.h
+	include/shader/usse_constant_table.h
 	include/shader/usse_disasm.h
 	include/shader/usse_program_analyzer.h
 	include/shader/usse_decoder_helpers.h

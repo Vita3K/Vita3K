@@ -19,7 +19,6 @@
 
 #include "lay_out_args.h"
 #include "read_arg.h"
-#include "vargs.h"
 #include "write_return_value.h"
 
 #include <host/import_fn.h>
@@ -27,27 +26,36 @@
 
 #include <microprofile.h>
 
+#if VITA3K_CPP17 || VITA3K_CPP14
+using std::index_sequence;
+using std::index_sequence_for;
+#else
+#include <boost/mp11/integer_sequence.hpp>
+using boost::mp11::index_sequence;
+using boost::mp11::index_sequence_for;
+#endif
+
 // Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>
-std::enable_if_t<!std::is_same_v<Ret, void>> call(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+typename std::enable_if<!std::is_same<Ret, void>::value>::type call(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
     const Ret ret = (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, state, host.mem)...);
     write_return_value(cpu, ret);
 }
 
 // Function does not return a value.
 template <typename... Args, size_t... indices>
-void call(void (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
+void call(void (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, index_sequence<indices...>, SceUID thread_id, CPUState &cpu, HostState &host) {
     (*export_fn)(host, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, state, host.mem)...);
 }
 
 template <typename Ret, typename... Args>
 ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), const char *export_name) {
-    constexpr std::tuple<ArgsLayout<Args...>, LayoutArgsState> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
+    const auto args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
 
     return [export_fn, export_name, args_layout](HostState &host, CPUState &cpu, SceUID thread_id) {
         MICROPROFILE_SCOPEI("HLE", export_name, MP_YELLOW);
 
-        using Indices = std::index_sequence_for<Args...>;
+        using Indices = index_sequence_for<Args...>;
         call(export_fn, export_name, std::get<0>(args_layout), std::get<1>(args_layout), Indices(), thread_id, cpu, host);
     };
 }

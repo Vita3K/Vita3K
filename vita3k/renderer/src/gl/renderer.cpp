@@ -20,7 +20,8 @@
 #include <cassert>
 #include <sstream>
 
-namespace renderer::gl {
+namespace renderer {
+namespace gl {
 namespace texture {
 bool init(GLTextureCacheState &cache) {
     cache.select_callback = [&](const std::size_t index) {
@@ -297,7 +298,7 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
 bool create(std::unique_ptr<Context> &context) {
     R_PROFILE(__func__);
 
-    context = std::make_unique<GLContext>();
+    context = std::unique_ptr<GLContext>(new GLContext());
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
     return !(!texture::init(gl_context->texture_cache) || !gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays) || !gl_context->element_buffer.init(glGenBuffers, glDeleteBuffers) || !gl_context->stream_vertex_buffers.init(glGenBuffers, glDeleteBuffers)
@@ -307,7 +308,7 @@ bool create(std::unique_ptr<Context> &context) {
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {
     R_PROFILE(__func__);
 
-    rt = std::make_unique<GLRenderTarget>();
+    rt = std::unique_ptr<GLRenderTarget>(new GLRenderTarget());
     GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
 
     if (!render_target->renderbuffers.init(glGenRenderbuffers, glDeleteRenderbuffers) || !render_target->framebuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
@@ -354,7 +355,7 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
-    fp = std::make_unique<GLFragmentProgram>();
+    fp = std::unique_ptr<GLFragmentProgram>(new GLFragmentProgram());
     GLFragmentProgram *frag_program_gl = reinterpret_cast<GLFragmentProgram *>(fp.get());
 
     // Try to hash this shader
@@ -386,7 +387,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
 bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
-    vp = std::make_unique<GLVertexProgram>();
+    vp = std::unique_ptr<GLVertexProgram>(new GLVertexProgram());
     GLVertexProgram *vert_program_gl = reinterpret_cast<GLVertexProgram *>(vp.get());
 
     // Try to hash this shader
@@ -486,4 +487,5 @@ void upload_vertex_stream(GLContext &context, const std::size_t stream_index, co
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-} // namespace renderer::gl
+} // namespace gl
+} // namespace renderer

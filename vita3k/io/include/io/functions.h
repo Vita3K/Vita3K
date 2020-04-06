@@ -31,7 +31,7 @@
 
 struct IOState;
 
-inline SceUID invalid_fd = -1;
+const SceUID invalid_fd = -1;
 
 void init_device_paths(IOState &io);
 bool init_savedata_game_path(IOState &io, const fs::path &pref_path);

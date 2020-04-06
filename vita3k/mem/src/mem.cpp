@@ -21,13 +21,9 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
 #include <cstring>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#else
+#ifndef WIN32
 #include <sys/mman.h>
 #include <unistd.h>
 #endif

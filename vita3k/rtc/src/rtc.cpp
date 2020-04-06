@@ -46,7 +46,7 @@ std::uint64_t convert_filetime(const _FILETIME &filetime) {
 }
 #else
 std::uint64_t convert_timespec(const timespec &timespec) {
-    return timespec.tv_sec * 1'000'000 + timespec.tv_nsec / 1'000;
+    return timespec.tv_sec * 1000000 + timespec.tv_nsec / 1000;
 }
 #endif
 

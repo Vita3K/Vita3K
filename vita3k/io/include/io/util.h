@@ -22,14 +22,16 @@
 #undef st_mtime
 
 #include <io/types.h>
+
 #include <util/fs.h>
+#include <util/preprocessor.h>
 
 typedef uint8_t TtyType;
 
-inline constexpr TtyType TTY_UNKNOWN = 0b00;
-inline constexpr TtyType TTY_IN = 0b01;
-inline constexpr TtyType TTY_OUT = 0b10;
-inline constexpr TtyType TTY_INOUT = TTY_IN | TTY_OUT;
+VITA3K_INLINE_CONSTEXPR TtyType TTY_UNKNOWN = 0b00;
+VITA3K_INLINE_CONSTEXPR TtyType TTY_IN = 0b01;
+VITA3K_INLINE_CONSTEXPR TtyType TTY_OUT = 0b10;
+VITA3K_INLINE_CONSTEXPR TtyType TTY_INOUT = TTY_IN | TTY_OUT;
 
 struct FileInfo {
     // The actual location on the Vita
@@ -98,11 +100,11 @@ public:
 // Overloaded functions for separate systems
 #ifdef WIN32
     const wchar_t *get_char_path() const {
-        return file_info.sys_loc.generic_path().wstring().c_str();
+        return file_info.sys_loc.generic_wstring().c_str();
     }
 #else
     const char *get_char_path() const {
-        return file_info.sys_loc.generic_path().string().c_str();
+        return file_info.sys_loc.generic_string().c_str();
     }
 #endif
 

@@ -24,18 +24,18 @@ struct SceNgsPatchInfo1 {
     std::int32_t in_channels;
     float unk[3];
 };
-static_assert(sizeof(SceNgsPatchInfo1) == 20);
+static_assert(sizeof(SceNgsPatchInfo1) == 20, "Invalid SceNgsPatchInfo1 size");
 
 struct SceNgsPatchInfo2 {
     std::int32_t unk[5];
 };
-static_assert(sizeof(SceNgsPatchInfo2) == 20);
+static_assert(sizeof(SceNgsPatchInfo2) == 20, "Invalid SceNgsPatchInfo2 size");
 
 struct SceNgsBufferInfo {
     Ptr<void> data;
     std::uint32_t size;
 };
-static_assert(sizeof(SceNgsBufferInfo) == 8);
+static_assert(sizeof(SceNgsBufferInfo) == 8, "Invalid SceNgsBufferInfo size");
 
 EXPORT(int, sceNgsAT9GetSectionDetails) {
     return UNIMPLEMENTED();

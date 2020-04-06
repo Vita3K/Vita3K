@@ -102,6 +102,8 @@ static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::Spi
         return &params.predicates;
     case shader::usse::RegisterBank::INDEX:
         return &params.indexes;
+    default:
+        break;
     }
 
     // LOG_WARN("Reg bank {} unsupported", static_cast<uint8_t>(reg_bank));

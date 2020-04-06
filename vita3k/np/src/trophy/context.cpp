@@ -8,7 +8,8 @@
 #include <pugixml.hpp>
 #include <spdlog/fmt/fmt.h>
 
-namespace np::trophy {
+namespace np {
+namespace trophy {
 Context::Context(const CommunicationID &comm_id, IOState &io, const SceUID trophy_stream,
     const std::string &output_progress_path)
     : comm_id(comm_id)
@@ -264,7 +265,8 @@ bool Context::get_trophy_description(const std::int32_t id, std::string &name, s
 
     return false;
 }
-} // namespace np::trophy
+} // namespace trophy
+} // namespace np
 
 np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const std::string &pref_path,
     const np::CommunicationID *custom_comm, const std::uint32_t lang, np::NpTrophyError *error) {
@@ -275,8 +277,8 @@ np::trophy::ContextHandle create_trophy_context(NpState &np, IOState &io, const 
     if (error)
         *error = np::NpTrophyError::TROPHY_ERROR_NONE;
 
-#define TROPHY_RET_ERROR(err)                 \
-    if (error)                                \
+#define TROPHY_RET_ERROR(err)            \
+    if (error)                           \
         *error = np::NpTrophyError::err; \
     return np::trophy::INVALID_CONTEXT_HANDLE
 
