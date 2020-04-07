@@ -60,6 +60,13 @@ bool refresh_game_list(GuiState &gui, HostState &host) {
     return true;
 }
 
+inline uint64_t current_time() {
+    return std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::high_resolution_clock::now().time_since_epoch())
+        .count();
+}
+
+static std::map<std::string, uint64_t> last_time;
 static auto MENUBAR_HEIGHT = 22.f;
 
 void draw_game_selector(GuiState &gui, HostState &host) {
@@ -67,14 +74,51 @@ void draw_game_selector(GuiState &gui, HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
-    if (gui.user_backgrounds[host.cfg.background_image])
+    if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty())
         ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
-    if (gui.user_backgrounds[host.cfg.background_image]) {
-        ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.background_image],
-            ImVec2(0, MENUBAR_HEIGHT), display_size);
+    if (gui.start_background && !gui.file_menu.pkg_install_dialog) {
+        if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
+            last_time["start"] = 0;
+        else {
+            if (last_time["start"] == 0)
+                last_time["start"] = current_time();
+
+            while (last_time["start"] + host.cfg.delay_start < current_time()) {
+                last_time["start"] += host.cfg.delay_start;
+                gui.theme.start_screen = true;
+            }
+        }
     }
+
+    if ((!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty()) && ImGui::IsWindowHovered()) {
+        if (last_time["home"] == 0)
+            last_time["home"] = current_time();
+
+        while (last_time["home"] + host.cfg.delay_background < current_time()) {
+            last_time["home"] += host.cfg.delay_background;
+
+            if (host.cfg.use_theme_background) {
+                if (gui.current_theme_bg < uint64_t(gui.theme_backgrounds.size() - 1))
+                    ++gui.current_theme_bg;
+                else
+                    gui.current_theme_bg = 0;
+            } else {
+                if (gui.user_backgrounds.size() > 1) {
+                    if (gui.current_user_bg < uint64_t(gui.user_backgrounds.size() - 1))
+                        ++gui.current_user_bg;
+                    else
+                        gui.current_user_bg = 0;
+                }
+            }
+        }
+    }
+
+    if (host.cfg.use_theme_background && !gui.theme_backgrounds.empty())
+        ImGui::GetBackgroundDrawList()->AddImage(gui.theme_backgrounds[gui.current_theme_bg], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+    else if (!gui.user_backgrounds.empty())
+        ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
 
     if (gui.delete_game_icon) {
         if (gui.game_selector.icons.find(host.io.title_id) != gui.game_selector.icons.end())

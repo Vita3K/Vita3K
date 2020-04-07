@@ -39,7 +39,12 @@
     code(bool, "texture-cache", true, texture_cache)                                                    \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
-    code(std::string, "background-image", std::string{}, background_image)                              \
+    code(std::string, "user-start-background", std::string{}, user_start_background)                    \
+    code(std::string, "start-background",  std::string{}, start_background)                             \
+    code(std::string, "theme-content-id", std::string{}, theme_content_id)                              \
+    code(bool, "use-theme-background", false, use_theme_background)                                     \
+    code(int, "delay-background", 4, delay_background)                                                  \
+    code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
     code(int, "log-level", static_cast<int>(spdlog::level::trace), log_level)                           \
     code(std::string, "pref-path", std::string{}, pref_path)                                            \
@@ -85,6 +90,7 @@
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_VECTOR(code)                                                                             \
     code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
+    code(std::vector<std::string>, "user-backgrounds",  std::vector<std::string>{}, user_backgrounds)   \
     code(std::vector<std::string>, "online-id", std::vector<std::string>{"Vita3K"}, online_id)
 
 // Parent macro for easier generation

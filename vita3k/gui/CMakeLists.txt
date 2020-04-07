@@ -39,6 +39,7 @@ add_library(
 	src/semaphores_dialog.cpp
 	src/settings_dialog.cpp
 	src/threads_dialog.cpp
+	src/themes.cpp
 	src/controls_dialog.cpp
 	src/allocations_dialog.cpp
 	src/disassembly_dialog.cpp

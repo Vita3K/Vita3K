@@ -100,6 +100,7 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
     const fs::path ux0_data{ ux0 / "data" };
     const fs::path uma0_data{ uma0 / "data" };
     const fs::path ux0_app{ ux0 / "app" };
+    const fs::path ux0_theme{ ux0 / "theme" };
     const fs::path ux0_user{ ux0 / "user" };
 
     if (!fs::exists(ux0))
@@ -108,6 +109,8 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
         fs::create_directory(ux0_data);
     if (!fs::exists(ux0_app))
         fs::create_directory(ux0_app);
+    if (!fs::exists(ux0_theme))
+        fs::create_directory(ux0_theme);
     if (!fs::exists(ux0_user))
         fs::create_directory(ux0_user);
     if (!fs::exists(uma0))
