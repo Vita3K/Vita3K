@@ -100,7 +100,7 @@ struct Atrac9DecoderState : public DecoderState {
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
 
-    Atrac9DecoderState(uint32_t config_data);
+    explicit Atrac9DecoderState(uint32_t config_data);
 };
 
 struct PlayerState {

@@ -38,6 +38,16 @@ using SceNgsRackHandle = Ptr<ngs::Rack>;
 using SceNgsVoiceHandle = Ptr<ngs::Voice>;
 using SceNgsPatchHandle = Ptr<ngs::Patch>;
 
+struct SceNgsCallbackInfo {
+    SceNgsVoiceHandle hVoiceHandle;
+    SceNgsRackHandle hRackHandle;
+    uint32_t uModuleID;
+    uint32_t nCallbackData;
+    uint32_t nCallbackData2;
+    Ptr<void> pCallbackPtr;
+    Ptr<void> pUserData;
+};
+
 static constexpr SceUInt32 SCE_NGS_OK = 0;
 static constexpr SceUInt32 SCE_NGS_ERROR = 0x804A0001;
 static constexpr SceUInt32 SCE_NGS_ERROR_INVALID_ARG = 0x804A0002;
@@ -363,8 +373,12 @@ EXPORT(int, sceNgsVoiceSetFinishedCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceSetModuleCallback) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, uint32_t module, Ptr<void> callback, Ptr<void> user_data) {
+    ngs::Voice *voice = voice_handle.get(host.mem);
+    voice->callback = callback;
+    voice->user_data = user_data;
+
+    return 0;
 }
 
 EXPORT(int, sceNgsVoiceSetParamsBlock) {

@@ -57,12 +57,9 @@ namespace ngs::atrac9 {
 
         assert(state);
 
-        //const std::uint32_t block_align = calculate_block_align(params->config_data);
-        //const std::uint32_t superframe_size = calculate_superframe_size(params->config_data);
-        //const std::uint32_t sample_per_superframe = calculate_sample_per_superframe(params->config_data);
-
         // making this maybe to early...
-        decoder = std::make_unique<Atrac9DecoderState>(params->config_data);
+        if (!decoder)
+            decoder = std::make_unique<Atrac9DecoderState>(params->config_data);
 
         if (static_cast<std::int32_t>(decoded_samples_pending) < voice->rack->system->granularity) {
             // Ran out of data, supply new
@@ -93,7 +90,7 @@ namespace ngs::atrac9 {
                         state->current_byte_position_in_buffer = 0;
                         
                         if (state->current_buffer == -1) {
-                            // Free all occupied input routes
+                            // TODO: Free all occupied input routes
                             //unroute_occupied(mem, voice);
                         }
                     }

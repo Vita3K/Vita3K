@@ -15,6 +15,18 @@ namespace ngs::player {
 
     void Module::process(const MemState &mem, Voice *voice) {
         Parameters *params = voice->get_parameters<Parameters>(mem);
-        assert(false); // not sure what's supposed to happen here so I'll just have it tell me if it reaches here
+
+        const std::lock_guard<std::mutex> guard(*voice->voice_lock);
+
+        // TODO: unimplemented, should play audio through sdl I think
+
+        if (voice->inputs.inputs.empty()) {
+            return;
+        }
+
+        assert(voice->inputs.inputs.size() == 1);
+        uint8_t *output_data = voice->inputs.inputs[0].data();
+
+        deliver_data(mem, voice, 0, output_data);
     }
 }

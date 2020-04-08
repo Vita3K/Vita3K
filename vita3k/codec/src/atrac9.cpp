@@ -144,7 +144,7 @@ bool Atrac9DecoderState::receive(uint8_t *data, DecoderSize *size) {
     }
 
     assert(frame->format == AV_SAMPLE_FMT_FLTP);
-//    assert(get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME) == frame->nb_samples);
+    assert(get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME) == frame->nb_samples);
 
     if (data) {
         convert_f32_to_s16(

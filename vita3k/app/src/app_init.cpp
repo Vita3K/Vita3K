@@ -165,8 +165,8 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         LOG_ERROR("Failed to initialize file system for the emulator!");
         return false;
     }
-    
-    if (!!ngs::init(state.ngs, state.mem)) {
+
+    if (!ngs::init(state.ngs, state.mem)) {
         LOG_ERROR("Failed to initialize ngs.");
         return false;
     }

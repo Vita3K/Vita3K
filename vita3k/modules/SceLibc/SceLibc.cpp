@@ -762,7 +762,7 @@ EXPORT(int, mbtowc) {
 }
 
 EXPORT(Ptr<void>, memalign, uint32_t alignment, uint32_t size) {
-    Address address = alloc(host.mem, size, "memalign");
+    Address address = alloc(host.mem, size, "memalign", alignment);
 
     STUBBED("No actual alignment.");
     LOG_WARN_IF(address % alignment != 0, "Address {} does not fit alignment of {}.", log_hex(address), alignment);

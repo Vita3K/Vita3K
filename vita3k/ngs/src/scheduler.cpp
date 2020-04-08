@@ -117,8 +117,8 @@ namespace ngs {
             return false;
         }
 
-        // Check all dependencies
-        for (std::uint8_t i = 0; i < source->patches.size(); i++) {
+        // Check all dependencies, could be optimized- @sunho suggested dfs topological sort
+        for (size_t i = 0; i < source->patches.size(); i++) {
             for (const auto &patch: source->patches[i]) {
                 if (!patch) {
                     continue;
