@@ -314,7 +314,7 @@ void game_context_menu(GuiState &gui, HostState &host) {
         ImGui::TextColored(GUI_COLOR_TEXT, "Updated  %s", game_info["updated"].c_str());
         ImGui::Spacing();
         ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Size  ").x);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Size  %s MB", game_info["size"]);
+        ImGui::TextColored(GUI_COLOR_TEXT, "Size  %s MB", game_info["size"].c_str());
         ImGui::Spacing();
         ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Version  ").x);
         ImGui::TextColored(GUI_COLOR_TEXT, "Version  %s", host.game_version.c_str());
