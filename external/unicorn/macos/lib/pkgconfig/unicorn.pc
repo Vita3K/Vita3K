@@ -1,0 +1,8 @@
+Name: unicorn
+Description: Unicorn emulator engine
+Version: 1.0.1
+libdir=@@HOMEBREW_PREFIX@@/Cellar/unicorn/1.0.1/lib
+includedir=@@HOMEBREW_PREFIX@@/Cellar/unicorn/1.0.1/include
+archive=${libdir}/libunicorn.a
+Libs: -L${libdir} -lunicorn
+Cflags: -I${includedir}

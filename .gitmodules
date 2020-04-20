@@ -1,0 +1,101 @@
+[submodule "external/better-enums"]
+	path = external/better-enums
+	url = https://github.com/aantron/better-enums
+[submodule "external/boost"]
+	path = external/boost
+	url = https://github.com/Vita3K/ext-boost
+[submodule "external/capstone"]
+	path = external/capstone
+	url = https://github.com/aquynh/capstone.git
+[submodule "external/crypto-algorithms"]
+	path = external/crypto-algorithms
+	url = https://github.com/KorewaWatchful/crypto-algorithms
+[submodule "external/dirent"]
+	path = external/dirent
+	url = https://github.com/tronkko/dirent
+	branch = v1.23
+[submodule "external/discord-rpc"]
+	path = external/discord-rpc
+	url = https://github.com/discordapp/discord-rpc
+[submodule "external/dlmalloc"]
+	path = external/dlmalloc
+	url = https://github.com/Vita3K/dlmalloc
+[submodule "external/elfio"]
+	path = external/elfio
+	url = https://github.com/serge1/ELFIO
+[submodule "external/glslang"]
+	path = external/glslang
+	url = https://github.com/KhronosGroup/glslang
+[submodule "external/googletest"]
+	path = external/googletest
+	url = https://github.com/google/googletest
+[submodule "external/imgui"]
+	path = external/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "external/imgui_club"]
+	path = external/imgui_club
+	url = https://github.com/ocornut/imgui_club
+[submodule "external/libfat16"]
+	path = external/libfat16
+	url = https://github.com/Vita3K/libfat16
+[submodule "external/microprofile"]
+	path = external/microprofile
+	url = https://github.com/jonasmr/microprofile
+[submodule "external/nativefiledialog-cmake"]
+	path = external/nativefiledialog-cmake
+	url = https://github.com/illusionman1212/nativefiledialog-cmake
+[submodule "external/printf"]
+	path = external/printf
+	url = https://github.com/Vita3K/printf
+[submodule "external/pugixml"]
+	path = external/pugixml
+	url = https://github.com/zeux/pugixml
+[submodule "external/sdl"]
+	path = external/sdl
+	url = https://github.com/Vita3K/sdl
+[submodule "external/sdl2-cmake-scripts"]
+	path = external/sdl2-cmake-scripts
+	url = https://github.com/tcbrindle/sdl2-cmake-scripts
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/gabime/spdlog
+	branch = v1.x
+[submodule "external/SPIRV-Cross"]
+	path = external/SPIRV-Cross
+	url = https://github.com/Vita3K/SPIRV-Cross
+[submodule "vita3k/shaders-db"]
+	path = vita3k/shaders-db
+	url = https://github.com/Vita3K/shaders-db
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb
+[submodule "external/unicorn-src"]
+	path = external/unicorn-src
+	url = https://github.com/unicorn-engine/unicorn
+[submodule "external/vita-toolchain"]
+	path = external/vita-toolchain
+	url = https://github.com/Vita3K/vita-toolchain
+[submodule "external/yaml-cpp"]
+	path = external/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp
+[submodule "external/VulkanMemoryAllocator"]
+	path = external/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "external/ffmpeg"]
+	path = external/ffmpeg
+	url = https://github.com/Vita3K/ffmpeg-core.git
+[submodule "external/libb64"]
+	path = external/libb64
+	url = https://github.com/korewawatchful/libb64.git
+[submodule "external/libzRIF"]
+	path = external/libzRIF
+	url = https://github.com/korewawatchful/libzrif.git
+[submodule "external/psvpfsparser"]
+	path = external/psvpfsparser
+	url = https://github.com/korewawatchful/psvpfsparser.git
+[submodule "external/zlib"]
+	path = external/zlib
+	url = https://github.com/korewawatchful/zlib.git
+[submodule "external/libtomcrypt"]
+	path = external/libtomcrypt
+	url = https://github.com/korewawatchful/libtomcrypt.git
