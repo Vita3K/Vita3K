@@ -127,7 +127,6 @@ int main(int argc, char *argv[]) {
 #endif
             gui::draw_live_area(gui, host);
             gui::draw_ui(gui, host);
-            gui::draw_game_selector(gui, host);
 
             gui::draw_end(gui, host.window.get());
         } else {

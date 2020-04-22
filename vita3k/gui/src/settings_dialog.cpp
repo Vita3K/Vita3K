@@ -116,12 +116,9 @@ void get_modules_list(GuiState &gui, HostState &host) {
 
     const auto modules_path{ fs::path(host.pref_path) / "vs0/sys/external/" };
     if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
-        fs::recursive_directory_iterator end;
-        const std::string ext = ".suprx";
-        for (fs::recursive_directory_iterator m(modules_path); m != end; ++m) {
-            const fs::path lle = *m;
-            if (m->path().extension() == ext)
-                gui.modules.push_back({ lle.filename().replace_extension().string(), false });
+        for (const auto &module : fs::recursive_directory_iterator(modules_path)) {
+            if (module.path().extension() == ".suprx")
+                gui.modules.push_back({ module.path().filename().replace_extension().string(), false });
         }
 
         for (auto &m : gui.modules)
@@ -188,9 +185,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::Button("Refresh list"))
             get_modules_list(gui, host);
         ImGui::EndTabItem();
-    } else {
+    } else
         ImGui::PopStyleColor();
-    }
 
     // GPU
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
@@ -200,9 +196,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable texture flipping from GPU side.\nIt is recommended to disable this option for homebrew.");
         ImGui::EndTabItem();
-    } else {
+    } else
         ImGui::PopStyleColor();
-    }
 
     // System
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
@@ -222,9 +217,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable PS TV mode.");
         ImGui::EndTabItem();
-    } else {
+    } else
         ImGui::PopStyleColor();
-    }
 
     // Emulator
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
@@ -281,9 +275,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 ImGui::SetTooltip("Reset Vita3K emulator path to default.\nNeed move folder old to default manualy.");
         }
         ImGui::EndTabItem();
-    } else {
+    } else
         ImGui::PopStyleColor();
-    }
 
     // GUI
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
@@ -297,7 +290,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open Live Area by default when clicking on a game.\nIf disabled, use the right click on game to open it.");
         ImGui::Spacing();
-        ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 32, 128);
+        ImGui::Checkbox("Grid mode", &host.cfg.apps_list_grid);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check the box to enable app list in grid mode.");
+        if (!host.cfg.apps_list_grid) {
+            ImGui::Spacing();
+            ImGui::SliderInt("Game Icon Size", &host.cfg.icon_size, 32, 128);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select your preferred icon size.");
+        }
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Background Image");
@@ -319,9 +320,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             LOG_INFO_IF(change_user_image_background(gui, host), "Succes change image: {}", host.cfg.background_image);
         if (gui.user_backgrounds[host.cfg.background_image]) {
             ImGui::Spacing();
-            ImGui::SliderFloat("Background Alpha\nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
+            ImGui::SliderFloat("Background Alpha", &host.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("The minimum slider is opaque and the maximum is transparent.");
+                ImGui::SetTooltip("Select your preferred transparent background effect.\nThe minimum slider is opaque and the maximum is transparent.");
         }
         ImGui::EndTabItem();
     } else
@@ -350,9 +351,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
         ImGui::EndTabItem();
-    } else {
+    } else
         ImGui::PopStyleColor();
-    }
 
     if (host.cfg.overwrite_config)
         config::serialize_config(host.cfg, host.cfg.config_path);

@@ -32,6 +32,7 @@
     code(bool, "log-uniforms", false, log_uniforms)                                                     \
     code(bool, "pstv-mode", false, pstv_mode)                                                           \
     code(bool, "show-gui", false, show_gui)                                                             \
+    code(bool, "apps-list-grid", false, apps_list_grid)                                                 \
     code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \

@@ -314,6 +314,9 @@ void draw_end(GuiState &gui, SDL_Window *window) {
 void draw_live_area(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.live_area_font);
 
+    if (gui.game_selector.selected_title_id.empty())
+        draw_game_selector(gui, host);
+    draw_app_context_menu(gui, host);
     if (gui.live_area.live_area_dialog)
         draw_live_area_dialog(gui, host);
     if (gui.live_area.manual_dialog)
