@@ -67,7 +67,6 @@ static void draw_debug_menu(DebugMenuState &state) {
         ImGui::MenuItem("Event Flags", nullptr, &state.eventflags_dialog);
         ImGui::MenuItem("Memory Allocations", nullptr, &state.allocations_dialog);
         ImGui::MenuItem("Disassembly", nullptr, &state.disassembly_dialog);
-        ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
 }
@@ -76,7 +75,6 @@ static void draw_config_menu(ConfigurationMenuState &state) {
     if (ImGui::BeginMenu("Configuration")) {
         ImGui::MenuItem("Profiles Manager", nullptr, &state.profiles_manager_dialog);
         ImGui::MenuItem("Settings", nullptr, &state.settings_dialog);
-        ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
 }
@@ -84,7 +82,6 @@ static void draw_config_menu(ConfigurationMenuState &state) {
 static void draw_controls_menu(ControlMenuState &state) {
     if (ImGui::BeginMenu("Controls")) {
         ImGui::MenuItem("Keyboard Controls", nullptr, &state.controls_dialog);
-        ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
 }

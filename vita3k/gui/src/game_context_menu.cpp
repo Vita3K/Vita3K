@@ -147,7 +147,7 @@ static std::string context_dialog;
 static auto check_savedata_and_shaderlog = false;
 static auto information = false;
 
-void game_context_menu(GuiState &gui, HostState &host) {
+void draw_app_context_menu(GuiState &gui, HostState &host) {
     const auto game_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
     const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / host.io.title_id };
     const auto save_data_path{ fs::path(host.pref_path) / "ux0/user/00/savedata" / host.io.title_id };
@@ -155,6 +155,7 @@ void game_context_menu(GuiState &gui, HostState &host) {
 
     // Game Context Menu
     if (ImGui::BeginPopupContextItem("#game_context_menu")) {
+        ImGui::SetWindowFontScale(1.4f);
         if (ImGui::MenuItem("Boot", host.game_title.c_str()))
             gui.game_selector.selected_title_id = host.io.title_id;
         if (ImGui::MenuItem("Check Game Compatibility")) {
@@ -225,15 +226,16 @@ void game_context_menu(GuiState &gui, HostState &host) {
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##context_dialog", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetNextWindowPosCenter();
+        ImGui::SetNextWindowBgAlpha(0.999f);
         ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         // Update History
         if (context_dialog == "history") {
             ImGui::SetCursorPos(ImVec2(20.f * scal.x, BUTTON_SIZE.y));
             if (ImGui::ListBoxHeader("##update_history_list", ImVec2(WINDOW_SIZE.x - (40.f * scal.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * scal.y)))) {
                 for (auto u = 0; u < update_history_infos[host.io.title_id].first.size(); u++) {
-                    ImGui::SetWindowFontScale(1.8f);
-                    ImGui::TextColored(GUI_COLOR_TEXT, "Version %.2f", update_history_infos[host.io.title_id].first[u]);
                     ImGui::SetWindowFontScale(1.4f);
+                    ImGui::TextColored(GUI_COLOR_TEXT, "Version %.2f", update_history_infos[host.io.title_id].first[u]);
+                    ImGui::SetWindowFontScale(1.f);
                     ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * scal.x));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s\n", update_history_infos[host.io.title_id].second[u].c_str());
                     ImGui::PopTextWrapPos();
@@ -249,7 +251,7 @@ void game_context_menu(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ICON_SIZE.x / 2.f));
                 ImGui::Image(gui.game_selector.icons[host.io.title_id], ICON_SIZE);
             }
-            ImGui::SetWindowFontScale(1.4f * scal.x);
+            ImGui::SetWindowFontScale(1.5f * scal.x);
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(host.game_short_title.c_str()).x / 2.f));
             ImGui::TextColored(GUI_COLOR_TEXT, host.game_short_title.c_str());
             std::string ask_delete = context_dialog == "save" ? "Do you really want to delete this save data for this application?" : "Do you really want to delete this application?";
@@ -291,7 +293,7 @@ void game_context_menu(GuiState &gui, HostState &host) {
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", &information, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-        ImGui::SetWindowFontScale(1.4f * scal.x);
+        ImGui::SetWindowFontScale(1.5f * scal.x);
         ImGui::SetCursorPos(ImVec2(10.0f * scal.x, 10.0f * scal.y));
         if (ImGui::Button("X", ImVec2(40.f * scal.x, 40.f * scal.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
             information = false;
@@ -300,11 +302,11 @@ void game_context_menu(GuiState &gui, HostState &host) {
             ImGui::Image(gui.game_selector.icons[host.io.title_id], ICON_SIZE);
         }
         const auto calc_name = ImGui::CalcTextSize("Name  ");
-        const auto calc_title = ImGui::CalcTextSize(host.game_title.c_str(), 0, false, 200.f * scal.x).y;
+        const auto calc_title = ImGui::CalcTextSize(host.game_title.c_str(), 0, false, 294.f * scal.x).y;
         ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - calc_name.x, ((ICON_SIZE.y * 2.4f) + (calc_title / 2.f)) - ((calc_title / 2.f) + (calc_name.y / 2.f))));
         ImGui::TextColored(GUI_COLOR_TEXT, "Name ");
         ImGui::SetCursorPos(ImVec2(display_size.x / 2.f, ((ICON_SIZE.y * 2.4f) + (calc_title / 2.f)) - calc_title));
-        ImGui::PushTextWrapPos(display_size.x - (280.f * scal.x));
+        ImGui::PushTextWrapPos(display_size.x - (186.f * scal.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.game_title.c_str());
         ImGui::PopTextWrapPos();
         ImGui::Spacing();
