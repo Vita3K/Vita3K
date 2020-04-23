@@ -16,8 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <crypto/aes.h>
-#include <host/pup_types.h>
-#include <miniz.h>
+#include <host/sce_types.h>
+
 #include <util/fs.h>
 
 #include <fstream>
@@ -65,186 +65,6 @@ static const char *FSTYPE[] = {
     "unknown1A",
     "psp_emulist",
 };
-
-static std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, const uint64_t &size) {
-    mz_stream stream;
-    stream.zalloc = Z_NULL;
-    stream.zfree = Z_NULL;
-    stream.opaque = Z_NULL;
-    stream.avail_in = 0;
-    stream.next_in = Z_NULL;
-    if (mz_inflateInit(&stream) != MZ_OK) {
-        LOG_ERROR("inflateInit failed while decompressing");
-        return "";
-    }
-
-    const std::string compressed_data((char *)&decrypted_data[0], size);
-    stream.next_in = (Bytef *)compressed_data.data();
-    stream.avail_in = compressed_data.size();
-
-    int ret = 0;
-    char outbuffer[4096];
-    std::string decompressed_data;
-
-    do {
-        stream.next_out = reinterpret_cast<Bytef *>(outbuffer);
-        stream.avail_out = sizeof(outbuffer);
-
-        ret = mz_inflate(&stream, 0);
-
-        if (decompressed_data.size() < stream.total_out) {
-            decompressed_data.append(outbuffer, stream.total_out - decompressed_data.size());
-        }
-    } while (ret == MZ_OK);
-
-    mz_inflateEnd(&stream);
-
-    if (ret != MZ_STREAM_END) {
-        LOG_ERROR("Exception during zlib decompression: ({}) {}", ret, stream.msg);
-        return "";
-    }
-    return decompressed_data;
-}
-
-static void self2elf(const std::string &infile, const std::string &outfile, KeyStore &SCE_KEYS, const int klictxt) {
-    std::ifstream filein(infile, std::ios::binary);
-    std::ofstream fileout(outfile, std::ios::binary);
-
-    int npdrmtype = 0;
-
-    char sceheaderbuffer[SceHeader::Size];
-    char selfheaderbuffer[SelfHeader::Size];
-    char appinfobuffer[AppInfoHeader::Size];
-    char verinfobuffer[SceVersionInfo::Size];
-    char controlinfobuffer[SceControlInfo::Size];
-
-    filein.read(sceheaderbuffer, SceHeader::Size);
-    filein.read(selfheaderbuffer, SelfHeader::Size);
-
-    const SceHeader sce_hdr = SceHeader(sceheaderbuffer);
-    const SelfHeader self_hdr = SelfHeader(selfheaderbuffer);
-
-    filein.seekg(self_hdr.appinfo_offset);
-    filein.read(appinfobuffer, AppInfoHeader::Size);
-
-    const AppInfoHeader appinfo_hdr = AppInfoHeader(appinfobuffer);
-
-    filein.seekg(self_hdr.sceversion_offset);
-    filein.read(verinfobuffer, SceVersionInfo::Size);
-
-    const SceVersionInfo verinfo_hdr = SceVersionInfo(verinfobuffer);
-
-    filein.seekg(self_hdr.controlinfo_offset);
-    filein.read(controlinfobuffer, SceControlInfo::Size);
-
-    SceControlInfo controlinfo_hdr = SceControlInfo(controlinfobuffer);
-    auto ci_off = SceControlInfo::Size;
-
-    if (controlinfo_hdr.type == ControlType::DIGEST_SHA256) {
-        filein.seekg(self_hdr.controlinfo_offset + ci_off);
-        ci_off += SceControlInfoDigest256::Size;
-        char controldigest256buffer[SceControlInfoDigest256::Size];
-        filein.read(controldigest256buffer, SceControlInfoDigest256::Size);
-        const SceControlInfoDigest256 controldigest256 = SceControlInfoDigest256(controldigest256buffer);
-    }
-    filein.seekg(self_hdr.controlinfo_offset + ci_off);
-    filein.read(controlinfobuffer, SceControlInfo::Size);
-    controlinfo_hdr = SceControlInfo(controlinfobuffer);
-    ci_off += SceControlInfo::Size;
-
-    if (controlinfo_hdr.type == ControlType::NPDRM_VITA) {
-        filein.seekg(self_hdr.controlinfo_offset + ci_off);
-        ci_off += SceControlInfoDRM::Size;
-        char controlnpdrmbuffer[SceControlInfoDRM::Size];
-        filein.read(controlnpdrmbuffer, SceControlInfoDRM::Size);
-        const SceControlInfoDRM controlnpdrm = SceControlInfoDRM(controlnpdrmbuffer);
-        npdrmtype = controlnpdrm.npdrm_type;
-    }
-
-    filein.seekg(self_hdr.elf_offset);
-    char dat[ElfHeader::Size];
-    filein.read(dat, ElfHeader::Size);
-    fileout.write(dat, ElfHeader::Size);
-
-    const ElfHeader elf_hdr = ElfHeader(dat);
-    std::vector<ElfPhdr> elf_phdrs;
-    std::vector<SegmentInfo> segment_infos;
-    bool encrypted = false;
-    uint64_t at = ElfHeader::Size;
-
-    for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
-        filein.seekg(self_hdr.phdr_offset + i * ElfPhdr::Size);
-        char dat[ElfPhdr::Size];
-        filein.read(dat, ElfPhdr::Size);
-        const ElfPhdr phdr = ElfPhdr(dat);
-        elf_phdrs.push_back(phdr);
-        fileout.write(dat, ElfPhdr::Size);
-        at += ElfPhdr::Size;
-
-        filein.seekg(self_hdr.segment_info_offset + i * SegmentInfo::Size);
-        char segmentinfobuffer[SegmentInfo::Size];
-        filein.read(segmentinfobuffer, SegmentInfo::Size);
-        const SegmentInfo segment_info = SegmentInfo(segmentinfobuffer);
-        segment_infos.push_back(segment_info);
-
-        if (segment_info.plaintext == SecureBool::NO)
-            encrypted = true;
-    }
-
-    std::vector<SceSegment> scesegs;
-
-    if (encrypted) {
-        scesegs = get_segments(filein, sce_hdr, SCE_KEYS, appinfo_hdr.sys_version, appinfo_hdr.self_type, npdrmtype, klictxt);
-    }
-
-    for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
-        int idx = 0;
-
-        if (!scesegs.empty())
-            idx = scesegs[i].idx;
-        else
-            idx = i;
-        if (elf_phdrs[idx].p_filesz == 0)
-            continue;
-
-        const int pad_len = elf_phdrs[idx].p_offset - at;
-        if (pad_len < 0)
-            LOG_ERROR("ELF p_offset Invalid");
-
-        std::vector<char> padding;
-        for (int i = 0; i < pad_len; i++) {
-            padding.push_back('\0');
-        }
-
-        fileout.write(padding.data(), pad_len);
-
-        at += pad_len;
-
-        filein.seekg(segment_infos[idx].offset);
-        std::vector<unsigned char> dat(segment_infos[idx].size);
-        filein.read((char *)&dat[0], segment_infos[idx].size);
-
-        std::vector<unsigned char> decrypted_data(segment_infos[idx].size);
-        if (segment_infos[idx].plaintext == SecureBool::NO) {
-            aes_context aes_ctx;
-            aes_setkey_enc(&aes_ctx, (unsigned char *)scesegs[i].key.c_str(), 128);
-            size_t ctr_nc_off = 0;
-            unsigned char ctr_stream_block[0x10];
-            aes_crypt_ctr(&aes_ctx, segment_infos[idx].size, &ctr_nc_off, (unsigned char *)scesegs[i].iv.c_str(), ctr_stream_block, &dat[0], &decrypted_data[0]);
-        }
-
-        if (segment_infos[idx].compressed == SecureBool::YES) {
-            const std::string decompressed_data = decompress_segments(decrypted_data, segment_infos[idx].size);
-            fileout.write(decompressed_data.c_str(), decompressed_data.length());
-            at += decompressed_data.length();
-        } else {
-            fileout.write((char *)&decrypted_data[0], segment_infos[idx].size);
-            at += segment_infos[idx].size;
-        }
-    }
-    filein.close();
-    fileout.close();
-}
 
 static std::string make_filename(unsigned char *hdr, int64_t filetype) {
     uint32_t magic = 0;
@@ -427,7 +247,7 @@ void install_pup(const std::string &pup, const std::string &pref_path) {
     fs::create_directory(pup_dec);
 
     KeyStore SCE_KEYS;
-    register_keys(SCE_KEYS);
+    register_keys(SCE_KEYS, 0);
 
     decrypt_pup_packages(pup_dest, pup_dec, SCE_KEYS);
 

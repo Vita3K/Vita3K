@@ -36,7 +36,8 @@ static void draw_file_menu(FileMenuState &state, HostState &host) {
         }
         ImGui::Separator();
         ImGui::MenuItem("Install Firmware", nullptr, &state.firmware_install_dialog);
-        ImGui::MenuItem("Install Game", nullptr, &state.game_install_dialog);
+        ImGui::MenuItem("Install .pkg", nullptr, &state.pkg_install_dialog);
+        ImGui::MenuItem("Install .zip, .vpk", nullptr, &state.game_install_dialog);
         ImGui::EndMenu();
     }
 }

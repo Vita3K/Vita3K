@@ -21,6 +21,7 @@
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/load_self.h>
+#include <host/pkg.h>
 #include <host/sfo.h>
 #include <io/functions.h>
 #include <io/vfs.h>
@@ -172,6 +173,19 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
         }
     }
 
+    if (fs::exists(output_path / "sce_sys/package/")) {
+        if (fs::exists(output_path / "sce_sys/package/work.bin")) {
+            std::string licpath = output_path.string() + "/sce_sys/package/work.bin";
+            if (!decrypt_install_nonpdrm(licpath, output_path.string())) {
+                LOG_ERROR("NoNpDrm installation failed, deleting data!");
+                fs::remove_all(output_path);
+                return false;
+            }
+        } else {
+            LOG_WARN("The nonpdrm license file (work.bin) is missing! If you're trying to install a NoNpDrm dump, please make sure that it is present in /sce_sys/package/ folder. Otherwise, ignore this warning.");
+        }
+    }
+
     LOG_INFO("{} [{}] installed succesfully!", host.io.title_id, host.game_title);
     fclose(vpk_fp);
     return true;
@@ -313,11 +327,11 @@ bool handle_events(HostState &host, GuiState &gui) {
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
                 // Show/Hide Live Area during game run
-                // TODO pause game running                
-                if (!gui.live_area.manual_dialog && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {                    
+                // TODO pause game running
+                if (!gui.live_area.manual_dialog && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {
                     if (gui.live_area_contents.find(host.io.title_id) == gui.live_area_contents.end())
                         gui::init_live_area(gui, host);
-                    gui.live_area.live_area_dialog = !gui.live_area.live_area_dialog;                    
+                    gui.live_area.live_area_dialog = !gui.live_area.live_area_dialog;
                 }
             }
             if (event.key.keysym.sym == SDLK_t)

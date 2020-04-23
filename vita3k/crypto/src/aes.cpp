@@ -640,11 +640,13 @@ int aes_crypt_cbc(aes_context *ctx,
     unsigned char *output) {
     int i;
     unsigned char temp[16];
+    unsigned char orig_iv[16];
 
     if (length % 16)
         return (POLARSSL_ERR_AES_INVALID_INPUT_LENGTH);
 
     if (mode == AES_DECRYPT) {
+        memcpy(orig_iv, iv, 16);
         while (length > 0) {
             memcpy(temp, input, 16);
             aes_crypt_ecb(ctx, mode, input, output);
@@ -658,6 +660,7 @@ int aes_crypt_cbc(aes_context *ctx,
             output += 16;
             length -= 16;
         }
+        memcpy(iv, orig_iv, 16);
     } else {
         while (length > 0) {
             for (i = 0; i < 16; i++)

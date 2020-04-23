@@ -19,7 +19,6 @@
 
 #include <host/sfo.h>
 #include <host/window.h>
-
 #include <audio/state.h>
 #include <config/state.h>
 #include <ctrl/state.h>

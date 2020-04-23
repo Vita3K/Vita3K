@@ -329,7 +329,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                             if (frame_id.child("text").child("str")) {
                                 for (const auto &str_child : frame_id.child("text"))
                                     str[host.io.title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
-                            }                            
+                            }
                             break;
                         } else if ((strncmp(frame_id.name(), "liveitem", 8) == 0) && !frame_id.child("exclude-lang") && !frame_id.child("lang") && !frame_id.child("cntry")) {
                             if (frame_id.child("background"))
@@ -528,7 +528,7 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-    ImGui::Begin("##live_area", &gui.live_area.live_area_dialog, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse |ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("##live_area", &gui.live_area.live_area_dialog, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_AlwaysAutoResize);
 
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
 
@@ -719,7 +719,7 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
                     str_size.x = float(liveitem[host.io.title_id][frame.id]["text"]["width"].first) * scal.x;
                 }
 
-                if ((liveitem[host.io.title_id][frame.id]["text"]["height"].first > 0) 
+                if ((liveitem[host.io.title_id][frame.id]["text"]["height"].first > 0)
                     && ((liveitem[host.io.title_id][frame.id]["text"]["word-scroll"].second == "on" || liveitem[host.io.title_id][frame.id]["text"]["height"].first <= FRAME_SIZE.y))) {
                     text_pos.y += (str_size.y - (float(liveitem[host.io.title_id][frame.id]["text"]["height"].first) * scal.y)) / 2.f;
                     str_size.y = float(liveitem[host.io.title_id][frame.id]["text"]["height"].first) * scal.y;
@@ -957,7 +957,7 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
         ImGui::Image(gui.live_area_contents[host.io.title_id]["search"], widget_scal_size);
     else
         ImGui::Button("Search", BUTTON_SIZE);
-    if (ImGui::IsItemClicked(0)) {        
+    if (ImGui::IsItemClicked(0)) {
         auto search_url = "http://www.google.com/search?q=" + host.game_title;
         std::replace(search_url.begin(), search_url.end(), ' ', '+');
         system((OS_PREFIX + search_url).c_str());

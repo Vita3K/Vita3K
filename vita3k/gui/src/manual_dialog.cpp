@@ -78,7 +78,6 @@ bool init_manual(GuiState &gui, HostState &host) {
         size_page[host.io.title_id]["max"] = ImVec2(float(width), float(height));
         if (height > width)
             zoom[host.io.title_id].first = true;
-
     }
     return gui.manuals.find(host.io.title_id) != gui.manuals.end();
 }
@@ -92,7 +91,7 @@ void draw_manual_dialog(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowBgAlpha(0.999f);
     ImGui::Begin("##manual", &gui.live_area.manual_dialog, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetNextWindowPosCenter();
-    if (zoom[host.io.title_id].first && ImGui::IsMouseDoubleClicked(0)) {        
+    if (zoom[host.io.title_id].first && ImGui::IsMouseDoubleClicked(0)) {
         zoom[host.io.title_id].second ? size_page[host.io.title_id]["current"] = size_page[host.io.title_id]["mini"] : size_page[host.io.title_id]["current"] = size_page[host.io.title_id]["max"];
         zoom[host.io.title_id].second = !zoom[host.io.title_id].second;
     }
@@ -105,7 +104,7 @@ void draw_manual_dialog(GuiState &gui, HostState &host) {
 
     if (ImGui::IsMouseClicked(1))
         hiden_button = !hiden_button;
-    
+
     const auto BUTTON_SIZE = ImVec2(65.f * scal.x, 30.f * scal.y);
 
     ImGui::SetCursorPos(ImVec2(size_child.x - ((!zoom[host.io.title_id].second ? 70.0f : 85.f) * scal.x), 10.0f * scal.y));
