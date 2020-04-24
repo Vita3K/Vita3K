@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
     return true;
 }
 
-bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
+bool install_archive(HostState &host, GuiState &gui, const fs::path &path) {
     if (!fs::exists(path)) {
         LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_path().string());
         return false;
@@ -120,29 +120,29 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     std::string content_id, dlc_foldername;
     sfo::load(sfo_handle, params);
     sfo::get_data_by_key(host.io.title_id, sfo_handle, "TITLE_ID");
-    sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
-    sfo::get_data_by_key(host.game_version, sfo_handle, "APP_VER");
-    sfo::get_data_by_key(host.game_category, sfo_handle, "CATEGORY");
+    sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
+    sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
+    sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
     sfo::get_data_by_key(content_id, sfo_handle, "CONTENT_ID");
     fs::path output_path;
 
-    if (host.game_category == "ac") {
+    if (host.app_category == "ac") {
         if (theme) {
             output_path = { fs::path(host.pref_path) / "ux0/theme" / content_id };
-            host.game_title += " (Theme)";
+            host.app_title += " (Theme)";
         } else {
             dlc_foldername = content_id.substr(20);
             output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.io.title_id / dlc_foldername };
-            host.game_title = host.game_title + " (DLC)";
+            host.app_title = host.app_title + " (DLC)";
         }
-    } else if (host.game_category == "gp")
+    } else if (host.app_category == "gp")
         output_path = { fs::path(host.pref_path) / "ux0/patch" / host.io.title_id };
     else
         output_path = { fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
     const auto created = fs::create_directories(output_path);
     if (!created) {
-        if (!gui.file_menu.game_install_dialog) {
+        if (!gui.file_menu.archive_install_dialog) {
             gui::GenericDialogState status = gui::UNK_STATE;
             while (handle_events(host, gui) && (status == 0)) {
                 ImGui_ImplSdl_NewFrame(gui.imgui_state.get());
@@ -161,12 +161,12 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
             } else if (status == gui::UNK_STATE) {
                 exit(0);
             }
-        } else if (gui.file_menu.game_install_dialog && !gui.game_reinstall_confirm) {
+        } else if (gui.file_menu.archive_install_dialog && !gui.content_reinstall_confirm) {
             vfs::FileBuffer params;
             vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
             sfo::load(host.sfo_handle, params);
             sfo::get_data_by_key(gui.app_ver, host.sfo_handle, "APP_VER");
-            gui.game_reinstall_confirm = true;
+            gui.content_reinstall_confirm = true;
             fclose(vpk_fp);
             return false;
         }
@@ -204,7 +204,7 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
         }
     }
 
-    LOG_INFO("{} [{}] installed succesfully!", host.io.title_id, host.game_title);
+    LOG_INFO("{} [{}] installed succesfully!", host.io.title_id, host.app_title);
     fclose(vpk_fp);
     return true;
 }
@@ -214,7 +214,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         return InvalidApplicationPath;
 
     if (run_type == app::AppRunType::Vpk) {
-        if (!install_vpk(host, gui, path)) {
+        if (!install_archive(host, gui, path)) {
             return FileNotFound;
         }
     } else if (run_type == app::AppRunType::Extracted) {
@@ -229,14 +229,14 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     if (params_found) {
         sfo::load(host.sfo_handle, params);
 
-        sfo::get_data_by_key(host.game_title, host.sfo_handle, "TITLE");
-        std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' '); // Restrict title to one line
+        sfo::get_data_by_key(host.app_title, host.sfo_handle, "TITLE");
+        std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' '); // Restrict title to one line
         sfo::get_data_by_key(host.io.title_id, host.sfo_handle, "TITLE_ID");
-        sfo::get_data_by_key(host.game_version, host.sfo_handle, "APP_VER");
+        sfo::get_data_by_key(host.app_version, host.sfo_handle, "APP_VER");
         sfo::get_data_by_key(game_category, host.sfo_handle, "CATEGORY");
     } else {
-        host.game_title = host.io.title_id; // Use TitleID as Title
-        host.game_version = "N/A";
+        host.app_title = host.io.title_id; // Use TitleID as Title
+        host.app_version = "N/A";
         game_category = "N/A";
     }
 
@@ -252,14 +252,14 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
-        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.game_title) + " - [" + host.io.title_id + "].log") };
+        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.app_title) + " - [" + host.io.title_id + "].log") };
         if (logging::add_sink(log_name) != Success)
             return InitConfigFailed;
     }
 
-    LOG_INFO("Title: {}", host.game_title);
+    LOG_INFO("Title: {}", host.app_title);
     LOG_INFO("Serial: {}", host.io.title_id);
-    LOG_INFO("Version: {}", host.game_version);
+    LOG_INFO("Version: {}", host.app_version);
     LOG_INFO("Category: {}", game_category);
 
     init_device_paths(host.io);
@@ -335,26 +335,26 @@ bool handle_events(HostState &host, GuiState &gui) {
             return false;
 
         case SDL_KEYDOWN:
-            if (gui.controls_menu.is_capturing_keys && event.key.keysym.scancode) {
+            if (gui.is_capturing_keys && event.key.keysym.scancode) {
                 if ((event.key.keysym.scancode == SDL_SCANCODE_G) || (event.key.keysym.scancode == SDL_SCANCODE_F11) || (event.key.keysym.scancode == SDL_SCANCODE_T) || (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)) {
                     LOG_ERROR("Key is reserved!");
-                    gui.controls_menu.captured_key = gui.controls_menu.old_captured_key;
-                    gui.controls_menu.is_capturing_keys = false;
+                    gui.captured_key = gui.old_captured_key;
+                    gui.is_capturing_keys = false;
                 } else {
-                    gui.controls_menu.captured_key = static_cast<int>(event.key.keysym.scancode);
-                    gui.controls_menu.is_capturing_keys = false;
+                    gui.captured_key = static_cast<int>(event.key.keysym.scancode);
+                    gui.is_capturing_keys = false;
                 }
             }
-            if (!gui.game_selector.selected_title_id.empty()) {
+            if (!gui.app_selector.selected_title_id.empty()) {
                 // toggle gui state
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
                 // Show/Hide Live Area during game run
                 // TODO pause game running
-                if (!gui.live_area.manual_dialog && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {
+                if (!gui.live_area.manual && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {
                     if (gui.live_area_contents.find(host.io.title_id) == gui.live_area_contents.end())
                         gui::init_live_area(gui, host);
-                    gui.live_area.live_area_dialog = !gui.live_area.live_area_dialog;
+                    gui.live_area.live_area_screen = !gui.live_area.live_area_screen;
                 }
             }
             if (event.key.keysym.sym == SDLK_t)
@@ -410,7 +410,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
 
 #if DISCORD_RPC
     if (host.cfg.discord_rich_presence)
-        discord::update_presence(host.io.title_id, host.game_title);
+        discord::update_presence(host.io.title_id, host.app_title);
 #endif
 
     return Success;

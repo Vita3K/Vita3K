@@ -88,9 +88,9 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
 
         config::serialize_config(host.cfg, host.cfg.config_path);
 
-        // TODO: Move game old to new path
+        // TODO: Move app old to new path
         get_modules_list(gui, host);
-        refresh_game_list(gui, host);
+        refresh_app_list(gui, host);
         LOG_INFO("Successfully moved Vita3K path to: {}", host.pref_path);
     }
 }
@@ -190,11 +190,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
         ImGui::Combo("Console Language", &host.cfg.sys_lang, LIST_SYS_LANG, SYS_LANG_COUNT, 6);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your language. \nNote that some games might not have your language.");
+            ImGui::SetTooltip("Select your language. \nNote that some applications might not have your language.");
         ImGui::Spacing();
         ImGui::TextColored(GUI_COLOR_TEXT, "Enter Button Assignment \nSelect your 'Enter' Button.");
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("This is the button that is used as 'Confirm' in game dialogs. \nSome games don't use this and get default confirmation button.");
+            ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");
         ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
         ImGui::RadioButton("Cross", &host.cfg.sys_button, 1);
         ImGui::Spacing();
@@ -222,7 +222,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SameLine();
         ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enables Discord Rich Presence to show what game you're playing on discord");
+            ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on discord");
         ImGui::Checkbox("Performance overlay", &host.cfg.performance_overlay);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Display performance information on the screen as an overlay.");
@@ -252,7 +252,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 
                     // Refresh the working paths
                     get_modules_list(gui, host);
-                    refresh_game_list(gui, host);
+                    refresh_app_list(gui, host);
                     LOG_INFO("Successfully restore default path for Vita3K files to: {}", host.pref_path);
                 }
             }
@@ -269,18 +269,18 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
         ImGui::Checkbox("GUI Visible", &host.cfg.show_gui);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show GUI after booting a game.");
+            ImGui::SetTooltip("Check the box to show GUI after booting a application.");
         ImGui::SameLine();
-        ImGui::Checkbox("Live Area Game Screen", &host.cfg.show_live_area_screen);
+        ImGui::Checkbox("Live Area App Screen", &host.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to open Live Area by default when clicking on a game.\nIf disabled, use the right click on game to open it.");
+            ImGui::SetTooltip("Check the box to open Live Area by default when clicking on a application.\nIf disabled, use the right click on application to open it.");
         ImGui::Spacing();
         ImGui::Checkbox("Grid mode", &host.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable app list in grid mode.");
         if (!host.cfg.apps_list_grid) {
             ImGui::Spacing();
-            ImGui::SliderInt("Game Icon Size", &host.cfg.icon_size, 32, 128);
+            ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 32, 128);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred icon size.");
         }
@@ -289,12 +289,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         const auto title = ImGui::CalcTextSize("Theme & Background").x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (title / 2.f));
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-        if (ImGui::Selectable("Theme & Background", ImGuiSelectableFlags_None, false, ImVec2(title, 0.f))) {
-            get_themes_list(gui, host);
-            gui.theme.theme_background = true;
-        }
-        ImGui::PopStyleColor();
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Theme & Background");
         ImGui::Spacing();
         if (!host.cfg.theme_content_id.empty()) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", host.cfg.theme_content_id.c_str());

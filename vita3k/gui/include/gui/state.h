@@ -42,7 +42,7 @@ enum SortState {
     DESCENDANT
 };
 
-struct Game {
+struct App {
     std::string app_ver;
     std::string category;
     std::string stitle;
@@ -50,11 +50,11 @@ struct Game {
     std::string title_id;
 };
 
-struct GamesSelector {
-    std::vector<Game> games;
+struct AppsSelector {
+    std::vector<App> apps;
     std::map<std::string, ImGui_Texture> icons;
     std::string selected_title_id;
-    bool is_game_list_sorted{ false };
+    bool is_app_list_sorted{ false };
     SortState title_id_sort_state = NOT_SORTED;
     SortState app_ver_sort_state = NOT_SORTED;
     SortState category_sort_state = NOT_SORTED;
@@ -63,8 +63,8 @@ struct GamesSelector {
 };
 
 struct LiveAreaState {
-    bool live_area_dialog = false;
-    bool manual_dialog = false;
+    bool live_area_screen = false;
+    bool manual = false;
 };
 
 struct ThemesState {
@@ -73,13 +73,13 @@ struct ThemesState {
 };
 
 struct TrophyState {
-    bool trophy_screen = false;
+    bool trophy_collection = false;
 };
 
 struct FileMenuState {
     bool firmware_install_dialog = false;
     bool pkg_install_dialog = false;
-    bool game_install_dialog = false;
+    bool archive_install_dialog = false;
 };
 
 struct DebugMenuState {
@@ -103,9 +103,6 @@ struct ConfigurationMenuState {
 
 struct ControlMenuState {
     bool controls_dialog = false;
-    bool is_capturing_keys = false;
-    int old_captured_key = 0;
-    int captured_key = 0;
 };
 
 struct HelpMenuState {
@@ -133,10 +130,10 @@ struct GuiState {
     gui::LiveAreaState live_area;
     gui::ThemesState theme;
     gui::TrophyState trophy;
-    gui::GamesSelector game_selector;
+    gui::AppsSelector app_selector;
 
     std::string app_ver;
-    bool game_reinstall_confirm = false;
+    bool content_reinstall_confirm = false;
 
     MemoryEditor memory_editor;
     MemoryEditor gxp_shader_editor;
@@ -150,13 +147,17 @@ struct GuiState {
 
     std::string online_id;
 
+    bool is_capturing_keys = false;
+    int old_captured_key = 0;
+    int captured_key = 0;
+
     std::vector<std::pair<std::string, bool>> modules;
     ImGuiTextFilter module_search_bar;
 
     bool delete_app_icon = false;
     GLuint display = 0;
 
-    ImGuiTextFilter game_search_bar;
+    ImGuiTextFilter app_search_bar;
 
     std::uint64_t current_theme_bg;
     std::map<std::string, std::map<std::string, ImGui_Texture>> themes_preview;

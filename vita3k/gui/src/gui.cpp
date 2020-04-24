@@ -174,18 +174,18 @@ static void init_user_backgrounds(GuiState &gui, HostState &host) {
 }
 
 void init_icons(GuiState &gui, HostState &host) {
-    for (Game &game : gui.game_selector.games) {
+    for (App &app : gui.app_selector.apps) {
         int32_t width = 0;
         int32_t height = 0;
         vfs::FileBuffer buffer;
 
-        vfs::read_app_file(buffer, host.pref_path, game.title_id, "sce_sys/icon0.png");
+        vfs::read_app_file(buffer, host.pref_path, app.title_id, "sce_sys/icon0.png");
 
         const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
         const auto default_icon{ fs::path(host.base_path) / "data/image/icon.png" };
 
         if ((buffer.empty() && (fs::exists(default_fw_icon) || fs::exists(default_icon)))) {
-            LOG_INFO("Default icon found for title {}, {}.", game.title_id, game.title);
+            LOG_INFO("Default icon found for title {}, {}.", app.title_id, app.title);
             std::ifstream image_stream(default_fw_icon.string(), std::ios::binary | std::ios::ate);
             if (!fs::exists(default_fw_icon))
                 image_stream = std::ifstream(default_icon.string(), std::ios::binary | std::ios::ate);
@@ -194,15 +194,15 @@ void init_icons(GuiState &gui, HostState &host) {
             image_stream.seekg(0, std::ios::beg);
             image_stream.read(reinterpret_cast<char *>(&buffer[0]), fsize);
         } else if (buffer.empty()) {
-            LOG_WARN("Default icon not found for title {}, {}.", game.title_id, game.title);
+            LOG_WARN("Default icon not found for title {}, {}.", app.title_id, app.title);
             continue;
         }
         stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (!data || width != 128 || height != 128) {
-            LOG_ERROR("Invalid icon for title {}, {}.", game.title_id, game.title);
+            LOG_ERROR("Invalid icon for title {}, {}.", app.title_id, app.title);
             continue;
         }
-        gui.game_selector.icons[game.title_id].init(gui.imgui_state.get(), data, width, height);
+        gui.app_selector.icons[app.title_id].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 }
@@ -214,48 +214,45 @@ void init_app_background(GuiState &gui, HostState &host) {
 
     vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/pic0.png");
     if (buffer.empty()) {
-        LOG_WARN("Background not found for application {} [{}].", host.io.title_id, host.game_title);
+        LOG_WARN("Background not found for application {} [{}].", host.io.title_id, host.app_title);
         return;
     }
 
     stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
-        LOG_ERROR("Invalid background for application {} [{}].", host.io.title_id, host.game_title);
+        LOG_ERROR("Invalid background for application {} [{}].", host.io.title_id, host.app_title);
         return;
     }
     gui.apps_background[host.io.title_id].init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 }
 
-void get_game_titles(GuiState &gui, HostState &host) {
+void get_apps_title(GuiState &gui, HostState &host) {
     fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
     if (!fs::exists(app_path))
         return;
 
-    fs::directory_iterator it{ app_path };
-    while (it != fs::directory_iterator{}) {
-        if (!it->path().empty() && fs::is_directory(it->path())
-            && !it->path().filename_is_dot() && !it->path().filename_is_dot_dot()) {
+    for (const auto &app : fs::directory_iterator(app_path)) {
+        if (!app.path().empty() && fs::is_directory(app.path())
+            && !app.path().filename_is_dot() && !app.path().filename_is_dot_dot()) {
             vfs::FileBuffer params;
-            host.io.title_id = it->path().stem().generic_string();
+            host.io.title_id = app.path().stem().generic_string();
             if (vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
-                sfo::get_data_by_key(host.game_version, sfo_handle, "APP_VER");
-                sfo::get_data_by_key(host.game_category, sfo_handle, "CATEGORY");
-                if (!sfo::get_data_by_key(host.game_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
-                    sfo::get_data_by_key(host.game_short_title, sfo_handle, "STITLE");
-                if (!sfo::get_data_by_key(host.game_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-                    sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
-                std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
+                sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
+                sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
+                if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
+                    sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
+                if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+                    sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
+                std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
             } else {
-                host.game_short_title = host.game_title = host.io.title_id; // Use TitleID as Short title and Title
-                host.game_version = host.game_category = "N/A";
+                host.app_short_title = host.app_title = host.io.title_id; // Use TitleID as Short title and Title
+                host.app_version = host.app_category = "N/A";
             }
-            gui.game_selector.games.push_back({ host.game_version, host.game_category, host.game_short_title, host.game_title, host.io.title_id });
+            gui.app_selector.apps.push_back({ host.app_version, host.app_category, host.app_short_title, host.app_title, host.io.title_id });
         }
-        boost::system::error_code er;
-        it.increment(er);
     }
 }
 
@@ -287,7 +284,7 @@ void init(GuiState &gui, HostState &host) {
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);
 
-    get_game_titles(gui, host);
+    get_apps_title(gui, host);
     get_modules_list(gui, host);
     init_icons(gui, host);
 
@@ -332,20 +329,20 @@ void draw_end(GuiState &gui, SDL_Window *window) {
 void draw_live_area(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.live_area_font);
 
-    if (!host.cfg.run_title_id && !host.cfg.vpk_path && gui.game_selector.selected_title_id.empty())
-        draw_game_selector(gui, host);
-    if (gui.live_area.live_area_dialog)
-        draw_live_area_dialog(gui, host);
-    if (gui.live_area.manual_dialog)
-        draw_manual_dialog(gui, host);
+    if (!host.cfg.run_title_id && !host.cfg.vpk_path && gui.app_selector.selected_title_id.empty())
+        draw_app_selector(gui, host);
+    if (gui.live_area.live_area_screen)
+        draw_live_area_screen(gui, host);
+    if (gui.live_area.manual)
+        draw_manual(gui, host);
 
     if (gui.theme.theme_background)
         draw_themes_selection(gui, host);
     if (gui.theme.start_screen)
         draw_start_screen(gui, host);
 
-    if (gui.trophy.trophy_screen)
-        draw_trophy_selection(gui, host);
+    if (gui.trophy.trophy_collection)
+        draw_trophy_collection(gui, host);
 
     ImGui::PopFont();
 }
@@ -359,8 +356,8 @@ void draw_ui(GuiState &gui, HostState &host) {
         draw_firmware_install_dialog(gui, host);
     if (gui.file_menu.pkg_install_dialog)
         draw_pkg_install_dialog(gui, host);
-    if (gui.file_menu.game_install_dialog)
-        draw_game_install_dialog(gui, host);
+    if (gui.file_menu.archive_install_dialog)
+        draw_archive_install_dialog(gui, host);
     if (gui.debug_menu.threads_dialog)
         draw_threads_dialog(gui, host);
     if (gui.debug_menu.thread_details_dialog)
