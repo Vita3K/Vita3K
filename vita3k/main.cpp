@@ -149,8 +149,8 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
-        if (!gui.game_selector.selected_title_id.empty()) {
-            vpk_path_wide = string_utils::utf_to_wide(gui.game_selector.selected_title_id);
+        if (!gui.app_selector.selected_title_id.empty()) {
+            vpk_path_wide = string_utils::utf_to_wide(gui.app_selector.selected_title_id);
             run_type = app::AppRunType::Extracted;
         }
     }
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
         host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());
 
-        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.game_title, host.io.title_id).c_str());
+        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.app_title, host.io.title_id).c_str());
     }
 
     while (handle_events(host, gui)) {

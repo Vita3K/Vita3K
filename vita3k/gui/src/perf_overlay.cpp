@@ -31,7 +31,7 @@ void draw_perf_overlay(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowBgAlpha(0.8f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, PERF_OVERLAY_BG_COLOR);
 
-    ImGui::Begin("Performance", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
+    ImGui::Begin("##performance", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
     ImGui::Text("FPS: %d", host.fps);
     ImGui::End();
 

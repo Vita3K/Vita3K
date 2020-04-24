@@ -108,7 +108,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             zRIF.clear();
         } else if (state == "succes") {
             title = "PKG successfully installed";
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s] %s.", host.io.title_id.c_str(), host.game_title.c_str(), host.game_version.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s] %s.", host.io.title_id.c_str(), host.app_title.c_str(), host.app_version.c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -126,7 +126,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                     fs::remove(fs::path(work_path));
                     delete_work_file = false;
                 }
-                refresh_game_list(gui, host);
+                refresh_app_list(gui, host);
                 pkg_path = nullptr;
                 work_path = nullptr;
                 gui.file_menu.pkg_install_dialog = false;
@@ -138,7 +138,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Please check log for more details.");
             ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
-                refresh_game_list(gui, host);
+                refresh_app_list(gui, host);
                 gui.file_menu.pkg_install_dialog = false;
                 pkg_path = nullptr;
                 draw_file_dialog = true;

@@ -359,7 +359,7 @@ static std::string np_com_id_selected, group_id_selected, trophy_id_selected;
 static bool detail_np_com_id;
 static ImGuiTextFilter search_bar;
 
-void draw_trophy_selection(GuiState &gui, HostState &host) {
+void draw_trophy_collection(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
     const auto MENUBAR_HEIGHT = 22.f;
@@ -374,12 +374,12 @@ void draw_trophy_selection(GuiState &gui, HostState &host) {
     const auto SIZE_INFO = ImVec2(780 * SCAL.x, 494.f * SCAL.y);
     const char progress_dummy[32] = "";
 
-    // Trophy Screen
+    // trophy Collection
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     if (gui.trophy_np_com_id_list["bg"].find("000") != gui.trophy_np_com_id_list["bg"].end())
         ImGui::SetNextWindowBgAlpha(0.999f);
-    ImGui::Begin("##trophy", &gui.theme.theme_background, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##trophy_collection", &gui.theme.theme_background, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (gui.trophy_np_com_id_list.find("bg") != gui.trophy_np_com_id_list.end())
         ImGui::GetWindowDrawList()->AddImage(gui.trophy_np_com_id_list["bg"]["000"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     if (group_id_selected.empty()) {
@@ -396,7 +396,7 @@ void draw_trophy_selection(GuiState &gui, HostState &host) {
         ImGui::SetWindowFontScale(1.f);
     }
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (trophy_id_selected.empty() ? 80.f : 38.0f) * SCAL.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
-    ImGui::BeginChild("##trophy_child", trophy_id_selected.empty() ? SIZE_LIST : SIZE_INFO, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##trophy_collection_child", trophy_id_selected.empty() ? SIZE_LIST : SIZE_INFO, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     // Select Np Com ID
     if (np_com_id_selected.empty()) {
@@ -610,7 +610,7 @@ void draw_trophy_selection(GuiState &gui, HostState &host) {
             } else
                 np_com_id_selected.clear();
         } else
-            gui.trophy.trophy_screen = false;
+            gui.trophy.trophy_collection = false;
     }
 
     if (np_com_id_selected.empty() || !group_id_selected.empty()) {

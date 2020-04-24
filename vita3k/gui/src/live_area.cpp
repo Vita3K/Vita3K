@@ -62,7 +62,7 @@ static std::map<std::string, std::map<std::string, std::string>> target;
 static std::map<std::string, std::map<std::string, uint64_t>> current_item, last_time;
 static std::map<std::string, std::string> type;
 static std::string start;
-static int32_t current_game;
+static int32_t current_app;
 
 void init_live_area(GuiState &gui, HostState &host) {
     std::string user_lang;
@@ -95,14 +95,13 @@ void init_live_area(GuiState &gui, HostState &host) {
         auto default_contents = false;
         const auto fw_path{ fs::path(host.pref_path) / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
-        const auto game_contents{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/livearea/contents/template.xml" };
-        auto template_xml = game_contents;
+        auto template_xml{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/livearea/contents/template.xml" };
 
         pugi::xml_document doc;
 
-        if (!doc.load_file(game_contents.c_str())) {
+        if (!doc.load_file(template_xml.c_str())) {
             if (host.io.title_id.find("PCS") != std::string::npos)
-                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}'.", host.io.title_id, host.game_title);
+                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}'.", host.io.title_id, host.app_title);
             if (doc.load_file(default_fw_contents.c_str())) {
                 template_xml = default_fw_contents;
                 default_contents = true;
@@ -190,7 +189,7 @@ void init_live_area(GuiState &gui, HostState &host) {
 
                 if (buffer.empty()) {
                     if (host.io.title_id.find("PCS") != std::string::npos)
-                        LOG_WARN("Contents {} '{}' Not found for title {} [{}].", contents.first, contents.second, host.io.title_id, host.game_title);
+                        LOG_WARN("Contents {} '{}' Not found for title {} [{}].", contents.first, contents.second, host.io.title_id, host.app_title);
                     continue;
                 }
                 stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
@@ -386,12 +385,12 @@ void init_live_area(GuiState &gui, HostState &host) {
 
                             if (buffer.empty()) {
                                 if (host.io.title_id.find("PCS") != std::string::npos)
-                                    LOG_WARN("background, Id: {}, Name: '{}', Not found for title: {} [{}].", item.first, bg_name, host.io.title_id, host.game_title);
+                                    LOG_WARN("background, Id: {}, Name: '{}', Not found for title: {} [{}].", item.first, bg_name, host.io.title_id, host.app_title);
                                 continue;
                             }
                             stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                             if (!data) {
-                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, host.io.title_id, host.game_title);
+                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, host.io.title_id, host.app_title);
                                 continue;
                             }
 
@@ -421,12 +420,12 @@ void init_live_area(GuiState &gui, HostState &host) {
 
                             if (buffer.empty()) {
                                 if (host.io.title_id.find("PCS") != std::string::npos)
-                                    LOG_WARN("Image, Id: {} Name: '{}', Not found for title {} [{}].", item.first, img_name, host.io.title_id, host.game_title);
+                                    LOG_WARN("Image, Id: {} Name: '{}', Not found for title {} [{}].", item.first, img_name, host.io.title_id, host.app_title);
                                 continue;
                             }
                             stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                             if (!data) {
-                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, host.io.title_id, host.game_title);
+                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, host.io.title_id, host.app_title);
                                 continue;
                             }
 
@@ -510,11 +509,11 @@ void init_live_area(GuiState &gui, HostState &host) {
         items_pos["psmobile"]["frame4"]["size"] = ImVec2(440.f, 34.f);
     }
 
-    for (const auto &game : gui.game_selector.games) {
-        const auto games_index = std::find_if(gui.game_selector.games.begin(), gui.game_selector.games.end(), [&](const Game &g) {
+    for (const auto &app : gui.app_selector.apps) {
+        const auto app_index = std::find_if(gui.app_selector.apps.begin(), gui.app_selector.apps.end(), [&](const App &g) {
             return g.title_id == host.io.title_id;
         });
-        current_game = int32_t(std::distance(gui.game_selector.games.begin(), games_index));
+        current_app = int32_t(std::distance(gui.app_selector.apps.begin(), app_index));
     }
 }
 
@@ -524,11 +523,11 @@ inline uint64_t current_time() {
         .count();
 }
 
-void draw_live_area_dialog(GuiState &gui, HostState &host) {
+void draw_live_area_screen(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-    ImGui::Begin("##live_area", &gui.live_area.live_area_dialog, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("##live_area", &gui.live_area.live_area_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_AlwaysAutoResize);
 
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
 
@@ -668,8 +667,13 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
         }
 
         // Target link
-        if (!target[host.io.title_id][frame.id].empty() && ImGui::IsItemClicked(0))
-            system((OS_PREFIX + target[host.io.title_id][frame.id]).c_str());
+        if (!target[host.io.title_id][frame.id].empty() && (target[host.io.title_id][frame.id].find("psts:") == std::string::npos)) {
+            ImGui::SetCursorPos(pos_frame);
+            ImGui::PushID(frame.id.c_str());
+            if (ImGui::Selectable("##target_link", ImGuiSelectableFlags_None, false, scal_size_frame))
+                system((OS_PREFIX + target[host.io.title_id][frame.id]).c_str());
+            ImGui::PopID();
+        }
 
         // Text
         for (const auto &str_tag : str[host.io.title_id][frame.id]) {
@@ -825,9 +829,6 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
 
                 auto pos_str = ImVec2(str_pos_init.x, str_pos_init.y - (liveitem[host.io.title_id][frame.id]["text"]["y"].first * scal.y));
 
-                //LOG_DEBUG_IF(liveitem[host.io.title_id][frame.id]["text"]["x"].first != 0, "frame: {}, x: {}", frame.id, liveitem[host.io.title_id][frame.id]["text"]["x"].first);
-                //LOG_DEBUG_IF(liveitem[host.io.title_id][frame.id]["text"]["y"].first != 0, "frame: {}, y: {}", frame.id, liveitem[host.io.title_id][frame.id]["text"]["y"].first);
-
                 if (liveitem[host.io.title_id][frame.id]["text"]["x"].first > 0) {
                     text_pos.x += liveitem[host.io.title_id][frame.id]["text"]["x"].first * scal.x;
                     str_size.x -= liveitem[host.io.title_id][frame.id]["text"]["x"].first * scal.x;
@@ -910,55 +911,60 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
     const auto scal_font_size = 25.0f / ImGui::GetFontSize();
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(start.c_str()).x * scal_font_size), (ImGui::CalcTextSize(start.c_str()).y * scal_font_size));
     const auto START_BUTTON_SIZE = ImVec2((START_SIZE.x + 30.0f) * scal.x, (START_SIZE.y + 10.0f) * scal.y);
-    const auto pos_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.06f));
-    const auto pos_start = ImVec2(pos_BUTTON.x + (START_BUTTON_SIZE.x - (START_SIZE.x * scal.x)) / 2,
-        pos_BUTTON.y + (START_BUTTON_SIZE.y - (START_SIZE.y * scal.y)) / 2);
+    const auto POS_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.06f));
+    const auto POS_START = ImVec2(POS_BUTTON.x + (START_BUTTON_SIZE.x - (START_SIZE.x * scal.x)) / 2,
+        POS_BUTTON.y + (START_BUTTON_SIZE.y - (START_SIZE.y * scal.y)) / 2);
 
     const auto BUTTON_SIZE = ImVec2(80.f * scal.x, 30.f * scal.y);
 
     if (gui.live_area_contents[host.io.title_id].find("gate") != gui.live_area_contents[host.io.title_id].end()) {
         ImGui::SetCursorPos(GATE_POS);
         ImGui::Image(gui.live_area_contents[host.io.title_id]["gate"], GATE_SIZE);
-        if (ImGui::IsItemClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
-            gui.game_selector.selected_title_id = host.io.title_id;
-            gui.live_area.live_area_dialog = false;
-        }
-        ImGui::GetWindowDrawList()->AddRectFilled(pos_BUTTON, ImVec2(pos_BUTTON.x + START_BUTTON_SIZE.x, pos_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(0, 191, 255, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
-        ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 25.0f * scal.x, pos_start, IM_COL32(255, 255, 255, 255), start.c_str());
-    } else {
-        ImGui::SetCursorPos(pos_BUTTON);
-        if (ImGui::Button(start.c_str(), START_BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
-            gui.game_selector.selected_title_id = host.io.title_id;
-            gui.live_area.live_area_dialog = false;
-        }
     }
-
+    ImGui::SetCursorPos(GATE_POS);
+    ImGui::PushID(host.io.title_id.c_str());
+    ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
+    ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 25.0f * scal.x, POS_START, IM_COL32(255, 255, 255, 255), start.c_str());
+    if (ImGui::Selectable("##gate", ImGuiSelectableFlags_None, false, GATE_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+        gui.app_selector.selected_title_id = host.io.title_id;
+        gui.live_area.live_area_screen = false;
+    }
+    ImGui::PopID();
     ImGui::GetWindowDrawList()->AddRect(GATE_POS, ImVec2(GATE_POS.x + GATE_SIZE.x, GATE_POS.y + GATE_SIZE.y), IM_COL32(192, 192, 192, 255), 10.0f, ImDrawCornerFlags_All, 12.0f);
 
     const auto icon_scal_size = ImVec2(32.0f * scal.x, 32.f * scal.y);
     const auto icon_pos = ImVec2(496.0f * scal.x, 544.f * scal.y);
     const auto pos_scal_icon = ImVec2(display_size.x - icon_pos.x, display_size.y - icon_pos.y);
 
-    if (gui.game_selector.icons.find(host.io.title_id) != gui.game_selector.icons.end()) {
+    if (gui.app_selector.icons.find(host.io.title_id) != gui.app_selector.icons.end()) {
         ImGui::SetCursorPos(pos_scal_icon);
-        ImGui::Image(gui.game_selector.icons[host.io.title_id], icon_scal_size);
+        ImGui::Image(gui.app_selector.icons[host.io.title_id], icon_scal_size);
     }
 
     const auto widget_scal_size = ImVec2(80.0f * scal.x, 80.f * scal.y);
     const auto manual_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/manual/" };
+    const auto scal_widget_font_size = 23.0f / ImGui::GetFontSize();
 
     auto search_pos = ImVec2(578.0f * scal.x, 505.0f * scal.y);
     if (!fs::exists(manual_path) || fs::is_empty(manual_path))
         search_pos = ImVec2(520.0f * scal.x, 505.0f * scal.y);
 
     const auto pos_scal_search = ImVec2(display_size.x - search_pos.x, display_size.y - search_pos.y);
-    ImGui::SetCursorPos(pos_scal_search);
-    if (gui.live_area_contents[host.io.title_id].find("search") != gui.live_area_contents[host.io.title_id].end())
+
+    if (gui.live_area_contents[host.io.title_id].find("search") != gui.live_area_contents[host.io.title_id].end()) {
+        ImGui::SetCursorPos(pos_scal_search);
         ImGui::Image(gui.live_area_contents[host.io.title_id]["search"], widget_scal_size);
-    else
-        ImGui::Button("Search", BUTTON_SIZE);
-    if (ImGui::IsItemClicked(0)) {
-        auto search_url = "http://www.google.com/search?q=" + host.game_title;
+    } else {
+        const std::string SEARCH = "Search";
+        const auto SEARCH_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(SEARCH.c_str()).x * scal_widget_font_size) * scal.x, (ImGui::CalcTextSize(SEARCH.c_str()).y * scal_widget_font_size) * scal.y);
+        const auto POS_STR_SEARCH = ImVec2(pos_scal_search.x + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.x / 2.f)),
+            pos_scal_search.y + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.y / 2.f)));
+        ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_search, ImVec2(pos_scal_search.x + widget_scal_size.x, pos_scal_search.y + widget_scal_size.y), IM_COL32(20, 168, 222, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
+        ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 23.0f * scal.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH.c_str());
+    }
+    ImGui::SetCursorPos(pos_scal_search);
+    if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size)) {
+        auto search_url = "http://www.google.com/search?q=" + host.app_title;
         std::replace(search_url.begin(), search_url.end(), ' ', '+');
         system((OS_PREFIX + search_url).c_str());
     }
@@ -967,14 +973,21 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
         const auto manaul_pos = ImVec2(463.0f * scal.x, 505.0f * scal.y);
         const auto pos_scal_manual = ImVec2(display_size.x - manaul_pos.x, display_size.y - manaul_pos.y);
 
-        ImGui::SetCursorPos(pos_scal_manual);
-        if (gui.live_area_contents[host.io.title_id].find("manual") != gui.live_area_contents[host.io.title_id].end())
+        if (gui.live_area_contents[host.io.title_id].find("manual") != gui.live_area_contents[host.io.title_id].end()) {
+            ImGui::SetCursorPos(pos_scal_manual);
             ImGui::Image(gui.live_area_contents[host.io.title_id]["manual"], widget_scal_size);
-        else
-            ImGui::Button("Manual", BUTTON_SIZE);
-        if (ImGui::IsItemClicked(0)) {
+        } else {
+            const std::string MANUAL_STR = "Manuel";
+            const auto MANUAL_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(MANUAL_STR.c_str()).x * scal_widget_font_size) * scal.x, (ImGui::CalcTextSize(MANUAL_STR.c_str()).y * scal_widget_font_size) * scal.y);
+            const auto MANUAl_STR_POS = ImVec2(pos_scal_manual.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
+                pos_scal_manual.y + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.y / 2.f)));
+            ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_manual, ImVec2(pos_scal_manual.x + widget_scal_size.x, pos_scal_manual.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
+            ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 23.0f * scal.x, MANUAl_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
+        }
+        ImGui::SetCursorPos(pos_scal_manual);
+        if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size)) {
             if (init_manual(gui, host))
-                gui.live_area.manual_dialog = true;
+                gui.live_area.manual = true;
             else
                 LOG_ERROR("Error opening Manual");
         }
@@ -1000,35 +1013,35 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
         init_live_area(gui, host);
     }*/
 
-    if (!gui.live_area.manual_dialog) {
+    if (!gui.live_area.manual) {
         const auto wheel_counter = ImGui::GetIO().MouseWheel;
 
-        if (gui.game_selector.selected_title_id.empty()) {
+        if (gui.app_selector.selected_title_id.empty()) {
             if (ImGui::IsKeyPressed(host.cfg.keyboard_button_up) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_up) || (wheel_counter == 1)) {
-                if (current_game > 0)
-                    --current_game;
+                if (current_app > 0)
+                    --current_app;
                 else
-                    current_game = int(gui.game_selector.games.size()) - 1;
+                    current_app = int(gui.app_selector.apps.size()) - 1;
             } else if (ImGui::IsKeyPressed(host.cfg.keyboard_button_down) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_down) || (wheel_counter == -1)) {
-                if (current_game < int(gui.game_selector.games.size()) - 1)
-                    ++current_game;
+                if (current_app < int(gui.app_selector.apps.size()) - 1)
+                    ++current_app;
                 else
-                    current_game = 0;
+                    current_app = 0;
             }
 
-            if (host.io.title_id != gui.game_selector.games[current_game].title_id) {
-                host.io.title_id = gui.game_selector.games[current_game].title_id;
-                host.game_title = gui.game_selector.games[current_game].title;
+            if (host.io.title_id != gui.app_selector.apps[current_app].title_id) {
+                host.io.title_id = gui.app_selector.apps[current_app].title_id;
+                host.app_title = gui.app_selector.apps[current_app].title;
                 init_live_area(gui, host);
             }
 
             ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x), 44.0f * scal.y));
-            ImGui::VSliderInt("##slider_current_game", ImVec2(60.f, 500.f * scal.y), &current_game, int32_t(gui.game_selector.games.size()) - 1, -1, fmt::format("{}\n_____\n\n{}", current_game + 1, int32_t(gui.game_selector.games.size())).c_str());
+            ImGui::VSliderInt("##slider_current_app", ImVec2(60.f, 500.f * scal.y), &current_app, int32_t(gui.app_selector.apps.size()) - 1, -1, fmt::format("{}\n_____\n\n{}", current_app + 1, int32_t(gui.app_selector.apps.size())).c_str());
         }
 
         ImGui::SetCursorPos(ImVec2(display_size.x - (140.0f * scal.x), 14.0f * scal.y));
         if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
-            gui.live_area.live_area_dialog = false;
+            gui.live_area.live_area_screen = false;
 
         ImGui::SetCursorPos(ImVec2(60.f * scal.x, 14.0f * scal.y));
         if (ImGui::Button("Help", BUTTON_SIZE))
@@ -1050,9 +1063,9 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Live Area Help");
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Browse in game list", "D-pad, Left Stick, Wheel in Up/Down or using Slider");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Start Game", "Click on Start or Press on Cross");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Show/Hide Live Area durring game run", "Press on PS");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Browse in app list", "D-pad, Left Stick, Wheel in Up/Down or using Slider");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Start App", "Click on Start or Press on Cross");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Show/Hide Live Area durring app run", "Press on PS");
             ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Exit Live Area", "Click on Esc or Press on Circle");
             ImGui::Spacing();
             ImGui::Separator();

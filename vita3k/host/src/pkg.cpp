@@ -208,9 +208,9 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
     infile.seekg(sfo_offset);
     infile.read((char *)&sfo_buffer[0], sfo_size);
     sfo::load(sfo_file, sfo_buffer);
-    sfo::get_data_by_key(host.game_version, sfo_file, "APP_VER");
-    if (!sfo::get_data_by_key(host.game_title, sfo_file, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-        sfo::get_data_by_key(host.game_title, sfo_file, "TITLE");
+    sfo::get_data_by_key(host.app_version, sfo_file, "APP_VER");
+    if (!sfo::get_data_by_key(host.app_title, sfo_file, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+        sfo::get_data_by_key(host.app_title, sfo_file, "TITLE");
     sfo::get_data_by_key(host.io.title_id, sfo_file, "TITLE_ID");
     sfo::get_data_by_key(category, sfo_file, "CATEGORY");
     sfo::get_data_by_key(content_id, sfo_file, "CONTENT_ID");

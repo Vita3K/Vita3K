@@ -37,20 +37,20 @@ static void draw_file_menu(FileMenuState &state, HostState &host) {
         ImGui::Separator();
         ImGui::MenuItem("Install Firmware", nullptr, &state.firmware_install_dialog);
         ImGui::MenuItem("Install .pkg", nullptr, &state.pkg_install_dialog);
-        ImGui::MenuItem("Install .zip, .vpk", nullptr, &state.game_install_dialog);
+        ImGui::MenuItem("Install .zip, .vpk", nullptr, &state.archive_install_dialog);
         ImGui::EndMenu();
     }
 }
 
 static void draw_emulation_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginMenu("Emulation")) {
-        if (ImGui::MenuItem("Load last App", host.cfg.last_app.c_str(), false, !host.cfg.last_app.empty() && gui.game_selector.selected_title_id.empty())) {
+        if (ImGui::MenuItem("Load last App", host.cfg.last_app.c_str(), false, !host.cfg.last_app.empty() && gui.app_selector.selected_title_id.empty())) {
             if (host.cfg.show_live_area_screen) {
                 host.io.title_id = host.cfg.last_app;
                 init_live_area(gui, host);
-                gui.live_area.live_area_dialog = true;
+                gui.live_area.live_area_screen = true;
             } else
-                gui.game_selector.selected_title_id = host.cfg.last_app;
+                gui.app_selector.selected_title_id = host.cfg.last_app;
         }
         ImGui::EndMenu();
     }
@@ -71,10 +71,12 @@ static void draw_debug_menu(DebugMenuState &state) {
     }
 }
 
-static void draw_config_menu(ConfigurationMenuState &state) {
+static void draw_config_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginMenu("Configuration")) {
-        ImGui::MenuItem("Profiles Manager", nullptr, &state.profiles_manager_dialog);
-        ImGui::MenuItem("Settings", nullptr, &state.settings_dialog);
+        ImGui::MenuItem("Profiles Manager", nullptr, &gui.configuration_menu.profiles_manager_dialog);
+        ImGui::MenuItem("Settings", nullptr, &gui.configuration_menu.settings_dialog);
+        if (ImGui::MenuItem("Theme & Background", nullptr, &gui.theme.theme_background))
+            get_themes_list(gui, host);
         ImGui::EndMenu();
     }
 }
@@ -88,8 +90,8 @@ static void draw_controls_menu(ControlMenuState &state) {
 
 static void draw_utilities_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginMenu("Utilities")) {
-        if (ImGui::MenuItem("Trophy Manager") && get_trophy_np_com_id_list(gui, host))
-            gui.trophy.trophy_screen = true;
+        if (ImGui::MenuItem("Trophy Collection") && get_trophy_np_com_id_list(gui, host))
+            gui.trophy.trophy_collection = true;
         ImGui::EndMenu();
     }
 }
@@ -108,7 +110,7 @@ void draw_main_menu_bar(GuiState &gui, HostState &host) {
         draw_file_menu(gui.file_menu, host);
         draw_emulation_menu(gui, host);
         draw_debug_menu(gui.debug_menu);
-        draw_config_menu(gui.configuration_menu);
+        draw_config_menu(gui, host);
         draw_utilities_menu(gui, host);
         draw_controls_menu(gui.controls_menu);
         draw_help_menu(gui.help_menu);
