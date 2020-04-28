@@ -8,3 +8,5 @@
 .vs
 .vscode
 build
+# generated on macOS
+.DS_Store

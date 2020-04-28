@@ -11,8 +11,10 @@ IF "%CI%"=="" IF NOT EXIST external\boost-build (
 	mkdir external\boost-build
 	cd external\boost
 
+	call bootstrap.bat
+
 	REM Build our Boost subset
-	b2 -j5 --build-dir=../boost-build --stagedir=../boost-build toolset=msvc stage
+	call b2 -j%NUMBER_OF_PROCESSORS% --build-dir=../boost-build --stagedir=../boost-build toolset=msvc stage
 	cd ../..
 )
 
@@ -22,8 +24,8 @@ pushd build-windows
 
 REM Generate project files
 IF "%CI%"=="" (
-	cmake -G "%vs_version%" ..
+	call cmake -G "%vs_version%" ..
 ) ELSE (
-	cmake -G "%vs_version%" -DCI:BOOL=ON -DCMAKE_CONFIGURATION_TYPES=%CONFIGURATION% ..
+	call cmake -G "%vs_version%" -DCI:BOOL=ON -DCMAKE_CONFIGURATION_TYPES=%CONFIGURATION% ..
 )
 popd

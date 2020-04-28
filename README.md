@@ -1,7 +1,10 @@
 # Vita3K
+
 [![Build Status](https://travis-ci.org/Vita3K/Vita3K.svg?branch=master)](https://travis-ci.org/Vita3K/Vita3K)
 [![Build status](https://ci.appveyor.com/api/projects/status/tlvkwrsj13vq3gor/branch/master?svg=true)](https://ci.appveyor.com/project/Vita3K/vita3k/branch/master)
+
 ## Introduction
+
 Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS.
 
 * [Website](https://vita3k.org/) (information for users)
@@ -11,6 +14,7 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS
 * [Patreon](https://www.patreon.com/Vita3K)
 
 ## Compatibility
+
 The emulator currently runs some homebrew programs. It is also able to load some decrypted commercial games.
 
 - [Homebrew compatibility database](https://github.com/Vita3K/homebrew-compatibility/issues)
@@ -29,6 +33,7 @@ The emulator currently runs some homebrew programs. It is also able to load some
 ![VitaSnake screenshot](https://user-images.githubusercontent.com/20528385/58014428-cd6b8600-7ac6-11e9-83ab-a3d2b79417fe.png)
 
 ## Licence
+
 Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
 
 ## Binaries
@@ -36,34 +41,8 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
 Vita3K binaries for Windows can be downloaded on [AppVeyor](https://ci.appveyor.com/project/Vita3K/vita3k/branch/master/artifacts).
 
 ## Building
-### Prerequisites
-[CMake](https://cmake.org/) is used to generate Visual Studio and Xcode project files. It is assumed that you have CMake installed and on your path. Other dependencies are provided as Git submodules or as prebuilt binaries.
 
-After cloning, open a command prompt in Vita3K's directory and run:
-
-`git submodule update --init --recursive`
-
-to get all submodules.
-
-### Windows (Visual Studio)
-1. Run `gen-windows.bat` to create a `build-windows` directory and generate a Visual Studio solution in there.
-2. Open the `Vita3K.sln` solution.
-3. Set the startup project to `emulator`.
-4. Build.
-
-### macOS (Xcode)
-1. Run `gen-macos.sh` to create a `build-macos` directory and generate an Xcode project in there.
-2. Open the `Vita3K.xcodeproj` project.
-3. When prompted to create schemes, create one for the `emulator` target only. The project builds many targets, so it will make your life easier if you create schemes as needed.
-4. Build.
-
-### Linux
-1. Get [SDL](https://wiki.libsdl.org/Installation#Linux.2FUnix) (2.0.7+)
-2. `git submodule init && git submodule update`
-3. `gen-linux.sh`
-4. `cd build-linux`
-5. `make`, or `make -jN` where "N" is the amount of cores in your system.
-##### Note: If Unicorn can't find Python, use `make UNICORN_QEMU_FLAGS="--python=/usr/bin/python2"` or similar to point it to your installation. `make` works after you do this once.
+See [`building.md`](./building.md).
 
 ## Running
 Specify the path to a .vpk file as the first command line argument, or run `Vita3K --help` from the command-line for a full list of options.
