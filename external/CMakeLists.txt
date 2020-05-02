@@ -216,3 +216,4 @@ if (USE_VULKAN)
 endif()
 
 add_subdirectory(ffmpeg)
+add_subdirectory(psvpfstools)

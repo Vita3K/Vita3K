@@ -9,7 +9,7 @@
 	url = https://github.com/aquynh/capstone.git
 [submodule "external/crypto-algorithms"]
 	path = external/crypto-algorithms
-	url = https://github.com/B-Con/crypto-algorithms
+	url = https://github.com/KorewaWatchful/crypto-algorithms
 [submodule "external/dirent"]
 	path = external/dirent
 	url = https://github.com/tronkko/dirent
@@ -23,6 +23,9 @@
 [submodule "external/elfio"]
 	path = external/elfio
 	url = https://github.com/serge1/ELFIO
+[submodule "external/ffmpeg"]
+	path = external/ffmpeg
+	url = https://github.com/Vita3K/ffmpeg-core.git
 [submodule "external/glslang"]
 	path = external/glslang
 	url = https://github.com/KhronosGroup/glslang
@@ -75,12 +78,12 @@
 [submodule "external/vita-toolchain"]
 	path = external/vita-toolchain
 	url = https://github.com/Vita3K/vita-toolchain
-[submodule "external/yaml-cpp"]
-	path = external/yaml-cpp
-	url = https://github.com/jbeder/yaml-cpp
 [submodule "external/VulkanMemoryAllocator"]
 	path = external/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-[submodule "external/ffmpeg"]
-	path = external/ffmpeg
-	url = https://github.com/Vita3K/ffmpeg-core.git
+[submodule "external/yaml-cpp"]
+	path = external/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp
+[submodule "external/psvpfstools"]
+	path = external/psvpfstools
+	url = https://github.com/korewawatchful/psvpfstools.git

@@ -32,6 +32,7 @@ add_library(
 	src/manual_dialog.cpp
 	src/mutexes_dialog.cpp
 	src/perf_overlay.cpp
+	src/pkg_install_dialog.cpp
 	src/private.h
 	src/profiles_manager_dialog.cpp
 	src/reinstall.cpp

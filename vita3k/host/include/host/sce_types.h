@@ -611,8 +611,47 @@ public:
     }
 };
 
-void register_keys(KeyStore &SCE_KEYS);
+class SceRIF {
+private:
+    unsigned char content_id[0x30];
+    unsigned char actidx[0x10];
+    unsigned char dates[0x10];
+    unsigned char filler[0x8];
+    unsigned char sig1r[0x14];
+    unsigned char sig1s[0xC];
+
+    // These members are big endian
+    uint16_t majver;
+    uint16_t minver;
+    uint16_t style;
+    uint16_t riftype;
+    uint64_t cid;
+
+public:
+    static const int Size = 0x98;
+    unsigned char klicense[0x10];
+
+    explicit SceRIF(const char *data) {
+        memcpy(&majver, &data[0x0], 0x2);
+        memcpy(&minver, &data[0x2], 0x2);
+        memcpy(&style, &data[0x4], 0x2);
+        memcpy(&riftype, &data[0x6], 0x2);
+        memcpy(&cid, &data[0x8], 0x8);
+
+        memcpy(&content_id, &data[0x10], 0x30);
+        memcpy(&actidx, &data[0x40], 0x10);
+        memcpy(&klicense, &data[0x50], 0x10);
+        memcpy(&dates, &data[0x60], 0x10);
+        memcpy(&filler, &data[0x70], 0x8);
+        memcpy(&sig1r, &data[0x78], 0x14);
+        memcpy(&sig1s, &data[0x8C], 0xC);
+    }
+};
+
+void register_keys(KeyStore &SCE_KEYS, int type);
 void extract_fat(const std::string &partition_path, const std::string &partition, const std::string &pref_path);
+std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, const uint64_t &size);
+void self2elf(const std::string &infile, const std::string &outfile, KeyStore &SCE_KEYS, unsigned char *klictxt);
 void make_fself(const std::string &input_file, const std::string &output_file);
 std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr);
-std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, int klictxt = 0);
+std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, unsigned char *klictxt = 0);
