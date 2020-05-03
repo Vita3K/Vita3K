@@ -165,7 +165,6 @@ void init_background(GuiState &gui, const std::string &image_path) {
     }
 
     gui.user_backgrounds[image_path].init(gui.imgui_state.get(), data, width, height);
-    gui.current_background = gui.user_backgrounds[image_path];
     stbi_image_free(data);
 }
 
@@ -203,26 +202,23 @@ void init_icons(GuiState &gui, HostState &host) {
     }
 }
 
-void load_game_background(GuiState &gui, HostState &host) {
+void init_app_background(GuiState &gui, HostState &host) {
     int32_t width = 0;
     int32_t height = 0;
     vfs::FileBuffer buffer;
 
     vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/pic0.png");
     if (buffer.empty()) {
-        if (gui.current_background != gui.user_backgrounds[host.cfg.background_image])
-            gui.current_background = gui.user_backgrounds[host.cfg.background_image];
-        LOG_WARN("Game background not found for title {}.", host.io.title_id);
+        LOG_WARN("Background not found for application {} [{}].", host.io.title_id, host.game_title);
         return;
     }
 
     stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
-        LOG_ERROR("Invalid game background for title {}.", host.io.title_id);
+        LOG_ERROR("Invalid background for application {} [{}].", host.io.title_id, host.game_title);
         return;
     }
-    gui.game_backgrounds[host.io.title_id].init(gui.imgui_state.get(), data, width, height);
-    gui.current_background = gui.game_backgrounds[host.io.title_id];
+    gui.apps_background[host.io.title_id].init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 }
 

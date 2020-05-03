@@ -154,6 +154,23 @@ int main(int argc, char *argv[]) {
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
 
+    if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end()) {
+        while (host.frame_count == 0) {
+            // Driver acto!
+            renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
+                host.io.title_id.c_str());
+
+            gui::draw_begin(gui, host);
+
+            // Display application background
+            ImGui::GetForegroundDrawList()->AddImage(gui.apps_background[host.io.title_id],
+                ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+
+            host.display.condvar.notify_all();
+            gui::draw_end(gui, host.window.get());
+        }
+    }
+
     while (handle_events(host, gui)) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),

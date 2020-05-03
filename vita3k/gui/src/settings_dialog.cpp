@@ -100,8 +100,6 @@ static bool change_user_image_background(GuiState &gui, HostState &host) {
 
         if (gui.user_backgrounds.find(image_path_str) == gui.user_backgrounds.end())
             init_background(gui, image_path_str);
-        else
-            gui.current_background = gui.user_backgrounds[image_path_str];
 
         if (gui.user_backgrounds.find(image_path_str) != gui.user_backgrounds.end()) {
             host.cfg.background_image = image_path_str;
@@ -298,9 +296,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Live Area Game Screen", &host.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open Live Area by default when clicking on a game.\nIf disabled, use the right click on game to open it.");
-        ImGui::Checkbox("Game Background", &host.cfg.show_game_background);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to disable viewing Game background.");
         ImGui::Spacing();
         ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 32, 128);
         ImGui::Spacing();
@@ -314,8 +309,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::PopItemWidth();
             ImGui::Spacing();
             if (ImGui::Button("Reset Image")) {
-                if (gui.current_background == gui.user_backgrounds[host.cfg.background_image])
-                    gui.current_background = nullptr;
                 host.cfg.background_image.clear();
                 gui.user_backgrounds.clear();
             }
@@ -324,16 +317,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         }
         if (ImGui::Button(image_button.c_str()))
             LOG_INFO_IF(change_user_image_background(gui, host), "Succes change image: {}", host.cfg.background_image);
-        if (gui.current_background) {
+        if (gui.user_backgrounds[host.cfg.background_image]) {
             ImGui::Spacing();
             ImGui::SliderFloat("Background Alpha\nSelect your preferred transparent background effect.", &host.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("The minimum slider is opaque and the maximum is transparent.");
         }
         ImGui::EndTabItem();
-    } else {
+    } else
         ImGui::PopStyleColor();
-    }
 
     // Debug
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);

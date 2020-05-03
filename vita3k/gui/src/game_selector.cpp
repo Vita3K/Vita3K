@@ -32,13 +32,11 @@ namespace gui {
 bool refresh_game_list(GuiState &gui, HostState &host) {
     auto game_list_size = gui.game_selector.games.size();
 
-    if (gui.current_background != gui.user_backgrounds[host.cfg.background_image])
-        gui.current_background = gui.user_backgrounds[host.cfg.background_image];
+    gui.apps_background.clear();
     gui.game_selector.games.clear();
     gui.game_selector.icons.clear();
     gui.live_area_contents.clear();
     gui.live_items.clear();
-    gui.delete_game_background = true;
 
     get_game_titles(gui, host);
 
@@ -65,25 +63,20 @@ bool refresh_game_list(GuiState &gui, HostState &host) {
     return true;
 }
 
-static constexpr auto MENUBAR_HEIGHT = 19;
+static auto MENUBAR_HEIGHT = 22.f;
 
 void draw_game_selector(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
-    if (gui.current_background)
+    if (gui.user_backgrounds[host.cfg.background_image])
         ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
     ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
-    if (gui.current_background) {
-        ImGui::GetBackgroundDrawList()->AddImage(reinterpret_cast<void *>(gui.current_background),
-            ImVec2(0, 0), display_size);
-    }
-
-    if (gui.delete_game_background) {
-        gui.game_backgrounds.clear();
-        gui.delete_game_background = false;
+    if (gui.user_backgrounds[host.cfg.background_image]) {
+        ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.background_image],
+            ImVec2(0, MENUBAR_HEIGHT), display_size);
     }
 
     if (gui.delete_game_icon) {
@@ -268,12 +261,6 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                     host.game_short_title = game.stitle;
                     host.game_title = game.title;
                     host.io.title_id = game.title_id;
-                    if (host.cfg.show_game_background) {
-                        if (gui.game_backgrounds.find(game.title_id) == gui.game_backgrounds.end())
-                            load_game_background(gui, host);
-                        else if (gui.current_background != gui.game_backgrounds[game.title_id])
-                            gui.current_background = gui.game_backgrounds[game.title_id];
-                    }
                     if (ImGui::IsMouseClicked(0))
                         selected[0] = true;
                 }
@@ -294,8 +281,6 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImGui::NextColumn();
             ImGui::Selectable(game.category.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
             ImGui::NextColumn();
-            if (ImGui::IsItemHovered() && (gui.current_background != gui.user_backgrounds[host.cfg.background_image]))
-                gui.current_background = gui.user_backgrounds[host.cfg.background_image];
             ImGui::Selectable(game.title.c_str(), &selected[4], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, static_cast<float>(icon_size)));
             ImGui::NextColumn();
             if (std::find(std::begin(selected), std::end(selected), true) != std::end(selected)) {

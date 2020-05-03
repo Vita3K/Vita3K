@@ -47,7 +47,6 @@ void delete_game(GuiState &gui, HostState &host) {
             LOG_INFO_IF(fs::remove_all(game_path), "Successfully deleted '{} [{}]'.", game.title_id, game.title);
 
             if (!fs::exists(game_path)) {
-                gui.delete_game_background = true;
                 gui.delete_game_icon = true;
                 gui.game_selector.games.erase(games_index);
             } else
