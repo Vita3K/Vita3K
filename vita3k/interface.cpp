@@ -122,15 +122,18 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     sfo::get_data_by_key(host.game_version, sfo_handle, "APP_VER");
     sfo::get_data_by_key(host.game_category, sfo_handle, "CATEGORY");
     sfo::get_data_by_key(content_id, sfo_handle, "CONTENT_ID");
-    dlc_foldername = content_id.substr(20);
     fs::path output_path;
 
     if (host.game_category == "gd") {
-        output_path = fs::path(host.pref_path + "/" + "ux0/app" + "/" + host.io.title_id);
-    }
-    else if (host.game_category == "ac") {
-        output_path = fs::path(host.pref_path + "/" + "ux0/addcont" + "/" + host.io.title_id + "/" + dlc_foldername);
+        output_path = { fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
+    } else if (host.game_category == "ac") {
+        dlc_foldername = content_id.substr(20);
+        output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.io.title_id / dlc_foldername };
         host.game_title = host.game_title + " (DLC)";
+    } else if (host.game_category == "gp") {
+        output_path = { fs::path(host.pref_path) / "ux0/patch" / host.io.title_id };
+    } else {
+        output_path = { fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
     }
 
     const auto created = fs::create_directories(output_path);
