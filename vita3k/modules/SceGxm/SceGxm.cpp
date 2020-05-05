@@ -1036,7 +1036,7 @@ EXPORT(Ptr<const char>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramPa
 
 EXPORT(unsigned int, sceGxmProgramParameterGetResourceIndex, const SceGxmProgramParameter *parameter) {
     if (parameter == nullptr)
-        return RET_ERROR(0);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return parameter->resource_index;
 }
 
@@ -1275,7 +1275,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(sourceData != nullptr);
 
     if (uniformBuffer == nullptr)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_PARAMETER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     size_t size = 0;
     size_t offset = 0;
