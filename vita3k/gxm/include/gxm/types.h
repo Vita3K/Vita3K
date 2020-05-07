@@ -25,6 +25,8 @@ struct VertexProgram;
 } // namespace renderer
 
 struct SceGxmSyncObject;
+struct SceGxmPrecomputedVertexState;
+struct SceGxmPrecomputedFragmentState;
 
 enum SceGxmColorMask {
     SCE_GXM_COLOR_MASK_NONE = 0,
@@ -1066,7 +1068,7 @@ struct SceGxmContextParams {
     uint32_t fragmentUsseRingBufferOffset;
 };
 
-typedef std::array<Ptr<void>, 15> UniformBuffers;
+typedef std::array<Ptr<const void>, 15> UniformBuffers;
 typedef std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> StreamDatas;
 
 struct GxmViewport {
@@ -1172,6 +1174,10 @@ struct GxmContextState {
 
     // Fragment Sync Object
     Ptr<SceGxmSyncObject> fragment_sync_object;
+
+    // Precomputed
+    Ptr<SceGxmPrecomputedVertexState> precomputed_vertex_state;
+    Ptr<SceGxmPrecomputedFragmentState> precomputed_fragment_state;
 };
 
 struct SceGxmFragmentProgram {
@@ -1469,3 +1475,40 @@ enum class GenericParameterType {
     Array
 };
 } // namespace gxp
+
+enum {
+    SCE_GXM_PRECOMPUTED_VERTEX_STATE_WORD_COUNT = 7,
+    SCE_GXM_PRECOMPUTED_FRAGMENT_STATE_WORD_COUNT = 9,
+    SCE_GXM_PRECOMPUTED_DRAW_WORD_COUNT = 11,
+};
+
+struct SceGxmPrecomputedDraw {
+    Ptr<const SceGxmVertexProgram> program;
+    Ptr<void> extra_data;
+
+    SceGxmPrimitiveType type;
+    uint32_t vertex_count;
+    SceGxmIndexFormat index_format;
+    Ptr<const void> index_data;
+
+    Ptr<const void> vertex_stream[4];
+};
+
+struct SceGxmPrecomputedFragmentState {
+    Ptr<const SceGxmFragmentProgram> program;
+    Ptr<void> extra_data;
+
+    Ptr<const void> default_uniform_buffer;
+    constexpr static uint32_t texture_count = 4;
+};
+
+struct SceGxmPrecomputedVertexState {
+    Ptr<const SceGxmVertexProgram> program;
+    Ptr<void> extra_data;
+
+    Ptr<const void> default_uniform_buffer;
+};
+
+static_assert(SCE_GXM_PRECOMPUTED_DRAW_WORD_COUNT * sizeof(uint32_t) >= sizeof(SceGxmPrecomputedDraw), "Precomputed Draw Size Too Big");
+static_assert(SCE_GXM_PRECOMPUTED_VERTEX_STATE_WORD_COUNT * sizeof(uint32_t) >= sizeof(SceGxmPrecomputedVertexState), "Precomputed Vertex State Size Too Big");
+static_assert(SCE_GXM_PRECOMPUTED_FRAGMENT_STATE_WORD_COUNT * sizeof(uint32_t) >= sizeof(SceGxmPrecomputedFragmentState), "Precomputed Fragment State Size Too Big");
