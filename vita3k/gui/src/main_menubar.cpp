@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,6 +38,20 @@ static void draw_file_menu(FileMenuState &state, HostState &host) {
         ImGui::MenuItem("Install Firmware", nullptr, &state.firmware_install_dialog);
         ImGui::MenuItem("Install .pkg", nullptr, &state.pkg_install_dialog);
         ImGui::MenuItem("Install .zip, .vpk", nullptr, &state.game_install_dialog);
+        ImGui::EndMenu();
+    }
+}
+
+static void draw_emulation_menu(GuiState &gui, HostState &host) {
+    if (ImGui::BeginMenu("Emulation")) {
+        if (ImGui::MenuItem("Load last App", host.cfg.last_app.c_str(), false, !host.cfg.last_app.empty() && gui.game_selector.selected_title_id.empty())) {
+            if (host.cfg.show_live_area_screen) {
+                host.io.title_id = host.cfg.last_app;
+                init_live_area(gui, host);
+                gui.live_area.live_area_dialog = true;
+            } else
+                gui.game_selector.selected_title_id = host.cfg.last_app;
+        }
         ImGui::EndMenu();
     }
 }
@@ -92,6 +106,7 @@ void draw_main_menu_bar(GuiState &gui, HostState &host) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
         draw_file_menu(gui.file_menu, host);
+        draw_emulation_menu(gui, host);
         draw_debug_menu(gui.debug_menu);
         draw_config_menu(gui.configuration_menu);
         draw_controls_menu(gui.controls_menu);
