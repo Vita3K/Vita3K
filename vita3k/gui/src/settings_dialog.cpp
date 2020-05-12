@@ -137,7 +137,7 @@ void get_modules_list(GuiState &gui, HostState &host) {
 
 void draw_settings_dialog(GuiState &gui, HostState &host) {
     const ImGuiWindowFlags settings_flags = ImGuiWindowFlags_AlwaysAutoResize;
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::Begin("Settings", &gui.configuration_menu.settings_dialog, settings_flags);
     const ImGuiTabBarFlags settings_tab_flags = ImGuiTabBarFlags_None;
     ImGui::BeginTabBar("SettingsTabBar", settings_tab_flags);
@@ -193,7 +193,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     }
 
     // GPU
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GPU")) {
         ImGui::PopStyleColor();
         ImGui::Checkbox("Hardware Flip", &host.cfg.hardware_flip);
@@ -205,7 +205,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     }
 
     // System
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
         ImGui::Combo("Console Language", &host.cfg.sys_lang, LIST_SYS_LANG, SYS_LANG_COUNT, 6);
@@ -227,7 +227,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     }
 
     // Emulator
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
@@ -252,7 +252,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
         ImGui::Separator();
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR_OPTIONS, "Emulated System Storage Folder");
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Emulated System Storage Folder");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
         ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", host.cfg.pref_path.c_str());
@@ -286,7 +286,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     }
 
     // GUI
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GUI")) {
         ImGui::PopStyleColor();
         ImGui::Checkbox("GUI Visible", &host.cfg.show_gui);
@@ -300,7 +300,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SliderInt("Game Icon Size \nSelect your preferred icon size.", &host.cfg.icon_size, 32, 128);
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR_OPTIONS, "Background Image");
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Background Image");
         ImGui::Spacing();
         std::string image_button = "Add Image";
         if (gui.user_backgrounds[host.cfg.background_image]) {
@@ -328,7 +328,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
 
     // Debug
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
         ImGui::Checkbox("Log Imports", &host.cfg.log_imports);

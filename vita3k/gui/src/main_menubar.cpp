@@ -58,7 +58,6 @@ static void draw_emulation_menu(GuiState &gui, HostState &host) {
 
 static void draw_debug_menu(DebugMenuState &state) {
     if (ImGui::BeginMenu("Debug")) {
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("Threads", nullptr, &state.threads_dialog);
         ImGui::MenuItem("Semaphores", nullptr, &state.semaphores_dialog);
         ImGui::MenuItem("Mutexes", nullptr, &state.mutexes_dialog);
@@ -75,7 +74,6 @@ static void draw_debug_menu(DebugMenuState &state) {
 
 static void draw_config_menu(ConfigurationMenuState &state) {
     if (ImGui::BeginMenu("Configuration")) {
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("Profiles Manager", nullptr, &state.profiles_manager_dialog);
         ImGui::MenuItem("Settings", nullptr, &state.settings_dialog);
         ImGui::PopStyleColor();
@@ -85,7 +83,6 @@ static void draw_config_menu(ConfigurationMenuState &state) {
 
 static void draw_controls_menu(ControlMenuState &state) {
     if (ImGui::BeginMenu("Controls")) {
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("Keyboard Controls", nullptr, &state.controls_dialog);
         ImGui::PopStyleColor();
         ImGui::EndMenu();
@@ -94,9 +91,7 @@ static void draw_controls_menu(ControlMenuState &state) {
 
 static void draw_help_menu(HelpMenuState &state) {
     if (ImGui::BeginMenu("Help")) {
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("About", nullptr, &state.about_dialog);
-        ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
 }

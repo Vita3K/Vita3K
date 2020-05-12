@@ -66,7 +66,7 @@ void draw_controls_dialog(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(width, height));
     ImGui::SetNextWindowPosCenter();
     ImGui::Begin("Controls", &gui.controls_menu.controls_dialog);
-    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR_OPTIONS, "%-16s    %-16s", "Button", "Mapped button");
+    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s    %-16s", "Button", "Mapped button");
     remapper_button(gui, host, &host.cfg.keyboard_leftstick_up, "Left stick up", ImVec2(7.0f, 7.0f));
     remapper_button(gui, host, &host.cfg.keyboard_leftstick_down, "Left stick down", ImVec2(7.0f, 7.0f));
     remapper_button(gui, host, &host.cfg.keyboard_leftstick_right, "Left stick right", ImVec2(7.0f, 7.0f));
@@ -98,7 +98,7 @@ void draw_controls_dialog(GuiState &gui, HostState &host) {
     remapper_button(gui, host, &host.cfg.keyboard_button_select, "Select button", ImVec2(7.0f, 7.0f));
     remapper_button(gui, host, &host.cfg.keyboard_button_psbutton, "PS Button", ImVec2(7.0f, 7.0f));
     ImGui::Separator();
-    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR_OPTIONS, "%-16s", "GUI");
+    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s", "GUI");
     ImGui::Text("%-16s    %-16s", "Toggle Touch", "T");
     ImGui::Text("%-16s    %-16s", "Toggle GUI visibility", "G");
 
