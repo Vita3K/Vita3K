@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -928,6 +928,10 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const 
     return Ptr<SceGxmProgramParameter>();
 }
 
+EXPORT(Ptr<SceGxmProgramParameter>, _sceGxmProgramFindParameterBySemantic, const SceGxmProgram *program, SceGxmParameterSemantic semantic, uint32_t index) {
+    return export_sceGxmProgramFindParameterBySemantic(host, thread_id, export_name, program, semantic, index);
+}
+
 EXPORT(int, sceGxmProgramGetDefaultUniformBufferSize, const SceGxmProgram *program) {
     return program->default_uniform_buffer_count * 4;
 }
@@ -1045,6 +1049,10 @@ EXPORT(int, sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *par
         return 0;
 
     return parameter->semantic;
+}
+
+EXPORT(int, _sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *parameter) {
+    return export_sceGxmProgramParameterGetSemantic(host, thread_id, export_name, parameter);
 }
 
 EXPORT(int, sceGxmProgramParameterGetSemanticIndex, const SceGxmProgramParameter *parameter) {
@@ -1374,6 +1382,10 @@ EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIn
 }
 
 EXPORT(int, sceGxmSetVertexTexture) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceGxmSetVertexTexture) {
     return UNIMPLEMENTED();
 }
 
@@ -2380,6 +2392,7 @@ BRIDGE_IMPL(sceGxmPrecomputedVertexStateSetUniformBuffer)
 BRIDGE_IMPL(sceGxmProgramCheck)
 BRIDGE_IMPL(sceGxmProgramFindParameterByName)
 BRIDGE_IMPL(sceGxmProgramFindParameterBySemantic)
+BRIDGE_IMPL(_sceGxmProgramFindParameterBySemantic)
 BRIDGE_IMPL(sceGxmProgramGetDefaultUniformBufferSize)
 BRIDGE_IMPL(sceGxmProgramGetFragmentProgramInputs)
 BRIDGE_IMPL(sceGxmProgramGetOutputRegisterFormat)
@@ -2402,6 +2415,7 @@ BRIDGE_IMPL(sceGxmProgramParameterGetIndex)
 BRIDGE_IMPL(sceGxmProgramParameterGetName)
 BRIDGE_IMPL(sceGxmProgramParameterGetResourceIndex)
 BRIDGE_IMPL(sceGxmProgramParameterGetSemantic)
+BRIDGE_IMPL(_sceGxmProgramParameterGetSemantic)
 BRIDGE_IMPL(sceGxmProgramParameterGetSemanticIndex)
 BRIDGE_IMPL(sceGxmProgramParameterGetType)
 BRIDGE_IMPL(sceGxmProgramParameterIsRegFormat)
@@ -2457,6 +2471,7 @@ BRIDGE_IMPL(sceGxmSetVertexDefaultUniformBuffer)
 BRIDGE_IMPL(sceGxmSetVertexProgram)
 BRIDGE_IMPL(sceGxmSetVertexStream)
 BRIDGE_IMPL(sceGxmSetVertexTexture)
+BRIDGE_IMPL(_sceGxmSetVertexTexture)
 BRIDGE_IMPL(sceGxmSetVertexUniformBuffer)
 BRIDGE_IMPL(sceGxmSetViewport)
 BRIDGE_IMPL(sceGxmSetViewportEnable)
