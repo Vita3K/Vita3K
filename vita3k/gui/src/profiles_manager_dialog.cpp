@@ -25,7 +25,7 @@
 namespace gui {
 
 void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::Begin("Profiles Manager", &gui.configuration_menu.profiles_manager_dialog, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::PopStyleColor();
 
@@ -40,7 +40,7 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
     ImGui::SameLine();
     if (ImGui::Button("Add Online ID") && !gui.online_id.empty())
         ImGui::OpenPopup("Add Online ID");
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginPopupModal("Add Online ID", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
 
@@ -101,7 +101,7 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         if (ImGui::Button("Delete Selected User"))
             ImGui::OpenPopup("Delete User");
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
         if (ImGui::BeginPopupModal("Delete User", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::PopStyleColor();
             const auto delete_online_id = std::find(host.cfg.online_id.begin(), host.cfg.online_id.end(), host.cfg.online_id[host.cfg.user_id]);
@@ -165,7 +165,7 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
             gui.online_id.clear();
         gui.online_id = host.cfg.online_id[host.cfg.user_id];
     }
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginPopupModal("Rename Online ID", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
         ImGui::InputTextWithHint("##online_id", "Write change online ID", &gui.online_id);
@@ -175,7 +175,7 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 65);
         if (ImGui::Button("Apply", BUTTON_SIZE))
             ImGui::OpenPopup("Apply Rename Online ID");
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
         if (ImGui::BeginPopupModal("Apply Rename Online ID", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::PopStyleColor();
 
