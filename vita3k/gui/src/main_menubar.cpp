@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2020 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,9 +42,22 @@ static void draw_file_menu(FileMenuState &state, HostState &host) {
     }
 }
 
+static void draw_emulation_menu(GuiState &gui, HostState &host) {
+    if (ImGui::BeginMenu("Emulation")) {
+        if (ImGui::MenuItem("Load last App", host.cfg.last_app.c_str(), false, !host.cfg.last_app.empty() && gui.game_selector.selected_title_id.empty())) {
+            if (host.cfg.show_live_area_screen) {
+                host.io.title_id = host.cfg.last_app;
+                init_live_area(gui, host);
+                gui.live_area.live_area_dialog = true;
+            } else
+                gui.game_selector.selected_title_id = host.cfg.last_app;
+        }
+        ImGui::EndMenu();
+    }
+}
+
 static void draw_debug_menu(DebugMenuState &state) {
     if (ImGui::BeginMenu("Debug")) {
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("Threads", nullptr, &state.threads_dialog);
         ImGui::MenuItem("Semaphores", nullptr, &state.semaphores_dialog);
         ImGui::MenuItem("Mutexes", nullptr, &state.mutexes_dialog);
@@ -54,35 +67,28 @@ static void draw_debug_menu(DebugMenuState &state) {
         ImGui::MenuItem("Event Flags", nullptr, &state.eventflags_dialog);
         ImGui::MenuItem("Memory Allocations", nullptr, &state.allocations_dialog);
         ImGui::MenuItem("Disassembly", nullptr, &state.disassembly_dialog);
-        ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
 }
 
 static void draw_config_menu(ConfigurationMenuState &state) {
     if (ImGui::BeginMenu("Configuration")) {
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("Profiles Manager", nullptr, &state.profiles_manager_dialog);
         ImGui::MenuItem("Settings", nullptr, &state.settings_dialog);
-        ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
 }
 
 static void draw_controls_menu(ControlMenuState &state) {
     if (ImGui::BeginMenu("Controls")) {
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("Keyboard Controls", nullptr, &state.controls_dialog);
-        ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
 }
 
 static void draw_help_menu(HelpMenuState &state) {
     if (ImGui::BeginMenu("Help")) {
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
         ImGui::MenuItem("About", nullptr, &state.about_dialog);
-        ImGui::PopStyleColor();
         ImGui::EndMenu();
     }
 }
@@ -92,6 +98,7 @@ void draw_main_menu_bar(GuiState &gui, HostState &host) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
         draw_file_menu(gui.file_menu, host);
+        draw_emulation_menu(gui, host);
         draw_debug_menu(gui.debug_menu);
         draw_config_menu(gui.configuration_menu);
         draw_controls_menu(gui.controls_menu);

@@ -28,7 +28,6 @@ namespace gui {
 #define RGBA_TO_FLOAT(r, g, b, a) ImVec4(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f)
 
 const ImVec4 GUI_COLOR_TEXT_MENUBAR = RGBA_TO_FLOAT(242, 150, 58, 255);
-const ImVec4 GUI_COLOR_TEXT_MENUBAR_OPTIONS = RGBA_TO_FLOAT(242, 150, 58, 255);
 const ImVec4 GUI_COLOR_TEXT_TITLE = RGBA_TO_FLOAT(247, 198, 51, 255);
 const ImVec4 GUI_COLOR_TEXT = RGBA_TO_FLOAT(255, 255, 255, 255);
 const ImVec4 GUI_COLOR_SEARCH_BAR_TEXT = RGBA_TO_FLOAT(200, 200, 200, 255);
@@ -57,6 +56,7 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host);
 void draw_settings_dialog(GuiState &gui, HostState &host);
 void draw_controls_dialog(GuiState &gui, HostState &host);
 void draw_about_dialog(GuiState &gui);
+void draw_app_context_menu(GuiState &gui, HostState &host);
 void draw_live_area_dialog(GuiState &gui, HostState &host);
 void draw_manual_dialog(GuiState &gui, HostState &host);
 

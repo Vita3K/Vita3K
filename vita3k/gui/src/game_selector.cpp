@@ -72,7 +72,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
     if (gui.user_backgrounds[host.cfg.background_image])
         ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
-    ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     if (gui.user_backgrounds[host.cfg.background_image]) {
         ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.background_image],
@@ -89,117 +89,115 @@ void draw_game_selector(GuiState &gui, HostState &host) {
 
     switch (gui.game_selector.state) {
     case SELECT_APP:
-        ImGui::Columns(5);
         ImGui::SetWindowFontScale(1.1f);
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-        ImGui::Button("Icon"); // Button to fit style, does nothing.
-        ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
-        ImGui::NextColumn();
         std::string title_id_label = "TitleID";
-        switch (gui.game_selector.title_id_sort_state) {
-        case ASCENDANT:
-            title_id_label += " >";
-            ImGui::SetColumnWidth(1, 82.f);
-            break;
-        case DESCENDANT:
-            title_id_label += " <";
-            ImGui::SetColumnWidth(1, 82.f);
-            break;
-        default:
-            ImGui::SetColumnWidth(1, 70.f);
-            break;
-        }
-        if (ImGui::Button(title_id_label.c_str())) {
-            gui.game_selector.title_id_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.game_selector.title_id_sort_state + 1) % 3));
-            gui.game_selector.app_ver_sort_state = NOT_SORTED;
-            gui.game_selector.category_sort_state = NOT_SORTED;
-            gui.game_selector.title_sort_state = NOT_SORTED;
+        float title_id_size = ImGui::CalcTextSize(title_id_label.c_str()).x + 50.f;
+        std::string app_ver_label = "Version";
+        float app_ver_size = ImGui::CalcTextSize(app_ver_label.c_str()).x + 30.f;
+        std::string cateogry_label = "Category";
+        float cateogry_size = ImGui::CalcTextSize(cateogry_label.c_str()).x + 30.f;
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+        if (!host.cfg.apps_list_grid) {
+            ImGui::Columns(5);
+            ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
+            ImGui::NextColumn();
             switch (gui.game_selector.title_id_sort_state) {
             case ASCENDANT:
-                std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
-                    return lhs.title_id < rhs.title_id;
-                });
+                title_id_label += " >";
+                title_id_size += ImGui::CalcTextSize(" >").x;
                 break;
             case DESCENDANT:
-                std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
-                    return lhs.title_id > rhs.title_id;
-                });
-                break;
-            default:
+                title_id_label += " <";
+                title_id_size += ImGui::CalcTextSize(" <").x;
                 break;
             }
-        }
-        ImGui::NextColumn();
-        std::string app_ver_label = "Version";
-        switch (gui.game_selector.app_ver_sort_state) {
-        case ASCENDANT:
-            app_ver_label += " >";
-            ImGui::SetColumnWidth(2, 82.f);
-            break;
-        case DESCENDANT:
-            app_ver_label += " <";
-            ImGui::SetColumnWidth(2, 82.f);
-            break;
-        default:
-            ImGui::SetColumnWidth(2, 70.f);
-            break;
-        }
-        if (ImGui::Button(app_ver_label.c_str())) {
-            gui.game_selector.title_id_sort_state = NOT_SORTED;
-            gui.game_selector.app_ver_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.game_selector.app_ver_sort_state + 1) % 3));
-            gui.game_selector.category_sort_state = NOT_SORTED;
-            gui.game_selector.title_sort_state = NOT_SORTED;
+            ImGui::SetColumnWidth(1, title_id_size);
+            if (ImGui::Button(title_id_label.c_str())) {
+                gui.game_selector.title_id_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.game_selector.title_id_sort_state + 1) % 3));
+                gui.game_selector.app_ver_sort_state = NOT_SORTED;
+                gui.game_selector.category_sort_state = NOT_SORTED;
+                gui.game_selector.title_sort_state = NOT_SORTED;
+                switch (gui.game_selector.title_id_sort_state) {
+                case ASCENDANT:
+                    std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                        return lhs.title_id < rhs.title_id;
+                    });
+                    break;
+                case DESCENDANT:
+                    std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                        return lhs.title_id > rhs.title_id;
+                    });
+                    break;
+                default:
+                    break;
+                }
+            }
+            ImGui::NextColumn();
             switch (gui.game_selector.app_ver_sort_state) {
             case ASCENDANT:
-                std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
-                    return lhs.app_ver < rhs.app_ver;
-                });
+                app_ver_label += " >";
+                app_ver_size += ImGui::CalcTextSize(" >").x;
                 break;
             case DESCENDANT:
-                std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
-                    return lhs.app_ver > rhs.app_ver;
-                });
-                break;
-            default:
+                app_ver_label += " <";
+                app_ver_size += ImGui::CalcTextSize(" <").x;
                 break;
             }
-        }
-        ImGui::NextColumn();
-        std::string cateogry_label = "Category";
-        switch (gui.game_selector.category_sort_state) {
-        case ASCENDANT:
-            cateogry_label += " >";
-            ImGui::SetColumnWidth(3, 90.f);
-            break;
-        case DESCENDANT:
-            cateogry_label += " <";
-            ImGui::SetColumnWidth(3, 90.f);
-            break;
-        default:
-            ImGui::SetColumnWidth(3, 76.f);
-            break;
-        }
-        if (ImGui::Button(cateogry_label.c_str())) {
-            gui.game_selector.title_id_sort_state = NOT_SORTED;
-            gui.game_selector.app_ver_sort_state = NOT_SORTED;
-            gui.game_selector.category_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.game_selector.category_sort_state + 1) % 3));
-            gui.game_selector.title_sort_state = NOT_SORTED;
+            ImGui::SetColumnWidth(2, app_ver_size);
+            if (ImGui::Button(app_ver_label.c_str())) {
+                gui.game_selector.title_id_sort_state = NOT_SORTED;
+                gui.game_selector.app_ver_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.game_selector.app_ver_sort_state + 1) % 3));
+                gui.game_selector.category_sort_state = NOT_SORTED;
+                gui.game_selector.title_sort_state = NOT_SORTED;
+                switch (gui.game_selector.app_ver_sort_state) {
+                case ASCENDANT:
+                    std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                        return lhs.app_ver < rhs.app_ver;
+                    });
+                    break;
+                case DESCENDANT:
+                    std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                        return lhs.app_ver > rhs.app_ver;
+                    });
+                    break;
+                default:
+                    break;
+                }
+            }
+            ImGui::NextColumn();
             switch (gui.game_selector.category_sort_state) {
             case ASCENDANT:
-                std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
-                    return lhs.category < rhs.category;
-                });
+                cateogry_label += " >";
+                cateogry_size += ImGui::CalcTextSize(" >").x;
                 break;
             case DESCENDANT:
-                std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
-                    return lhs.category > rhs.category;
-                });
-                break;
-            default:
+                cateogry_label += " <";
+                cateogry_size += ImGui::CalcTextSize(" <").x;
                 break;
             }
+            ImGui::SetColumnWidth(3, cateogry_size);
+            if (ImGui::Button(cateogry_label.c_str())) {
+                gui.game_selector.title_id_sort_state = NOT_SORTED;
+                gui.game_selector.app_ver_sort_state = NOT_SORTED;
+                gui.game_selector.category_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.game_selector.category_sort_state + 1) % 3));
+                gui.game_selector.title_sort_state = NOT_SORTED;
+                switch (gui.game_selector.category_sort_state) {
+                case ASCENDANT:
+                    std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                        return lhs.category < rhs.category;
+                    });
+                    break;
+                case DESCENDANT:
+                    std::sort(gui.game_selector.games.begin(), gui.game_selector.games.end(), [](const Game &lhs, const Game &rhs) {
+                        return lhs.category > rhs.category;
+                    });
+                    break;
+                default:
+                    break;
+                }
+            }
+            ImGui::NextColumn();
         }
-        ImGui::NextColumn();
         std::string title_label = "Title";
         switch (gui.game_selector.title_sort_state) {
         case ASCENDANT:
@@ -234,19 +232,40 @@ void draw_game_selector(GuiState &gui, HostState &host) {
         }
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
-        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh game list").x + ImGui::GetStyle().DisplayWindowPadding.x + 320));
-        if (ImGui::Button("Refresh game list"))
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh").x + ImGui::GetStyle().DisplayWindowPadding.x + 270));
+        if (ImGui::Button("Refresh"))
             refresh_game_list(gui, host);
-        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Game Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 220));
-        ImGui::TextColored(GUI_COLOR_TEXT, "Game Search");
+        ImGui::PopStyleColor(3);
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 180));
+        ImGui::TextColored(GUI_COLOR_TEXT, "Search");
         ImGui::SameLine();
-        gui.game_search_bar.Draw("##game_search_bar", 220);
-        ImGui::NextColumn();
+        gui.game_search_bar.Draw("##game_search_bar", 180);
+        if (!host.cfg.apps_list_grid) {
+            ImGui::NextColumn();
+            ImGui::Columns(1);
+        }
         ImGui::Separator();
-        ImGui::SetWindowFontScale(1);
+        static const auto POS_GAME_LIST = ImVec2(54.f, 72.f);
+        ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_GAME_LIST : ImVec2(0.f, 72.f), ImGuiCond_Always);
+        ImGui::BeginChild("##apps_list", ImVec2(host.cfg.apps_list_grid ? display_size.x - POS_GAME_LIST.x : display_size.x, display_size.y - POS_GAME_LIST.y), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        static const auto GRID_ICON_SIZE = ImVec2(128.f, 128.f);
+        if (!host.cfg.apps_list_grid) {
+            ImGui::Columns(5, nullptr, true);
+            ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
+            ImGui::SetColumnWidth(1, title_id_size);
+            ImGui::SetColumnWidth(2, app_ver_size);
+            ImGui::SetColumnWidth(3, cateogry_size);
+        } else {
+            ImGui::Columns(4, nullptr, false);
+            ImGui::SetColumnWidth(0, GRID_ICON_SIZE.x + 80.f);
+            ImGui::SetColumnWidth(1, GRID_ICON_SIZE.x + 80.f);
+            ImGui::SetColumnWidth(2, GRID_ICON_SIZE.x + 80.f);
+            ImGui::SetColumnWidth(3, GRID_ICON_SIZE.x + 80.f);
+        }
+        ImGui::SetWindowFontScale(0.74f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         for (const auto &game : gui.game_selector.games) {
-            bool selected[5] = { false };
+            bool selected = false;
             if (!gui.game_search_bar.PassFilter(game.title.c_str()) && !gui.game_search_bar.PassFilter(game.title_id.c_str()))
                 continue;
             if (!fs::exists(fs::path(host.pref_path) / "ux0/app" / game.title_id)) {
@@ -254,20 +273,21 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                 LOG_ERROR("Game not found: {} [{}], deleting the entry for it.", game.title_id, game.title);
                 delete_game(gui, host);
             }
+            const auto POS_ICON = ImGui::GetCursorPosY();
             if (gui.game_selector.icons.find(game.title_id) != gui.game_selector.icons.end()) {
-                ImGui::Image(gui.game_selector.icons[game.title_id], ImVec2(icon_size, icon_size));
-                if (ImGui::IsItemHovered()) {
-                    host.game_version = game.app_ver;
-                    host.game_short_title = game.stitle;
-                    host.game_title = game.title;
-                    host.io.title_id = game.title_id;
-                    if (ImGui::IsMouseClicked(0))
-                        selected[0] = true;
-                }
-                ImGui::OpenPopupOnItemClick("#game_context_menu", 1);
+                if (host.cfg.apps_list_grid)
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f));
+                ImGui::Image(gui.game_selector.icons[game.title_id], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
             }
-            ImGui::NextColumn();
-            ImGui::Selectable(game.title_id.c_str(), &selected[1], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
+            const auto POS_TEXT = ImGui::GetCursorPos();
+            ImGui::SetCursorPosY(POS_ICON);
+            if (host.cfg.apps_list_grid)
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f));
+            else
+                ImGui::SetCursorPosY(POS_ICON);
+            ImGui::PushID(game.title_id.c_str());
+            ImGui::Selectable("##icon", &selected, host.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
+            ImGui::PopID();
             if (ImGui::IsItemHovered()) {
                 host.game_version = game.app_ver;
                 host.game_short_title = game.stitle;
@@ -275,15 +295,28 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                 host.io.title_id = game.title_id;
             }
             if (host.io.title_id == game.title_id)
-                game_context_menu(gui, host);
-            ImGui::NextColumn();
-            ImGui::Selectable(game.app_ver.c_str(), &selected[2], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
-            ImGui::NextColumn();
-            ImGui::Selectable(game.category.c_str(), &selected[3], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, icon_size));
-            ImGui::NextColumn();
-            ImGui::Selectable(game.title.c_str(), &selected[4], ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, static_cast<float>(icon_size)));
-            ImGui::NextColumn();
-            if (std::find(std::begin(selected), std::end(selected), true) != std::end(selected)) {
+                draw_app_context_menu(gui, host);
+            ImGui::SetWindowFontScale(0.76f);
+            if (!host.cfg.apps_list_grid) {
+                ImGui::NextColumn();
+                ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.0f, 0.5f));
+                ImGui::Selectable(game.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::NextColumn();
+                ImGui::Selectable(game.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::NextColumn();
+                ImGui::Selectable(game.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::NextColumn();
+                ImGui::Selectable(game.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::PopStyleVar();
+                ImGui::NextColumn();
+            } else {
+                ImGui::SetCursorPos(ImVec2(POS_TEXT.x + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f), POS_TEXT.y));
+                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + GRID_ICON_SIZE.x);
+                ImGui::TextColored(GUI_COLOR_TEXT, game.title.c_str());
+                ImGui::PopTextWrapPos();
+                ImGui::NextColumn();
+            }
+            if (selected) {
                 if (host.cfg.show_live_area_screen) {
                     init_live_area(gui, host);
                     gui.live_area.live_area_dialog = true;
@@ -291,7 +324,8 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                     gui.game_selector.selected_title_id = game.title_id;
             }
         }
-        ImGui::PopStyleColor(4);
+        ImGui::Columns(1);
+        ImGui::EndChild();
         break;
     }
     ImGui::End();

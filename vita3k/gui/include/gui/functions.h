@@ -37,7 +37,6 @@ enum GenericDialogState {
 };
 
 void delete_game(GuiState &gui, HostState &host);
-void game_context_menu(GuiState &gui, HostState &host);
 void get_game_titles(GuiState &gui, HostState &host);
 void get_modules_list(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);

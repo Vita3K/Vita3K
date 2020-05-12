@@ -32,6 +32,7 @@
     code(bool, "log-uniforms", false, log_uniforms)                                                     \
     code(bool, "pstv-mode", false, pstv_mode)                                                           \
     code(bool, "show-gui", false, show_gui)                                                             \
+    code(bool, "apps-list-grid", false, apps_list_grid)                                                 \
     code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
@@ -42,6 +43,7 @@
     code(float, "background-alpha", .300f, background_alpha)                                            \
     code(int, "log-level", static_cast<int>(spdlog::level::trace), log_level)                           \
     code(std::string, "pref-path", std::string{}, pref_path)                                            \
+    code(std::string, "last-app", std::string{}, last_app)                                              \
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \

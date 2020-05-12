@@ -52,7 +52,7 @@ void draw_game_install_dialog(GuiState &gui, HostState &host) {
 
     if (gui.game_reinstall_confirm)
         ImGui::OpenPopup("Game reinstallation");
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginPopupModal("Game reinstallation", &gui.game_reinstall_confirm, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
         ImGui::TextColored(GUI_COLOR_TEXT, "This game is already installed:\n%s [%s].", host.io.title_id.c_str(), host.game_title.c_str());
@@ -81,7 +81,7 @@ void draw_game_install_dialog(GuiState &gui, HostState &host) {
 
     if (game_install_confirm)
         ImGui::OpenPopup("Game installation succes");
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginPopupModal("Game installation succes", &game_install_confirm, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 5);
@@ -107,7 +107,7 @@ void draw_game_install_dialog(GuiState &gui, HostState &host) {
     } else
         ImGui::PopStyleColor();
 
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR_OPTIONS);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginPopupModal("Game installation failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
         ImGui::TextColored(GUI_COLOR_TEXT, "Installation failed, please check the log for more information.");

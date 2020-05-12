@@ -127,7 +127,6 @@ int main(int argc, char *argv[]) {
 #endif
             gui::draw_live_area(gui, host);
             gui::draw_ui(gui, host);
-            gui::draw_game_selector(gui, host);
 
             gui::draw_end(gui, host.window.get());
         } else {
@@ -153,6 +152,11 @@ int main(int argc, char *argv[]) {
 
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
+
+    if (host.cfg.overwrite_config) {
+        host.cfg.last_app = host.io.title_id.c_str();
+        config::serialize_config(host.cfg, host.cfg.config_path);
+    }
 
     if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end()) {
         while (host.frame_count == 0) {
