@@ -324,6 +324,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                     gui.game_selector.selected_title_id = game.title_id;
             }
         }
+        ImGui::PopStyleColor();
         ImGui::Columns(1);
         ImGui::EndChild();
         break;
