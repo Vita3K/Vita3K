@@ -149,6 +149,7 @@ static auto information = false;
 
 void game_context_menu(GuiState &gui, HostState &host) {
     const auto game_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
+    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / host.io.title_id };
     const auto save_data_path{ fs::path(host.pref_path) / "ux0/user/00/savedata" / host.io.title_id };
     const auto shaderlog_path{ fs::path(host.base_path) / "shaderlog" / host.io.title_id };
 
@@ -181,6 +182,8 @@ void game_context_menu(GuiState &gui, HostState &host) {
         if (ImGui::BeginMenu("Open Folder")) {
             if (ImGui::MenuItem("Game"))
                 system((OS_PREFIX + game_path.string()).c_str());
+            if (fs::exists(DLC_PATH) && ImGui::MenuItem("Dlc"))
+                system((OS_PREFIX + DLC_PATH.string()).c_str());
             if (fs::exists(save_data_path) && ImGui::MenuItem("Save Data"))
                 system((OS_PREFIX + save_data_path.string()).c_str());
             ImGui::EndMenu();
@@ -190,6 +193,8 @@ void game_context_menu(GuiState &gui, HostState &host) {
         if (ImGui::BeginMenu("Delete")) {
             if (ImGui::MenuItem("Game"))
                 context_dialog = "game";
+            if (fs::exists(DLC_PATH) && ImGui::MenuItem("Dlc"))
+                fs::remove_all(DLC_PATH);
             if (fs::exists(save_data_path) && ImGui::MenuItem("Save Data"))
                 context_dialog = "save";
             if (ImGui::MenuItem("Shader Log")) {
