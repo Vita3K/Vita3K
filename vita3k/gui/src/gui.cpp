@@ -59,7 +59,7 @@ static void init_style() {
     style->Colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
     style->Colors[ImGuiCol_TextDisabled] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
     style->Colors[ImGuiCol_WindowBg] = ImVec4(0.07f, 0.08f, 0.10f, 0.80f);
-    style->Colors[ImGuiCol_ChildWindowBg] = ImVec4(0.07f, 0.07f, 0.09f, 0.90f);
+    style->Colors[ImGuiCol_ChildBg] = ImVec4(0.07f, 0.07f, 0.09f, 0.90f);
     style->Colors[ImGuiCol_PopupBg] = ImVec4(0.07f, 0.07f, 0.09f, 0.90f);
     style->Colors[ImGuiCol_Border] = ImVec4(0.80f, 0.80f, 0.80f, 0.88f);
     style->Colors[ImGuiCol_BorderShadow] = ImVec4(0.92f, 0.91f, 0.88f, 0.00f);
@@ -133,7 +133,8 @@ static void init_live_area_font(GuiState &gui, HostState &host) {
 
     // check existence of font file
     if (!fs::exists(font_path)) {
-        LOG_WARN("Could not find font file at \"{}\", falling back to default live area font.", font_path.string());
+        LOG_WARN("Could not find firmware font file at \"{}\", using defaut vita3k font.", font_path.string());
+        gui.live_area_font = gui.normal_font;
         return;
     }
 
@@ -314,7 +315,7 @@ void draw_end(GuiState &gui, SDL_Window *window) {
 void draw_live_area(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.live_area_font);
 
-    if (gui.game_selector.selected_title_id.empty())
+    if (!host.cfg.run_title_id && !host.cfg.vpk_path && gui.game_selector.selected_title_id.empty())
         draw_game_selector(gui, host);
     draw_app_context_menu(gui, host);
     if (gui.live_area.live_area_dialog)

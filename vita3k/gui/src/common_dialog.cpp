@@ -62,7 +62,7 @@ static void draw_ime_dialog(DialogState &common_dialog) {
 
 static void draw_message_dialog(DialogState &common_dialog) {
     const ImVec2 PROGRESS_BAR_SIZE = ImVec2(120.f, 5.f);
-    ImGui::SetNextWindowPosCenter();
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("Message Dialog");
     ImGui::Text("%s", common_dialog.msg.message.c_str());
@@ -191,7 +191,7 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
 
     switch (common_dialog.savedata.mode_to_display) {
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
-        ImGui::SetNextWindowPosCenter();
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(WINDOW_SIZE);
         ImGui::Begin("##Savedata Dialog", nullptr, ImGuiWindowFlags_NoDecoration);
         ImGui::SetWindowFontScale(1.5f);
@@ -231,7 +231,7 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
         break;
     default:
     case SCE_SAVEDATA_DIALOG_MODE_FIXED:
-        ImGui::SetNextWindowPosCenter();
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(WINDOW_SIZE);
         ImGui::Begin("##Savedata Dialog", nullptr, ImGuiWindowFlags_NoDecoration);
         ImGui::SetWindowFontScale(1.5f);
