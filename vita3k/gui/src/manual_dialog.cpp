@@ -90,7 +90,7 @@ void draw_manual_dialog(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(display_size.x + 10.f, display_size.y + 2.f), ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(0.999f);
     ImGui::Begin("##manual", &gui.live_area.manual_dialog, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetNextWindowPosCenter();
+    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (zoom[host.io.title_id].first && ImGui::IsMouseDoubleClicked(0)) {
         zoom[host.io.title_id].second ? size_page[host.io.title_id]["current"] = size_page[host.io.title_id]["mini"] : size_page[host.io.title_id]["current"] = size_page[host.io.title_id]["max"];
         zoom[host.io.title_id].second = !zoom[host.io.title_id].second;

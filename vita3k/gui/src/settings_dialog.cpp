@@ -135,6 +135,7 @@ void get_modules_list(GuiState &gui, HostState &host) {
 void draw_settings_dialog(GuiState &gui, HostState &host) {
     const ImGuiWindowFlags settings_flags = ImGuiWindowFlags_AlwaysAutoResize;
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("Settings", &gui.configuration_menu.settings_dialog, settings_flags);
     const ImGuiTabBarFlags settings_tab_flags = ImGuiTabBarFlags_None;
     ImGui::BeginTabBar("SettingsTabBar", settings_tab_flags);
