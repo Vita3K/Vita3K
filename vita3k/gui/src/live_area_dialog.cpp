@@ -1033,7 +1033,7 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPos(ImVec2(60.f * scal.x, 14.0f * scal.y));
         if (ImGui::Button("Help", BUTTON_SIZE))
             ImGui::OpenPopup("Live Area Help");
-        ImGui::SetNextWindowPosCenter();
+        ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         if (ImGui::BeginPopupModal("Live Area Help", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize("Help").x / 2.f));
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Help");

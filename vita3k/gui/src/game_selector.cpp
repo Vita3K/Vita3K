@@ -18,9 +18,6 @@
 #include "private.h"
 
 #include <gui/functions.h>
-#include <gui/state.h>
-
-#include <host/state.h>
 
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -104,11 +101,9 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             switch (gui.game_selector.title_id_sort_state) {
             case ASCENDANT:
                 title_id_label += " >";
-                title_id_size += ImGui::CalcTextSize(" >").x;
                 break;
             case DESCENDANT:
                 title_id_label += " <";
-                title_id_size += ImGui::CalcTextSize(" <").x;
                 break;
             }
             ImGui::SetColumnWidth(1, title_id_size);
@@ -232,14 +227,14 @@ void draw_game_selector(GuiState &gui, HostState &host) {
         }
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
-        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh").x + ImGui::GetStyle().DisplayWindowPadding.x + 270));
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh").x + ImGui::GetStyle().DisplayWindowPadding.x + 270.f));
         if (ImGui::Button("Refresh"))
             refresh_game_list(gui, host);
         ImGui::PopStyleColor(3);
         ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Search").x + ImGui::GetStyle().DisplayWindowPadding.x + 180));
         ImGui::TextColored(GUI_COLOR_TEXT, "Search");
         ImGui::SameLine();
-        gui.game_search_bar.Draw("##game_search_bar", 180);
+        gui.game_search_bar.Draw("##game_search_bar", 180.f);
         if (!host.cfg.apps_list_grid) {
             ImGui::NextColumn();
             ImGui::Columns(1);
@@ -262,7 +257,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImGui::SetColumnWidth(2, GRID_ICON_SIZE.x + 80.f);
             ImGui::SetColumnWidth(3, GRID_ICON_SIZE.x + 80.f);
         }
-        ImGui::SetWindowFontScale(0.74f);
+        ImGui::SetWindowFontScale(!gui.live_area_font_data.empty() ? 0.76f : 1.f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         for (const auto &game : gui.game_selector.games) {
             bool selected = false;
@@ -296,10 +291,9 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             }
             if (host.io.title_id == game.title_id)
                 draw_app_context_menu(gui, host);
-            ImGui::SetWindowFontScale(0.76f);
             if (!host.cfg.apps_list_grid) {
                 ImGui::NextColumn();
-                ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.0f, 0.5f));
+                ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                 ImGui::Selectable(game.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                 ImGui::NextColumn();
                 ImGui::Selectable(game.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
@@ -324,6 +318,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                     gui.game_selector.selected_title_id = game.title_id;
             }
         }
+        ImGui::PopStyleColor();
         ImGui::Columns(1);
         ImGui::EndChild();
         break;

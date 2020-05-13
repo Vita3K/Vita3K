@@ -22,7 +22,7 @@
 namespace gui {
 
 void draw_reinstall_dialog(GenericDialogState *status) {
-    ImGui::SetNextWindowPosCenter();
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("Reinstall this application?");
     ImGui::Text("This application is already installed.");

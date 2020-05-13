@@ -64,7 +64,7 @@ void draw_controls_dialog(GuiState &gui, HostState &host) {
     float width = ImGui::GetWindowWidth() / 1.35f;
     float height = ImGui::GetWindowHeight() / 1.25f;
     ImGui::SetNextWindowSize(ImVec2(width, height));
-    ImGui::SetNextWindowPosCenter();
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("Controls", &gui.controls_menu.controls_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s    %-16s", "Button", "Mapped button");
     remapper_button(gui, host, &host.cfg.keyboard_leftstick_up, "Left stick up", ImVec2(7.0f, 7.0f));
