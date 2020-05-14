@@ -124,7 +124,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
     const void *pixels = nullptr;
 
-    size_t stride = 0;
+    size_t pixels_per_stride = 0;
     const auto base_format = gxm::get_base_format(fmt);
     size_t bpp = renderer::texture::bits_per_pixel(base_format);
     size_t bytes_per_pixel = (bpp + 7) >> 3;
@@ -161,7 +161,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                     static_cast<std::uint8_t>(bpp));
 
             pixels = texture_pixels_lineared.data();
-            stride = width;
+            pixels_per_stride = width;
 
             if (need_decompress_and_unswizzle_on_cpu) {
                 texture_data_decompressed.clear();
@@ -169,10 +169,12 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
             break;
         }
+        case SCE_GXM_TEXTURE_LINEAR_STRIDED:
+            pixels_per_stride = gxm::get_stride_in_bytes(&gxm_texture) / bytes_per_pixel;
 
+            break;
         default:
-            pixels = texture_data;
-            stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
+            pixels_per_stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
 
             break;
         }
@@ -190,7 +192,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                     reinterpret_cast<const uint8_t *>(pixels), width, height, palette_bytes);
             }
             pixels = palette_texture_pixels.data();
-            stride = width;
+            pixels_per_stride = width;
         }
 
         if (gxm::is_yuv_format(fmt)) {
@@ -203,7 +205,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                 renderer::texture::yuv420_texture_to_rgb(yuv_texture_pixels.data(),
                     reinterpret_cast<const uint8_t *>(pixels), width, height);
                 pixels = yuv_texture_pixels.data();
-                stride = width;
+                pixels_per_stride = width;
                 break;
             }
 
@@ -229,7 +231,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
         const GLenum format = translate_format(fmt);
         const GLenum type = translate_type(fmt);
 
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(stride));
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
 
         if (need_decompress_and_unswizzle_on_cpu)
             glTexSubImage2D(GL_TEXTURE_2D, mip_index, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);

@@ -24,6 +24,10 @@ SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src) {
     return static_cast<SceGxmTextureBaseFormat>(src & 0xFF000000);
 }
 
+size_t get_stride_in_bytes(const SceGxmTexture *texture) {
+    return ((texture->mip_filter | (texture->min_filter << 1) | (texture->mip_count << 3) | (texture->lod_bias << 7)) + 1) * 4;
+}
+
 bool is_paletted_format(SceGxmTextureFormat src) {
     const auto base_format = get_base_format(src);
 

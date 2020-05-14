@@ -1807,9 +1807,12 @@ EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
     return Ptr<void>(texture->palette_addr << 6);
 }
 
-EXPORT(int, sceGxmTextureGetStride, const SceGxmTexture *texture) {
+EXPORT(uint32_t, sceGxmTextureGetStride, const SceGxmTexture *texture) {
     assert(texture != nullptr);
-    return UNIMPLEMENTED();
+    if (texture->texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED)
+        return 0;
+
+    return gxm::get_stride_in_bytes(texture);
 }
 
 EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
@@ -1943,8 +1946,30 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     return result;
 }
 
-EXPORT(int, sceGxmTextureInitLinearStrided) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t byteStride) {
+    if (width > 4096 || height > 4096 || byteStride == 0)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    else if (!data)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    else if (!texture)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    const uint32_t stride_compressed = (byteStride >> 2) - 1;
+    texture->mip_filter = stride_compressed & 1;
+    texture->min_filter = (stride_compressed & 0b0000110) >> 1;
+    texture->mip_count = (stride_compressed & 0b1111000) >> 3;
+    texture->lod_bias = (stride_compressed & 0b1111110000000) >> 7;
+    texture->base_format = (texFormat & 0x1F000000) >> 24;
+    texture->type = SCE_GXM_TEXTURE_LINEAR_STRIDED >> 29;
+    texture->data_addr = data.address() >> 2;
+    texture->swizzle_format = (texFormat & 0x7000) >> 12;
+    texture->normalize_mode = 1;
+    texture->format0 = (texFormat & 0x80000000) >> 31;
+    texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+    texture->height = height - 1;
+    texture->width = width - 1;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
