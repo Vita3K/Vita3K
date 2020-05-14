@@ -432,7 +432,12 @@ int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const std::s
     assert(statp != nullptr);
     memset(statp, '\0', sizeof(SceIoStat));
 
-    return stat_file(io, io.std_files.find(fd)->second.get_vita_loc(), statp, pref_path, base_tick, export_name, fd);
+    const auto std_file = io.std_files.find(fd);
+    if (std_file == io.std_files.end()) {
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    }
+
+    return stat_file(io, std_file->second.get_vita_loc(), statp, pref_path, base_tick, export_name, fd);
 }
 
 int close_file(IOState &io, const SceUID fd, const char *export_name) {
