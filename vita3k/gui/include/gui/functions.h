@@ -36,7 +36,7 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-void delete_game(GuiState &gui, HostState &host);
+void delete_app(GuiState &gui, HostState &host);
 void get_game_titles(GuiState &gui, HostState &host);
 void get_modules_list(GuiState &gui, HostState &host);
 void get_themes_list(GuiState &gui, HostState &host);

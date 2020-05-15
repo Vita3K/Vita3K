@@ -71,12 +71,13 @@ static auto MENUBAR_HEIGHT = 22.f;
 
 void draw_game_selector(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
+    const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
     if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty())
         ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
-    ImGui::Begin("Game Selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("app_selector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     if (gui.start_background && !gui.file_menu.pkg_install_dialog) {
         if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
@@ -120,10 +121,10 @@ void draw_game_selector(GuiState &gui, HostState &host) {
     else if (!gui.user_backgrounds.empty())
         ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
 
-    if (gui.delete_game_icon) {
+    if (gui.delete_app_icon) {
         if (gui.game_selector.icons.find(host.io.title_id) != gui.game_selector.icons.end())
             gui.game_selector.icons.erase(host.io.title_id);
-        gui.delete_game_icon = false;
+        gui.delete_app_icon = false;
     }
 
     const float icon_size = static_cast<float>(host.cfg.icon_size);
@@ -131,12 +132,12 @@ void draw_game_selector(GuiState &gui, HostState &host) {
     switch (gui.game_selector.state) {
     case SELECT_APP:
         ImGui::SetWindowFontScale(1.1f);
-        std::string title_id_label = "TitleID";
-        float title_id_size = ImGui::CalcTextSize(title_id_label.c_str()).x + 50.f;
+        std::string title_id_label = "Title ID";
+        float title_id_size = (ImGui::CalcTextSize(title_id_label.c_str()).x + 50.f) * scal.x;
         std::string app_ver_label = "Version";
-        float app_ver_size = ImGui::CalcTextSize(app_ver_label.c_str()).x + 30.f;
+        float app_ver_size = (ImGui::CalcTextSize(app_ver_label.c_str()).x + 30.f) * scal.x;
         std::string cateogry_label = "Category";
-        float cateogry_size = ImGui::CalcTextSize(cateogry_label.c_str()).x + 30.f;
+        float cateogry_size = (ImGui::CalcTextSize(cateogry_label.c_str()).x + 30.f) * scal.x;
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         if (!host.cfg.apps_list_grid) {
             ImGui::Columns(5);
@@ -284,10 +285,10 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImGui::Columns(1);
         }
         ImGui::Separator();
-        static const auto POS_GAME_LIST = ImVec2(54.f, 72.f);
-        ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_GAME_LIST : ImVec2(0.f, 72.f), ImGuiCond_Always);
-        ImGui::BeginChild("##apps_list", ImVec2(host.cfg.apps_list_grid ? display_size.x - POS_GAME_LIST.x : display_size.x, display_size.y - POS_GAME_LIST.y), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-        static const auto GRID_ICON_SIZE = ImVec2(128.f, 128.f);
+        static const auto POS_APP_LIST = ImVec2(54.f, 70.f);
+        ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, 68.f), ImGuiCond_Always);
+        ImGui::BeginChild("##apps_list", ImVec2(host.cfg.apps_list_grid ? display_size.x - POS_APP_LIST.x : display_size.x, display_size.y - POS_APP_LIST.y), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        const auto GRID_ICON_SIZE = ImVec2(128.f * scal.x, 128.f * scal.y);
         if (!host.cfg.apps_list_grid) {
             ImGui::Columns(5, nullptr, true);
             ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
@@ -296,21 +297,22 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             ImGui::SetColumnWidth(3, cateogry_size);
         } else {
             ImGui::Columns(4, nullptr, false);
-            ImGui::SetColumnWidth(0, GRID_ICON_SIZE.x + 80.f);
-            ImGui::SetColumnWidth(1, GRID_ICON_SIZE.x + 80.f);
-            ImGui::SetColumnWidth(2, GRID_ICON_SIZE.x + 80.f);
-            ImGui::SetColumnWidth(3, GRID_ICON_SIZE.x + 80.f);
+            const auto COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * scal.x);
+            ImGui::SetColumnWidth(0, COLUMN_SIZE);
+            ImGui::SetColumnWidth(1, COLUMN_SIZE);
+            ImGui::SetColumnWidth(2, COLUMN_SIZE);
+            ImGui::SetColumnWidth(3, COLUMN_SIZE);
         }
-        ImGui::SetWindowFontScale(!gui.live_area_font_data.empty() ? 0.76f : 1.f);
+        ImGui::SetWindowFontScale(!gui.live_area_font_data.empty() ? 0.82f * scal.x : 1.f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         for (const auto &game : gui.game_selector.games) {
             bool selected = false;
-            if (!gui.game_search_bar.PassFilter(game.title.c_str()) && !gui.game_search_bar.PassFilter(game.title_id.c_str()))
+            if (!gui.game_search_bar.PassFilter(game.stitle.c_str()) && !gui.game_search_bar.PassFilter(game.title.c_str()) && !gui.game_search_bar.PassFilter(game.title_id.c_str()))
                 continue;
             if (!fs::exists(fs::path(host.pref_path) / "ux0/app" / game.title_id)) {
                 host.io.title_id = game.title_id;
-                LOG_ERROR("Game not found: {} [{}], deleting the entry for it.", game.title_id, game.title);
-                delete_game(gui, host);
+                LOG_ERROR("Application not found: {} [{}], deleting the entry for it.", game.title_id, game.title);
+                delete_app(gui, host);
             }
             const auto POS_ICON = ImGui::GetCursorPosY();
             if (gui.game_selector.icons.find(game.title_id) != gui.game_selector.icons.end()) {
@@ -318,7 +320,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f));
                 ImGui::Image(gui.game_selector.icons[game.title_id], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
             }
-            const auto POS_TEXT = ImGui::GetCursorPos();
+            const auto POS_STITLE = ImVec2(ImGui::GetCursorPosX() + (30.f * scal.x), ImGui::GetCursorPosY());
             ImGui::SetCursorPosY(POS_ICON);
             if (host.cfg.apps_list_grid)
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f));
@@ -348,9 +350,9 @@ void draw_game_selector(GuiState &gui, HostState &host) {
                 ImGui::PopStyleVar();
                 ImGui::NextColumn();
             } else {
-                ImGui::SetCursorPos(ImVec2(POS_TEXT.x + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f), POS_TEXT.y));
-                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + GRID_ICON_SIZE.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", game.title.c_str());
+                ImGui::SetCursorPos(ImVec2(POS_STITLE.x + ((GRID_ICON_SIZE.x / 2.f) - (ImGui::CalcTextSize(game.stitle.c_str(), 0, false, GRID_ICON_SIZE.x).x / 2.f)), POS_STITLE.y));
+                ImGui::PushTextWrapPos(POS_STITLE.x + GRID_ICON_SIZE.x);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", game.stitle.c_str());
                 ImGui::PopTextWrapPos();
                 ImGui::NextColumn();
             }

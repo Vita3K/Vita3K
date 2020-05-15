@@ -153,7 +153,7 @@ struct GuiState {
     std::vector<std::pair<std::string, bool>> modules;
     ImGuiTextFilter module_search_bar;
 
-    bool delete_game_icon = false;
+    bool delete_app_icon = false;
     GLuint display = 0;
 
     ImGuiTextFilter game_search_bar;
