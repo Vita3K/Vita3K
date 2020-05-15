@@ -544,7 +544,9 @@ int create_dir(IOState &io, const char *dir, int mode, const std::string &pref_p
         return fs::create_directories(emulated_path);
     if (fs::exists(emulated_path))
         return IO_ERROR(SCE_ERROR_ERRNO_EEXIST);
-    if (!fs::exists(emulated_path.parent_path())) // Vita cannot recursively create directories
+
+    const auto parent_path = fs::path(emulated_path).remove_trailing_separator().parent_path();
+    if (!fs::exists(parent_path)) // Vita cannot recursively create directories
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
 
     LOG_TRACE("{}: Creating new dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
