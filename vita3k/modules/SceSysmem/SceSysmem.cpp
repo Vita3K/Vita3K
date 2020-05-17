@@ -101,7 +101,9 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
 
     KernelState *const state = &host.kernel;
     const Blocks::const_iterator block = state->blocks.find(uid);
-    assert(block != state->blocks.end());
+    // TODO, is really that ?
+    if (block == state->blocks.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
 
     free(host.mem, block->second->mappedBase.address());
     state->blocks.erase(block);
