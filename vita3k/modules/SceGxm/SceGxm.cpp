@@ -1812,7 +1812,7 @@ EXPORT(uint32_t, sceGxmTextureGetStride, const SceGxmTexture *texture) {
     if (texture->texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED)
         return 0;
 
-    return gxm::get_stride_in_bytes(texture);
+    return uint32_t(gxm::get_stride_in_bytes(texture));
 }
 
 EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
@@ -1882,6 +1882,9 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     case SCE_GXM_TEXTURE_FORMAT_U8_R111:
     case SCE_GXM_TEXTURE_FORMAT_U8_111R:
     case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
+    case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
         break;
 
     default:
@@ -1978,8 +1981,10 @@ EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> d
     return result;
 }
 
-EXPORT(int, sceGxmTextureInitSwizzledArbitrary) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTextureInitSwizzledArbitrary, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
+    const auto result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY);
+
+    return result;
 }
 
 EXPORT(int, sceGxmTextureInitTiled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
