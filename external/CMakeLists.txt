@@ -189,6 +189,7 @@ option(SPIRV_CROSS_ENABLE_CPP "Enable C++ target support." OFF)
 option(SPIRV_CROSS_ENABLE_REFLECT "Enable JSON reflection target support." OFF)
 option(SPIRV_CROSS_ENABLE_C_API "Enable C API wrapper support in static library." OFF)
 option(SPIRV_CROSS_ENABLE_UTIL "Enable util module support." OFF)
+option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 add_subdirectory(SPIRV-Cross)
 
 add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
