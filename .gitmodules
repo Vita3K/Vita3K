@@ -65,7 +65,7 @@
 	branch = v1.x
 [submodule "external/SPIRV-Cross"]
 	path = external/SPIRV-Cross
-	url = https://github.com/Vita3K/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git
 [submodule "vita3k/shaders-db"]
 	path = vita3k/shaders-db
 	url = https://github.com/Vita3K/shaders-db

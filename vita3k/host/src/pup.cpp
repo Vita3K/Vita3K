@@ -259,6 +259,14 @@ void install_pup(const std::string &pup, const std::string &pref_path) {
     }
     if (fs::file_size(pup_dec + "/vs0.img") > 0) {
         extract_fat(pup_dec, "vs0.img", pref_path);
+        for (const auto &file : fs::recursive_directory_iterator(pref_path + "/vs0/app")) {
+            if (file.path().filename() == "eboot.bin") {
+                self2elf(file.path().string(), file.path().string() + "elf", SCE_KEYS, 0);
+                fs::rename(file.path().string() + "elf", file.path().string());
+                make_fself(file.path().string(), file.path().string() + "fself");
+                fs::rename(file.path().string() + "fself", file.path().string());
+            }
+        }
         for (const auto &file : fs::directory_iterator(pref_path + "/vs0/sys/external")) {
             self2elf(file.path().string(), file.path().string() + "elf", SCE_KEYS, 0);
             fs::rename(file.path().string() + "elf", file.path().string());

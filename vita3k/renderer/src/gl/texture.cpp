@@ -148,8 +148,8 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
         case SCE_GXM_TEXTURE_TILED:
         case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY: {
             if (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) {
-                width = width = nearest_power_of_two(width);
-                height = height = nearest_power_of_two(height);
+                width = nearest_power_of_two(width);
+                height = nearest_power_of_two(height);
             }
 
             if (need_decompress_and_unswizzle_on_cpu) {
@@ -216,7 +216,11 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC0:
             case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0:
             case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1: {
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1: {
                 yuv_texture_pixels.resize(width * height * 3);
                 renderer::texture::yuv420_texture_to_rgb(yuv_texture_pixels.data(),
                     reinterpret_cast<const uint8_t *>(pixels), width, height);
@@ -224,11 +228,6 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                 pixels_per_stride = width;
                 break;
             }
-
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1:
 
             case SCE_GXM_TEXTURE_FORMAT_YUYV422_CSC0:
             case SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC0:
