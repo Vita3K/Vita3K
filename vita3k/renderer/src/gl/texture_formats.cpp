@@ -424,10 +424,8 @@ GLenum translate_type(SceGxmTextureFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
         return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
-        //LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2");
         return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
-        //LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3");
         return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
         LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_YUV422");

@@ -1899,7 +1899,14 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
             }
         } else if (gxm::is_yuv_format(tex_format)) {
             switch (tex_format) {
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC1:
             case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC0:
+            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1:
+            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1:
                 break;
             default:
                 LOG_WARN("Initialized texture with untested YUV texture format: {}", log_hex(tex_format));
