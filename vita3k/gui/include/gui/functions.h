@@ -52,6 +52,7 @@ void draw_end(GuiState &host, SDL_Window *window);
 void draw_live_area(GuiState &gui, HostState &host);
 void draw_ui(GuiState &gui, HostState &host);
 
+void draw_app_context_menu(GuiState &gui, HostState &host);
 void draw_common_dialog(GuiState &gui, HostState &host);
 void draw_game_selector(GuiState &gui, HostState &host);
 void draw_reinstall_dialog(GenericDialogState *status);

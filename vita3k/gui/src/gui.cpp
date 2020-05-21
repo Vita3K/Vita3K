@@ -317,7 +317,6 @@ void draw_live_area(GuiState &gui, HostState &host) {
 
     if (!host.cfg.run_title_id && !host.cfg.vpk_path && gui.game_selector.selected_title_id.empty())
         draw_game_selector(gui, host);
-    draw_app_context_menu(gui, host);
     if (gui.live_area.live_area_dialog)
         draw_live_area_dialog(gui, host);
     if (gui.live_area.manual_dialog)
