@@ -119,32 +119,6 @@ if(WIN32)
 	target_link_libraries(winsock INTERFACE WSOCK32 WS2_32 IPHLPAPI)
 endif()
 
-add_library(unicorn INTERFACE)
-if(APPLE)
-	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/macos/include")
-	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/macos/lib/libunicorn.a")
-elseif(WIN32)
-	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/windows/include")
-	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/windows/unicorn.lib")
-elseif(UNIX)
-	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn-src/include")
-	externalproject_add(
-		unicorn_build
-		SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn-src"
-		BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/unicorn-src"
-		CONFIGURE_COMMAND ""
-		BUILD_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/unicorn-build.sh"
-		INSTALL_COMMAND "")
-	add_dependencies(unicorn unicorn_build)
-	target_link_libraries(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn-src/libunicorn.a")
-else()
-	find_package(PkgConfig)
-	pkg_check_modules(UNICORN REQUIRED unicorn)
-	target_include_directories(unicorn INTERFACE "${UNICORN_INCLUDE_DIRS}")
-	find_library(UNICORN_LIB NAMES "${UNICORN_STATIC_LIBRARIES}" PATHS "${UNICORN_LIBRARY_DIRS}")
-	target_link_libraries(unicorn INTERFACE "${UNICORN_LIB}")
-endif()
-
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
 
