@@ -89,8 +89,6 @@ cd build-linux
 make -j$(nproc)
 ```
 
-__Note:__ If Unicorn can't find Python, use `make UNICORN_QEMU_FLAGS="--python=/usr/bin/python2"` or similar to point it to your installation. `make` works after you do this once.
-
 ## Note
 
 - After cloning or checking out a branch, you should always update submodules.
