@@ -158,21 +158,26 @@ int main(int argc, char *argv[]) {
         config::serialize_config(host.cfg, host.cfg.config_path);
     }
 
-    if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end()) {
-        while (host.frame_count == 0) {
-            // Driver acto!
-            renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-                host.io.title_id.c_str());
+    while (host.frame_count == 0) {
+        // Driver acto!
+        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
+            host.io.title_id.c_str());
 
-            gui::draw_begin(gui, host);
+        gui::draw_begin(gui, host);
 
+        if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
             // Display application background
             ImGui::GetForegroundDrawList()->AddImage(gui.apps_background[host.io.title_id],
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+        else if (!gui.user_backgrounds.empty())
+            // Application background not found, Display user background if exist
+            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.background_image],
+                ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
 
-            host.display.condvar.notify_all();
-            gui::draw_end(gui, host.window.get());
-        }
+        host.display.condvar.notify_all();
+        gui::draw_end(gui, host.window.get());
+
+        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.game_title, host.io.title_id).c_str());
     }
 
     while (handle_events(host, gui)) {
