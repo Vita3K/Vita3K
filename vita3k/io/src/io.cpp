@@ -305,6 +305,11 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
     }
 
     const auto file = io.std_files.find(fd);
+
+    if (!fs::is_directory(file->second.get_system_location().parent_path())) {
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT); // TODO: Is it the right error code?
+    }
+
     if (file->second.can_write_file()) {
         const auto written = file->second.write(data, 1, size);
         LOG_TRACE("{}: Writing to fd: {}, size: {}", export_name, log_hex(fd), size);
