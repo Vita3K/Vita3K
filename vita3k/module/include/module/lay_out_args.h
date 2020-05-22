@@ -29,10 +29,10 @@ class vargs;
 
 template <typename Arg>
 constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_stack(const LayoutArgsState &state) {
-    const size_t stack_alignment = alignof(Arg); // TODO Assumes host matches ARM.
-    const size_t stack_required = sizeof(Arg); // TODO Should this be aligned up?
-    const size_t stack_offset = align(state.stack_used, stack_alignment);
-    const size_t next_stack_used = stack_offset + stack_required;
+    const std::size_t stack_alignment = alignof(Arg); // TODO Assumes host matches ARM.
+    const std::size_t stack_required = sizeof(Arg); // TODO Should this be aligned up?
+    const std::size_t stack_offset = align(state.stack_used, stack_alignment);
+    const std::size_t next_stack_used = stack_offset + stack_required;
     const ArgLayout layout = { ArgLocation::stack, stack_offset };
     const LayoutArgsState next_state = { state.gpr_used, next_stack_used, state.float_used };
 
@@ -41,10 +41,10 @@ constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_stack(const LayoutArgsSt
 
 template <typename Arg>
 constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_gpr_or_stack(const LayoutArgsState &state) {
-    const size_t gpr_required = (sizeof(Arg) + 3) / 4;
-    const size_t gpr_alignment = gpr_required;
-    const size_t gpr_index = align(state.gpr_used, gpr_alignment);
-    const size_t next_gpr_used = gpr_index + gpr_required;
+    const std::size_t gpr_required = (sizeof(Arg) + 3) / 4;
+    const std::size_t gpr_alignment = gpr_required;
+    const std::size_t gpr_index = align(state.gpr_used, gpr_alignment);
+    const std::size_t next_gpr_used = gpr_index + gpr_required;
 
     // Does variable not fit in register file?
     if (next_gpr_used > 4) {
@@ -60,8 +60,8 @@ constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_gpr_or_stack(const Layou
 
 template <typename Arg>
 constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_float(const LayoutArgsState &state) {
-    const size_t float_index = state.float_used;
-    const size_t next_float_used = state.float_used + 1;
+    const std::size_t float_index = state.float_used;
+    const std::size_t next_float_used = state.float_used + 1;
 
     // Lay out in registers.
     const ArgLayout layout = { ArgLocation::fp, float_index };
