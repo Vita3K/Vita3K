@@ -155,14 +155,14 @@ void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
 
-        if (parameter.type == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER) {
+        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER) {
             int buffer_size = match_uniform_buffer_with_buffer_size(program, parameter, buffers);
 
             // Search for the buffer from analyzed list
             if (buffer_size != -1) {
                 sizes[parameter.resource_index] = buffer_size;
             }
-        } else if (parameter.type == SCE_GXM_PARAMETER_CATEGORY_UNIFORM || parameter.type == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+        } else if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM || parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
             const auto con = gxp::get_container_by_index(program, parameter.container_index);
 
             if (con) {
