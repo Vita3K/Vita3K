@@ -887,15 +887,15 @@ void draw_live_area_dialog(GuiState &gui, HostState &host) {
                 if (frame.autoflip > 0) {
                     if (str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].color.empty())
                         ImGui::TextColored(ImVec4(255.f, 255.f, 255.f, 255.f),
-                            str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].text.c_str());
+                            "%s", str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].text.c_str());
                     else
                         ImGui::TextColored(ImVec4(float(R[0]), float(G[0]), float(B[0]), 255),
-                            str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].text.c_str());
+                            "%s", str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].text.c_str());
                 } else {
                     if (str_tag.color.empty())
-                        ImGui::TextColored(ImVec4(255.f, 255.f, 255.f, 255.f), str_tag.text.c_str());
+                        ImGui::TextColored(ImVec4(255.f, 255.f, 255.f, 255.f), "%s", str_tag.text.c_str());
                     else
-                        ImGui::TextColored(ImVec4(float(R[0]), float(G[0]), float(B[0]), 255), str_tag.text.c_str());
+                        ImGui::TextColored(ImVec4(float(R[0]), float(G[0]), float(B[0]), 255), "%s", str_tag.text.c_str());
                 }
                 if (liveitem[host.io.title_id][frame.id]["text"]["word-wrap"].second != "off")
                     ImGui::PopTextWrapPos();

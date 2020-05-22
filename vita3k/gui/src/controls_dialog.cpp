@@ -42,7 +42,7 @@ static char const *SDL_key_to_string[]{ "[unset]", "[unknown]", "[unknown]", "[u
     "Keypad Mem+", "Keypad Mem-", "Keypad Mem*", "Keypad Mem/", "Keypad +/-", "Keypad Clear", "Keypad ClearEntry", "Keypad Binary", "Keypad Octal",
     "Keypad Dec", "Keypad HexaDec", "[unset]", "[unset]", "LCtrl", "LShift", "LAlt", "Win/Cmd", "RCtrl", "RShift", "RAlt", "RWin/Cmd" };
 
-static void remapper_button(GuiState &gui, HostState &host, int *button, char *button_name, const ImVec2 &dummy_size) {
+static void remapper_button(GuiState &gui, HostState &host, int *button, const char *button_name, const ImVec2 &dummy_size) {
     ImGui::Text("%-16s", button_name);
     ImGui::SameLine();
     ImGui::Dummy(dummy_size);
@@ -50,7 +50,7 @@ static void remapper_button(GuiState &gui, HostState &host, int *button, char *b
     if (ImGui::Button(SDL_key_to_string[*button])) {
         gui.controls_menu.old_captured_key = *button;
         gui.controls_menu.is_capturing_keys = true;
-        while (gui.controls_menu.is_capturing_keys == true) {
+        while (gui.controls_menu.is_capturing_keys) {
             handle_events(host, gui);
             *button = gui.controls_menu.captured_key;
             if (*button < 0 || *button > 231)
