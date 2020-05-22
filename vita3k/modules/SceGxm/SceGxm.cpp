@@ -2032,7 +2032,7 @@ EXPORT(int, sceGxmTextureSetGammaMode, SceGxmTexture *texture, SceGxmTextureGamm
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    texture->gamma_mode = (uint32_t)gammaMode;
+    texture->gamma_mode = (static_cast<std::uint32_t>(gammaMode) >> 27);
     return 0;
 }
 
