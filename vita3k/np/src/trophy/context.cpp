@@ -212,7 +212,7 @@ bool Context::unlock_trophy(std::int32_t id, np::NpTrophyError *err, const bool 
 const int Context::total_trophy_unlocked() {
     int total = 0;
 
-    for (int i = 0; i<MAX_TROPHIES>> 5; i++) {
+    for (int i = 0; i < (MAX_TROPHIES >> 5); i++) {
         if (trophy_progress[i] != 0) {
             if (trophy_progress[i] == 0xFFFFFFFF) {
                 total += 32;

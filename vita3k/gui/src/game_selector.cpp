@@ -306,7 +306,7 @@ void draw_game_selector(GuiState &gui, HostState &host) {
             } else {
                 ImGui::SetCursorPos(ImVec2(POS_TEXT.x + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f), POS_TEXT.y));
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + GRID_ICON_SIZE.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, game.title.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", game.title.c_str());
                 ImGui::PopTextWrapPos();
                 ImGui::NextColumn();
             }
