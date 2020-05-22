@@ -28,7 +28,7 @@
 // Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
 
 void register_keys(KeyStore &SCE_KEYS, int type) {
-	//case 0 registers external(retail), 1 registers internal proto keys, proto_keys not added. 
+    //case 0 registers external(retail), 1 registers internal proto keys, proto_keys not added.
     switch (type) {
     case 0:
         SCE_KEYS.register_keys(

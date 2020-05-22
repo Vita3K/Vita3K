@@ -32,9 +32,9 @@ nfdchar_t *pkg_path = nullptr;
 
 void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
-    
+
     const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
-    
+
     if (gui.file_menu.draw_file_dialog) {
         result = NFD_OpenDialog("pkg", nullptr, &pkg_path);
         gui.file_menu.draw_file_dialog = false;
