@@ -2136,15 +2136,12 @@ EXPORT(int, sceGxmTextureSetMipmapCount, SceGxmTexture *texture, uint32_t mipCou
     return 0;
 }
 
-/**
- * TODO: uncomment code once https://github.com/vitasdk/vita-headers/commit/2995273a998f355a498cc4e9c563974fe5938ac6 is available
- */
-EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture /*, SceGxmTextureNormalizeMode normalizeMode*/) {
+EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture, SceGxmTextureNormalizeMode normalizeMode) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    //texture->normalize_mode = (uint32_t)normalizeMode;
+    texture->normalize_mode = (static_cast<std::uint32_t>(normalizeMode) >> 31);
     return 0;
 }
 
