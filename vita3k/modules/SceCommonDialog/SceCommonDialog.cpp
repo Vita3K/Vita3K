@@ -687,6 +687,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
     }
 
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
     host.common_dialog.savedata.has_progress_bar = false;
 
     const SceSaveDataDialogParam *p = param.get(host.mem);
@@ -946,11 +947,8 @@ EXPORT(int, sceSaveDataDialogFinish) {
     if (host.common_dialog.type != SAVEDATA_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
-    }
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
-    host.common_dialog.type = NO_DIALOG;
+    host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     return 0;
 }
 
@@ -980,8 +978,7 @@ EXPORT(int, sceSaveDataDialogGetSubStatus) {
     if (host.common_dialog.type != SAVEDATA_DIALOG) {
         return SCE_COMMON_DIALOG_STATUS_NONE;
     }
-    // NOTE: the substatus is different from the status, but for now i'll treat it like it's the same
-    return host.common_dialog.status;
+    return host.common_dialog.substatus;
 }
 
 EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
@@ -994,10 +991,12 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
     }
 
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
 
     const SceSaveDataDialogParam *p = param.get(host.mem);
     SceSaveDataDialogFixedParam *fixed_param;
     SceSaveDataDialogListParam *list_param;
+    SceSaveDataDialogUserMessageParam *user_message;
     std::vector<SceAppUtilSaveDataSlot> slot_list;
     std::vector<SceAppUtilSaveDataSlotParam> slot_param;
     std::string thumbnail_path;
@@ -1044,7 +1043,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
             host.common_dialog.savedata.icon_buffer[0] = thumbnail_buffer;
             host.common_dialog.savedata.icon_loaded[0] = true;
         }
-        host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
         break;
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
         list_param = p->listParam.get(host.mem);
@@ -1087,6 +1086,44 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
             check_save_file(fd, slot_param, i, host, export_name);
         }
         break;
+    case SCE_SAVEDATA_DIALOG_MODE_USER_MSG:
+        user_message = p->userMsgParam.get(host.mem);
+        slot_param.resize(1);
+        host.common_dialog.savedata.icon_loaded.resize(1);
+        host.common_dialog.savedata.slot_info.resize(1);
+        host.common_dialog.savedata.title.resize(1);
+        host.common_dialog.savedata.subtitle.resize(1);
+        host.common_dialog.savedata.details.resize(1);
+        host.common_dialog.savedata.has_date.resize(1);
+        host.common_dialog.savedata.date.resize(1);
+        host.common_dialog.savedata.icon_buffer.resize(1);
+        host.common_dialog.savedata.slot_id.resize(1);
+        host.common_dialog.savedata.slot_id[0] = user_message->targetSlot.id;
+        host.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
+        host.common_dialog.savedata.msg = reinterpret_cast<const char *>(user_message->msg.get(host.mem));
+
+        fd = open_file(host.io, construct_slotparam_path(user_message->targetSlot.id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+        check_save_file(fd, slot_param, 0, host, export_name);
+
+        switch (user_message->buttonType) {
+        case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK:
+            host.common_dialog.savedata.btn_num = 1;
+            host.common_dialog.savedata.btn[0] = "OK";
+            host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
+            break;
+        case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_YESNO:
+            host.common_dialog.savedata.btn_num = 2;
+            host.common_dialog.savedata.btn[0] = "NO";
+            host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
+            host.common_dialog.savedata.btn[1] = "YES";
+            host.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
+            break;
+        case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_NONE:
+            host.common_dialog.savedata.btn_num = 0;
+            host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+            break;
+        }
+        break;
     default:
         LOG_ERROR("Attempt to initialize savedata dialog with unknown mode: {}", log_hex(p->mode));
         break;
@@ -1126,7 +1163,7 @@ EXPORT(int, sceSaveDataDialogSubClose) {
     if (host.common_dialog.type != SAVEDATA_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
     host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
     host.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
     return 0;
@@ -1135,9 +1172,6 @@ EXPORT(int, sceSaveDataDialogSubClose) {
 EXPORT(int, sceSaveDataDialogTerm) {
     if (host.common_dialog.type != SAVEDATA_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
-    }
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     host.common_dialog.type = NO_DIALOG;
