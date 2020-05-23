@@ -23,7 +23,6 @@
 #include <util/string_utils.h>
 
 #include <SDL.h>
-#include <stb_image.h>
 
 namespace gui {
 static void draw_ime_dialog(DialogState &common_dialog) {

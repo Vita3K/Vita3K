@@ -18,7 +18,6 @@
 #include <module/module.h>
 #include <util/log.h>
 
-#include <iostream>
 #include <mutex>
 #include <set>
 

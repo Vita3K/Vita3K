@@ -20,7 +20,6 @@
 #include <config/functions.h>
 #include <host/state.h>
 #include <misc/cpp/imgui_stdlib.h>
-#include <util/log.h>
 
 namespace gui {
 

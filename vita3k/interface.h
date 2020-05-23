@@ -18,12 +18,13 @@
 #pragma once
 
 #include <app/functions.h>
-#include <host/state.h>
 #include <util/exit_code.h>
+#include <util/fs.h>
 
 #include <miniz.h>
 
 struct GuiState;
+struct HostState;
 
 typedef std::shared_ptr<mz_zip_archive> ZipPtr;
 typedef std::shared_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;

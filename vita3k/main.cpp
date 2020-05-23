@@ -23,6 +23,7 @@
 #include <config/version.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <host/state.h>
 #include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>

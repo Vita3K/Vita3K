@@ -22,7 +22,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <iostream>
 #include <string>
 
 static constexpr bool LOG_RELOCATIONS = false;
