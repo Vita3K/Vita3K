@@ -218,7 +218,7 @@ static void write_thumb_mov_abs(void *data, uint16_t symbol) {
     pair->upper.imm4 = symbol >> 12;
 }
 
-static bool relocate_entry(void *data, Code code, uint32_t symval, uint32_t addend, uint32_t addr) {
+static bool relocate_entry(void *data, uint32_t code, uint32_t symval, uint32_t addend, uint32_t addr) {
     LOG_DEBUG_IF(LOG_RELOCATIONS, "code: {}, *data: {}, data: {}, addr: {}, symval: {}, addend: {}", code, log_hex(*(reinterpret_cast<uint32_t *>(data))), data, log_hex(addr), log_hex(symval), log_hex(addend));
     switch (code) {
     case None:
@@ -270,7 +270,7 @@ static bool relocate_entry(void *data, Code code, uint32_t symval, uint32_t adde
     }
 
     LOG_WARN("Unhandled relocation code {}.", code);
-    return true; // ignore unhadled relocations
+    return true; // ignore unhandled relocations
 }
 
 bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &segments, const MemState &mem, bool is_var_import, uint32_t explicit_symval) {
@@ -319,7 +319,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0]: offset: {}, code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, patch_start: {}, s: {}, p: {}, a: {}. {}",
                 format0_entry->offset, format0_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), log_hex(p), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(p).get(mem)));
 
-            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format0_entry->code), s, a, p)) {
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), format0_entry->code, s, a, p)) {
                 return false;
             }
 
@@ -329,7 +329,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                 LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0/2]: code: {}, sym_seg: {}, sym_start: {}, s: {}, patch_seg: {}, p: {}, a: {}. {}",
                     format0_entry->code2, format0_entry->symbol_segment, symbol_seg_start, format0_entry->patch_segment, log_hex(patch_seg_start), log_hex(s), log_hex(addr2), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(addr2).get(mem)));
 
-                if (!relocate_entry(Ptr<uint32_t>(addr2).get(mem), static_cast<Code>(format0_entry->code2), s, a, addr2)) {
+                if (!relocate_entry(Ptr<uint32_t>(addr2).get(mem), format0_entry->code2, s, a, addr2)) {
                     return false;
                 }
             }
@@ -361,7 +361,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                 LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}",
                     format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
 
-                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format1_entry->code), s, a, p)) {
+                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), format1_entry->code, s, a, p)) {
                     return false;
                 }
 
@@ -405,7 +405,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                 LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1_VAR_IMPORT]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}",
                     format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
 
-                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(format1_entry->code), s, a, p)) {
+                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), format1_entry->code, s, a, p)) {
                     return false;
                 }
 
@@ -438,7 +438,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT2]: code: {}, sym_seg: {}, sym_start: {}, offset: {}, s: {}, p: {}, a: {}",
                 format2_entry->code, symbol_seg, log_hex(symbol_seg_start), log_hex(format2_entry->offset), log_hex(s), log_hex(p), log_hex(a));
 
-            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), g_type, s, a, p)) {
                 return false;
             }
 
@@ -473,11 +473,11 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             const auto a = g_addend;
             const auto p = g_addr + g_offset;
 
-            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), g_type, s, a, p)) {
                 return false;
             }
 
-            if (!relocate_entry(Ptr<uint32_t>(p + dist2).get(mem), static_cast<Code>(g_type2), s, a, p + dist2)) {
+            if (!relocate_entry(Ptr<uint32_t>(p + dist2).get(mem), g_type2, s, a, p + dist2)) {
                 return false;
             }
 
@@ -496,11 +496,11 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             const auto a = g_addend;
             const auto p = g_addr + g_offset;
 
-            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), g_type, s, a, p)) {
                 return false;
             }
 
-            if (!relocate_entry(Ptr<uint32_t>(p + dist2).get(mem), static_cast<Code>(g_type2), s, a, p + dist2)) {
+            if (!relocate_entry(Ptr<uint32_t>(p + dist2).get(mem), g_type2, s, a, p + dist2)) {
                 return false;
             }
 
@@ -515,22 +515,22 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             const auto a = g_addend;
             const auto p = g_addr + g_offset;
 
-            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), g_type, s, a, p)) {
                 return false;
             }
 
-            if (!relocate_entry(Ptr<uint32_t>(p + format5_entry->dist2).get(mem), static_cast<Code>(g_type2), s, a, p + format5_entry->dist2)) {
+            if (!relocate_entry(Ptr<uint32_t>(p + format5_entry->dist2).get(mem), g_type2, s, a, p + format5_entry->dist2)) {
                 return false;
             }
 
             g_offset += format5_entry->dist3;
             const auto p2 = g_addr + g_offset;
 
-            if (!relocate_entry(Ptr<uint32_t>(p2).get(mem), static_cast<Code>(g_type), s, a, p2)) {
+            if (!relocate_entry(Ptr<uint32_t>(p2).get(mem), g_type, s, a, p2)) {
                 return false;
             }
 
-            if (!relocate_entry(Ptr<uint32_t>(p2 + format5_entry->dist4).get(mem), static_cast<Code>(g_type2), s, a, p2 + format5_entry->dist4)) {
+            if (!relocate_entry(Ptr<uint32_t>(p2 + format5_entry->dist4).get(mem), g_type2, s, a, p2 + format5_entry->dist4)) {
                 return false;
             }
 
@@ -564,7 +564,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             const auto a = addend;
             const auto p = g_addr + g_offset;
 
-            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), g_type, s, a, p)) {
                 return false;
             }
 
@@ -616,7 +616,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                 const auto a = addend;
                 const auto p = g_addr + g_offset;
 
-                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), static_cast<Code>(g_type), s, a, p)) {
+                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), g_type, s, a, p)) {
                     return false;
                 }
             } while (offsets >>= bitsize);
