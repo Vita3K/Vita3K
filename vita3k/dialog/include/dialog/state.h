@@ -91,6 +91,7 @@ struct SavedataState {
 struct DialogState {
     DialogType type = NO_DIALOG;
     SceCommonDialogStatus status = SCE_COMMON_DIALOG_STATUS_NONE;
+    SceCommonDialogStatus substatus = SCE_COMMON_DIALOG_STATUS_NONE;
     SceCommonDialogResult result = SCE_COMMON_DIALOG_RESULT_OK;
     ImeState ime;
     MsgState msg;

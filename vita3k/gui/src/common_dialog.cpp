@@ -196,9 +196,9 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
         ImGui::Begin("##Savedata Dialog", nullptr, ImGuiWindowFlags_NoDecoration);
         ImGui::SetWindowFontScale(1.5f);
         if (ImGui::Button("X", ImVec2(40, 30))) {
-            common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
             common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
             common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+            common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
         }
         ImGui::SameLine();
         ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(common_dialog.savedata.list_title.c_str()).x / 2);
@@ -285,7 +285,7 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
                 if (ImGui::Button(common_dialog.savedata.btn[i].c_str(), BUTTON_SIZE)) {
                     common_dialog.savedata.button_id = common_dialog.savedata.btn_val[i];
                     common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-                    common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+                    common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
                 }
                 ImGui::SameLine();
             }
