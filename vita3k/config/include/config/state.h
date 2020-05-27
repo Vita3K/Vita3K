@@ -58,7 +58,7 @@ private:
         if (rhs.run_title_id.is_initialized())
             run_title_id = rhs.run_title_id;
         if (rhs.recompile_shader_path.is_initialized())
-            run_title_id = rhs.run_title_id;
+            recompile_shader_path = rhs.recompile_shader_path;
 
         if (!rhs.config_path.empty())
             config_path = rhs.config_path;
