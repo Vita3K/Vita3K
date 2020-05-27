@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
         else if (!gui.user_backgrounds.empty())
             // Application background not found, Display user background if exist
-            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.background_image],
+            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]],
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
 
         host.display.condvar.notify_all();

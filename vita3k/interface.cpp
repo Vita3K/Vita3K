@@ -92,6 +92,7 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
 
     int num_files = mz_zip_reader_get_num_files(zip.get());
     fs::path sfo_path = "sce_sys/param.sfo";
+    bool theme = false;
 
     for (int i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
@@ -103,9 +104,10 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
             fclose(vpk_fp);
             return false;
         }
-        if (fs::path(file_stat.m_filename) == sfo_path) {
+        if (fs::path(file_stat.m_filename) == "theme.xml")
+            theme = true;
+        if (fs::path(file_stat.m_filename) == sfo_path)
             break;
-        }
     }
 
     vfs::FileBuffer params;
@@ -124,17 +126,19 @@ bool install_vpk(HostState &host, GuiState &gui, const fs::path &path) {
     sfo::get_data_by_key(content_id, sfo_handle, "CONTENT_ID");
     fs::path output_path;
 
-    if (host.game_category == "gd") {
-        output_path = { fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
-    } else if (host.game_category == "ac") {
-        dlc_foldername = content_id.substr(20);
-        output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.io.title_id / dlc_foldername };
-        host.game_title = host.game_title + " (DLC)";
-    } else if (host.game_category == "gp") {
+    if (host.game_category == "ac") {
+        if (theme) {
+            output_path = { fs::path(host.pref_path) / "ux0/theme" / content_id };
+            host.game_title += " (Theme)";
+        } else {
+            dlc_foldername = content_id.substr(20);
+            output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.io.title_id / dlc_foldername };
+            host.game_title = host.game_title + " (DLC)";
+        }
+    } else if (host.game_category == "gp")
         output_path = { fs::path(host.pref_path) / "ux0/patch" / host.io.title_id };
-    } else {
+    else
         output_path = { fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
-    }
 
     const auto created = fs::create_directories(output_path);
     if (!created) {

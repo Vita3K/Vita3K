@@ -67,6 +67,11 @@ struct LiveAreaState {
     bool manual_dialog = false;
 };
 
+struct ThemesState {
+    bool start_screen = false;
+    bool theme_background = false;
+};
+
 struct FileMenuState {
     bool firmware_install_dialog = false;
     bool pkg_install_dialog = false;
@@ -129,6 +134,7 @@ struct GuiState {
     gui::ControlMenuState controls_menu;
     gui::HelpMenuState help_menu;
     gui::LiveAreaState live_area;
+    gui::ThemesState theme;
     gui::GamesSelector game_selector;
 
     std::string app_ver;
@@ -153,7 +159,15 @@ struct GuiState {
     GLuint display = 0;
 
     ImGuiTextFilter game_search_bar;
+
+    std::uint64_t current_theme_bg;
+    std::map<std::string, std::map<std::string, ImGui_Texture>> themes_preview;
+    std::vector<ImGui_Texture> theme_backgrounds;
+
+    std::uint64_t current_user_bg;
     std::map<std::string, ImGui_Texture> user_backgrounds;
+
+    ImGui_Texture start_background;
 
     std::map<std::string, ImGui_Texture> apps_background;
 
