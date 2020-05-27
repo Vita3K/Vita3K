@@ -20,7 +20,6 @@
 #include <config/functions.h>
 #include <host/state.h>
 #include <misc/cpp/imgui_stdlib.h>
-#include <util/log.h>
 
 namespace gui {
 
@@ -45,7 +44,7 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
 
         if (gui.online_id.length() > 16)
-            ImGui::TextColored(GUI_COLOR_TEXT, "Error: Need reduce to length for online ID.\nCurrently the length is: %d.", gui.online_id.length());
+            ImGui::TextColored(GUI_COLOR_TEXT, "Error: Need reduce to length for online ID.\nCurrently the length is: %lu.", gui.online_id.length());
         else if (update_online_id != host.cfg.online_id.end())
             ImGui::TextColored(GUI_COLOR_TEXT, "Error: '%s' Online ID already exists.", gui.online_id.c_str());
         else
@@ -182,7 +181,7 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
             if (gui.online_id.empty())
                 ImGui::TextColored(GUI_COLOR_TEXT, "Error: Text is empty, write you Online ID.");
             else if (gui.online_id.length() > 16)
-                ImGui::TextColored(GUI_COLOR_TEXT, "Error: Need reduce to length for online ID.\nCurrently the length is: %d.", gui.online_id.length());
+                ImGui::TextColored(GUI_COLOR_TEXT, "Error: Need reduce to length for online ID.\nCurrently the length is: %lu.", gui.online_id.length());
             else if (update_online_id != host.cfg.online_id.end())
                 ImGui::TextColored(GUI_COLOR_TEXT, "Error: '%s' Online ID already exists.", gui.online_id.c_str());
             else

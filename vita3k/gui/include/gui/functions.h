@@ -39,12 +39,15 @@ enum GenericDialogState {
 void delete_game(GuiState &gui, HostState &host);
 void get_game_titles(GuiState &gui, HostState &host);
 void get_modules_list(GuiState &gui, HostState &host);
+void get_themes_list(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);
 void init_app_background(GuiState &gui, HostState &host);
-void init_background(GuiState &gui, const std::string &image_path);
 void init_icons(GuiState &gui, HostState &host);
 void init_live_area(GuiState &gui, HostState &host);
 bool init_manual(GuiState &gui, HostState &host);
+bool init_theme(GuiState &gui, HostState &host, std::string &content_id);
+void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id);
+bool init_user_start_background(GuiState &gui, const std::string &image_path);
 bool refresh_game_list(GuiState &gui, HostState &host);
 
 void draw_begin(GuiState &gui, HostState &host);
@@ -52,6 +55,7 @@ void draw_end(GuiState &host, SDL_Window *window);
 void draw_live_area(GuiState &gui, HostState &host);
 void draw_ui(GuiState &gui, HostState &host);
 
+void draw_app_context_menu(GuiState &gui, HostState &host);
 void draw_common_dialog(GuiState &gui, HostState &host);
 void draw_game_selector(GuiState &gui, HostState &host);
 void draw_reinstall_dialog(GenericDialogState *status);

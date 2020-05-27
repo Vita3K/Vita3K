@@ -253,10 +253,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
             }
             ImGui::SetWindowFontScale(1.5f * scal.x);
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(host.game_short_title.c_str()).x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT, host.game_short_title.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.game_short_title.c_str());
             std::string ask_delete = context_dialog == "save" ? "Do you really want to delete this save data for this application?" : "Do you really want to delete this application?";
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete.c_str()).x / 2, (WINDOW_SIZE.y / 2) + 10));
-            ImGui::TextColored(GUI_COLOR_TEXT, ask_delete.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", ask_delete.c_str());
             if (context_dialog == "game") {
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Deleting a game may take a while\ndepending on its size and your hardware.");

@@ -16,12 +16,11 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <audio/functions.h>
-
 #include <audio/state.h>
-#include <util/log.h>
 
 #include <microprofile.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 

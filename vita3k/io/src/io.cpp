@@ -100,6 +100,7 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
     const fs::path ux0_data{ ux0 / "data" };
     const fs::path uma0_data{ uma0 / "data" };
     const fs::path ux0_app{ ux0 / "app" };
+    const fs::path ux0_theme{ ux0 / "theme" };
     const fs::path ux0_user{ ux0 / "user" };
 
     if (!fs::exists(ux0))
@@ -108,6 +109,8 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
         fs::create_directory(ux0_data);
     if (!fs::exists(ux0_app))
         fs::create_directory(ux0_app);
+    if (!fs::exists(ux0_theme))
+        fs::create_directory(ux0_theme);
     if (!fs::exists(ux0_user))
         fs::create_directory(ux0_user);
     if (!fs::exists(uma0))
@@ -305,6 +308,11 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
     }
 
     const auto file = io.std_files.find(fd);
+
+    if (!fs::is_directory(file->second.get_system_location().parent_path())) {
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT); // TODO: Is it the right error code?
+    }
+
     if (file->second.can_write_file()) {
         const auto written = file->second.write(data, 1, size);
         LOG_TRACE("{}: Writing to fd: {}, size: {}", export_name, log_hex(fd), size);

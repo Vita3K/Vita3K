@@ -27,13 +27,13 @@ enum class ArgLocation {
 
 struct ArgLayout {
     ArgLocation location;
-    size_t offset;
+    std::size_t offset;
 };
 
 struct LayoutArgsState {
-    size_t gpr_used;
-    size_t stack_used;
-    size_t float_used;
+    std::size_t gpr_used;
+    std::size_t stack_used;
+    std::size_t float_used;
 };
 
 template <typename... Args>

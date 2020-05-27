@@ -19,7 +19,6 @@
 
 #include <modules/module_parent.h>
 
-#include <crypto/hash.h>
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <kernel/thread/thread_functions.h>
@@ -1885,6 +1884,14 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
+    case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
+    case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_1BGR:
+    case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
+    case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_1BGR:
         break;
 
     default:
@@ -1917,7 +1924,6 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
 
     texture->mip_count = std::min<std::uint32_t>(0, mipCount - 1);
     texture->format0 = (tex_format & 0x80000000) >> 31;
-    texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
     texture->lod_bias = 31;
 
     if (texture_type == SCE_GXM_TEXTURE_SWIZZLED) {
@@ -1932,9 +1938,11 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
             return 0;
         };
 
+        texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
         texture->height = highest_set_bit(height);
         texture->width = highest_set_bit(width);
     } else {
+        texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
         texture->height = height - 1;
         texture->width = width - 1;
     }

@@ -38,7 +38,8 @@ struct SceNgsBufferInfo {
 static_assert(sizeof(SceNgsBufferInfo) == 8);
 
 EXPORT(int, sceNgsAT9GetSectionDetails) {
-    return UNIMPLEMENTED();
+    STUBBED("Hack");
+    return -1;
 }
 
 EXPORT(int, sceNgsModuleGetNumPresets) {

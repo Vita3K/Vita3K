@@ -5,6 +5,7 @@
 .vs/
 /external/boost-build
 .idea/
+cmake-build-*/
 .vs
 .vscode
 build

@@ -27,7 +27,8 @@ const uint8_t pkg_vita_4[] = { 0xaf, 0x07, 0xfd, 0x59, 0x65, 0x25, 0x27, 0xba, 0
 enum class PkgType {
     PKG_TYPE_VITA_APP = 0,
     PKG_TYPE_VITA_DLC = 1,
-    PKG_TYPE_VITA_PATCH = 2
+    PKG_TYPE_VITA_PATCH = 2,
+    PKG_TYPE_VITA_THEME = 3
 };
 
 struct PkgHeader {

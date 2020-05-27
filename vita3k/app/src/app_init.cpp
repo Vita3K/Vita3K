@@ -28,7 +28,6 @@
 #include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #if DISCORD_RPC
 #include <app/discord.h>
@@ -40,11 +39,11 @@
 
 #ifdef USE_VULKAN
 #include <renderer/vulkan/functions.h>
+#include <util/string_utils.h>
 #endif
 
 #include <SDL_video.h>
 #include <SDL_vulkan.h>
-#include <microprofile.h>
 
 namespace app {
 void update_viewport(HostState &state) {

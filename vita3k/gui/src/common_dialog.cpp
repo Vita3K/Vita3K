@@ -23,7 +23,6 @@
 #include <util/string_utils.h>
 
 #include <SDL.h>
-#include <stb_image.h>
 
 namespace gui {
 static void draw_ime_dialog(DialogState &common_dialog) {
@@ -124,7 +123,7 @@ static void draw_savedata_dialog_list(DialogState &common_dialog, GuiState &gui,
     ImGui::SetWindowFontScale(1.5f);
     if (!common_dialog.savedata.title[loop_index].empty()) {
         ImGui::SetCursorPosX(WINDOW_SIZE.x - WINDOW_SIZE.x + THUMBNAIL_SIZE.x + 10 + 5);
-        ImGui::Text(common_dialog.savedata.title[loop_index].c_str());
+        ImGui::Text("%s", common_dialog.savedata.title[loop_index].c_str());
     }
     ImGui::SetWindowFontScale(1.2f);
     switch (common_dialog.savedata.list_style) {
@@ -136,13 +135,13 @@ static void draw_savedata_dialog_list(DialogState &common_dialog, GuiState &gui,
         }
         if (!common_dialog.savedata.subtitle[loop_index].empty()) {
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - WINDOW_SIZE.x + THUMBNAIL_SIZE.x + 10 + 5, WINDOW_SIZE.y - WINDOW_SIZE.y + (save_index * THUMBNAIL_SIZE.y) + 40));
-            ImGui::Text(common_dialog.savedata.subtitle[loop_index].c_str());
+            ImGui::Text("%s", common_dialog.savedata.subtitle[loop_index].c_str());
         }
         break;
     case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_SUBTITLE_DATE:
         if (!common_dialog.savedata.subtitle[loop_index].empty()) {
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - WINDOW_SIZE.x + THUMBNAIL_SIZE.x + 10 + 5, WINDOW_SIZE.y - WINDOW_SIZE.y + (save_index * THUMBNAIL_SIZE.y) + 24));
-            ImGui::Text(common_dialog.savedata.subtitle[loop_index].c_str());
+            ImGui::Text("%s", common_dialog.savedata.subtitle[loop_index].c_str());
         }
         if (common_dialog.savedata.has_date[loop_index]) {
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - WINDOW_SIZE.x + THUMBNAIL_SIZE.x + 10 + 5, WINDOW_SIZE.y - WINDOW_SIZE.y + (save_index * THUMBNAIL_SIZE.y) + 40));
@@ -202,7 +201,7 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
         }
         ImGui::SameLine();
         ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(common_dialog.savedata.list_title.c_str()).x / 2);
-        ImGui::Text(common_dialog.savedata.list_title.c_str());
+        ImGui::Text("%s", common_dialog.savedata.list_title.c_str());
         ImGui::SetWindowFontScale(1.1f);
         ImGui::BeginChild("##Selectables", ImVec2(0, 0), false, ImGuiWindowFlags_NoDecoration);
         for (int i = 0; i < common_dialog.savedata.slot_list_size; i++) {

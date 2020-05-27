@@ -20,7 +20,6 @@
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/pkg.h>
-#include <host/sce_types.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <util/log.h>
 
@@ -32,9 +31,9 @@ nfdchar_t *pkg_path = nullptr;
 
 void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
-    
+
     const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
-    
+
     if (gui.file_menu.draw_file_dialog) {
         result = NFD_OpenDialog("pkg", nullptr, &pkg_path);
         gui.file_menu.draw_file_dialog = false;
@@ -52,7 +51,9 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
         }
     }
 
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
     if (ImGui::BeginPopupModal("PKG Installation success", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::PopStyleColor();
         ImGui::TextColored(GUI_COLOR_TEXT, "PKG successfully installed.");
         ImGui::Spacing();
         ImGui::Separator();
@@ -65,32 +66,49 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                 fs::remove(fs::path(pkg_path));
                 gui.file_menu.delete_pkg_file = false;
             }
+            refresh_game_list(gui, host);
             pkg_path = nullptr;
+            gui.file_menu.zRIF.clear();
             gui.file_menu.is_entering_zrif = true;
             gui.file_menu.pkg_install_dialog = false;
             gui.file_menu.draw_file_dialog = true;
         }
         ImGui::EndPopup();
-    }
+    } else
+        ImGui::PopStyleColor();
 
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
     if (ImGui::BeginPopupModal("PKG Installation failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::PopStyleColor();
         ImGui::TextColored(GUI_COLOR_TEXT, "Failed to install the pkg. \nPlease check log for more details.");
         if (ImGui::Button("OK", BUTTON_SIZE)) {
+            refresh_game_list(gui, host);
             gui.file_menu.is_entering_zrif = true;
             gui.file_menu.pkg_install_dialog = false;
             gui.file_menu.draw_file_dialog = true;
+            gui.file_menu.zRIF.clear();
         }
         ImGui::EndPopup();
-    }
+    } else
+        ImGui::PopStyleColor();
 
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
     if (ImGui::BeginPopupModal("Enter zRIF", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::PopStyleColor();
         ImGui::InputTextWithHint("##enter_zrif", "Please input your zRIF here", &gui.file_menu.zRIF);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Ctrl(Cmd) + C for copy, Ctrl(Cmd) + V to paste.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        if (ImGui::Button("Confirm") && !gui.file_menu.zRIF.empty()) {
+        if (ImGui::Button("Cancel", BUTTON_SIZE)) {
+            gui.file_menu.is_entering_zrif = true;
+            ImGui::CloseCurrentPopup();
+            gui.file_menu.pkg_install_dialog = false;
+            gui.file_menu.draw_file_dialog = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Ok", BUTTON_SIZE) && !gui.file_menu.zRIF.empty()) {
             if (install_pkg(pkg_path, host.pref_path, gui.file_menu.zRIF)) {
                 gui.file_menu.pkg_success = true;
                 gui.file_menu.is_entering_zrif = false;
@@ -99,22 +117,15 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                 gui.file_menu.is_entering_zrif = false;
             }
         }
-        if (ImGui::Button("Cancel")) {
-            gui.file_menu.is_entering_zrif = true;
-            ImGui::CloseCurrentPopup();
-            gui.file_menu.pkg_install_dialog = false;
-            gui.file_menu.draw_file_dialog = true;
-        }
         ImGui::EndPopup();
-    }
+    } else
+        ImGui::PopStyleColor();
+
     if (!gui.file_menu.is_entering_zrif) {
-        if (gui.file_menu.pkg_success) {
+        if (gui.file_menu.pkg_success)
             ImGui::OpenPopup("PKG Installation success");
-            refresh_game_list(gui, host);
-        } else {
+        else
             ImGui::OpenPopup("PKG Installation failed");
-            refresh_game_list(gui, host);
-        }
     }
 }
 } // namespace gui

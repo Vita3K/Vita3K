@@ -18,6 +18,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 
 using Sha256Hash = std::array<uint8_t, 32>;
 

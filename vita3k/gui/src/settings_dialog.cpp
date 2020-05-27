@@ -91,26 +91,6 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
     }
 }
 
-static bool change_user_image_background(GuiState &gui, HostState &host) {
-    nfdchar_t *image_path = nullptr;
-    nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &image_path);
-
-    if (result == NFD_OKAY && host.cfg.background_image != static_cast<std::string>(image_path)) {
-        const std::string image_path_str = static_cast<std::string>(image_path);
-
-        if (gui.user_backgrounds.find(image_path_str) == gui.user_backgrounds.end())
-            init_background(gui, image_path_str);
-
-        if (gui.user_backgrounds.find(image_path_str) != gui.user_backgrounds.end()) {
-            host.cfg.background_image = image_path_str;
-            return true;
-        } else
-            return false;
-
-    } else
-        return false;
-}
-
 void get_modules_list(GuiState &gui, HostState &host) {
     gui.modules.clear();
 
@@ -302,28 +282,57 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         }
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Background Image");
         ImGui::Spacing();
-        std::string image_button = "Add Image";
-        if (gui.user_backgrounds[host.cfg.background_image]) {
-            ImGui::PushItemWidth(400);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Current image: %s", host.cfg.background_image.c_str());
-            ImGui::PopItemWidth();
+        const auto title = ImGui::CalcTextSize("Theme & Background").x;
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (title / 2.f));
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
+        if (ImGui::Selectable("Theme & Background", ImGuiSelectableFlags_None, false, ImVec2(title, 0.f))) {
+            get_themes_list(gui, host);
+            gui.theme.theme_background = true;
+        }
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
+        if (!host.cfg.theme_content_id.empty()) {
+            ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", host.cfg.theme_content_id.c_str());
             ImGui::Spacing();
-            if (ImGui::Button("Reset Image")) {
-                host.cfg.background_image.clear();
+            if (ImGui::Button("Reset theme")) {
+                host.cfg.theme_content_id.clear();
+                gui.theme_backgrounds.clear();
+            }
+            ImGui::SameLine();
+            if (!gui.theme_backgrounds.empty())
+                ImGui::Checkbox("Using theme background", &host.cfg.use_theme_background);
+        }
+        if (!gui.user_backgrounds.empty()) {
+            ImGui::Spacing();
+            if (ImGui::Button("Reset User Background")) {
+                if (!host.cfg.theme_content_id.empty())
+                    host.cfg.use_theme_background = true;
+                host.cfg.user_backgrounds.clear();
                 gui.user_backgrounds.clear();
             }
-            image_button = "Change Image";
-            ImGui::SameLine();
         }
-        if (ImGui::Button(image_button.c_str()))
-            LOG_INFO_IF(change_user_image_background(gui, host), "Succes change image: {}", host.cfg.background_image);
-        if (gui.user_backgrounds[host.cfg.background_image]) {
+        if (!host.cfg.start_background.empty()) {
+            ImGui::Spacing();
+            if (ImGui::Button("Reset Start Background")) {
+                host.cfg.user_start_background.clear();
+                host.cfg.start_background.clear();
+                gui.start_background = {};
+            }
+        }
+        if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty()) {
             ImGui::Spacing();
             ImGui::SliderFloat("Background Alpha", &host.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred transparent background effect.\nThe minimum slider is opaque and the maximum is transparent.");
+        }
+        if (!gui.theme_backgrounds.empty() || (gui.user_backgrounds.size() > 1)) {
+            ImGui::Spacing();
+            ImGui::SliderInt("Delay for backgrounds", &host.cfg.delay_background, 4, 32);
+        }
+        if (gui.start_background) {
+            ImGui::Spacing();
+            ImGui::SliderInt("Delay for start screen", &host.cfg.delay_start, 10, 60);
         }
         ImGui::EndTabItem();
     } else

@@ -150,23 +150,27 @@ static void init_live_area_font(GuiState &gui, HostState &host) {
     gui.live_area_font = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 19.2f, &font_config, io.Fonts->GetGlyphRangesJapanese());
 }
 
-void init_background(GuiState &gui, const std::string &image_path) {
-    if (!fs::exists(image_path)) {
-        LOG_WARN("Image doesn't exist: {}.", image_path);
-        return;
+static void init_user_backgrounds(GuiState &gui, HostState &host) {
+    for (const auto &background : host.cfg.user_backgrounds) {
+        if (!fs::exists(fs::path(background))) {
+            LOG_WARN("Image doesn't exist: {}.", background);
+            continue;
+        }
+
+        int32_t width = 0;
+        int32_t height = 0;
+        stbi_uc *data = stbi_load(background.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+
+        if (!data) {
+            LOG_ERROR("Invalid or corrupted image: {}.", background);
+            continue;
+        }
+
+        gui.user_backgrounds[background].init(gui.imgui_state.get(), data, width, height);
+        stbi_image_free(data);
     }
 
-    int32_t width = 0;
-    int32_t height = 0;
-    stbi_uc *data = stbi_load(image_path.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
-
-    if (!data) {
-        LOG_ERROR("Invalid or corrupted image: {}.", image_path);
-        return;
-    }
-
-    gui.user_backgrounds[image_path].init(gui.imgui_state.get(), data, width, height);
-    stbi_image_free(data);
+    gui.current_user_bg = 0;
 }
 
 void init_icons(GuiState &gui, HostState &host) {
@@ -287,8 +291,21 @@ void init(GuiState &gui, HostState &host) {
     get_modules_list(gui, host);
     init_icons(gui, host);
 
-    if (!host.cfg.background_image.empty())
-        init_background(gui, host.cfg.background_image);
+    if (!host.cfg.user_backgrounds.empty())
+        init_user_backgrounds(gui, host);
+
+    if (!host.cfg.theme_content_id.empty())
+        init_theme(gui, host, host.cfg.theme_content_id);
+
+    if (!host.cfg.start_background.empty()) {
+        if (host.cfg.start_background == "image")
+            init_user_start_background(gui, host.cfg.user_start_background);
+        else
+            init_theme_start_background(gui, host, host.cfg.start_background == "default" ? "default" : host.cfg.theme_content_id);
+
+        if (!host.cfg.run_title_id && !host.cfg.vpk_path && gui.start_background)
+            gui.theme.start_screen = true;
+    }
 
     // Initialize trophy callback
     host.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
@@ -317,11 +334,15 @@ void draw_live_area(GuiState &gui, HostState &host) {
 
     if (!host.cfg.run_title_id && !host.cfg.vpk_path && gui.game_selector.selected_title_id.empty())
         draw_game_selector(gui, host);
-    draw_app_context_menu(gui, host);
     if (gui.live_area.live_area_dialog)
         draw_live_area_dialog(gui, host);
     if (gui.live_area.manual_dialog)
         draw_manual_dialog(gui, host);
+
+    if (gui.theme.theme_background)
+        draw_themes_selection(gui, host);
+    if (gui.theme.start_screen)
+        draw_start_screen(gui, host);
 
     ImGui::PopFont();
 }

@@ -7,7 +7,6 @@ struct FeatureState {
     bool support_texture_barrier = false; ///< Second option for blending. Slower but work on 3 vendors.
     bool direct_fragcolor = false;
     bool hardware_flip = true; ///< Allow flipping in shader.
-    bool use_ssbo = false;
     bool use_ubo = false;
     bool use_shader_binding = false;
 

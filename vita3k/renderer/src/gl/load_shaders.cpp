@@ -72,7 +72,7 @@ static void dump_missing_shader(const char *hash, const char *extension, const S
 std::string load_shader(const SceGxmProgram &program, const FeatureState &features, const char *base_path, const char *title_id) {
     const Sha256Hash hash_bytes = sha256(&program, program.size);
     auto shader_type_to_str = [](SceGxmProgramType type) {
-        return type == Vertex ? "vert" : type == Fragment ? "frag" : "unknown";
+        return type == SceGxmProgramType::Vertex ? "vert" : type == SceGxmProgramType::Fragment ? "frag" : "unknown";
     };
 
     SceGxmProgramType program_type = program.get_type();
