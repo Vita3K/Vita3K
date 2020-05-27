@@ -20,7 +20,6 @@
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/pkg.h>
-#include <host/sce_types.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <util/log.h>
 

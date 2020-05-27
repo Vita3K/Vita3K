@@ -26,8 +26,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <iomanip>
-#include <iostream>
 
 typedef std::unique_ptr<uc_struct, std::function<void(uc_struct *)>> UnicornPtr;
 

@@ -19,7 +19,6 @@
 
 #include <modules/module_parent.h>
 
-#include <crypto/hash.h>
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <kernel/thread/thread_functions.h>

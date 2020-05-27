@@ -28,9 +28,6 @@
 
 #include <SDL.h>
 
-#include <cassert>
-#include <sstream>
-
 namespace app {
 
 void error_dialog(const std::string &message, SDL_Window *window) {

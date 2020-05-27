@@ -20,8 +20,6 @@
 #include <host/state.h>
 #include <util/log.h>
 
-#include <SDL_video.h>
-
 namespace app {
 
 bool gl_screen_renderer::init(const std::string &base_path) {

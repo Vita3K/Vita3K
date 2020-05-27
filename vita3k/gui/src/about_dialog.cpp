@@ -20,7 +20,6 @@
 #include "private.h"
 
 #include <config/version.h>
-#include <host/state.h>
 
 #include <sstream>
 
