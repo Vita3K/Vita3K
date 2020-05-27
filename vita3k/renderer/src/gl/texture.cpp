@@ -1,5 +1,6 @@
 #include <renderer/functions.h>
 #include <renderer/profile.h>
+#include <renderer/pvrt-dec.h>
 
 #include <renderer/gl/functions.h>
 #include <renderer/gl/types.h>
@@ -106,6 +107,12 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
         renderer::texture::decompress_bc_swizz_image(width, height, reinterpret_cast<const std::uint8_t *>(data),
             reinterpret_cast<std::uint32_t *>(dest), ubc_type);
         return (((width + 3) / 4) * ((height + 3) / 4) * ((ubc_type > 1) ? 16 : 8));
+    } else if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
+        // TODO, is not perfect for PVRT-II.
+        pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height, 
+            (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP), reinterpret_cast<uint8_t *>(dest));
+        // TODO, calcule return is not sur.
+        return ((width + 3) / 4) * ((height + 3) / 4);
     }
 
     return 0;
@@ -161,22 +168,24 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                 pixels = texture_data_decompressed.data();
             }
 
-            // Convert data
-            texture_pixels_lineared.resize(width * height * bytes_per_pixel);
+            if (!((base_format >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (base_format <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP))) {
+                // Convert data
+                texture_pixels_lineared.resize(width * height * bytes_per_pixel);
 
-            if (is_swizzled)
-                renderer::texture::swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), width, height,
-                    static_cast<std::uint8_t>(bpp));
-            else
-                renderer::texture::tiled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), width, height,
-                    static_cast<std::uint8_t>(bpp));
+                if (is_swizzled)
+                    renderer::texture::swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), width, height,
+                        static_cast<std::uint8_t>(bpp));
+                else
+                    renderer::texture::tiled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), width, height,
+                        static_cast<std::uint8_t>(bpp));
 
-            pixels = texture_pixels_lineared.data();
-            pixels_per_stride = width;
+                pixels = texture_pixels_lineared.data();
 
-            if (need_decompress_and_unswizzle_on_cpu) {
-                texture_data_decompressed.clear();
+                if (need_decompress_and_unswizzle_on_cpu)
+                    texture_data_decompressed.clear();
             }
+
+            pixels_per_stride = width;
 
             if (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) {
                 width = org_width;
@@ -185,19 +194,22 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
             break;
         }
+        case SCE_GXM_TEXTURE_LINEAR:
+            pixels_per_stride = (width + 7) & ~7;
+
+            break;
         case SCE_GXM_TEXTURE_LINEAR_STRIDED:
             pixels_per_stride = gxm::get_stride_in_bytes(&gxm_texture) / bytes_per_pixel;
 
             break;
         default:
+            LOG_ERROR("Uniplemented Texture type: {} ", log_hex(gxm_texture.texture_type()));
             pixels_per_stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
 
             break;
         }
 
         if (gxm::is_paletted_format(fmt)) {
-            const auto base_format = gxm::get_base_format(fmt);
-
             const uint32_t *const palette_bytes = renderer::texture::get_texture_palette(gxm_texture, mem);
             palette_texture_pixels.resize(width * height * 4);
             if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {

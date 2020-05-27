@@ -19,6 +19,7 @@ add_library(
 	include/renderer/commands.h
 	include/renderer/functions.h
 	include/renderer/profile.h
+	include/renderer/pvrt-dec.h
 	include/renderer/state.h
 	include/renderer/texture_cache_state.h
 	include/renderer/types.h
@@ -42,6 +43,7 @@ add_library(
 	src/batch.cpp
 	src/creation.cpp
 	src/driver_functions.h
+	src/pvrt-dec.cpp
 	src/renderer.cpp
 	src/scene.cpp
 	src/state_set.cpp
