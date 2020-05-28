@@ -145,6 +145,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->default_str({})->check(CLI::IsMember(get_file_set(root_paths.get_pref_path() / "ux0/app")))->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
+    input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
+        ->default_str({})->check(CLI::IsMember(get_file_set(root_paths.get_pref_path() / "ux0/app")))->group("Input");
 
     auto config = app.add_option_group("Configuration", "Modify Vita3K's config.yml file");
     config->add_flag("--" + cfg[e_archive_log] + ",-A", command_line.archive_log, "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
@@ -198,6 +200,10 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
     if (command_line.recompile_shader_path.is_initialized()) {
         cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
+        return QuitRequested;
+    }
+    if (command_line.delete_title_id.is_initialized()) {
+        cfg.delete_title_id = std::move(command_line.delete_title_id);
         return QuitRequested;
     }
     if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {

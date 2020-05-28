@@ -61,6 +61,8 @@ private:
             run_title_id = rhs.run_title_id;
         if (rhs.recompile_shader_path.is_initialized())
             recompile_shader_path = rhs.recompile_shader_path;
+        if (rhs.delete_title_id.is_initialized())
+            delete_title_id = rhs.delete_title_id;
 
         if (!rhs.config_path.empty())
             config_path = rhs.config_path;
@@ -75,6 +77,7 @@ public:
     optional<std::string> vpk_path;
     optional<std::string> run_title_id;
     optional<std::string> recompile_shader_path;
+    optional<std::string> delete_title_id;
 
     // Setting not present in the YAML file
     fs::path config_path = {};
