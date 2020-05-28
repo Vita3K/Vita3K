@@ -21,12 +21,15 @@
 #include <config/yaml.h>
 
 #include <util/fs.h>
-#include <util/optional.h>
 #include <util/vector_utils.h>
+
+#include <boost/optional.hpp>
+#include <boost/optional/optional_io.hpp>
+
+using boost::optional;
 
 // Enum based on members in Config file
 // Used for easier getting of options and their names for config files
-namespace config {
 enum file_config {
 #define GENERATE_ENUM(option_type, option_name, option_default, member_name) \
     e_##member_name,
@@ -36,7 +39,6 @@ enum file_config {
         _INVALID
 #undef GENERATE_ENUM
 };
-} // namespace config
 
 // Configuration File options
 struct Config : YamlLoader {
@@ -142,15 +144,15 @@ public:
     }
 
     // Return the name of the configuration as named in the config file
-    std::string operator[](const config::file_config &name) const {
+    std::string operator[](const file_config &name) const {
 #define SWITCH_NAMES(option_type, option_name, option_default, member_name) \
-    case config::file_config::e_##member_name:                              \
+    case file_config::e_##member_name:                                      \
         return option_name;
 
         switch (name) {
             CONFIG_LIST(SWITCH_NAMES)
 
-        case config::_INVALID:
+        case _INVALID:
         default: {
             return nullptr;
         }
@@ -161,7 +163,7 @@ public:
     // Return the value of the YAML node
     // If the YAML looks outdated, call update_yaml() first, and then use this operator
     template <typename T>
-    T get_from_yaml(const config::file_config &name) const {
+    T get_from_yaml(const file_config &name) const {
         return get_member<T>(this[name]);
     }
 
