@@ -19,6 +19,7 @@
 #include <config/state.h>
 #include <config/version.h>
 
+#include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -45,7 +46,7 @@ static std::set<std::string> get_file_set(const fs::path &loc, bool dirs_only = 
             cur_set.insert(it->path().stem().string());
         }
 
-        std::error_code err{};
+        boost::system::error_code err{};
         it.increment(err);
     }
     return cur_set;
@@ -124,7 +125,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         fs::copy(root_paths.get_base_path() / "data/config/default.yml", root_paths.get_base_path() / "config.yml");
 
     // Declare all options
-    CLI::App app{ "Vita3K Command Line Interface", "Vita3K.exe" }; // "--help,-h" is automatically generated
+    CLI::App app{ "Vita3K Command Line Interface" }; // "--help,-h" is automatically generated
     app.allow_windows_style_options();
     app.allow_extras();
     app.enabled_by_default();
@@ -157,6 +158,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     config->add_flag("!--keep-config,!-w", command_line.overwrite_config, "Do not modify the configuration file after loading.")
         ->group("YML");
     config->add_flag("--load-config,-f", command_line.load_config, "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
+        ->group("YML");
+    config->add_flag("--fullscreen,-F", command_line.fullscreen, "Starts the emulator in fullscreen mode.")
         ->group("YML");
 
     std::vector<std::string> lle_modules{};
@@ -193,7 +196,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         return QuitRequested;
     }
 
-    if (command_line.recompile_shader_path.has_value()) {
+    if (command_line.recompile_shader_path.is_initialized()) {
         cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
         return QuitRequested;
     }
