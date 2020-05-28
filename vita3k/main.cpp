@@ -23,6 +23,7 @@
 #include <config/version.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <host/pkg.h>
 #include <host/state.h>
 #include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
@@ -65,6 +66,11 @@ int main(int argc, char *argv[]) {
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/addcont" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/user/00/savedata" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "shaderlog" / *cfg.delete_title_id);
+            }
+            if (cfg.pkg_path.is_initialized() && cfg.pkg_zrif.is_initialized()) {
+                LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
+                install_pkg(*cfg.pkg_path, root_paths.get_pref_path().string(), *cfg.pkg_zrif);
+                return Success;
             }
             return Success;
         }

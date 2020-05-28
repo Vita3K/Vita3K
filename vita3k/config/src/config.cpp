@@ -147,6 +147,12 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
         ->default_str({})->check(CLI::IsMember(get_file_set(root_paths.get_pref_path() / "ux0/app")))->group("Input");
+    auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path of app in .pkg format to install")
+        ->default_str({})->group("Input");
+    auto input_zrif = input->add_option("--zrif", command_line.pkg_zrif, "zrif for the app in .pkg format")
+        ->default_str({})->group("Input");
+    input_pkg->needs(input_zrif);
+    input_zrif->needs(input_pkg);
 
     auto config = app.add_option_group("Configuration", "Modify Vita3K's config.yml file");
     config->add_flag("--" + cfg[e_archive_log] + ",-A", command_line.archive_log, "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
@@ -204,6 +210,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     }
     if (command_line.delete_title_id.is_initialized()) {
         cfg.delete_title_id = std::move(command_line.delete_title_id);
+        return QuitRequested;
+    }
+    if (command_line.pkg_path.is_initialized() && command_line.pkg_zrif.is_initialized()) {
+        cfg.pkg_path = std::move(command_line.pkg_path);
+        cfg.pkg_zrif = std::move(command_line.pkg_zrif);
         return QuitRequested;
     }
     if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
