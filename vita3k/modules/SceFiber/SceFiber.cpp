@@ -22,21 +22,6 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-typedef void(SceFiberEntry)(SceUInt32 argOnInitialize, SceUInt32 argOnRun);
-
-struct SceFiberOptParam {
-    char reserved[128];
-};
-
-typedef struct SceFiber {
-    Ptr<SceFiberEntry> entry;
-    SceUInt32 argOnInitialize;
-    Address addrContext;
-    SceSize sizeContext;
-    char name[32];
-    CPUContext cpu;
-} SceFiber;
-
 EXPORT(int, _sceFiberAttachContextAndRun) {
     return UNIMPLEMENTED();
 }
@@ -62,7 +47,8 @@ EXPORT(SceInt32, _sceFiberInitializeImpl, SceFiber *fiber, char *name, Ptr<SceFi
     fiber->cpu.pc = fiber->entry.address();
     fiber->cpu.sp = fiber->addrContext + sizeContext;
     memset(addrContext.get(host.mem), 0xCC, sizeContext);
-    return SCE_KERNEL_OK;
+
+    return SCE_FIBER_OK;
 }
 
 EXPORT(int, _sceFiberInitializeWithInternalOptionImpl) {
@@ -77,12 +63,18 @@ EXPORT(int, sceFiberGetInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceUInt32, sceFiberGetSelf, SceFiber *fiber) {
+EXPORT(SceUInt32, sceFiberGetSelf, Ptr<SceFiber> *fiber) {
+    if (!fiber)
+        return SCE_FIBER_ERROR_NULL;
+
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
-    *fiber = *thread->fiber.cast<SceFiber>().get(host.mem);
+    if (thread->fiber)
+        *fiber = thread->fiber.cast<SceFiber>();
+    else
+        *fiber = Ptr<SceFiber>(0);
 
-    return 0;
+    return SCE_FIBER_OK;
 }
 
 EXPORT(int, sceFiberOptParamInitialize) {
@@ -113,7 +105,7 @@ EXPORT(SceInt32, sceFiberReturnToThread, SceUInt32 argOnReturn, Ptr<SceUInt32> a
         *(Ptr<SceUInt32>(previousArgOnRun).get(host.mem)) = argOnReturn;
     }
 
-    return SCE_KERNEL_OK;
+    return SCE_FIBER_OK;
 }
 
 EXPORT(SceUInt32, sceFiberRun, Ptr<SceFiber> fiber_ptr, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
@@ -139,7 +131,7 @@ EXPORT(SceUInt32, sceFiberRun, Ptr<SceFiber> fiber_ptr, SceUInt32 argOnRunTo, Pt
     write_lr(*(thread->cpu), thread->cpu_context.get()->lr);
     thread->fiber = fiber_ptr.cast<void>();
 
-    return suspended ? SCE_KERNEL_OK : fiber->cpu.cpu_registers[0];
+    return suspended ? SCE_FIBER_OK : fiber->cpu.cpu_registers[0];
 }
 
 EXPORT(int, sceFiberStartContextSizeCheck) {
@@ -173,7 +165,7 @@ EXPORT(SceUInt32, sceFiberSwitch, Ptr<SceFiber> fiber_ptr, SceUInt32 argOnRunTo,
 
     thread->fiber = fiber_ptr.cast<void>();
 
-    return suspended ? SCE_KERNEL_OK : fiber->cpu.cpu_registers[0];
+    return suspended ? SCE_FIBER_OK : fiber->cpu.cpu_registers[0];
 }
 
 BRIDGE_IMPL(_sceFiberAttachContextAndRun)
