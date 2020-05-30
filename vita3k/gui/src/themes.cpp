@@ -124,19 +124,19 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
     gui.start_background.init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 
-    date["date"] = ImVec2(898, 186.f);
+    date["date"] = ImVec2(898.f, 186.f);
     date["clock"] = ImVec2(898.f, 146.f);
     if (!param["start"]["dateLayout"].empty()) {
         switch (std::stoi(param["start"]["dateLayout"])) {
         case 0:
             break;
         case 1:
-            date["date"] = ImVec2(898, 472.f);
-            date["clock"] = ImVec2(898, 432.f);
+            date["date"] = ImVec2(898.f, 472.f);
+            date["clock"] = ImVec2(898.f, 432.f);
             break;
         case 2:
             date["date"] = ImVec2(460.f, 186.f);
-            date["clock"] = ImVec2(460, 146.f);
+            date["clock"] = ImVec2(460.f, 146.f);
             break;
         default:
             LOG_WARN("Date layout is unknown : {}", param["start"]["dateLayout"]);
@@ -247,7 +247,7 @@ static std::vector<std::pair<std::string, time_t>> themes_list;
 void get_themes_list(GuiState &gui, HostState &host) {
     const auto theme_path{ fs::path(host.pref_path) / "ux0/theme" };
     const auto fw_theme_path{ fs::path(host.pref_path) / "vs0/data/internal/theme" };
-    if ((!fs::exists(theme_path) && !fs::is_empty(theme_path)) || !fs::exists(fw_theme_path)) {
+    if (fs::is_empty(theme_path) && fs::is_empty(fw_theme_path)) {
         LOG_WARN("Theme path is empty");
         return;
     }
@@ -404,10 +404,11 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto now = std::chrono::system_clock::now();
     const auto tt = std::chrono::system_clock::to_time_t(now);
     const auto local = *localtime(&tt);
+    const auto scal_font = 19.2f / ImGui::GetFontSize();
 
-    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, 40.0f * SCAL.x, DATE_POS, IM_COL32(RGB["R"], RGB["G"], RGB["B"], 255),
+    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, (40.0f * scal_font) * SCAL.x, DATE_POS, IM_COL32(RGB["R"], RGB["G"], RGB["B"], 255),
         fmt::format("{} {} ({})", local.tm_mday, wmonth[local.tm_mon], wday[local.tm_wday]).c_str());
-    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, 108.0f * SCAL.x, CLOCK_POS, IM_COL32(RGB["R"], RGB["G"], RGB["B"], 255),
+    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, (108.0f * scal_font) * SCAL.x, CLOCK_POS, IM_COL32(RGB["R"], RGB["G"], RGB["B"], 255),
         fmt::format("{:0>2d}:{:0>2d}", local.tm_hour, local.tm_min).c_str());
 
     if (ImGui::IsMouseClicked(0))
@@ -767,10 +768,8 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
             if (!selected.empty()) {
                 if (!popup.empty())
                     popup.clear();
-                else {
-                    selected = -1;
+                else
                     selected.clear();
-                }
             } else if (!start.empty())
                 start.clear();
             else
