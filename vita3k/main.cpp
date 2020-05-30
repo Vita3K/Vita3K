@@ -67,9 +67,10 @@ int main(int argc, char *argv[]) {
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/user/00/savedata" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "shaderlog" / *cfg.delete_title_id);
             }
+            HostState host;
             if (cfg.pkg_path.is_initialized() && cfg.pkg_zrif.is_initialized()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
-                install_pkg(*cfg.pkg_path, root_paths.get_pref_path().string(), *cfg.pkg_zrif);
+                install_pkg(*cfg.pkg_path, host, *cfg.pkg_zrif);
                 return Success;
             }
             return Success;

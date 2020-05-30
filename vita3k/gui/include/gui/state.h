@@ -80,13 +80,6 @@ struct FileMenuState {
     bool firmware_install_dialog = false;
     bool pkg_install_dialog = false;
     bool game_install_dialog = false;
-
-    bool draw_file_dialog = true;
-    bool is_entering_zrif = true;
-    bool delete_pkg_file = false;
-    bool pkg_success = false;
-
-    std::string zRIF = std::string();
 };
 
 struct DebugMenuState {

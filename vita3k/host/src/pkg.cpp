@@ -101,7 +101,7 @@ bool decrypt_install_nonpdrm(std::string &drmlicpath, const std::string &title_p
     return true;
 }
 
-bool install_pkg(const std::string &pkg, const std::string &pref_path, std::string &p_zRIF) {
+bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
     std::ifstream infile(pkg, std::ios::binary);
     PkgHeader pkg_header;
     PkgExtHeader ext_header;
@@ -203,13 +203,15 @@ bool install_pkg(const std::string &pkg, const std::string &pref_path, std::stri
 
     std::vector<uint8_t> sfo_buffer(sfo_size);
     SfoFile sfo_file;
-    std::string title_id;
     std::string category;
     std::string content_id;
     infile.seekg(sfo_offset);
     infile.read((char *)&sfo_buffer[0], sfo_size);
     sfo::load(sfo_file, sfo_buffer);
-    sfo::get_data_by_key(title_id, sfo_file, "TITLE_ID");
+    sfo::get_data_by_key(host.game_version, sfo_file, "APP_VER");
+    if (!sfo::get_data_by_key(host.game_title, sfo_file, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+        sfo::get_data_by_key(host.game_title, sfo_file, "TITLE");
+    sfo::get_data_by_key(host.io.title_id, sfo_file, "TITLE_ID");
     sfo::get_data_by_key(category, sfo_file, "CATEGORY");
     sfo::get_data_by_key(content_id, sfo_file, "CONTENT_ID");
     if (type == PkgType::PKG_TYPE_VITA_DLC)
@@ -223,17 +225,17 @@ bool install_pkg(const std::string &pkg, const std::string &pref_path, std::stri
 
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
-        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "app/" + title_id, pref_path);
+        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "app/" + host.io.title_id, host.pref_path);
         break;
     case PkgType::PKG_TYPE_VITA_DLC:
-        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "addcont/" + title_id + "/" + content_id, pref_path);
+        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "addcont/" + host.io.title_id + "/" + content_id, host.pref_path);
         break;
     case PkgType::PKG_TYPE_VITA_PATCH:
         app::error_dialog("Sorry, but game updates/patches are not supported at this time.", nullptr);
         return false;
         //root_path = device::construct_emulated_path(VitaIoDevice::ux0, "patch/" + title_id, pref_path);
     case PkgType::PKG_TYPE_VITA_THEME:
-        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "theme/" + content_id, pref_path);
+        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "theme/" + content_id, host.pref_path);
         break;
     }
 
@@ -323,7 +325,7 @@ bool install_pkg(const std::string &pkg, const std::string &pref_path, std::stri
 
     case PkgType::PKG_TYPE_VITA_THEME:
 
-        // Theme don't have keystone file, need skio error
+        // Theme don't have keystone file, need skip error
         execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg);
         fs::remove_all(fs::path(title_id_src));
         fs::rename(fs::path(title_id_dst), fs::path(title_id_src));
