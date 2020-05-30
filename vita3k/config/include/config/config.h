@@ -70,7 +70,7 @@
     code(int, "keyboard-button-r3", 11, keyboard_button_r3)												\
     code(int, "keyboard-button-triangle", 25, keyboard_button_triangle)									\
     code(int, "keyboard-button-circle", 6, keyboard_button_circle)										\
-    code(int, "keyboard-button-cross", 18, keyboard_button_cross)										\
+    code(int, "keyboard-button-cross", 27, keyboard_button_cross)										\
     code(int, "keyboard-button-square", 29, keyboard_button_square)										\
     code(int, "keyboard-leftstick-left", 4, keyboard_leftstick_left)									\
     code(int, "keyboard-leftstick-right", 7, keyboard_leftstick_right)									\
