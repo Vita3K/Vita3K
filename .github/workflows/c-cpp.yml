@@ -1,0 +1,64 @@
+name: C/C++ CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        config: [Release]
+
+    steps:
+      - name: Set up build environment (macos-latest)
+        run: |
+          brew install ccache boost
+          echo "::add-path::/usr/local/opt/ccache/libexec"
+          echo "::set-env name=CCACHE_DIR::/tmp/ccache"
+        if: matrix.os == 'macos-latest'
+
+      - name: Set up build environment (ubuntu-latest)
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev
+          echo "::set-env name=CCACHE_DIR::/tmp/ccache"
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Set up build environment (windows-latest)
+        run: |
+          echo "::set-env name=BOOST_ROOT::$env:BOOST_ROOT_1_72_0"
+        if: matrix.os == 'windows-latest'
+
+      - uses: actions/cache@v1
+        with:
+          path: /tmp/ccache
+          key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
+        if: matrix.os != 'windows-latest'
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: CMake configure
+        run: cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+
+      - name: CMake build
+        run: cmake --build build --config ${{ matrix.config }} --parallel 2
+
+      - name: CTest
+        working-directory: build
+        run: ctest --build-config ${{ matrix.config }} --output-on-failure --parallel 2
+
+      - name: Compute git short sha
+        id: git_short_sha
+        run: echo "::set-output name=value::$(git rev-parse --short HEAD)"
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: vita3k-${{ steps.git_short_sha.outputs.value }}-${{ matrix.os }}
+          path: build/bin
