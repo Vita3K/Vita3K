@@ -21,14 +21,15 @@
 
 namespace fs = boost::filesystem;
 
-class AbstractFS {
+class AbstractFS {    
+protected:
     fs::path base_path;
     fs::path device_path;
-    
-protected:
     std::vector<fs::path> filesystem_list;
+    void create_filesystem();
 
 public:
-    bool file_exists(std::string file_name);
-    virtual void init_filesystem_list();
+    virtual ~AbstractFS() = default;
+    AbstractFS() = default;
+    virtual void init_filesystem_list() = 0;
 };

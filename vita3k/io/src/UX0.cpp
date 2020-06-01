@@ -17,6 +17,14 @@
 
 #include "io/UX0.h"
 
+UX0::UX0(fs::path base_path) : ExternalFS(){
+    this->base_path = base_path;
+    device_path = "/ux0";
+}
+
 void UX0::init_filesystem_list() {
-    filesystem_list.push_back(fs::path("Fun/"));
+    filesystem_list.push_back(fs::path("/data"));
+    filesystem_list.push_back(fs::path("/app"));
+    filesystem_list.push_back(fs::path("/user"));
+    create_filesystem();
 }

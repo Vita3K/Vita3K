@@ -17,8 +17,6 @@
 
 #pragma once
 #include "io/VitaIoDevice.h"
-#include "io/AbstractFS.h"
-#include "io/ExternalFS.h"
 #include "io/UX0.h"
 
 // Description: A class that handles devices operations,
@@ -26,17 +24,25 @@
 // the project, while also making sure that there is always only one mount and no
 // collision in file handling.
 class FilesystemHandlers {
-    static FilesystemHandlers *s_instance;
+    static FilesystemHandlers *my_instance;
 
-    FilesystemHandlers() {}
+protected:
+    fs::path file_base_path;
+    FilesystemHandlers(fs::path out_base_path) : file_base_path(out_base_path) { }
+
 
 public:
-    static AbstractFS open_filesystem(VitaIoDevice device);
-    static FilesystemHandlers *instance() {
-        if (!s_instance) {
-            s_instance = new FilesystemHandlers();
-        }
+    /**
+     * Singletons should not be cloneable.
+     */
+    FilesystemHandlers(FilesystemHandlers &other) = delete;
+    /**
+     * Singletons should not be assignable.
+     */
+    void operator=(const FilesystemHandlers &) = delete;
+    FilesystemHandlers(const FilesystemHandlers &) = delete;
 
-        return s_instance;
-    }
+    AbstractFS* open_filesystem(better_enums_data_VitaIoDevice::_enumClassForSwitchStatements device);
+
+    static FilesystemHandlers *GetInstance(const fs::path &base_path);
 };

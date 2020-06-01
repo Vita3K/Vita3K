@@ -23,6 +23,7 @@
 #include <io/util.h>
 #include <io/vfs.h>
 
+
 #include <rtc/rtc.h>
 #include <util/log.h>
 #include <util/preprocessor.h>
@@ -34,6 +35,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
+
+#include "io/FilesytemHandlers.h"
 
 #include <cassert>
 #include <iostream>
@@ -95,21 +98,13 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
             fs::create_directories(pref_path / i);
     }
 
-    const fs::path ux0{ pref_path / (+VitaIoDevice::ux0)._to_string() };
-    const fs::path uma0{ pref_path / (+VitaIoDevice::uma0)._to_string() };
-    const fs::path ux0_data{ ux0 / "data" };
-    const fs::path uma0_data{ uma0 / "data" };
-    const fs::path ux0_app{ ux0 / "app" };
-    const fs::path ux0_user{ ux0 / "user" };
+    FilesystemHandlers* filesystem_handlers = FilesystemHandlers::GetInstance(pref_path);
+    AbstractFS* device_ux0 = filesystem_handlers->open_filesystem(better_enums_data_VitaIoDevice::_enumClassForSwitchStatements::ux0);
+    device_ux0->init_filesystem_list();
 
-    if (!fs::exists(ux0))
-        fs::create_directories(ux0);
-    if (!fs::exists(ux0_data))
-        fs::create_directory(ux0_data);
-    if (!fs::exists(ux0_app))
-        fs::create_directory(ux0_app);
-    if (!fs::exists(ux0_user))
-        fs::create_directory(ux0_user);
+    const fs::path uma0{ pref_path / (+VitaIoDevice::uma0)._to_string() };
+    const fs::path uma0_data{ uma0 / "data" };
+
     if (!fs::exists(uma0))
         fs::create_directory(uma0);
     if (!fs::exists(uma0_data))

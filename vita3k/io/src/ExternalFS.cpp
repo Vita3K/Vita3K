@@ -14,6 +14,9 @@
 
 #include "io/ExternalFS.h"
 
+ExternalFS::ExternalFS() : AbstractFS(), IGameFS() {
+}
+
 std::vector<std::string> ExternalFS::list_all_games() {
     return std::vector<std::string>{ "A game" };
 }

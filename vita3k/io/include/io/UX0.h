@@ -21,5 +21,6 @@
 
 class UX0 : public ExternalFS {
 public:
-    void init_filesystem_list();
+    UX0(fs::path base_path);
+    void init_filesystem_list() override;
 };

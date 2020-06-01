@@ -21,7 +21,9 @@
 // Decription: IGameFS is an interface for common required methods for handling game data
 // such as install game, or boot game.
 class IGameFS {
+protected:
+    ~IGameFS() = default;
 public:
     //TODO: Create a game profile later
-    virtual std::vector<std::string> list_all_games();
+    virtual std::vector<std::string> list_all_games() = 0;
 };

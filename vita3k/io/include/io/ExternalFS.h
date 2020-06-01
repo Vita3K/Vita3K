@@ -22,6 +22,6 @@
 
 class ExternalFS : public AbstractFS, public IGameFS {
 public:
-    std::vector<std::string> list_all_games();
-    
+    ExternalFS();
+    std::vector<std::string> list_all_games() override;    
 };

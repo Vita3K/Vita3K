@@ -17,6 +17,18 @@
 
 #include "io/AbstractFS.h"
 
-bool AbstractFS::file_exists(std::string file_name) {
-    return fs::exists(device_path.append(file_name));
+void AbstractFS::create_filesystem() {
+    // Checks if the folder for the device exists
+    const fs::path device_full_path = base_path / device_path;
+    if (!fs::exists(device_full_path)) {
+        fs::create_directories(device_full_path);
+    }
+
+    // Creates all required folders for the device
+    for (const fs::path &file_relative_path : filesystem_list) {
+        auto full_path = device_full_path / file_relative_path;
+        if (!fs::exists(full_path)) {
+            fs::create_directories(full_path);
+        }
+    }
 }
