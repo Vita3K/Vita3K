@@ -35,11 +35,13 @@ FilesystemHandlers *FilesystemHandlers::GetInstance(const fs::path &base_path) {
     return my_instance;
 }
 
-AbstractFS* FilesystemHandlers::open_filesystem(better_enums_data_VitaIoDevice::_enumClassForSwitchStatements device) {
+AbstractFS *FilesystemHandlers::open_filesystem(VitaIoDevice device) const {
     // TODO: Implement device mounts unique access
     switch (device) {
-    case better_enums_data_VitaIoDevice::_enumClassForSwitchStatements::app0:
-    case better_enums_data_VitaIoDevice::_enumClassForSwitchStatements::ux0: return new UX0(file_base_path);
+    case +VitaIoDevice::gro0:
+    case +VitaIoDevice::grw0:
+    case +VitaIoDevice::app0:
+    case +VitaIoDevice::ux0: return new UX0(file_base_path);
     default: return new UX0(file_base_path);
     }
     

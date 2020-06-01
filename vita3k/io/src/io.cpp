@@ -92,10 +92,9 @@ SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path,
 bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
     // Iterate through the entire list of devices and create the subdirectories if they do not exist
     for (auto i : VitaIoDevice::_names()) {
-        if (!device::is_valid_output_path(i))
-            continue;
-        if (!fs::exists(pref_path / i))
+        if (device::is_valid_output_path(i) && !fs::exists(pref_path / i)) {
             fs::create_directories(pref_path / i);
+        }   
     }
 
     FilesystemHandlers* filesystem_handlers = FilesystemHandlers::GetInstance(pref_path);

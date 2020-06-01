@@ -42,7 +42,7 @@ public:
     void operator=(const FilesystemHandlers &) = delete;
     FilesystemHandlers(const FilesystemHandlers &) = delete;
 
-    AbstractFS* open_filesystem(better_enums_data_VitaIoDevice::_enumClassForSwitchStatements device);
+    AbstractFS* open_filesystem(VitaIoDevice device) const;
 
     static FilesystemHandlers *GetInstance(const fs::path &base_path);
 };
