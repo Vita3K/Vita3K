@@ -71,7 +71,7 @@ cd Vita3K
 - Install dependencies.
 
 ```sh
-sudo apt install git cmake libsdl2-dev pkg-config libgtk-3-dev
+sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev
 ```
 
 - Clone this repo.
@@ -86,7 +86,7 @@ cd Vita3K
 ```sh
 ./gen-linux.sh
 cd build-linux
-make -j$(nproc)
+ninja
 ```
 
 ## Note
