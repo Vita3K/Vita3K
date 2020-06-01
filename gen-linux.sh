@@ -18,4 +18,4 @@ fi
 # Generate project files
 mkdir -p build-linux
 cd build-linux
-cmake ..
+cmake .. -GNinja
