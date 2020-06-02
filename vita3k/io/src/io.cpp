@@ -98,7 +98,7 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
     }
 
     FilesystemHandlers* filesystem_handlers = FilesystemHandlers::GetInstance(pref_path);
-    AbstractFS* device_ux0 = filesystem_handlers->open_filesystem(better_enums_data_VitaIoDevice::_enumClassForSwitchStatements::ux0);
+    AbstractFS* device_ux0 = filesystem_handlers->open_filesystem(+VitaIoDevice::ux0);
     device_ux0->init_filesystem_list();
 
     const fs::path uma0{ pref_path / (+VitaIoDevice::uma0)._to_string() };

@@ -15,9 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "io/UX0.h"
+#include <io/UX0.h>
 
-UX0::UX0(fs::path base_path) : ExternalFS(){
+UX0::UX0(fs::path base_path) : ExternalFS() {
     this->base_path = base_path;
     device_path = "/ux0";
 }
