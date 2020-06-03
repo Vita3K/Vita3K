@@ -72,6 +72,10 @@ struct ThemesState {
     bool theme_background = false;
 };
 
+struct TrophyState {
+    bool trophy_screen = false;
+};
+
 struct FileMenuState {
     bool firmware_install_dialog = false;
     bool pkg_install_dialog = false;
@@ -135,6 +139,7 @@ struct GuiState {
     gui::HelpMenuState help_menu;
     gui::LiveAreaState live_area;
     gui::ThemesState theme;
+    gui::TrophyState trophy;
     gui::GamesSelector game_selector;
 
     std::string app_ver;
@@ -166,6 +171,9 @@ struct GuiState {
 
     std::uint64_t current_user_bg;
     std::map<std::string, ImGui_Texture> user_backgrounds;
+
+    std::map<std::string, std::map<std::string, ImGui_Texture>> trophy_np_com_id_list;
+    std::map<std::string, ImGui_Texture> trophy_list;
 
     ImGui_Texture start_background;
 

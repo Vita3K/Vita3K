@@ -40,6 +40,7 @@ void delete_game(GuiState &gui, HostState &host);
 void get_game_titles(GuiState &gui, HostState &host);
 void get_modules_list(GuiState &gui, HostState &host);
 void get_themes_list(GuiState &gui, HostState &host);
+bool get_trophy_np_com_id_list(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);
 void init_app_background(GuiState &gui, HostState &host);
 void init_icons(GuiState &gui, HostState &host);

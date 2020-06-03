@@ -344,6 +344,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (gui.theme.start_screen)
         draw_start_screen(gui, host);
 
+    if (gui.trophy.trophy_screen)
+        draw_trophy_selection(gui, host);
+
     ImGui::PopFont();
 }
 
