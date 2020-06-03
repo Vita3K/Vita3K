@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -ex
 
+cmake_args=
+CLANG=
+command -v clang > /dev/null && CLANG=1
+
 # CI uses pre-built Boost
 if [[ -z "${CI}" ]]; then
 	# Create build dir
@@ -15,7 +19,11 @@ if [[ -z "${CI}" ]]; then
 	cd ../..
 fi
 
+if [ "$CLANG" ]; then
+	cmake_args="-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++"
+fi
+
 # Generate project files
 mkdir -p build-linux
 cd build-linux
-cmake .. -GNinja
+cmake .. -GNinja ${cmake_args}
