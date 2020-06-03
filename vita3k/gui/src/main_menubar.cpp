@@ -86,6 +86,14 @@ static void draw_controls_menu(ControlMenuState &state) {
     }
 }
 
+static void draw_utilities_menu(GuiState &gui, HostState &host) {
+    if (ImGui::BeginMenu("Utilities")) {
+        if (ImGui::MenuItem("Trophy Manager") && get_trophy_np_com_id_list(gui, host))
+            gui.trophy.trophy_screen = true;
+        ImGui::EndMenu();
+    }
+}
+
 static void draw_help_menu(HelpMenuState &state) {
     if (ImGui::BeginMenu("Help")) {
         ImGui::MenuItem("About", nullptr, &state.about_dialog);
@@ -101,6 +109,7 @@ void draw_main_menu_bar(GuiState &gui, HostState &host) {
         draw_emulation_menu(gui, host);
         draw_debug_menu(gui.debug_menu);
         draw_config_menu(gui.configuration_menu);
+        draw_utilities_menu(gui, host);
         draw_controls_menu(gui.controls_menu);
         draw_help_menu(gui.help_menu);
 
