@@ -82,8 +82,6 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         if (export_address_it != kernel.export_nids.end()) {
             export_address = export_address_it->second;
         } else {
-            // TODO: Proper HLE support for var imports (map with varnid, pointer, size)
-
             const char *const name = import_name(nid);
             constexpr auto STUB_SYMVAL = 0xDEADBEEF;
             LOG_WARN("\tNID NOT FOUND {} ({}) at {}, setting to stub value {}", log_hex(nid), name, log_hex(entry.address()), log_hex(STUB_SYMVAL));
