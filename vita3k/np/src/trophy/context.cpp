@@ -72,7 +72,7 @@ bool Context::init_info_from_trp() {
 
     // Get parental of all
     for (auto trop : conf_file_doc.child("trophyconf")) {
-        if (strncmp(trop.name(), "trophy", 6) == 0) {
+        if (trop.name() == std::string("trophy")) {
             // Get ID
             const std::uint32_t id = trop.attribute("id").as_uint();
             const std::string hidden = trop.attribute("hidden").as_string();
@@ -124,8 +124,8 @@ void Context::save_trophy_progress_file() {
     write_stuff(&trophy_count, 4);
     write_stuff(&platinum_trophy_id, 4);
 
-    write_stuff(&unlock_timestamps[0], (std::uint32_t)unlock_timestamps.size() * 8);
-    write_stuff(&trophy_kinds[0], (std::uint32_t)trophy_kinds.size());
+    write_stuff(unlock_timestamps.data(), (std::uint32_t)unlock_timestamps.size() * 8);
+    write_stuff(trophy_kinds.data(), (std::uint32_t)trophy_kinds.size());
 
     close_file(io, output, "save_trophy_progress_file");
 }
@@ -161,12 +161,12 @@ bool Context::load_trophy_progress_file(const SceUID &progress_input_file) {
     }
 
     // Read timestamps
-    if (read_stuff(&unlock_timestamps[0], (std::uint32_t)unlock_timestamps.size() * 8) != (int)unlock_timestamps.size() * 8) {
+    if (read_stuff(unlock_timestamps.data(), (std::uint32_t)unlock_timestamps.size() * 8) != (int)unlock_timestamps.size() * 8) {
         return false;
     }
 
     // Read trophy type (shinyyyy!! *yes this is lord of the ring reference*)
-    if (read_stuff(&trophy_kinds[0], (std::uint32_t)trophy_kinds.size()) != (int)trophy_kinds.size()) {
+    if (read_stuff(trophy_kinds.data(), (std::uint32_t)trophy_kinds.size()) != (int)trophy_kinds.size()) {
         return false;
     }
 
@@ -203,6 +203,8 @@ bool Context::unlock_trophy(std::int32_t id, np::NpTrophyError *err, const bool 
     if (err) {
         *err = np::NpTrophyError::TROPHY_ERROR_NONE;
     }
+
+    unlock_timestamps[id] = std::time(nullptr);
 
     save_trophy_progress_file();
 
