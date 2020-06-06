@@ -1862,11 +1862,10 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     const SceGxmTextureType &texture_type) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    } else if (!data) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     } else if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+    // data can be empty to be filled out later.
 
     // Add supported formats here
 
@@ -1967,8 +1966,6 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
 EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t byteStride) {
     if (width > 4096 || height > 4096 || byteStride == 0)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    else if (!data)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     else if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 

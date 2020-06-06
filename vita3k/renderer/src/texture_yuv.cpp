@@ -9,9 +9,32 @@ extern "C" {
 }
 
 namespace renderer::texture {
+
+static SwsContext *s_render_sws_context{};
+static size_t res[2] = { 0, 0 };
+SwsContext *get_sws_context(size_t width, size_t height) {
+    bool recreate = false;
+    if (res[0] != width || res[1] != height) {
+        recreate = true;
+        res[0] = width;
+        res[1] = height;
+    } else if (s_render_sws_context == nullptr) {
+        recreate = true;
+    }
+
+    if (recreate) {
+        if (s_render_sws_context != nullptr) {
+            sws_freeContext(s_render_sws_context);
+            s_render_sws_context = nullptr;
+        }
+        s_render_sws_context = sws_getContext(width, height, AV_PIX_FMT_YUV420P, width, height, AV_PIX_FMT_RGB24,
+            0, nullptr, nullptr, nullptr);
+    }
+    return s_render_sws_context;
+}
+
 void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_t height) {
-    SwsContext *context = sws_getContext(width, height, AV_PIX_FMT_YUV420P, width, height, AV_PIX_FMT_RGB24,
-        0, nullptr, nullptr, nullptr);
+    SwsContext *context = get_sws_context(width, height);
     assert(context);
 
     const uint8_t *slices[] = {
@@ -36,6 +59,5 @@ void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_
 
     int error = sws_scale(context, slices, strides, 0, height, dst_slices, dst_strides);
     assert(error == height);
-    sws_freeContext(context);
 }
 } // namespace renderer::texture
