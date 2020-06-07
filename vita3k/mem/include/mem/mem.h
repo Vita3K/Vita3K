@@ -37,6 +37,7 @@ struct MemState {
     Allocated allocated_pages;
     std::mutex generation_mutex;
     GenerationNames generation_names;
+    std::map<Address, Address> aligned_addr_to_original;
     std::map<Address, uint32_t> breakpoints;
 };
 
@@ -54,6 +55,7 @@ constexpr size_t GB(size_t gb) {
 
 bool init(MemState &state);
 Address alloc(MemState &state, size_t size, const char *name);
+Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment);
 Address alloc_at(MemState &state, Address address, size_t size, const char *name);
 void free(MemState &state, Address address);
 uint32_t mem_available(MemState &state);
