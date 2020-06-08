@@ -206,7 +206,9 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
 std::string expand_path(IOState &io, const char *path, const std::string &pref_path) {
     auto device = device::get_device(path);
 
-    const auto translated_path = translate_path(path, device, io.device_paths);
+    auto translated_path = translate_path(path, device, io.device_paths);
+    if (translated_path.find('\x1') != -1)
+        translated_path.replace(translated_path.find("\x1"), sizeof("\x1") - 1, io.title_id);
     return device::construct_emulated_path(device, translated_path, pref_path).string();
 }
 
@@ -234,7 +236,9 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::stri
         return fd;
     }
 
-    const auto translated_path = translate_path(path, device, io.device_paths);
+    auto translated_path = translate_path(path, device, io.device_paths);
+    if (translated_path.find('\x1') != -1)
+        translated_path.replace(translated_path.find("\x1"), sizeof("\x1")-1, io.title_id);
     if (translated_path.empty()) {
         LOG_ERROR("Cannot translate path: {}", path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -371,7 +375,9 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
             return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
         }
 
-        const auto translated_path = translate_path(file, device, io.device_paths);
+        auto translated_path = translate_path(file, device, io.device_paths);
+        if (translated_path.find('\x1') != -1)
+            translated_path.replace(translated_path.find("\x1"), sizeof("\x1") - 1, io.title_id);
         file_path = device::construct_emulated_path(device, translated_path, pref_path);
         if (!fs::exists(file_path)) {
             LOG_ERROR("Missing file at {} (target path: {})", file_path.string(), file);
@@ -467,7 +473,9 @@ int remove_file(IOState &io, const char *file, const std::string &pref_path, con
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto translated_path = translate_path(file, device, io.device_paths);
+    auto translated_path = translate_path(file, device, io.device_paths);
+    if (translated_path.find('\x1') != -1)
+        translated_path.replace(translated_path.find("\x1"), sizeof("\x1") - 1, io.title_id);
     if (translated_path.empty()) {
         LOG_ERROR("Cannot translate path: {}", translated_path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -485,8 +493,10 @@ int remove_file(IOState &io, const char *file, const std::string &pref_path, con
 
 SceUID open_dir(IOState &io, const char *path, const std::string &pref_path, const char *export_name) {
     auto device = device::get_device(path);
-    const auto translated_path = translate_path(path, device, io.device_paths);
-
+    
+    auto translated_path = translate_path(path, device, io.device_paths);
+    if (translated_path.find('\x1') != -1)
+        translated_path.replace(translated_path.find("\x1"), sizeof("\x1") - 1, io.title_id);
     const auto dir_path = device::construct_emulated_path(device, translated_path, pref_path) / "/";
     if (!fs::exists(dir_path)) {
         LOG_ERROR("File does not exist at: {} (target path: {})", dir_path.string(), path);
@@ -546,7 +556,9 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::stri
 
 int create_dir(IOState &io, const char *dir, int mode, const std::string &pref_path, const char *export_name, const bool recursive) {
     auto device = device::get_device(dir);
-    const auto translated_path = translate_path(dir, device, io.device_paths);
+    auto translated_path = translate_path(dir, device, io.device_paths);
+    if (translated_path.find('\x1') != -1)
+        translated_path.replace(translated_path.find("\x1"), sizeof("\x1") - 1, io.title_id);
     if (translated_path.empty()) {
         LOG_ERROR("Failed to translate path: {}", dir);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -593,7 +605,9 @@ int remove_dir(IOState &io, const char *dir, const std::string &pref_path, const
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto translated_path = translate_path(dir, device, io.device_paths);
+    auto translated_path = translate_path(dir, device, io.device_paths);
+    if (translated_path.find('\x1') != -1)
+        translated_path.replace(translated_path.find("\x1"), sizeof("\x1") - 1, io.title_id);
     if (translated_path.empty()) {
         LOG_ERROR("Cannot translate path: {}", dir);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
