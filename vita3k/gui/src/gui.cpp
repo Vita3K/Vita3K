@@ -21,6 +21,7 @@
 
 #include <gui/imgui_impl_sdl.h>
 
+#include <boost/algorithm/string/trim.hpp>
 #include <glutil/gl.h>
 #include <host/functions.h>
 #include <host/state.h>
@@ -248,6 +249,7 @@ void get_game_titles(GuiState &gui, HostState &host) {
                 if (!sfo::get_data_by_key(host.game_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
                     sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
                 std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
+                boost::trim(host.game_title);
             } else {
                 host.game_short_title = host.game_title = host.io.title_id; // Use TitleID as Short title and Title
                 host.game_version = host.game_category = "N/A";
