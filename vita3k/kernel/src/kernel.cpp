@@ -69,3 +69,39 @@ void stop_all_threads(KernelState &kernel) {
         stop(*thread->second->cpu);
     }
 }
+
+void add_watch_memory_addr(KernelState &state, Address addr, size_t size) {
+    state.watch_memory_addrs.emplace(addr, WatchMemory{ addr, size });
+}
+
+void remove_watch_memory_addr(KernelState &state, Address addr) {
+    state.watch_memory_addrs.erase(addr);
+}
+
+// TODO use boost icl or interval tree instead if this turns out to be a significant bottleneck
+bool is_watch_memory_addr(KernelState &state, Address addr) {
+    for (const auto &item : state.watch_memory_addrs) {
+        if (item.second.start <= addr && addr < item.second.start + item.second.size) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void update_watches(KernelState &state) {
+    for (const auto &thread : state.threads) {
+        auto &cpu = *thread.second->cpu;
+        if (state.watch_code != log_code_exists(cpu)) {
+            if (state.watch_code)
+                log_code_add(cpu);
+            else
+                log_code_remove(cpu);
+        }
+        if (state.watch_memory != log_mem_exists(cpu)) {
+            if (state.watch_memory)
+                log_mem_add(cpu);
+            else
+                log_mem_remove(cpu);
+        }
+    }
+}

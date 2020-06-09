@@ -20,6 +20,8 @@
 
 #include <kernel/state.h>
 
+#include <kernel/functions.h>
+
 #include <cpu/functions.h>
 #include <util/find.h>
 #include <util/lock_and_find.h>
@@ -69,7 +71,7 @@ static int SDLCALL thread_function(void *data) {
     return r0;
 }
 
-SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CallImport call_import, bool log_code) {
+SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CallImport call_import, ResolveNIDName resolve_nid_name, const SceKernelThreadOptParam *option = nullptr) {
     SceUID thid = kernel.get_next_uid();
 
     const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {
@@ -97,9 +99,24 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         call_import(cpu, nid, thid);
     };
 
-    thread->cpu = init_cpu(entry_point.address(), stack_top, log_code, call_svc, mem);
+    auto is_watch_memory_addr = [&](Address addr) {
+        return ::is_watch_memory_addr(kernel, addr);
+    };
+
+    thread->cpu = init_cpu(thid, entry_point.address(), stack_top, call_svc, resolve_nid_name, is_watch_memory_addr, mem);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
+    }
+    if (kernel.watch_code) {
+        log_code_add(*thread->cpu);
+    }
+    if (kernel.watch_memory) {
+        log_mem_add(*thread->cpu);
+    }
+
+    if (option) {
+        write_reg(*thread->cpu, 0, option->attr);
+        write_reg(*thread->cpu, 1, option->size);
     }
 
     thread->cpu_context = std::make_unique<CPUContext>();

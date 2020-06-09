@@ -416,8 +416,12 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         ::call_import(host, cpu, nid, main_thread_id);
     };
 
+    const ResolveNIDName resolve_nid_name = [&host](Address addr) {
+        return ::resolve_nid_name(host.kernel, addr);
+    };
+
     const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
-        call_import, false);
+        call_import, resolve_nid_name, nullptr);
 
     if (main_thread_id < 0) {
         app::error_dialog("Failed to init main thread.", host.window.get());
@@ -439,7 +443,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
         auto argp = Ptr<void>();
         const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
-            call_import, false);
+            call_import, resolve_nid_name, nullptr);
         const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
         const auto ret = run_on_current(*module_thread, module_start, 0, argp);
         module_thread->to_do = ThreadToDo::exit;
