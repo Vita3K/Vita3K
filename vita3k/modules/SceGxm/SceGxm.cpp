@@ -395,7 +395,7 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 
 EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<SceGxmSyncObject> newBuffer, Ptr<const void> callbackData) {
     if (!oldBuffer || !newBuffer || !callbackData) {
-        return SCE_GXM_ERROR_INVALID_POINTER;
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     DisplayCallback display_callback;
@@ -943,10 +943,10 @@ EXPORT(int, sceGxmProgramGetFragmentProgramInputs, Ptr<const SceGxmProgram> prog
 
 EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, SceGxmParameterType *type, std::uint32_t *component_count) {
     if (!program || !type || !component_count)
-        return SCE_GXM_ERROR_INVALID_POINTER;
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     if (!program->is_fragment())
-        return SCE_GXM_ERROR_INVALID_VALUE;
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     // TODO
 
@@ -1084,7 +1084,7 @@ EXPORT(int, sceGxmRenderTargetGetDriverMemBlock) {
 
 EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
     if (!context || !uniformBuffer)
-        return SCE_GXM_ERROR_INVALID_POINTER;
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *uniformBuffer = context->state.params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
     context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Reserved;
@@ -1099,7 +1099,7 @@ EXPORT(int, sceGxmRenderTargetGetHostMem) {
 
 EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
     if (!context || !uniformBuffer)
-        return SCE_GXM_ERROR_INVALID_POINTER;
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *uniformBuffer = context->state.params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
 
@@ -1680,7 +1680,7 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
 
     *syncObject = alloc<SceGxmSyncObject>(host.mem, __FUNCTION__);
     if (!*syncObject) {
-        return SCE_GXM_ERROR_OUT_OF_MEMORY;
+        return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
     // Set all subjects to be done.
@@ -1862,11 +1862,10 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     const SceGxmTextureType &texture_type) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    } else if (!data) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     } else if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+    // data can be empty to be filled out later.
 
     // Add supported formats here
 
@@ -1967,8 +1966,6 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
 EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t byteStride) {
     if (width > 4096 || height > 4096 || byteStride == 0)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    else if (!data)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     else if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 

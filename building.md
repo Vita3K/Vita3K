@@ -71,7 +71,7 @@ cd Vita3K
 - Install dependencies.
 
 ```sh
-sudo apt install git cmake libsdl2-dev pkg-config libgtk-3-dev
+sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang
 ```
 
 - Clone this repo.
@@ -86,10 +86,8 @@ cd Vita3K
 ```sh
 ./gen-linux.sh
 cd build-linux
-make -j$(nproc)
+ninja
 ```
-
-__Note:__ If Unicorn can't find Python, use `make UNICORN_QEMU_FLAGS="--python=/usr/bin/python2"` or similar to point it to your installation. `make` works after you do this once.
 
 ## Note
 

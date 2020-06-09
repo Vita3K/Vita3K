@@ -109,7 +109,7 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
         return (((width + 3) / 4) * ((height + 3) / 4) * ((ubc_type > 1) ? 16 : 8));
     } else if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
         // TODO, is not perfect for PVRT-II.
-        pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height, 
+        pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height,
             (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP), reinterpret_cast<uint8_t *>(dest));
         // TODO, calcule return is not sur.
         return ((width + 3) / 4) * ((height + 3) / 4);

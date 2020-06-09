@@ -116,6 +116,17 @@ bool init(MemState &state) {
     return true;
 }
 
+Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment) {
+    if (alignment != 0)
+        size += alignment - 1;
+    auto addr = alloc(state, size, name);
+    if (alignment == 0)
+        return addr;
+    auto new_addr = (addr + alignment - 1) & ~(alignment - 1);
+    state.aligned_addr_to_original[new_addr] = addr;
+    return new_addr;
+}
+
 Address alloc(MemState &state, size_t size, const char *name) {
     const size_t page_count = (size + (state.page_size - 1)) / state.page_size;
     const Allocated::iterator block = std::search_n(state.allocated_pages.begin(), state.allocated_pages.end(), page_count, 0);
@@ -142,6 +153,12 @@ Address alloc_at(MemState &state, Address address, size_t size, const char *name
 }
 
 void free(MemState &state, Address address) {
+    auto &addr_map = state.aligned_addr_to_original;
+    if (addr_map.find(address) != addr_map.end()) {
+        auto old_addr = address;
+        address = addr_map[old_addr];
+        addr_map.erase(old_addr);
+    }
     const size_t page = address / state.page_size;
     assert(page >= 0);
     assert(page < state.allocated_pages.size());
