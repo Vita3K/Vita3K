@@ -930,7 +930,11 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry ent
         ::call_import(host, cpu, nid, thread_id);
     };
 
-    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, stack_size, call_import, false);
+    const ResolveNIDName resolve_nid_name = [&host](Address addr) {
+        return ::resolve_nid_name(host.kernel, addr);
+    };
+
+    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, stack_size, call_import, resolve_nid_name, option);
     if (thid < 0)
         return RET_ERROR(thid);
     return thid;
@@ -1265,8 +1269,12 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
         ::call_import(host, cpu, nid, thread_id);
     };
 
+    const ResolveNIDName resolve_nid_name = [&host](Address addr) {
+        return ::resolve_nid_name(host.kernel, addr);
+    };
+
     const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
-        static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, false);
+        static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, resolve_nid_name, nullptr);
 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 

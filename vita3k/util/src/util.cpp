@@ -31,6 +31,9 @@
 #include <sstream>
 #include <string>
 
+#include <memory>
+#include <stdexcept>
+
 #include <immintrin.h>
 
 namespace logging {
@@ -155,8 +158,10 @@ std::string remove_special_chars(std::string str) {
 // Based on: https://stackoverflow.com/a/23135441
 // Search and replace "in" with "out" in the given string
 void replace(std::string &str, const std::string &in, const std::string &out) {
-    for (auto start = str.find(in); start != std::string::npos; start = str.find(in)) {
-        str.replace(str.find(in), in.length(), out);
+    size_t pos = 0;
+    while ((pos = str.find(in, pos)) != std::string::npos) {
+        str.replace(pos, in.length(), out);
+        pos += out.length();
     }
 }
 

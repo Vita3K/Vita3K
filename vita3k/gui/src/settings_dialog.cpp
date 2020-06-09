@@ -27,8 +27,12 @@
 
 #include <misc/cpp/imgui_stdlib.h>
 
+#include <cpu/functions.h>
+
 #include <util/fs.h>
 #include <util/log.h>
+
+#include <kernel/functions.h>
 
 #include <algorithm>
 #include <nfd.h>
@@ -360,6 +364,21 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Save color surfaces", &host.cfg.color_surface_debug);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
+        ImGui::Spacing();
+        if (ImGui::Button(host.kernel.watch_code ? "Unwatch code" : "Watch code")) {
+            host.kernel.watch_code = !host.kernel.watch_code;
+            update_watches(host.kernel);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(host.kernel.watch_memory ? "Unwatch memory" : "Watch memory")) {
+            host.kernel.watch_memory = !host.kernel.watch_memory;
+            update_watches(host.kernel);
+        }
+        ImGui::Spacing();
+        if (ImGui::Button(host.kernel.watch_import_calls ? "Unwatch import calls" : "Watch import calls")) {
+            host.kernel.watch_import_calls = !host.kernel.watch_import_calls;
+            update_watches(host.kernel);
+        }
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

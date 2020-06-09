@@ -705,9 +705,13 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
         ::call_import(host, cpu, nid, thread_id);
     };
 
+    const ResolveNIDName resolve_nid_name = [&host](Address addr) {
+        return ::resolve_nid_name(host.kernel, addr);
+    };
+
     const auto stack_size = SCE_KERNEL_STACK_SIZE_USER_DEFAULT; // TODO: Verify this is the correct stack size
 
-    host.gxm.display_queue_thread = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, call_import, false);
+    host.gxm.display_queue_thread = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, call_import, resolve_nid_name, nullptr);
 
     if (host.gxm.display_queue_thread < 0) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
