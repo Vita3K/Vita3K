@@ -96,7 +96,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     // Always generate the default configuration file
     Config command_line{};
     serialize_config(command_line, root_paths.get_base_path() / "data/config/default.yml");
-
+    std::cout << "Config Directory" << root_paths.get_base_path() << std::endl;
     // Load base path configuration by default; otherwise, move the default to the base path
     if (fs::exists(check_path(root_paths.get_base_path())))
         parse(cfg, root_paths.get_base_path(), root_paths.get_pref_path_string());

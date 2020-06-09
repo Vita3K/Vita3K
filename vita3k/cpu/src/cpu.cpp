@@ -40,6 +40,7 @@ struct CPUState {
     DisasmState disasm;
     UnicornPtr uc;
     bool did_break = false;
+    bool did_inject = false;
 };
 
 // Log code for specified threads (arg to create_thread)
@@ -105,10 +106,9 @@ static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
     CPUState &state = *static_cast<CPUState *>(user_data);
 
     uint32_t pc = read_pc(state);
-
-    switch (intno) {
-    case INT_SVC:
-        if (is_thumb_mode(uc)) {
+    auto thumb_mode = is_thumb_mode(uc);
+    if (intno == INT_SVC) {
+        if (thumb_mode) {
             const Address svc_address = pc - 2;
             uint16_t svc_instruction = 0;
             uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
@@ -123,12 +123,20 @@ static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
             const uint32_t imm = svc_instruction & 0xffffff;
             state.call_svc(state, imm, pc);
         }
-        break;
-    case INT_BKPT:
-        stop(state);
-        state.did_break = true;
-        break;
-    default: break;
+    } else if (intno == INT_BKPT) {
+        auto &bks = state.mem->breakpoints;
+        if (bks.find(pc) != bks.end()) {
+            auto bk = bks[pc];
+            stop(state);
+            if (bk.gdb) {
+                state.did_break = true;
+            } else {
+                state.did_inject = true;
+                if (bk.callback) {
+                    bk.callback(state, *state.mem);
+                }
+            }
+        }
     }
 }
 
@@ -159,12 +167,12 @@ static void log_error_details(CPUState &state, uc_err code) {
     for (size_t a = 0; a < 13; a++)
         registers[a] = read_reg(state, a);
 
-    LOG_ERROR("Executing: {}", disassemble(state, pc));
     LOG_ERROR("PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}", pc, sp, lr);
     for (int a = 0; a < 6; a++) {
         LOG_ERROR("r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}", a, registers[a], a + 6, registers[a + 6]);
     }
     LOG_ERROR("r12: 0x{:0>8x}", registers[12]);
+    LOG_ERROR("Executing: {}", disassemble(state, pc));
 }
 
 CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem) {
@@ -215,24 +223,28 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     return state;
 }
 
-int run(CPUState &state, bool callback, Address entry_point) {
-    state.did_break = false;
-    uint32_t pc = read_pc(state);
-    bool thumb_mode = is_thumb_mode(state.uc.get());
-    if (thumb_mode) {
-        pc |= 1;
-    }
-    if (callback) {
-        uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &entry_point);
-    }
-    uc_err err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
-    pc = read_pc(state);
-    thumb_mode = is_thumb_mode(state.uc.get());
-    if (thumb_mode) {
-        pc |= 1;
-    }
-    err = uc_emu_start(state.uc.get(), pc, entry_point & 0xfffffffe, 0, 0);
+int _run_after_injected(CPUState &state, uint32_t pc, bool thumb_mode) {
+    // run the original instruction before injecting bkpt
+    // then, inject the bkpt again
 
+    assert(state.mem->breakpoints.find(pc) != state.mem->breakpoints.end());
+
+    unsigned char original[4];
+    auto bk = state.mem->breakpoints[pc];
+
+    size_t size = thumb_mode ? sizeof(unsigned char[2]) : sizeof(unsigned char[4]);
+
+    std::memcpy(original, &state.mem->memory[pc], size);
+    std::memcpy(&state.mem->memory[pc], bk.data, size);
+
+    uc_err err;
+    if (thumb_mode) {
+        err = uc_emu_start(state.uc.get(), pc | 1, 0, 0, 1);
+    } else {
+        err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
+    }
+
+    std::memcpy(&state.mem->memory[pc], original, size);
     if (err != UC_ERR_OK) {
         log_error_details(state, err);
 #ifdef USE_GDBSTUB
@@ -242,6 +254,44 @@ int run(CPUState &state, bool callback, Address entry_point) {
         return -1;
 #endif
     }
+    return 0;
+}
+
+int run(CPUState &state, bool callback, Address entry_point) {
+    uint32_t pc = read_pc(state);
+    bool thumb_mode = is_thumb_mode(state.uc.get());
+    state.did_break = false;
+    if (state.did_inject && _run_after_injected(state, pc, thumb_mode)) {
+        return -1;
+    }
+    state.did_inject = false;
+
+    pc = read_pc(state);
+    if (thumb_mode) {
+        pc |= 1;
+    }
+    if (callback) {
+        uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &entry_point);
+    }
+
+    uc_err err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
+    pc = read_pc(state);
+    thumb_mode = is_thumb_mode(state.uc.get());
+    if (thumb_mode) {
+        pc |= 1;
+    }
+
+    err = uc_emu_start(state.uc.get(), pc, entry_point & 0xfffffffe, 0, 0);
+    if (err != UC_ERR_OK) {
+        log_error_details(state, err);
+#ifdef USE_GDBSTUB
+        trigger_breakpoint(state);
+        return 0;
+#else
+        return -1;
+#endif
+    }
+
     pc = read_pc(state);
     thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
@@ -254,6 +304,14 @@ int run(CPUState &state, bool callback, Address entry_point) {
 int step(CPUState &state, bool callback, Address entry_point) {
     uint32_t pc = read_pc(state);
     bool thumb_mode = is_thumb_mode(state.uc.get());
+
+    state.did_break = false;
+    if (state.did_inject && _run_after_injected(state, pc, thumb_mode)) {
+        return -1;
+    }
+    state.did_inject = false;
+
+    pc = read_pc(state);
     if (thumb_mode) {
         pc |= 1;
     }
