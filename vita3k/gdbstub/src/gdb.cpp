@@ -27,6 +27,7 @@
 #include <cpu/functions.h>
 #include <kernel/functions.h>
 
+#include <mem/mem.h>
 #include <spdlog/fmt/bundled/printf.h>
 #include <sstream>
 
@@ -147,7 +148,6 @@ static PacketCommand parse_command(char *data, int64_t length) {
 static int64_t server_reply(GDBState &state, const char *data, int64_t length) {
     uint8_t checksum = make_checksum(data, length);
     std::string packet_data = fmt::format("${}#{:0>2x}", std::string(data, length), checksum);
-
     return send(state.client_socket, &packet_data[0], packet_data.size(), 0);
 }
 
@@ -157,23 +157,6 @@ static int64_t server_reply(GDBState &state, const char *text) {
 
 static int64_t server_ack(GDBState &state, char ack = '+') {
     return send(state.client_socket, &ack, 1, 0);
-}
-
-// TODO: Do breakpoints work in thumb code? This is an arm breakpoint.
-constexpr unsigned char breakpoint[] = { 0x70, 0x00, 0x20, 0xe1 };
-
-void add_breakpoint(HostState &state, uint32_t at) {
-    uint32_t last;
-    std::memcpy(&last, &state.mem.memory[at], sizeof(last));
-    std::memcpy(&state.mem.memory[at], breakpoint, sizeof(breakpoint));
-    state.gdb.breakpoints[at] = last;
-}
-
-void remove_breakpoint(HostState &state, uint32_t at) {
-    if (state.gdb.breakpoints.find(at) != state.gdb.breakpoints.end()) {
-        std::memcpy(&state.mem.memory[at], &state.gdb.breakpoints[at], sizeof(uint32_t));
-        state.gdb.breakpoints.erase(at);
-    }
 }
 
 static std::string cmd_supported(HostState &state, PacketCommand &command) {
@@ -354,9 +337,6 @@ static bool check_memory_region(Address address, Address length, MemState &mem) 
     const bool memory_empty = std::find(pages_start, pages_end, empty_page) != pages_end;
     const bool memory_null = std::find(pages_start, pages_end, null_page) != pages_end;
     const bool memory_safe = !(memory_empty || memory_null);
-
-    if (!memory_safe)
-        LOG_GDB("Accessing unsafe memory page. {} - {}", page_first, page_length);
 
     return memory_safe;
 }
@@ -554,7 +534,10 @@ static std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) 
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     LOG_GDB("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
-    add_breakpoint(state, address);
+
+    // kind is 2 if it's thumb mode
+    // https://sourceware.org/gdb/current/onlinedocs/gdb/ARM-Breakpoint-Kinds.html#ARM-Breakpoint-Kinds
+    add_breakpoint(state.mem, true, kind == 2, address, nullptr);
 
     return "OK";
 }
@@ -569,7 +552,7 @@ static std::string cmd_remove_breakpoint(HostState &state, PacketCommand &comman
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     LOG_GDB("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
-    remove_breakpoint(state, address);
+    remove_breakpoint(state.mem, address);
 
     return "OK";
 }
@@ -687,11 +670,10 @@ static int64_t server_next(HostState &state) {
 
             PacketCommand command = parse_command(buffer + a, length - a);
             if (command.is_valid) {
-                std::string debug_func_name = "INVALID FUNC";
-
                 for (const auto &function : functions) {
                     if (command_begins_with(command, function.name)) {
-                        debug_func_name = function.name;
+                        LOG_GDB("GDB Server Recognized Command as {}. {}", function.name,
+                            std::string(command.content_start, command.content_length));
                         state.gdb.last_reply = function.function(state, command);
                         if (state.gdb.server_die)
                             break;
@@ -699,11 +681,10 @@ static int64_t server_next(HostState &state) {
                         break;
                     }
                 }
+                LOG_GDB("GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
 
                 a += command.content_length + 3;
 
-                LOG_GDB_DEBUG("GDB Server Recognized Command as {}. {}", debug_func_name,
-                    std::string(command.content_start, command.content_length));
             } else {
                 server_ack(state.gdb, '-');
 
