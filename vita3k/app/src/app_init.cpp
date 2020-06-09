@@ -143,7 +143,24 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
-    if (!state.window || !init(state.mem) || !init(state.audio, resume_thread) || !init(state.io, state.base_path, state.pref_path)) {
+
+    if (!state.window) {
+        LOG_ERROR("SDL failed to create window!");
+        return false;
+    }
+
+    if (!init(state.mem)) {
+        LOG_ERROR("Failed to initialize memory for emulator state!");
+        return false;
+    }
+
+    if (!init(state.audio, resume_thread)) {
+        LOG_ERROR("Failed to init audio! Your computer probably does not have an audio device.");
+        return false;
+    }
+
+    if (!init(state.io, state.base_path, state.pref_path)) {
+        LOG_ERROR("Failed to initialize file system for the emulator!");
         return false;
     }
 
