@@ -3,6 +3,7 @@ add_library(
 	STATIC
 	include/host/app_util.h
 	include/host/functions.h
+	include/host/import_var.h
 	include/host/import_fn.h
 	include/host/load_self.h
 	include/host/pkg.h
