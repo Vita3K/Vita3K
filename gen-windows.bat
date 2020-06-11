@@ -28,4 +28,9 @@ IF "%CI%"=="" (
 ) ELSE (
 	call cmake -G "%vs_version%" -DCI:BOOL=ON -DCMAKE_CONFIGURATION_TYPES=%CONFIGURATION% ..
 )
+
+IF NOT DEFINED CI ( 
+	set /p selection="Do you want to build?(Y/n)" 
+	IF "%selection%"=="Y" (MSBuild Vita3k.sln /p:Configuration=Release /p:Platform=x64)
+	)
 popd
