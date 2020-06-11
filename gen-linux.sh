@@ -23,7 +23,17 @@ if [ "$CLANG" ]; then
 	cmake_args="-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++"
 fi
 
+pushd .
+
 # Generate project files
 mkdir -p build-linux
 cd build-linux
 cmake .. -GNinja ${cmake_args}
+
+if [[ -z "${CI}" ]]; then
+	read -p "Do you want to build?(Y/n)" selection
+	if [ "${selection}"=="Y" ]; then
+		ninja
+	fi
+	popd
+fi
