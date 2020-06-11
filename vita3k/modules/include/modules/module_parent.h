@@ -18,8 +18,8 @@
 #pragma once
 
 #include <kernel/types.h>
-#include <util/types.h>
 #include <module/module.h>
+#include <util/types.h>
 
 struct CPUState;
 struct HostState;
@@ -34,14 +34,14 @@ std::string resolve_nid_name(KernelState &kernel, Address addr);
 struct VarExport {
     uint32_t nid;
     ImportVarFactory factory;
-    const char* name;
+    const char *name;
 };
 
 constexpr int var_exports_size =
-#define NID(name,nid)
+#define NID(name, nid)
 #define VAR_NID(name, nid) 1 +
 #include <nids/nids.h>
-0;
+    0;
 #undef VAR_NID
 #undef NID
 
