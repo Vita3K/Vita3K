@@ -3,7 +3,17 @@ name: C/C++ CI
 on: [push, pull_request]
 
 jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Format check
+        run: bash .github/format-check.sh
+
   build:
+    needs: format-check
     runs-on: ${{ matrix.os }}
 
     strategy:
