@@ -17,32 +17,10 @@
 
 #pragma once
 
-#include <kernel/types.h>
 #include <util/types.h>
-#include <module/module.h>
 
-struct CPUState;
+#include <functional>
+
 struct HostState;
-struct KernelState;
 
-void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
-bool load_module(HostState &host, SceSysmoduleModuleId module_id);
-Address resolve_export(KernelState &kernel, uint32_t nid);
-uint32_t resolve_nid(KernelState &kernel, Address addr);
-std::string resolve_nid_name(KernelState &kernel, Address addr);
-
-struct VarExport {
-    uint32_t nid;
-    ImportVarFactory factory;
-    const char* name;
-};
-
-constexpr int var_exports_size =
-#define NID(name,nid)
-#define VAR_NID(name, nid) 1 +
-#include <nids/nids.h>
-0;
-#undef VAR_NID
-#undef NID
-
-extern const VarExport var_exports[var_exports_size];
+using ImportVarFactory = std::function<Address(HostState &host)>;

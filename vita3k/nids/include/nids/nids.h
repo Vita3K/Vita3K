@@ -5971,7 +5971,7 @@ NID(sceKernelPerfArmPmonStart, 0xAAE516BC)
 NID(sceKernelPerfArmPmonStop, 0xA42BDD17)
 // Module "ScePerf"
 // Library "ScePerf"
-NID(_pLibPerfCaptureFlagPtr, 0x936A5F31)
+VAR_NID(_pLibPerfCaptureFlagPtr, 0x936A5F31)
 NID(_sceCpuRazorPopFiberUserMarker, 0x453AED06)
 NID(_sceCpuRazorPushFiberUserMarker, 0x8F7B522C)
 NID(_sceRazorCpuInit, 0x7AD6AC30)

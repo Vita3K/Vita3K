@@ -175,11 +175,6 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
 
     state.kernel.base_tick = { rtc_base_ticks() };
     
-    for (const auto& var: hle_var_export) {
-        auto addr = alloc(state.mem, var.size, var.name);
-        state.kernel.export_nids.emplace(var.nid, addr);
-    }
-    
     if (renderer::init(state.window, state.renderer, backend)) {
         update_viewport(state);
         return true;

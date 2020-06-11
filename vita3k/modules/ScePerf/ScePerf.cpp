@@ -17,8 +17,12 @@
 
 #include "ScePerf.h"
 
-EXPORT(int, _pLibPerfCaptureFlagPtr) {
-    return UNIMPLEMENTED();
+VAR_EXPORT(_pLibPerfCaptureFlagPtr) {
+    auto ptr = Ptr<uint32_t>(alloc(host.mem, 4, "_pLibPerfCaptureFlagPtr"));
+    auto flag = Ptr<uint32_t>(alloc(host.mem, 4, "_pLibPerfCaptureFlag"));
+    *ptr.get(host.mem) = flag.address();
+    *flag.get(host.mem) = 0;
+    return ptr.address();
 }
 
 EXPORT(int, _sceCpuRazorPopFiberUserMarker) {
@@ -125,7 +129,7 @@ EXPORT(int, sceRazorCpuSync) {
     return UNIMPLEMENTED();
 }
 
-BRIDGE_IMPL(_pLibPerfCaptureFlagPtr)
+VAR_BRIDGE_IMPL(_pLibPerfCaptureFlagPtr)
 BRIDGE_IMPL(_sceCpuRazorPopFiberUserMarker)
 BRIDGE_IMPL(_sceCpuRazorPushFiberUserMarker)
 BRIDGE_IMPL(_sceRazorCpuInit)

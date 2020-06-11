@@ -31,3 +31,8 @@ int stubbed_impl(const char *name, const char *info);
 #define BRIDGE_IMPL(name) const ImportFn import_##name = bridge(&export_##name, #name);
 
 #define EXPORT(ret, name, ...) ret export_##name(HostState &host, SceUID thread_id, const char *export_name, ##__VA_ARGS__)
+
+#define VAR_BRIDGE_DECL(name) extern const ImportVarFactory import_##name;
+#define VAR_BRIDGE_IMPL(name) const ImportVarFactory import_##name = export_##name;
+
+#define VAR_EXPORT(name) Address export_##name(HostState &host)

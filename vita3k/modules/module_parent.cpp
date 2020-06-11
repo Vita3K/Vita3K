@@ -18,6 +18,7 @@
 #include <modules/module_parent.h>
 
 #include <cpu/functions.h>
+#include <host/import_var.h>
 #include <host/import_fn.h>
 #include <host/load_self.h>
 #include <host/state.h>
@@ -33,21 +34,40 @@
 
 static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
+#define VAR_NID(name, nid) extern const ImportVarFactory import_##name;
 #define NID(name, nid) extern const ImportFn import_##name;
 #include <nids/nids.h>
 #undef NID
+#undef VAR_NID
+
+struct HostState;
 
 static ImportFn resolve_import(uint32_t nid) {
     switch (nid) {
+#define VAR_NID(name, nid)
 #define NID(name, nid) \
     case nid:          \
         return import_##name;
 #include <nids/nids.h>
 #undef NID
+#undef VAR_NID
     }
 
     return ImportFn();
 }
+
+const VarExport var_exports[var_exports_size] = {
+#define NID(name, nid)
+#define VAR_NID(name, nid) \
+    {  \
+        nid, \
+        import_##name, \
+        #name \
+    },
+#include <nids/nids.h>
+#undef VAR_NID
+#undef NID
+};
 
 /**
  * \brief Resolves a function imported from a loaded module.
