@@ -23,9 +23,9 @@
 #include <gui/imgui_impl_sdl.h>
 #include <host/state.h>
 #include <io/functions.h>
-#include <renderer/functions.h>
-#include <nids/functions.h>
 #include <mem/mem.h>
+#include <nids/functions.h>
+#include <renderer/functions.h>
 #include <rtc/rtc.h>
 #include <util/fs.h>
 #include <util/lock_and_find.h>
@@ -174,7 +174,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
 #endif
 
     state.kernel.base_tick = { rtc_base_ticks() };
-    
+
     if (renderer::init(state.window, state.renderer, backend)) {
         update_viewport(state);
         return true;

@@ -9,7 +9,7 @@
 const char *import_name(uint32_t nid) {
     switch (nid) {
 #define VAR_NID(name, nid) \
-    case nid:          \
+    case nid:              \
         return name_##name;
 #define NID(name, nid) \
     case nid:          \
