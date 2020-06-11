@@ -142,11 +142,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     // Grouped options
     auto input = app.add_option_group("Input", "Special options for Vita3K");
     input->add_option("--installed-id,-r", command_line.run_title_id, "Title ID of installed app to run")
-        ->default_str({})->check(CLI::IsMember(get_file_set(root_paths.get_pref_path() / "ux0/app")))->group("Input");
+        ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
-        ->default_str({})->check(CLI::IsMember(get_file_set(root_paths.get_pref_path() / "ux0/app")))->group("Input");
+        ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
     auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path of app in .pkg format to install")
         ->default_str({})->group("Input");
     auto input_zrif = input->add_option("--zrif", command_line.pkg_zrif, "zrif for the app in .pkg format")
