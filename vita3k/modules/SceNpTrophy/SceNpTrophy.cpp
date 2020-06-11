@@ -37,7 +37,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
     }
 
     np::NpTrophyError err = np::NpTrophyError::TROPHY_ERROR_NONE;
-    *context = create_trophy_context(host.np, host.io, host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg.sys_lang),
+    *context = create_trophy_context(host.np, &host.io, host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg.sys_lang),
         &err);
 
     if (*context == np::trophy::INVALID_CONTEXT_HANDLE) {
@@ -84,43 +84,6 @@ EXPORT(int, sceNpTrophyDestroyHandle, SceNpTrophyHandle handle) {
     return 0;
 }
 
-static int copy_file_data_from_trophy_file(np::trophy::Context *context, const char *filename, void *buffer,
-    SceSize *size) {
-    // Search for ICON0.PNG in the trophy file
-    const std::int32_t file_index = context->trophy_file.search_file(filename);
-
-    if (file_index == -1) {
-        return SCE_NP_TROPHY_ERROR_ICON_FILE_NOT_FOUND;
-    }
-
-    if (!buffer) {
-        // Set the needed size for the target buffer
-        *size = static_cast<SceSize>(context->trophy_file.entries[file_index].size);
-        return 0;
-    }
-
-    // Do buffer copy
-    *size = std::min<SceSize>(static_cast<SceSize>(context->trophy_file.entries[file_index].size),
-        *size);
-
-    std::uint32_t size_left = *size;
-
-    context->trophy_file.get_entry_data(static_cast<std::uint32_t>(file_index), [&](void *source, std::uint32_t source_size) -> bool {
-        if (size_left == 0) {
-            return false;
-        }
-
-        source_size = std::min<std::uint32_t>(size_left, source_size);
-        std::copy(reinterpret_cast<std::uint8_t *>(source), reinterpret_cast<std::uint8_t *>(source) + source_size,
-            reinterpret_cast<std::uint8_t *>(buffer));
-
-        buffer = reinterpret_cast<std::uint8_t *>(buffer) + source_size;
-        return true;
-    });
-
-    return 0;
-}
-
 #define NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)                                       \
     if (!host.np.trophy_state.inited) {                                                      \
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;                                          \
@@ -136,7 +99,7 @@ static int copy_file_data_from_trophy_file(np::trophy::Context *context, const c
 EXPORT(int, sceNpTrophyGetGameIcon, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     void *buffer, SceSize *size) {
     NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)
-    return copy_file_data_from_trophy_file(context, "ICON0.PNG", buffer, size);
+    return context->copy_file_data_from_trophy_file("ICON0.PNG", buffer, size);
 }
 
 EXPORT(int, sceNpTrophyGetGameInfo) {
@@ -162,7 +125,7 @@ EXPORT(int, sceNpTrophyGetTrophyIcon, np::trophy::ContextHandle context_handle, 
 
     // Make filename
     const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
-    return copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), buffer, size);
+    return context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), buffer, size);
 }
 
 EXPORT(int, sceNpTrophyGetTrophyInfo) {
@@ -223,7 +186,7 @@ static void trophy_unlocked(const NpTrophyUnlockCallbackData &callback_data, con
 static int do_trophy_callback(HostState &host, np::trophy::Context *context, SceNpTrophyID trophy_id) {
     NpTrophyUnlockCallbackData callback_data;
 
-    if (context->trophy_kinds[trophy_id] == np::trophy::TrophyType::INVALID) {
+    if (context->trophy_kinds[trophy_id] == np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_UNKNOWN) {
         // Yes this ID is not present. So return INVALID_ID
         return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
     }
@@ -241,10 +204,10 @@ static int do_trophy_callback(HostState &host, np::trophy::Context *context, Sce
 
         // Make filename
         const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
-        copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), nullptr, &buf_size);
+        context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), nullptr, &buf_size);
 
         callback_data.icon_buf.resize(buf_size);
-        copy_file_data_from_trophy_file(context, trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
+        context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
 
         host.np.trophy_state.trophy_unlock_callback(callback_data);
     }

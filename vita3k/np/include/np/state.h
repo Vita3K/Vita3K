@@ -36,7 +36,7 @@ typedef std::map<int, SceNpServiceStateCallback> np_callbacks;
 struct NpTrophyUnlockCallbackData {
     std::string trophy_name;
     std::string description;
-    np::trophy::TrophyType trophy_kind;
+    np::trophy::SceNpTrophyGrade trophy_kind;
     std::vector<std::uint8_t> icon_buf;
 };
 
