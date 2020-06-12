@@ -35,6 +35,10 @@ struct SDL_Thread;
 
 struct WatchMemory;
 
+struct InitialFiber;
+
+typedef std::vector<InitialFiber> InitialFibers;
+
 typedef std::shared_ptr<SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
 typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
@@ -269,6 +273,14 @@ typedef std::map<SceUID, TimerPtr> TimerStates;
 
 using LoadedSysmodules = std::vector<SceSysmoduleModuleId>;
 
+struct SceFiber;
+
+struct InitialFiber {
+    Address start;
+    Address end;
+    SceFiber *fiber;
+};
+
 struct WatchMemory {
     Address start;
     size_t size;
@@ -298,6 +310,7 @@ struct KernelState {
     NotFoundVars not_found_vars;
     WatchMemoryAddrs watch_memory_addrs;
 
+    InitialFibers initial_fibers;
     SceRtcTick base_tick;
     DecoderStates decoders;
     PlayerStates players;
