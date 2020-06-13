@@ -717,8 +717,12 @@ EXPORT(int, sceKernelResumeThreadForVM) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSendSignal) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
+    STUBBED("sceKernelSendSignal");
+    const auto thread = lock_and_find(target_thread_id, host.kernel.threads, host.kernel.mutex);
+    LOG_TRACE("signaling thread {}", target_thread_id);
+    thread->signal.notify();
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelSetEvent) {
