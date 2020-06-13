@@ -31,27 +31,16 @@ struct CPUContext;
 template <typename T>
 class Resource;
 
-struct InitialFiber;
-
 typedef Resource<Address> ThreadStack;
 typedef std::shared_ptr<ThreadStack> ThreadStackPtr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
-typedef std::vector<InitialFiber> InitialFibers;
 
 enum class ThreadToDo {
     exit,
     run,
     step,
     wait,
-};
-
-struct SceFiber;
-
-struct InitialFiber {
-    Address start;
-    Address end;
-    SceFiber *fiber;
 };
 
 struct ThreadState {
@@ -61,7 +50,6 @@ struct ThreadState {
     CPUStatePtr cpu;
     CPUContextPtr cpu_context;
     Ptr<void> fiber;
-    InitialFibers initial_fibers;
     ThreadToDo to_do = ThreadToDo::run;
     std::mutex mutex;
     sync_utils::Semaphore signal;
