@@ -124,8 +124,8 @@ EXPORT(int, sceKernelIsGameBudget) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelLibcClock) {
-    return UNIMPLEMENTED();
+EXPORT(VitaTime, sceKernelLibcClock) {
+    return rtc_get_ticks(host.kernel.base_tick.tick) - rtc_get_ticks(host.kernel.start_tick.tick);
 }
 
 EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAddr) {

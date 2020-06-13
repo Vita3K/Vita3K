@@ -298,6 +298,7 @@ struct KernelState {
     NotFoundVars not_found_vars;
     WatchMemoryAddrs watch_memory_addrs;
 
+    SceRtcTick start_tick;
     SceRtcTick base_tick;
     DecoderStates decoders;
     PlayerStates players;
