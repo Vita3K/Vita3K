@@ -311,6 +311,7 @@ struct KernelState {
     WatchMemoryAddrs watch_memory_addrs;
 
     InitialFibers initial_fibers;
+    SceRtcTick start_tick;
     SceRtcTick base_tick;
     DecoderStates decoders;
     PlayerStates players;

@@ -1557,8 +1557,28 @@ EXPORT(int, sceKernelWaitSemaCB, SceUID semaid, int signal, SceUInt *timeout) {
     return semaphore_wait(host.kernel, export_name, thread_id, semaid, signal, timeout);
 }
 
-EXPORT(int, sceKernelWaitSignal) {
-    return UNIMPLEMENTED();
+// TODO figure out more about this struct
+struct SceKernelWaitSignalResult {
+    Address tls_address;
+    uint32_t dret;
+};
+
+// TODO figure out more about this struct
+struct SceKernelWaitSignalParams {
+    uint32_t reserved[2];
+    Ptr<SceKernelWaitSignalResult> result_ptr;
+};
+
+EXPORT(int, sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout, SceKernelWaitSignalParams *params) {
+    STUBBED("sceKernelWaitSignal");
+    const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    LOG_TRACE("thread {} is waiting to get signaled", thread_id);
+    thread->signal.wait();
+    LOG_TRACE("thread {} gets signaled", thread_id);
+    if (params != nullptr) {
+        params->result_ptr.get(host.mem)->dret = 0;
+    }
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelWaitSignalCB) {
