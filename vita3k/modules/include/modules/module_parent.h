@@ -45,4 +45,4 @@ constexpr int var_exports_size =
 #undef VAR_NID
 #undef NID
 
-extern const VarExport var_exports[var_exports_size];
+const std::array<VarExport, var_exports_size> &get_var_exports();
