@@ -56,7 +56,8 @@ static ImportFn resolve_import(uint32_t nid) {
     return ImportFn();
 }
 
-const VarExport var_exports[var_exports_size] = {
+const std::array<VarExport, var_exports_size> &get_var_exports() {
+    static std::array<VarExport, var_exports_size> var_exports = {
 #define NID(name, nid)
 #define VAR_NID(name, nid) \
     {                      \
@@ -67,7 +68,9 @@ const VarExport var_exports[var_exports_size] = {
 #include <nids/nids.h>
 #undef VAR_NID
 #undef NID
-};
+    };
+    return var_exports;
+}
 
 /**
  * \brief Resolves a function imported from a loaded module.

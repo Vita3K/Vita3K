@@ -265,7 +265,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     init_device_paths(host.io);
     init_savedata_game_path(host.io, host.pref_path);
 
-    for (const auto &var : var_exports) {
+    for (const auto &var : get_var_exports()) {
         auto addr = var.factory(host);
         host.kernel.export_nids.emplace(var.nid, addr);
     }
