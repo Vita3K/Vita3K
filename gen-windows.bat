@@ -34,3 +34,4 @@ IF NOT DEFINED CI (
 	IF "%selection%"=="Y" (MSBuild Vita3k.sln /p:Configuration=Release /p:Platform=x64)
 	)
 popd
+

@@ -15,7 +15,18 @@ if [[ -z "${CI}" ]]; then
 	cd ../..
 fi
 
+pushd .
+
 # Generate project files
 mkdir -p build-macos
 cd build-macos
 cmake -G Xcode ..
+
+if [[ -z "${CI}" ]]; then
+	read -p "Do you want to build?(Y/n)" selection	
+	if [ "${selection}"=="Y" ]; then
+		xcodebuild -scheme ALL_BUILD -configuration Release build	
+	fi
+	popd
+fi
+
