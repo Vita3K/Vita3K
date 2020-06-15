@@ -45,8 +45,11 @@ EXPORT(int, sceFiosKernelOverlayResolveSync02) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceFiosKernelOverlayResolveWithRangeSync02) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceFiosKernelOverlayResolveWithRangeSync02, SceUID pid, int resolveFlag, const char *pInPath, sceFiosKernelOverlayResolveWithRangeSync02_opt *opt) {
+    STUBBED("Using strncpy");
+    strncpy(opt->pOutPath.get(host.mem), pInPath, opt->maxPath);
+
+    return 0;
 }
 
 EXPORT(int, sceFiosKernelOverlayThreadIsDisabled02) {

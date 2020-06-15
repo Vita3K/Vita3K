@@ -19,6 +19,19 @@
 
 #include <module/module.h>
 
+struct sceFiosKernelOverlayResolveWithRangeSync_opt {
+    Ptr<char> pOutPath;
+    SceSize maxPath;
+    char loOrderFilter;
+    char hiOrderFilter;
+    char reserved1;
+    char reserved2;
+    int reserved3;
+    int reserved4;
+    int reserved5;
+    int reserved6;
+};
+
 BRIDGE_DECL(_sceFiosKernelOverlayAdd)
 BRIDGE_DECL(_sceFiosKernelOverlayAddForProcess)
 BRIDGE_DECL(_sceFiosKernelOverlayDHChstatSync)
