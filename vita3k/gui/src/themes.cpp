@@ -318,7 +318,7 @@ void get_themes_list(GuiState &gui, HostState &host) {
 
                 themes_info[content_id].updated = fmt::format("{}/{}/{}  {:0>2d}:{:0>2d}", updated_date->tm_mday, updated_date->tm_mon + 1, updated_date->tm_year + 1900, updated_date->tm_hour, updated_date->tm_min).c_str();
 
-                themes_info[content_id].size = theme_size / 1024;
+                themes_info[content_id].size = theme_size / KB(1);
                 themes_info[content_id].version = infomation.child("m_contentVer").text().as_string();
 
                 themes_list.push_back({ content_id, updated });

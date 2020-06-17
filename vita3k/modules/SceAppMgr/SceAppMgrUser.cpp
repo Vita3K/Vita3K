@@ -356,7 +356,7 @@ EXPORT(SceInt32, sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[],
                 while (argv[size_argv].get(host.mem))
                     ++size_argv;
 
-                if (size_argv > 1024)
+                if (size_argv > KB(1))
                     return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
             }
 
