@@ -85,8 +85,13 @@ EXPORT(int, _sceKernelCreateMsgPipeWithLR) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelCreateMutex) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
+    SceUID uid;
+
+    if (auto error = mutex_create(&uid, host.kernel, export_name, name, thread_id, attr, init_count, SyncWeight::Heavy)) {
+        return error;
+    }
+    return uid;
 }
 
 EXPORT(int, _sceKernelCreateRWLock) {
@@ -109,8 +114,10 @@ EXPORT(int, _sceKernelCreateTimer) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelDeleteLwCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
+    SceUID lightweight_condition_id = workarea.get(host.mem)->uid;
+
+    return condvar_delete(host.kernel, export_name, thread_id, lightweight_condition_id, SyncWeight::Light);
 }
 
 EXPORT(int, _sceKernelDeleteLwMutex) {
@@ -297,8 +304,10 @@ EXPORT(int, _sceKernelSetTimerTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelSignalLwCond) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelSignalLwCond, Ptr<SceKernelLwCondWork> workarea) {
+    SceUID condid = workarea.get(host.mem)->uid;
+    return condvar_signal(host.kernel, export_name, thread_id, condid,
+        Condvar::SignalTarget(Condvar::SignalTarget::Type::Any), SyncWeight::Light);
 }
 
 EXPORT(int, _sceKernelSignalLwCondAll) {
@@ -345,8 +354,9 @@ EXPORT(int, _sceKernelWaitEventFlag) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelWaitEventFlagCB) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelWaitEventFlagCB, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout) {
+    STUBBED("no CB");
+    return eventflag_wait(host.kernel, export_name, thread_id, event_id, flags, wait, outBits, timeout);
 }
 
 EXPORT(int, _sceKernelWaitException) {
@@ -381,8 +391,16 @@ EXPORT(int, _sceKernelWaitSemaCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelWaitSignal) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout, SceKernelWaitSignalParams *params) {
+    STUBBED("sceKernelWaitSignal");
+    const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    LOG_TRACE("thread {} is waiting to get signaled", thread_id);
+    thread->signal.wait();
+    LOG_TRACE("thread {} gets signaled", thread_id);
+    if (params != nullptr) {
+        params->result_ptr.get(host.mem)->dret = 0;
+    }
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelWaitSignalCB) {

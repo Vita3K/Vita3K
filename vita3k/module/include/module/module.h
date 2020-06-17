@@ -30,6 +30,8 @@ int stubbed_impl(const char *name, const char *info);
 #define BRIDGE_DECL(name) extern const ImportFn import_##name;
 #define BRIDGE_IMPL(name) const ImportFn import_##name = bridge(&export_##name, #name);
 
+#define CALL_EXPORT(name, ...) export_##name(host, thread_id, #name, ##__VA_ARGS__)
+
 #define EXPORT(ret, name, ...) ret export_##name(HostState &host, SceUID thread_id, const char *export_name, ##__VA_ARGS__)
 
 #define VAR_BRIDGE_DECL(name) extern const ImportVarFactory import_##name;

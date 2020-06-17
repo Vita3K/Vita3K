@@ -48,9 +48,7 @@ struct SceAppMgrSaveDataData {
 };
 
 EXPORT(SceInt32, _sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion) {
-    memset(appState, 0, sizeofSceAppMgrAppState);
-
-    return STUBBED("Set to 0.");
+    return CALL_EXPORT(__sceAppMgrGetAppState, appState, sizeofSceAppMgrAppState, buildVersion);
 }
 
 EXPORT(int, sceAppMgrAcidDirSet) {
@@ -85,14 +83,8 @@ EXPORT(int, sceAppMgrAppParamGetInt) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
-    std::string res;
-    if (!sfo::get_data_by_id(res, host.sfo_handle, param)) {
-        return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
-    } else {
-        res.copy(string, length);
-        return 0;
-    }
+EXPORT(SceInt32, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
+    return CALL_EXPORT(_sceAppMgrAppParamGetString, pid, param, string, length);
 }
 
 EXPORT(int, sceAppMgrAppParamSetString) {
@@ -337,74 +329,7 @@ EXPORT(int, sceAppMgrLaunchVideoStreamingApp) {
 }
 
 EXPORT(SceInt32, sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[], const SceAppMgrLoadExecOptParam *optParam) {
-    if (optParam)
-        return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
-
-    // Create exec path
-    auto exec_path = static_cast<std::string>(appPath);
-    if (exec_path.find("app0:/") != std::string::npos)
-        exec_path.erase(0, 6);
-    else
-        exec_path.erase(0, 5);
-
-    // Load exec executable
-    vfs::FileBuffer exec_buffer;
-    if (vfs::read_app_file(exec_buffer, host.pref_path, host.io.title_id, exec_path)) {
-        Ptr<const void> exec_entry_point;
-        const auto exec_id = load_self(exec_entry_point, host.kernel, host.mem, exec_buffer.data(), appPath, host.cfg);
-        if (exec_id >= 0) {
-            const auto exec_load = host.kernel.loaded_modules[exec_id];
-
-            LOG_INFO("Exec executable {} ({}) loaded", exec_load->module_name, exec_path);
-
-            auto inject = create_cpu_dep_inject(host);
-            // Init exec thread
-            const auto exec_thread_id = create_thread(exec_entry_point, host.kernel, host.mem, exec_load->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
-                inject, nullptr);
-
-            if (exec_thread_id < 0) {
-                LOG_ERROR("Failed to init exec thread.");
-                return RET_ERROR(exec_thread_id);
-            }
-
-            // Init size of argv
-            SceSize size_argv = 0;
-            if (argv && argv->get(host.mem)) {
-                while (argv[size_argv].get(host.mem))
-                    ++size_argv;
-
-                if (size_argv > KB(1))
-                    return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
-            }
-
-            // Start exec thread
-            const auto exec = start_thread(host.kernel, exec_thread_id, size_argv, argv ? Ptr<void>(*argv) : Ptr<void>());
-            if (exec < 0) {
-                LOG_ERROR("Failed to run exec thread.");
-                return RET_ERROR(exec);
-            }
-
-            LOG_INFO("Exec {} (at \"{}\") start_exec returned {}", exec_load->module_name, exec_load->path, log_hex(exec));
-
-            // Erase current module/thread
-            // TODO Unload and Erase it inside memory
-            auto run_exec_thread = util::find(exec_thread_id, host.kernel.running_threads);
-            host.kernel.running_threads[thread_id].swap(run_exec_thread);
-            host.kernel.running_threads.erase(thread_id);
-
-            auto exec_thread = util::find(exec_thread_id, host.kernel.threads);
-            host.kernel.threads[thread_id].swap(exec_thread);
-            host.kernel.threads.erase(thread_id);
-
-            host.kernel.loaded_modules.erase(thread_id - 1);
-
-            return 0;
-        }
-
-        return RET_ERROR(SCE_APPMGR_ERROR_STATE);
-    }
-
-    return RET_ERROR(SCE_APPMGR_ERROR_INVALID_SELF_PATH);
+    return CALL_EXPORT(_sceAppMgrLoadExec, appPath, argv, optParam);
 }
 
 EXPORT(int, sceAppMgrLoadSaveDataSystemFile) {

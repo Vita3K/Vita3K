@@ -19,6 +19,20 @@
 
 #include <module/module.h>
 
+// TODO figure out more about this struct
+struct SceKernelWaitSignalResult {
+    Address tls_address;
+    uint32_t dret;
+};
+
+// TODO figure out more about this struct
+struct SceKernelWaitSignalParams {
+    uint32_t reserved[2];
+    Ptr<SceKernelWaitSignalResult> result_ptr;
+};
+
+EXPORT(int, _sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout, SceKernelWaitSignalParams *params);
+
 BRIDGE_DECL(__sceKernelCreateLwMutex)
 BRIDGE_DECL(_sceKernelCancelEvent)
 BRIDGE_DECL(_sceKernelCancelEventFlag)

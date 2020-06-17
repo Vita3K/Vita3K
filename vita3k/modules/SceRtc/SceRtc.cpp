@@ -17,12 +17,35 @@
 
 #include "SceRtc.h"
 
-EXPORT(int, _sceRtcConvertLocalTimeToUtc) {
-    return UNIMPLEMENTED();
+#include <rtc/rtc.h>
+
+#include <chrono>
+#include <ctime>
+
+#define VITA_CLOCKS_PER_SEC 1000000
+
+EXPORT(int, _sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc) {
+    if (pUtc == nullptr || pLocalTime == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+    std::time_t t = std::time(nullptr);
+    std::time_t local = std::mktime(std::localtime(&t));
+    std::time_t gmt = std::mktime(std::gmtime(&t));
+    pUtc->tick = pLocalTime->tick - (local - gmt) * VITA_CLOCKS_PER_SEC;
+
+    return 0;
 }
 
-EXPORT(int, _sceRtcConvertUtcToLocalTime) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pLocalTime) {
+    if (pUtc == nullptr || pLocalTime == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+
+    std::time_t t = std::time(nullptr);
+    std::time_t local = std::mktime(std::localtime(&t));
+    std::time_t gmt = std::mktime(std::gmtime(&t));
+    pLocalTime->tick = pUtc->tick + (local - gmt) * VITA_CLOCKS_PER_SEC;
+    return 0;
 }
 
 EXPORT(int, _sceRtcFormatRFC2822) {
@@ -45,12 +68,28 @@ EXPORT(int, _sceRtcGetCurrentAdNetworkTick) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceRtcGetCurrentClock) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone) {
+    if (datePtr == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+
+    uint64_t tick = rtc_get_ticks(host.kernel.base_tick.tick) + iTimeZone * 60 * 60 * VITA_CLOCKS_PER_SEC;
+    __RtcTicksToPspTime(datePtr, tick);
+
+    return 0;
 }
 
-EXPORT(int, _sceRtcGetCurrentClockLocalTime) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
+    if (datePtr == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+
+    std::time_t t = std::time(nullptr);
+    std::time_t local = std::mktime(std::localtime(&t));
+    std::time_t gmt = std::mktime(std::gmtime(&t));
+    uint64_t tick = rtc_get_ticks(host.kernel.base_tick.tick) + (local - gmt) * VITA_CLOCKS_PER_SEC;
+    __RtcTicksToPspTime(datePtr, tick);
+    return 0;
 }
 
 EXPORT(int, _sceRtcGetCurrentDebugNetworkTick) {
@@ -61,16 +100,28 @@ EXPORT(int, _sceRtcGetCurrentGpsTick) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceRtcGetCurrentNetworkTick) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
+    if (tick == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+
+    tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
+
+    return 0;
 }
 
 EXPORT(int, _sceRtcGetCurrentRetainedNetworkTick) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceRtcGetCurrentTick) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceRtcGetCurrentTick, SceRtcTick *tick) {
+    if (tick == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+
+    tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
+
+    return 0;
 }
 
 EXPORT(int, _sceRtcGetLastAdjustedTick) {
