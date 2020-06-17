@@ -53,10 +53,10 @@ struct DisplayState {
 };
 
 struct HostState {
-    std::string game_version;
-    std::string game_category;
-    std::string game_short_title;
-    std::string game_title;
+    std::string app_version;
+    std::string app_category;
+    std::string app_short_title;
+    std::string app_title;
     std::string base_path;
     std::string default_path;
     std::string pref_path;

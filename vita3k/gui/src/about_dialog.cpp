@@ -38,6 +38,7 @@ void draw_about_dialog(GuiState &gui) {
     const float height = static_cast<float>(ImGui::GetWindowHeight() / 1.35);
 
     ImGui::SetNextWindowSize(ImVec2(width, height));
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("About", &gui.help_menu.about_dialog);
 
     ImGui::Text("%s", window_title);

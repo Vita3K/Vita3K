@@ -48,11 +48,11 @@ static void remapper_button(GuiState &gui, HostState &host, int *button, const c
     ImGui::Dummy(dummy_size);
     ImGui::SameLine();
     if (ImGui::Button(SDL_key_to_string[*button])) {
-        gui.controls_menu.old_captured_key = *button;
-        gui.controls_menu.is_capturing_keys = true;
-        while (gui.controls_menu.is_capturing_keys) {
+        gui.old_captured_key = *button;
+        gui.is_capturing_keys = true;
+        while (gui.is_capturing_keys) {
             handle_events(host, gui);
-            *button = gui.controls_menu.captured_key;
+            *button = gui.captured_key;
             if (*button < 0 || *button > 231)
                 *button = 0;
         }

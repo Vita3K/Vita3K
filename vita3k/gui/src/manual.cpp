@@ -35,19 +35,16 @@ bool init_manual(GuiState &gui, HostState &host) {
     current_page = 0;
     if (gui.manuals.find(host.io.title_id) == gui.manuals.end()) {
         std::vector<std::string> manual_page_list;
-        const auto game_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
+        const auto app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
         auto manual_path{ fs::path("sce_sys/manual/") };
 
-        if (fs::exists(game_path / manual_path / fmt::format("{:0>2d}", host.cfg.sys_lang)))
+        if (fs::exists(app_path / manual_path / fmt::format("{:0>2d}", host.cfg.sys_lang)))
             manual_path /= fmt::format("{:0>2d}/", host.cfg.sys_lang);
 
-        if (fs::exists(game_path / manual_path) && !fs::is_empty(game_path / manual_path)) {
-            fs::directory_iterator end;
-            const std::string ext = ".png";
-            for (fs::directory_iterator m(game_path / manual_path); m != end; ++m) {
-                const fs::path page_manual = *m;
-                if (m->path().extension() == ext) {
-                    manual_page_list.push_back({ page_manual.filename().string() });
+        if (fs::exists(app_path / manual_path) && !fs::is_empty(app_path / manual_path)) {
+            for (const auto &manual : fs::directory_iterator(app_path / manual_path)) {
+                if (manual.path().extension() == ".png") {
+                    manual_page_list.push_back({ manual.path().filename().string() });
                     gui.manuals[host.io.title_id].push_back({});
                 }
             }
@@ -63,12 +60,12 @@ bool init_manual(GuiState &gui, HostState &host) {
             vfs::read_app_file(buffer, host.pref_path, host.io.title_id, app_manual_path);
 
             if (buffer.empty()) {
-                LOG_WARN("Manual not found for title: {} [{}].", host.io.title_id, host.game_title);
+                LOG_WARN("Manual not found for title: {} [{}].", host.io.title_id, host.app_title);
                 return false;
             }
             stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
             if (!data) {
-                LOG_ERROR("Invalid manual image for title: {} [{}].", host.io.title_id, host.game_title);
+                LOG_ERROR("Invalid manual image for title: {} [{}].", host.io.title_id, host.app_title);
                 return false;
             }
             gui.manuals[host.io.title_id][p].init(gui.imgui_state.get(), data, width, height);
@@ -84,12 +81,12 @@ bool init_manual(GuiState &gui, HostState &host) {
 
 static auto hiden_button = false;
 
-void draw_manual_dialog(GuiState &gui, HostState &host) {
+void draw_manual(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2(-5.f, -1.f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x + 10.f, display_size.y + 2.f), ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(0.999f);
-    ImGui::Begin("##manual", &gui.live_area.manual_dialog, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##manual", &gui.live_area.manual, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (zoom[host.io.title_id].first && ImGui::IsMouseDoubleClicked(0)) {
         zoom[host.io.title_id].second ? size_page[host.io.title_id]["current"] = size_page[host.io.title_id]["mini"] : size_page[host.io.title_id]["current"] = size_page[host.io.title_id]["max"];
@@ -109,7 +106,7 @@ void draw_manual_dialog(GuiState &gui, HostState &host) {
 
     ImGui::SetCursorPos(ImVec2(size_child.x - ((!zoom[host.io.title_id].second ? 70.0f : 85.f) * scal.x), 10.0f * scal.y));
     if (!hiden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton))
-        gui.live_area.manual_dialog = false;
+        gui.live_area.manual = false;
 
     const auto wheel_counter = ImGui::GetIO().MouseWheel;
     if (current_page > 0) {

@@ -28,7 +28,7 @@ macro(configure_boost)
 
 	set(Boost_USE_STATIC_LIBS ON)
 	set(Boost_USE_MULTITHREADED ON)
-	set(BOOST_COMPONENTS filesystem program_options system)
+	set(BOOST_COMPONENTS filesystem system)
 
 	find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
 

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <mem/mem.h> // Address.
+#include <util/types.h>
 
 #include <cstdint>
 #include <functional>
@@ -34,10 +35,12 @@ struct CPUContext {
 };
 
 typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
+typedef std::function<std::string(Address)> ResolveNIDName;
+typedef std::function<bool(Address)> IsWatchMemoryAddr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
 
-CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem);
+CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, CallSVC call_svc, ResolveNIDName resolve_nid_name, IsWatchMemoryAddr is_watch_memory_addr, MemState &mem);
 int run(CPUState &state, bool callback, Address entry_point);
 int step(CPUState &state, bool callback, Address entry_point);
 void stop(CPUState &state);
@@ -65,6 +68,9 @@ bool hit_breakpoint(CPUState &state);
 void trigger_breakpoint(CPUState &state);
 void log_code_add(CPUState &state);
 void log_mem_add(CPUState &state);
-
+void log_code_remove(CPUState &state);
+void log_mem_remove(CPUState &state);
+bool log_code_exists(CPUState &state);
+bool log_mem_exists(CPUState &state);
 void save_context(CPUState &state, CPUContext &ctx);
 void load_context(CPUState &state, CPUContext &ctx);

@@ -19,7 +19,7 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(_pLibPerfCaptureFlagPtr)
+VAR_BRIDGE_DECL(_pLibPerfCaptureFlagPtr)
 BRIDGE_DECL(_sceCpuRazorPopFiberUserMarker)
 BRIDGE_DECL(_sceCpuRazorPushFiberUserMarker)
 BRIDGE_DECL(_sceRazorCpuInit)

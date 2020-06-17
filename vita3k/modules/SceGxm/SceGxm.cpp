@@ -705,9 +705,13 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
         ::call_import(host, cpu, nid, thread_id);
     };
 
+    const ResolveNIDName resolve_nid_name = [&host](Address addr) {
+        return ::resolve_nid_name(host.kernel, addr);
+    };
+
     const auto stack_size = SCE_KERNEL_STACK_SIZE_USER_DEFAULT; // TODO: Verify this is the correct stack size
 
-    host.gxm.display_queue_thread = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, call_import, false);
+    host.gxm.display_queue_thread = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, call_import, resolve_nid_name, nullptr);
 
     if (host.gxm.display_queue_thread < 0) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
@@ -1862,11 +1866,10 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     const SceGxmTextureType &texture_type) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    } else if (!data) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     } else if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+    // data can be empty to be filled out later.
 
     // Add supported formats here
 
@@ -1967,8 +1970,6 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
 EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t byteStride) {
     if (width > 4096 || height > 4096 || byteStride == 0)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    else if (!data)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     else if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2031,7 +2032,7 @@ EXPORT(int, sceGxmTextureSetGammaMode, SceGxmTexture *texture, SceGxmTextureGamm
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    texture->gamma_mode = (uint32_t)gammaMode;
+    texture->gamma_mode = (static_cast<std::uint32_t>(gammaMode) >> 27);
     return 0;
 }
 
@@ -2135,15 +2136,12 @@ EXPORT(int, sceGxmTextureSetMipmapCount, SceGxmTexture *texture, uint32_t mipCou
     return 0;
 }
 
-/**
- * TODO: uncomment code once https://github.com/vitasdk/vita-headers/commit/2995273a998f355a498cc4e9c563974fe5938ac6 is available
- */
-EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture /*, SceGxmTextureNormalizeMode normalizeMode*/) {
+EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture, SceGxmTextureNormalizeMode normalizeMode) {
     if (texture == nullptr) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    //texture->normalize_mode = (uint32_t)normalizeMode;
+    texture->normalize_mode = (static_cast<std::uint32_t>(normalizeMode) >> 31);
     return 0;
 }
 

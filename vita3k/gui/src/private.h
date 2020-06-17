@@ -34,14 +34,14 @@ const ImVec4 GUI_COLOR_SEARCH_BAR_TEXT = RGBA_TO_FLOAT(200, 200, 200, 255);
 const ImVec4 GUI_COLOR_SEARCH_BAR_BG = RGBA_TO_FLOAT(42, 42, 42, 255);
 const ImVec4 GUI_SMOOTH_GRAY = ImVec4(0.76f, 0.75f, 0.76f, 1.0f);
 const ImVec4 GUI_PROGRESS_BAR_BG = RGBA_TO_FLOAT(82, 82, 91, 30);
-const ImVec4 GUI_PROGRESS_BAR = RGBA_TO_FLOAT(118, 150, 55, 255);
+const ImVec4 GUI_PROGRESS_BAR = RGBA_TO_FLOAT(51, 153, 255, 255);
 
 #undef RGBA_TO_FLOAT
 
 void draw_main_menu_bar(GuiState &gui, HostState &host);
 void draw_firmware_install_dialog(GuiState &gui, HostState &host);
 void draw_pkg_install_dialog(GuiState &gui, HostState &host);
-void draw_game_install_dialog(GuiState &gui, HostState &host);
+void draw_archive_install_dialog(GuiState &gui, HostState &host);
 void draw_threads_dialog(GuiState &gui, HostState &host);
 void draw_thread_details_dialog(GuiState &gui, HostState &host);
 void draw_semaphores_dialog(GuiState &gui, HostState &host);
@@ -57,10 +57,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host);
 void draw_controls_dialog(GuiState &gui, HostState &host);
 void draw_about_dialog(GuiState &gui);
 
-void draw_live_area_dialog(GuiState &gui, HostState &host);
-void draw_manual_dialog(GuiState &gui, HostState &host);
-void draw_themes_selection(GuiState &gui, HostState &host);
+void draw_app_selector(GuiState &gui, HostState &host);
+void draw_live_area_screen(GuiState &gui, HostState &host);
+void draw_manual(GuiState &gui, HostState &host);
 void draw_start_screen(GuiState &gui, HostState &host);
+void draw_themes_selection(GuiState &gui, HostState &host);
+void draw_trophy_collection(GuiState &gui, HostState &host);
 
 void reevaluate_code(GuiState &gui, HostState &host);
 

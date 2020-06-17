@@ -33,6 +33,12 @@ struct ThreadState;
 
 struct SDL_Thread;
 
+struct WatchMemory;
+
+struct InitialFiber;
+
+typedef std::vector<InitialFiber> InitialFibers;
+
 typedef std::shared_ptr<SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
 typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
@@ -44,6 +50,9 @@ typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 typedef std::shared_ptr<SceKernelModuleInfo> SceKernelModuleInfoPtr;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
 typedef std::map<uint32_t, Address> ExportNids;
+typedef std::map<Address, uint32_t> NidFromExport;
+typedef std::map<Address, uint32_t> NotFoundVars;
+typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
 
 struct WaitingThreadData {
     ThreadStatePtr thread;
@@ -264,6 +273,19 @@ typedef std::map<SceUID, TimerPtr> TimerStates;
 
 using LoadedSysmodules = std::vector<SceSysmoduleModuleId>;
 
+struct SceFiber;
+
+struct InitialFiber {
+    Address start;
+    Address end;
+    SceFiber *fiber;
+};
+
+struct WatchMemory {
+    Address start;
+    size_t size;
+};
+
 struct KernelState {
     std::mutex mutex;
     Blocks blocks;
@@ -284,6 +306,12 @@ struct KernelState {
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
     ExportNids export_nids;
+    NidFromExport nid_from_export;
+    NotFoundVars not_found_vars;
+    WatchMemoryAddrs watch_memory_addrs;
+
+    InitialFibers initial_fibers;
+    SceRtcTick start_tick;
     SceRtcTick base_tick;
     DecoderStates decoders;
     PlayerStates players;
@@ -291,6 +319,9 @@ struct KernelState {
     TimerStates timers;
     Ptr<uint32_t> process_param;
     bool wait_for_debugger = false;
+    bool watch_import_calls = false;
+    bool watch_code = false;
+    bool watch_memory = false;
 
     SceUID get_next_uid() {
         return next_uid++;

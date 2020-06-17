@@ -20,9 +20,11 @@
 #include <config/config.h>
 #include <config/yaml.h>
 
+#include <util/fs.h>
 #include <util/vector_utils.h>
 
 #include <boost/optional.hpp>
+#include <boost/optional/optional_io.hpp>
 
 using boost::optional;
 
@@ -59,6 +61,12 @@ private:
             run_title_id = rhs.run_title_id;
         if (rhs.recompile_shader_path.is_initialized())
             recompile_shader_path = rhs.recompile_shader_path;
+        if (rhs.delete_title_id.is_initialized())
+            delete_title_id = rhs.delete_title_id;
+        if (rhs.pkg_path.is_initialized())
+            pkg_path = rhs.pkg_path;
+        if (rhs.pkg_zrif.is_initialized())
+            pkg_zrif = rhs.pkg_zrif;
 
         if (!rhs.config_path.empty())
             config_path = rhs.config_path;
@@ -73,6 +81,9 @@ public:
     optional<std::string> vpk_path;
     optional<std::string> run_title_id;
     optional<std::string> recompile_shader_path;
+    optional<std::string> delete_title_id;
+    optional<std::string> pkg_path;
+    optional<std::string> pkg_zrif;
 
     // Setting not present in the YAML file
     fs::path config_path = {};

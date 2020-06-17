@@ -17,25 +17,10 @@
 
 #pragma once
 
-#include <app/functions.h>
-#include <util/exit_code.h>
-#include <util/fs.h>
+#include <util/types.h>
 
-#include <miniz.h>
+#include <functional>
 
-struct GuiState;
 struct HostState;
 
-typedef std::shared_ptr<mz_zip_archive> ZipPtr;
-typedef std::shared_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;
-
-inline void delete_zip(mz_zip_archive *zip) {
-    mz_zip_reader_end(zip);
-    delete zip;
-}
-
-bool handle_events(HostState &host, GuiState &gui);
-
-bool install_archive(HostState &host, GuiState &gui, const fs::path &path);
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, app::AppRunType run_type);
-ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
+using ImportVarFactory = std::function<Address(HostState &host)>;

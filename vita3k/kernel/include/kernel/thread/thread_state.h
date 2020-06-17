@@ -23,6 +23,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <string>
+#include <util/semaphore.h>
 
 struct CPUState;
 struct CPUContext;
@@ -51,6 +52,7 @@ struct ThreadState {
     Ptr<void> fiber;
     ThreadToDo to_do = ThreadToDo::run;
     std::mutex mutex;
+    sync_utils::Semaphore signal;
     std::condition_variable something_to_do;
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
     std::string name;

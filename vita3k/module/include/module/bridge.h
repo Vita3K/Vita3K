@@ -23,6 +23,7 @@
 #include "write_return_value.h"
 
 #include <host/import_fn.h>
+#include <host/import_var.h>
 #include <host/state.h>
 
 #include <microprofile.h>

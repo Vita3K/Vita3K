@@ -23,6 +23,7 @@
 #include <config/version.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <host/pkg.h>
 #include <host/state.h>
 #include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
@@ -58,6 +59,19 @@ int main(int argc, char *argv[]) {
             if (cfg.recompile_shader_path.is_initialized()) {
                 LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
                 shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
+            }
+            if (cfg.delete_title_id.is_initialized()) {
+                LOG_INFO("Deleting title id {}", *cfg.delete_title_id);
+                fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/app" / *cfg.delete_title_id);
+                fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/addcont" / *cfg.delete_title_id);
+                fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/user/00/savedata" / *cfg.delete_title_id);
+                fs::remove_all(fs::path(root_paths.get_pref_path()) / "shaderlog" / *cfg.delete_title_id);
+            }
+            HostState host;
+            if (cfg.pkg_path.is_initialized() && cfg.pkg_zrif.is_initialized()) {
+                LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
+                install_pkg(*cfg.pkg_path, host, *cfg.pkg_zrif);
+                return Success;
             }
             return Success;
         }
@@ -107,7 +121,7 @@ int main(int argc, char *argv[]) {
 
     HostState host;
     if (!app::init(host, cfg, root_paths)) {
-        app::error_dialog("Host initialisation failed.", host.window.get());
+        app::error_dialog("Host initialization failed.", host.window.get());
         return HostInitFailed;
     }
 
@@ -135,8 +149,8 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: Clean this, ie. make load_app overloads called depending on run type
-        if (!gui.game_selector.selected_title_id.empty()) {
-            vpk_path_wide = string_utils::utf_to_wide(gui.game_selector.selected_title_id);
+        if (!gui.app_selector.selected_title_id.empty()) {
+            vpk_path_wide = string_utils::utf_to_wide(gui.app_selector.selected_title_id);
             run_type = app::AppRunType::Extracted;
         }
     }
@@ -178,7 +192,7 @@ int main(int argc, char *argv[]) {
         host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());
 
-        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.game_title, host.io.title_id).c_str());
+        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.app_title, host.io.title_id).c_str());
     }
 
     while (handle_events(host, gui)) {

@@ -20,7 +20,15 @@
 #include <kernel/state.h>
 #include <kernel/types.h>
 
-struct SceKernelAllocMemBlockOpt;
+struct SceKernelAllocMemBlockOpt {
+    SceSize size;
+    SceUInt32 attr;
+    SceSize alignment;
+    SceUInt32 uidBaseBlock;
+    const char *strBaseBlockName;
+    int flags;
+    int reserved[10];
+};
 
 struct SceKernelFreeMemorySizeInfo {
     int size; //!< sizeof(SceKernelFreeMemorySizeInfo)
@@ -35,7 +43,12 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     assert(type != 0);
     assert(size != 0);
 
-    const Ptr<void> address(alloc(mem, size, name));
+    Ptr<void> address;
+    if (optp == nullptr) {
+        address = alloc(mem, size, name);
+    } else {
+        address = alloc(mem, size, name, optp->alignment);
+    }
     if (!address) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }

@@ -42,7 +42,7 @@ enum SortState {
     DESCENDANT
 };
 
-struct Game {
+struct App {
     std::string app_ver;
     std::string category;
     std::string stitle;
@@ -50,11 +50,11 @@ struct Game {
     std::string title_id;
 };
 
-struct GamesSelector {
-    std::vector<Game> games;
+struct AppsSelector {
+    std::vector<App> apps;
     std::map<std::string, ImGui_Texture> icons;
     std::string selected_title_id;
-    bool is_game_list_sorted{ false };
+    bool is_app_list_sorted{ false };
     SortState title_id_sort_state = NOT_SORTED;
     SortState app_ver_sort_state = NOT_SORTED;
     SortState category_sort_state = NOT_SORTED;
@@ -63,8 +63,8 @@ struct GamesSelector {
 };
 
 struct LiveAreaState {
-    bool live_area_dialog = false;
-    bool manual_dialog = false;
+    bool live_area_screen = false;
+    bool manual = false;
 };
 
 struct ThemesState {
@@ -72,17 +72,14 @@ struct ThemesState {
     bool theme_background = false;
 };
 
+struct TrophyState {
+    bool trophy_collection = false;
+};
+
 struct FileMenuState {
     bool firmware_install_dialog = false;
     bool pkg_install_dialog = false;
-    bool game_install_dialog = false;
-
-    bool draw_file_dialog = true;
-    bool is_entering_zrif = true;
-    bool delete_pkg_file = false;
-    bool pkg_success = false;
-
-    std::string zRIF = std::string();
+    bool archive_install_dialog = false;
 };
 
 struct DebugMenuState {
@@ -106,9 +103,6 @@ struct ConfigurationMenuState {
 
 struct ControlMenuState {
     bool controls_dialog = false;
-    bool is_capturing_keys = false;
-    int old_captured_key = 0;
-    int captured_key = 0;
 };
 
 struct HelpMenuState {
@@ -135,10 +129,11 @@ struct GuiState {
     gui::HelpMenuState help_menu;
     gui::LiveAreaState live_area;
     gui::ThemesState theme;
-    gui::GamesSelector game_selector;
+    gui::TrophyState trophy;
+    gui::AppsSelector app_selector;
 
     std::string app_ver;
-    bool game_reinstall_confirm = false;
+    bool content_reinstall_confirm = false;
 
     MemoryEditor memory_editor;
     MemoryEditor gxp_shader_editor;
@@ -152,13 +147,17 @@ struct GuiState {
 
     std::string online_id;
 
+    bool is_capturing_keys = false;
+    int old_captured_key = 0;
+    int captured_key = 0;
+
     std::vector<std::pair<std::string, bool>> modules;
     ImGuiTextFilter module_search_bar;
 
-    bool delete_game_icon = false;
+    bool delete_app_icon = false;
     GLuint display = 0;
 
-    ImGuiTextFilter game_search_bar;
+    ImGuiTextFilter app_search_bar;
 
     std::uint64_t current_theme_bg;
     std::map<std::string, std::map<std::string, ImGui_Texture>> themes_preview;
@@ -166,6 +165,9 @@ struct GuiState {
 
     std::uint64_t current_user_bg;
     std::map<std::string, ImGui_Texture> user_backgrounds;
+
+    std::map<std::string, std::map<std::string, ImGui_Texture>> trophy_np_com_id_list;
+    std::map<std::string, ImGui_Texture> trophy_list;
 
     ImGui_Texture start_background;
 

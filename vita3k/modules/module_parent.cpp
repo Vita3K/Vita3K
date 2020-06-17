@@ -19,6 +19,7 @@
 
 #include <cpu/functions.h>
 #include <host/import_fn.h>
+#include <host/import_var.h>
 #include <host/load_self.h>
 #include <host/state.h>
 #include <io/device.h>
@@ -31,28 +32,44 @@
 
 #include <unordered_set>
 
-#ifdef NDEBUG // Leave it as non-constexpr on Debug so that we can enable/disable it at will via set_log_import_calls
-constexpr
-#endif
-    bool LOG_IMPORT_CALLS
-    = false;
-
 static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
+#define VAR_NID(name, nid) extern const ImportVarFactory import_##name;
 #define NID(name, nid) extern const ImportFn import_##name;
 #include <nids/nids.h>
 #undef NID
+#undef VAR_NID
+
+struct HostState;
 
 static ImportFn resolve_import(uint32_t nid) {
     switch (nid) {
+#define VAR_NID(name, nid)
 #define NID(name, nid) \
     case nid:          \
         return import_##name;
 #include <nids/nids.h>
 #undef NID
+#undef VAR_NID
     }
 
     return ImportFn();
+}
+
+const std::array<VarExport, var_exports_size> &get_var_exports() {
+    static std::array<VarExport, var_exports_size> var_exports = {
+#define NID(name, nid)
+#define VAR_NID(name, nid) \
+    {                      \
+        nid,               \
+        import_##name,     \
+        #name              \
+    },
+#include <nids/nids.h>
+#undef VAR_NID
+#undef NID
+    };
+    return var_exports;
 }
 
 /**
@@ -61,7 +78,7 @@ static ImportFn resolve_import(uint32_t nid) {
  * \param nid NID to resolve
  * \return Resolved address, 0 if not found
  */
-static Address resolve_export(KernelState &kernel, uint32_t nid) {
+Address resolve_export(KernelState &kernel, uint32_t nid) {
     const ExportNids::iterator export_address = kernel.export_nids.find(nid);
     if (export_address == kernel.export_nids.end()) {
         return 0;
@@ -70,10 +87,32 @@ static Address resolve_export(KernelState &kernel, uint32_t nid) {
     return export_address->second;
 }
 
-static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist) {
+uint32_t resolve_nid(KernelState &kernel, Address addr) {
+    auto nid = kernel.nid_from_export.find(addr);
+    if (nid == kernel.nid_from_export.end()) {
+        // resolve the thumbs address
+        addr = addr | 1;
+        nid = kernel.nid_from_export.find(addr);
+        if (nid == kernel.nid_from_export.end()) {
+            return 0;
+        }
+    }
+
+    return nid->second;
+}
+
+std::string resolve_nid_name(KernelState &kernel, Address addr) {
+    auto nid = resolve_nid(kernel, addr);
+    if (nid == 0) {
+        return "";
+    }
+    return import_name(nid);
+}
+
+static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address pc) {
     if (nid_blacklist.find(nid) == nid_blacklist.end()) {
         const char *const name = import_name(nid);
-        LOG_TRACE("[{}LE] TID: {:<3} FUNC: {} {}", emulation_level, thread_id, log_hex(nid), name);
+        LOG_TRACE("[{}LE] TID: {:<3} FUNC: {} {} at {}", emulation_level, thread_id, log_hex(nid), name, log_hex(pc));
     }
 }
 
@@ -83,14 +122,14 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
     if (!export_pc) {
         // HLE - call our C++ function
 
-        if (LOG_IMPORT_CALLS) {
+        if (host.kernel.watch_import_calls) {
             const std::unordered_set<uint32_t> hle_nid_blacklist = {
                 0xB295EB61, // sceKernelGetTLSAddr
                 0x46E7BE7B, // sceKernelLockLwMutex
                 0x91FA6614, // sceKernelUnlockLwMutex
             };
-
-            log_import_call('H', nid, thread_id, hle_nid_blacklist);
+            auto pc = read_pc(cpu);
+            log_import_call('H', nid, thread_id, hle_nid_blacklist, pc);
         }
         const ImportFn fn = resolve_import(nid);
         if (fn) {
@@ -105,10 +144,10 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
     } else {
         // LLE - directly run ARM code imported from some loaded module
 
-        if (LOG_IMPORT_CALLS) {
+        if (host.kernel.watch_import_calls) {
             const std::unordered_set<uint32_t> lle_nid_blacklist = {};
-
-            log_import_call('L', nid, thread_id, lle_nid_blacklist);
+            auto pc = read_pc(cpu);
+            log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
         }
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
@@ -122,6 +161,9 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
 bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
     const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
         ::call_import(host, cpu, nid, main_thread_id);
+    };
+    const ResolveNIDName resolve_nid_name = [&host](Address addr) {
+        return ::resolve_nid_name(host.kernel, addr);
     };
 
     LOG_INFO("Loading module ID: {}", log_hex(module_id));
@@ -151,7 +193,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
 
                 Ptr<void> argp = Ptr<void>();
                 const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
-                    static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, false);
+                    static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, resolve_nid_name, nullptr);
                 const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
                 const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
 
@@ -173,10 +215,3 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
     host.kernel.loaded_sysmodules.push_back(module_id);
     return true;
 }
-
-#ifndef NDEBUG
-// Import logging is really slow and this allows us to enable/disable it from whenever we please, for easy in debugging
-void set_log_import_calls(bool enabled) {
-    LOG_IMPORT_CALLS = enabled;
-}
-#endif

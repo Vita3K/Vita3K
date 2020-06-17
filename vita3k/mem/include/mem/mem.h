@@ -30,6 +30,18 @@ typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
 typedef std::vector<Generation> Allocated;
 typedef std::map<Generation, std::string> GenerationNames;
 
+struct CPUState;
+struct MemState;
+
+typedef void (*BreakpointCallback)(CPUState &, MemState &);
+
+struct Breakpoint {
+    bool gdb;
+    bool thumb_mode;
+    unsigned char data[4];
+    BreakpointCallback callback;
+};
+
 struct MemState {
     size_t page_size = 0;
     Generation generation = 0;
@@ -37,7 +49,8 @@ struct MemState {
     Allocated allocated_pages;
     std::mutex generation_mutex;
     GenerationNames generation_names;
-    std::map<Address, uint32_t> breakpoints;
+    std::map<Address, Address> aligned_addr_to_original;
+    std::map<Address, Breakpoint> breakpoints;
 };
 
 constexpr size_t KB(size_t kb) {
@@ -54,7 +67,10 @@ constexpr size_t GB(size_t gb) {
 
 bool init(MemState &state);
 Address alloc(MemState &state, size_t size, const char *name);
+Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment);
 Address alloc_at(MemState &state, Address address, size_t size, const char *name);
 void free(MemState &state, Address address);
 uint32_t mem_available(MemState &state);
 const char *mem_name(Address address, MemState &state);
+void add_breakpoint(MemState &state, bool gdb, bool thumb_mode, uint32_t addr, BreakpointCallback callback);
+void remove_breakpoint(MemState &state, uint32_t addr);

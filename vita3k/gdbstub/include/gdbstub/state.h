@@ -47,8 +47,6 @@ struct GDBState {
     std::string last_reply = "";
 
     SceUID current_thread = 0;
-
-    std::map<Address, uint32_t> breakpoints;
 };
 
 #endif

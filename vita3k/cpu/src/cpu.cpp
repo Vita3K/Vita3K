@@ -21,13 +21,19 @@
 #include <disasm/state.h>
 #include <mem/ptr.h>
 #include <util/log.h>
+#include <util/types.h>
 
 #include <unicorn/unicorn.h>
 
 #include <cassert>
 #include <cstring>
 
+#include <spdlog/fmt/fmt.h>
+#include <util/string_utils.h>
+
 typedef std::unique_ptr<uc_struct, std::function<void(uc_struct *)>> UnicornPtr;
+
+constexpr bool LOG_REGISTERS = false;
 
 union DoubleReg {
     double d;
@@ -35,20 +41,22 @@ union DoubleReg {
 };
 
 struct CPUState {
+    SceUID thread_id;
     MemState *mem = nullptr;
     CallSVC call_svc;
+    ResolveNIDName resolve_nid_name;
     DisasmState disasm;
+    IsWatchMemoryAddr is_watch_memory_addr;
     UnicornPtr uc;
+    uc_hook memory_read_hook = 0;
+    uc_hook memory_write_hook = 0;
+    uc_hook code_hook = 0;
+
     bool did_break = false;
+    bool did_inject = false;
 };
 
-// Log code for specified threads (arg to create_thread)
-static const bool LOG_CODE = true;
-static const bool TRACE_RETURN_VALUES = true;
-
-// Log code run on all threads
-static bool LOG_CODE_ALL = false;
-static bool LOG_MEM_ACCESS = false;
+constexpr bool TRACE_RETURN_VALUES = true;
 
 static void delete_cpu_state(CPUState *state) {
     delete state;
@@ -71,14 +79,31 @@ static inline void func_trace(CPUState &state) {
 static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     CPUState &state = *static_cast<CPUState *>(user_data);
     std::string disassembly = disassemble(state, address);
-    LOG_TRACE("{}: {} {}", log_hex((uint64_t)uc), log_hex(address), disassembly);
+    if (LOG_REGISTERS) {
+        for (int i = 0; i < 12; i++) {
+            auto reg_name = fmt::format("r{}", i);
+            auto reg_name_with_value = fmt::format("{}({})", reg_name, log_hex(read_reg(state, i)));
+            string_utils::replace(disassembly, reg_name, reg_name_with_value);
+        }
+
+        string_utils::replace(disassembly, "lr", fmt::format("lr({})", log_hex(read_lr(state))));
+        string_utils::replace(disassembly, "sp", fmt::format("sp({})", log_hex(read_sp(state))));
+    }
+
+    auto name = state.resolve_nid_name(address);
+    if (name != "") {
+        LOG_TRACE("{} ({}): {} {} entering export function {}", log_hex((uint64_t)uc), state.thread_id, log_hex(address), disassembly, name);
+    } else {
+        LOG_TRACE("{} ({}): {} {}", log_hex((uint64_t)uc), state.thread_id, log_hex(address), disassembly);
+    }
 
     func_trace(state);
 }
 
-static void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem) {
+static void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu) {
     const char *const name = mem_name(address, mem);
-    LOG_TRACE("{}: {} {} bytes, address {} ( {} ), value {}", log_hex((uint64_t)uc), type, size, log_hex(address), name, log_hex(value));
+    auto pc = read_pc(cpu);
+    LOG_TRACE("{} ({}): {} {} bytes, address {} ( {} ), value {} at {}", log_hex((uint64_t)uc), cpu.thread_id, type, size, log_hex(address), name, log_hex(value), log_hex(pc));
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -86,14 +111,19 @@ static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int siz
 
     CPUState &state = *static_cast<CPUState *>(user_data);
     MemState &mem = *state.mem;
-    memcpy(&value, Ptr<const void>(static_cast<Address>(address)).get(mem), size);
-    log_memory_access(uc, "Read", static_cast<Address>(address), size, value, mem);
+    if (state.is_watch_memory_addr(address)) {
+        memcpy(&value, Ptr<const void>(static_cast<Address>(address)).get(mem), size);
+        log_memory_access(uc, "Read", static_cast<Address>(address), size, value, mem, state);
+    }
 }
 
 static void write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     CPUState &state = *static_cast<CPUState *>(user_data);
     MemState &mem = *state.mem;
-    log_memory_access(uc, "Write", static_cast<Address>(address), size, value, mem);
+    if (state.is_watch_memory_addr(address)) {
+        MemState &mem = *state.mem;
+        log_memory_access(uc, "Write", static_cast<Address>(address), size, value, mem, state);
+    }
 }
 
 constexpr uint32_t INT_SVC = 2;
@@ -105,10 +135,9 @@ static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
     CPUState &state = *static_cast<CPUState *>(user_data);
 
     uint32_t pc = read_pc(state);
-
-    switch (intno) {
-    case INT_SVC:
-        if (is_thumb_mode(uc)) {
+    auto thumb_mode = is_thumb_mode(uc);
+    if (intno == INT_SVC) {
+        if (thumb_mode) {
             const Address svc_address = pc - 2;
             uint16_t svc_instruction = 0;
             uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
@@ -123,12 +152,20 @@ static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
             const uint32_t imm = svc_instruction & 0xffffff;
             state.call_svc(state, imm, pc);
         }
-        break;
-    case INT_BKPT:
-        stop(state);
-        state.did_break = true;
-        break;
-    default: break;
+    } else if (intno == INT_BKPT) {
+        auto &bks = state.mem->breakpoints;
+        if (bks.find(pc) != bks.end()) {
+            auto bk = bks[pc];
+            stop(state);
+            if (bk.gdb) {
+                state.did_break = true;
+            } else {
+                state.did_inject = true;
+                if (bk.callback) {
+                    bk.callback(state, *state.mem);
+                }
+            }
+        }
     }
 }
 
@@ -159,19 +196,21 @@ static void log_error_details(CPUState &state, uc_err code) {
     for (size_t a = 0; a < 13; a++)
         registers[a] = read_reg(state, a);
 
-    LOG_ERROR("Executing: {}", disassemble(state, pc));
     LOG_ERROR("PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}", pc, sp, lr);
     for (int a = 0; a < 6; a++) {
         LOG_ERROR("r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}", a, registers[a], a + 6, registers[a + 6]);
     }
     LOG_ERROR("r12: 0x{:0>8x}", registers[12]);
+    LOG_ERROR("Executing: {}", disassemble(state, pc));
 }
 
-CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, MemState &mem) {
+CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, CallSVC call_svc, ResolveNIDName resolve_nid_name, IsWatchMemoryAddr is_watch_memory_addr, MemState &mem) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
     state->call_svc = call_svc;
-
+    state->resolve_nid_name = resolve_nid_name;
+    state->is_watch_memory_addr = is_watch_memory_addr;
+    state->thread_id = thread_id;
     if (!init(state->disasm)) {
         return CPUStatePtr();
     }
@@ -184,14 +223,6 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     temp_uc = nullptr;
 
     uc_hook hh = 0;
-
-    if ((log_code && LOG_CODE) || LOG_CODE_ALL) {
-        log_code_add(*state);
-    }
-
-    if (LOG_MEM_ACCESS) {
-        log_mem_add(*state);
-    }
 
     err = uc_hook_add(state->uc.get(), &hh, UC_HOOK_INTR, reinterpret_cast<void *>(&intr_hook), state.get(), 1, 0);
     assert(err == UC_ERR_OK);
@@ -215,24 +246,28 @@ CPUStatePtr init_cpu(Address pc, Address sp, bool log_code, CallSVC call_svc, Me
     return state;
 }
 
-int run(CPUState &state, bool callback, Address entry_point) {
-    state.did_break = false;
-    uint32_t pc = read_pc(state);
-    bool thumb_mode = is_thumb_mode(state.uc.get());
-    if (thumb_mode) {
-        pc |= 1;
-    }
-    if (callback) {
-        uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &entry_point);
-    }
-    uc_err err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
-    pc = read_pc(state);
-    thumb_mode = is_thumb_mode(state.uc.get());
-    if (thumb_mode) {
-        pc |= 1;
-    }
-    err = uc_emu_start(state.uc.get(), pc, entry_point & 0xfffffffe, 0, 0);
+int _run_after_injected(CPUState &state, uint32_t pc, bool thumb_mode) {
+    // run the original instruction before injecting bkpt
+    // then, inject the bkpt again
 
+    assert(state.mem->breakpoints.find(pc) != state.mem->breakpoints.end());
+
+    unsigned char original[4];
+    auto bk = state.mem->breakpoints[pc];
+
+    size_t size = thumb_mode ? sizeof(unsigned char[2]) : sizeof(unsigned char[4]);
+
+    std::memcpy(original, &state.mem->memory[pc], size);
+    std::memcpy(&state.mem->memory[pc], bk.data, size);
+
+    uc_err err;
+    if (thumb_mode) {
+        err = uc_emu_start(state.uc.get(), pc | 1, 0, 0, 1);
+    } else {
+        err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
+    }
+
+    std::memcpy(&state.mem->memory[pc], original, size);
     if (err != UC_ERR_OK) {
         log_error_details(state, err);
 #ifdef USE_GDBSTUB
@@ -242,6 +277,44 @@ int run(CPUState &state, bool callback, Address entry_point) {
         return -1;
 #endif
     }
+    return 0;
+}
+
+int run(CPUState &state, bool callback, Address entry_point) {
+    uint32_t pc = read_pc(state);
+    bool thumb_mode = is_thumb_mode(state.uc.get());
+    state.did_break = false;
+    if (state.did_inject && _run_after_injected(state, pc, thumb_mode)) {
+        return -1;
+    }
+    state.did_inject = false;
+
+    pc = read_pc(state);
+    if (thumb_mode) {
+        pc |= 1;
+    }
+    if (callback) {
+        uc_reg_write(state.uc.get(), UC_ARM_REG_LR, &entry_point);
+    }
+
+    uc_err err = uc_emu_start(state.uc.get(), pc, 0, 0, 1);
+    pc = read_pc(state);
+    thumb_mode = is_thumb_mode(state.uc.get());
+    if (thumb_mode) {
+        pc |= 1;
+    }
+
+    err = uc_emu_start(state.uc.get(), pc, entry_point & 0xfffffffe, 0, 0);
+    if (err != UC_ERR_OK) {
+        log_error_details(state, err);
+#ifdef USE_GDBSTUB
+        trigger_breakpoint(state);
+        return 0;
+#else
+        return -1;
+#endif
+    }
+
     pc = read_pc(state);
     thumb_mode = is_thumb_mode(state.uc.get());
     if (thumb_mode) {
@@ -254,6 +327,14 @@ int run(CPUState &state, bool callback, Address entry_point) {
 int step(CPUState &state, bool callback, Address entry_point) {
     uint32_t pc = read_pc(state);
     bool thumb_mode = is_thumb_mode(state.uc.get());
+
+    state.did_break = false;
+    if (state.did_inject && _run_after_injected(state, pc, thumb_mode)) {
+        return -1;
+    }
+    state.did_inject = false;
+
+    pc = read_pc(state);
     if (thumb_mode) {
         pc |= 1;
     }
@@ -416,19 +497,41 @@ std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size) {
 }
 
 void log_code_add(CPUState &state) {
-    uc_hook hh = 0;
-    const uc_err err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_CODE, reinterpret_cast<void *>(&code_hook), &state, 1, 0);
+    const uc_err err = uc_hook_add(state.uc.get(), &state.code_hook, UC_HOOK_CODE, reinterpret_cast<void *>(&code_hook), &state, 1, 0);
 
     assert(err == UC_ERR_OK);
 }
 
+void log_code_remove(CPUState &state) {
+    auto err = uc_hook_del(state.uc.get(), state.code_hook);
+    assert(err == UC_ERR_OK);
+    state.code_hook = 0;
+}
+
 void log_mem_add(CPUState &state) {
-    uc_hook hh = 0;
-    uc_err err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_MEM_READ, reinterpret_cast<void *>(&read_hook), &state, 1, 0);
+    uc_err err = uc_hook_add(state.uc.get(), &state.memory_read_hook, UC_HOOK_MEM_READ, reinterpret_cast<void *>(&read_hook), &state, 1, 0);
     assert(err == UC_ERR_OK);
 
-    err = uc_hook_add(state.uc.get(), &hh, UC_HOOK_MEM_WRITE, reinterpret_cast<void *>(&write_hook), &state, 1, 0);
+    err = uc_hook_add(state.uc.get(), &state.memory_write_hook, UC_HOOK_MEM_WRITE, reinterpret_cast<void *>(&write_hook), &state, 1, 0);
     assert(err == UC_ERR_OK);
+}
+
+void log_mem_remove(CPUState &state) {
+    auto err = uc_hook_del(state.uc.get(), state.memory_read_hook);
+    assert(err == UC_ERR_OK);
+    state.memory_read_hook = 0;
+
+    err = uc_hook_del(state.uc.get(), state.memory_write_hook);
+    assert(err == UC_ERR_OK);
+    state.memory_write_hook = 0;
+}
+
+bool log_code_exists(CPUState &state) {
+    return state.code_hook != 0;
+}
+
+bool log_mem_exists(CPUState &state) {
+    return state.memory_read_hook != 0 && state.memory_write_hook != 0;
 }
 
 static void delete_cpu_context(CPUContext *ctx) {

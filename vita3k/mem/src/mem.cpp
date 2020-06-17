@@ -116,6 +116,17 @@ bool init(MemState &state) {
     return true;
 }
 
+Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment) {
+    if (alignment != 0)
+        size += alignment - 1;
+    auto addr = alloc(state, size, name);
+    if (alignment == 0)
+        return addr;
+    auto new_addr = (addr + alignment - 1) & ~(alignment - 1);
+    state.aligned_addr_to_original[new_addr] = addr;
+    return new_addr;
+}
+
 Address alloc(MemState &state, size_t size, const char *name) {
     const size_t page_count = (size + (state.page_size - 1)) / state.page_size;
     const Allocated::iterator block = std::search_n(state.allocated_pages.begin(), state.allocated_pages.end(), page_count, 0);
@@ -142,6 +153,12 @@ Address alloc_at(MemState &state, Address address, size_t size, const char *name
 }
 
 void free(MemState &state, Address address) {
+    auto &addr_map = state.aligned_addr_to_original;
+    if (addr_map.find(address) != addr_map.end()) {
+        auto old_addr = address;
+        address = addr_map[old_addr];
+        addr_map.erase(old_addr);
+    }
     const size_t page = address / state.page_size;
     assert(page >= 0);
     assert(page < state.allocated_pages.size());
@@ -189,4 +206,32 @@ const char *mem_name(Address address, MemState &state) {
     }
 
     return found->second.c_str();
+}
+
+constexpr unsigned char thumb_breakpoint[2] = { 0x00, 0xBE };
+constexpr unsigned char arm_breakpoint[4] = { 0x70, 0x00, 0x20, 0xE1 };
+
+void add_breakpoint(MemState &mem, bool gdb, bool thumb_mode, uint32_t addr, BreakpointCallback callback) {
+    Breakpoint last = {
+        gdb,
+        thumb_mode,
+        { 0 },
+        callback
+    };
+    if (thumb_mode) {
+        std::memcpy(&last.data, &mem.memory[addr], sizeof(thumb_breakpoint));
+        std::memcpy(&mem.memory[addr], thumb_breakpoint, sizeof(thumb_breakpoint));
+    } else {
+        std::memcpy(&last.data, &mem.memory[addr], sizeof(arm_breakpoint));
+        std::memcpy(&mem.memory[addr], arm_breakpoint, sizeof(arm_breakpoint));
+    }
+    mem.breakpoints[addr] = last;
+}
+
+void remove_breakpoint(MemState &mem, uint32_t addr) {
+    if (mem.breakpoints.find(addr) != mem.breakpoints.end()) {
+        auto last = mem.breakpoints[addr];
+        std::memcpy(&mem.memory[addr], &last.data, last.thumb_mode ? sizeof(thumb_breakpoint) : sizeof(arm_breakpoint));
+        mem.breakpoints.erase(addr);
+    }
 }

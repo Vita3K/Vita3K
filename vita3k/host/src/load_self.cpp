@@ -94,6 +94,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
             // Use same stub for other var imports
             kernel.export_nids.emplace(nid, export_address);
+            kernel.not_found_vars.emplace(export_address, nid);
         }
 
         if (reloc_entries_count > 0)
@@ -242,6 +243,7 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
             continue;
 
         kernel.export_nids.emplace(nid, entry.address());
+        kernel.nid_from_export.emplace(entry.address(), nid);
 
         if (cfg.log_exports) {
             const char *const name = import_name(nid);
@@ -281,6 +283,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         }
 
         kernel.export_nids.emplace(nid, entry.address());
+        kernel.nid_from_export.emplace(entry.address(), nid);
     }
 
     return true;
