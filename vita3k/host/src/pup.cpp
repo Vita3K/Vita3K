@@ -253,25 +253,36 @@ void install_pup(const std::string &pup, const std::string &pref_path) {
 
     if (fs::file_size(pup_dec + "/os0.img") > 0) {
         extract_fat(pup_dec, "os0.img", pref_path);
-    }
-    if (fs::file_size(pup_dec + "/sa0.img") > 0) {
-        extract_fat(pup_dec, "sa0.img", pref_path);
-    }
-    if (fs::file_size(pup_dec + "/vs0.img") > 0) {
-        extract_fat(pup_dec, "vs0.img", pref_path);
-        for (const auto &file : fs::recursive_directory_iterator(pref_path + "/vs0/app")) {
-            if (file.path().filename() == "eboot.bin") {
-                self2elf(file.path().string(), file.path().string() + "elf", SCE_KEYS, 0);
-                fs::rename(file.path().string() + "elf", file.path().string());
-                make_fself(file.path().string(), file.path().string() + "fself");
-                fs::rename(file.path().string() + "fself", file.path().string());
+        for (const auto &file : fs::recursive_directory_iterator(pref_path + "/os0")) {
+            if (fs::is_regular_file(file.path())) {
+                const auto filePathString = file.path().string();
+                const auto extention = file.path().filename().extension();
+                const auto is_self = ((extention == ".suprx") || (extention == ".skprx") || (extention == ".self"));
+                if (is_self) {
+                    self2elf(filePathString, filePathString + "elf", SCE_KEYS, 0);
+                    fs::rename(filePathString + "elf", filePathString);
+                    make_fself(filePathString, filePathString + "fself");
+                    fs::rename(filePathString + "fself", filePathString);
+                }
             }
         }
-        for (const auto &file : fs::directory_iterator(pref_path + "/vs0/sys/external")) {
-            self2elf(file.path().string(), file.path().string() + "elf", SCE_KEYS, 0);
-            fs::rename(file.path().string() + "elf", file.path().string());
-            make_fself(file.path().string(), file.path().string() + "fself");
-            fs::rename(file.path().string() + "fself", file.path().string());
+    }
+    if (fs::file_size(pup_dec + "/sa0.img") > 0)
+        extract_fat(pup_dec, "sa0.img", pref_path);
+    if (fs::file_size(pup_dec + "/vs0.img") > 0) {
+        extract_fat(pup_dec, "vs0.img", pref_path);
+        for (const auto &file : fs::recursive_directory_iterator(pref_path + "/vs0")) {
+            if (fs::is_regular_file(file.path())) {
+                const auto filePathString = file.path().string();
+                const auto extention = file.path().filename().extension();
+                const auto is_self = ((extention == ".suprx") || (extention == ".skprx") || (extention == ".self"));
+                if ((file.path().filename() == "eboot.bin") || is_self) {
+                    self2elf(filePathString, filePathString + "elf", SCE_KEYS, 0);
+                    fs::rename(filePathString + "elf", filePathString);
+                    make_fself(filePathString, filePathString + "fself");
+                    fs::rename(filePathString + "fself", filePathString);
+                }
+            }
         }
     }
 }

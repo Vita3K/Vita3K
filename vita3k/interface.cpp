@@ -23,6 +23,7 @@
 #include <host/load_self.h>
 #include <host/pkg.h>
 #include <host/sfo.h>
+#include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/functions.h>
@@ -209,6 +210,34 @@ bool install_archive(HostState &host, GuiState &gui, const fs::path &path) {
     return true;
 }
 
+static auto pre_load_module(HostState &host, const std::vector<std::string> &lib_load_list, const VitaIoDevice &device) {
+    for (const auto &module_path : lib_load_list) {
+        vfs::FileBuffer module_buffer;
+        Ptr<const void> lib_entry_point;
+        bool res;
+
+        if (device == VitaIoDevice::app0)
+            res = vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path);
+        else
+            res = vfs::read_file(device, module_buffer, host.pref_path, module_path);
+
+        if (res) {
+            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), device._to_string() + module_path, host.cfg);
+            if (module_id >= 0) {
+                const auto module = host.kernel.loaded_modules[module_id];
+
+                LOG_INFO("Pre-load module {} (at \"{}\") loaded", module->module_name, module_path);
+            } else
+                return FileNotFound;
+        } else {
+            LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
+            return FileNotFound;
+        }
+    }
+
+    return Success;
+}
+
 static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {
     if (path.empty())
         return InvalidApplicationPath;
@@ -224,8 +253,6 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     vfs::FileBuffer params;
     bool params_found = vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
 
-    std::string game_category;
-
     if (params_found) {
         sfo::load(host.sfo_handle, params);
 
@@ -233,11 +260,10 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' '); // Restrict title to one line
         sfo::get_data_by_key(host.io.title_id, host.sfo_handle, "TITLE_ID");
         sfo::get_data_by_key(host.app_version, host.sfo_handle, "APP_VER");
-        sfo::get_data_by_key(game_category, host.sfo_handle, "CATEGORY");
+        sfo::get_data_by_key(host.app_category, host.sfo_handle, "CATEGORY");
     } else {
         host.app_title = host.io.title_id; // Use TitleID as Title
-        host.app_version = "N/A";
-        game_category = "N/A";
+        host.app_version = host.app_category = "N/A";
     }
 
     if (static_cast<int>(host.cfg.online_id.size()) - 1 < host.cfg.user_id || host.cfg.user_id < 0) {
@@ -260,7 +286,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     LOG_INFO("Title: {}", host.app_title);
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Version: {}", host.app_version);
-    LOG_INFO("Category: {}", game_category);
+    LOG_INFO("Category: {}", host.app_category);
 
     init_device_paths(host.io);
     init_savedata_game_path(host.io, host.pref_path);
@@ -273,27 +299,25 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     host.renderer->features.hardware_flip = host.cfg.hardware_flip;
 
     // Load pre-loaded libraries
-    const char *const lib_load_list[] = {
-        "sce_module/libc.suprx",
-        "sce_module/libfios2.suprx",
-        "sce_module/libult.suprx",
-    };
+    const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_module" };
+    if (fs::exists(module_app_path) && !fs::is_empty(module_app_path)) {
+        // Load application module
+        const std::vector<std::string> lib_load_list = {
+            "sce_module/libc.suprx",
+            "sce_module/libfios2.suprx",
+            "sce_module/libult.suprx",
+        };
 
-    for (auto module_path : lib_load_list) {
-        vfs::FileBuffer module_buffer;
-        Ptr<const void> lib_entry_point;
+        pre_load_module(host, lib_load_list, VitaIoDevice::app0);
+    } else {
+        // Load Firmware module
+        const std::vector<std::string> lib_load_list = {
+            "sys/external/libc.suprx",
+            "sys/external/libfios2.suprx",
+            "sys/external/libult.suprx",
+        };
 
-        if (vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path)) {
-            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), std::string("app0:") + module_path, host.cfg);
-            if (module_id >= 0) {
-                const auto module = host.kernel.loaded_modules[module_id];
-
-                LOG_INFO("Pre-load module {} (at \"{}\") loaded", module->module_name, module_path);
-            } else
-                return FileNotFound;
-        } else {
-            LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
-        }
+        pre_load_module(host, lib_load_list, VitaIoDevice::vs0);
     }
 
     // Load main executable (eboot.bin)
