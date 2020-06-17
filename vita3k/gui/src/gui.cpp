@@ -21,7 +21,6 @@
 
 #include <gui/imgui_impl_sdl.h>
 
-#include <boost/algorithm/string/trim.hpp>
 #include <glutil/gl.h>
 #include <host/functions.h>
 #include <host/state.h>
@@ -241,14 +240,13 @@ void get_apps_title(GuiState &gui, HostState &host) {
             if (vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
-                sfo::get_data_by_key(host.game_version, sfo_handle, "APP_VER");
-                sfo::get_data_by_key(host.game_category, sfo_handle, "CATEGORY");
-                if (!sfo::get_data_by_key(host.game_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
-                    sfo::get_data_by_key(host.game_short_title, sfo_handle, "STITLE");
-                if (!sfo::get_data_by_key(host.game_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-                    sfo::get_data_by_key(host.game_title, sfo_handle, "TITLE");
-                std::replace(host.game_title.begin(), host.game_title.end(), '\n', ' ');
-                boost::trim(host.game_title);
+                sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
+                sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
+                if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
+                    sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
+                if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+                    sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
+                std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
             } else {
                 host.app_short_title = host.app_title = host.io.title_id; // Use TitleID as Short title and Title
                 host.app_version = host.app_category = "N/A";
