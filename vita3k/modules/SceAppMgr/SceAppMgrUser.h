@@ -19,38 +19,7 @@
 
 #include <module/module.h>
 
-enum SceAppMgrErrorCode {
-    SCE_APPMGR_ERROR_BUSY = 0x80802000, //!< Busy
-    SCE_APPMGR_ERROR_STATE = 0x80802013, //!< Invalid state
-    SCE_APPMGR_ERROR_NULL_POINTER = 0x80802016, //!< NULL pointer
-    SCE_APPMGR_ERROR_INVALID = 0x8080201A, //!< Invalid param
-    SCE_APPMGR_ERROR_TOO_LONG_ARGV = 0x8080201D, //!< argv is too long
-    SCE_APPMGR_ERROR_INVALID_SELF_PATH = 0x8080201E, //!< Invalid SELF path
-    SCE_APPMGR_ERROR_BGM_PORT_BUSY = 0x80803000 //!< BGM port was occupied and could not be secured
-};
-
-enum SceAppMgrSystemEventType {
-    SCE_APPMGR_SYSTEMEVENT_ON_RESUME = 0x10000003, //!< Application resumed
-    SCE_APPMGR_SYSTEMEVENT_ON_STORE_PURCHASE = 0x10000004, //!< Store checkout event arrived
-    SCE_APPMGR_SYSTEMEVENT_ON_NP_MESSAGE_ARRIVED = 0x10000005, //!< NP message event arrived
-    SCE_APPMGR_SYSTEMEVENT_ON_STORE_REDEMPTION = 0x10000006 //!< Promotion code redeemed at PlayStation®Store
-};
-
-typedef struct SceAppMgrSystemEvent {
-    SceInt32 systemEvent; //!< System event ID
-    SceUInt8 reserved[60]; //!< Reserved data
-} SceAppMgrSystemEvent;
-
-typedef struct SceAppMgrAppState {
-    SceUInt32 systemEventNum; //!< Number of system events
-    SceUInt32 appEventNum; //!< Number of application events
-    SceBool isSystemUiOverlaid; //!< Truth-value of UI overlaid of system software
-    SceUInt8 reserved[128 - sizeof(SceUInt32) * 2 - sizeof(SceBool)]; //!< Reserved area
-} SceAppMgrAppState;
-
-typedef struct SceAppMgrLoadExecOptParam {
-    int reserved[256 / 4]; //!< Reserved area
-} SceAppMgrLoadExecOptParam;
+#include "SceAppMgr.h"
 
 SceInt32 _sceAppMgrGetAppState(SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion);
 SceInt32 sceAppMgrLoadExec(const char *appPath, char *const argv[], const SceAppMgrLoadExecOptParam *optParam);

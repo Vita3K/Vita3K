@@ -17,8 +17,17 @@
 
 #include "SceAppMgr.h"
 
-EXPORT(int, __sceAppMgrGetAppState) {
-    return UNIMPLEMENTED();
+#include <host/functions.h>
+#include <host/load_self.h>
+#include <kernel/functions.h>
+#include <kernel/thread/thread_functions.h>
+#include <modules/module_parent.h>
+#include <util/find.h>
+
+EXPORT(SceInt32, __sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion) {
+    memset(appState, 0, sizeofSceAppMgrAppState);
+
+    return STUBBED("Set to 0.");
 }
 
 EXPORT(int, _sceAppMgrAcidDirSet) {
@@ -53,8 +62,14 @@ EXPORT(int, _sceAppMgrAppParamGetInt) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrAppParamGetString) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
+    std::string res;
+    if (!sfo::get_data_by_id(res, host.sfo_handle, param))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
+    else {
+        res.copy(string, length);
+        return 0;
+    }
 }
 
 EXPORT(int, _sceAppMgrAppParamSetString) {
@@ -297,8 +312,76 @@ EXPORT(int, _sceAppMgrLaunchVideoStreamingApp) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrLoadExec) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[], const SceAppMgrLoadExecOptParam *optParam) {
+    if (optParam)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
+
+    // Create exec path
+    auto exec_path = static_cast<std::string>(appPath);
+    if (exec_path.find("app0:/") != std::string::npos)
+        exec_path.erase(0, 6);
+    else
+        exec_path.erase(0, 5);
+    LOG_DEBUG("appPath: {}, exec path: {}", appPath, exec_path);
+    // Load exec executable
+    vfs::FileBuffer exec_buffer;
+    if (vfs::read_app_file(exec_buffer, host.pref_path, host.io.title_id, exec_path)) {
+        Ptr<const void> exec_entry_point;
+        const auto exec_id = load_self(exec_entry_point, host.kernel, host.mem, exec_buffer.data(), appPath, host.cfg);
+        if (exec_id >= 0) {
+            const auto exec_load = host.kernel.loaded_modules[exec_id];
+
+            LOG_INFO("Exec executable {} ({}) loaded", exec_load->module_name, exec_path);
+
+            auto inject = create_cpu_dep_inject(host);
+            // Init exec thread
+            const auto exec_thread_id = create_thread(exec_entry_point, host.kernel, host.mem, exec_load->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
+                inject, nullptr);
+
+            if (exec_thread_id < 0) {
+                LOG_ERROR("Failed to init exec thread.");
+                return RET_ERROR(exec_thread_id);
+            }
+
+            // Init size of argv
+            SceSize size_argv = 0;
+            if (argv && argv->get(host.mem)) {
+                while (argv->get(host.mem)[size_argv])
+                    ++size_argv;
+
+                if (size_argv > 1024)
+                    return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
+            }
+
+            // Start exec thread
+            const auto new_argv = copy_stack(thread_id, exec_thread_id, argv ? Ptr<void>(*argv) : Ptr<void>(), host.kernel, host.mem);
+            const auto exec = start_thread(host.kernel, exec_thread_id, size_argv, new_argv);
+            if (exec < 0) {
+                LOG_ERROR("Failed to run exec thread.");
+                return RET_ERROR(exec);
+            }
+
+            LOG_INFO("Exec {} (at \"{}\") start_exec returned {}", exec_load->module_name, exec_load->path, log_hex(exec));
+
+            // Erase current module/thread
+            // TODO Unload and Erase it inside memory
+            auto run_exec_thread = util::find(exec_thread_id, host.kernel.running_threads);
+            host.kernel.running_threads[thread_id].swap(run_exec_thread);
+            host.kernel.running_threads.erase(thread_id);
+
+            auto exec_thread = util::find(exec_thread_id, host.kernel.threads);
+            host.kernel.threads[thread_id].swap(exec_thread);
+            host.kernel.threads.erase(thread_id);
+
+            host.kernel.loaded_modules.erase(thread_id - 1);
+
+            return 0;
+        }
+
+        return RET_ERROR(SCE_APPMGR_ERROR_STATE);
+    }
+
+    return RET_ERROR(SCE_APPMGR_ERROR_INVALID_SELF_PATH);
 }
 
 EXPORT(int, _sceAppMgrLoadSaveDataSystemFile) {
@@ -361,7 +444,8 @@ EXPORT(int, _sceAppMgrReceiveShellEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrReceiveSystemEvent) {
+EXPORT(int, _sceAppMgrReceiveSystemEvent, SceAppMgrSystemEvent *systemEvent) {
+    systemEvent->systemEvent = SCE_APPMGR_SYSTEMEVENT_ON_RESUME;
     return UNIMPLEMENTED();
 }
 

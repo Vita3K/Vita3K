@@ -19,6 +19,13 @@
 
 #include <module/module.h>
 
+EXPORT(int, _sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc);
+EXPORT(int, _sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pLocalTime);
+EXPORT(int, _sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone);
+EXPORT(int, _sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr);
+EXPORT(int, _sceRtcGetCurrentNetworkTick, SceRtcTick *tick);
+EXPORT(int, _sceRtcGetCurrentTick, SceRtcTick *tick);
+
 BRIDGE_DECL(_sceRtcConvertLocalTimeToUtc)
 BRIDGE_DECL(_sceRtcConvertUtcToLocalTime)
 BRIDGE_DECL(_sceRtcFormatRFC2822)

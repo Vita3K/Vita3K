@@ -19,6 +19,8 @@
 
 #include <module/module.h>
 
+#include "SceDisplay.h"
+
 BRIDGE_DECL(sceDisplayGetFrameBuf)
 BRIDGE_DECL(sceDisplayGetFrameBufInternal)
 BRIDGE_DECL(sceDisplayGetMaximumFrameBufResolution)

@@ -19,20 +19,6 @@
 
 #include <host/functions.h>
 
-enum SceDisplayErrorCode {
-    SCE_DISPLAY_ERROR_OK = 0,
-    SCE_DISPLAY_ERROR_INVALID_HEAD = 0x80290000,
-    SCE_DISPLAY_ERROR_INVALID_VALUE = 0x80290001,
-    SCE_DISPLAY_ERROR_INVALID_ADDR = 0x80290002,
-    SCE_DISPLAY_ERROR_INVALID_PIXELFORMAT = 0x80290003,
-    SCE_DISPLAY_ERROR_INVALID_PITCH = 0x80290004,
-    SCE_DISPLAY_ERROR_INVALID_RESOLUTION = 0x80290005,
-    SCE_DISPLAY_ERROR_INVALID_UPDATETIMING = 0x80290006,
-    SCE_DISPLAY_ERROR_NO_FRAME_BUFFER = 0x80290007,
-    SCE_DISPLAY_ERROR_NO_PIXEL_DATA = 0x80290008,
-    SCE_DISPLAY_ERROR_NO_OUTPUT_SIGNAL = 0x80290009
-};
-
 static int display_wait(HostState &host) {
     std::unique_lock<std::mutex> lock(host.display.mutex);
     host.display.condvar.wait(lock);
@@ -59,8 +45,35 @@ EXPORT(int, _sceDisplayGetResolutionInfoInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceDisplaySetFrameBuf) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
+    if (pFrameBuf == nullptr)
+        return SCE_DISPLAY_ERROR_OK;
+    if (pFrameBuf->size != sizeof(SceDisplayFrameBuf)) {
+        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
+    }
+    if (!pFrameBuf->base) {
+        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_ADDR);
+    }
+    if (pFrameBuf->pitch < pFrameBuf->width) {
+        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_PITCH);
+    }
+    if (pFrameBuf->pixelformat != SCE_DISPLAY_PIXELFORMAT_A8B8G8R8) {
+        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_PIXELFORMAT);
+    }
+    if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE) {
+        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
+    }
+
+    host.display.base = pFrameBuf->base;
+    host.display.pitch = pFrameBuf->pitch;
+    host.display.pixelformat = pFrameBuf->pixelformat;
+    host.display.image_size.x = pFrameBuf->width;
+    host.display.image_size.y = pFrameBuf->height;
+    ++host.frame_count;
+
+    MicroProfileFlip(nullptr);
+
+    return SCE_DISPLAY_ERROR_OK;
 }
 
 EXPORT(int, _sceDisplaySetFrameBufForCompat) {

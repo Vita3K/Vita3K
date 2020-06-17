@@ -87,8 +87,12 @@ EXPORT(int, _sceIoMkdirAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoOpen) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoOpen, const char *file, const int flags, const SceMode mode) {
+    if (file == nullptr) {
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    }
+    LOG_INFO("Opening file: {}", file);
+    return open_file(host.io, file, flags, host.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoOpenAsync) {

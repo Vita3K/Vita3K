@@ -19,6 +19,8 @@
 
 #include <module/module.h>
 
+#include "SceRtc.h"
+
 BRIDGE_DECL(sceRtcCheckValid)
 BRIDGE_DECL(sceRtcCompareTick)
 BRIDGE_DECL(sceRtcConvertLocalTimeToUtc)
