@@ -127,6 +127,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
         if (!gui.modules.empty()) {
             ImGui::Spacing();
+            ImGui::Checkbox("Experimental: LLE libkernel & driver_us", &host.cfg.lle_kernel);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Enable this for using libkernel and driver_us module (experimental).");
+            ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Module Mode");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select Automatic or Manual mode for load modules list.");

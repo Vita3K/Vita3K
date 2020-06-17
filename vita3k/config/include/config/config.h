@@ -41,6 +41,7 @@
     code(bool, "disable-ngs", true, disable_ngs)                                                        \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
+    code(bool, "lle-kernel", false, lle_kernel)                                                         \
     code(bool, "auto-lle", false, auto_lle)                                                             \
     code(int, "delay-background", 4, delay_background)                                                  \
     code(int, "delay-start", 10, delay_start)                                                           \
