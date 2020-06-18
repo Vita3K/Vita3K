@@ -71,7 +71,7 @@ static int SDLCALL thread_function(void *data) {
     return r0;
 }
 
-SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CallImport call_import, ResolveNIDName resolve_nid_name, const SceKernelThreadOptParam *option = nullptr) {
+SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CallImport call_import, ResolveNIDName resolve_nid_name, bool trace_stack, const SceKernelThreadOptParam *option = nullptr) {
     SceUID thid = kernel.get_next_uid();
 
     const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {
@@ -103,7 +103,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         return ::is_watch_memory_addr(kernel, addr);
     };
 
-    thread->cpu = init_cpu(thid, entry_point.address(), stack_top, call_svc, resolve_nid_name, is_watch_memory_addr, mem);
+    thread->cpu = init_cpu(thid, entry_point.address(), stack_top, call_svc, resolve_nid_name, is_watch_memory_addr, trace_stack, mem);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }

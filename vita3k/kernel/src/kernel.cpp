@@ -27,6 +27,7 @@
 #include <spdlog/fmt/fmt.h>
 
 #include <util/find.h>
+#include <util/log.h>
 
 Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key) {
     SlotToAddress &slot_to_address = kernel.tls[thread_id];
@@ -103,5 +104,34 @@ void update_watches(KernelState &state) {
             else
                 log_mem_remove(cpu);
         }
+    }
+}
+
+std::unique_ptr<ModuleRegion> get_region(KernelState &state, Address addr) {
+    for (const auto &region : state.module_regions) {
+        if (region.start <= addr && addr < region.start + region.size) {
+            return std::make_unique<ModuleRegion>(region);
+        }
+    }
+    return nullptr;
+}
+
+void log_stack_frames(KernelState &state, CPUState &cpu) {
+    auto sfs = get_stack_frames(cpu);
+    LOG_INFO("stack information");
+    int i = 0;
+    while (!sfs.empty() && i < 50) {
+        i++;
+        auto sf = sfs.top();
+        sfs.pop();
+
+        auto region = get_region(state, sf.addr);
+        assert(region);
+        auto vaddr = sf.addr - region->start + region->vaddr;
+        LOG_INFO("---------");
+        LOG_INFO("module: {}", region->name);
+        LOG_INFO("vaddr: {}", log_hex(vaddr));
+        LOG_INFO("addr: {}", log_hex(sf.addr));
+        LOG_INFO("fp: {}", sf.sp);
     }
 }

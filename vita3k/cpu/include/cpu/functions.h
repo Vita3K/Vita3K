@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <stack>
 
 struct CPUState;
 struct MemState;
@@ -34,13 +35,19 @@ struct CPUContext {
     uint32_t cpsr;
 };
 
+struct StackFrame {
+    uint32_t addr;
+    uint32_t sp;
+    std::string name;
+};
+
 typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
 typedef std::function<std::string(Address)> ResolveNIDName;
 typedef std::function<bool(Address)> IsWatchMemoryAddr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
 
-CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, CallSVC call_svc, ResolveNIDName resolve_nid_name, IsWatchMemoryAddr is_watch_memory_addr, MemState &mem);
+CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, CallSVC call_svc, ResolveNIDName resolve_nid_name, IsWatchMemoryAddr is_watch_memory_addr, bool trace_stack, MemState &mem);
 int run(CPUState &state, bool callback, Address entry_point);
 int step(CPUState &state, bool callback, Address entry_point);
 void stop(CPUState &state);
@@ -74,3 +81,5 @@ bool log_code_exists(CPUState &state);
 bool log_mem_exists(CPUState &state);
 void save_context(CPUState &state, CPUContext &ctx);
 void load_context(CPUState &state, CPUContext &ctx);
+std::stack<StackFrame> get_stack_frames(CPUState &state);
+void push_stack_frame(CPUState &state, StackFrame sf);

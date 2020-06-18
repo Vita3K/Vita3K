@@ -193,7 +193,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
 
                 Ptr<void> argp = Ptr<void>();
                 const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
-                    static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, resolve_nid_name, nullptr);
+                    static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, resolve_nid_name, host.cfg.stack_traceback, nullptr);
                 const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
                 const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
 

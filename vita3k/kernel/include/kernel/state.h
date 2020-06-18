@@ -37,6 +37,8 @@ struct WatchMemory;
 
 struct InitialFiber;
 
+struct ModuleRegion;
+
 typedef std::vector<InitialFiber> InitialFibers;
 
 typedef std::shared_ptr<SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
@@ -53,6 +55,7 @@ typedef std::map<uint32_t, Address> ExportNids;
 typedef std::map<Address, uint32_t> NidFromExport;
 typedef std::map<Address, uint32_t> NotFoundVars;
 typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
+typedef std::vector<ModuleRegion> ModuleRegions;
 
 struct WaitingThreadData {
     ThreadStatePtr thread;
@@ -170,6 +173,14 @@ typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
 
 struct WaitingThreadState {
     std::string name; // for debugging
+};
+
+struct ModuleRegion {
+    uint32_t nid;
+    std::string name;
+    Address start;
+    uint32_t size;
+    Address vaddr;
 };
 
 typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
@@ -309,6 +320,7 @@ struct KernelState {
     NidFromExport nid_from_export;
     NotFoundVars not_found_vars;
     WatchMemoryAddrs watch_memory_addrs;
+    ModuleRegions module_regions;
 
     InitialFibers initial_fibers;
     SceRtcTick start_tick;

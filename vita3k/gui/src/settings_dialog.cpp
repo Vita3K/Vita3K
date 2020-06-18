@@ -353,9 +353,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shaders being used on each draw call.");
+        ImGui::Checkbox("Enable Stack Traceback", &host.cfg.stack_traceback);
         ImGui::Checkbox("Log Uniforms", &host.cfg.log_uniforms);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shader uniform names and values.");
+        ImGui::SameLine();
         ImGui::Checkbox("Save color surfaces", &host.cfg.color_surface_debug);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");

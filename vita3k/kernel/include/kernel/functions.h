@@ -24,6 +24,7 @@ template <class T>
 class Ptr;
 struct KernelState;
 struct MemState;
+struct CPUState;
 
 Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key);
 void stop_all_threads(KernelState &kernel);
@@ -33,3 +34,5 @@ void remove_watch_memory_addr(KernelState &state, Address addr);
 bool is_watch_memory_addr(KernelState &state, Address addr);
 
 void update_watches(KernelState &state);
+
+void log_stack_frames(KernelState &state, CPUState &cpu);
