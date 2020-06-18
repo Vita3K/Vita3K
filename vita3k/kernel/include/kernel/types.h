@@ -532,9 +532,12 @@ struct SceKernelLMOption {
 
 // We only use workarea for uid
 struct SceKernelLwMutexWork {
+    std::uint32_t owner;
+    std::uint32_t unknown0;
+    std::uint32_t lockCount;
+    std::uint32_t attr;
     SceUID uid;
-
-    std::uint8_t padding[28];
+    std::uint32_t unknown1[3];
 };
 
 // We only use workarea for uid
@@ -542,6 +545,25 @@ struct SceKernelLwCondWork {
     SceUID uid;
 
     std::uint8_t padding[28];
+};
+
+struct SceKernelCreateLwMutex_opt {
+    int init_count;
+    Ptr<SceKernelLwMutexOptParam> opt_param;
+    uint32_t unk_8;
+    uint32_t unk_C;
+};
+
+struct SceKernelCreateLwCond_opt {
+    Ptr<SceKernelLwMutexWork> workarea_mutex;
+    Ptr<SceKernelLwCondOptParam> opt_param;
+    uint32_t unk_8;
+    uint32_t unk_C;
+};
+
+struct SceKernelCreateSema_opt {
+    int maxVal;
+    Ptr<SceKernelSemaOptParam> option;
 };
 
 struct SceKernelThreadInfo {
@@ -558,7 +580,7 @@ struct SceKernelThreadInfo {
     /** Thread entry point */
     SceKernelThreadEntry entry;
     /** Thread stack pointer */
-    void *stack;
+    Ptr<void> stack;
     /** Thread stack size */
     int stackSize;
     /** Initial priority */
@@ -598,6 +620,14 @@ struct SceKernelThreadOptParam {
     SceSize size;
     /** Attributes */
     SceUInt32 attr;
+};
+
+struct SceKernelCreateThread_opt {
+    SceSize size;
+    int stack_size;
+    SceUInt attr;
+    int cpu_affinity_mask;
+    Ptr<SceKernelThreadOptParam> option;
 };
 
 static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
