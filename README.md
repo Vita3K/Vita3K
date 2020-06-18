@@ -36,9 +36,11 @@ The emulator currently runs some homebrew programs. It is also able to load some
 
 Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
 
-## Binaries
-
-Vita3K binaries for Windows can be downloaded on [AppVeyor](https://ci.appveyor.com/project/Vita3K/vita3k/branch/master/artifacts).
+## Downloads
+* [Windows](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
+  * [Visual C++ Redistributables](https://aka.ms/vs/16/release/vc_redist.x64.exe) (Install if not working.) 
+* [Linux](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
+* [macOS](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
 
 ## Building
 
