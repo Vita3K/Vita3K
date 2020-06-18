@@ -25,6 +25,7 @@
 #include <io/functions.h>
 #include <mem/mem.h>
 #include <nids/functions.h>
+#include <pvf/state.h>
 #include <renderer/functions.h>
 #include <rtc/rtc.h>
 #include <util/fs.h>
@@ -153,6 +154,11 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
 
     if (!init(state.mem)) {
         LOG_ERROR("Failed to initialize memory for emulator state!");
+        return false;
+    }
+
+    if (!init(state.pvf)) {
+        LOG_ERROR("Failed to initialize pvf!");
         return false;
     }
 

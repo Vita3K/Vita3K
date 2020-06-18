@@ -29,6 +29,7 @@
 #include <net/state.h>
 #include <nids/types.h>
 #include <np/state.h>
+#include <pvf/state.h>
 #include <renderer/state.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
@@ -80,6 +81,7 @@ struct HostState {
     IOState io;
     NetState net;
     NpState np;
+    PvfState pvf;
     DisplayState display;
     DialogState common_dialog;
     SfoFile sfo_handle;
