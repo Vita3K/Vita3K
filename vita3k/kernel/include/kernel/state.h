@@ -138,8 +138,10 @@ typedef std::shared_ptr<Semaphore> SemaphorePtr;
 typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 
 struct Mutex : SyncPrimitive {
+    int init_count;
     int lock_count;
     ThreadStatePtr owner;
+    Ptr<SceKernelLwMutexWork> workarea;
 };
 
 typedef std::shared_ptr<Mutex> MutexPtr;

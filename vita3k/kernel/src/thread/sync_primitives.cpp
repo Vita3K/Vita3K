@@ -104,7 +104,7 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
 // * Mutex *
 // *********
 
-SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_name, const char *mutex_name, SceUID thread_id, SceUInt attr, int init_count, SyncWeight weight) {
+SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const char *export_name, const char *mutex_name, SceUID thread_id, SceUInt attr, int init_count, Ptr<SceKernelLwMutexWork> workarea, SyncWeight weight) {
     if ((strlen(mutex_name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -118,13 +118,23 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_nam
     const MutexPtr mutex = std::make_shared<Mutex>();
     const SceUID uid = kernel.get_next_uid();
     mutex->uid = uid;
+    mutex->init_count = init_count;
     mutex->lock_count = init_count;
+    mutex->workarea = workarea;
     std::copy(mutex_name, mutex_name + KERNELOBJECT_MAX_NAME_LENGTH, mutex->name);
     mutex->attr = attr;
     mutex->owner = nullptr;
     if (init_count > 0) {
         const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
         mutex->owner = thread;
+    }
+
+    if (weight == SyncWeight::Light) {
+        SceKernelLwMutexWork *workarea_mem = workarea.get(mem);
+        workarea_mem->lockCount = init_count;
+        if (workarea_mem->lockCount)
+            workarea_mem->owner = thread_id;
+        workarea_mem->attr = attr;
     }
 
     const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
@@ -143,7 +153,7 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_nam
     return SCE_KERNEL_OK;
 }
 
-inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int lock_count, MutexPtr &mutex, SyncWeight weight, SceUInt *timeout, bool only_try) {
+inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, int lock_count, MutexPtr &mutex, SyncWeight weight, SceUInt *timeout, bool only_try) {
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} lock_count: {} timeout: {} waiting_threads: {}",
             export_name, mutex->uid, thread_id, mutex->name, mutex->attr, mutex->lock_count, timeout ? *timeout : 0,
@@ -163,6 +173,9 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
         if (mutex->owner == thread) {
             if (is_recursive) {
                 mutex->lock_count += lock_count;
+                if (weight == SyncWeight::Light)
+                    mutex->workarea.get(mem)->lockCount += lock_count;
+
                 return SCE_KERNEL_OK;
             }
             if (weight == SyncWeight::Light)
@@ -193,7 +206,16 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
         mutex->waiting_threads.emplace(data);
         mutex_lock.unlock();
 
-        return handle_timeout(thread, thread_lock, mutex_lock, *mutex, data, export_name, timeout);
+        int res = handle_timeout(thread, thread_lock, mutex_lock, *mutex, data, export_name, timeout);
+
+        if (weight == SyncWeight::Light) {
+            mutex->workarea.get(mem)->lockCount = mutex->lock_count;
+            if (mutex->owner == thread) {
+                mutex->workarea.get(mem)->owner = thread_id;
+            }
+        }
+
+        return res;
     }
     // Not owned
     // Take ownership!
@@ -201,27 +223,34 @@ inline int mutex_lock_impl(KernelState &kernel, const char *export_name, SceUID 
     mutex->lock_count += lock_count;
     mutex->owner = thread;
 
+    if (weight == SyncWeight::Light) {
+        mutex->workarea.get(mem)->lockCount = mutex->lock_count;
+        if (mutex->owner == thread) {
+            mutex->workarea.get(mem)->owner = thread_id;
+        }
+    }
+
     return SCE_KERNEL_OK;
 }
 
-int mutex_lock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, unsigned int *timeout, SyncWeight weight) {
+int mutex_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, unsigned int *timeout, SyncWeight weight) {
     assert(mutexid >= 0);
 
     MutexPtr mutex;
     if (auto error = find_mutex(mutex, nullptr, kernel, export_name, mutexid, weight))
         return error;
 
-    return mutex_lock_impl(kernel, export_name, thread_id, lock_count, mutex, weight, timeout, false);
+    return mutex_lock_impl(kernel, mem, export_name, thread_id, lock_count, mutex, weight, timeout, false);
 }
 
-int mutex_try_lock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, SyncWeight weight) {
+int mutex_try_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, SyncWeight weight) {
     assert(mutexid >= 0);
 
     MutexPtr mutex;
     if (auto error = find_mutex(mutex, nullptr, kernel, export_name, mutexid, weight))
         return error;
 
-    return mutex_lock_impl(kernel, export_name, thread_id, lock_count, mutex, weight, nullptr, true);
+    return mutex_lock_impl(kernel, mem, export_name, thread_id, lock_count, mutex, weight, nullptr, true);
 }
 
 inline int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int unlock_count, MutexPtr &mutex) {
@@ -475,7 +504,7 @@ SceUID condvar_create(SceUID *uid_out, KernelState &kernel, const char *export_n
     return SCE_KERNEL_OK;
 }
 
-int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, SceUInt *timeout, SyncWeight weight) {
+int condvar_wait(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID condid, SceUInt *timeout, SyncWeight weight) {
     assert(condid >= 0);
 
     CondvarPtr condvar;
@@ -514,7 +543,7 @@ int condvar_wait(KernelState &kernel, const char *export_name, SceUID thread_id,
 
     thread_lock.unlock();
 
-    return mutex_lock_impl(kernel, export_name, thread_id, 1, condvar->associated_mutex, weight, timeout, false);
+    return mutex_lock_impl(kernel, mem, export_name, thread_id, 1, condvar->associated_mutex, weight, timeout, false);
 }
 
 int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, Condvar::SignalTarget signal_target, SyncWeight weight) {
