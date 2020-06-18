@@ -17,6 +17,9 @@
 
 #include "ScePvf.h"
 
+#include <mem/mem.h>
+#include <pvf/state.h>
+
 EXPORT(int, __scePvfSetFt2DoneLibCHook) {
     return UNIMPLEMENTED();
 }
@@ -25,51 +28,136 @@ EXPORT(int, __scePvfSetFt2LibCHook) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePvfClose) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfClose, ScePvfFontId font_id) {
+    clean_pvf_font(host.pvf, font_id);
+    return SCE_PVF_OK;
 }
 
-EXPORT(int, scePvfDoneLib) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfDoneLib, ScePvfLibID lib_id) {
+    clean_pvf_library(host.pvf, lib_id);
+    return SCE_PVF_OK;
 }
 
-EXPORT(int, scePvfFindFont) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfFontIndex, scePvfFindFont, ScePvfLibID libID, ScePvfFontStyleInfo *fontStyleInfo, ScePvfError *errorCode) {
+    STUBBED("deal with styleInfo correctly");
+    ScePvfFontIndex out;
+    switch (fontStyleInfo->countryCode) {
+    case SCE_PVF_LANGUAGE_LATIN:
+        out = 0;
+        break;
+    case SCE_PVF_LANGUAGE_K:
+        out = 1;
+        break;
+    case SCE_PVF_LANGUAGE_C:
+        out = 2;
+        break;
+    default:
+        out = 3;
+    }
+    *errorCode = SCE_PVF_OK;
+    return out;
 }
 
-EXPORT(int, scePvfFindOptimumFont) {
-    return UNIMPLEMENTED();
+static std::string get_path_for_index(ScePvfFontIndex index) {
+    std::ostringstream path;
+    path << "sa0:data/font/pvf";
+    switch (index) {
+    case 0:
+        path << "/latin0.pvf";
+        break;
+    case 1:
+        path << "/kr0.pvf";
+        break;
+    case 2:
+        path << "/cn0.pvf";
+        break;
+    default:
+        path << "/jpn0.pvf";
+    }
+    return path.str();
+}
+
+EXPORT(ScePvfFontIndex, scePvfFindOptimumFont, ScePvfLibID libID, ScePvfFontStyleInfo *fontStyleInfo, ScePvfError *errorCode) {
+    STUBBED("deal with bold and regular");
+    ScePvfFontIndex out;
+    switch (fontStyleInfo->countryCode) {
+    case SCE_PVF_LANGUAGE_LATIN:
+        out = 0;
+        break;
+    case SCE_PVF_LANGUAGE_K:
+        out = 1;
+        break;
+    case SCE_PVF_LANGUAGE_C:
+        out = 2;
+        break;
+    default:
+        out = 3;
+    }
+    *errorCode = SCE_PVF_OK;
+    return out;
 }
 
 EXPORT(int, scePvfFlush) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePvfGetCharGlyphImage) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfGetCharGlyphImage, ScePvfFontId fontID, uint16_t charCode, ScePvfUserImageBufferRec *imageBuffer) {
+    auto font = get_pvf_font(host.pvf, fontID);
+    auto lib = get_pvf_library(host.pvf, font->lib_id);
+    if (font->render(*lib, host.mem, charCode, imageBuffer)) {
+        return SCE_PVF_ERROR_NOGLYPH;
+    }
+
+    return SCE_PVF_OK;
 }
 
-EXPORT(int, scePvfGetCharGlyphImage_Clip) {
-    return UNIMPLEMENTED();
+// TODO clip it
+EXPORT(ScePvfError, scePvfGetCharGlyphImage_Clip, ScePvfFontId fontID, uint16_t charCode, ScePvfUserImageBufferRec *imageBuffer, int32_t clipX, int32_t clipY, uint32_t clipWidth, uint32_t clipHeight) {
+    auto font = get_pvf_font(host.pvf, fontID);
+    auto lib = get_pvf_library(host.pvf, font->lib_id);
+    if (font->render(*lib, host.mem, charCode, imageBuffer)) {
+        return SCE_PVF_ERROR_NOGLYPH;
+    }
+
+    return SCE_PVF_OK;
 }
 
 EXPORT(int, scePvfGetCharGlyphOutline) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePvfGetCharImageRect) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfGetCharImageRect, ScePvfFontId fontID, ScePvfCharCode charCode, ScePvfIrect *rect) {
+    auto font = get_pvf_font(host.pvf, fontID);
+    auto lib = get_pvf_library(host.pvf, font->lib_id);
+    ScePvfCharInfo info;
+    if (font->get_char_info(*lib, charCode, &info)) {
+        return SCE_PVF_ERROR_NOGLYPH;
+    }
+    rect->width = info.bitmapWidth;
+    rect->height = info.bitmapHeight;
+    return SCE_PVF_OK;
 }
 
-EXPORT(int, scePvfGetCharInfo) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfGetCharInfo, ScePvfFontId fontID, ScePvfCharCode charCode, ScePvfCharInfo *charInfo) {
+    auto font = get_pvf_font(host.pvf, fontID);
+    auto lib = get_pvf_library(host.pvf, font->lib_id);
+    if (font->get_char_info(*lib, charCode, charInfo)) {
+        return SCE_PVF_ERROR_NOGLYPH;
+    }
+
+    return SCE_PVF_OK;
 }
 
-EXPORT(int, scePvfGetFontInfo) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfGetFontInfo, ScePvfFontId fontID, ScePvfFontInfo *fontInfo) {
+    auto font = get_pvf_font(host.pvf, fontID);
+    if (font->get_info(fontInfo)) {
+        return SCE_PVF_ERROR_NOFILE;
+    }
+
+    return SCE_PVF_OK;
 }
 
-EXPORT(int, scePvfGetFontInfoByIndexNumber) {
+EXPORT(int, scePvfGetFontInfoByIndexNumber, ScePvfLibID libID, ScePvfFontStyleInfo *fontStyleInfo, ScePvfFontIndex fontIndex) {
     return UNIMPLEMENTED();
 }
 
@@ -113,12 +201,21 @@ EXPORT(int, scePvfIsVertElement) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePvfNewLib) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfLibID, scePvfNewLib, ScePvfInitRec *initParam, ScePvfError *errorCode) {
+    *errorCode = SCE_PVF_OK;
+    return create_pvf_library(host.pvf);
 }
 
-EXPORT(int, scePvfOpen) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfOpen, ScePvfLibID libID, ScePvfFontIndex index, uint32_t mode, ScePvfError *errorCode) {
+    auto path = get_path_for_index(index);
+    auto lib = get_pvf_library(host.pvf, libID);
+    auto out = lib->load_font_file(host.pvf, host.mem, host.io, path, host.pref_path);
+    if (out == 0) {
+        *errorCode = SCE_PVF_ERROR_NOFILE;
+    } else {
+        *errorCode = SCE_PVF_OK;
+    }
+    return out;
 }
 
 EXPORT(int, scePvfOpenDefaultJapaneseFontOnSharedMemory) {
@@ -129,16 +226,30 @@ EXPORT(int, scePvfOpenDefaultLatinFontOnSharedMemory) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePvfOpenUserFile) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfOpenUserFile, ScePvfLibID libID, const char *filename, uint32_t mode, uint32_t *errorCode) {
+    auto lib = get_pvf_library(host.pvf, libID);
+    auto out = lib->load_font_file(host.pvf, host.mem, host.io, filename, host.pref_path);
+    if (out == 0) {
+        *errorCode = SCE_PVF_ERROR_NOFILE;
+    } else {
+        *errorCode = SCE_PVF_OK;
+    }
+    return out;
 }
 
 EXPORT(int, scePvfOpenUserFileWithSubfontIndex) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePvfOpenUserMemory) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfOpenUserMemory, ScePvfLibID libID, Ptr<uint8_t> addr, uint32_t size, ScePvfError *errorCode) {
+    auto lib = get_pvf_library(host.pvf, libID);
+    auto out = lib->load_font_file(host.pvf, host.mem, addr, size);
+    if (out == 0) {
+        *errorCode = SCE_PVF_ERROR_NOFILE;
+    } else {
+        *errorCode = SCE_PVF_OK;
+    }
+    return out;
 }
 
 EXPORT(int, scePvfOpenUserMemoryWithSubfontIndex) {
@@ -169,20 +280,29 @@ EXPORT(int, scePvfSetAltCharacterCode) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePvfSetCharSize) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfSetCharSize, ScePvfFontId fontID, SceFloat32 hSize, SceFloat32 vSize) {
+    auto font = get_pvf_font(host.pvf, fontID);
+    auto lib = get_pvf_library(host.pvf, font->lib_id);
+    font->set_char_size(*lib, hSize, vSize);
+    return SCE_PVF_OK;
 }
 
-EXPORT(int, scePvfSetEM) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfSetEM, ScePvfLibID libID, SceFloat32 em) {
+    auto lib = get_pvf_library(host.pvf, libID);
+    lib->set_em(em);
+    lib->update_fonts(host.pvf);
+    return SCE_PVF_OK;
 }
 
 EXPORT(int, scePvfSetEmboldenRate) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePvfSetResolution) {
-    return UNIMPLEMENTED();
+EXPORT(ScePvfError, scePvfSetResolution, ScePvfLibID libID, SceFloat32 hSize, SceFloat32 vSize) {
+    auto lib = get_pvf_library(host.pvf, libID);
+    lib->set_resolution(hSize, vSize);
+    lib->update_fonts(host.pvf);
+    return SCE_PVF_OK;
 }
 
 EXPORT(int, scePvfSetSkewValue) {
