@@ -84,3 +84,6 @@
 [submodule "external/psvpfstools"]
 	path = external/psvpfstools
 	url = https://github.com/korewawatchful/psvpfstools.git
+[submodule "external/freetype2"]
+	path = external/freetype2
+	url = http://git.sv.nongnu.org/r/freetype/freetype2.git
