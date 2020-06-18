@@ -1881,6 +1881,7 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
     case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+    case SCE_GXM_TEXTURE_FORMAT_U8_R000:
     case SCE_GXM_TEXTURE_FORMAT_U8_R111:
     case SCE_GXM_TEXTURE_FORMAT_U8_111R:
     case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
