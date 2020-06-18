@@ -343,7 +343,7 @@ EXPORT(SceInt32, sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[],
 
             // Init exec thread
             const auto exec_thread_id = create_thread(exec_entry_point, host.kernel, host.mem, exec_load->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
-                call_import, resolve_nid_name, nullptr);
+                call_import, resolve_nid_name, host.cfg.stack_traceback, nullptr);
 
             if (exec_thread_id < 0) {
                 LOG_ERROR("Failed to init exec thread.");

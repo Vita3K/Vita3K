@@ -934,7 +934,7 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry ent
         return ::resolve_nid_name(host.kernel, addr);
     };
 
-    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, stack_size, call_import, resolve_nid_name, option);
+    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, stack_size, call_import, resolve_nid_name, host.cfg.stack_traceback, option);
     if (thid < 0)
         return RET_ERROR(thid);
     return thid;
@@ -1274,7 +1274,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
     };
 
     const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
-        static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, resolve_nid_name, nullptr);
+        static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, resolve_nid_name, host.cfg.stack_traceback, nullptr);
 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 

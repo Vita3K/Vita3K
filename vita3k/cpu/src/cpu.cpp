@@ -54,6 +54,8 @@ struct CPUState {
 
     bool did_break = false;
     bool did_inject = false;
+
+    std::stack<StackFrame> stack_frames;
 };
 
 constexpr bool TRACE_RETURN_VALUES = true;
@@ -74,6 +76,39 @@ static inline void func_trace(CPUState &state) {
     if (TRACE_RETURN_VALUES)
         if (is_returning(state.disasm))
             LOG_TRACE("Returning, r0: {}", log_hex(read_reg(state, 0)));
+}
+
+std::stack<StackFrame> get_stack_frames(CPUState &state) {
+    return state.stack_frames;
+}
+
+void push_stack_frame(CPUState &state, StackFrame sf) {
+    state.stack_frames.push(sf);
+}
+
+static void stack_trace_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+    CPUState &state = *static_cast<CPUState *>(user_data);
+    auto thumb_mode = is_thumb_mode(uc);
+    uint16_t ins = 0;
+    uc_err err = uc_mem_read(uc, address, &ins, sizeof(ins));
+    assert(err == UC_ERR_OK);
+    if (thumb_mode) {
+        if ((ins & 0xff00) == 0xB400 || (ins & 0xff00) == 0xB500 || ins == 0xE92D) {
+            state.stack_frames.push({ static_cast<uint32_t>(address), read_sp(state) });
+        }
+
+        if ((ins & 0xff00) == 0xBC00 || (ins & 0xff00) == 0xBD00 || ins == 0xE8BD) {
+            state.stack_frames.pop();
+        }
+    } else {
+        // TODO make sure this works
+        if (ins == 0xE92D) {
+            state.stack_frames.push({ static_cast<uint32_t>(address), read_sp(state) });
+        }
+        if (ins == 0xE8BD) {
+            state.stack_frames.pop();
+        }
+    }
 }
 
 static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
@@ -204,7 +239,7 @@ static void log_error_details(CPUState &state, uc_err code) {
     LOG_ERROR("Executing: {}", disassemble(state, pc));
 }
 
-CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, CallSVC call_svc, ResolveNIDName resolve_nid_name, IsWatchMemoryAddr is_watch_memory_addr, MemState &mem) {
+CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, CallSVC call_svc, ResolveNIDName resolve_nid_name, IsWatchMemoryAddr is_watch_memory_addr, bool trace_stack, MemState &mem) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
     state->call_svc = call_svc;
@@ -242,6 +277,11 @@ CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, CallSVC call_svc,
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(state->uc.get());
+
+    if (trace_stack) {
+        err = uc_hook_add(state->uc.get(), &hh, UC_HOOK_CODE, reinterpret_cast<void *>(&stack_trace_hook), state.get(), 1, 0);
+        assert(err == UC_ERR_OK);
+    }
 
     return state;
 }

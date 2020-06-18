@@ -379,7 +379,6 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         };
 
         LOG_DEBUG_IF(LOG_MODULE_LOADING, "    [{}] (p_type: {}): p_offset: {}, p_vaddr: {}, p_paddr: {}, p_filesz: {}, p_memsz: {}, p_flags: {}, p_align: {}", get_seg_header_string(), log_hex(seg_header.p_type), log_hex(seg_header.p_offset), log_hex(seg_header.p_vaddr), log_hex(seg_header.p_paddr), log_hex(seg_header.p_filesz), log_hex(seg_header.p_memsz), log_hex(seg_header.p_flags), log_hex(seg_header.p_align));
-
         assert(seg_infos[seg_index].encryption == 2);
         if (seg_header.p_type == PT_LOAD) {
             Address segment_address = 0;
@@ -435,13 +434,19 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         }
     }
 
-    for (const auto [seg, infos] : segment_reloc_info)
-        LOG_INFO("Loaded module segment {} @ [0x{:08X} - 0x{:08X}] (size: 0x{:08X}) of module {}", seg, infos.addr, infos.addr + infos.size, infos.size, self_path);
-
     const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
     const Ptr<const uint8_t> module_info_segment_address = Ptr<const uint8_t>(segment_reloc_info[module_info_segment_index].addr);
     const uint8_t *const module_info_segment_bytes = module_info_segment_address.get(mem);
     const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module_info_segment_bytes + module_info_offset);
+
+    for (const auto [seg, infos] : segment_reloc_info) {
+        LOG_INFO("Loaded module segment {} @ [0x{:08X} - 0x{:08X} / 0x{:08X}] (size: 0x{:08X}) of module {}", seg, infos.addr, infos.addr + infos.size, infos.p_vaddr, infos.size, self_path);
+        kernel.module_regions.push_back({ module_info->library_nid,
+            module_info->name,
+            infos.addr,
+            static_cast<uint32_t>(infos.size),
+            infos.p_vaddr });
+    }
 
     const SceKernelModuleInfoPtr sceKernelModuleInfo = std::make_shared<SceKernelModuleInfo>();
     sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
