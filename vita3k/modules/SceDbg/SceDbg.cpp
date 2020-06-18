@@ -29,7 +29,7 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    std::vector<char> buffer(1024);
+    std::vector<char> buffer(KB(1));
 
     const char *main_message = messages.next<Ptr<const char>>(*(thread->cpu), host.mem).get(host.mem);
     const int result = utils::snprintf(buffer.data(), buffer.size(), main_message, *(thread->cpu), host.mem, messages);

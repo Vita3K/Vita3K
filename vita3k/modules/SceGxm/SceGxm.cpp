@@ -647,7 +647,7 @@ EXPORT(int, sceGxmGetPrecomputedVertexStateSize) {
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSizes, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
-    *hostMemSize = 2 * 1024 * 1024;
+    *hostMemSize = MB(2);
     return STUBBED("2MB host mem");
 }
 
