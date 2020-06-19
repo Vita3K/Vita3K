@@ -645,13 +645,23 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         // Scal size frame
         const auto scal_size_frame = ImVec2(FRAME_SIZE.x * scal.x, FRAME_SIZE.y * scal.y);
 
-        if ((bg_size.x + bg_scal_size.x) > (pos_frame.x + scal_size_frame.x))
-            bg_size.x += (pos_frame.x + scal_size_frame.x) - (bg_pos.x + bg_scal_size.x);
+        // Reset position if get outside frame
+        if ((bg_pos.x + bg_scal_size.x) > (pos_frame.x + scal_size_frame.x))
+            bg_pos.x += (pos_frame.x + scal_size_frame.x) - (bg_pos.x + bg_scal_size.x);
+        if (bg_pos.x < pos_frame.x)
+            bg_pos.x += pos_frame.x - bg_pos.x;
 
-        if ((img_size.x + img_scal_size.x) > (pos_frame.x + scal_size_frame.x))
+        if ((bg_pos.y + bg_scal_size.y) > (pos_frame.y + scal_size_frame.y))
+            bg_pos.y += (pos_frame.y + scal_size_frame.y) - (bg_pos.y + bg_scal_size.y);
+        if (bg_pos.y < pos_frame.y)
+            bg_pos.y += pos_frame.y - bg_pos.y;
+
+        if ((img_pos.x + img_scal_size.x) > (pos_frame.x + scal_size_frame.x))
             img_size.x += (pos_frame.x + scal_size_frame.x) - (img_pos.x + img_scal_size.x);
+        if (img_pos.x < pos_frame.x)
+            img_pos.x += pos_frame.x - img_pos.x;
 
-        if ((img_size.y + img_scal_size.y) > (pos_frame.y + scal_size_frame.y))
+        if ((img_pos.y + img_scal_size.y) > (pos_frame.y + scal_size_frame.y))
             img_pos.y += (pos_frame.y + scal_size_frame.y) - (img_pos.y + img_scal_size.y);
         if (img_pos.y < pos_frame.y)
             img_pos.y += pos_frame.y - img_pos.y;
