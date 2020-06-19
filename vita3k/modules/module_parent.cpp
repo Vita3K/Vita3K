@@ -24,6 +24,7 @@
 #include <host/state.h>
 #include <io/device.h>
 #include <io/vfs.h>
+#include <kernel/functions.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
 #include <util/find.h>
@@ -159,13 +160,6 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
  * \return False on failure, true on success
  */
 bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
-    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
-        ::call_import(host, cpu, nid, main_thread_id);
-    };
-    const ResolveNIDName resolve_nid_name = [&host](Address addr) {
-        return ::resolve_nid_name(host.kernel, addr);
-    };
-
     LOG_INFO("Loading module ID: {}", log_hex(module_id));
 
     const auto module_paths = sysmodule_paths[module_id];
@@ -192,8 +186,9 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
                 LOG_DEBUG("Running module_start of module: {}", module_name);
 
                 Ptr<void> argp = Ptr<void>();
+                auto inject = create_cpu_dep_inject(host);
                 const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
-                    static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), call_import, resolve_nid_name, host.cfg.stack_traceback, nullptr);
+                    static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), inject, nullptr);
                 const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
                 const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
 
@@ -214,4 +209,24 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
 
     host.kernel.loaded_sysmodules.push_back(module_id);
     return true;
+}
+
+CPUDepInject create_cpu_dep_inject(HostState &host) {
+    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
+        ::call_import(host, cpu, nid, main_thread_id);
+    };
+    const ResolveNIDName resolve_nid_name = [&host](Address addr) {
+        return ::resolve_nid_name(host.kernel, addr);
+    };
+    auto is_watch_memory_addr = [&host](Address addr) {
+        return ::is_watch_memory_addr(host.kernel, addr);
+    };
+
+    CPUDepInject inject;
+    inject.call_import = call_import;
+    inject.resolve_nid_name = resolve_nid_name;
+    inject.trace_stack = host.cfg.stack_traceback;
+    inject.is_watch_memory_addr = is_watch_memory_addr;
+    inject.module_regions = host.kernel.module_regions;
+    return inject;
 }

@@ -24,6 +24,7 @@
 struct CPUState;
 struct HostState;
 struct KernelState;
+struct CPUDepInject;
 
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
 bool load_module(HostState &host, SceSysmoduleModuleId module_id);
@@ -46,3 +47,5 @@ constexpr int var_exports_size =
 #undef NID
 
 const std::array<VarExport, var_exports_size> &get_var_exports();
+
+CPUDepInject create_cpu_dep_inject(HostState &host);
