@@ -20,6 +20,8 @@
 #include <host/app_util.h>
 #include <mem/ptr.h>
 
+#define SCE_SAVEDATA_DIALOG_ERROR_PARAM 0x80100b01
+
 enum SceSaveDataDialogMode {
     SCE_SAVEDATA_DIALOG_MODE_FIXED = 1,
     SCE_SAVEDATA_DIALOG_MODE_LIST = 2,
@@ -89,6 +91,10 @@ enum SceSaveDataDialogButtonId {
 
 enum SceSaveDataDialogProgressBarTarget {
     SCE_SAVEDATA_DIALOG_PROGRESSBAR_TARGET_BAR_DEFAULT = 0
+};
+
+enum SceSaveDataDialogFinishFlag {
+    SCE_SAVEDATA_DIALOG_FINISH_FLAG_DEFAULT = 0
 };
 
 enum SceCommonDialogStatus {
@@ -346,6 +352,11 @@ struct SceSaveDataDialogErrorCodeParam {
     SceInt32 errorCode;
     SceAppUtilSaveDataSlot targetSlot;
     SceChar8 reserved[32];
+};
+
+struct SceSaveDataDialogFinishParam {
+    SceSaveDataDialogFinishFlag flag;
+    SceChar8 reserved[36];
 };
 
 struct SceAppUtilMountPoint {
