@@ -43,24 +43,27 @@ EXPORT(int, _sceIoDevctlAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoDopen) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoDopen, const char *dir) {
+    return open_dir(host.io, dir, host.pref_path, export_name);
 }
 
-EXPORT(int, _sceIoDread) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir) {
+    if (dir == nullptr) {
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    }
+    return read_dir(host.io, fd, dir, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
-EXPORT(int, _sceIoGetstat) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat) {
+    return stat_file(host.io, file, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, _sceIoGetstatAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoGetstatByFd) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
+    return stat_file_by_fd(host.io, fd, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
 }
 
 EXPORT(int, _sceIoIoctl) {
@@ -71,16 +74,17 @@ EXPORT(int, _sceIoIoctlAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoLseek) {
-    return UNIMPLEMENTED();
+EXPORT(SceOff, _sceIoLseek, const SceUID fd, Ptr<_sceIoLseekOpt> opt) {
+    _sceIoLseekOpt kk = *opt.get(host.mem);
+    return seek_file(fd, opt.get(host.mem)->offset, opt.get(host.mem)->whence, host.io, export_name);
 }
 
 EXPORT(int, _sceIoLseekAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoMkdir) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoMkdir, const char *dir, const SceMode mode) {
+    return create_dir(host.io, dir, mode, host.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoMkdirAsync) {
