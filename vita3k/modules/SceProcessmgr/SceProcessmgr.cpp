@@ -48,8 +48,10 @@ EXPORT(int, _sceKernelExitProcessForUser) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetTimer5Reg) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelGetTimer5Reg, Ptr<uint64_t> *timer) {
+    *timer = alloc<uint64_t>(host.mem, "timer5reg");
+    *(*timer).get(host.mem) = rtc_get_ticks(host.kernel.start_tick.tick);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelRegisterLibkernelAddresses) {
