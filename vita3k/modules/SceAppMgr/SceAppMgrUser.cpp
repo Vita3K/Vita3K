@@ -333,17 +333,10 @@ EXPORT(SceInt32, sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[],
 
             LOG_INFO("Exec executable {} ({}) loaded", exec_load->module_name, exec_path);
 
-            const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID exec_thread_id) {
-                ::call_import(host, cpu, nid, exec_thread_id);
-            };
-
-            const ResolveNIDName resolve_nid_name = [&host](Address addr) {
-                return ::resolve_nid_name(host.kernel, addr);
-            };
-
+            auto inject = create_cpu_dep_inject(host);
             // Init exec thread
             const auto exec_thread_id = create_thread(exec_entry_point, host.kernel, host.mem, exec_load->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
-                call_import, resolve_nid_name, host.cfg.stack_traceback, nullptr);
+                inject, nullptr);
 
             if (exec_thread_id < 0) {
                 LOG_ERROR("Failed to init exec thread.");

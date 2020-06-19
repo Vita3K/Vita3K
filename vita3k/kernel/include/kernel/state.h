@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cpu/functions.h>
 #include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mem/ptr.h>
@@ -36,8 +37,6 @@ struct SDL_Thread;
 struct WatchMemory;
 
 struct InitialFiber;
-
-struct ModuleRegion;
 
 typedef std::vector<InitialFiber> InitialFibers;
 
@@ -173,14 +172,6 @@ typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
 
 struct WaitingThreadState {
     std::string name; // for debugging
-};
-
-struct ModuleRegion {
-    uint32_t nid;
-    std::string name;
-    Address start;
-    uint32_t size;
-    Address vaddr;
 };
 
 typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;

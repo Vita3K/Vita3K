@@ -71,12 +71,19 @@ static int SDLCALL thread_function(void *data) {
     return r0;
 }
 
-SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CallImport call_import, ResolveNIDName resolve_nid_name, bool trace_stack, const SceKernelThreadOptParam *option = nullptr) {
+SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CPUDepInject &inject, const SceKernelThreadOptParam *option = nullptr) {
     SceUID thid = kernel.get_next_uid();
 
     const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {
         free(mem, stack);
     };
+
+    const CallSVC call_svc = [inject, thid, &mem](CPUState &cpu, uint32_t imm, Address pc) {
+        assert(imm == 0);
+        const uint32_t nid = *Ptr<uint32_t>(pc + 4).get(mem);
+        inject.call_import(cpu, nid, thid);
+    };
+    inject.call_svc = call_svc;
 
     const ThreadStatePtr thread = std::make_shared<ThreadState>();
     thread->name = name;
@@ -93,17 +100,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const Address stack_top = thread->stack->get() + stack_size;
     memset(Ptr<void>(thread->stack->get()).get(mem), 0xcc, stack_size);
 
-    const CallSVC call_svc = [call_import, thid, &mem](CPUState &cpu, uint32_t imm, Address pc) {
-        assert(imm == 0);
-        const uint32_t nid = *Ptr<uint32_t>(pc + 4).get(mem);
-        call_import(cpu, nid, thid);
-    };
-
-    auto is_watch_memory_addr = [&](Address addr) {
-        return ::is_watch_memory_addr(kernel, addr);
-    };
-
-    thread->cpu = init_cpu(thid, entry_point.address(), stack_top, call_svc, resolve_nid_name, is_watch_memory_addr, trace_stack, mem);
+    thread->cpu = init_cpu(thid, entry_point.address(), stack_top, mem, inject);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
