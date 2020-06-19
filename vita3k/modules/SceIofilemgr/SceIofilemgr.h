@@ -19,6 +19,18 @@
 
 #include <module/module.h>
 
+typedef struct _sceIoLseekOpt {
+    SceOff offset;
+    SceIoSeekMode whence;
+    uint32_t unk;
+} _sceIoLseekOpt;
+
+EXPORT(int, _sceIoDopen, const char *dir);
+EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir);
+EXPORT(int, _sceIoMkdir, const char *dir, const SceMode mode);
+EXPORT(SceOff, _sceIoLseek, const SceUID fd, Ptr<_sceIoLseekOpt> opt);
+EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat);
+
 BRIDGE_DECL(_sceIoChstat)
 BRIDGE_DECL(_sceIoChstatAsync)
 BRIDGE_DECL(_sceIoChstatByFd)

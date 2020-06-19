@@ -19,6 +19,7 @@
 #include <modules/module_parent.h>
 #include <v3kprintf.h>
 
+#include <../SceIofilemgr/SceIofilemgr.h>
 #include <../SceKernelThreadMgr/SceThreadmgr.h>
 
 #include <cpu/functions.h>
@@ -378,18 +379,15 @@ EXPORT(int, sceIoDevctlAsync) {
 }
 
 EXPORT(int, sceIoDopen, const char *dir) {
-    return open_dir(host.io, dir, host.pref_path, export_name);
+    return CALL_EXPORT(_sceIoDopen, dir);
 }
 
 EXPORT(int, sceIoDread, const SceUID fd, SceIoDirent *dir) {
-    if (dir == nullptr) {
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
-    }
-    return read_dir(host.io, fd, dir, host.pref_path, host.kernel.base_tick.tick, export_name);
+    return CALL_EXPORT(_sceIoDread, fd, dir);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(host.io, file, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
+    return CALL_EXPORT(_sceIoGetstat, file, stat);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
@@ -409,7 +407,12 @@ EXPORT(int, sceIoIoctlAsync) {
 }
 
 EXPORT(SceOff, sceIoLseek, const SceUID fd, const SceOff offset, const SceIoSeekMode whence) {
-    return seek_file(fd, offset, whence, host.io, export_name);
+    Ptr<_sceIoLseekOpt> options = alloc<_sceIoLseekOpt>(host.mem, "");
+    options.get(host.mem)->offset = offset;
+    options.get(host.mem)->whence = whence;
+    int res = CALL_EXPORT(_sceIoLseek, fd, options);
+    free(host.mem, options);
+    return res;
 }
 
 EXPORT(int, sceIoLseekAsync) {
@@ -417,7 +420,7 @@ EXPORT(int, sceIoLseekAsync) {
 }
 
 EXPORT(int, sceIoMkdir, const char *dir, const SceMode mode) {
-    return create_dir(host.io, dir, mode, host.pref_path, export_name);
+    return CALL_EXPORT(_sceIoMkdir, dir, mode);
 }
 
 EXPORT(int, sceIoMkdirAsync) {
