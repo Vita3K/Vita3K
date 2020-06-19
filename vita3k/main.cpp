@@ -178,6 +178,8 @@ int main(int argc, char *argv[]) {
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
 
+        gl_renderer.render(host);
+
         gui::draw_begin(gui, host);
 
         if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
