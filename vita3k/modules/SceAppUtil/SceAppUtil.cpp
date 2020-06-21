@@ -242,7 +242,7 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         }
     }
 
-    if (slot) {
+    if (slot && slot->slotParam) {
         SceDateTime modified_time;
         std::time_t time = std::time(0);
         tm *local = localtime(&time);
