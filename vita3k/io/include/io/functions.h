@@ -43,6 +43,7 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
 SceUID open_file(IOState &io, const char *path, const int flags, const std::string &pref_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);
+int truncate_file(SceUID fd, unsigned long long length, const IOState &io, const char *export_name);
 SceOff seek_file(SceUID fd, SceOff offset, SceIoSeekMode whence, IOState &io, const char *export_name);
 SceOff tell_file(IOState &io, const SceUID fd, const char *export_name);
 int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string &pref_path, SceUInt64 base_tick, const char *export_name, SceUID fd = invalid_fd);

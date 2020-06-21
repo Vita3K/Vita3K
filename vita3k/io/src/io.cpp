@@ -314,12 +314,22 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
     }
 
     if (file->second.can_write_file()) {
-        const auto written = file->second.write(data, 1, size);
+        const auto written = file->second.write(data, size, 1);
         LOG_TRACE("{}: Writing to fd: {}, size: {}", export_name, log_hex(fd), size);
         return static_cast<int>(written);
     }
 
     return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+}
+
+int truncate_file(const SceUID fd, unsigned long long length, const IOState &io, const char *export_name) {
+    if (fd < 0)
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+
+    const auto file = io.std_files.find(fd);
+    auto trunc = file->second.truncate(length);
+    LOG_TRACE("{}: Truncating fd: {}, to size: {}", export_name, log_hex(fd), length);
+    return trunc;
 }
 
 SceOff seek_file(const SceUID fd, const SceOff offset, const SceIoSeekMode whence, IOState &io, const char *export_name) {

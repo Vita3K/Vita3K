@@ -17,6 +17,13 @@
 
 #include <io/state.h>
 
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
 SceOff FileStats::read(void *input_data, const int element_size, const SceSize element_count) const {
     if (!wrapped_file)
         return -1;
@@ -29,6 +36,14 @@ SceOff FileStats::write(const void *data, const SceSize size, const int count) c
         return -1;
 
     return fwrite(data, size, count, get_file_pointer());
+}
+
+int FileStats::truncate(const SceSize size) const {
+#ifdef _WIN32
+    return _chsize_s(_fileno(get_file_pointer()), size);
+#else
+    return ftruncate(fileno(get_file_pointer()), size);
+#endif
 }
 
 bool FileStats::seek(const SceOff offset, const SceIoSeekMode seek_mode) const {

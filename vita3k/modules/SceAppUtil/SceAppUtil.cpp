@@ -45,6 +45,7 @@ enum SceAppUtilSaveDataRemoveMode {
 
 enum SceAppUtilSaveDataSaveMode {
     SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE = 0,
+    SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE_TRUNCATE = 1,
     SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_DIRECTORY = 2
 };
 
@@ -223,14 +224,19 @@ EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceA
     return 0;
 }
 
-EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataFile *files, unsigned int fileNum, SceAppUtilSaveDataMountPoint *mountPoint, SceSize *requiredSizeKB) {
+EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataDataSaveItem *files, unsigned int fileNum, SceAppUtilSaveDataMountPoint *mountPoint, SceSize *requiredSizeKB) {
     SceUID fd;
 
     for (unsigned int i = 0; i < fileNum; i++) {
-        const auto file_path = construct_savedata0_path(files[i].filePath.get(host.mem));
+        const auto file_path = construct_savedata0_path(files[i].dataPath.get(host.mem));
         switch (files[i].mode) {
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_DIRECTORY:
             create_dir(host.io, file_path.c_str(), 0777, host.pref_path, export_name);
+            break;
+        case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE_TRUNCATE:
+            fd = open_file(host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, host.pref_path, export_name);
+            truncate_file(fd, files[i].bufSize + files[i].offset, host.io, export_name);
+            close_file(host.io, fd, export_name);
             break;
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE:
         default:
