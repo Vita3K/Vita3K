@@ -304,7 +304,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImGui::SetColumnWidth(2, COLUMN_SIZE);
             ImGui::SetColumnWidth(3, COLUMN_SIZE);
         }
-        ImGui::SetWindowFontScale(!gui.live_area_font_data.empty() ? 0.82f * scal.x: 1.f);
+        ImGui::SetWindowFontScale(!gui.live_area_font_data.empty() ? 0.82f * scal.x : 1.f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         for (const auto &app : gui.app_selector.apps) {
             bool selected = false;
