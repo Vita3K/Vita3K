@@ -178,6 +178,11 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
 
     if (renderer::init(state.window, state.renderer, backend)) {
         update_viewport(state);
+
+        std::ofstream ofs(state.base_path + "/features.yml");
+        auto node = state.renderer->features.searialize();
+        ofs << node;
+
         return true;
     } else {
         switch (backend) {
