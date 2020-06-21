@@ -775,7 +775,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
             std::vector<spv::Id> ops;
             for (auto j = 0; j < 4 / size_comp; j++) {
                 if (dest_mask & (1 << (nearest_swizz_on + i + j))) {
-                    if (b.isScalar(source)) {
+                    if (b.isScalar(source) || total_comp_source == 1) {
                         ops.push_back(source);
                     } else {
                         ops.push_back(b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { source, b.makeIntConstant(std::min(i + j, (int)total_comp_source - 1)) }));
