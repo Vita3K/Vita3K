@@ -17,23 +17,14 @@ struct SceAppUtilDrmAddcontId {
     SceChar8 padding[3];
 };
 
-struct SceAppUtilSaveDataSaveItem {
+struct SceAppUtilSaveDataDataSaveItem {
     const Ptr<char> dataPath;
     const Ptr<void> buf;
+    SceSize bufSize;
     uint32_t pad;
     SceOff offset;
     int mode;
     uint8_t reserved[36];
-};
-
-struct SceAppUtilSaveDataFile {
-    const Ptr<char> filePath;
-    Ptr<void> buf;
-    SceSize bufSize;
-    SceOff offset;
-    unsigned int mode;
-    unsigned int progDelta;
-    uint8_t reserved[32];
 };
 
 struct SceAppUtilSaveDataSlotParam {

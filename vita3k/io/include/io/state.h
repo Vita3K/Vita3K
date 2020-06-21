@@ -61,6 +61,7 @@ public:
     // File functions
     SceOff read(void *input_data, int element_size, SceSize element_count) const;
     SceOff write(const void *data, SceSize size, int count) const;
+    int truncate(const SceSize size) const;
     bool seek(SceOff offset, SceIoSeekMode seek_mode) const;
     SceOff tell() const;
 };
