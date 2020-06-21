@@ -701,8 +701,18 @@ EXPORT(SceUID, sceKernelOpenTimer, const char *name) {
     return timer_handle;
 }
 
-EXPORT(int, sceKernelPollSema) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
+    assert(needCount >= 0);
+    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
+    if (!semaphore) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    }
+    std::unique_lock<std::mutex> semaphore_lock(semaphore->mutex);
+    if (semaphore->val < needCount) {
+        return SCE_KERNEL_ERROR_SEMA_ZERO;
+    }
+    semaphore->val -= needCount;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelPulseEvent) {
