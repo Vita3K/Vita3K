@@ -183,6 +183,19 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     glDetachShader(program->get(), fragment_shader->get());
     glDetachShader(program->get(), vertex_shader->get());
 
+    glUseProgram(program->get());
+    const auto fragment_program_gxp = fragment_program_gxm.program.get(mem);
+    const auto parameters = gxp::program_parameters(*fragment_program_gxp);
+    for (uint32_t i = 0; i < fragment_program_gxp->parameter_count; ++i) {
+        const auto parameter = &parameters[i];
+        if (parameter->category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+            const auto name = gxp::parameter_name_raw(*parameter);
+            GLint loc = glGetUniformLocation(program->get(), name.c_str());
+            glUniform1i(loc, parameter->resource_index);
+        }
+    }
+    glUseProgram(0);
+
     program_cache.emplace(hashes, program);
 
     return program;
