@@ -90,3 +90,53 @@ bool USSETranslatorVisitor::smlsi(
 
     return true;
 }
+
+bool USSETranslatorVisitor::kill(
+    ShortPredicate pred) {
+    LOG_DISASM("{:016x}: KILL {}", m_instr, disasm::s_predicate_str(pred));
+
+    auto cur_pc = m_recompiler.cur_pc;
+
+    spv::Function *no_kill_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);
+
+    m_b.setLine(m_recompiler.cur_pc);
+
+    if (pred == ShortPredicate::NONE) {
+        m_b.createFunctionCall(no_kill_block, {});
+    } else {
+        spv::Id pred_v = spv::NoResult;
+
+        Operand pred_opr{};
+        pred_opr.bank = RegisterBank::PREDICATE;
+
+        bool do_neg = false;
+
+        if (pred >= ShortPredicate::P0 && pred <= ShortPredicate::P1) {
+            pred_opr.num = static_cast<int>(pred) - static_cast<int>(ShortPredicate::P0);
+        } else {
+            pred_opr.num = static_cast<int>(pred) - static_cast<int>(ShortPredicate::NEGP0);
+            do_neg = true;
+        }
+
+        pred_v = load(pred_opr, 0b0001);
+
+        if (pred_v == spv::NoResult) {
+            LOG_ERROR("Pred not loaded");
+            return false;
+        }
+
+        if (do_neg) {
+            std::vector<spv::Id> ops{ pred_v };
+            pred_v = m_b.createOp(spv::OpLogicalNot, m_b.makeBoolType(), ops);
+        }
+
+        spv::Function *continous_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);
+        spv::Builder::If cond_builder(pred_v, spv::SelectionControlMaskNone, m_b);
+        m_b.createFunctionCall(no_kill_block, {});
+        cond_builder.makeBeginElse();
+        m_b.makeDiscard();
+        cond_builder.makeEndIf();
+    }
+
+    return true;
+}
