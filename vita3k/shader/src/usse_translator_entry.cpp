@@ -448,7 +448,17 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                         ffffffff = src2_inc (8 bits)
         */
         INST(&V::smlsi, "SMLSI ()", "11111010--01-n--ttttppppssssdrcieeeeeeeeaaaaaaaabbbbbbbbffffffff"),
-
+        // Kill program
+        /*
+                           11111 = op1
+                                001 = op2
+                                   -- = don't care
+                                     11 = opcat
+                                       000000000 = kill
+                                                pp = pred (2 bits, ShortPredicate)
+                                                  00000011011110000000000000000000000000000 = kill2
+        */
+        INST(&V::kill, "KILL ()", "11111001--11000000000pp00000011011110000000000000000000000000000"),
         // Special
         /*
                                11111 = op1

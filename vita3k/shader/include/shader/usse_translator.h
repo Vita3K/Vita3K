@@ -602,6 +602,8 @@ public:
         bool special,
         SpecialCategory category);
 
+    bool kill(ShortPredicate pred);
+
 private:
     // SPIR-V emitter
     spv::Builder &m_b;
