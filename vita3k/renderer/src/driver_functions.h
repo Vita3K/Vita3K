@@ -18,7 +18,7 @@ struct CommandHelper;
 
 #define COMMAND_SET_STATE(name)                                                                                \
     void cmd_set_state_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \
-        Context *render_context, GxmContextState *state)
+        Context *render_context, GxmContextState *state, const char *base_path, const char *title_id)
 
 COMMAND_SET_STATE(region_clip);
 COMMAND_SET_STATE(program);

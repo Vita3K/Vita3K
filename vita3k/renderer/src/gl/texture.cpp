@@ -10,12 +10,14 @@
 #include <util/align.h>
 #include <util/log.h>
 
+#include <stb_image_write.h>
+
+static constexpr bool log_parameter = false;
+
 namespace renderer::gl {
 namespace texture {
-
 void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
-
     glBindTexture(GL_TEXTURE_2D, cache.textures[0]);
     configure_bound_texture(gxm_texture);
     upload_bound_texture(gxm_texture, mem);
@@ -281,6 +283,68 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
         texture_data += source_size;
     }
+}
+
+// Dumps bound texture to a file
+void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::string &parameter_name, const std::string &base_path, const std::string &title_id, Sha256Hash program_hash) {
+    static uint32_t g_tex_index = 0;
+    static std::vector<uint8_t> g_pixels; // re-use the same vector instead of allocating one every time
+    static std::map<TextureCacheHash, uint32_t> g_dumped_hashes;
+
+    int tex_index = g_tex_index;
+
+    const TextureCacheHash hash = renderer::texture::hash_texture_data(gxm_texture, mem);
+
+    if (g_dumped_hashes.find(hash) != g_dumped_hashes.end()) {
+        if (log_parameter && parameter_name != "") {
+            LOG_TRACE("Setting {} of {} by texture {}", parameter_name, hex(program_hash).data(), g_dumped_hashes[hash]);
+        }
+        return;
+    } else {
+        g_dumped_hashes.emplace(hash, tex_index);
+        ++g_tex_index;
+    }
+
+    const size_t width = gxm::get_width(&gxm_texture);
+    const size_t height = gxm::get_height(&gxm_texture);
+
+    const SceGxmTextureFormat format = gxm::get_format(&gxm_texture);
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
+
+    const bool is_swizzled = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED) || (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY);
+    const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !can_texture_be_unswizzled_without_decode(base_format);
+
+    size_t bpp = renderer::texture::bits_per_pixel(base_format);
+    const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
+    size_t size = (bpp * stride * height) / 8;
+    if (need_decompress_and_unswizzle_on_cpu) {
+        bpp = 32;
+        size = width * height * 4;
+    }
+    const size_t components = bpp / 8;
+
+    g_pixels.resize(size);
+
+    auto gl_format = texture::translate_format(format);
+    auto gl_type = texture::translate_type(format);
+
+    if (need_decompress_and_unswizzle_on_cpu) {
+        gl_format = GL_RGBA;
+        gl_type = GL_UNSIGNED_BYTE;
+    }
+    glGetTexImage(GL_TEXTURE_2D, 0, gl_format, gl_type, (void *)g_pixels.data());
+
+    // TODO: Create the texturelog path elsewhere on init once and pass it here whole
+    // TODO: Same for shaderlog path
+    const fs::path texturelog_path{ fs::path(base_path) / "texturelog" / title_id };
+    if (!fs::exists(texturelog_path))
+        fs::create_directories(texturelog_path);
+
+    const auto tex_filename = fmt::format("tex_{}_{:08X}_{}.png", tex_index, hash, hex(program_hash).data());
+    const auto filepath = texturelog_path / tex_filename;
+
+    if (!stbi_write_png(filepath.string().c_str(), width, height, components, (void *)g_pixels.data(), stride * components))
+        LOG_WARN("Failed to save texture: {}", filepath.string());
 }
 
 } // namespace texture

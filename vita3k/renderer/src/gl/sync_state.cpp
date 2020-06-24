@@ -12,6 +12,8 @@
 
 #include <cmath>
 
+static constexpr bool dump_textures = false;
+
 namespace renderer::gl {
 
 static GLenum translate_depth_func(SceGxmDepthFunc depth_func) {
@@ -248,7 +250,7 @@ void sync_front_depth_bias(const GxmContextState &state) {
 }
 
 void sync_texture(GLContext &context, const GxmContextState &state, const MemState &mem, std::size_t index,
-    bool enable_texture_cache) {
+    bool enable_texture_cache, const std::string &base_path, const std::string &title_id) {
     const SceGxmTexture &texture = state.fragment_textures[index];
 
     if (texture.data_addr == 0) {
@@ -262,6 +264,25 @@ void sync_texture(GLContext &context, const GxmContextState &state, const MemSta
         renderer::texture::cache_and_bind_texture(context.texture_cache, texture, mem);
     } else {
         texture::bind_texture(context.texture_cache, texture, mem);
+    }
+
+    if (dump_textures) {
+        auto frag_program = state.fragment_program.get(mem);
+        auto program = frag_program->program.get(mem);
+        const auto program_hash = sha256(program, program->size);
+
+        std::string parameter_name;
+        const auto fragment_program = state.fragment_program.get(mem);
+        const auto fragment_program_gxp = fragment_program->program.get(mem);
+        const auto parameters = gxp::program_parameters(*fragment_program_gxp);
+        for (uint32_t i = 0; i < fragment_program_gxp->parameter_count; ++i) {
+            const auto parameter = &parameters[i];
+            if (parameter->resource_index == index) {
+                parameter_name = gxp::parameter_name_raw(*parameter);
+                break;
+            }
+        }
+        renderer::gl::texture::dump(texture, mem, parameter_name, base_path, title_id, program_hash);
     }
 
     glActiveTexture(GL_TEXTURE0);
@@ -304,7 +325,7 @@ void sync_rendertarget(const GLRenderTarget &rt) {
     glBindFramebuffer(GL_FRAMEBUFFER, rt.framebuffer[0]);
 }
 
-bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip) {
+bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip, const std::string &base_path, const std::string &title_id) {
     R_PROFILE(__func__);
 
     sync_viewport(context, state, hardware_flip);
@@ -339,7 +360,7 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
             LOG_WARN("Texture unit index ({}) out of range. SCE_GXM_MAX_TEXTURE_UNITS is {}.", texture_unit, SCE_GXM_MAX_TEXTURE_UNITS);
             continue;
         }
-        sync_texture(context, state, mem, texture_unit, enable_texture_cache);
+        sync_texture(context, state, mem, texture_unit, enable_texture_cache, base_path, title_id);
     }
     glActiveTexture(GL_TEXTURE0);
 
