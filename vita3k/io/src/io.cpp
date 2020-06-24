@@ -118,6 +118,7 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
     if (!fs::exists(uma0_data))
         fs::create_directory(uma0_data);
 
+    fs::create_directory(base_path / "texturelog");
     fs::create_directory(base_path / "shaderlog");
 
     return true;

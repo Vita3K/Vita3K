@@ -312,12 +312,12 @@ COMMAND_SET_STATE(stencil_ref) {
 COMMAND_SET_STATE(fragment_texture) {
     const std::uint32_t texture_index = helper.pop<std::uint32_t>();
     SceGxmTexture texture = helper.pop<SceGxmTexture>();
-
     state->fragment_textures[texture_index] = texture;
+
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::sync_texture(*reinterpret_cast<gl::GLContext *>(render_context), *state, mem, texture_index,
-            config.texture_cache);
+            config.texture_cache, base_path, title_id);
 
         break;
     }
@@ -373,7 +373,7 @@ COMMAND_SET_STATE(vertex_stream) {
 COMMAND(handle_set_state) {
     renderer::GXMState gxm_state_to_set = helper.pop<renderer::GXMState>();
     using StateChangeHandlerFunc = std::function<void(renderer::State &, MemState &, Config &, CommandHelper &,
-        Context *, GxmContextState *)>;
+        Context *, GxmContextState *, const char *base_path, const char *title_id)>;
 
     static const std::map<renderer::GXMState, StateChangeHandlerFunc> handlers = {
         { renderer::GXMState::RegionClip, cmd_set_state_region_clip },
@@ -398,7 +398,7 @@ COMMAND(handle_set_state) {
 
     if (result != handlers.end()) {
         //LOG_TRACE("State set: {}", (int)gxm_state_to_set);
-        result->second(renderer, mem, config, helper, render_context, state);
+        result->second(renderer, mem, config, helper, render_context, state, base_path, title_id);
     }
 }
 } // namespace renderer

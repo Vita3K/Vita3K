@@ -8,6 +8,8 @@ struct MemState;
 struct FeatureState;
 struct Config;
 
+typedef uint32_t TextureCacheHash;
+
 namespace renderer {
 struct Context;
 struct FragmentProgram;
@@ -161,6 +163,7 @@ void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t
 void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 bool is_compressed_format(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height, size_t &source_size);
+TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem);
 
 } // namespace texture
 

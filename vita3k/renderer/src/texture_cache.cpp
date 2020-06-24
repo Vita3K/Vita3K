@@ -33,7 +33,7 @@ static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t c
     return palette_hash;
 }
 
-static TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
+TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat format = gxm::get_format(&texture);
