@@ -90,8 +90,8 @@ static void draw_controls_menu(ControlMenuState &state) {
 
 static void draw_utilities_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginMenu("Utilities")) {
-        if (ImGui::MenuItem("Trophy Collection") && get_trophy_np_com_id_list(gui, host))
-            gui.trophy.trophy_collection = true;
+        if (ImGui::MenuItem("Trophy Collection", nullptr, &gui.trophy.trophy_collection, !gui.trophy.trophy_collection))
+            get_trophy_np_com_id_list(gui, host);
         ImGui::EndMenu();
     }
 }
