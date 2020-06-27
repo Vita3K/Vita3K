@@ -419,6 +419,8 @@ void draw_start_screen(GuiState &gui, HostState &host) {
 
 static std::string popup, menu, selected, title, start, delete_user_background;
 static ImGuiTextFilter search_bar;
+static float scroll_pos;
+static bool set_scroll_pos;
 
 void draw_themes_selection(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
@@ -435,7 +437,6 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     const auto SIZE_MINI_PACKAGE = ImVec2(170.f * SCAL.x, 96.f * SCAL.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
 
-    // Themes dialog
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     if (gui.themes_preview["default"].find("background") == gui.themes_preview["default"].end())
@@ -449,6 +450,8 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (theme_str.x / 2.f), (35.f * SCAL.y) - (theme_str.y / 2.f)));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
     ImGui::PopTextWrapPos();
+
+    // Search Bar
     if ((menu == "theme") && selected.empty()) {
         ImGui::SetWindowFontScale(1.2f * SCAL.x);
         const auto search_size = ImGui::CalcTextSize("Search");
@@ -458,11 +461,14 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
         search_bar.Draw("##search_bar", 200);
         ImGui::SetWindowFontScale(1.6f * SCAL.x);
     }
+
     ImGui::SetCursorPosY(70.0f * SCAL.y);
     ImGui::Separator();
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, 102.0f * SCAL.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
     ImGui::BeginChild("##themes_child", SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+
+    // Themes & Backgrounds
     if (menu.empty()) {
         title = "Theme & Background";
         ImGui::SetWindowFontScale(1.2f);
@@ -490,8 +496,16 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
         ImGui::PopStyleVar();
         ImGui::Separator();
     } else if (menu == "theme") {
+        // Theme List
         if (selected.empty()) {
             title = "Theme";
+
+            // Set Scroll Pos
+            if (set_scroll_pos) {
+                ImGui::SetScrollY(scroll_pos);
+                set_scroll_pos = false;
+            }
+
             ImGui::Columns(3, nullptr, false);
             for (const auto &theme : themes_list) {
                 if (!search_bar.PassFilter(themes_info[theme.first].title.c_str()) && !search_bar.PassFilter(theme.first.c_str()))
@@ -505,8 +519,10 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
                 ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                 ImGui::SetWindowFontScale(1.8f);
-                if (ImGui::Selectable(host.cfg.theme_content_id == theme.first ? "V" : "##preview", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
+                if (ImGui::Selectable(host.cfg.theme_content_id == theme.first ? "V" : "##preview", false, ImGuiSelectableFlags_None, SIZE_PACKAGE)) {
                     selected = theme.first;
+                    scroll_pos = ImGui::GetScrollY();
+                }
                 ImGui::SetWindowFontScale(0.6f);
                 ImGui::PopStyleColor();
                 ImGui::PopStyleVar();
@@ -519,6 +535,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
             }
             ImGui::Columns(1);
         } else {
+            // Theme Select
             title = themes_info[selected].title;
             if (popup.empty()) {
                 if (gui.themes_preview[selected].find("home") != gui.themes_preview[selected].end()) {
@@ -538,6 +555,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                         if (!gui.theme_backgrounds.empty())
                             host.cfg.use_theme_background = true;
                         selected.clear();
+                        set_scroll_pos = true;
                         if (host.cfg.overwrite_config)
                             config::serialize_config(host.cfg, host.cfg.config_path);
                     }
@@ -581,6 +599,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     get_themes_list(gui, host);
                     popup.clear();
                     selected.clear();
+                    set_scroll_pos = true;
                 }
                 ImGui::EndChild();
                 ImGui::PopStyleVar(2);
@@ -768,8 +787,10 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
             if (!selected.empty()) {
                 if (!popup.empty())
                     popup.clear();
-                else
+                else {
                     selected.clear();
+                    set_scroll_pos = true;
+                }
             } else if (!start.empty())
                 start.clear();
             else
