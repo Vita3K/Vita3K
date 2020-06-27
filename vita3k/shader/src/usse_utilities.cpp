@@ -392,8 +392,12 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
             }
         }
 
-        spv::Id result = b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(consts.size())), consts);
-        return apply_modifiers(b, op.flags, result);
+        if (consts.size() == 1) {
+            return apply_modifiers(b, op.flags, consts[0]);
+        } else {
+            spv::Id result = b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(consts.size())), consts);
+            return apply_modifiers(b, op.flags, result);
+        }
     }
 
     if (op.bank == RegisterBank::FPINTERNAL) {
@@ -538,9 +542,14 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
                 comps.push_back(get_correspond_constant_with_channel(b, op.swizzle[i]));
             }
         }
-
         // Create a constant composite
-        return apply_modifiers(b, op.flags, b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(comps.size())), comps));
+        if (comps.size() == 1) {
+            return apply_modifiers(b, op.flags, comps[0]);
+        }
+
+        else {
+            return apply_modifiers(b, op.flags, b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(comps.size())), comps));
+        }
     }
 
     lowest_swizzle_bit = lowest_swizzle_bit * static_cast<int>(size_comp) / 4;
@@ -613,9 +622,9 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
     // Bitcast them to integer. Those flags assuming bits stores on those float registers are actually integer
     if (is_signed_integer_dtype) {
-        first_pass = b.createUnaryOp(spv::OpBitcast, b.makeVectorType(b.makeIntType(32), static_cast<int>(dest_comp_count)), first_pass);
+        first_pass = b.createUnaryOp(spv::OpBitcast, utils::make_vector_or_scalar_type(b, b.makeIntType(32), static_cast<int>(dest_comp_count)), first_pass);
     } else if (is_unsigned_integer_dtype) {
-        first_pass = b.createUnaryOp(spv::OpBitcast, b.makeVectorType(b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
+        first_pass = b.createUnaryOp(spv::OpBitcast, utils::make_vector_or_scalar_type(b, b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
     }
 
     return apply_modifiers(b, op.flags, first_pass);
@@ -704,7 +713,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
 
     if (b.isIntType(source_elm_type_id) || b.isUintType(source_elm_type_id)) {
         std::vector<spv::Id> ops{ source };
-        spv::Id bitcast_type = b.makeVectorType(type_f32, total_comp_source);
+        spv::Id bitcast_type = utils::make_vector_or_scalar_type(b, type_f32, total_comp_source);
 
         source = b.createOp(spv::OpBitcast, bitcast_type, ops);
     }
@@ -795,7 +804,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                 }
             }
 
-            spv::Id result_type = b.makeVectorType(type_f32, (int)ops.size());
+            spv::Id result_type = utils::make_vector_or_scalar_type(b, type_f32, (int)ops.size());
             spv::Id result = ops.size() == 1 ? ops[0] : b.createCompositeConstruct(result_type, ops);
             result = pack_one(b, utils, features, result, dest.type);
 
@@ -905,4 +914,11 @@ spv::Id shader::usse::utils::make_uniform_vector_from_type(spv::Builder &b, spv:
     spv::Id v0 = b.makeCompositeConstant(type, c_vecs);
 
     return v0;
+}
+
+spv::Id shader::usse::utils::make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size) {
+    if (size == 1) {
+        return component;
+    }
+    return b.makeVectorType(component, size);
 }

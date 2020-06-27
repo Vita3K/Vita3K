@@ -30,6 +30,8 @@ spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState 
 
 spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val);
 
+spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size);
+
 template <typename F>
 void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite, spv::Id iterator_limit, F body) {
     auto blocks = b.makeNewLoop();
@@ -37,7 +39,8 @@ void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite,
     b.createBranch(&blocks.head);
 
     b.setBuildPoint(&blocks.head);
-    spv::Id compare_result = b.createOp(spv::OpSLessThan, b.makeBoolType(), { iterator, iterator_limit });
+
+    spv::Id compare_result = b.createBinOp(spv::OpSLessThan, b.makeBoolType(), b.createLoad(iterator), iterator_limit);
 
     b.createLoopMerge(&blocks.merge, &blocks.continue_target, spv::LoopControlMaskNone, {});
     b.createConditionalBranch(compare_result, &blocks.body, &blocks.merge);

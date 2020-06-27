@@ -101,15 +101,20 @@ public:
         const_f32[2] = m_b.makeFloatConstant(2.0f);
 
         for (std::uint8_t i = 1; i < 5; i++) {
-            type_f32_v[i] = m_b.makeVectorType(type_f32, i);
+            if (i == 1) {
+                type_f32_v[i] = type_f32;
+                const_f32_v0[i] = m_b.makeFloatConstant(const_f32[0]);
+            } else {
+                type_f32_v[i] = m_b.makeVectorType(type_f32, i);
 
-            std::vector<spv::Id> consts;
+                std::vector<spv::Id> consts;
 
-            for (std::uint8_t j = 1; j < i + 1; j++) {
-                consts.push_back(const_f32[0]);
+                for (std::uint8_t j = 1; j < i + 1; j++) {
+                    consts.push_back(const_f32[0]);
+                }
+
+                const_f32_v0[i] = m_b.makeCompositeConstant(type_f32_v[i], consts);
             }
-
-            const_f32_v0[i] = m_b.makeCompositeConstant(type_f32_v[i], consts);
         }
 
         do_texture_queries(queries);
