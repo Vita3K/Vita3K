@@ -509,12 +509,10 @@ void init_live_area(GuiState &gui, HostState &host) {
         items_pos["psmobile"]["frame4"]["size"] = ImVec2(440.f, 34.f);
     }
 
-    for (const auto &app : gui.app_selector.apps) {
-        const auto app_index = std::find_if(gui.app_selector.apps.begin(), gui.app_selector.apps.end(), [&](const App &g) {
-            return g.title_id == host.io.title_id;
-        });
-        current_app = int32_t(std::distance(gui.app_selector.apps.begin(), app_index));
-    }
+    const auto app_index = std::find_if(gui.app_selector.apps.begin(), gui.app_selector.apps.end(), [&](const App &g) {
+        return g.title_id == host.io.title_id;
+    });
+    current_app = int32_t(std::distance(gui.app_selector.apps.begin(), app_index));
 }
 
 inline uint64_t current_time() {
@@ -987,7 +985,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(pos_scal_manual);
             ImGui::Image(gui.live_area_contents[host.io.title_id]["manual"], widget_scal_size);
         } else {
-            const std::string MANUAL_STR = "Manuel";
+            const std::string MANUAL_STR = "Manual";
             const auto MANUAL_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(MANUAL_STR.c_str()).x * scal_widget_font_size) * scal.x, (ImGui::CalcTextSize(MANUAL_STR.c_str()).y * scal_widget_font_size) * scal.y);
             const auto MANUAl_STR_POS = ImVec2(pos_scal_manual.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
                 pos_scal_manual.y + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.y / 2.f)));
@@ -1046,7 +1044,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             }
 
             ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x), 44.0f * scal.y));
-            ImGui::VSliderInt("##slider_current_app", ImVec2(60.f, 500.f * scal.y), &current_app, int32_t(gui.app_selector.apps.size()) - 1, -1, fmt::format("{}\n_____\n\n{}", current_app + 1, int32_t(gui.app_selector.apps.size())).c_str());
+            ImGui::VSliderInt("##slider_current_app", ImVec2(60.f, 500.f * scal.y), &current_app, int32_t(gui.app_selector.apps.size()) - 1, 0, fmt::format("{}\n_____\n\n{}", current_app + 1, int32_t(gui.app_selector.apps.size())).c_str());
         }
 
         ImGui::SetCursorPos(ImVec2(display_size.x - (140.0f * scal.x), 14.0f * scal.y));
