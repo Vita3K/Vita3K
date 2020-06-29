@@ -157,8 +157,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
     }
 
     if (!init(state.audio, resume_thread)) {
-        LOG_ERROR("Failed to init audio! Your computer probably does not have an audio device.");
-        return false;
+        LOG_WARN("Failed to init audio! Audio will not work.");
     }
 
     if (!init(state.io, state.base_path, state.pref_path)) {

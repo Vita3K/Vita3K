@@ -20,6 +20,8 @@
 
 #include <microprofile.h>
 
+#include <util/log.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cstring>
@@ -95,7 +97,9 @@ bool init(AudioState &state, ResumeAudioThread resume_thread) {
     desired.callback = &audio_callback;
     desired.userdata = &state;
 
-    if (SDL_OpenAudio(&desired, &state.ro.spec) != 0) {
+    if (SDL_OpenAudioDevice(nullptr, 0, &desired, &state.ro.spec, SDL_AUDIO_ALLOW_FORMAT_CHANGE) == 0) {
+        auto msg = SDL_GetError();
+        LOG_ERROR("SDL audio error: {}", msg);
         return false;
     }
 
