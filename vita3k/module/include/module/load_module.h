@@ -33,7 +33,7 @@ inline SysmodulePaths init_sysmodule_paths() {
     p[SCE_SYSMODULE_NET] = { "libnet", "libnetctl" };
     p[SCE_SYSMODULE_HTTP] = { "libhttp" };
     p[SCE_SYSMODULE_SSL] = { "libssl" };
-    p[SCE_SYSMODULE_HTTPS] = { "libssl" }; // no https module, I'm assuming it also uses libssl
+    p[SCE_SYSMODULE_HTTPS] = { "libhttp", "libssl" };
     p[SCE_SYSMODULE_PERF] = { "libperf" };
     p[SCE_SYSMODULE_FIBER] = { "libfiber" };
     p[SCE_SYSMODULE_ULT] = { "libult" };
@@ -44,7 +44,7 @@ inline SysmodulePaths init_sysmodule_paths() {
     p[SCE_SYSMODULE_SULPHA] = { "libsulpha" };
     p[SCE_SYSMODULE_SAS] = { "libsas" };
     p[SCE_SYSMODULE_PGF] = { "libpgf" };
-    p[SCE_SYSMODULE_APPUTIL] = { "libapputil" };
+    p[SCE_SYSMODULE_APPUTIL] = { "apputil" };
     p[SCE_SYSMODULE_FIOS2] = { "libfios2" };
     p[SCE_SYSMODULE_IME] = { "libime" };
     p[SCE_SYSMODULE_NP_BASIC] = { "np_basic" };
