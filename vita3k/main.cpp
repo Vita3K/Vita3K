@@ -181,6 +181,7 @@ int main(int argc, char *argv[]) {
         gl_renderer.render(host);
 
         gui::draw_begin(gui, host);
+        gui::draw_common_dialog(gui, host);
 
         if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
             // Display application background
