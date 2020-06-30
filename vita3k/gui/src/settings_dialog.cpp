@@ -128,9 +128,23 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Core")) {
         ImGui::PopStyleColor();
         if (!gui.modules.empty()) {
-            ImGui::TextColored(GUI_COLOR_TEXT, "Module List");
+            ImGui::Spacing();
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Module Mode");
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select Automatic or Manuel mode for load modules list.");
+            ImGui::Spacing();
+            if (ImGui::RadioButton("Automatic", host.cfg.auto_lle))
+                host.cfg.auto_lle = true;
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Manual", !host.cfg.auto_lle))
+                host.cfg.auto_lle = false;
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Modules List");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your desired modules.");
+            ImGui::Spacing();
             ImGui::PushItemWidth(240);
             if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 8)) {
                 for (auto &m : gui.modules) {
@@ -138,7 +152,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                     const bool module_existed = (module != host.cfg.lle_modules.end());
                     if (!gui.module_search_bar.PassFilter(m.first.c_str()))
                         continue;
-                    if (ImGui::Selectable(m.first.c_str(), &m.second)) {
+                    if (ImGui::Selectable(m.first.c_str(), &m.second, host.cfg.auto_lle ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None)) {
                         if (module_existed)
                             host.cfg.lle_modules.erase(module);
                         else

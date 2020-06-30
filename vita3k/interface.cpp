@@ -284,6 +284,18 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
             return InitConfigFailed;
     }
 
+    LOG_INFO_IF(host.cfg.hardware_flip, "{}: enabled", host.cfg[e_hardware_flip]);
+    if (host.cfg.auto_lle)
+        LOG_INFO("{}: enabled", host.cfg[e_auto_lle]);
+    else if (!host.cfg.lle_modules.empty()) {
+        std::string modules;
+        for (const auto &mod : host.cfg.lle_modules) {
+            modules += mod + ",";
+        }
+        modules.pop_back();
+        LOG_INFO("lle-modules: {}", modules);
+    }
+
     LOG_INFO("Title: {}", host.app_title);
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Version: {}", host.app_version);
