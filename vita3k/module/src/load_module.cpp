@@ -20,19 +20,39 @@
 #include <host/load_self.h>
 #include <host/state.h>
 
-bool is_lle_module(SceSysmoduleModuleId module_id, const std::vector<std::string> &lle_modules) {
+bool is_lle_module(SceSysmoduleModuleId module_id, HostState &host) {
     const auto paths = sysmodule_paths[module_id];
 
     // Do we know the module and its dependencies' paths?
     const bool have_paths = !paths.empty();
 
+    // Current modules works for loading
+    const auto auto_lle_modules = {
+        SCE_SYSMODULE_HTTP,
+        SCE_SYSMODULE_SSL,
+        SCE_SYSMODULE_HTTPS,
+        //SCE_SYSMODULE_SAS, // Have regressed, Disable for now
+        SCE_SYSMODULE_PGF,
+        SCE_SYSMODULE_SYSTEM_GESTURE,
+        SCE_SYSMODULE_XML,
+        SCE_SYSMODULE_MP4,
+        SCE_SYSMODULE_ATRAC,
+        SCE_SYSMODULE_JSON,
+    };
+
     if (!have_paths)
         return false;
 
-    if (have_paths)
-        for (auto path : paths)
-            if (std::find(lle_modules.begin(), lle_modules.end(), path) != lle_modules.end())
+    if (have_paths) {
+        if (host.cfg.auto_lle) {
+            if (std::find(auto_lle_modules.begin(), auto_lle_modules.end(), module_id) != auto_lle_modules.end())
                 return true;
+        } else {
+            for (auto path : paths)
+                if (std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), path) != host.cfg.lle_modules.end())
+                    return true;
+        }
+    }
 
     return false;
 }

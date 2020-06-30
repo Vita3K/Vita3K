@@ -250,15 +250,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
     LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
     LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
-    LOG_INFO_IF(cfg.hardware_flip, "{}: enabled", cfg[e_hardware_flip]);
-    if (!cfg.lle_modules.empty()) {
-        std::string modules;
-        for (const auto &mod : cfg.lle_modules) {
-            modules += mod + ",";
-        }
-        modules.pop_back();
-        LOG_INFO("lle-modules: {}", modules);
-    }
     LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
     LOG_INFO_IF(cfg.log_imports, "{}: enabled", cfg[e_log_imports]);
     LOG_INFO_IF(cfg.log_exports, "{}: enabled", cfg[e_log_exports]);

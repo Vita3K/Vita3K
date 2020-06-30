@@ -40,6 +40,7 @@
     code(bool, "texture-cache", true, texture_cache)                                                    \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
+    code(bool, "auto-lle", false, auto_lle)                                                             \
     code(std::string, "user-start-background", std::string{}, user_start_background)                    \
     code(std::string, "start-background",  std::string{}, start_background)                             \
     code(std::string, "theme-content-id", std::string{}, theme_content_id)                              \

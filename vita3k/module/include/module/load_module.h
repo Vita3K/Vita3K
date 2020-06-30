@@ -115,5 +115,5 @@ inline SysmodulePaths init_sysmodule_paths() {
 
 const SysmodulePaths sysmodule_paths = init_sysmodule_paths();
 
-bool is_lle_module(SceSysmoduleModuleId module_id, const std::vector<std::string> &lle_modules);
+bool is_lle_module(SceSysmoduleModuleId module_id, HostState &host);
 bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id);
