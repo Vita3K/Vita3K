@@ -104,7 +104,7 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
 // * Mutex *
 // *********
 
-SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_name, const char *mutex_name, SceUID thread_id, SceUInt attr, int init_count, SyncWeight weight) {
+SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_name, const char *mutex_name, SceUID thread_id, SceUInt attr, int init_count, Ptr<SceKernelLwMutexWork> workarea, SyncWeight weight) {
     if ((strlen(mutex_name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -118,7 +118,9 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, const char *export_nam
     const MutexPtr mutex = std::make_shared<Mutex>();
     const SceUID uid = kernel.get_next_uid();
     mutex->uid = uid;
+    mutex->init_count = init_count;
     mutex->lock_count = init_count;
+    mutex->workarea = workarea;
     std::copy(mutex_name, mutex_name + KERNELOBJECT_MAX_NAME_LENGTH, mutex->name);
     mutex->attr = attr;
     mutex->owner = nullptr;
@@ -300,6 +302,22 @@ int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id,
     }
 
     return SCE_KERNEL_OK;
+}
+
+MutexPtr mutex_get(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight) {
+    assert(mutexid >= 0);
+
+    MutexPtr mutex;
+    MutexPtrs *mutexes;
+    if (auto error = find_mutex(mutex, &mutexes, kernel, export_name, mutexid, weight))
+        return nullptr;
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} lock_count: {} waiting_threads: {}",
+            export_name, mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count,
+            mutex->waiting_threads.size());
+    }
+    return mutex;
 }
 
 // **************

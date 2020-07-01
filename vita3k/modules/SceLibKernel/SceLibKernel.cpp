@@ -78,7 +78,7 @@ EXPORT(int, _sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const c
     assert(init_count >= 0);
 
     auto uid_out = &workarea.get(host.mem)->uid;
-    return mutex_create(uid_out, host.kernel, export_name, name, thread_id, attr, init_count, SyncWeight::Light);
+    return mutex_create(uid_out, host.kernel, export_name, name, thread_id, attr, init_count, workarea, SyncWeight::Light);
 }
 
 EXPORT(int, sceClibAbort) {
@@ -886,7 +886,7 @@ EXPORT(int, sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const ch
     assert(init_count >= 0);
 
     const auto uid_out = &workarea.get(host.mem)->uid;
-    return mutex_create(uid_out, host.kernel, export_name, name, thread_id, attr, init_count, SyncWeight::Light);
+    return mutex_create(uid_out, host.kernel, export_name, name, thread_id, attr, init_count, workarea, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelCreateMsgPipe) {
@@ -900,7 +900,7 @@ EXPORT(int, sceKernelCreateMsgPipeWithLR) {
 EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
     SceUID uid;
 
-    if (auto error = mutex_create(&uid, host.kernel, export_name, name, thread_id, attr, init_count, SyncWeight::Heavy)) {
+    if (auto error = mutex_create(&uid, host.kernel, export_name, name, thread_id, attr, init_count, Ptr<SceKernelLwMutexWork>(0), SyncWeight::Heavy)) {
         return error;
     }
     return uid;
@@ -1016,12 +1016,38 @@ EXPORT(int, sceKernelGetLwCondInfoById) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetLwMutexInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKernelLwMutexInfo> info) {
+    SceKernelLwMutexInfo *info_data = info.get(host.mem);
+    SceSize info_size = info_data->size;
+    if (sizeof(SceKernelLwMutexInfo) != info_size) {
+        LOG_ERROR("Unexpected SceKernelLwMutexInfo size. Expected {} Got {}", sizeof(SceKernelLwMutexInfo), info_size);
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+    }
+    MutexPtr mutex = mutex_get(host.kernel, export_name, thread_id, lightweight_mutex_id, SyncWeight::Light);
+    if (mutex) {
+        info_data->uid = lightweight_mutex_id;
+        std::copy(mutex->name, mutex->name + KERNELOBJECT_MAX_NAME_LENGTH, info_data->name);
+        info_data->attr = mutex->attr;
+        info_data->pWork = mutex->workarea;
+        info_data->initCount = mutex->init_count;
+        info_data->currentCount = mutex->lock_count;
+        auto threads = host.kernel.threads;
+        for (auto it = threads.begin(); it != threads.end(); ++it) {
+            if (it->second == mutex->owner) {
+                info_data->currentOwnerId = it->first;
+                break;
+            }
+        }
+        info_data->numWaitThreads = static_cast<SceUInt32>(mutex->waiting_threads.size());
+        return SCE_KERNEL_OK;
+    } else {
+        return SCE_KERNEL_ERROR_LW_MUTEX_ERROR;
+    }
 }
 
-EXPORT(int, sceKernelGetLwMutexInfoById) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetLwMutexInfo, Ptr<SceKernelLwMutexWork> workarea, Ptr<SceKernelLwMutexInfo> info) {
+    const auto lightweight_mutex_id = workarea.get(host.mem)->uid;
+    return export_sceKernelGetLwMutexInfoById(host, thread_id, export_name, lightweight_mutex_id, info);
 }
 
 EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, SceKernelModuleInfo *info) {
@@ -1108,8 +1134,15 @@ EXPORT(int, sceKernelGetThreadEventInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetThreadExitStatus) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetThreadExitStatus, SceUID thid) {
+    const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+    if (thread->to_do != ThreadToDo::exit) {
+        return SCE_KERNEL_ERROR_NOT_DORMANT;
+    }
+    return thread->exit_status;
 }
 
 EXPORT(int, sceKernelGetThreadId) {
