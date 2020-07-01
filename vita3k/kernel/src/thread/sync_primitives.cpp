@@ -711,7 +711,7 @@ int eventflag_poll(KernelState &kernel, const char *export_name, SceUID thread_i
     return eventflag_waitorpoll(kernel, export_name, thread_id, event_id, flags, wait, outBits, 0, false);
 }
 
-int eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags) {
+int eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, bool do_clear) {
     assert(event_id >= 0);
 
     // TODO Don't lock twice.
@@ -728,7 +728,11 @@ int eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id
     }
 
     const std::lock_guard<std::mutex> event_lock(event->mutex);
-    event->flags |= flags;
+    if (do_clear) {
+        event->flags &= !flags;
+    } else {
+        event->flags |= flags;
+    }
 
     while (!event->waiting_threads.empty()) {
         const auto waiting_thread_data = event->waiting_threads.top();

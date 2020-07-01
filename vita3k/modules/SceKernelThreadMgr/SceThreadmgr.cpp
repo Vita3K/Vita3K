@@ -439,8 +439,8 @@ EXPORT(int, sceKernelClearEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelClearEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelClearEventFlag, SceUID eventid, unsigned int flags) {
+    return eventflag_set(host.kernel, export_name, thread_id, eventid, flags, true);
 }
 
 EXPORT(int, sceKernelCloseCond) {
@@ -740,7 +740,7 @@ EXPORT(int, sceKernelSetEvent) {
 }
 
 EXPORT(int, sceKernelSetEventFlag, SceUID eventid, unsigned int flags) {
-    return eventflag_set(host.kernel, export_name, thread_id, eventid, flags);
+    return eventflag_set(host.kernel, export_name, thread_id, eventid, flags, false);
 }
 
 EXPORT(int, sceKernelSetTimerTimeWide) {

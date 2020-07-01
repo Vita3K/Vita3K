@@ -47,5 +47,5 @@ int condvar_delete(KernelState &kernel, const char *export_name, SceUID thread_i
 SceUID eventflag_create(KernelState &kernel, const char *export_name, const char *event_name, SceUID thread_id, SceUInt attr, unsigned int flags);
 int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID eventflagid, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout);
 int eventflag_poll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID eventflagid, unsigned int flags, unsigned int wait, unsigned int *outBits);
-int eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags);
+int eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, bool do_clear);
 int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id);
