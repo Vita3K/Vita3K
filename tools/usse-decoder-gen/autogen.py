@@ -1,14 +1,14 @@
 import yaml
 import string
 import sys
-
+import re
+from glob import glob
 
 # Need Python 3.6 or newer for stable insertion order dicts
 assert sys.version_info >= (3, 6), 'Needs Python 3.6 or newer'
 
 # Set this to true to indent the annotation string in line with the match string
 STAIRCASE_INDENT = True
-
 
 def allocate_char(chars_used, name):
     # Pick a character from the identifier
@@ -72,7 +72,7 @@ for k, v in d.items():
     v["handler"] = k.lower()
     args = ',\n    '.join(f'{props["type"]} {name}' for name,
                           offset, props in members if name != 'DONTCARE' and 'match' not in props)
-    func = f'bool USSETranslatorVisitor::{v["handler"]}(\n    {args})\n{{\n}}'
+    func = (v["handler"], args)
     funcdefs.append(func)
 
     # Create match string and assign bit characters
@@ -105,6 +105,17 @@ for k, v in d.items():
     annotation = '\n'.join(annotations)
     matchers.append(f'// {description}\n/*\n{annotation}\n*/\n{PREFIX}{matchstr}{SUFFIX}')
 
+def replace_file(file, pat, replace):
+    with open(file, 'r') as f:
+        content = f.read()
+        if isinstance(pat, list):
+            for p, r in zip(pat,replace):
+                content_new = re.sub(p, r, content)
+                content = content_new
+        else:
+            content_new = re.sub(pat, replace, content)
+    with open(file, 'w') as f:
+        f.write(content_new)
 
 def dump(fp):
     print('// Functions\n', file=fp)
@@ -117,6 +128,40 @@ def dump(fp):
         print(matcher, file=fp)
         print('', file=fp)
 
+def update_matcher():
+    entry_pat = r'(static const std::vector<USSEMatcher<V>> table = {)[^\}]+(})'
+    out = ""
+    for matcher in matchers:
+        out += matcher
+        out += '\n'
+    out = '\n'.join(['        ' + x for x in out.splitlines()])
+    out = """
+#define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
+        // clang-format off
+""" + out + "\n        // clang-format on\n"
+    import re
+    replace_file('../../vita3k/shader/src/usse_translator_entry.cpp', entry_pat, r'\1'+out+r'    \2')
 
-dump(sys.stdout)
-dump(open('autogen_out.cpp', 'w'))
+def update_visitor():
+    # update headers
+    header_pat = r'(// Instructions start)[^/]+(// Instructions end)'
+    out = '\n'
+    for func in funcdefs:
+        out += f'bool {func[0]}({func[1]});\n\n'
+    def tab(x):
+        if x != '':
+            return '    ' + x
+        return ''
+    out = '\n'.join([tab(x) for x in out.splitlines()])
+    replace_file('../../vita3k/shader/include/shader/usse_translator.h', header_pat, r'\1'+out+r'    \2')
+
+    # update sources
+    def src_pat(name):
+        return r'(bool USSETranslatorVisitor::' + name + r'\()[^)]+(\))'
+    
+    files = glob('../../vita3k/shader/src/translator/*.cpp')
+    for file in files:
+        replace_file(file, [src_pat(func[0]) for func in funcdefs], [r'\1\n    '+func[1]+r'\2' for func in funcdefs])
+
+update_matcher()
+update_visitor()
