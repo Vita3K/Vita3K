@@ -1,0 +1,1176 @@
+VMOV:
+    description: Vector move
+    members:
+        - op1: '00111'
+        - pred:
+            size: 3
+            type: ExtPredicate
+        - skipinv:
+            size: 1
+            type: bool
+        - test_bit_2: 1
+        - src0_comp_sel: 1
+        - syncstart:
+            size: 1
+            type: bool
+        - dest_bank_ext: 1
+        - end_or_src0_bank_ext: 1
+        - src1_bank_ext: 1
+        - src2_bank_ext: 1
+        - move_type:
+            size: 2
+            type: MoveType
+        - repeat_count:
+            size: 2
+            type: RepeatCount
+        - nosched:
+            size: 1
+            type: bool
+        - move_data_type:
+            size: 3
+            type: DataType
+        - test_bit_1: 1
+        - src0_swiz: 4
+        - src0_bank_sel: 1
+        - dest_bank_sel: 2
+        - src1_bank_sel: 2
+        - src2_bank_sel: 2
+        - dest_mask:
+            size: 4
+            type: Imm4
+        - dest_n: 6
+        - src0_n: 6
+        - src1_n: 6
+        - src2_n: 6
+VMAD:
+    description: "Vector multiply-add"
+    members:
+        - opcode1: '00011'
+        - pred:
+            size: 3
+            type: ExtPredicate
+        - skipinv: 1
+        - gpi1_swiz_ext: 1
+        - present_bit_1: '1'
+        - opcode2: 1
+        - dest_use_bank_ext: 1
+        - end: 1
+        - src1_bank_ext: 1
+        - increment_mode: 2
+        - gpi0_abs: 1
+        - repeat_count:
+            size: 2
+            type: RepeatCount
+        - nosched:
+            size: 1
+            type: bool
+        - write_mask: 4
+        - src1_neg: 1
+        - src1_abs: 1
+        - gpi1_neg: 1
+        - gpi1_abs: 1
+        - gpi0_swiz_ext: 1
+        - dest_bank: 2
+        - src1_bank: 2
+        - gpi0_n: 2
+        - dest_n: 6
+        - gpi0_swiz: 4
+        - gpi1_swiz: 4
+        - gpi1_n: 2
+        - gpi0_neg: 1
+        - src1_swiz_ext:
+            size: 1
+            offset: 10
+        - src1_swiz: 4
+        - src1_n: 6
+VMAD2:
+    description: Vector multiply-add (Normal version)
+    members:
+        - opcode1: '00000'
+        - dat_fmt:
+            offset: 58
+            size: 1
+        - pred: 
+            offset: 56
+            size: 2
+        - skipinv:
+            offset: 55
+            size: 1
+        - src0_swiz_bits2:
+            size: 1
+            offset: 53
+        - syncstart:
+            offset: 52
+            size: 1
+        - src0_abs:
+            offset: 50
+            size: 1
+        - src1_bank_ext:
+            offset: 49
+            size: 1
+        - src2_bank_ext:
+            offset: 48
+            size: 1
+        - src2_swiz:
+            offset: 45
+            size: 3
+        - src1_swiz_bit2:
+            offset: 44
+            size: 1
+        - nosched:
+            offset: 43
+            size: 1
+        - dest_mask:
+            offset: 39
+            size: 4
+        - src1_mod:
+            size: 2
+            offset: 37
+        - src2_mod:
+            size: 2
+            offset: 35
+        - src0_bank:
+            size: 1
+            offset: 34
+        - dest_bank:
+            size: 2
+            offset: 32
+        - src1_bank:
+            size: 2
+            offset: 30
+        - src2_bank:
+            size: 2
+            offset: 28
+        - dest_n:
+            offset: 22
+            size: 6
+        - src1_swiz_bits01:
+            size: 2
+            offset: 20
+        - src0_swiz_bits01:
+            size: 2
+            offset: 18
+        - src0_n:
+            size: 6
+            offset: 12
+        - src1_n:
+            size: 6
+            offset: 6
+        - src2_n:
+            size: 6
+            offset: 0
+VDP:
+    description: Vector Dot Product (single issue)
+    members:
+        - opcode1: '00011'
+        - pred:
+            size: 3
+            type: ExtPredicate
+        - skipinv: 1
+        - clip_plane_enable:
+            size: 1
+            type: bool
+        - present_bit_0: '0'
+        - opcode2: 1
+        - dest_use_bank_ext: 1
+        - end: 1
+        - src1_bank_ext: 1
+        - increment_mode: 2
+        - gpi0_abs: 1
+        - repeat_count:
+            size: 2
+            type: RepeatCount
+        - nosched:
+            size: 1
+            type: bool
+        - write_mask: 4
+        - src1_neg: 1
+        - src1_abs: 1
+        - clip_plane_n: 3
+        - dest_bank: 2 
+        - src1_bank: 2
+        - gpi0_n: 2
+        - dest_n: 6
+        - gpi0_swiz: 4
+        - src1_swiz_w: 3
+        - src1_swiz_z: 3
+        - src1_swiz_y: 3
+        - src1_swiz_x: 3
+        - src1_n: 6
+VNMAD32:
+    description: Vector operations except for MAD (F32)
+    members:
+        - opcode1: '00001'
+        - pred:
+            size: 3
+            type: ExtPredicate
+        - skipinv:
+            size: 1
+            type: bool
+        - src1_swiz_10_11:
+            size: 2
+        - syncstart:
+            size: 1
+            type: bool
+        - dest_bank_ext: 1
+        - src1_swiz_9: 1
+        - src1_bank_ext: 1
+        - src2_bank_ext: 1
+        - src2_swiz: 4
+        - nosched:
+            size: 1
+            type: bool
+        - dest_mask:
+            size: 4
+            type: Imm4
+        - src1_mod: 2
+        - src2_mod: 1
+        - src1_swiz_7_8: 2
+        - dest_bank_sel: 2
+        - src1_bank_sel: 2
+        - src2_bank_sel: 2
+        - dest_n: 6
+        - src1_swiz_0_6: 7
+        - op2: 3
+        - src1_n: 6
+        - src2_n: 6
+VNMAD16:
+    description: Vector operations except for MAD (F16)
+    members:
+        - opcode1: '00010'
+        - pred:
+            size: 3
+            type: ExtPredicate
+        - skipinv:
+            size: 1
+            type: bool
+        - src1_swiz_10_11:
+            size: 2
+        - syncstart:
+            size: 1
+            type: bool
+        - dest_bank_ext: 1
+        - src1_swiz_9: 1
+        - src1_bank_ext: 1
+        - src2_bank_ext: 1
+        - src2_swiz: 4
+        - nosched:
+            size: 1
+            type: bool
+        - dest_mask:
+            size: 4
+            type: Imm4
+        - src1_mod: 2
+        - src2_mod: 1
+        - src1_swiz_7_8: 2
+        - dest_bank_sel: 2
+        - src1_bank_sel: 2
+        - src2_bank_sel: 2
+        - dest_n: 6
+        - src1_swiz_0_6: 7
+        - op2: 3
+        - src1_n: 6
+        - src2_n: 6
+VLDST:
+    description: Load and Store
+    members:
+        - op1_cnst: '111'
+        - op1:
+            size: 2
+            offset: 59
+        - pred:
+            size: 3
+            offset: 56
+            type: ExtPredicate
+        - skipinv:
+            size: 1
+            offset: 55
+        - nosched:
+            size: 1
+            offset: 54
+        - moe_expand:
+            size: 1
+            offest: 53
+        - sync_start:
+            size: 1
+            offset: 52
+        - cache_ext:
+            size: 1
+            offset: 51
+        - src0_bank_ext:
+            size: 1
+            offset: 50
+        - src1_bank_ext:
+            size: 1
+            offset: 49
+        - src2_bank_ext:
+            size: 1
+            offset: 48
+        - mask_count:
+            size: 4
+            offset: 44
+        - addr_mode:
+            size: 2
+            offset: 42
+        - mode:
+            size: 2
+            offset: 40
+        - dest_bank_primattr:
+            size: 1
+            offset: 39
+        - range_enable:
+            size: 1
+            offset: 38
+        - data_type:
+            size: 2
+            offset: 36
+        - increment_or_decrement:
+            size: 1
+            offset: 35
+        - src0_bank:
+            size: 1
+            offset: 34
+        - cache_by_pass12:
+            size: 1
+            offset: 33
+        - drc_sel:
+            size: 1
+            offset: 32
+        - src1_bank:
+            size: 2
+            offset: 30
+        - src2_bank:
+            size: 2
+            offset: 28
+        - dest_n:
+            size: 7
+            offset: 21
+        - src0_n:
+            size: 7
+            offset: 14
+        - src1_n:
+            size: 7
+            offset: 7
+        - src2_n:
+            size: 7
+            offset: 0
+VTST:
+    description: Test Instructions
+    members:
+        - op1: '01001'
+        - pred:
+            size: 3
+            offset: 56
+            type: ExtPredicate
+        - skipinv:
+            size: 1
+            offset: 55
+        - onceonly:
+            size: 1
+            offset: 53
+        - syncstart:
+            size: 1
+            offset: 52
+        - dest_ext:
+            size: 1
+            offset: 51
+        - src1_neg:
+            size: 1
+            offset: 50
+        - src1_ext:
+            size: 1
+            offset: 49
+        - src2_ext:
+            size: 1
+            offset: 48
+        - prec:
+            size: 1
+            offset: 47
+        - src2_vscomp:
+            size: 1
+            offset: 46
+        - rpt_count:
+            type: RepeatCount
+            size: 2
+            offset: 44
+        - sign_test:
+            size: 2
+            offset: 42
+        - zero_test:
+            size: 2
+            offset: 40
+        - test_crcomb_and:
+            size: 1
+            offset: 39
+        - chan_cc:
+            size: 3
+            offset: 36
+        - pdst_n:
+            size: 2
+            offset: 34
+        - dest_bank:
+            size: 2
+            offset: 32
+        - src1_bank:
+            size: 2
+            offset: 30
+        - src2_bank:
+            size: 2
+            offset: 28
+        - dest_n:
+            offset: 21
+            size: 7
+        - test_wben:
+            offset: 20
+            size: 1
+        - alu_sel:
+            size: 2
+            offset: 18
+        - alu_op:
+            size: 4
+            offset: 14
+        - src1_n:
+            size: 7
+            offset: 7
+        - src2_n:
+            size: 7
+            offset: 0
+VTSTMSK:
+    description: Test mask Instructions
+    members:
+        - op1: '01111'
+        - pred:
+            size: 3
+            offset: 56
+            type: ExtPredicate
+        - skipinv:
+            size: 1
+            offset: 55
+        - onceonly:
+            size: 1
+            offset: 53
+        - syncstart:
+            size: 1
+            offset: 52
+        - dest_ext:
+            size: 1
+            offset: 51
+        - test_flag_2:
+            size: 1
+            offset: 50
+        - src1_ext:
+            size: 1
+            offset: 49
+        - src2_ext:
+            size: 1
+            offset: 48
+        - prec:
+            size: 1
+            offset: 47
+        - src2_vscomp:
+            size: 1
+            offset: 46
+        - rpt_count:
+            type: RepeatCount
+            size: 2
+            offset: 44
+        - sign_test:
+            size: 2
+            offset: 42
+        - zero_test:
+            size: 2
+            offset: 40
+        - test_crcomb_and:
+            size: 1
+            offset: 39
+        - tst_mask_type:
+            size: 2
+            offset: 36
+        - dest_bank:
+            size: 2
+            offset: 32
+        - src1_bank:
+            size: 2
+            offset: 30
+        - src2_bank:
+            size: 2
+            offset: 28
+        - dest_n:
+            offset: 21
+            size: 7
+        - test_wben:
+            offset: 20
+            size: 1
+        - alu_sel:
+            size: 2
+            offset: 18
+        - alu_op:
+            size: 4
+            offset: 14
+        - src1_n:
+            size: 7
+            offset: 7
+        - src2_n:
+            size: 7
+            offset: 0
+VPCK:
+    description: Vector pack/unpack
+    members:
+        - op1: '01000'
+        - pred:
+            size: 3
+            type: ExtPredicate
+        - skipinv:
+            size: 1
+            type: bool
+        - nosched:
+            size: 1
+            type: bool
+        - unknown: 1
+        - syncstart:
+            size: 1
+            type: bool
+        - dest_bank_ext: 1
+        - end: 1
+        - src1_bank_ext: 1
+        - src2_bank_ext: 1
+        - repeat_count:
+            size: 3
+            type: RepeatCount
+            offset: 44
+        - src_fmt: 3
+        - dest_fmt: 3
+        - dest_mask: 4
+        - dest_bank_sel: 2
+        - src1_bank_sel: 2
+        - src2_bank_sel: 2
+        - dest_n: 
+            offset: 21
+            size: 7
+        - comp_sel_3:
+            offset: 19
+            size: 2
+        - scale:
+            offset: 18
+            size: 1
+        - comp_sel_1:
+            offset: 16
+            size: 2
+        - comp_sel_2: 
+            offset: 14
+            size: 2
+        - src1_n: 
+            offset: 8
+            size: 6
+        - comp0_sel_bit1:
+            offset: 7
+            size: 1
+        - src2_n:
+            offset: 1
+            size: 6
+        - comp_sel_0_bit0: 
+            offset: 0
+            size: 1
+VBW:
+    description: Bitwise Instructions
+    members:
+        - op1_cnst: '01'
+        - op1: 3
+        - pred:
+            type: ExtPredicate
+            size: 3
+        - skipinv:
+            type: bool
+            size: 1
+        - nosched:
+            type: bool
+            size: 1
+        - repeat_count: 1
+        - sync_start: 1
+        - dest_ext: 1
+        - end: 1
+        - src1_ext: 1
+        - src2_ext: 1
+        - mask_count: 4
+        - src2_invert: 1
+        - src2_rot: 5
+        - src2_exth: 2
+        - op2: 1
+        - bitwise_partial: 1
+        - dest_bank: 2
+        - src1_bank: 2
+        - src2_bank: 2
+        - dest_n: 7
+        - src2_sel: 7
+        - src1_n: 7
+        - src2_n: 7   
+SMP:
+    description: Sample Instructions
+    members:
+        - op1: '11100'
+        - pred:
+            type: ExtPredicate
+            offset: 56
+            size: 3
+        - skipinv:
+            size: 1
+            offset: 55
+        - nosched:
+            size: 1
+            offset: 54
+        - syncstart:
+            offset: 52
+            size: 1
+        - minpack:
+            size: 1
+            offset: 51
+        - src0_ext:
+            size: 1
+            offset: 50
+        - src1_ext:
+            offset: 49
+            size: 1
+        - src2_ext:
+            offset: 48
+            size: 1
+        - fconv_type:
+            offset: 46
+            size: 2
+        - mask_count:
+            size: 2
+            offset: 44
+        - dim:
+            size: 2
+            offset: 42
+        - lod_mode:
+            size: 2
+            offset: 40
+        - dest_use_pa:
+            size: 1
+            type: bool
+            offset: 39
+        - sb_mode:
+            offset: 37
+            size: 2
+        - src0_type:
+            offset: 35
+            size: 2
+        - src0_bank:
+            size: 1
+            offset: 34
+        - drc_sel:
+            size: 2
+            offset: 32
+        - src1_bank:
+            offset: 30
+            size: 2
+        - src2_bank:
+            offset: 28
+            size: 2
+        - dest_n:
+            size: 7
+            offset: 21
+        - src0_n:
+            size: 7
+            offset: 14
+        - src1_n:
+            size: 7
+            offset: 7
+        - src2_n:
+            size: 7
+            offset: 0
+VCOMP:
+    description: Vector Complex Instructions
+    members:
+        - op1: '00110'
+        - pred:
+            size: 3
+            type: ExtPredicate
+            offset: 56
+        - skipinv:
+            size: 1
+            type: bool
+            offset: 55
+        - dest_type:
+            size: 2
+            offset: 53
+        - syncstart:
+            size: 1
+            type: bool
+            offset: 52
+        - dest_bank_ext:
+            size: 1
+            type: bool
+            offset: 51
+        - end:
+            size: 1
+            type: bool
+            offset: 50
+        - src1_bank_ext:
+            size: 1
+            type: bool
+            offset: 49
+        - repeat_count:
+            size: 4
+            type: RepeatCount
+            offset: 44
+        - nosched:
+            size: 1
+            offset: 43
+            type: bool
+        - op2:
+            size: 2
+            offset: 41
+        - src_type:
+            size: 2
+            offset: 39
+        - src1_mod:
+            size: 2
+            offset: 37
+        - src_comp:
+            size: 2
+            offset: 35
+        - dest_bank:
+            size: 2
+            offset: 32
+        - src1_bank:
+            size: 2
+            offset: 30
+        - dest_n:
+            offset: 21
+            size: 7
+        - src1_n:
+            offset: 7
+            size: 7
+        - write_mask:
+            size: 4
+            offset: 0
+SOP2:
+    description: Sum of Products
+    members:
+        - op1: '10000'
+        - pred:
+            offset: 57
+            size: 2
+        - cmod1:
+            offset: 56
+            size: 1
+        - skipinv:
+            offset: 55
+            size: 1
+        - nosched:
+            offset: 54
+            size: 1
+        - asel1:
+            offset: 52
+            size: 2
+        - dest_bank_ext:
+            offset: 51
+            size: 1
+        - end:
+            offset: 50
+            size: 1
+        - src1_bank_ext:
+            offset: 49
+            size: 1
+        - src2_bank_ext:
+            offset: 48
+            size: 1
+        - cmod2:
+            offset: 47
+            size: 1
+        - count:
+            offset: 44
+            size: 3
+        - amod1:
+            offset: 43
+            size: 1
+        - asel2:
+            offset: 41
+            size: 2
+        - csel1:
+            offset: 38
+            size: 3
+        - csel2:
+            offset: 35
+            size: 3
+        - amod2:
+            offset: 34
+            size: 1
+        - dest_bank:
+            offset: 32
+            size: 2
+        - src1_bank:
+            offset: 30
+            size: 2
+        - src2_bank:
+            offset: 28
+            size: 2
+        - dest_n:
+            offset: 21
+            size: 7
+        - src1_mod:
+            offset: 20
+            size: 1
+        - cop:
+            offset: 18
+            size: 2
+        - aop:
+            offset: 16
+            size: 2
+        - asrc1_mod:
+            offset: 15
+            size: 1
+        - dest_mod:
+            offset: 14
+            size: 1
+        - src1_n:
+            offset: 7
+            size: 7
+        - src2_n:
+            offset: 0
+            size: 7
+BR:
+    description: Branch
+    members:
+        - op1: '11111'
+        - pred:
+            type: ExtPredicate
+            size: 3
+            offset: 56
+        - syncend:
+            size: 1
+            offset: 55
+        - opcat_extra:
+            match: '0'
+            size: 1
+            offset: 54
+        - op2_flow_ctrl:
+            match: '00'
+            size: 2
+            offset: 52
+        - exception:
+            type: bool
+            size: 1
+            offset: 51
+        - pwait:
+            type: bool
+            size: 1
+            offset: 45
+        - sync_ext:
+            size: 1
+            offset: 44
+        - nosched:
+            type: bool
+            size: 1
+            offset: 43
+        - br_monitor:
+            type: bool
+            size: 1
+            offset: 42
+        - save_link:
+            type: bool
+            size: 1
+            offset: 41
+        - br_op:
+            match: '00'
+            offset: 39
+            size: 2
+        - br_type:
+            offset: 38
+            size: 1
+        - any_inst:
+            offset: 21
+            size: 1
+        - all_inst:
+            offset: 20
+            size: 1
+        - br_off:
+            size: 20
+            offset: 0
+            type: uint32_t
+PHAS:
+    description: Phase
+    members:
+        - op1: '11111'
+        - op2:
+            size: 3
+            offset: 56
+            match: '010'
+        - sprvv:
+            size: 1
+            offset: 55
+        - phas:
+            match: '100'
+            offset: 52
+            size: 3
+        - end:
+            size: 1
+            offset: 51
+        - imm:
+            size: 1
+            offset: 50
+        - src1_bank_ext:
+            size: 1
+            offset: 49
+        - src2_bank_ext:
+            size: 1
+            offset: 48
+        - mode:
+            size: 1
+            offset: 45
+        - rate_hi:
+            size: 1
+            offset: 44
+        - rate_lo_or_nosched:
+            size: 1
+            offset: 43
+        - wait_cond:
+            size: 3
+            offset: 40
+        - temp_count:
+            size: 8
+            offset: 32
+        - src1_bank:
+            size: 2
+            offset: 30
+        - src2_bank:
+            size: 2
+            offset: 28
+        - exe_addr_high:
+            size: 6
+            offset: 14
+        - src1_n_or_exe_addr_mid:
+            size: 7
+            offset: 7
+        - src2_n_or_exe_addr_low:
+            size: 7
+            offset: 0
+NOP:
+    description: Nop
+    members:
+        - op1: '11111'
+        - opcat_extra:
+            match: '0'
+            size: 1
+            offset: 54
+        - op2_flow_ctrl:
+            match: '00'
+            size: 2
+            offset: 52
+        - nop:
+            match: '101'
+            offset: 38
+            size: 3
+SMLSI:
+    description: SMLSI control instruction
+    members:
+        - op1: '11111'
+        - op2:
+            size: 3
+            offset: 56
+            match: '010'
+        - opcat: 
+            match: '01'
+            size: 2
+            offset: 52
+        - nosched:
+            offset: 50
+            size: 1
+        - temp_limit:
+            offset: 44
+            size: 4
+        - pa_limit:
+            offset: 40
+            size: 4
+        - sa_limit:
+            offset: 36
+            size: 4
+        - dest_inc_mode:
+            offset: 35
+            size: 1
+        - src0_inc_mode:
+            offset: 34
+            size: 1
+        - src1_inc_mode:
+            offset: 33
+            size: 1
+        - src2_inc_mode:
+            offset: 32
+            size: 1
+        - dest_inc:
+            offset: 24
+            size: 8
+        - src0_inc:
+            offset: 16
+            size: 8
+        - src1_inc:
+            offset: 8
+            size: 8
+        - src2_inc:
+            offset: 0
+            size: 8
+EMIT:
+    description: Emit Output
+    members:
+        - op1: '11111'
+        - op2:
+            size: 3
+            offset: 56
+            match: '011'
+        - sideband_high:
+            size: 2
+            offset: 54
+        - opcat:
+            size: 2
+            offset: 52
+            match: '10'
+        - src0_bank_ext:
+            size: 1
+            offset: 51
+        - end:
+            size: 1
+            offset: 50
+        - src1_bank_ext:
+            size: 1
+            offset: 49
+        - src2_bank_ext:
+            size: 1
+            offset: 48
+        - target:
+            size: 2
+            offset: 46
+        - task_start_or_mte_hi:
+            size: 1
+            offset: 45
+        - task_end_or_mte_lo:
+            size: 1
+            offset: 44
+        - nosched:
+            size: 1
+            offset: 43
+        - sideband_mid:
+            size: 6
+            offset: 35
+        - src0_bank:
+            size: 1
+            offset: 34
+        - incp:
+            size: 2
+            offset: 32
+        - src1_bank:
+            size: 2
+            offset: 30
+        - src2_bank:
+            size: 2
+            offset: 28
+        - sideband_low:
+            size: 6
+            offset: 22
+        - freep:
+            size: 1
+            offset: 21
+        - src0_n:
+            size: 7
+            offset: 14
+        - src1_n:
+            size: 7
+            offset: 7
+        - src2_n:
+            size: 7
+            offset: 0
+VDUAL:
+    description: Dual issue instruction
+    members:
+        - op1: '0010'
+        - comp_count_type:
+            size: 1
+            offset: 59
+        - gpi1_neg:
+            size: 1
+            offset: 58
+        - sv_pred:
+            size: 2
+            offset: 56
+        - skipinv:
+            size: 1
+            offset: 55
+        - dual_op1_ext_vec3_or_has_w_vec4:
+            size: 1
+            offset: 54
+        - type_f16:
+            size: 1
+            offset: 53
+            type: bool
+        - gpi1_swizz_ext:
+            size: 1
+            offset: 52
+        - unified_store_swizz:
+            size: 4
+            offset: 48
+        - unified_store_neg:
+            size: 1
+            offset: 47
+        - dual_op1:
+            size: 3
+            offset: 44
+        - dual_op2_ext:
+            size: 1
+            offset: 43
+        - prim_ustore:
+            offset: 42
+            size: 1
+            type: bool
+        - gpi0_swizz:
+            offset: 38
+            size: 4
+        - gpi1_swizz:
+            offset: 34
+            size: 4
+        - prim_dest_bank:
+            size: 2
+            offset: 32
+        - unified_store_slot_bank:
+            size: 2
+            offset: 30
+        - prim_dest_num_gpi_case:
+            size: 2
+            offset: 28
+        - prim_dest_num:
+            size: 7
+            offset: 21
+        - dual_op2:
+            size: 3
+            offset: 18
+        - src_config:
+            size: 2
+            offset: 16
+        - gpi2_slot_num_bit_1:
+            size: 1
+            offset: 15
+        - gpi2_slot_num_bit_0_or_unified_store_abs:
+            size: 1
+            offset: 14
+        - gpi1_slot_num:
+            size: 2
+            offset: 12
+        - gpi0_slot_num:
+            size: 2
+            offset: 10
+        - write_mask_non_gpi:
+            size: 3
+            offset: 7
+        - unified_store_slot_num:
+            size: 7
+            offset: 0
+SPEC:
+    description: Special
+    members:
+        - op1: '11111'
+        - special:
+            size: 1
+            offset: 54
+            type: bool
+        - category:
+            size: 2
+            type: SpecialCategory
