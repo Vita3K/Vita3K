@@ -19,6 +19,9 @@
 
 #include <module/module.h>
 
+EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option);
+EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes);
+
 BRIDGE_DECL(_sceKernelCloseModule)
 BRIDGE_DECL(_sceKernelLoadModule)
 BRIDGE_DECL(_sceKernelLoadStartModule)
