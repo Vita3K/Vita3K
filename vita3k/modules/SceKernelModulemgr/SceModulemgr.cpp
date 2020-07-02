@@ -16,18 +16,111 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceModulemgr.h"
+#include <host/load_self.h>
+#include <io/functions.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_functions.h>
+#include <modules/module_parent.h>
+#include <util/lock_and_find.h>
+
+static bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, HostState &host, const char *export_name, const char *path, int &error_val) {
+    const auto &loaded_modules = host.kernel.loaded_modules;
+
+    auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [path](const auto &p) {
+        return std::string(p.second->path) == path;
+    });
+
+    if (module_iter == loaded_modules.end()) {
+        // module is not loaded, load it here
+
+        const auto file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path, export_name);
+        if (file < 0) {
+            error_val = RET_ERROR(file);
+            return false;
+        }
+        const auto size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
+        if (size < 0) {
+            error_val = RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+            return false;
+        }
+
+        if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0) {
+            error_val = RET_ERROR(static_cast<int>(size));
+            return false;
+        }
+
+        std::vector<char> data(static_cast<int>(size) + 1); // null-terminated char array
+        if (read_file(&data, host.io, file, SceSize(size), export_name) < 0) {
+            data.clear();
+            error_val = RET_ERROR(static_cast<int>(size));
+            return false;
+        }
+
+        mod_id = load_self(entry_point, host.kernel, host.mem, &data, path, host.cfg);
+
+        close_file(host.io, file, export_name);
+        data.clear();
+        if (mod_id < 0) {
+            error_val = RET_ERROR(mod_id);
+            return false;
+        }
+
+        module_iter = loaded_modules.find(mod_id);
+        module = module_iter->second;
+    } else {
+        // module is already loaded
+        module = module_iter->second;
+
+        mod_id = module_iter->first;
+        entry_point = module->module_start;
+    }
+    return true;
+}
 
 EXPORT(int, _sceKernelCloseModule) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelLoadModule) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
+    SceUID mod_id;
+    Ptr<const void> entry_point;
+    SceKernelModuleInfoPtr module;
+
+    int error_val;
+    if (!load_module(mod_id, entry_point, module, host, export_name, path, error_val))
+        return error_val;
+
+    return mod_id;
 }
 
-EXPORT(int, _sceKernelLoadStartModule) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
+    SceUID mod_id;
+    Ptr<const void> entry_point;
+    SceKernelModuleInfoPtr module;
+
+    int error_val;
+    if (!load_module(mod_id, entry_point, module, host, export_name, moduleFileName, error_val))
+        return error_val;
+
+    auto inject = create_cpu_dep_inject(host);
+    const SceUID thid = create_thread(entry_point.cast<const void>(), host.kernel, host.mem, module->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
+        static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), inject, nullptr);
+
+    const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+
+    uint32_t result = run_on_current(*thread, entry_point, args, argp);
+
+    LOG_INFO("Module {} (at \"{}\") module_start returned {}", module->module_name, module->path, log_hex(result));
+
+    if (pRes)
+        *pRes = result;
+
+    thread->to_do = ThreadToDo::exit;
+    thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
+    host.kernel.running_threads.erase(thid);
+    host.kernel.threads.erase(thid);
+
+    return mod_id;
 }
 
 EXPORT(int, _sceKernelOpenModule) {

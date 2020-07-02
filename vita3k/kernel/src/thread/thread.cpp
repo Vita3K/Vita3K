@@ -268,7 +268,7 @@ bool run_callback(ThreadState &thread, Address &pc, Address &data) {
     return run_thread(thread, true);
 }
 
-uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp, bool callback) {
+uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, const Ptr<void> &argp, bool callback) {
     std::unique_lock<std::mutex> lock(thread.mutex);
     stop(*thread.cpu);
     write_reg(*thread.cpu, 0, arglen);
