@@ -266,7 +266,7 @@ int read_file(void *data, IOState &io, const SceUID fd, const SceSize size, cons
 
     const auto file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
-        const auto read = file->second.read(data, 1, size);
+        const auto read = size * file->second.read(data, size, 1);
         LOG_TRACE("{}: Reading {} bytes of fd {}", export_name, read, log_hex(fd));
         return static_cast<int>(read);
     }
@@ -315,7 +315,7 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
     }
 
     if (file->second.can_write_file()) {
-        const auto written = file->second.write(data, size, 1);
+        const auto written = size * file->second.write(data, size, 1);
         LOG_TRACE("{}: Writing to fd: {}, size: {}", export_name, log_hex(fd), size);
         return static_cast<int>(written);
     }
