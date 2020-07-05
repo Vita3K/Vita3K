@@ -58,6 +58,7 @@ void draw_ui(GuiState &gui, HostState &host);
 
 void draw_app_context_menu(GuiState &gui, HostState &host);
 void draw_common_dialog(GuiState &gui, HostState &host);
+void draw_information_bar(GuiState &gui);
 void draw_reinstall_dialog(GenericDialogState *status);
 void draw_trophies_unlocked(GuiState &gui, HostState &host);
 void draw_perf_overlay(GuiState &gui, HostState &host);

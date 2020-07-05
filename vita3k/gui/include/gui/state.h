@@ -173,6 +173,8 @@ struct GuiState {
 
     std::map<std::string, ImGui_Texture> apps_background;
 
+    std::map<std::string, ImU32> information_bar_color;
+
     std::map<std::string, std::map<std::string, ImGui_Texture>> live_area_contents;
     std::map<std::string, std::map<std::string, std::map<std::string, std::vector<ImGui_Texture>>>> live_items;
 
