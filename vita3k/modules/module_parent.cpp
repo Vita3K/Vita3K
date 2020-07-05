@@ -129,7 +129,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
                 0x46E7BE7B, // sceKernelLockLwMutex
                 0x91FA6614, // sceKernelUnlockLwMutex
             };
-            auto pc = read_pc(cpu);
+            auto pc = read_lr(cpu);
             log_import_call('H', nid, thread_id, hle_nid_blacklist, pc);
         }
         const ImportFn fn = resolve_import(nid);
