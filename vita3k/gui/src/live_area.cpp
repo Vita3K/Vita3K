@@ -33,6 +33,33 @@
 
 namespace gui {
 
+void draw_information_bar(GuiState &gui) {
+    const auto display_size = ImGui::GetIO().DisplaySize;
+    const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+    const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
+    ImU32 DEFAUL_BAR_COLOR = 4278190080; // Black
+    ImU32 DEFAUL_INDICATOR_COLOR = 4294967295; // White
+
+    const auto is_theme_color = (gui.theme.start_screen || gui.live_area.live_area_screen);
+
+    ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(display_size.x, MENUBAR_HEIGHT), ImGuiCond_Always);
+    ImGui::Begin("##information_bar", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+
+    const auto scal_font = 19.2f / ImGui::GetFontSize();
+
+    const auto now = std::chrono::system_clock::now();
+    const auto tt = std::chrono::system_clock::to_time_t(now);
+    const auto local = *localtime(&tt);
+
+    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, MENUBAR_HEIGHT), is_theme_color ? gui.information_bar_color["bar"] : DEFAUL_BAR_COLOR, 0.f, ImDrawCornerFlags_All);
+    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, (20.f * scal_font) * SCAL.x, ImVec2(display_size.x - (122.f * SCAL.x), 6.f * SCAL.y), is_theme_color ? gui.information_bar_color["indicator"] : DEFAUL_INDICATOR_COLOR, fmt::format("{:0>2d}:{:0>2d}", local.tm_hour, local.tm_min).c_str());
+    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCAL.x), 12.f * SCAL.y), ImVec2(display_size.x - 50.f, 20 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawCornerFlags_All);
+    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCAL.x), 5.f * SCAL.y), ImVec2(display_size.x - 12.f, 27 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f, ImDrawCornerFlags_All);
+
+    ImGui::End();
+}
+
 #ifdef _WIN32
 static const char OS_PREFIX[] = "start ";
 #elif __APPLE__
@@ -522,12 +549,22 @@ inline uint64_t current_time() {
 }
 
 void draw_live_area_screen(GuiState &gui, HostState &host) {
+    if (!gui.live_area.manual)
+        draw_information_bar(gui);
+
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
+    const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-    ImGui::Begin("##live_area", &gui.live_area.live_area_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("##live_area", &gui.live_area.live_area_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_AlwaysAutoResize);
 
-    const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+    const auto icon_scal_pos = ImVec2(display_size.x - (496.0f * scal.x), display_size.y - (544.f * scal.y));
+    const auto icon_scal_size = ImVec2(icon_scal_pos.x + (32.0f * scal.x), icon_scal_pos.y + (32.f * scal.y));
+
+    if (!gui.live_area.manual && (gui.app_selector.icons.find(host.io.title_id) != gui.app_selector.icons.end())) {
+        ImGui::GetForegroundDrawList()->AddImage(gui.app_selector.icons[host.io.title_id], icon_scal_pos, icon_scal_size);
+    }
 
     const auto background_pos = ImVec2(900.0f * scal.x, 500.0f * scal.y);
     const auto pos_bg = ImVec2(display_size.x - background_pos.x, display_size.y - background_pos.y);
@@ -923,7 +960,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     const auto POS_START = ImVec2(POS_BUTTON.x + (START_BUTTON_SIZE.x - (START_SIZE.x * scal.x)) / 2,
         POS_BUTTON.y + (START_BUTTON_SIZE.y - (START_SIZE.y * scal.y)) / 2);
 
-    const auto BUTTON_SIZE = ImVec2(80.f * scal.x, 30.f * scal.y);
+    const auto BUTTON_SIZE = ImVec2(76.f * scal.x, 30.f * scal.y);
 
     if (gui.live_area_contents[host.io.title_id].find("gate") != gui.live_area_contents[host.io.title_id].end()) {
         ImGui::SetCursorPos(GATE_POS);
@@ -939,15 +976,6 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
     ImGui::PopID();
     ImGui::GetWindowDrawList()->AddRect(GATE_POS, ImVec2(GATE_POS.x + GATE_SIZE.x, GATE_POS.y + GATE_SIZE.y), IM_COL32(192, 192, 192, 255), 10.0f, ImDrawCornerFlags_All, 12.0f);
-
-    const auto icon_scal_size = ImVec2(32.0f * scal.x, 32.f * scal.y);
-    const auto icon_pos = ImVec2(496.0f * scal.x, 544.f * scal.y);
-    const auto pos_scal_icon = ImVec2(display_size.x - icon_pos.x, display_size.y - icon_pos.y);
-
-    if (gui.app_selector.icons.find(host.io.title_id) != gui.app_selector.icons.end()) {
-        ImGui::SetCursorPos(pos_scal_icon);
-        ImGui::Image(gui.app_selector.icons[host.io.title_id], icon_scal_size);
-    }
 
     const auto widget_scal_size = ImVec2(80.0f * scal.x, 80.f * scal.y);
     const auto manual_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/manual/" };
@@ -1047,11 +1075,12 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::VSliderInt("##slider_current_app", ImVec2(60.f, 500.f * scal.y), &current_app, int32_t(gui.app_selector.apps.size()) - 1, 0, fmt::format("{}\n_____\n\n{}", current_app + 1, int32_t(gui.app_selector.apps.size())).c_str());
         }
 
-        ImGui::SetCursorPos(ImVec2(display_size.x - (140.0f * scal.x), 14.0f * scal.y));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f);
+        ImGui::SetCursorPos(ImVec2(display_size.x - (136.0f * scal.x), 44.0f * scal.y));
         if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
             gui.live_area.live_area_screen = false;
 
-        ImGui::SetCursorPos(ImVec2(60.f * scal.x, 14.0f * scal.y));
+        ImGui::SetCursorPos(ImVec2(60.f * scal.x, 44.0f * scal.y));
         if (ImGui::Button("Help", BUTTON_SIZE))
             ImGui::OpenPopup("Live Area Help");
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
@@ -1092,6 +1121,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
             ImGui::EndPopup();
         }
+        ImGui::PopStyleVar();
     }
 
     ImGui::End();
