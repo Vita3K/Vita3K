@@ -153,7 +153,11 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
 
         const ExportNids::iterator export_address = kernel.export_nids.find(nid);
         uint32_t *const stub = entry.get(mem);
-        if (export_address == kernel.export_nids.end() || kernel.watch_import_calls) {
+        if (TRACK_IMPORT_CALL_RETURN) {
+            stub[0] = 0xef000053; // svc #53 - Call our interrupt hook.
+            stub[1] = 0xef000000; // svc #0 - Call our interrupt hook again to log the return value.
+            stub[2] = nid; // Our interrupt hook will read this.
+        } else if (export_address == kernel.export_nids.end() || kernel.watch_import_calls) {
             stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
             stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
             stub[2] = nid; // Our interrupt hook will read this.

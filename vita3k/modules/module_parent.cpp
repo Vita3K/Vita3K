@@ -122,7 +122,8 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
 
     if (!export_pc) {
         // HLE - call our C++ function
-
+        if (is_returning(cpu))
+            return;
         if (host.kernel.watch_import_calls) {
             const std::unordered_set<uint32_t> hle_nid_blacklist = {
                 0xB295EB61, // sceKernelGetTLSAddr
@@ -144,12 +145,14 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         }
     } else {
         // LLE - directly run ARM code imported from some loaded module
-
-        if (host.kernel.watch_import_calls) {
-            const std::unordered_set<uint32_t> lle_nid_blacklist = {};
-            auto pc = read_pc(cpu);
-            log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
+        if (is_returning(cpu)) {
+            LOG_TRACE("[LLE] TID: {:<3} FUNC: {} returned {}", thread_id, import_name(nid), log_hex(read_reg(cpu, 0)));
+            return;
         }
+
+        const std::unordered_set<uint32_t> lle_nid_blacklist = {};
+        auto pc = read_pc(cpu);
+        log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         write_pc(*thread->cpu, export_pc);

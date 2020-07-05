@@ -79,8 +79,12 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     };
 
     const CallSVC call_svc = [inject, thid, &mem](CPUState &cpu, uint32_t imm, Address pc) {
-        assert(imm == 0);
-        const uint32_t nid = *Ptr<uint32_t>(pc + 4).get(mem);
+        uint32_t nid;
+        if (is_returning(cpu)) {
+            nid = *Ptr<uint32_t>(pc).get(mem);
+        } else {
+            nid = *Ptr<uint32_t>(pc + 4).get(mem);
+        }
         inject.call_import(cpu, nid, thid);
     };
     inject.call_svc = call_svc;

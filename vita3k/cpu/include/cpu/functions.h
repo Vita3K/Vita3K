@@ -27,6 +27,8 @@
 struct CPUState;
 struct MemState;
 
+constexpr bool TRACK_IMPORT_CALL_RETURN = false;
+
 struct CPUContext {
     uint32_t cpu_registers[16];
     uint32_t sp;
@@ -102,3 +104,7 @@ void load_context(CPUState &state, CPUContext &ctx);
 std::stack<StackFrame> get_stack_frames(CPUState &state);
 void push_stack_frame(CPUState &state, StackFrame sf);
 void log_stack_frames(CPUState &cpu);
+bool is_returning(CPUState &cpu);
+
+void push_lr(CPUState &cpu, Address lr);
+Address pop_lr(CPUState &cpu);
