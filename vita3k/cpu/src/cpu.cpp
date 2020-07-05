@@ -170,27 +170,16 @@ constexpr uint32_t INT_BKPT = 7;
 
 static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
     assert(intno == INT_SVC || intno == INT_BKPT);
-
     CPUState &state = *static_cast<CPUState *>(user_data);
-
     uint32_t pc = read_pc(state);
-    auto thumb_mode = is_thumb_mode(uc);
+
     if (intno == INT_SVC) {
-        if (thumb_mode) {
-            const Address svc_address = pc - 2;
-            uint16_t svc_instruction = 0;
-            uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
-            assert(err == UC_ERR_OK);
-            const uint8_t imm = svc_instruction & 0xff;
-            state.call_svc(state, imm, pc);
-        } else {
-            const Address svc_address = pc - 4;
-            uint32_t svc_instruction = 0;
-            uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
-            assert(err == UC_ERR_OK);
-            const uint32_t imm = svc_instruction & 0xffffff;
-            state.call_svc(state, imm, pc);
-        }
+        assert(!is_thumb_mode(uc));
+        const Address svc_address = pc - 4;
+        uint32_t svc_instruction = 0;
+        uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
+        assert(err == UC_ERR_OK);
+        const uint32_t imm = svc_instruction & 0xffffff;
     } else if (intno == INT_BKPT) {
         auto &bks = state.mem->breakpoints;
         if (bks.find(pc) != bks.end()) {
