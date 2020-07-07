@@ -19,6 +19,10 @@
 
 #include <module/module.h>
 
+// TODO use macro
+EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size);
+EXPORT(int, sceKernelFreeMemBlock, SceUID uid);
+
 BRIDGE_DECL(sceKernelAllocMemBlock)
 BRIDGE_DECL(sceKernelAllocMemBlockForVM)
 BRIDGE_DECL(sceKernelAllocUnmapMemBlock)

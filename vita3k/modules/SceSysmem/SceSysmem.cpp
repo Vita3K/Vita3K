@@ -53,6 +53,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }
 
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
     KernelState *const state = &host.kernel;
     const SceUID uid = state->get_next_uid();
 
@@ -76,6 +77,7 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, int size) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }
 
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
     KernelState *const state = &host.kernel;
     const SceUID uid = state->get_next_uid();
 
@@ -105,13 +107,21 @@ EXPORT(int, sceKernelCloseVMDomain) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelFindMemBlockByAddr) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size) {
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
+
+    for (auto it = host.kernel.blocks.begin(); it != host.kernel.blocks.end(); ++it) {
+        if (it->second->mappedBase.address() <= addr && (it->second->mappedBase.address() + it->second->mappedSize > addr)) {
+            return it->first;
+        }
+    }
+    return RET_ERROR(SCE_KERNEL_ERROR_BLOCK_ERROR);
 }
 
 EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
     assert(uid >= 0);
 
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
     KernelState *const state = &host.kernel;
     const Blocks::const_iterator block = state->blocks.find(uid);
     // TODO, is really that ?
@@ -127,6 +137,7 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
 EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     assert(uid >= 0);
 
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
     KernelState *const state = &host.kernel;
     const Blocks::const_iterator block = state->vm_blocks.find(uid);
     assert(block != state->vm_blocks.end());
@@ -150,6 +161,7 @@ EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
     assert(uid >= 0);
     assert(basep != nullptr);
 
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
     const KernelState *const state = &host.kernel;
     const Blocks::const_iterator block = state->blocks.find(uid);
     if (block == state->blocks.end()) {
@@ -166,9 +178,10 @@ EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, SceKernelMemBlockInfo 
     assert(addr >= 0);
     assert(info != nullptr);
 
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
     const KernelState *const state = &host.kernel;
     for (Blocks::const_iterator it = state->blocks.begin(); it != state->blocks.end(); ++it) {
-        if (it->second->mappedBase.address() < addr && (it->second->mappedBase.address() + it->second->mappedSize > addr)) {
+        if (it->second->mappedBase.address() <= addr && (it->second->mappedBase.address() + it->second->mappedSize > addr)) {
             memcpy(info, it->second.get(), sizeof(SceKernelMemBlockInfo));
             return SCE_KERNEL_OK;
         }
