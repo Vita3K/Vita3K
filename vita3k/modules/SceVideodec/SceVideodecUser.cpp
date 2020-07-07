@@ -357,7 +357,8 @@ EXPORT(int, sceM4vdecDeleteDecoder) {
 }
 
 EXPORT(int, sceM4vdecQueryDecoderMemSize) {
-    return UNIMPLEMENTED();
+    STUBBED("fake size");
+    return 53;
 }
 
 EXPORT(int, sceM4vdecQueryDecoderMemSizeInternal) {
@@ -393,7 +394,8 @@ EXPORT(int, sceVideodecQueryInstanceNongameapp) {
 }
 
 EXPORT(int, sceVideodecQueryMemSize) {
-    return UNIMPLEMENTED();
+    STUBBED("fake size");
+    return 53;
 }
 
 EXPORT(int, sceVideodecQueryMemSizeInternal) {

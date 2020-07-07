@@ -16,21 +16,39 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceCodecEngineUser.h"
+#include <../SceSysmem/SceSysmem.h>
 
-EXPORT(int, sceCodecEngineAllocMemoryFromUnmapMemBlock) {
-    return UNIMPLEMENTED();
+EXPORT(int32_t, sceCodecEngineAllocMemoryFromUnmapMemBlock, SceUID uid, uint32_t size, uint32_t alignment) {
+    STUBBED("fake vaddr");
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
+    auto it = host.kernel.codec_blocks.find(uid);
+    if (it == host.kernel.codec_blocks.end())
+        return SCE_CODECENGINE_ERROR_INVALID_VALUE;
+    auto &block = it->second;
+    return 1 + block.vaddr++;
 }
 
-EXPORT(int, sceCodecEngineCloseUnmapMemBlock) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCodecEngineCloseUnmapMemBlock, SceUID uid) {
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
+    if (host.kernel.codec_blocks.find(uid) == host.kernel.codec_blocks.end())
+        return SCE_CODECENGINE_ERROR_INVALID_VALUE;
+
+    host.kernel.codec_blocks.erase(uid);
+    return 0;
 }
 
 EXPORT(int, sceCodecEngineFreeMemoryFromUnmapMemBlock) {
-    return UNIMPLEMENTED();
+    STUBBED("always return success");
+    return 0;
 }
 
-EXPORT(int, sceCodecEngineOpenUnmapMemBlock) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceCodecEngineOpenUnmapMemBlock, Address memBlock, uint32_t size) {
+    auto uid = host.kernel.get_next_uid();
+    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
+    CodecEngineBlock block;
+    block.size = size;
+    host.kernel.codec_blocks.emplace(uid, block);
+    return uid;
 }
 
 BRIDGE_IMPL(sceCodecEngineAllocMemoryFromUnmapMemBlock)
