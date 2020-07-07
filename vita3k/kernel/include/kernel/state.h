@@ -39,10 +39,13 @@ struct WatchMemory;
 
 struct InitialFiber;
 
+struct CodecEngineBlock;
+
 typedef std::vector<InitialFiber> InitialFibers;
 
 typedef std::shared_ptr<SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
 typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
+typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
 typedef std::map<SceUID, SlotToAddress> ThreadToSlotToAddress;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
@@ -203,6 +206,17 @@ struct PlayerInfoState {
 typedef std::shared_ptr<PlayerInfoState> PlayerPtr;
 typedef std::map<SceUID, PlayerPtr> PlayerStates;
 
+struct MJpegState {
+    bool initialized = false;
+
+    AVCodecContext *decoder{};
+};
+
+struct CodecEngineBlock {
+    uint32_t size;
+    int32_t vaddr;
+};
+
 struct TimerState {
     std::string name;
 
@@ -253,6 +267,7 @@ struct KernelState {
     std::mutex mutex;
     Blocks blocks;
     Blocks vm_blocks;
+    CodecEngineBlocks codec_blocks;
     ThreadToSlotToAddress tls;
     Ptr<const void> tls_address;
     unsigned int tls_psize;

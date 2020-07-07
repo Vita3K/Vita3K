@@ -164,7 +164,8 @@ EXPORT(int, sceAudiodecDeleteDecoderResident) {
 }
 
 EXPORT(int, sceAudiodecGetContextSize) {
-    return UNIMPLEMENTED();
+    STUBBED("fake size");
+    return 53;
 }
 
 EXPORT(int, sceAudiodecGetInternalError) {

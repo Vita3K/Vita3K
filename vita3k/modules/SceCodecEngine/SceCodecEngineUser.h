@@ -19,6 +19,13 @@
 
 #include <module/module.h>
 
+enum SceCodecEngineErrorCode {
+    SCE_CODECENGINE_ERROR_INVALID_POINTER = 0x80600000,
+    SCE_CODECENGINE_ERROR_INVALID_SIZE = 0x80600001,
+    SCE_CODECENGINE_ERROR_INVALID_HEAP = 0x80600005,
+    SCE_CODECENGINE_ERROR_INVALID_VALUE = 0x80600009
+};
+
 BRIDGE_DECL(sceCodecEngineAllocMemoryFromUnmapMemBlock)
 BRIDGE_DECL(sceCodecEngineCloseUnmapMemBlock)
 BRIDGE_DECL(sceCodecEngineFreeMemoryFromUnmapMemBlock)
