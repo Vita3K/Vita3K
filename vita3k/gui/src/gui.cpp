@@ -136,6 +136,7 @@ static void init_live_area_font(GuiState &gui, HostState &host) {
     if (!fs::exists(font_path)) {
         LOG_WARN("Could not find firmware font file at \"{}\", using defaut vita3k font.", font_path.string());
         gui.live_area_font = gui.normal_font;
+        gui.live_area_font_large = gui.normal_font;
         return;
     }
 
@@ -145,10 +146,13 @@ static void init_live_area_font(GuiState &gui, HostState &host) {
     std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
     font_stream.read(gui.live_area_font_data.data(), font_file_size);
 
+    static const ImWchar large_font_chars[] = { L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L':', L';', L'<', L'=', L'>' };
+
     // add it to imgui
     ImGuiIO &io = ImGui::GetIO();
     ImFontConfig font_config{};
     gui.live_area_font = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 19.2f, &font_config, io.Fonts->GetGlyphRangesJapanese());
+    gui.live_area_font_large = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 124.f, &font_config, large_font_chars);
 }
 
 static void init_user_backgrounds(GuiState &gui, HostState &host) {
