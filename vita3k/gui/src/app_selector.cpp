@@ -89,12 +89,13 @@ void draw_app_selector(GuiState &gui, HostState &host) {
 
             while (last_time["start"] + host.cfg.delay_start < current_time()) {
                 last_time["start"] += host.cfg.delay_start;
+                last_time["home"] = 0;
                 gui.theme.start_screen = true;
             }
         }
     }
 
-    if ((!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty()) && ImGui::IsWindowHovered()) {
+    if (!gui.theme.start_screen && (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty())) {
         if (last_time["home"] == 0)
             last_time["home"] = current_time();
 
