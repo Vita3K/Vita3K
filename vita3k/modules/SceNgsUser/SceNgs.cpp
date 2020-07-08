@@ -15,9 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <util/log.h>
-#include <ngs/system.h>
 #include <ngs/modules/atrac9.h>
+#include <ngs/system.h>
+#include <util/log.h>
 
 #include "SceNgs.h"
 
@@ -73,10 +73,10 @@ EXPORT(int, sceNgsModuleGetPreset) {
 
 EXPORT(int, sceNgsPatchCreateRouting, ngs::PatchSetupInfo *patch_info, SceNgsPatchHandle *handle) {
     assert(handle);
-    
+
     // Make the scheduler order this right based on dependencies request
     ngs::Voice *source = patch_info->source.get(host.mem);
-    
+
     if (!source) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
@@ -157,14 +157,14 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
 }
 
 EXPORT(int, sceNgsSystemGetRequiredMemorySize, ngs::SystemInitParameters *params, uint32_t *size) {
-    *size = ngs::System::get_required_memspace_size(params);           // System struct size
+    *size = ngs::System::get_required_memspace_size(params); // System struct size
     return 0;
 }
 
 EXPORT(SceUInt32, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t memspace_size, ngs::SystemInitParameters *params,
     SceNgsSynthSystemHandle *handle) {
     if (!ngs::init_system(host.ngs, host.mem, params, memspace, memspace_size)) {
-        return RET_ERROR(SCE_NGS_ERROR);      // TODO: Better error code
+        return RET_ERROR(SCE_NGS_ERROR); // TODO: Better error code
     }
 
     *handle = memspace.cast<ngs::System>();
@@ -297,7 +297,7 @@ EXPORT(int, sceNgsVoiceGetParamsOutOfRange) {
 EXPORT(int, sceNgsVoiceGetStateData, SceNgsVoiceHandle voice_handle, const std::uint32_t unk, void *mem, const std::uint32_t space_size) {
     ngs::Voice *voice = voice_handle.get(host.mem);
     std::memcpy(mem, &voice->voice_state_data[0], std::min<std::size_t>(space_size, voice->voice_state_data.size()));
-    
+
     return SCE_NGS_OK;
 }
 

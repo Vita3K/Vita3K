@@ -1,9 +1,9 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <queue>
 #include <string>
-#include <cstdint>
 
 struct AVFrame;
 struct AVPacket;

@@ -88,31 +88,30 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
     ctrl->handle = handle;
 
     switch (codec) {
-        case SCE_AUDIODEC_TYPE_AT9: {
-            SceAudiodecInfoAt9 &info = ctrl->info.get(host.mem)->at9;
-            DecoderPtr decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
-            host.kernel.decoders[handle] = decoder;
+    case SCE_AUDIODEC_TYPE_AT9: {
+        SceAudiodecInfoAt9 &info = ctrl->info.get(host.mem)->at9;
+        DecoderPtr decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
+        host.kernel.decoders[handle] = decoder;
 
+        uint32_t block_align = decoder->get(DecoderQuery::AT9_BLOCK_ALIGN);
+        uint32_t sps = decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME);
+        uint32_t fis = decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME);
+        uint32_t ss = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
 
-            uint32_t block_align = decoder->get(DecoderQuery::AT9_BLOCK_ALIGN);
-            uint32_t sps = decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME);
-            uint32_t fis = decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME);
-            uint32_t ss = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
-
-            ctrl->es_size_max = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
-            ctrl->pcm_size_max = decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME)
-                * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
-            info.channels = decoder->get(DecoderQuery::CHANNELS);
-            info.bit_rate = decoder->get(DecoderQuery::BIT_RATE);
-            info.sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);
-            info.super_frame_size = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
-            info.frames_in_super_frame = decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME);
-            return 0;
-        }
-        default: {
-            LOG_ERROR("Unimplemented audio decoder {}.", codec);
-            return -1;
-        }
+        ctrl->es_size_max = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
+        ctrl->pcm_size_max = decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME)
+            * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
+        info.channels = decoder->get(DecoderQuery::CHANNELS);
+        info.bit_rate = decoder->get(DecoderQuery::BIT_RATE);
+        info.sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);
+        info.super_frame_size = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
+        info.frames_in_super_frame = decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME);
+        return 0;
+    }
+    default: {
+        LOG_ERROR("Unimplemented audio decoder {}.", codec);
+        return -1;
+    }
     }
 }
 
@@ -127,7 +126,7 @@ EXPORT(int, sceAudiodecCreateDecoderResident) {
 EXPORT(int, sceAudiodecDecode, SceAudiodecCtrl *ctrl) {
     const DecoderPtr &decoder = lock_and_find(ctrl->handle, host.kernel.decoders, host.kernel.mutex);
 
-    DecoderSize size = { };
+    DecoderSize size = {};
 
     decoder->send(ctrl->es_data.get(host.mem), ctrl->es_size_max);
     decoder->receive(ctrl->pcm_data.get(host.mem), &size);

@@ -147,7 +147,7 @@ EXPORT(int, sceAvcdecCscInternal) {
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
     const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
 
-    H264DecoderOptions options = { };
+    H264DecoderOptions options = {};
     options.pts_upper = au->pts.upper;
     options.pts_lower = au->pts.lower;
     options.dts_upper = au->dts.upper;
@@ -259,8 +259,7 @@ EXPORT(int, sceAvcdecGetSeiUserDataNongameapp) {
 EXPORT(int, sceAvcdecQueryDecoderMemSize, uint32_t codec_type, const SceAvcdecQueryDecoderInfo *query_info, SceAvcdecDecoderInfo *decoder_info) {
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
 
-    decoder_info->frameMemSize =
-        H264DecoderState::buffer_size({ query_info->horizontal, query_info->vertical }) * query_info->numOfRefFrames;
+    decoder_info->frameMemSize = H264DecoderState::buffer_size({ query_info->horizontal, query_info->vertical }) * query_info->numOfRefFrames;
 
     return 0;
 }

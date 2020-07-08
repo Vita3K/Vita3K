@@ -11,13 +11,13 @@
 struct MemState;
 
 namespace ngs {
-    struct VoiceDefinition;
-    struct System;
+struct VoiceDefinition;
+struct System;
 
-    struct State: public MempoolObject {
-        std::map<BussType, Ptr<VoiceDefinition>> definitions;
-        std::vector<System *> systems;
-    };
-    
-    bool init(State &ngs, MemState &mem);
-}
+struct State : public MempoolObject {
+    std::map<BussType, Ptr<VoiceDefinition>> definitions;
+    std::vector<System *> systems;
+};
+
+bool init(State &ngs, MemState &mem);
+} // namespace ngs

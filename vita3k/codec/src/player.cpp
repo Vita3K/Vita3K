@@ -4,12 +4,12 @@
 #include <util/log.h>
 
 extern "C" {
-#include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 }
 
-#include <chrono>
 #include <cassert>
+#include <chrono>
 
 uint64_t PlayerState::get_framerate_microseconds() {
     AVRational rational = format->streams[video_stream_id]->avg_frame_rate;
@@ -20,7 +20,7 @@ DecoderSize PlayerState::get_size() {
     if (video_context)
         return { static_cast<uint32_t>(video_context->width), static_cast<uint32_t>(video_context->height) };
 
-    return { };
+    return {};
 }
 
 void PlayerState::pop_video() {
@@ -128,10 +128,10 @@ bool PlayerState::next_packet(int32_t stream_id) {
 
 std::vector<int16_t> PlayerState::receive_audio() {
     if (audio_stream_id < 0)
-        return { };
+        return {};
 
     if (video_playing.empty())
-        return { };
+        return {};
 
     int error;
     AVFrame *frame = av_frame_alloc();
@@ -182,10 +182,10 @@ std::vector<int16_t> PlayerState::receive_audio() {
 
 std::vector<uint8_t> PlayerState::receive_video() {
     if (video_stream_id < 0)
-        return { };
+        return {};
 
     if (video_playing.empty())
-        return { };
+        return {};
 
     int error;
     AVFrame *frame = av_frame_alloc();

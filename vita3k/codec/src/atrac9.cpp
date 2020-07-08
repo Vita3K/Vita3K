@@ -1,8 +1,8 @@
 #include <codec/state.h>
 
 extern "C" {
-#include <libavutil/opt.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/opt.h>
 #include <libswresample/swresample.h>
 }
 
@@ -27,7 +27,7 @@ void convert_f32_to_s16(const float *f32, int16_t *s16, uint32_t dest_channels, 
 
     swr_init(swr);
 
-    const int result = swr_convert(swr, (uint8_t **)&s16, samples, (const uint8_t**)(f32), samples);
+    const int result = swr_convert(swr, (uint8_t **)&s16, samples, (const uint8_t **)(f32), samples);
     swr_free(&swr);
     assert(result > 0);
 }
@@ -38,33 +38,33 @@ uint32_t Atrac9DecoderState::get_channel_count() {
     std::uint32_t total_channels = 0;
 
     switch (block_rate_index) {
-        case 0:     // Mono
-            total_channels = 1;
-            break;
+    case 0: // Mono
+        total_channels = 1;
+        break;
 
-        case 1:     // Dual Mono (Mono, Mono)
-            total_channels = 2;
-            break;
+    case 1: // Dual Mono (Mono, Mono)
+        total_channels = 2;
+        break;
 
-        case 2:     // Stereo
-            total_channels = 2;
-            break;
+    case 2: // Stereo
+        total_channels = 2;
+        break;
 
-        case 3:     // Stereo, Mono, LFE, Stereo
-            total_channels = 2 + 1 + 1 + 2;
-            break;
+    case 3: // Stereo, Mono, LFE, Stereo
+        total_channels = 2 + 1 + 1 + 2;
+        break;
 
-        case 4:     // Stereo, Mono, LFE, Stereo, Stereo
-            total_channels = 2 + 1 + 1 + 2 + 2;
-            break;
+    case 4: // Stereo, Mono, LFE, Stereo, Stereo
+        total_channels = 2 + 1 + 1 + 2 + 2;
+        break;
 
-        case 5:     // Dual Stereo
-            total_channels = 4;
-            break;
+    case 5: // Dual Stereo
+        total_channels = 4;
+        break;
 
-        default:
-            total_channels = 2;
-            break;
+    default:
+        total_channels = 2;
+        break;
     }
 
     return total_channels;
@@ -103,14 +103,14 @@ uint32_t Atrac9DecoderState::get_superframe_size() {
 
 uint32_t Atrac9DecoderState::get(DecoderQuery query) {
     switch (query) {
-        case DecoderQuery::CHANNELS: return context->channels;
-        case DecoderQuery::BIT_RATE: return context->bit_rate;
-        case DecoderQuery::SAMPLE_RATE: return context->sample_rate;
-        case DecoderQuery::AT9_BLOCK_ALIGN: return get_block_align();
-        case DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME: return get_samples_per_superframe();
-        case DecoderQuery::AT9_FRAMES_IN_SUPERFRAME: return get_frames_in_superframe();
-        case DecoderQuery::AT9_SUPERFRAME_SIZE: return get_superframe_size();
-        default: return 0;
+    case DecoderQuery::CHANNELS: return context->channels;
+    case DecoderQuery::BIT_RATE: return context->bit_rate;
+    case DecoderQuery::SAMPLE_RATE: return context->sample_rate;
+    case DecoderQuery::AT9_BLOCK_ALIGN: return get_block_align();
+    case DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME: return get_samples_per_superframe();
+    case DecoderQuery::AT9_FRAMES_IN_SUPERFRAME: return get_frames_in_superframe();
+    case DecoderQuery::AT9_SUPERFRAME_SIZE: return get_superframe_size();
+    default: return 0;
     }
 }
 
@@ -161,14 +161,15 @@ bool Atrac9DecoderState::receive(uint8_t *data, DecoderSize *size) {
     return true;
 }
 
-Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data) : config_data(config_data) {
+Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data)
+    : config_data(config_data) {
     AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_ATRAC9);
     assert(codec);
 
     context = avcodec_alloc_context3(codec);
     assert(context);
 
-    FFMPEGAtrac9Info info = { };
+    FFMPEGAtrac9Info info = {};
     info.version = 2;
     info.config_data = config_data;
     info.padding = 0;

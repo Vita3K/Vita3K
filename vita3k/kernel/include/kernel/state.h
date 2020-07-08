@@ -21,8 +21,8 @@
 #include <kernel/types.h>
 #include <mem/ptr.h>
 
-#include <rtc/rtc.h>
 #include <codec/state.h>
+#include <rtc/rtc.h>
 
 #include <atomic>
 #include <map>

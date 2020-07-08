@@ -18,8 +18,8 @@
 #include "SceLibc.h"
 
 #include <io/functions.h>
-#include <util/log.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
 
 #include <dlmalloc.h>
 #include <v3kprintf.h>
@@ -873,7 +873,7 @@ EXPORT(int, printf, const char *format, module::vargs args) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     }
 
-        LOG_INFO("{}", buffer.data());
+    LOG_INFO("{}", buffer.data());
 
     return SCE_KERNEL_OK;
 }

@@ -57,7 +57,7 @@ EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *jpeg_data, uint32_t jpeg_siz
     if (!host.kernel.mjpeg_state)
         return -1;
 
-    DecoderSize size = { };
+    DecoderSize size = {};
 
     host.kernel.mjpeg_state->send(jpeg_data, jpeg_size);
     host.kernel.mjpeg_state->receive(output, &size);
@@ -81,7 +81,7 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
     if (!host.kernel.mjpeg_state)
         return -1;
 
-    DecoderSize size = { };
+    DecoderSize size = {};
 
     host.kernel.mjpeg_state->send(jpeg_data, jpeg_size);
     host.kernel.mjpeg_state->receive(nullptr, &size);

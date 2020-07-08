@@ -217,8 +217,7 @@ EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, SceAvPlayerFrameInfo
     frame_info->timestamp = player_info->player.last_timestamp;
     frame_info->stream_details.audio.channels = player_info->player.last_channels;
     frame_info->stream_details.audio.sample_rate = player_info->player.last_sample_rate;
-    frame_info->stream_details.audio.size =
-        player_info->player.last_channels * player_info->player.last_sample_count * sizeof(int16_t);
+    frame_info->stream_details.audio.size = player_info->player.last_channels * player_info->player.last_sample_count * sizeof(int16_t);
     frame_info->data = buffer;
 
     strcpy(frame_info->stream_details.audio.language, "ENG");
@@ -283,11 +282,11 @@ EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
     if (info->memory_allocator.general_allocator)
         LOG_WARN("General Allocator will not be used.");
     if (info->memory_allocator.general_deallocator)
-            LOG_WARN("General Deallocator will not be used.");
+        LOG_WARN("General Deallocator will not be used.");
     if (info->memory_allocator.texture_allocator)
-            LOG_WARN("Texture Allocator will not be used.");
+        LOG_WARN("Texture Allocator will not be used.");
     if (info->memory_allocator.texture_deallocator)
-            LOG_WARN("Texture Deallocator will not be used.");
+        LOG_WARN("Texture Deallocator will not be used.");
 
     player->last_frame_time = current_time();
 
