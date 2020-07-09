@@ -28,13 +28,13 @@ COMMAND(handle_set_context) {
         render_context->current_render_target = rt;
     }
 
-    if (color_surface) {
+    if (color_surface && !color_surface->disabled) {
         state->color_surface = *color_surface;
         delete color_surface;
     } else {
         // Disable writing to this surface.
         // Data is still in render target though.
-        state->color_surface.pbeEmitWords[3] = 0;
+        state->color_surface.data = 0;
     }
 
     // Maybe we should disable writing to depth stencil too if it's null
@@ -56,10 +56,10 @@ COMMAND(handle_set_context) {
 }
 
 COMMAND(handle_sync_surface_data) {
-    const size_t width = state->color_surface.pbeEmitWords[0];
-    const size_t height = state->color_surface.pbeEmitWords[1];
-    const size_t stride_in_pixels = state->color_surface.pbeEmitWords[2];
-    const Address data = state->color_surface.pbeEmitWords[3];
+    const size_t width = state->color_surface.width;
+    const size_t height = state->color_surface.height;
+    const size_t stride_in_pixels = state->color_surface.strideInPixels;
+    const Address data = state->color_surface.data.address();
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
 
     switch (renderer.current_backend) {

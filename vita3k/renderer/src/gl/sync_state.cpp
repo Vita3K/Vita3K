@@ -102,8 +102,8 @@ static void set_stencil_state(GLenum face, const GxmStencilState &state) {
 
 void sync_viewport(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
     // Viewport.
-    const GLsizei display_w = state.color_surface.pbeEmitWords[0];
-    const GLsizei display_h = state.color_surface.pbeEmitWords[1];
+    const GLsizei display_w = state.color_surface.width;
+    const GLsizei display_h = state.color_surface.height;
     const GxmViewport &viewport = state.viewport;
     if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
         const GLfloat ymin = viewport.offset.y + viewport.scale.y;
@@ -137,7 +137,7 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
 }
 
 void sync_clipping(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
-    const GLsizei display_h = state.color_surface.pbeEmitWords[1];
+    const GLsizei display_h = state.color_surface.height;
     const GLsizei scissor_x = state.region_clip_min.x;
     GLsizei scissor_y = 0;
 
