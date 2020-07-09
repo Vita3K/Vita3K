@@ -1013,11 +1013,22 @@ struct SceGxmTexture {
 };
 
 struct SceGxmColorSurface {
-    uint32_t pbeSidebandWord;
-    uint32_t pbeEmitWords[6];
+    // opaque start
+    uint32_t disabled : 1;
+    uint32_t downscale : 1;
+    uint32_t pad : 30;
+    uint32_t width;
+    uint32_t height;
+    uint32_t strideInPixels;
+    Ptr<void> data;
+    SceGxmColorFormat colorFormat;
+    SceGxmColorSurfaceType surfaceType;
+    // opaque end
     uint32_t outputRegisterSize;
     SceGxmTexture backgroundTex;
 };
+
+static_assert(sizeof(SceGxmColorSurface) == (32 + sizeof(SceGxmTexture)), "Incorrect size.");
 
 struct SceGxmValidRegion {
     unsigned int xMin;
@@ -1026,12 +1037,19 @@ struct SceGxmValidRegion {
     unsigned int yMax;
 };
 
+struct SceGxmDepthStencilControl {
+    bool disabled;
+    SceGxmDepthStencilFormat format;
+    bool backgroundMask = true;
+    uint8_t backgroundStencil;
+};
+
 struct SceGxmDepthStencilSurface {
     uint32_t zlsControl;
     Ptr<void> depthData;
     Ptr<void> stencilData;
-    float backgroundDepth;
-    uint32_t backgroundControl;
+    float backgroundDepth = 1.0;
+    Ptr<SceGxmDepthStencilControl> control;
 };
 
 struct SceGxmContextParams {

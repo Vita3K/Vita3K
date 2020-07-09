@@ -167,7 +167,7 @@ EXPORT(int, sceGxmColorSurfaceGetClip) {
 }
 
 EXPORT(Ptr<void>, sceGxmColorSurfaceGetData, SceGxmColorSurface *surface) {
-    return Ptr<void>(surface->pbeEmitWords[3]);
+    return surface->data;
 }
 
 EXPORT(SceGxmColorSurfaceDitherMode, sceGxmColorSurfaceGetDitherMode, SceGxmColorSurface *surface) {
@@ -176,8 +176,7 @@ EXPORT(SceGxmColorSurfaceDitherMode, sceGxmColorSurfaceGetDitherMode, SceGxmColo
 }
 
 EXPORT(SceGxmColorFormat, sceGxmColorSurfaceGetFormat, SceGxmColorSurface *surface) {
-    STUBBED("SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR");
-    return SceGxmColorFormat::SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR;
+    return surface->colorFormat;
 }
 
 EXPORT(SceGxmColorSurfaceGammaMode, sceGxmColorSurfaceGetGammaMode, SceGxmColorSurface *surface) {
@@ -186,24 +185,19 @@ EXPORT(SceGxmColorSurfaceGammaMode, sceGxmColorSurfaceGetGammaMode, SceGxmColorS
 }
 
 EXPORT(SceGxmColorSurfaceScaleMode, sceGxmColorSurfaceGetScaleMode, SceGxmColorSurface *surface) {
-    STUBBED("SCE_GXM_COLOR_SURFACE_SCALE_NONE");
-    return SceGxmColorSurfaceScaleMode::SCE_GXM_COLOR_SURFACE_SCALE_NONE;
+    return surface->downscale ? SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE : SCE_GXM_COLOR_SURFACE_SCALE_NONE;
 }
 
 EXPORT(int, sceGxmColorSurfaceGetStrideInPixels, SceGxmColorSurface *surface) {
-    return surface->pbeEmitWords[2];
+    return surface->strideInPixels;
 }
 
 EXPORT(SceGxmColorSurfaceType, sceGxmColorSurfaceGetType, SceGxmColorSurface *surface) {
-    STUBBED("SCE_GXM_COLOR_SURFACE_LINEAR");
-    return SceGxmColorSurfaceType::SCE_GXM_COLOR_SURFACE_LINEAR;
+    return surface->surfaceType;
 }
 
 EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorFormat colorFormat, SceGxmColorSurfaceType surfaceType, SceGxmColorSurfaceScaleMode scaleMode, SceGxmOutputRegisterSize outputRegisterSize, unsigned int width, unsigned int height, unsigned int strideInPixels, Ptr<void> data) {
     assert(surface != nullptr);
-    assert(colorFormat == SCE_GXM_COLOR_FORMAT_A8B8G8R8);
-    assert(surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR);
-    assert(scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_NONE);
     assert(outputRegisterSize == SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT);
     assert(width > 0);
     assert(height > 0);
@@ -211,21 +205,28 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
     assert(data);
 
     memset(surface, 0, sizeof(*surface));
-    surface->pbeEmitWords[0] = width;
-    surface->pbeEmitWords[1] = height;
-    surface->pbeEmitWords[2] = strideInPixels;
-    surface->pbeEmitWords[3] = data.address();
+    surface->disabled = 0;
+    surface->downscale = scaleMode == SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE;
+    surface->width = width;
+    surface->height = height;
+    surface->strideInPixels = strideInPixels;
+    surface->data = data;
+    surface->colorFormat = colorFormat;
+    surface->surfaceType = surfaceType;
     surface->outputRegisterSize = outputRegisterSize;
 
     return 0;
 }
 
-EXPORT(int, sceGxmColorSurfaceInitDisabled) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmColorSurfaceInitDisabled, SceGxmColorSurface *surface) {
+    assert(surface != nullptr);
+    surface->disabled = 1;
+    return 0;
 }
 
-EXPORT(int, sceGxmColorSurfaceIsEnabled) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmColorSurfaceIsEnabled, SceGxmColorSurface *surface) {
+    assert(surface != nullptr);
+    return !surface->disabled;
 }
 
 EXPORT(int, sceGxmColorSurfaceSetClip) {
@@ -328,20 +329,29 @@ EXPORT(int, sceGxmDepthStencilSurfaceGetStrideInSamples) {
 
 EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, unsigned int strideInSamples, Ptr<void> depthData, Ptr<void> stencilData) {
     assert(surface != nullptr);
-    assert(surfaceType == SCE_GXM_DEPTH_STENCIL_SURFACE_TILED);
     assert(strideInSamples > 0);
-    assert(depthData);
 
-    // TODO What to do here?
-    memset(surface, 0, sizeof(*surface));
-    surface->depthData = depthData;
-    surface->stencilData = stencilData;
+    SceGxmDepthStencilSurface tmp_surface;
+    tmp_surface.depthData = depthData;
+    tmp_surface.stencilData = stencilData;
 
+    tmp_surface.control = alloc<SceGxmDepthStencilControl>(host.mem, "gxm depth stencil control");
+    SceGxmDepthStencilControl control;
+    control.disabled = false;
+    control.format = depthStencilFormat;
+    memcpy(tmp_surface.control.get(host.mem), &control, sizeof(SceGxmDepthStencilControl));
+    memcpy(surface, &tmp_surface, sizeof(SceGxmDepthStencilSurface));
     return 0;
 }
 
-EXPORT(int, sceGxmDepthStencilSurfaceInitDisabled) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmDepthStencilSurfaceInitDisabled, SceGxmDepthStencilSurface *surface) {
+    memset(surface, 0, sizeof(*surface));
+
+    auto control = surface->control.get(host.mem);
+    memset(control, 0, sizeof(*control));
+    control->disabled = true;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceIsEnabled) {
@@ -362,12 +372,12 @@ EXPORT(int, sceGxmDepthStencilSurfaceSetBackgroundStencil) {
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceLoadMode, SceGxmDepthStencilSurface *surface,
     SceGxmDepthStencilForceLoadMode forceLoad) {
-    surface->zlsControl = (forceLoad & 2) | (surface->zlsControl & 0xFFFFFFFD);
+    assert(forceLoad == SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_DISABLED);
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceStoreMode, SceGxmDepthStencilSurface *surface,
     SceGxmDepthStencilForceStoreMode forceStore) {
-    surface->zlsControl = (forceStore & 4) | (surface->zlsControl & 0xFFFFFFFB);
+    assert(forceStore == SCE_GXM_DEPTH_STENCIL_FORCE_STORE_DISABLED);
 }
 
 EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
