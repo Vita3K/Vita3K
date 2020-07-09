@@ -197,6 +197,9 @@ bool sync_depth_data(const GxmContextState &state) {
     // Depth test.
     if (state.depth_stencil_surface.depthData) {
         glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+        glClearDepth(state.depth_stencil_surface.backgroundDepth);
+        glClear(GL_DEPTH_BUFFER_BIT);
         return true;
     }
 
@@ -208,10 +211,13 @@ void sync_stencil_func(const GxmContextState &state, const bool is_back_stencil)
     set_stencil_state(is_back_stencil ? GL_BACK : GL_FRONT, is_back_stencil ? state.back_stencil : state.front_stencil);
 }
 
-bool sync_stencil_data(const GxmContextState &state) {
+bool sync_stencil_data(const GxmContextState &state, const MemState &mem) {
     // Stencil.
     if (state.depth_stencil_surface.stencilData) {
         glEnable(GL_STENCIL_TEST);
+        glStencilMask(GL_TRUE);
+        glClearStencil(state.depth_stencil_surface.control.get(mem)->backgroundStencil);
+        glClear(GL_STENCIL_BUFFER_BIT);
         return true;
     }
 
@@ -337,7 +343,7 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
         sync_front_depth_write_enable(state);
     }
 
-    if (sync_stencil_data(state)) {
+    if (sync_stencil_data(state, mem)) {
         set_stencil_state(GL_BACK, state.back_stencil);
         set_stencil_state(GL_FRONT, state.front_stencil);
     }

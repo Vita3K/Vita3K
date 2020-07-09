@@ -441,9 +441,9 @@ void set_context(GLContext &context, GxmContextState &state, const GLRenderTarge
         sync_front_depth_write_enable(state);
     }
 
-    if (sync_stencil_data(state)) {
-        sync_stencil_func(state, true);
-        sync_stencil_func(state, false);
+    if (sync_stencil_data(state, mem)) {
+        sync_stencil_func(state, mem, true);
+        sync_stencil_func(state, mem, false);
     }
 }
 
