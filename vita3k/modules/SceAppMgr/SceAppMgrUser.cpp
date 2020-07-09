@@ -153,7 +153,8 @@ EXPORT(int, sceAppMgrGetBootParam) {
 }
 
 EXPORT(int, sceAppMgrGetBudgetInfo) {
-    return UNIMPLEMENTED();
+    STUBBED("not system mode");
+    return -1;
 }
 
 EXPORT(int, sceAppMgrGetCoredumpStateForShell) {
