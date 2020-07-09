@@ -19,7 +19,7 @@ add_library(
 )
 
 target_include_directories(host PUBLIC include ${PSVPFSPARSER_INCLUDE_DIR})
-target_link_libraries(host PUBLIC psvpfsparser app audio config ctrl dialog io kernel miniz net nids np renderer sdl2 touch)
+target_link_libraries(host PUBLIC psvpfsparser app audio config ctrl dialog io kernel miniz net ngs nids np renderer sdl2 touch)
 if(USE_GDBSTUB)
 	target_link_libraries(host PUBLIC gdbstub)
 endif()

@@ -22,6 +22,7 @@
 #include <kernel/types.h>
 #include <mem/ptr.h>
 
+#include <codec/state.h>
 #include <rtc/rtc.h>
 
 #include <atomic>
@@ -176,71 +177,31 @@ struct WaitingThreadState {
 
 typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
 
-struct AVPacket;
-struct AVCodecContext;
-struct AVFormatContext;
-struct AVCodecParserContext;
-
-struct VideoDecoderState {
-    AVCodecContext *context{};
-    AVCodecParserContext *parser{};
-
-    uint32_t frame_width;
-    uint32_t frame_height;
-    uint32_t frame_ref_count;
-};
-
-typedef std::shared_ptr<VideoDecoderState> DecoderPtr;
+typedef std::shared_ptr<DecoderState> DecoderPtr;
 typedef std::map<SceUID, DecoderPtr> DecoderStates;
 
-struct PlayerState {
-    Ptr<void> general_allocator;
-    Ptr<void> general_deallocator;
-    Ptr<void> texture_allocator;
-    Ptr<void> texture_deallocator;
+struct PlayerInfoState {
+    PlayerState player;
 
-    std::string video_playing;
-    std::queue<std::string> videos_queue;
-
-    AVFormatContext *format{};
-    AVCodecContext *video_context{};
-    AVCodecContext *audio_context{};
-    int32_t video_stream_id = 0;
-    int32_t audio_stream_id = 0;
-
-    std::queue<AVPacket *> audio_packets;
-    std::queue<AVPacket *> video_packets;
-
-    // A ring buffer is used to lower the chances of a race condition between rendering and decoding thread.
+    // Framebuffer count is defined in info. I'm being safe now and forcing it to 4 (even though its usually 2).
     constexpr static uint32_t RING_BUFFER_COUNT = 4;
 
     uint32_t video_buffer_ring_index = 0;
     uint32_t video_buffer_size = 0;
-    Ptr<uint8_t> video_buffer[RING_BUFFER_COUNT];
+    std::array<Ptr<uint8_t>, RING_BUFFER_COUNT> video_buffer;
 
     uint32_t audio_buffer_ring_index = 0;
     uint32_t audio_buffer_size = 0;
-    Ptr<uint8_t> audio_buffer[RING_BUFFER_COUNT];
-
-    uint64_t time_of_last_frame = 0;
-
-    uint64_t last_timestamp = 0;
-    uint32_t last_channels = 0;
-    uint32_t last_sample_rate = 0;
-    uint32_t last_sample_count = 0;
+    std::array<Ptr<uint8_t>, RING_BUFFER_COUNT> audio_buffer;
 
     bool do_loop = false;
     bool paused = false;
+
+    uint64_t last_frame_time = 0;
 };
 
-typedef std::shared_ptr<PlayerState> PlayerPtr;
+typedef std::shared_ptr<PlayerInfoState> PlayerPtr;
 typedef std::map<SceUID, PlayerPtr> PlayerStates;
-
-struct MJpegState {
-    bool initialized = false;
-
-    AVCodecContext *decoder{};
-};
 
 struct TimerState {
     std::string name;
@@ -316,9 +277,9 @@ struct KernelState {
     InitialFibers initial_fibers;
     SceRtcTick start_tick;
     SceRtcTick base_tick;
+    DecoderPtr mjpeg_state;
     DecoderStates decoders;
     PlayerStates players;
-    MJpegState mjpeg_state;
     TimerStates timers;
     Ptr<uint32_t> process_param;
     bool wait_for_debugger = false;

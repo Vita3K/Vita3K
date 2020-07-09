@@ -166,6 +166,11 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
+    if (!ngs::init(state.ngs, state.mem)) {
+        LOG_ERROR("Failed to initialize ngs.");
+        return false;
+    }
+
 #if DISCORD_RPC
     discord::init();
     if (cfg.discord_rich_presence) {

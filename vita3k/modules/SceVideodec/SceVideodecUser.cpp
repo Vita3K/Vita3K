@@ -17,9 +17,7 @@
 
 #include "SceVideodecUser.h"
 
-extern "C" {
-#include <libavcodec/avcodec.h>
-}
+#include <util/lock_and_find.h>
 
 enum SceVideodecType {
     SCE_VIDEODEC_TYPE_HW_AVCDEC = 0x1001
@@ -78,7 +76,7 @@ struct SceAvcdecBuf {
 };
 
 struct SceAvcdecCtrl {
-    uint32_t handle;
+    SceUID handle;
     SceAvcdecBuf frameBuf;
 };
 
@@ -119,99 +117,13 @@ struct SceAvcdecArrayPicture {
     Ptr<Ptr<SceAvcdecPicture>> pPicture;
 };
 
-inline uint32_t calculate_buffer_size(uint32_t width, uint32_t height, uint32_t frameRefs) {
-    return width * height * 3 / 2 * frameRefs;
-}
-
-void send_decoder_data(MemState &mem, DecoderPtr &decoder_info, const SceAvcdecAu *au) {
-    int error = 0;
-
-    std::vector<uint8_t> au_frame(au->es.size + AV_INPUT_BUFFER_PADDING_SIZE);
-    memcpy(au_frame.data(), au->es.pBuf.get(mem), au->es.size);
-
-    uint64_t pts = static_cast<uint64_t>(au->pts.upper) << 32u | static_cast<uint64_t>(au->pts.lower);
-    uint64_t dts = static_cast<uint64_t>(au->dts.upper) << 32u | static_cast<uint64_t>(au->dts.lower);
-    if (pts == ~0ull)
-        pts = AV_NOPTS_VALUE;
-    if (dts == ~0ull)
-        dts = AV_NOPTS_VALUE;
-
-    AVPacket *packet = av_packet_alloc();
-    error = av_parser_parse2(
-        decoder_info->parser, // AVCodecParserContext *s,
-        decoder_info->context, // AVCodecContext *avctx,
-        &packet->data, // uint8_t **poutbuf,
-        &packet->size, // int *poutbuf_size,
-        au_frame.data(), // const uint8_t *buf,
-        au->es.size, // int buf_size,
-        pts, // int64_t pts,
-        dts, // int64_t dts,
-        0 // int64_t pos
-    );
-    assert(error >= 0);
-
-    error = avcodec_send_packet(decoder_info->context, packet);
-    assert(error == 0);
-
-    av_packet_free(&packet);
-}
-
-inline void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest) {
-    for (int32_t a = 0; a < frame->height; a++) {
-        memcpy(dest, &frame->data[0][frame->linesize[0] * a], frame->width);
-        dest += frame->width;
-    }
-    for (int32_t a = 0; a < frame->height / 2; a++) {
-        memcpy(dest, &frame->data[1][frame->linesize[1] * a], frame->width / 2);
-        dest += frame->width / 2;
-    }
-    for (int32_t a = 0; a < frame->height / 2; a++) {
-        memcpy(dest, &frame->data[2][frame->linesize[2] * a], frame->width / 2);
-        dest += frame->width / 2;
-    }
-}
-
-void receive_decoder_data(MemState &mem, DecoderPtr &decoder_info, SceAvcdecArrayPicture *picture) {
-    AVFrame *frame = av_frame_alloc();
-
-    if (avcodec_receive_frame(decoder_info->context, frame) == 0) {
-        SceAvcdecFrame *avc_frame = &picture->pPicture.get(mem)[0].get(mem)->frame;
-        auto *avc_data = reinterpret_cast<uint8_t *>(avc_frame->pPicture[0].get(mem));
-        copy_yuv_data_from_frame(frame, avc_data);
-        picture->numOfOutput++;
-    }
-
-    av_frame_free(&frame);
-}
-
 EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, SceAvcdecCtrl *decoder, const SceAvcdecQueryDecoderInfo *query) {
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
 
     SceUID handle = host.kernel.get_next_uid();
     decoder->handle = handle;
 
-    host.kernel.decoders[handle] = std::make_shared<VideoDecoderState>();
-    DecoderPtr &decoder_info = host.kernel.decoders[handle];
-    decoder_info->frame_width = query->horizontal;
-    decoder_info->frame_height = query->vertical;
-    decoder_info->frame_ref_count = query->numOfRefFrames;
-
-    AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_H264);
-    assert(codec);
-
-    decoder_info->parser = av_parser_init(codec->id);
-    assert(decoder_info->parser);
-    decoder_info->frame_width = decoder_info->frame_width;
-    decoder_info->frame_height = decoder_info->frame_height;
-    decoder_info->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-
-    decoder_info->context = avcodec_alloc_context3(codec);
-    assert(decoder_info->context);
-    decoder_info->context->width = query->horizontal;
-    decoder_info->context->height = query->vertical;
-
-    int result = avcodec_open2(decoder_info->context, codec, nullptr);
-    assert(result == 0);
+    host.kernel.decoders[handle] = std::make_shared<H264DecoderState>(query->horizontal, query->vertical);
 
     return 0;
 }
@@ -233,11 +145,23 @@ EXPORT(int, sceAvcdecCscInternal) {
 }
 
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
-    DecoderPtr &decoder_info = host.kernel.decoders[decoder->handle];
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
+
+    H264DecoderOptions options = {};
+    options.pts_upper = au->pts.upper;
+    options.pts_lower = au->pts.lower;
+    options.dts_upper = au->dts.upper;
+    options.dts_lower = au->dts.lower;
+
+    // This is quite long...
+    uint8_t *output = picture->pPicture.get(host.mem)[0].get(host.mem)->frame.pPicture[0].cast<uint8_t>().get(host.mem);
 
     // TODO: decoding can be done async I think
-    send_decoder_data(host.mem, decoder_info, au);
-    receive_decoder_data(host.mem, decoder_info, picture);
+    decoder_info->configure(&options);
+    decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(host.mem)), au->es.size);
+    decoder_info->receive(output);
+
+    picture->numOfOutput++;
 
     return 0;
 }
@@ -259,16 +183,16 @@ EXPORT(int, sceAvcdecDecodeAuNongameapp) {
 }
 
 EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
-    DecoderPtr &decoder_info = host.kernel.decoders[decoder->handle];
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
 
-    return calculate_buffer_size(
-        decoder_info->frame_width, decoder_info->frame_height, decoder_info->frame_ref_count);
+    return H264DecoderState::buffer_size(
+        { decoder_info->get(DecoderQuery::WIDTH), decoder_info->get(DecoderQuery::HEIGHT) });
 }
 
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
-    auto &decoder_info = host.kernel.decoders[decoder->handle];
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
 
-    avcodec_flush_buffers(decoder_info->context);
+    decoder_info->flush();
 
     return 0;
 }
@@ -302,9 +226,10 @@ EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
 }
 
 EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *picture) {
-    auto &decoder_info = host.kernel.decoders[decoder->handle];
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
 
-    receive_decoder_data(host.mem, decoder_info, picture);
+    uint8_t *output = picture->pPicture.get(host.mem)[0].get(host.mem)->frame.pPicture[0].cast<uint8_t>().get(host.mem);
+    decoder_info->receive(output);
 
     return 0;
 }
@@ -318,11 +243,6 @@ EXPORT(int, sceAvcdecDecodeWithWorkPicture) {
 }
 
 EXPORT(int, sceAvcdecDeleteDecoder, SceAvcdecCtrl *decoder) {
-    auto &decoder_info = host.kernel.decoders[decoder->handle];
-
-    avcodec_close(decoder_info->context);
-    av_parser_close(decoder_info->parser);
-
     host.kernel.decoders.erase(decoder->handle);
 
     return 0;
@@ -339,7 +259,7 @@ EXPORT(int, sceAvcdecGetSeiUserDataNongameapp) {
 EXPORT(int, sceAvcdecQueryDecoderMemSize, uint32_t codec_type, const SceAvcdecQueryDecoderInfo *query_info, SceAvcdecDecoderInfo *decoder_info) {
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
 
-    decoder_info->frameMemSize = calculate_buffer_size(query_info->horizontal, query_info->vertical, query_info->numOfRefFrames);
+    decoder_info->frameMemSize = H264DecoderState::buffer_size({ query_info->horizontal, query_info->vertical }) * query_info->numOfRefFrames;
 
     return 0;
 }
