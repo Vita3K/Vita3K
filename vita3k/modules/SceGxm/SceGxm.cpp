@@ -354,20 +354,20 @@ EXPORT(int, sceGxmDepthStencilSurfaceInitDisabled, SceGxmDepthStencilSurface *su
     return 0;
 }
 
-EXPORT(int, sceGxmDepthStencilSurfaceIsEnabled) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmDepthStencilSurfaceIsEnabled, SceGxmDepthStencilSurface *surface) {
+    return !surface->control.get(host.mem)->disabled;
 }
 
-EXPORT(int, sceGxmDepthStencilSurfaceSetBackgroundDepth) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundDepth, SceGxmDepthStencilSurface *surface, float depth) {
+    surface->backgroundDepth = depth;
 }
 
-EXPORT(int, sceGxmDepthStencilSurfaceSetBackgroundMask) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundMask, SceGxmDepthStencilSurface *surface, bool mask) {
+    surface->control.get(host.mem)->backgroundMask = mask;
 }
 
-EXPORT(int, sceGxmDepthStencilSurfaceSetBackgroundStencil) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundStencil, SceGxmDepthStencilSurface *surface, uint8_t stencil) {
+    surface->control.get(host.mem)->backgroundStencil = stencil;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceLoadMode, SceGxmDepthStencilSurface *surface,
