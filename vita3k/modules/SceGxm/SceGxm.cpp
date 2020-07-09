@@ -750,6 +750,7 @@ EXPORT(int, sceGxmIsDebugVersion) {
 }
 
 EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, SceSize size, unsigned int *offset) {
+    STUBBED("always return success");
     assert(base);
     assert(size > 0);
     assert(offset != nullptr);
@@ -761,6 +762,7 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, SceSize size, unsigned 
 }
 
 EXPORT(int, sceGxmMapMemory, void *base, SceSize size, SceGxmMemoryAttribFlags attr) {
+    STUBBED("always return success");
     assert(base != nullptr);
     assert(size > 0);
     //assert((attr == SCE_GXM_MEMORY_ATTRIB_READ) || (attr == SCE_GXM_MEMORY_ATTRIB_RW));
@@ -769,6 +771,7 @@ EXPORT(int, sceGxmMapMemory, void *base, SceSize size, SceGxmMemoryAttribFlags a
 }
 
 EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, SceSize size, unsigned int *offset) {
+    STUBBED("always return success");
     assert(base);
     assert(size > 0);
     assert(offset != nullptr);
