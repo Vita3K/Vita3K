@@ -36,6 +36,9 @@ typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 struct SceGxmProgramParameter;
 
 namespace renderer::gl {
+static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0; ///< The slot that has our color attachment (for programmable blending) - image2D.
+static constexpr GLint MASK_TEXTURE_SLOT_IMAGE = 1; ///< The slot that has our color attachment (for programmable blending) - image2D.
+
 struct ExcludedUniform {
     std::string name;
     GLuint program;
@@ -61,11 +64,14 @@ struct GLTextureCacheState : public renderer::TextureCacheState {
     GLObjectArray<TextureCacheSize> textures;
 };
 
+struct GLRenderTarget;
+
 struct GLContext : public renderer::Context {
     GLTextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
     GLObjectArray<30> uniform_buffer;
+    const GLRenderTarget *render_target;
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     GLuint last_draw_program{ 0 };
 
@@ -101,6 +107,10 @@ struct GLVertexProgram : public renderer::VertexProgram {
 };
 
 struct GLRenderTarget : public renderer::RenderTarget {
+    uint16_t width;
+    uint16_t height;
+    GLObjectArray<1> maskbuffer;
+    GLObjectArray<1> masktexture;
     GLObjectArray<2> renderbuffers;
     GLObjectArray<1> framebuffer;
     GLObjectArray<1> color_attachment;

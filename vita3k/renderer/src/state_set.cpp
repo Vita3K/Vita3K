@@ -284,9 +284,19 @@ COMMAND_SET_STATE(stencil_func) {
     stencil_state.compare_mask = helper.pop<std::uint8_t>();
     stencil_state.write_mask = helper.pop<std::uint8_t>();
 
+    if (state->fragment_program && state->fragment_program.get(mem)->is_maskupdate) {
+        if (stencil_state.func == SCE_GXM_STENCIL_FUNC_NEVER) {
+            state->writing_mask = false;
+        } else if (stencil_state.func == SCE_GXM_STENCIL_FUNC_ALWAYS) {
+            state->writing_mask = true;
+        } else {
+            assert(false);
+        }
+    }
+
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::sync_stencil_func(*state, !is_front);
+        gl::sync_stencil_func(*state, mem, !is_front);
         break;
     }
 

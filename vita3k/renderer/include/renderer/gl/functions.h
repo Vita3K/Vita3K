@@ -37,10 +37,10 @@ namespace renderer::gl {
 
 // Compile program.
 SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_cache, ShaderCache &fragment_cache,
-    const GxmContextState &state, const FeatureState &features, const MemState &mem, const char *base_path, const char *title_id);
+    const GxmContextState &state, const FeatureState &features, const MemState &mem, bool maskupdate, const char *base_path, const char *title_id);
 
 // Shaders.
-std::string load_shader(const SceGxmProgram &program, const FeatureState &features, const char *base_path, const char *title_id);
+std::string load_shader(const SceGxmProgram &program, const FeatureState &features, bool maskupdate, const char *base_path, const char *title_id);
 
 // Uniforms.
 bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderStatics &statics, const MemState &mem,
@@ -55,7 +55,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
 bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip, const std::string &base_path, const std::string &title_id);
 void sync_rendertarget(const GLRenderTarget &rt);
-void set_context(GLContext &ctx, GxmContextState &state, const GLRenderTarget *rt, const FeatureState &features);
+void set_context(GLContext &ctx, GxmContextState &state, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, const bool do_flip);
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id,
@@ -72,6 +72,7 @@ void sync_front_depth_write_enable(const GxmContextState &state);
 bool sync_depth_data(const GxmContextState &state);
 bool sync_stencil_data(const GxmContextState &state, const MemState &mem);
 void sync_stencil_func(const GxmContextState &state, const MemState &mem, bool is_back_stencil);
+void sync_mask(GLContext &context, const GxmContextState &state, const MemState &mem);
 void sync_front_polygon_mode(const GxmContextState &state);
 void sync_front_point_line_width(const GxmContextState &state);
 void sync_front_depth_bias(const GxmContextState &state);

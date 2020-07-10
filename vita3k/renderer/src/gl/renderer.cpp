@@ -312,10 +312,16 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
 
     rt = std::make_unique<GLRenderTarget>();
     GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
-
     if (!render_target->renderbuffers.init(reinterpret_cast<renderer::Generator *>(glGenRenderbuffers), reinterpret_cast<renderer::Deleter *>(glDeleteRenderbuffers)) || !render_target->framebuffer.init(reinterpret_cast<renderer::Generator *>(glGenFramebuffers), reinterpret_cast<renderer::Deleter *>(glDeleteFramebuffers))) {
         return false;
     }
+
+    if (!render_target->maskbuffer.init(reinterpret_cast<renderer::Generator *>(glGenFramebuffers), reinterpret_cast<renderer::Deleter *>(glDeleteFramebuffers))) {
+        return false;
+    }
+
+    render_target->width = params.width;
+    render_target->height = params.height;
 
     int depth_fb_index = 1;
 
@@ -331,6 +337,17 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
         glBindRenderbuffer(GL_RENDERBUFFER, render_target->renderbuffers[0]);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, params.width, params.height);
     }
+
+    render_target->masktexture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
+    glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, params.width, params.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindFramebuffer(GL_FRAMEBUFFER, render_target->maskbuffer[0]);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_target->masktexture[0], 0);
+    GLenum drawbuffers[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, drawbuffers);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glBindRenderbuffer(GL_RENDERBUFFER, render_target->renderbuffers[depth_fb_index]);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, params.width, params.height);
@@ -380,7 +397,6 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
         frag_program_gl->alpha_src = translate_blend_factor(blend->alphaSrc);
         frag_program_gl->alpha_dst = translate_blend_factor(blend->alphaDst);
     }
-
     shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
 
     return true;
@@ -404,36 +420,20 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
     return true;
 }
 
-void set_context(GLContext &context, GxmContextState &state, const GLRenderTarget *rt, const FeatureState &features) {
+void set_context(GLContext &context, GxmContextState &state, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features) {
     R_PROFILE(__func__);
 
     bind_fundamental(context);
 
     if (rt) {
-        sync_rendertarget(*rt);
+        context.render_target = rt;
     } else {
-        sync_rendertarget(*reinterpret_cast<const GLRenderTarget *>(context.current_render_target));
+        context.render_target = reinterpret_cast<const GLRenderTarget *>(context.current_render_target);
     }
 
     // Bind it for programmable blending
-    if (features.is_programmable_blending_need_to_bind_color_attachment()) {
-        if (features.should_use_shader_interlock())
-            glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, rt->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
-        else {
-            // Hopefully no one will use slot 12
-            // TODO: Move color attachment futher or try to preserve it
-            glActiveTexture(GL_TEXTURE0 + shader::COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
-            glBindTexture(GL_TEXTURE_2D, rt->color_attachment[0]);
-        }
-    }
 
-    // Try to clear the depth buffer.
     // TODO: Take request to force load from given memory
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glClearDepth(1.0f);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
 
     // Sync enable/disable depth/stencil based on depth stencil surface.
     if (sync_depth_data(state)) {
@@ -445,6 +445,8 @@ void set_context(GLContext &context, GxmContextState &state, const GLRenderTarge
         sync_stencil_func(state, mem, true);
         sync_stencil_func(state, mem, false);
     }
+
+    sync_mask(context, state, mem);
 }
 
 static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {

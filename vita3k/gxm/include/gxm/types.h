@@ -1167,6 +1167,9 @@ struct GxmContextState {
     // Textures.
     std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> fragment_textures;
 
+    // Mask
+    bool writing_mask;
+
     // Fragment Sync Object
     Ptr<SceGxmSyncObject> fragment_sync_object;
 };
@@ -1174,6 +1177,7 @@ struct GxmContextState {
 struct SceGxmFragmentProgram {
     size_t reference_count = 1;
     Ptr<const SceGxmProgram> program;
+    bool is_maskupdate;
     std::unique_ptr<renderer::FragmentProgram> renderer_data;
 };
 

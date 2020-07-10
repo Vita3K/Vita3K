@@ -100,6 +100,22 @@ static void set_stencil_state(GLenum face, const GxmStencilState &state) {
     glStencilMaskSeparate(face, state.write_mask);
 }
 
+void sync_mask(GLContext &context, const GxmContextState &state, const MemState &mem) {
+    auto control = state.depth_stencil_surface.control.get(mem);
+    auto width = context.render_target->width;
+    auto height = context.render_target->height;
+    GLubyte initial_byte;
+    if (control) {
+        initial_byte = control->backgroundMask ? 0xFF : 0;
+    } else {
+        // always accept
+        initial_byte = 0xFF;
+    }
+    std::vector<GLubyte> emptyData(width * height * 4, initial_byte);
+    glBindTexture(GL_TEXTURE_2D, context.render_target->masktexture[0]);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &emptyData[0]);
+}
+
 void sync_viewport(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
     // Viewport.
     const GLsizei display_w = state.color_surface.width;
@@ -207,8 +223,11 @@ bool sync_depth_data(const GxmContextState &state) {
     return false;
 }
 
-void sync_stencil_func(const GxmContextState &state, const bool is_back_stencil) {
-    set_stencil_state(is_back_stencil ? GL_BACK : GL_FRONT, is_back_stencil ? state.back_stencil : state.front_stencil);
+void sync_stencil_func(const GxmContextState &state, const MemState &mem, const bool is_back_stencil) {
+    auto frag_program = state.fragment_program.get(mem);
+    if (!frag_program || !frag_program->is_maskupdate) {
+        set_stencil_state(is_back_stencil ? GL_BACK : GL_FRONT, is_back_stencil ? state.back_stencil : state.front_stencil);
+    }
 }
 
 bool sync_stencil_data(const GxmContextState &state, const MemState &mem) {
@@ -327,12 +346,14 @@ void sync_vertex_attributes(GLContext &context, const GxmContextState &state, co
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void sync_rendertarget(const GLRenderTarget &rt) {
-    glBindFramebuffer(GL_FRAMEBUFFER, rt.framebuffer[0]);
-}
-
 bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip, const std::string &base_path, const std::string &title_id) {
     R_PROFILE(__func__);
+
+    const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
+    const SceGxmProgram &fragment_gxp = *gxm_fragment_program.program.get(mem);
+    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_gxp);
+    const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
+        gxm_fragment_program.renderer_data.get());
 
     sync_viewport(context, state, hardware_flip);
     sync_clipping(context, state, hardware_flip);
@@ -351,11 +372,9 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
     sync_front_polygon_mode(state);
     sync_front_depth_bias(state);
     sync_blending(state, mem);
+    sync_mask(context, state, mem);
 
     // Textures.
-    const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
-    const SceGxmProgram &fragment_gxp = *gxm_fragment_program.program.get(mem);
-    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_gxp);
     for (size_t i = 0; i < fragment_gxp.parameter_count; ++i) {
         const SceGxmProgramParameter &param = fragment_params[i];
         if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
