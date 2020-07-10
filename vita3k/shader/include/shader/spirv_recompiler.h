@@ -21,7 +21,7 @@ static constexpr int COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER = 12; ///< The slot t
 // Dump generated SPIR-V disassembly up to this point
 void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
 
-std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features,
+std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, bool maskupdate = false,
     bool force_shader_debug = false, std::string *spirv_dump = nullptr, std::string *disasm_dump = nullptr);
 
 void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath);

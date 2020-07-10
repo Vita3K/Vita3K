@@ -41,6 +41,10 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 
     GLuint program_id = context.last_draw_program;
 
+    const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
+    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
+    const auto &gl_frag_program = reinterpret_cast<gl::GLFragmentProgram *>(gxm_fragment_program.renderer_data.get());
+
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
     // If it's different, we need to switch. Else just stick to it.
     // Pass 1: Check pointer.
@@ -49,7 +53,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         if (!state.last_draw_vertex_program || !state.last_draw_fragment_program || (state.last_draw_vertex_program.get(mem)->renderer_data->hash != state.vertex_program.get(mem)->renderer_data->hash) || (state.last_draw_fragment_program.get(mem)->renderer_data->hash != state.fragment_program.get(mem)->renderer_data->hash)) {
             // Need to recompile!
             SharedGLObject program = gl::compile_program(renderer.program_cache, renderer.vertex_shader_cache,
-                renderer.fragment_shader_cache, state, features, mem, base_path, title_id);
+                renderer.fragment_shader_cache, state, features, mem, gxm_fragment_program.is_maskupdate, base_path, title_id);
 
             if (!program) {
                 LOG_ERROR("Fail to get program!");
@@ -77,16 +81,60 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint *>(&program_id));
     }
 
+    if (gxm_fragment_program.is_maskupdate) {
+        uint8_t mask = state.writing_mask ? 0xFF : 0;
+        set_uniform_buffer(context, false, 14, sizeof(mask), &mask);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
+    }
+
+    const SceGxmProgram &fragment_gxp = *gxm_fragment_program.program.get(mem);
+    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_gxp);
+    std::array<bool, SCE_GXM_MAX_TEXTURE_UNITS> sampler_slot_used = { false };
+    for (int i = 0; i < fragment_gxp.parameter_count; ++i) {
+        const SceGxmProgramParameter &param = fragment_params[i];
+        if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+            continue;
+        }
+        sampler_slot_used[param.resource_index] = true;
+    }
+
     glUseProgram(program_id);
 
+    const auto bind_host_texture = [&](std::string uniform_name, int image_index, GLint texture) {
+        GLint loc = glGetUniformLocation(program_id, uniform_name.c_str());
+        // It maybe a hand-written shader. So colorAttachment didn't exist
+        if (loc != -1) {
+            if (features.should_use_shader_interlock()) {
+                glBindImageTexture(image_index, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+                glUniform1i(loc, image_index);
+            } else {
+                // Tries to find unused texture slot
+                auto it = std::find(sampler_slot_used.begin(), sampler_slot_used.end(), false);
+                if (it == sampler_slot_used.end())
+                    assert(false); // hahahahahahahahahahaha
+                auto index = it - sampler_slot_used.begin();
+                sampler_slot_used[index] = true;
+                glActiveTexture(GL_TEXTURE0 + index);
+                glBindTexture(GL_TEXTURE_2D, texture);
+                glUniform1i(loc, index);
+            }
+        }
+    };
+
+    if (fragment_gxp_program.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
+        bind_host_texture("f_colorAttachment", COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0]);
+    }
+    bind_host_texture("f_mask", MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0]);
+
     if (!features.use_ubo) {
-        const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
         const SceGxmVertexProgram &gxm_vertex_program = *state.vertex_program.get(mem);
         const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
 
         // Set uniforms
         const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(mem);
-        const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
 
         gl::GLShaderStatics &vertex_gl_statics = reinterpret_cast<gl::GLVertexProgram *>(gxm_vertex_program.renderer_data.get())->statics;
         gl::GLShaderStatics &fragment_gl_statics = reinterpret_cast<gl::GLFragmentProgram *>(gxm_fragment_program.renderer_data.get())->statics;

@@ -89,10 +89,12 @@ struct PAVar {
 struct TranslationState {
     spv::Id last_frag_data_id = spv::NoResult;
     spv::Id color_attachment_id = spv::NoResult;
+    spv::Id mask_id = spv::NoResult;
     spv::Id frag_coord_id = spv::NoResult; ///< gl_FragCoord, not built-in in SPIR-V.
     spv::Id flip_vec_id = spv::NoResult;
     std::vector<PAVar> pa_vars;
     std::vector<spv::Id> interfaces;
+    bool is_maskupdate;
 };
 
 struct VertexProgramOutputProperties {
@@ -523,8 +525,31 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         query_info.coord = coords[query_info.coord_index];
     }
 
+    std::vector<spv::Id> empty_args;
+    int sampled = 1;
+    spv::ImageFormat img_format = spv::ImageFormatUnknown;
+
+    if (features.should_use_shader_interlock()) {
+        sampled = 2;
+        img_format = spv::ImageFormatRgba8;
+    }
     spv::Id f32 = b.makeFloatType(32);
     spv::Id v4 = b.makeVectorType(f32, 4);
+    spv::Id sampled_type = b.makeFloatType(32);
+    spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
+
+    if (features.should_use_texture_barrier()) {
+        // Make it a sampler
+        image_type = b.makeSampledImageType(image_type);
+    }
+
+    spv::Id mask = b.createVariable(spv::StorageClassUniformConstant, image_type, "f_mask");
+    translation_state.interfaces.push_back(mask);
+    translation_state.mask_id = mask;
+
+    spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
+    translation_state.interfaces.push_back(current_coord);
+    translation_state.frag_coord_id = current_coord;
 
     if (program.is_native_color()) {
         // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data
@@ -542,35 +567,18 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             source = last_frag_data;
             translation_state.last_frag_data_id = last_frag_data_arr;
         } else if (features.support_shader_interlock || features.support_texture_barrier) {
-            std::vector<spv::Id> empty_args;
-            int sampled = 1;
-            spv::ImageFormat img_format = spv::ImageFormatUnknown;
-
-            if (features.should_use_shader_interlock()) {
-                sampled = 2;
-                img_format = spv::ImageFormatRgba8;
-            }
-
             // Create a global sampler, which is our color attachment
-            spv::Id sampled_type = b.makeFloatType(32);
-            spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
-
-            if (features.should_use_texture_barrier()) {
-                // Make it a sampler
-                image_type = b.makeSampledImageType(image_type);
-            }
-
             spv::Id v4 = b.makeVectorType(sampled_type, 4);
 
             spv::Id color_attachment = b.createVariable(spv::StorageClassUniformConstant, image_type, "f_colorAttachment");
             translation_state.interfaces.push_back(color_attachment);
 
-            if (features.use_shader_binding) {
-                if (features.should_use_shader_interlock())
-                    b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
-                else
-                    b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
-            }
+            // if (features.use_shader_binding) {
+            //     if (features.should_use_shader_interlock())
+            //         b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
+            //     else
+            //         b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
+            // }
 
             spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
             translation_state.interfaces.push_back(current_coord);
@@ -1028,6 +1036,28 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         b.createStore(color, out);
     }
 
+    if (!translate_state.is_maskupdate) {
+        spv::Id current_coord = translate_state.frag_coord_id;
+
+        spv::Id i32 = b.makeIntegerType(32, true);
+        current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord));
+        current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
+        spv::Id sampled_type = b.makeFloatType(32);
+        spv::Id v4 = b.makeVectorType(sampled_type, 4);
+        spv::Id texel = spv::NoResult;
+
+        if (features.should_use_shader_interlock())
+            texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id), current_coord });
+        else
+            texel = b.createOp(spv::OpImageFetch, v4, { b.createLoad(translate_state.mask_id), current_coord });
+        spv::Id rezero = b.makeFloatConstant(0.5f);
+        spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
+        spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { texel, zero });
+        spv::Id pred2 = b.createUnaryOp(spv::OpAll, b.makeBoolType(), pred);
+        spv::Builder::If cond_builder(pred2, spv::SelectionControlMaskNone, b);
+        b.makeDiscard();
+        cond_builder.makeEndIf();
+    }
     b.makeReturn(false);
     b.setBuildPoint(last_build_point);
 
@@ -1368,7 +1398,7 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureSt
         glsl.set_name(translation_state.last_frag_data_id, "gl_LastFragData");
     }
 
-    if (features.is_programmable_blending_need_to_bind_color_attachment() && translation_state.frag_coord_id != spv::NoResult) {
+    if (translation_state.frag_coord_id != spv::NoResult) {
         glsl.set_remapped_variable_state(translation_state.frag_coord_id, true);
         glsl.set_name(translation_state.frag_coord_id, "gl_FragCoord");
     }
@@ -1399,8 +1429,9 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 // * Functions (exposed API) *
 // ***************************
 
-std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
+std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, bool maskupdate, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
     TranslationState translation_state;
+    translation_state.is_maskupdate = maskupdate;
     std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, translation_state, force_shader_debug, spirv_dump, disasm_dump);
 
     const auto source = convert_spirv_to_glsl(spirv_binary, features, translation_state);

@@ -45,7 +45,7 @@ COMMAND(handle_set_context) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::set_context(*reinterpret_cast<gl::GLContext *>(render_context), *state, reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
+        gl::set_context(*reinterpret_cast<gl::GLContext *>(render_context), *state, mem, reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
         break;
     }
 
