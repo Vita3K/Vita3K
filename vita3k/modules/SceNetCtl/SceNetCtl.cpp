@@ -109,15 +109,16 @@ EXPORT(int, sceNetCtlAdhocUnregisterCallback) {
 }
 
 EXPORT(int, sceNetCtlCheckCallback) {
-    if (host.net.state == 0)
+    if (host.net.state == 1) {
         return 0;
+    }
 
-    host.net.state = 0;
+    host.net.state = 1;
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     for (auto &callback : host.net.cbs) {
         Ptr<void> argp = Ptr<void>(callback.second.data);
-        run_on_current(*thread, Ptr<void>(callback.second.pc), host.net.state, argp);
+        run_on_current(*thread, Ptr<void>(callback.second.pc), 1, argp);
     }
     return STUBBED("Stub");
 }
@@ -154,8 +155,9 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
     return 0;
 }
 
-EXPORT(int, sceNetCtlInetGetResult) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetCtlInetGetResult, uint32_t eventtype, uint32_t *errorCode) {
+    *errorCode = 0x80412112; // flight mode
+    return 0;
 }
 
 EXPORT(int, sceNetCtlInetGetState, uint32_t *state) {
@@ -173,8 +175,9 @@ EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, u
     return 0;
 }
 
-EXPORT(int, sceNetCtlInetUnregisterCallback) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetCtlInetUnregisterCallback, uint32_t cid) {
+    host.net.cbs.erase(cid);
+    return 0;
 }
 
 EXPORT(int, sceNetCtlInit) {
