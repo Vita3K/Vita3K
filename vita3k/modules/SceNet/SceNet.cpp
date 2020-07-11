@@ -309,6 +309,7 @@ EXPORT(int, sceNetInit, SceNetInitParam *param) {
     WSADATA wsaData;
     WSAStartup(versionWanted, &wsaData);
 #endif
+    host.net.state = 0;
     host.net.inited = true;
     return 0;
 }
