@@ -25,6 +25,7 @@
 #include <glutil/gl.h>
 #include <host/functions.h>
 #include <host/state.h>
+#include <io/VitaIoDevice.h>
 #include <io/vfs.h>
 #include <util/fs.h>
 #include <util/log.h>
@@ -178,13 +179,16 @@ static void init_user_backgrounds(GuiState &gui, HostState &host) {
     gui.current_user_bg = 0;
 }
 
-void init_icons(GuiState &gui, HostState &host) {
-    for (App &app : gui.app_selector.apps) {
+void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> &apps_list) {
+    for (const App &app : apps_list) {
         int32_t width = 0;
         int32_t height = 0;
         vfs::FileBuffer buffer;
 
-        vfs::read_app_file(buffer, host.pref_path, app.title_id, "sce_sys/icon0.png");
+        if (app.title_id.find("NPXS") != std::string::npos)
+            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app.title_id + "/sce_sys/icon0.png");
+        else
+            vfs::read_app_file(buffer, host.pref_path, app.title_id, "sce_sys/icon0.png");
 
         const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
         const auto default_icon{ fs::path(host.base_path) / "data/image/icon.png" };
@@ -217,7 +221,11 @@ void init_app_background(GuiState &gui, HostState &host) {
     int32_t height = 0;
     vfs::FileBuffer buffer;
 
-    vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/pic0.png");
+    if (host.io.title_id.find("NPXS") != std::string::npos)
+        vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + host.io.title_id + "/sce_sys/pic0.png");
+    else
+        vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/pic0.png");
+
     if (buffer.empty()) {
         LOG_WARN("Background not found for application {} [{}].", host.io.title_id, host.app_title);
         return;
@@ -230,6 +238,35 @@ void init_app_background(GuiState &gui, HostState &host) {
     }
     gui.apps_background[host.io.title_id].init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
+}
+
+void get_sys_apps_title(GuiState &gui, HostState &host) {
+    const std::vector<std::string> sys_apps_list = { "NPXS10008", "NPXS10015" };
+    for (const auto &app : sys_apps_list) {
+        vfs::FileBuffer params;
+        if (vfs::read_file(VitaIoDevice::vs0, params, host.pref_path, "app/" + app + "/sce_sys/param.sfo")) {
+            SfoFile sfo_handle;
+            sfo::load(sfo_handle, params);
+            sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
+            sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
+            if (app != "NPXS10015") {
+                if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
+                    sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
+                if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+                    sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
+                std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
+            } else
+                host.app_short_title = host.app_title = "Theme & Background";
+            boost::trim(host.app_title);
+        } else {
+            host.app_version = host.app_category = "N/A";
+            if (app == "NPXS10008")
+                host.app_short_title = host.app_title = "Trophy Collection";
+            else
+                host.app_short_title = host.app_title = "Theme & Background";
+        }
+        gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, host.app_short_title, host.app_title, app });
+    }
 }
 
 void get_apps_title(GuiState &gui, HostState &host) {
@@ -292,13 +329,16 @@ void init(GuiState &gui, HostState &host) {
 
     get_apps_title(gui, host);
     get_modules_list(gui, host);
-    init_icons(gui, host);
+    get_sys_apps_title(gui, host);
+    init_apps_icon(gui, host, gui.app_selector.apps);
 
     if (!host.cfg.user_backgrounds.empty())
         init_user_backgrounds(gui, host);
 
     if (!host.cfg.theme_content_id.empty())
         init_theme(gui, host, host.cfg.theme_content_id);
+
+    init_apps_icon(gui, host, gui.app_selector.sys_apps);
 
     if (!host.cfg.start_background.empty()) {
         if (host.cfg.start_background == "image")
@@ -307,7 +347,7 @@ void init(GuiState &gui, HostState &host) {
             init_theme_start_background(gui, host, host.cfg.start_background == "default" ? "default" : host.cfg.theme_content_id);
 
         if (!host.cfg.run_title_id && !host.cfg.vpk_path && gui.start_background)
-            gui.theme.start_screen = true;
+            gui.live_area.start_screen = true;
     }
 
     // Initialize trophy callback
@@ -342,12 +382,12 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (gui.live_area.manual)
         draw_manual(gui, host);
 
-    if (gui.theme.theme_background)
+    if (gui.live_area.theme_background)
         draw_themes_selection(gui, host);
-    if (gui.theme.start_screen)
+    if (gui.live_area.start_screen)
         draw_start_screen(gui, host);
 
-    if (gui.trophy.trophy_collection)
+    if (gui.live_area.trophy_collection)
         draw_trophy_collection(gui, host);
 
     ImGui::PopFont();

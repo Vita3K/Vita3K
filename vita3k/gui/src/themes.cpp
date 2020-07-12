@@ -352,9 +352,7 @@ void get_themes_list(GuiState &gui, HostState &host) {
         return ta.second > tb.second;
     });
 
-    if (fs::exists(fs::path(host.pref_path) / "vs0/app/NPXS10015/sce_sys/pic0.png")) {
-        theme_preview_name["default"]["background"] = "app/NPXS10015/sce_sys/pic0.png";
-
+    if (fs::exists(fw_theme_path) && !fs::is_empty(fw_theme_path)) {
         theme_preview_name["default"]["package"] = "data/internal/theme/theme_defaultImage.png";
 
         theme_preview_name["default"]["home"] = "data/internal/theme/defaultTheme_homeScreen.png";
@@ -415,7 +413,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0.f, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-    ImGui::Begin("##start_screen", &gui.theme.start_screen, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##start_screen", &gui.live_area.start_screen, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     if (gui.start_background)
         ImGui::GetForegroundDrawList()->AddImage(gui.start_background,
@@ -442,7 +440,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     ImGui::PopFont();
 
     if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
-        gui.theme.start_screen = false;
+        gui.live_area.start_screen = false;
 
     ImGui::End();
 }
@@ -471,11 +469,11 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    if (gui.themes_preview["default"].find("background") == gui.themes_preview["default"].end())
+    if (gui.apps_background.find(host.io.title_id) == gui.apps_background.end())
         ImGui::SetNextWindowBgAlpha(0.999f);
-    ImGui::Begin("##themes", &gui.theme.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    if (gui.themes_preview["default"].find("background") != gui.themes_preview["default"].end())
-        ImGui::GetWindowDrawList()->AddImage(gui.themes_preview["default"]["background"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+    ImGui::Begin("##themes", &gui.live_area.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
+        ImGui::GetWindowDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     ImGui::SetWindowFontScale(1.6f * SCAL.x);
     const auto theme_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
     ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
@@ -831,7 +829,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
             else
                 menu.clear();
         } else
-            gui.theme.theme_background = false;
+            gui.live_area.theme_background = false;
     }
 
     if (!selected.empty() && (selected != "default")) {

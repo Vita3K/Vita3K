@@ -19,7 +19,7 @@
 
 #include <gui/functions.h>
 
-#include <io/device.h>
+#include <io/VitaIoDevice.h>
 #include <io/vfs.h>
 #include <util/log.h>
 
@@ -40,7 +40,7 @@ void draw_information_bar(GuiState &gui) {
     ImU32 DEFAUL_BAR_COLOR = 4278190080; // Black
     ImU32 DEFAUL_INDICATOR_COLOR = 4294967295; // White
 
-    const auto is_theme_color = (gui.theme.start_screen || gui.live_area.live_area_screen);
+    const auto is_theme_color = (gui.live_area.start_screen || gui.live_area.live_area_screen);
 
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, MENUBAR_HEIGHT), ImGuiCond_Always);
@@ -90,6 +90,7 @@ static std::map<std::string, std::map<std::string, uint64_t>> current_item, last
 static std::map<std::string, std::string> type;
 static std::string start;
 static int32_t current_app;
+static std::vector<gui::App> app_type;
 
 void init_live_area(GuiState &gui, HostState &host) {
     std::string user_lang;
@@ -118,22 +119,101 @@ void init_live_area(GuiState &gui, HostState &host) {
     default: break;
     }
 
+    // Init type
+    if (items_pos.empty()) {
+        // A1
+        items_pos["a1"]["gate"]["pos"] = ImVec2(620.f, 364.f);
+        items_pos["a1"]["frame1"]["pos"] = ImVec2(900.f, 415.f);
+        items_pos["a1"]["frame1"]["size"] = ImVec2(260.f, 260.f);
+        items_pos["a1"]["frame2"]["pos"] = ImVec2(320.f, 415.f);
+        items_pos["a1"]["frame2"]["size"] = ImVec2(260.f, 260.f);
+        items_pos["a1"]["frame3"]["pos"] = ImVec2(900.f, 155.f);
+        items_pos["a1"]["frame3"]["size"] = ImVec2(840.f, 150.f);
+        // A2
+        items_pos["a2"]["gate"]["pos"] = ImVec2(620.f, 390.f);
+        items_pos["a2"]["frame1"]["pos"] = ImVec2(900.f, 405.f);
+        items_pos["a2"]["frame1"]["size"] = ImVec2(260.f, 400.f);
+        items_pos["a2"]["frame2"]["pos"] = ImVec2(320.f, 405.f);
+        items_pos["a2"]["frame2"]["size"] = ImVec2(260.f, 400.f);
+        items_pos["a2"]["frame3"]["pos"] = ImVec2(640.f, 205.f);
+        items_pos["a2"]["frame3"]["size"] = ImVec2(320.f, 200.f);
+        // A3
+        items_pos["a3"]["gate"]["pos"] = ImVec2(620.f, 394.f);
+        items_pos["a3"]["frame1"]["pos"] = ImVec2(900.f, 415.f);
+        items_pos["a3"]["frame1"]["size"] = ImVec2(260.f, 200.f);
+        items_pos["a3"]["frame2"]["pos"] = ImVec2(320.f, 415.f);
+        items_pos["a3"]["frame2"]["size"] = ImVec2(260.f, 200.f);
+        items_pos["a3"]["frame3"]["pos"] = ImVec2(900.f, 215.f);
+        items_pos["a3"]["frame3"]["size"] = ImVec2(260.f, 210.f);
+        items_pos["a3"]["frame4"]["pos"] = ImVec2(640.f, 215.f);
+        items_pos["a3"]["frame4"]["size"] = ImVec2(320.f, 210.f);
+        items_pos["a3"]["frame5"]["pos"] = ImVec2(320.f, 215.f);
+        items_pos["a3"]["frame5"]["size"] = ImVec2(260.f, 210.f);
+        // A4
+        items_pos["a4"]["gate"]["pos"] = ImVec2(620.f, 394.f);
+        items_pos["a4"]["frame1"]["pos"] = ImVec2(900.f, 415.f);
+        items_pos["a4"]["frame1"]["size"] = ImVec2(260.f, 200.f);
+        items_pos["a4"]["frame2"]["pos"] = ImVec2(320.f, 415.f);
+        items_pos["a4"]["frame2"]["size"] = ImVec2(260.f, 200.f);
+        items_pos["a4"]["frame3"]["pos"] = ImVec2(900.f, 215.f);
+        items_pos["a4"]["frame3"]["size"] = ImVec2(840.f, 70.f);
+        items_pos["a4"]["frame4"]["pos"] = ImVec2(900.f, 145.f);
+        items_pos["a4"]["frame4"]["size"] = ImVec2(840.f, 70.f);
+        items_pos["a4"]["frame5"]["pos"] = ImVec2(900.f, 75.f);
+        items_pos["a4"]["frame5"]["size"] = ImVec2(840.f, 70.f);
+        // A5
+        items_pos["a5"]["gate"]["pos"] = ImVec2(380.f, 388.f);
+        items_pos["a5"]["frame1"]["pos"] = ImVec2(900.f, 414.f);
+        items_pos["a5"]["frame1"]["size"] = ImVec2(480.f, 68.f);
+        items_pos["a5"]["frame2"]["pos"] = ImVec2(900.f, 345.f);
+        items_pos["a5"]["frame2"]["size"] = ImVec2(480.f, 68.f);
+        items_pos["a5"]["frame3"]["pos"] = ImVec2(900.f, 278.f);
+        items_pos["a5"]["frame3"]["size"] = ImVec2(480.f, 68.f);
+        items_pos["a5"]["frame4"]["pos"] = ImVec2(900.f, 210.f);
+        items_pos["a5"]["frame4"]["size"] = ImVec2(480.f, 68.f);
+        items_pos["a5"]["frame5"]["pos"] = ImVec2(900.f, 142.f);
+        items_pos["a5"]["frame5"]["size"] = ImVec2(480.f, 68.f);
+        items_pos["a5"]["frame6"]["pos"] = ImVec2(900.f, 74.f);
+        items_pos["a5"]["frame6"]["size"] = ImVec2(480.f, 68.f);
+        items_pos["a5"]["frame7"]["pos"] = ImVec2(420.f, 220.f);
+        items_pos["a5"]["frame7"]["size"] = ImVec2(360.f, 210.f);
+        // psmobile
+        items_pos["psmobile"]["gate"]["pos"] = ImVec2(380.f, 339.f);
+        //items_pos["psmobile"]["frame1"]["pos"] = ImVec2(900.f, 414.f);
+        //items_pos["psmobile"]["frame1"]["size"] = ImVec2(480.f, 68.f);
+        items_pos["psmobile"]["frame2"]["pos"] = ImVec2(865.f, 215.f);
+        items_pos["psmobile"]["frame2"]["size"] = ImVec2(440.f, 68.f);
+        items_pos["psmobile"]["frame3"]["pos"] = ImVec2(865.f, 113.f);
+        items_pos["psmobile"]["frame3"]["size"] = ImVec2(440.f, 34.f);
+        items_pos["psmobile"]["frame4"]["pos"] = ImVec2(865.f, 39.f);
+        items_pos["psmobile"]["frame4"]["size"] = ImVec2(440.f, 34.f);
+    }
+
+    const VitaIoDevice app_device = host.io.title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
+    app_type = app_device == VitaIoDevice::ux0 ? gui.app_selector.apps : gui.app_selector.sys_apps;
+
+    const auto app_index = std::find_if(app_type.begin(), app_type.end(), [&](const App &a) {
+        return a.title_id == host.io.title_id;
+    });
+    current_app = int32_t(std::distance(app_type.begin(), app_index));
+
     if (gui.live_area_contents.find(host.io.title_id) == gui.live_area_contents.end()) {
         auto default_contents = false;
         const auto fw_path{ fs::path(host.pref_path) / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
-        auto template_xml{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/livearea/contents/template.xml" };
+        auto template_xml{ fs::path(host.pref_path) / app_device._to_string() / "app" / host.io.title_id / "sce_sys/livearea/contents/template.xml" };
 
         pugi::xml_document doc;
 
         if (!doc.load_file(template_xml.c_str())) {
-            if (host.io.title_id.find("PCS") != std::string::npos)
+            if ((host.io.title_id.find("PCS") != std::string::npos) || (host.io.title_id.find("NPXS") != std::string::npos))
                 LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}'.", host.io.title_id, host.app_title);
             if (doc.load_file(default_fw_contents.c_str())) {
                 template_xml = default_fw_contents;
                 default_contents = true;
                 LOG_INFO("Using default firmware contents.");
             } else {
+                type[host.io.title_id] = "a1";
                 LOG_ERROR("Default firmware contents is corrupted or missing.");
                 return;
             }
@@ -145,7 +225,7 @@ void init_live_area(GuiState &gui, HostState &host) {
             type[host.io.title_id].clear();
             type[host.io.title_id] = doc.child("livearea").attribute("style").as_string();
 
-            if (doc.child("livearea").child("livearea-background").child("image").child("lang")) {
+            if (!doc.child("livearea").child("livearea-background").child("image").child("lang").text().empty()) {
                 for (const auto &livearea_background : doc.child("livearea").child("livearea-background")) {
                     if (livearea_background.child("lang").text().as_string() == user_lang) {
                         name["livearea-background"] = livearea_background.text().as_string();
@@ -189,15 +269,6 @@ void init_live_area(GuiState &gui, HostState &host) {
                 name["gate"].erase(remove_if(name["gate"].begin(), name["gate"].end(), isspace), name["gate"].end());
             }
 
-            if (fs::exists(fw_path / "vsh/shell/6df5c7c2.png"))
-                name["search"] = "6df5c7c2.png";
-            if (fs::exists(fw_path / "vsh/shell/2f88f589.png"))
-                name["manual"] = "2f88f589.png";
-            /*if (fs::exists(fw_path / "vsh/shell/b4a6dc.png"))
-                name["button"] = "b4a6dc.png";
-            if (fs::exists(fw_path / "vsh/shell/4d4d9ca0.png"))
-                name["refresh"] = "4d4d9ca0.png";*/
-
             if (name["livearea-background"].find('\n') != std::string::npos)
                 name["livearea-background"].erase(remove(name["livearea-background"].begin(), name["livearea-background"].end(), '\n'), name["livearea-background"].end());
             name["livearea-background"].erase(remove_if(name["livearea-background"].begin(), name["livearea-background"].end(), isspace), name["livearea-background"].end());
@@ -209,13 +280,13 @@ void init_live_area(GuiState &gui, HostState &host) {
 
                 if (default_contents)
                     vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "data/internal/livearea/default/sce_sys/livearea/contents/" + contents.second);
-                else if ((contents.first == "search") || (contents.first == "manual") /*|| (contents.first == "button") || (contents.first == "refresh")*/)
-                    vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "vsh/shell/" + contents.second);
+                else if (app_device == VitaIoDevice::vs0)
+                    vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + host.io.title_id + "/sce_sys/livearea/contents/" + contents.second);
                 else
                     vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/livearea/contents/" + contents.second);
 
                 if (buffer.empty()) {
-                    if (host.io.title_id.find("PCS") != std::string::npos)
+                    if ((host.io.title_id.find("PCS") != std::string::npos) || (host.io.title_id.find("NPXS") != std::string::npos))
                         LOG_WARN("Contents {} '{}' Not found for title {} [{}].", contents.first, contents.second, host.io.title_id, host.app_title);
                     continue;
                 }
@@ -408,10 +479,13 @@ void init_live_area(GuiState &gui, HostState &host) {
                             int32_t height = 0;
                             vfs::FileBuffer buffer;
 
-                            vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/livearea/contents/" + bg_name);
+                            if (app_device == VitaIoDevice::vs0)
+                                vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + host.io.title_id + "/sce_sys/livearea/contents/" + bg_name);
+                            else
+                                vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/livearea/contents/" + bg_name);
 
                             if (buffer.empty()) {
-                                if (host.io.title_id.find("PCS") != std::string::npos)
+                                if ((host.io.title_id.find("PCS") != std::string::npos) || (host.io.title_id.find("NPXS") != std::string::npos))
                                     LOG_WARN("background, Id: {}, Name: '{}', Not found for title: {} [{}].", item.first, bg_name, host.io.title_id, host.app_title);
                                 continue;
                             }
@@ -443,10 +517,13 @@ void init_live_area(GuiState &gui, HostState &host) {
                             int32_t height = 0;
                             vfs::FileBuffer buffer;
 
-                            vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/livearea/contents/" + img_name);
+                            if (app_device == VitaIoDevice::vs0)
+                                vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + host.io.title_id + "/sce_sys/livearea/contents/" + img_name);
+                            else
+                                vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/livearea/contents/" + img_name);
 
                             if (buffer.empty()) {
-                                if (host.io.title_id.find("PCS") != std::string::npos)
+                                if ((host.io.title_id.find("PCS") != std::string::npos) || (host.io.title_id.find("NPXS") != std::string::npos))
                                     LOG_WARN("Image, Id: {} Name: '{}', Not found for title {} [{}].", item.first, img_name, host.io.title_id, host.app_title);
                                 continue;
                             }
@@ -465,81 +542,8 @@ void init_live_area(GuiState &gui, HostState &host) {
             }
         }
     }
-
-    // Type Used
-    if (items_pos.empty()) {
-        // A1
-        items_pos["a1"]["gate"]["pos"] = ImVec2(620.f, 364.f);
-        items_pos["a1"]["frame1"]["pos"] = ImVec2(900.f, 415.f);
-        items_pos["a1"]["frame1"]["size"] = ImVec2(260.f, 260.f);
-        items_pos["a1"]["frame2"]["pos"] = ImVec2(320.f, 415.f);
-        items_pos["a1"]["frame2"]["size"] = ImVec2(260.f, 260.f);
-        items_pos["a1"]["frame3"]["pos"] = ImVec2(900.f, 155.f);
-        items_pos["a1"]["frame3"]["size"] = ImVec2(840.f, 150.f);
-        // A2
-        items_pos["a2"]["gate"]["pos"] = ImVec2(620.f, 390.f);
-        items_pos["a2"]["frame1"]["pos"] = ImVec2(900.f, 405.f);
-        items_pos["a2"]["frame1"]["size"] = ImVec2(260.f, 400.f);
-        items_pos["a2"]["frame2"]["pos"] = ImVec2(320.f, 405.f);
-        items_pos["a2"]["frame2"]["size"] = ImVec2(260.f, 400.f);
-        items_pos["a2"]["frame3"]["pos"] = ImVec2(640.f, 205.f);
-        items_pos["a2"]["frame3"]["size"] = ImVec2(320.f, 200.f);
-        // A3
-        items_pos["a3"]["gate"]["pos"] = ImVec2(620.f, 394.f);
-        items_pos["a3"]["frame1"]["pos"] = ImVec2(900.f, 415.f);
-        items_pos["a3"]["frame1"]["size"] = ImVec2(260.f, 200.f);
-        items_pos["a3"]["frame2"]["pos"] = ImVec2(320.f, 415.f);
-        items_pos["a3"]["frame2"]["size"] = ImVec2(260.f, 200.f);
-        items_pos["a3"]["frame3"]["pos"] = ImVec2(900.f, 215.f);
-        items_pos["a3"]["frame3"]["size"] = ImVec2(260.f, 210.f);
-        items_pos["a3"]["frame4"]["pos"] = ImVec2(640.f, 215.f);
-        items_pos["a3"]["frame4"]["size"] = ImVec2(320.f, 210.f);
-        items_pos["a3"]["frame5"]["pos"] = ImVec2(320.f, 215.f);
-        items_pos["a3"]["frame5"]["size"] = ImVec2(260.f, 210.f);
-        // A4
-        items_pos["a4"]["gate"]["pos"] = ImVec2(620.f, 394.f);
-        items_pos["a4"]["frame1"]["pos"] = ImVec2(900.f, 415.f);
-        items_pos["a4"]["frame1"]["size"] = ImVec2(260.f, 200.f);
-        items_pos["a4"]["frame2"]["pos"] = ImVec2(320.f, 415.f);
-        items_pos["a4"]["frame2"]["size"] = ImVec2(260.f, 200.f);
-        items_pos["a4"]["frame3"]["pos"] = ImVec2(900.f, 215.f);
-        items_pos["a4"]["frame3"]["size"] = ImVec2(840.f, 70.f);
-        items_pos["a4"]["frame4"]["pos"] = ImVec2(900.f, 145.f);
-        items_pos["a4"]["frame4"]["size"] = ImVec2(840.f, 70.f);
-        items_pos["a4"]["frame5"]["pos"] = ImVec2(900.f, 75.f);
-        items_pos["a4"]["frame5"]["size"] = ImVec2(840.f, 70.f);
-        // A5
-        items_pos["a5"]["gate"]["pos"] = ImVec2(380.f, 388.f);
-        items_pos["a5"]["frame1"]["pos"] = ImVec2(900.f, 414.f);
-        items_pos["a5"]["frame1"]["size"] = ImVec2(480.f, 68.f);
-        items_pos["a5"]["frame2"]["pos"] = ImVec2(900.f, 345.f);
-        items_pos["a5"]["frame2"]["size"] = ImVec2(480.f, 68.f);
-        items_pos["a5"]["frame3"]["pos"] = ImVec2(900.f, 278.f);
-        items_pos["a5"]["frame3"]["size"] = ImVec2(480.f, 68.f);
-        items_pos["a5"]["frame4"]["pos"] = ImVec2(900.f, 210.f);
-        items_pos["a5"]["frame4"]["size"] = ImVec2(480.f, 68.f);
-        items_pos["a5"]["frame5"]["pos"] = ImVec2(900.f, 142.f);
-        items_pos["a5"]["frame5"]["size"] = ImVec2(480.f, 68.f);
-        items_pos["a5"]["frame6"]["pos"] = ImVec2(900.f, 74.f);
-        items_pos["a5"]["frame6"]["size"] = ImVec2(480.f, 68.f);
-        items_pos["a5"]["frame7"]["pos"] = ImVec2(420.f, 220.f);
-        items_pos["a5"]["frame7"]["size"] = ImVec2(360.f, 210.f);
-        // psmobile
-        items_pos["psmobile"]["gate"]["pos"] = ImVec2(380.f, 339.f);
-        //items_pos["psmobile"]["frame1"]["pos"] = ImVec2(900.f, 414.f);
-        //items_pos["psmobile"]["frame1"]["size"] = ImVec2(480.f, 68.f);
-        items_pos["psmobile"]["frame2"]["pos"] = ImVec2(865.f, 215.f);
-        items_pos["psmobile"]["frame2"]["size"] = ImVec2(440.f, 68.f);
-        items_pos["psmobile"]["frame3"]["pos"] = ImVec2(865.f, 113.f);
-        items_pos["psmobile"]["frame3"]["size"] = ImVec2(440.f, 34.f);
-        items_pos["psmobile"]["frame4"]["pos"] = ImVec2(865.f, 39.f);
-        items_pos["psmobile"]["frame4"]["size"] = ImVec2(440.f, 34.f);
-    }
-
-    const auto app_index = std::find_if(gui.app_selector.apps.begin(), gui.app_selector.apps.end(), [&](const App &g) {
-        return g.title_id == host.io.title_id;
-    });
-    current_app = int32_t(std::distance(gui.app_selector.apps.begin(), app_index));
+    if (type[host.io.title_id].empty())
+        type[host.io.title_id] = "a1";
 }
 
 inline uint64_t current_time() {
@@ -554,6 +558,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+    const VitaIoDevice app_device = host.io.title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
@@ -723,20 +728,19 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         // Text
         for (const auto &str_tag : str[host.io.title_id][frame.id]) {
             if (!str_tag.text.empty()) {
-                std::vector<int> R, G, B;
+                std::vector<ImVec4> str_color;
 
                 if (!str_tag.color.empty()) {
                     int color;
 
-                    if (frame.autoflip != 0) {
+                    if (frame.autoflip != 0)
                         sscanf(str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].color.c_str(), "#%x", &color);
-                    } else
+                    else
                         sscanf(str_tag.color.c_str(), "#%x", &color);
 
-                    R.push_back((color >> 16) & 0xFF);
-                    G.push_back((color >> 8) & 0xFF);
-                    B.push_back((color >> 0) & 0xFF);
-                }
+                    str_color.push_back(ImVec4(float((color >> 16) & 0xFF), float((color >> 8) & 0xFF), float((color >> 0) & 0xFF), 255.f));
+                } else
+                    str_color.push_back(ImVec4(255.f, 255.f, 255.f, 255.f));
 
                 auto str_size = scal_size_frame, text_pos = pos_frame;
 
@@ -930,19 +934,10 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                     }
                 }
                 ImGui::SetCursorPos(pos_str);
-                if (frame.autoflip > 0) {
-                    if (str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].color.empty())
-                        ImGui::TextColored(ImVec4(255.f, 255.f, 255.f, 255.f),
-                            "%s", str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].text.c_str());
-                    else
-                        ImGui::TextColored(ImVec4(float(R[0]), float(G[0]), float(B[0]), 255),
-                            "%s", str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].text.c_str());
-                } else {
-                    if (str_tag.color.empty())
-                        ImGui::TextColored(ImVec4(255.f, 255.f, 255.f, 255.f), "%s", str_tag.text.c_str());
-                    else
-                        ImGui::TextColored(ImVec4(float(R[0]), float(G[0]), float(B[0]), 255), "%s", str_tag.text.c_str());
-                }
+                if (frame.autoflip > 0)
+                    ImGui::TextColored(str_color[0], "%s", str[host.io.title_id][frame.id][current_item[host.io.title_id][frame.id]].text.c_str());
+                else
+                    ImGui::TextColored(str_color[0], "%s", str_tag.text.c_str());
                 if (liveitem[host.io.title_id][frame.id]["text"]["word-wrap"].second != "off")
                     ImGui::PopTextWrapPos();
                 ImGui::EndChild();
@@ -955,10 +950,13 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[host.io.title_id]]["gate"]["pos"].x * scal.x), display_size.y - (items_pos[type[host.io.title_id]]["gate"]["pos"].y * scal.y));
     const auto scal_font_size = 25.0f / ImGui::GetFontSize();
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(start.c_str()).x * scal_font_size), (ImGui::CalcTextSize(start.c_str()).y * scal_font_size));
-    const auto START_BUTTON_SIZE = ImVec2((START_SIZE.x + 30.0f) * scal.x, (START_SIZE.y + 10.0f) * scal.y);
-    const auto POS_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.06f));
+    const auto START_BUTTON_SIZE = ImVec2((START_SIZE.x + 26.0f) * scal.x, (START_SIZE.y + 5.0f) * scal.y);
+    const auto POS_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.08f));
     const auto POS_START = ImVec2(POS_BUTTON.x + (START_BUTTON_SIZE.x - (START_SIZE.x * scal.x)) / 2,
         POS_BUTTON.y + (START_BUTTON_SIZE.y - (START_SIZE.y * scal.y)) / 2);
+    const auto SELECT_SIZE = ImVec2(GATE_SIZE.x - (10.f * scal.x), GATE_SIZE.y - (5.f * scal.y));
+    const auto SELECT_POS = ImVec2(GATE_POS.x + (5.f * scal.y), GATE_POS.y + (2.f * scal.y));
+    const auto SIZE_GATE = ImVec2(GATE_POS.x + GATE_SIZE.x, GATE_POS.y + GATE_SIZE.y);
 
     const auto BUTTON_SIZE = ImVec2(76.f * scal.x, 30.f * scal.y);
 
@@ -966,88 +964,60 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         ImGui::SetCursorPos(GATE_POS);
         ImGui::Image(gui.live_area_contents[host.io.title_id]["gate"], GATE_SIZE);
     }
-    ImGui::SetCursorPos(GATE_POS);
     ImGui::PushID(host.io.title_id.c_str());
-    ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
+    ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * scal.x, ImDrawCornerFlags_All);
     ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 25.0f * scal.x, POS_START, IM_COL32(255, 255, 255, 255), start.c_str());
-    if (ImGui::Selectable("##gate", ImGuiSelectableFlags_None, false, GATE_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
-        gui.app_selector.selected_title_id = host.io.title_id;
+    ImGui::SetCursorPos(SELECT_POS);
+    if (ImGui::Selectable("##gate", ImGuiSelectableFlags_None, false, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+        run_app(gui, host);
         gui.live_area.live_area_screen = false;
     }
     ImGui::PopID();
-    ImGui::GetWindowDrawList()->AddRect(GATE_POS, ImVec2(GATE_POS.x + GATE_SIZE.x, GATE_POS.y + GATE_SIZE.y), IM_COL32(192, 192, 192, 255), 10.0f, ImDrawCornerFlags_All, 12.0f);
+    ImGui::GetWindowDrawList()->AddRect(GATE_POS, SIZE_GATE, IM_COL32(192, 192, 192, 255), 15.f, ImDrawCornerFlags_All, 12.f);
 
-    const auto widget_scal_size = ImVec2(80.0f * scal.x, 80.f * scal.y);
-    const auto manual_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/manual/" };
-    const auto scal_widget_font_size = 23.0f / ImGui::GetFontSize();
+    if (app_device == VitaIoDevice::ux0) {
+        const auto widget_scal_size = ImVec2(80.0f * scal.x, 80.f * scal.y);
+        const auto manual_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/manual/" };
+        const auto scal_widget_font_size = 23.0f / ImGui::GetFontSize();
 
-    auto search_pos = ImVec2(578.0f * scal.x, 505.0f * scal.y);
-    if (!fs::exists(manual_path) || fs::is_empty(manual_path))
-        search_pos = ImVec2(520.0f * scal.x, 505.0f * scal.y);
+        auto search_pos = ImVec2(578.0f * scal.x, 505.0f * scal.y);
+        if (!fs::exists(manual_path) || fs::is_empty(manual_path))
+            search_pos = ImVec2(520.0f * scal.x, 505.0f * scal.y);
 
-    const auto pos_scal_search = ImVec2(display_size.x - search_pos.x, display_size.y - search_pos.y);
+        const auto pos_scal_search = ImVec2(display_size.x - search_pos.x, display_size.y - search_pos.y);
 
-    if (gui.live_area_contents[host.io.title_id].find("search") != gui.live_area_contents[host.io.title_id].end()) {
-        ImGui::SetCursorPos(pos_scal_search);
-        ImGui::Image(gui.live_area_contents[host.io.title_id]["search"], widget_scal_size);
-    } else {
         const std::string SEARCH = "Search";
         const auto SEARCH_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(SEARCH.c_str()).x * scal_widget_font_size) * scal.x, (ImGui::CalcTextSize(SEARCH.c_str()).y * scal_widget_font_size) * scal.y);
         const auto POS_STR_SEARCH = ImVec2(pos_scal_search.x + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.x / 2.f)),
             pos_scal_search.y + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.y / 2.f)));
         ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_search, ImVec2(pos_scal_search.x + widget_scal_size.x, pos_scal_search.y + widget_scal_size.y), IM_COL32(20, 168, 222, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
         ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 23.0f * scal.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH.c_str());
-    }
-    ImGui::SetCursorPos(pos_scal_search);
-    if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size)) {
-        auto search_url = "http://www.google.com/search?q=" + host.app_title;
-        std::replace(search_url.begin(), search_url.end(), ' ', '+');
-        system((OS_PREFIX + search_url).c_str());
-    }
+        ImGui::SetCursorPos(pos_scal_search);
+        if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size)) {
+            auto search_url = "http://www.google.com/search?q=" + host.app_title;
+            std::replace(search_url.begin(), search_url.end(), ' ', '+');
+            system((OS_PREFIX + search_url).c_str());
+        }
 
-    if (fs::exists(manual_path) && !fs::is_empty(manual_path)) {
-        const auto manaul_pos = ImVec2(463.0f * scal.x, 505.0f * scal.y);
-        const auto pos_scal_manual = ImVec2(display_size.x - manaul_pos.x, display_size.y - manaul_pos.y);
+        if (fs::exists(manual_path) && !fs::is_empty(manual_path)) {
+            const auto manaul_pos = ImVec2(463.0f * scal.x, 505.0f * scal.y);
+            const auto pos_scal_manual = ImVec2(display_size.x - manaul_pos.x, display_size.y - manaul_pos.y);
 
-        if (gui.live_area_contents[host.io.title_id].find("manual") != gui.live_area_contents[host.io.title_id].end()) {
-            ImGui::SetCursorPos(pos_scal_manual);
-            ImGui::Image(gui.live_area_contents[host.io.title_id]["manual"], widget_scal_size);
-        } else {
             const std::string MANUAL_STR = "Manual";
             const auto MANUAL_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(MANUAL_STR.c_str()).x * scal_widget_font_size) * scal.x, (ImGui::CalcTextSize(MANUAL_STR.c_str()).y * scal_widget_font_size) * scal.y);
             const auto MANUAl_STR_POS = ImVec2(pos_scal_manual.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
                 pos_scal_manual.y + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.y / 2.f)));
             ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_manual, ImVec2(pos_scal_manual.x + widget_scal_size.x, pos_scal_manual.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
             ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 23.0f * scal.x, MANUAl_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
-        }
-        ImGui::SetCursorPos(pos_scal_manual);
-        if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size)) {
-            if (init_manual(gui, host))
-                gui.live_area.manual = true;
-            else
-                LOG_ERROR("Error opening Manual");
+            ImGui::SetCursorPos(pos_scal_manual);
+            if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size)) {
+                if (init_manual(gui, host))
+                    gui.live_area.manual = true;
+                else
+                    LOG_ERROR("Error opening Manual");
+            }
         }
     }
-
-    /*const auto button_pos = ImVec2(355.0f * scal.x, 505.0f * scal.y);
-    const auto pos_scal_button = ImVec2(display_size.x - button_pos.x, display_size.y - button_pos.y);
-
-    const auto refresh_scal_size = ImVec2(64.0f * scal.x, 64.f * scal.y);
-    const auto refresh_pos = ImVec2(457.0f * scal.x, 501.0f * scal.y);
-    const auto pos_scal_refresh = ImVec2(display_size.x - refresh_pos.x, display_size.y - refresh_pos.y);
-
-    ImGui::SetCursorPos(pos_scal_button);
-    if ((gui.live_area_contents[host.io.title_id].find(BUTTON) != gui.live_area_contents[host.io.title_id].end()) && (gui.live_area_contents[host.io.title_id].find(REFRESH) != gui.live_area_contents[host.io.title_id].end())) {
-        ImGui::Image(gui.live_area_contents[host.io.title_id][BUTTON], widget_scal_size);
-        ImGui::SetCursorPos(pos_scal_refresh);
-        ImGui::Image(gui.live_area_contents[host.io.title_id][REFRESH], refresh_scal_size);
-    } else
-        ImGui::Button("Refresh", BUTTON_SIZE);
-    if (ImGui::IsItemClicked(0)) {
-        gui.live_area_contents.erase(host.io.title_id);
-        gui.live_items.erase(host.io.title_id);
-        init_live_area(gui, host);
-    }*/
 
     if (!gui.live_area.manual) {
         const auto wheel_counter = ImGui::GetIO().MouseWheel;
@@ -1057,22 +1027,22 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 if (current_app > 0)
                     --current_app;
                 else
-                    current_app = int(gui.app_selector.apps.size()) - 1;
+                    current_app = int(app_type.size()) - 1;
             } else if (ImGui::IsKeyPressed(host.cfg.keyboard_button_down) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_down) || (wheel_counter == -1)) {
-                if (current_app < int(gui.app_selector.apps.size()) - 1)
+                if (current_app < int(app_type.size()) - 1)
                     ++current_app;
                 else
                     current_app = 0;
             }
 
-            if (host.io.title_id != gui.app_selector.apps[current_app].title_id) {
-                host.io.title_id = gui.app_selector.apps[current_app].title_id;
-                host.app_title = gui.app_selector.apps[current_app].title;
+            if (host.io.title_id != app_type[current_app].title_id) {
+                host.io.title_id = app_type[current_app].title_id;
+                host.app_title = app_type[current_app].title;
                 init_live_area(gui, host);
             }
 
             ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x), 44.0f * scal.y));
-            ImGui::VSliderInt("##slider_current_app", ImVec2(60.f, 500.f * scal.y), &current_app, int32_t(gui.app_selector.apps.size()) - 1, 0, fmt::format("{}\n_____\n\n{}", current_app + 1, int32_t(gui.app_selector.apps.size())).c_str());
+            ImGui::VSliderInt("##slider_current_app", ImVec2(60.f, 500.f * scal.y), &current_app, int32_t(app_type.size()) - 1, 0, fmt::format("{}\n_____\n\n{}", current_app + 1, int32_t(app_type.size())).c_str());
         }
 
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f);

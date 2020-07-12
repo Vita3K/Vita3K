@@ -168,11 +168,6 @@ int main(int argc, char *argv[]) {
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
 
-    if (host.cfg.overwrite_config) {
-        host.cfg.last_app = host.io.title_id.c_str();
-        config::serialize_config(host.cfg, host.cfg.config_path);
-    }
-
     while (host.frame_count == 0) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),

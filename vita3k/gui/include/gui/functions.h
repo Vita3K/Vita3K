@@ -43,13 +43,15 @@ void get_themes_list(GuiState &gui, HostState &host);
 void get_trophy_np_com_id_list(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);
 void init_app_background(GuiState &gui, HostState &host);
-void init_icons(GuiState &gui, HostState &host);
+void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> &apps_list);
 void init_live_area(GuiState &gui, HostState &host);
 bool init_manual(GuiState &gui, HostState &host);
 bool init_theme(GuiState &gui, HostState &host, std::string &content_id);
 void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
+void load_app(GuiState &gui, HostState &host);
 bool refresh_app_list(GuiState &gui, HostState &host);
+void run_app(GuiState &gui, HostState &host);
 
 void draw_begin(GuiState &gui, HostState &host);
 void draw_end(GuiState &host, SDL_Window *window);

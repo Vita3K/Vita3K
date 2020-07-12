@@ -230,20 +230,13 @@ void get_trophy_np_com_id_list(GuiState &gui, HostState &host) {
         }
     }
 
-    const auto trophy_app_bg_path{ fs::path(host.pref_path) / "vs0/app/NPXS10008/sce_sys/pic0.png" };
-    if (fs::exists(trophy_app_bg_path))
-        np_com_id_list_name["bg"]["000"] = "pic0.png";
-
     for (const auto &np_com_id : np_com_id_list_name) {
         for (const auto &group : np_com_id.second) {
             int32_t width = 0;
             int32_t height = 0;
             vfs::FileBuffer buffer;
 
-            if (np_com_id.first == "bg")
-                vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/NPXS10008/sce_sys/" + group.second);
-            else
-                vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "user/" + host.io.user_id + "/trophy/conf/" + np_com_id.first + "/" + group.second);
+            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "user/" + host.io.user_id + "/trophy/conf/" + np_com_id.first + "/" + group.second);
 
             if (buffer.empty()) {
                 LOG_WARN("Icon, Name: '{}', Not found for NPComId: {}.", group.second, np_com_id.first);
@@ -399,11 +392,11 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    if (gui.trophy_np_com_id_list["bg"].find("000") != gui.trophy_np_com_id_list["bg"].end())
+    if (gui.apps_background.find(host.io.title_id) == gui.apps_background.end())
         ImGui::SetNextWindowBgAlpha(0.999f);
-    ImGui::Begin("##trophy_collection", &gui.theme.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    if (gui.trophy_np_com_id_list.find("bg") != gui.trophy_np_com_id_list.end())
-        ImGui::GetWindowDrawList()->AddImage(gui.trophy_np_com_id_list["bg"]["000"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+    ImGui::Begin("##trophy_collection", &gui.live_area.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
+        ImGui::GetWindowDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * SCAL.x);
         if (np_com_id_selected.empty()) {
@@ -715,8 +708,11 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 scroll_type = "np_com";
                 set_scroll_pos = true;
             }
-        } else
-            gui.trophy.trophy_collection = false;
+        } else {
+            gui.live_area.trophy_collection = false;
+            if (host.cfg.show_live_area_screen)
+                gui.live_area.live_area_screen = true;
+        }
     }
 
     if (trophy_id_selected.empty() && !detail_np_com_id && (np_com_id_selected.empty() || !group_id_selected.empty())) {

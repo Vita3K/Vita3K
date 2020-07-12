@@ -45,12 +45,8 @@ static void draw_file_menu(FileMenuState &state, HostState &host) {
 static void draw_emulation_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginMenu("Emulation")) {
         if (ImGui::MenuItem("Load last App", host.cfg.last_app.c_str(), false, !host.cfg.last_app.empty() && gui.app_selector.selected_title_id.empty())) {
-            if (host.cfg.show_live_area_screen) {
-                host.io.title_id = host.cfg.last_app;
-                init_live_area(gui, host);
-                gui.live_area.live_area_screen = true;
-            } else
-                gui.app_selector.selected_title_id = host.cfg.last_app;
+            host.io.title_id = host.cfg.last_app;
+            load_app(gui, host);
         }
         ImGui::EndMenu();
     }
@@ -75,8 +71,6 @@ static void draw_config_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginMenu("Configuration")) {
         ImGui::MenuItem("Profiles Manager", nullptr, &gui.configuration_menu.profiles_manager_dialog);
         ImGui::MenuItem("Settings", nullptr, &gui.configuration_menu.settings_dialog);
-        if (ImGui::MenuItem("Theme & Background", nullptr, &gui.theme.theme_background))
-            get_themes_list(gui, host);
         ImGui::EndMenu();
     }
 }
@@ -84,14 +78,6 @@ static void draw_config_menu(GuiState &gui, HostState &host) {
 static void draw_controls_menu(ControlMenuState &state) {
     if (ImGui::BeginMenu("Controls")) {
         ImGui::MenuItem("Keyboard Controls", nullptr, &state.controls_dialog);
-        ImGui::EndMenu();
-    }
-}
-
-static void draw_utilities_menu(GuiState &gui, HostState &host) {
-    if (ImGui::BeginMenu("Utilities")) {
-        if (ImGui::MenuItem("Trophy Collection", nullptr, &gui.trophy.trophy_collection, !gui.trophy.trophy_collection))
-            get_trophy_np_com_id_list(gui, host);
         ImGui::EndMenu();
     }
 }
@@ -111,7 +97,6 @@ void draw_main_menu_bar(GuiState &gui, HostState &host) {
         draw_emulation_menu(gui, host);
         draw_debug_menu(gui.debug_menu);
         draw_config_menu(gui, host);
-        draw_utilities_menu(gui, host);
         draw_controls_menu(gui.controls_menu);
         draw_help_menu(gui.help_menu);
 

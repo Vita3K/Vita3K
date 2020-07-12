@@ -437,8 +437,6 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, 
         return ModuleLoadFailed;
     }
 
-    gui::init_app_background(gui, host);
-
     if (!host.cfg.show_gui)
         host.display.imgui_render = false;
 

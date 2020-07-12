@@ -38,21 +38,17 @@ namespace gui {
 void delete_app(GuiState &gui, HostState &host) {
     const fs::path app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
-    for (const auto &app : gui.app_selector.apps) {
-        const auto app_index = std::find_if(gui.app_selector.apps.begin(), gui.app_selector.apps.end(), [&app](const App &a) {
-            return a.app_ver == app.app_ver && a.title == app.title && a.title_id == app.title_id;
-        });
+    const auto app_index = std::find_if(gui.app_selector.apps.begin(), gui.app_selector.apps.end(), [&](const App &a) {
+        return a.title == host.app_title && a.title_id == host.io.title_id;
+    });
 
-        if (host.io.title_id == app.title_id) {
-            LOG_INFO_IF(fs::remove_all(app_path), "Application successfully deleted '{} [{}]'.", app.title_id, app.title);
+    LOG_INFO_IF(fs::remove_all(app_path), "Application successfully deleted '{} [{}]'.", host.io.title_id, host.app_title);
 
-            if (!fs::exists(app_path)) {
-                gui.delete_app_icon = true;
-                gui.app_selector.apps.erase(app_index);
-            } else
-                LOG_ERROR("Failed to delete '{} [{}]'.", app.title_id, app.title);
-        }
-    }
+    if (!fs::exists(app_path)) {
+        gui.delete_app_icon = true;
+        gui.app_selector.apps.erase(app_index);
+    } else
+        LOG_ERROR("Failed to delete '{} [{}]'.", host.io.title_id, host.app_title);
 }
 
 static std::map<double, std::string> update_history_infos;
@@ -142,7 +138,6 @@ static const char OS_PREFIX[] = "xdg-open ";
 #endif
 
 static std::string context_dialog;
-static auto check_savedata_and_shaderlog = false;
 static auto information = false;
 
 void draw_app_context_menu(GuiState &gui, HostState &host) {
@@ -154,60 +149,65 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.3f);
-        if (ImGui::MenuItem("Boot", host.app_title.c_str()))
-            gui.app_selector.selected_title_id = host.io.title_id;
-        if (ImGui::MenuItem("Check App Compatibility")) {
-            const std::string compat_url = host.io.title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + host.io.title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
-            system((OS_PREFIX + compat_url).c_str());
-        }
-        if (ImGui::BeginMenu("Copy App Info")) {
-            if (ImGui::MenuItem("ID and Name")) {
-                ImGui::LogToClipboard();
-                ImGui::LogText("%s [%s]", host.io.title_id.c_str(), host.app_title.c_str());
-                ImGui::LogFinish();
+        if (ImGui::MenuItem("Boot", host.app_short_title.c_str()))
+            run_app(gui, host);
+        if (host.io.title_id.find("NPXS") == std::string::npos) {
+            if (ImGui::MenuItem("Check App Compatibility")) {
+                const std::string compat_url = host.io.title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + host.io.title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
+                system((OS_PREFIX + compat_url).c_str());
             }
-            if (ImGui::MenuItem("ID")) {
-                ImGui::LogToClipboard();
-                ImGui::LogText("%s", host.io.title_id.c_str());
-                ImGui::LogFinish();
+            if (ImGui::BeginMenu("Copy App Info")) {
+                if (ImGui::MenuItem("ID and Name")) {
+                    ImGui::LogToClipboard();
+                    ImGui::LogText("%s [%s]", host.io.title_id.c_str(), host.app_title.c_str());
+                    ImGui::LogFinish();
+                }
+                if (ImGui::MenuItem("ID")) {
+                    ImGui::LogToClipboard();
+                    ImGui::LogText("%s", host.io.title_id.c_str());
+                    ImGui::LogFinish();
+                }
+                if (ImGui::MenuItem("Name")) {
+                    ImGui::LogToClipboard();
+                    ImGui::LogText("%s", host.app_title.c_str());
+                    ImGui::LogFinish();
+                }
+                ImGui::EndMenu();
             }
-            if (ImGui::MenuItem("Name")) {
-                ImGui::LogToClipboard();
-                ImGui::LogText("%s", host.app_title.c_str());
-                ImGui::LogFinish();
+            if (ImGui::BeginMenu("Open Folder")) {
+                if (ImGui::MenuItem("Application"))
+                    system((OS_PREFIX + APP_PATH.string()).c_str());
+                if (fs::exists(DLC_PATH) && ImGui::MenuItem("Dlc"))
+                    system((OS_PREFIX + DLC_PATH.string()).c_str());
+                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
+                    system((OS_PREFIX + SAVE_DATA_PATH.string()).c_str());
+                ImGui::EndMenu();
             }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Open Folder")) {
-            if (ImGui::MenuItem("Application"))
-                system((OS_PREFIX + APP_PATH.string()).c_str());
-            if (fs::exists(DLC_PATH) && ImGui::MenuItem("Dlc"))
-                system((OS_PREFIX + DLC_PATH.string()).c_str());
-            if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
-                system((OS_PREFIX + SAVE_DATA_PATH.string()).c_str());
-            ImGui::EndMenu();
-        }
-        if (!host.cfg.show_live_area_screen && ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
-            init_live_area(gui, host);
-        if (ImGui::BeginMenu("Delete")) {
-            if (ImGui::MenuItem("Application"))
-                context_dialog = "app";
-            if (fs::exists(DLC_PATH) && ImGui::MenuItem("DLC"))
-                fs::remove_all(DLC_PATH);
-            if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
-                context_dialog = "save";
-            if (ImGui::MenuItem("Shader Log")) {
-                fs::remove_all(SHADER_LOG_PATH);
+            if (!host.cfg.show_live_area_screen && ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
+                init_live_area(gui, host);
+            if (ImGui::BeginMenu("Delete")) {
+                if (ImGui::MenuItem("Application"))
+                    context_dialog = "app";
+                if (fs::exists(DLC_PATH) && ImGui::MenuItem("DLC"))
+                    fs::remove_all(DLC_PATH);
+                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
+                    context_dialog = "save";
+                if (ImGui::MenuItem("Shader Log")) {
+                    fs::remove_all(SHADER_LOG_PATH);
+                }
+                ImGui::EndMenu();
             }
-            ImGui::EndMenu();
+            if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem("Update History")) {
+                if (get_update_history(gui, host))
+                    context_dialog = "history";
+                else
+                    LOG_WARN("Patch note Error for title: {}", host.io.title_id);
+            }
         }
-        if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem("Update History")) {
-            if (get_update_history(gui, host))
-                context_dialog = "history";
-            else
-                LOG_WARN("Patch note Error for title: {}", host.io.title_id);
+        if (ImGui::MenuItem("Information", nullptr, &information)) {
+            if (host.io.title_id.find("NPXS") == std::string::npos)
+                get_app_info(gui, host);
         }
-        ImGui::MenuItem("Information", nullptr, &information) && get_app_info(gui, host);
         ImGui::EndPopup();
     }
 
@@ -216,7 +216,8 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
     const auto WINDOW_SIZE = ImVec2(756.0f * scal.x, 436.0f * scal.y);
 
     const auto BUTTON_SIZE = ImVec2(320.f * scal.x, 46.f * scal.y);
-    const auto ICON_SIZE = ImVec2(100.f * scal.x, 100.f * scal.y);
+    const auto PUPOP_ICON_SIZE = ImVec2(96.f * scal.x, 96.f * scal.y);
+    const auto INFO_ICON_SIZE = ImVec2(128.f * scal.x, 128.f * scal.y);
 
     // Context Dialog
     if (!context_dialog.empty()) {
@@ -226,7 +227,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
         ImGui::SetNextWindowBgAlpha(0.999f);
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
-        ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, false, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
         // Update History
         if (context_dialog == "history") {
@@ -247,39 +248,33 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
         } else {
             // Delete Data
             if (gui.app_selector.icons.find(host.io.title_id) != gui.app_selector.icons.end()) {
-                ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ICON_SIZE.x / 2.f), 25.f * scal.y));
-                ImGui::Image(gui.app_selector.icons[host.io.title_id], ICON_SIZE);
+                ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), 24.f * scal.y));
+                ImGui::Image(gui.app_selector.icons[host.io.title_id], PUPOP_ICON_SIZE);
             }
-            ImGui::SetWindowFontScale(1.5f * scal.x);
+            ImGui::SetWindowFontScale(1.6f * scal.x);
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(host.app_short_title.c_str()).x / 2.f));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_short_title.c_str());
-            ImGui::SetWindowFontScale(1.2f * scal.x);
-            std::string ask_delete = context_dialog == "save" ? "Do you really want to delete this save data for this application?" : "Do you really want to delete this application?";
-            ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete.c_str()).x / 2, (WINDOW_SIZE.y / 2) + 10));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", ask_delete.c_str());
-            if (context_dialog == "app") {
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Deleting a application may take a while\ndepending on its size and your hardware.");
-                std::string checkbox_delete = "Also delete save data and shader log for this application?";
-                ImGui::SetCursorPosX((WINDOW_SIZE.x / 2) - (ImGui::CalcTextSize(checkbox_delete.c_str()).x / 2) - 36.f);
-                ImGui::Checkbox(checkbox_delete.c_str(), &check_savedata_and_shaderlog);
-            }
             ImGui::SetWindowFontScale(1.4f * scal.x);
-            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * scal.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.0f * scal.y)));
+            std::string ask_delete = context_dialog == "save" ? "Do you want to delete this saved data?" : "This application and all related data, including saved data, will be deleted.";
+            ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete.c_str(), 0, false, WINDOW_SIZE.x - (108.f * scal.x)).x / 2, (WINDOW_SIZE.y / 2) + 10));
+            ImGui::PushTextWrapPos(WINDOW_SIZE.x - (54.f * scal.x));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", ask_delete.c_str());
+            ImGui::PopTextWrapPos();
+            if ((context_dialog == "app") && ImGui::IsItemHovered())
+                ImGui::SetTooltip("Deleting a application may take a while\ndepending on its size and your hardware.");
+            ImGui::SetWindowFontScale(1.4f * scal.x);
+            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * scal.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * scal.y)));
             if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
-                check_savedata_and_shaderlog = false;
                 context_dialog.clear();
             }
             ImGui::SameLine();
-            ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 + 20.f);
+            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * scal.x));
         }
         if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
             if (context_dialog == "app") {
-                if (check_savedata_and_shaderlog) {
-                    fs::remove_all(SAVE_DATA_PATH);
-                    fs::remove_all(SHADER_LOG_PATH);
-                    check_savedata_and_shaderlog = false;
-                }
+                fs::remove_all(DLC_PATH);
+                fs::remove_all(SAVE_DATA_PATH);
+                fs::remove_all(SHADER_LOG_PATH);
                 delete_app(gui, host);
             } else if (context_dialog == "save")
                 fs::remove_all(SAVE_DATA_PATH);
@@ -300,32 +295,32 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
         if (ImGui::Button("X", ImVec2(40.f * scal.x, 40.f * scal.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
             information = false;
         if (gui.app_selector.icons.find(host.io.title_id) != gui.app_selector.icons.end()) {
-            ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (ICON_SIZE.x / 2.f), 40.f * scal.y));
-            ImGui::Image(gui.app_selector.icons[host.io.title_id], ICON_SIZE);
+            ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * scal.y));
+            ImGui::Image(gui.app_selector.icons[host.io.title_id], INFO_ICON_SIZE);
         }
-        const auto calc_name = ImGui::CalcTextSize("Name  ");
-        const auto calc_title = ImGui::CalcTextSize(host.app_title.c_str(), 0, false, 294.f * scal.x).y;
-        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - calc_name.x, ((ICON_SIZE.y * 2.4f) + (calc_title / 2.f)) - ((calc_title / 2.f) + (calc_name.y / 2.f))));
+        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize("Name  ").x, INFO_ICON_SIZE.y + (50.f * scal.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "Name ");
-        ImGui::SetCursorPos(ImVec2(display_size.x / 2.f, ((ICON_SIZE.y * 2.4f) + (calc_title / 2.f)) - calc_title));
-        ImGui::PushTextWrapPos(display_size.x - (186.f * scal.x));
+        ImGui::SameLine();
+        ImGui::PushTextWrapPos(display_size.x - (85.f * scal.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_title.c_str());
         ImGui::PopTextWrapPos();
-        ImGui::Spacing();
-        ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Trophy Earning  ").x);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Trophy Earning  %s", app_info["trophy"].c_str());
-        ImGui::Spacing();
-        ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Parental Controls  ").x);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls  Level %d", *reinterpret_cast<const uint16_t *>(app_info["parental"].c_str()));
-        ImGui::Spacing();
-        ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize("Updated  ").x));
-        ImGui::TextColored(GUI_COLOR_TEXT, "Updated  %s", app_info["updated"].c_str());
-        ImGui::Spacing();
-        ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Size  ").x);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Size  %s MB", app_info["size"].c_str());
-        ImGui::Spacing();
-        ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Version  ").x);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Version  %s", host.app_version.c_str());
+        if (host.io.title_id.find("NPXS") == std::string::npos) {
+            ImGui::Spacing();
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Trophy Earning  ").x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "Trophy Earning  %s", app_info["trophy"].c_str());
+            ImGui::Spacing();
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Parental Controls  ").x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls  Level %d", *reinterpret_cast<const uint16_t *>(app_info["parental"].c_str()));
+            ImGui::Spacing();
+            ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize("Updated  ").x));
+            ImGui::TextColored(GUI_COLOR_TEXT, "Updated  %s", app_info["updated"].c_str());
+            ImGui::Spacing();
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Size  ").x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "Size  %s MB", app_info["size"].c_str());
+            ImGui::Spacing();
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Version  ").x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "Version  %s", host.app_version.c_str());
+        }
         ImGui::End();
     }
 }
