@@ -614,6 +614,10 @@ static void delete_cpu_context(CPUContext *ctx) {
 }
 
 void save_context(CPUState &state, CPUContext &ctx) {
+    auto err = uc_context_alloc(state.uc.get(), &ctx.context);
+    assert(err == UC_ERR_OK);
+    err = uc_context_save(state.uc.get(), ctx.context);
+    assert(err == UC_ERR_OK);
     for (auto i = 0; i < 16; i++) {
         ctx.cpu_registers[i] = read_reg(state, i);
     }
@@ -636,4 +640,6 @@ void load_context(CPUState &state, CPUContext &ctx) {
     write_pc(state, ctx.pc);
     write_lr(state, ctx.lr);
     write_sp(state, ctx.sp);
+    auto err = uc_context_restore(state.uc.get(), ctx.context);
+    assert(err == UC_ERR_OK);
 }

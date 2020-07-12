@@ -26,8 +26,10 @@
 
 struct CPUState;
 struct MemState;
+struct uc_context;
 
 struct CPUContext {
+    uc_context *context;
     uint32_t cpu_registers[16];
     uint32_t sp;
     uint32_t pc;
