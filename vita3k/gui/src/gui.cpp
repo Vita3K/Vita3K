@@ -335,10 +335,11 @@ void init(GuiState &gui, HostState &host) {
     if (!host.cfg.user_backgrounds.empty())
         init_user_backgrounds(gui, host);
 
-    if (!host.cfg.theme_content_id.empty())
+    if (!host.cfg.theme_content_id.empty()) {
         init_theme(gui, host, host.cfg.theme_content_id);
-
-    init_apps_icon(gui, host, gui.app_selector.sys_apps);
+        init_theme_apps_icon(gui, host, host.cfg.theme_content_id);
+    } else
+        init_apps_icon(gui, host, gui.app_selector.sys_apps);
 
     if (!host.cfg.start_background.empty()) {
         if (host.cfg.start_background == "image")

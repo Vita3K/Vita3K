@@ -74,7 +74,7 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
     std::string src_start;
 
     const auto THEME_PATH{ fs::path(host.pref_path) / "ux0/theme" / content_id };
-    param.clear();
+    param.clear(), gui.information_bar_color.clear();
     if (content_id != "default") {
         const auto THEME_PATH_XML{ THEME_PATH / "theme.xml" };
         pugi::xml_document doc;
@@ -138,8 +138,8 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
         case 0:
             break;
         case 1:
-            date["date"].y = 478.f;
-            date["clock"].y = 446.f;
+            date["date"].y = 468.f;
+            date["clock"].y = 436.f;
             break;
         case 2:
             date["date"].x = 50.f;
@@ -204,7 +204,57 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     return gui.start_background;
 }
 
-bool init_theme(GuiState &gui, HostState &host, std::string &content_id) {
+void init_theme_apps_icon(GuiState &gui, HostState &host, const std::string &content_id) {
+    if (content_id != "default") {
+        std::map<std::string, std::string> theme_icon_name;
+        const auto theme_path{ fs::path(host.pref_path) / "ux0/theme" / content_id };
+
+        const auto theme_path_xml{ theme_path / "theme.xml" };
+        pugi::xml_document doc;
+
+        if (doc.load_file(theme_path_xml.c_str())) {
+            const auto theme = doc.child("theme");
+
+            // Theme Apps Icon
+            if (!theme.child("HomeProperty").child("m_trophy").child("m_iconFilePath").text().empty())
+                theme_icon_name["NPXS10008"] = theme.child("HomeProperty").child("m_trophy").child("m_iconFilePath").text().as_string();
+            if (!theme.child("HomeProperty").child("m_settings").child("m_iconFilePath").text().empty())
+                theme_icon_name["NPXS10015"] = theme.child("HomeProperty").child("m_settings").child("m_iconFilePath").text().as_string();
+
+            if (theme_icon_name["NPXS10008"].empty() && theme_icon_name["NPXS10015"].empty()) {
+                init_apps_icon(gui, host, gui.app_selector.sys_apps);
+                return;
+            }
+
+            for (const auto &icon : theme_icon_name) {
+                int32_t width = 0;
+                int32_t height = 0;
+                vfs::FileBuffer buffer;
+
+                const auto title_id = icon.first;
+                const auto name = icon.second;
+
+                vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + name);
+
+                if (buffer.empty()) {
+                    LOG_WARN("Name: '{}', Not found icon for content id: {}.", name, content_id);
+                    continue;
+                }
+                stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+                if (!data) {
+                    LOG_ERROR("Name: '{}', Invalid icon for content id: {}.", name, content_id);
+                    continue;
+                }
+
+                gui.app_selector.icons[title_id].init(gui.imgui_state.get(), data, width, height);
+                stbi_image_free(data);
+            }
+        }
+    } else
+        init_apps_icon(gui, host, gui.app_selector.sys_apps);
+}
+
+bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
     std::vector<std::string> theme_bg_name;
 
     gui.current_theme_bg = 0;
@@ -226,29 +276,29 @@ bool init_theme(GuiState &gui, HostState &host, std::string &content_id) {
                     gui.theme_backgrounds.push_back({});
                 }
             }
+
+            for (auto pos = 0; pos < theme_bg_name.size(); pos++) {
+                int32_t width = 0;
+                int32_t height = 0;
+                vfs::FileBuffer buffer;
+
+                vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + theme_bg_name[pos]);
+
+                if (buffer.empty()) {
+                    LOG_WARN("background, Name: '{}', Not found for content id: {}.", theme_bg_name[pos], content_id);
+                    continue;
+                }
+                stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+                if (!data) {
+                    LOG_ERROR("Invalid Background for title: {}.", content_id);
+                    continue;
+                }
+
+                gui.theme_backgrounds[pos].init(gui.imgui_state.get(), data, width, height);
+                stbi_image_free(data);
+            }
         } else
             LOG_ERROR("Theme not found for Content ID: {}, in path: {}", content_id, theme_path_xml.string());
-    }
-
-    for (auto pos = 0; pos < theme_bg_name.size(); pos++) {
-        int32_t width = 0;
-        int32_t height = 0;
-        vfs::FileBuffer buffer;
-
-        vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + theme_bg_name[pos]);
-
-        if (buffer.empty()) {
-            LOG_WARN("background, Name: '{}', Not found for content id: {}.", theme_bg_name[pos], content_id);
-            continue;
-        }
-        stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-        if (!data) {
-            LOG_ERROR("Invalid Background for title: {}.", content_id);
-            continue;
-        }
-
-        gui.theme_backgrounds[pos].init(gui.imgui_state.get(), data, width, height);
-        stbi_image_free(data);
     }
 
     return content_id != "default" ? !gui.theme_backgrounds.empty() : true;
@@ -584,6 +634,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                 if (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
                     if (init_theme(gui, host, selected)) {
                         host.cfg.theme_content_id = selected;
+                        init_theme_apps_icon(gui, host, selected);
                         init_theme_start_background(gui, host, selected);
                         if (!gui.theme_backgrounds.empty())
                             host.cfg.use_theme_background = true;
@@ -814,8 +865,9 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     }
     ImGui::EndChild();
 
-    ImGui::SetCursorPos(ImVec2(5.f, display_size.y - (94.f * SCAL.y)));
-    if (ImGui::Button("Back", ImVec2(80.f * SCAL.x, 50.f * SCAL.y))) {
+    ImGui::SetWindowFontScale(1.00f);
+    ImGui::SetCursorPos(ImVec2(6.f, display_size.y - (84.f * SCAL.y)));
+    if (ImGui::Button("Back", ImVec2(64.f * SCAL.x, 40.f * SCAL.y))) {
         if (!menu.empty()) {
             if (!selected.empty()) {
                 if (!popup.empty())
@@ -833,8 +885,8 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     }
 
     if (!selected.empty() && (selected != "default")) {
-        ImGui::SetCursorPos(ImVec2(display_size.x - (60.f * SCAL.x), display_size.y - (94.f * SCAL.y)));
-        if ((popup != "information") && ImGui::Button("...", ImVec2(60.f * SCAL.x, 50.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
+        ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCAL.x), display_size.y - (84.f * SCAL.y)));
+        if ((popup != "information") && ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...")) {
             if (ImGui::MenuItem("Information"))
