@@ -19,9 +19,11 @@
 
 #include <kernel/state.h>
 #include <mem/ptr.h>
+#include <vector>
 //#include <psp2/types.h>
 
 #include <functional>
+#include <list>
 #include <memory>
 
 struct CPUState;
@@ -37,5 +39,5 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
 Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, KernelState &kernel, MemState &mem);
 bool run_thread(ThreadState &thread, bool callback);
 bool run_callback(ThreadState &thread, Address &pc, Address &data);
-uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp, bool callback = false);
+uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, const std::list<uint32_t> &args);
 void raise_waiting_threads(ThreadState *thread);

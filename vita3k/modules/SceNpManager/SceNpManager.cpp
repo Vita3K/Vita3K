@@ -60,10 +60,8 @@ EXPORT(int, sceNpCheckCallback) {
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     for (auto &callback : host.np.cbs) {
-        Ptr<void> argp = Ptr<void>(callback.second.data);
-        run_on_current(*thread, Ptr<void>(callback.second.pc), host.np.state, argp);
+        run_on_current(*thread, Ptr<void>(callback.second.pc), { static_cast<uint32_t>(host.np.state), 0, callback.second.data });
     }
-
     return STUBBED("Stub");
 }
 

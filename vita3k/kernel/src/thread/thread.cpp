@@ -261,13 +261,23 @@ bool run_callback(ThreadState &thread, Address &pc, Address &data) {
     return run_thread(thread, true);
 }
 
-uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp, bool callback) {
+uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, const std::list<uint32_t> &args) {
+    std::vector<uint32_t> args_vector{ std::begin(args), std::end(args) };
     std::unique_lock<std::mutex> lock(thread.mutex);
     stop(*thread.cpu);
-    write_reg(*thread.cpu, 0, arglen);
-    write_reg(*thread.cpu, 1, argp.address());
-    write_pc(*thread.cpu, entry_point.address());
     lock.unlock();
-    run_thread(thread, callback);
-    return read_reg(*thread.cpu, 0);
+    CPUContext ctx;
+    save_context(*thread.cpu, ctx);
+    assert(args_vector.size() < 4); // TODO support this by using stack
+    for (int i = 0; i < args_vector.size(); ++i) {
+        write_reg(*thread.cpu, i, args_vector[i]);
+    }
+    write_pc(*thread.cpu, entry_point.address());
+    run(*thread.cpu, true, entry_point.address());
+
+    load_context(*thread.cpu, ctx);
+    auto out = read_reg(*thread.cpu, 0);
+
+    run_thread(thread, false);
+    return out;
 }

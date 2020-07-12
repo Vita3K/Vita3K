@@ -185,12 +185,11 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
             if (lib_entry_point) {
                 LOG_DEBUG("Running module_start of module: {}", module_name);
 
-                Ptr<void> argp = Ptr<void>();
                 auto inject = create_cpu_dep_inject(host);
                 const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
                     static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), inject, nullptr);
                 const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
-                const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
+                const auto ret = run_on_current(*module_thread, lib_entry_point, { 0, 0 });
 
                 module_thread->to_do = ThreadToDo::exit;
                 module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?

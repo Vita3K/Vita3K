@@ -20,6 +20,8 @@
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
 
+#include <kernel/functions.h>
+
 #define SCE_NETCTL_INFO_SSID_LEN_MAX 32
 #define SCE_NETCTL_INFO_CONFIG_NAME_LEN_MAX 64
 
@@ -115,9 +117,9 @@ EXPORT(int, sceNetCtlCheckCallback) {
     host.net.state = 0;
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    for (auto &callback : host.net.cbs) {
-        Ptr<void> argp = Ptr<void>(callback.second.data);
-        run_on_current(*thread, Ptr<void>(callback.second.pc), host.net.state, argp);
+    auto cbs = host.net.cbs;
+    for (auto &callback : cbs) {
+        run_on_current(*thread, Ptr<void>(callback.second.pc), { 1, callback.second.data });
     }
     return STUBBED("Stub");
 }

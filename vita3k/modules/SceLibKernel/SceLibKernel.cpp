@@ -1250,7 +1250,7 @@ EXPORT(int, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *optio
     return mod_id;
 }
 
-EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, int flags, SceKernelLMOption *option, int *status) {
+EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Address argp, int flags, SceKernelLMOption *option, int *status) {
     SceUID mod_id;
     Ptr<const void> entry_point;
     SceKernelModuleInfoPtr module;
@@ -1265,7 +1265,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 
-    uint32_t result = run_on_current(*thread, entry_point, args, argp);
+    uint32_t result = run_on_current(*thread, entry_point, { static_cast<uint32_t>(args), argp });
     char *module_name = module->module_name;
 
     LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(result));
