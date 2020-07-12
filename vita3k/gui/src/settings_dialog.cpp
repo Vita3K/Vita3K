@@ -296,7 +296,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             if (ImGui::Button("Reset theme")) {
                 host.cfg.theme_content_id.clear();
+                if (host.cfg.start_background == "theme") {
+                    host.cfg.start_background.clear();
+                    gui.start_background = {};
+                }
                 gui.theme_backgrounds.clear();
+                init_apps_icon(gui, host, gui.app_selector.sys_apps);
             }
             ImGui::SameLine();
             if (!gui.theme_backgrounds.empty())

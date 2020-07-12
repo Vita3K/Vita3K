@@ -52,6 +52,7 @@ struct App {
 
 struct AppsSelector {
     std::vector<App> apps;
+    std::vector<App> sys_apps;
     std::map<std::string, ImGui_Texture> icons;
     std::string selected_title_id;
     bool is_app_list_sorted{ false };
@@ -65,15 +66,9 @@ struct AppsSelector {
 struct LiveAreaState {
     bool live_area_screen = false;
     bool manual = false;
-};
-
-struct ThemesState {
-    bool start_screen = false;
     bool theme_background = false;
-};
-
-struct TrophyState {
     bool trophy_collection = false;
+    bool start_screen = false;
 };
 
 struct FileMenuState {
@@ -128,8 +123,6 @@ struct GuiState {
     gui::ControlMenuState controls_menu;
     gui::HelpMenuState help_menu;
     gui::LiveAreaState live_area;
-    gui::ThemesState theme;
-    gui::TrophyState trophy;
     gui::AppsSelector app_selector;
 
     std::string app_ver;

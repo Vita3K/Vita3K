@@ -17,7 +17,11 @@
 
 #include "private.h"
 
+#include <config/functions.h>
+
 #include <gui/functions.h>
+
+#include <io/VitaIoDevice.h>
 
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -40,7 +44,8 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
     if (gui.app_selector.apps.empty())
         return false;
 
-    init_icons(gui, host);
+    init_apps_icon(gui, host, gui.app_selector.apps);
+    init_apps_icon(gui, host, gui.app_selector.sys_apps);
 
     std::sort(gui.app_selector.apps.begin(), gui.app_selector.apps.end(), [](const App &lhs, const App &rhs) {
         return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
@@ -59,6 +64,35 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
     LOG_INFO("{} {}", app_list_size, change_app_list);
 
     return true;
+}
+
+void load_app(GuiState &gui, HostState &host) {
+    if (host.cfg.show_live_area_screen) {
+        init_live_area(gui, host);
+        gui.live_area.live_area_screen = true;
+    } else
+        run_app(gui, host);
+}
+
+void run_app(GuiState &gui, HostState &host) {
+    init_app_background(gui, host);
+
+    if (host.io.title_id.find("NPXS") == std::string::npos)
+        gui.app_selector.selected_title_id = host.io.title_id;
+    else {
+        if (host.io.title_id == "NPXS10008") {
+            gui.live_area.trophy_collection = true;
+            get_trophy_np_com_id_list(gui, host);
+        } else {
+            gui.live_area.theme_background = true;
+            get_themes_list(gui, host);
+        }
+    }
+
+    if (host.cfg.overwrite_config) {
+        host.cfg.last_app = host.io.title_id.c_str();
+        config::serialize_config(host.cfg, host.cfg.config_path);
+    }
 }
 
 inline uint64_t current_time() {
@@ -90,12 +124,12 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             while (last_time["start"] + host.cfg.delay_start < current_time()) {
                 last_time["start"] += host.cfg.delay_start;
                 last_time["home"] = 0;
-                gui.theme.start_screen = true;
+                gui.live_area.start_screen = true;
             }
         }
     }
 
-    if (!gui.theme.start_screen && (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty())) {
+    if (!gui.live_area.start_screen && (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty())) {
         if (last_time["home"] == 0)
             last_time["home"] = current_time();
 
@@ -118,10 +152,9 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         }
     }
 
-    if (host.cfg.use_theme_background && !gui.theme_backgrounds.empty())
-        ImGui::GetBackgroundDrawList()->AddImage(gui.theme_backgrounds[gui.current_theme_bg], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
-    else if (!gui.user_backgrounds.empty())
-        ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+    if ((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty())
+        ImGui::GetBackgroundDrawList()->AddImage((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]],
+            ImVec2(0.f, MENUBAR_HEIGHT), display_size);
 
     if (gui.delete_app_icon) {
         if (gui.app_selector.icons.find(host.io.title_id) != gui.app_selector.icons.end())
@@ -307,65 +340,69 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         }
         ImGui::SetWindowFontScale(!gui.live_area_font_data.empty() ? 0.82f * scal.x : 1.f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-        for (const auto &app : gui.app_selector.apps) {
-            bool selected = false;
-            if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
-                continue;
-            if (!fs::exists(fs::path(host.pref_path) / "ux0/app" / app.title_id)) {
-                host.io.title_id = app.title_id;
-                LOG_ERROR("Application not found: {} [{}], deleting the entry for it.", app.title_id, app.title);
-                delete_app(gui, host);
-            }
-            const auto POS_ICON = ImGui::GetCursorPosY();
-            if (gui.app_selector.icons.find(app.title_id) != gui.app_selector.icons.end()) {
+        const auto display_app = [&](const std::vector<gui::App> &app_list) {
+            for (const auto &app : app_list) {
+                bool selected = false;
+                if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
+                    continue;
+                if (app.title_id.find("NPXS") == std::string::npos) {
+                    if (!fs::exists(fs::path(host.pref_path) / "ux0/app" / app.title_id)) {
+                        host.app_title = app.title;
+                        host.io.title_id = app.title_id;
+                        LOG_ERROR("Application not found: {} [{}], deleting the entry for it.", app.title_id, app.title);
+                        delete_app(gui, host);
+                    }
+                }
+                const auto POS_ICON = ImGui::GetCursorPosY();
+                if (gui.app_selector.icons.find(app.title_id) != gui.app_selector.icons.end()) {
+                    if (host.cfg.apps_list_grid)
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f));
+                    ImGui::Image(gui.app_selector.icons[app.title_id], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
+                }
+                const auto POS_STITLE = ImVec2(ImGui::GetCursorPosX() + (30.f * scal.x), ImGui::GetCursorPosY());
+                ImGui::SetCursorPosY(POS_ICON);
                 if (host.cfg.apps_list_grid)
                     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f));
-                ImGui::Image(gui.app_selector.icons[app.title_id], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
+                else
+                    ImGui::SetCursorPosY(POS_ICON);
+                ImGui::PushID(app.title_id.c_str());
+                ImGui::Selectable("##icon", &selected, host.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
+                ImGui::PopID();
+                if (ImGui::IsItemHovered()) {
+                    host.app_version = app.app_ver;
+                    host.app_short_title = app.stitle;
+                    host.app_title = app.title;
+                    host.io.title_id = app.title_id;
+                }
+                if (host.io.title_id == app.title_id)
+                    draw_app_context_menu(gui, host);
+                if (!host.cfg.apps_list_grid) {
+                    ImGui::NextColumn();
+                    ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
+                    ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                    ImGui::NextColumn();
+                    ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                    ImGui::NextColumn();
+                    ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                    ImGui::NextColumn();
+                    ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                    ImGui::PopStyleVar();
+                    ImGui::NextColumn();
+                } else {
+                    ImGui::SetCursorPos(ImVec2(POS_STITLE.x + ((GRID_ICON_SIZE.x / 2.f) - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x).x / 2.f)), POS_STITLE.y));
+                    ImGui::PushTextWrapPos(POS_STITLE.x + GRID_ICON_SIZE.x);
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", app.stitle.c_str());
+                    ImGui::PopTextWrapPos();
+                    ImGui::NextColumn();
+                }
+                if (selected)
+                    load_app(gui, host);
             }
-            const auto POS_STITLE = ImVec2(ImGui::GetCursorPosX() + (30.f * scal.x), ImGui::GetCursorPosY());
-            ImGui::SetCursorPosY(POS_ICON);
-            if (host.cfg.apps_list_grid)
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f));
-            else
-                ImGui::SetCursorPosY(POS_ICON);
-            ImGui::PushID(app.title_id.c_str());
-            ImGui::Selectable("##icon", &selected, host.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
-            ImGui::PopID();
-            if (ImGui::IsItemHovered()) {
-                host.app_version = app.app_ver;
-                host.app_short_title = app.stitle;
-                host.app_title = app.title;
-                host.io.title_id = app.title_id;
-            }
-            if (host.io.title_id == app.title_id)
-                draw_app_context_menu(gui, host);
-            if (!host.cfg.apps_list_grid) {
-                ImGui::NextColumn();
-                ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-                ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                ImGui::NextColumn();
-                ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                ImGui::NextColumn();
-                ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                ImGui::NextColumn();
-                ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                ImGui::PopStyleVar();
-                ImGui::NextColumn();
-            } else {
-                ImGui::SetCursorPos(ImVec2(POS_STITLE.x + ((GRID_ICON_SIZE.x / 2.f) - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x).x / 2.f)), POS_STITLE.y));
-                ImGui::PushTextWrapPos(POS_STITLE.x + GRID_ICON_SIZE.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", app.title.c_str());
-                ImGui::PopTextWrapPos();
-                ImGui::NextColumn();
-            }
-            if (selected) {
-                if (host.cfg.show_live_area_screen) {
-                    init_live_area(gui, host);
-                    gui.live_area.live_area_screen = true;
-                } else
-                    gui.app_selector.selected_title_id = app.title_id;
-            }
-        }
+        };
+        // System Applications
+        display_app(gui.app_selector.sys_apps);
+        // User Applications
+        display_app(gui.app_selector.apps);
         ImGui::PopStyleColor();
         ImGui::Columns(1);
         ImGui::EndChild();
