@@ -45,7 +45,10 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
         return false;
 
     init_apps_icon(gui, host, gui.app_selector.apps);
-    init_apps_icon(gui, host, gui.app_selector.sys_apps);
+    if (host.cfg.theme_content_id.empty())
+        init_apps_icon(gui, host, gui.app_selector.sys_apps);
+    else
+        init_theme_apps_icon(gui, host, host.cfg.theme_content_id);
 
     std::sort(gui.app_selector.apps.begin(), gui.app_selector.apps.end(), [](const App &lhs, const App &rhs) {
         return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
