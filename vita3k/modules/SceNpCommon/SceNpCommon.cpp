@@ -57,8 +57,13 @@ EXPORT(int, sceNpAuthTerm) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpCmpNpId) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpCmpNpId, np::NpId *npid1, np::NpId *npid2) {
+    STUBBED("assume single user");
+    auto username = host.cfg.online_id[host.cfg.user_id];
+    if (std::string(npid1->online_id.name) == username && std::string(npid2->online_id.name) == username) {
+        return 0;
+    }
+    return 0x80550605; // INVALID NP ID
 }
 
 EXPORT(int, sceNpCmpNpIdInOrder) {
