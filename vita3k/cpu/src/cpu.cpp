@@ -46,7 +46,7 @@ struct CPUState {
     CallSVC call_svc;
     ResolveNIDName resolve_nid_name;
     DisasmState disasm;
-    IsWatchMemoryAddr is_watch_memory_addr;
+    GetWatchMemoryAddr get_watch_memory_addr;
     UnicornPtr uc;
     uc_hook memory_read_hook = 0;
     uc_hook memory_write_hook = 0;
@@ -139,10 +139,10 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
     log_stack_frames(state);
 }
 
-static void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu) {
+static void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset) {
     const char *const name = mem_name(address, mem);
     auto pc = read_pc(cpu);
-    LOG_TRACE("{} ({}): {} {} bytes, address {} ( {} ), value {} at {}", log_hex((uint64_t)uc), cpu.thread_id, type, size, log_hex(address), name, log_hex(value), log_hex(pc));
+    LOG_TRACE("{} ({}): {} {} bytes, address {} + {} ({}, {}), value {} at {}", log_hex((uint64_t)uc), cpu.thread_id, type, size, log_hex(address), log_hex(offset), log_hex(address + offset), name, log_hex(value), log_hex(pc));
 }
 
 static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -150,18 +150,20 @@ static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int siz
 
     CPUState &state = *static_cast<CPUState *>(user_data);
     MemState &mem = *state.mem;
-    if (state.is_watch_memory_addr(address)) {
+    auto start = state.get_watch_memory_addr(address);
+    if (start) {
         memcpy(&value, Ptr<const void>(static_cast<Address>(address)).get(mem), size);
-        log_memory_access(uc, "Read", static_cast<Address>(address), size, value, mem, state);
+        log_memory_access(uc, "Read", start, size, value, mem, state, address - start);
     }
 }
 
 static void write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     CPUState &state = *static_cast<CPUState *>(user_data);
     MemState &mem = *state.mem;
-    if (state.is_watch_memory_addr(address)) {
+    auto start = state.get_watch_memory_addr(address);
+    if (start) {
         MemState &mem = *state.mem;
-        log_memory_access(uc, "Write", static_cast<Address>(address), size, value, mem, state);
+        log_memory_access(uc, "Write", start, size, value, mem, state, address - start);
     }
 }
 
@@ -278,7 +280,7 @@ CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, MemState &mem, CP
     state->mem = &mem;
     state->call_svc = inject.call_svc;
     state->resolve_nid_name = inject.resolve_nid_name;
-    state->is_watch_memory_addr = inject.is_watch_memory_addr;
+    state->get_watch_memory_addr = inject.get_watch_memory_addr;
     state->thread_id = thread_id;
     state->module_regions = inject.module_regions;
     if (!init(state->disasm)) {
