@@ -17,141 +17,44 @@
 
 #include "SceNet.h"
 
+#include <kernel/functions.h>
+
 #include <net/functions.h>
 #include <net/types.h>
+#include <util/lock_and_find.h>
 
-#ifdef WIN32
-#include <iphlpapi.h>
-#else
-#include <cerrno>
-#endif
-
-// NOTE: This should be SCE_NET_##errname but it causes vitaQuake to softlock in online games
-#ifdef WIN32
-#define ERROR_CASE(errname) \
-    case (WSA##errname):    \
-        return SCE_NET_ERROR_##errname;
-#else
-#define ERROR_CASE(errname) \
-    case (errname):         \
-        return SCE_NET_ERROR_##errname;
-#endif
-
-static int translate_errorcode() {
-#ifdef WIN32
-    switch (WSAGetLastError()) {
-#else
-    switch (errno) {
-#endif
-#ifndef WIN32 // These errorcodes don't exist in WinSock
-        ERROR_CASE(EPERM)
-        ERROR_CASE(ENOENT)
-        ERROR_CASE(ESRCH)
-        ERROR_CASE(EIO)
-        ERROR_CASE(ENXIO)
-        ERROR_CASE(E2BIG)
-        ERROR_CASE(ENOEXEC)
-        ERROR_CASE(EDEADLK)
-        ERROR_CASE(ENOMEM)
-        ERROR_CASE(ECHILD)
-        ERROR_CASE(EBUSY)
-        ERROR_CASE(EEXIST)
-        ERROR_CASE(EXDEV)
-        ERROR_CASE(ENODEV)
-        ERROR_CASE(ENOTDIR)
-        ERROR_CASE(EISDIR)
-        ERROR_CASE(ENFILE)
-        ERROR_CASE(ENOTTY)
-        ERROR_CASE(ETXTBSY)
-        ERROR_CASE(EFBIG)
-        ERROR_CASE(ENOSPC)
-        ERROR_CASE(ESPIPE)
-        ERROR_CASE(EROFS)
-        ERROR_CASE(EMLINK)
-        ERROR_CASE(EPIPE)
-        ERROR_CASE(EDOM)
-        ERROR_CASE(ERANGE)
-        ERROR_CASE(ENOLCK)
-        ERROR_CASE(ENOSYS)
-        ERROR_CASE(EIDRM)
-        ERROR_CASE(EOVERFLOW)
-        ERROR_CASE(EILSEQ)
-        ERROR_CASE(ENOTSUP)
-        ERROR_CASE(ECANCELED)
-        ERROR_CASE(EBADMSG)
-        ERROR_CASE(ENODATA)
-        ERROR_CASE(ENOSR)
-        ERROR_CASE(ENOSTR)
-        ERROR_CASE(ETIME)
-#endif
-        ERROR_CASE(EINTR)
-        ERROR_CASE(EBADF)
-        ERROR_CASE(EACCES)
-        ERROR_CASE(EFAULT)
-        ERROR_CASE(EINVAL)
-        ERROR_CASE(EMFILE)
-        ERROR_CASE(EWOULDBLOCK)
-        ERROR_CASE(EINPROGRESS)
-        ERROR_CASE(EALREADY)
-        ERROR_CASE(ENOTSOCK)
-        ERROR_CASE(EDESTADDRREQ)
-        ERROR_CASE(EMSGSIZE)
-        ERROR_CASE(EPROTOTYPE)
-        ERROR_CASE(ENOPROTOOPT)
-        ERROR_CASE(EPROTONOSUPPORT)
-#if defined(__APPLE__) || defined(WIN32)
-        ERROR_CASE(EOPNOTSUPP)
-#endif
-        ERROR_CASE(EAFNOSUPPORT)
-        ERROR_CASE(EADDRINUSE)
-        ERROR_CASE(EADDRNOTAVAIL)
-        ERROR_CASE(ENETDOWN)
-        ERROR_CASE(ENETUNREACH)
-        ERROR_CASE(ENETRESET)
-        ERROR_CASE(ECONNABORTED)
-        ERROR_CASE(ECONNRESET)
-        ERROR_CASE(ENOBUFS)
-        ERROR_CASE(EISCONN)
-        ERROR_CASE(ENOTCONN)
-        ERROR_CASE(ETIMEDOUT)
-        ERROR_CASE(ECONNREFUSED)
-        ERROR_CASE(ELOOP)
-        ERROR_CASE(ENAMETOOLONG)
-        ERROR_CASE(EHOSTUNREACH)
-        ERROR_CASE(ENOTEMPTY)
+EXPORT(int, sceNetAccept, int sid, SceNetSockaddr *addr, unsigned int *addrlen) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
-    return SCE_NET_ERROR_EINTERNAL;
+    auto newsock = sock->accept(addr, addrlen);
+    if (!newsock) {
+        return -1;
+    }
+    auto id = ++host.net.next_id;
+    host.net.socks.emplace(id, sock);
+    return id;
 }
 
-EXPORT(int, sceNetAccept, int s, SceNetSockaddr *addr, unsigned int *addrlen) {
-    int res = accept_socket(host.net, s, addr, addrlen);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
+EXPORT(int, sceNetBind, int sid, const SceNetSockaddr *addr, unsigned int addrlen) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
-}
-
-EXPORT(int, sceNetBind, int s, const SceNetSockaddr *name, unsigned int addrlen) {
-    int res = bind_socket(host.net, s, name, addrlen);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
-    }
+    return sock->bind(addr, addrlen);
 }
 
 EXPORT(int, sceNetClearDnsCache) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetConnect, int s, const SceNetSockaddr *name, unsigned int namelen) {
-    int res = connect_socket(host.net, s, name, namelen);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
+EXPORT(int, sceNetConnect, int sid, const SceNetSockaddr *addr, unsigned int addrlen) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
+    return sock->connect(addr, addrlen);
 }
 
 EXPORT(int, sceNetDumpAbort) {
@@ -186,7 +89,7 @@ EXPORT(int, sceNetEpollControl) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetEpollCreate) {
+EXPORT(int, sceNetEpollCreate, const char *name) {
     return UNIMPLEMENTED();
 }
 
@@ -194,8 +97,12 @@ EXPORT(int, sceNetEpollDestroy) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetEpollWait) {
-    return UNIMPLEMENTED();
+struct SceNetEpollEvent {}; // TODO fill this
+
+EXPORT(int, sceNetEpollWait, int sid, SceNetEpollEvent *events, int maxevents, int timeout) {
+    auto x = std::chrono::microseconds(timeout);
+    std::this_thread::sleep_for(x);
+    return STUBBED("only timeout");
 }
 
 EXPORT(int, sceNetEpollWaitCB) {
@@ -249,13 +156,12 @@ EXPORT(int, sceNetGetpeername) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetGetsockname, int s, SceNetSockaddr *name, unsigned int *namelen) {
-    int res = get_socket_address(host.net, s, name, namelen);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
+EXPORT(int, sceNetGetsockname, int sid, SceNetSockaddr *name, unsigned int *namelen) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
+    return sock->get_socket_address(name, namelen);
 }
 
 EXPORT(int, sceNetGetsockopt) {
@@ -295,7 +201,7 @@ EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
     int res = inet_pton(af, src, dst);
 #endif
     if (res < 0) {
-        return RET_ERROR(translate_errorcode());
+        return -1;
     }
     return res;
 }
@@ -313,13 +219,12 @@ EXPORT(int, sceNetInit, SceNetInitParam *param) {
     return 0;
 }
 
-EXPORT(int, sceNetListen, int s, int backlog) {
-    int res = listen_socket(host.net, s, backlog);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
+EXPORT(int, sceNetListen, int sid, int backlog) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
+    return sock->listen(backlog);
 }
 
 EXPORT(unsigned int, sceNetNtohl, unsigned int n) {
@@ -334,22 +239,20 @@ EXPORT(unsigned short int, sceNetNtohs, unsigned short int n) {
     return ntohs(n);
 }
 
-EXPORT(int, sceNetRecv, int s, void *buf, unsigned int len, int flags) {
-    int res = recv_packet(host.net, s, buf, len, flags, nullptr, 0);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
+EXPORT(int, sceNetRecv, int sid, void *buf, unsigned int len, int flags) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
+    return sock->recv_packet(buf, len, flags, nullptr, 0);
 }
 
-EXPORT(int, sceNetRecvfrom, int s, void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
-    int res = recv_packet(host.net, s, buf, len, flags, from, fromlen);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
+EXPORT(int, sceNetRecvfrom, int sid, void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
+    return sock->recv_packet(buf, len, flags, from, fromlen);
 }
 
 EXPORT(int, sceNetRecvmsg) {
@@ -384,39 +287,36 @@ EXPORT(int, sceNetResolverStartNtoa, int rid, const char *hostname, SceNetInAddr
     return 0;
 }
 
-EXPORT(int, sceNetSend, int s, const void *msg, unsigned int len, int flags) {
-    int res = send_packet(host.net, s, msg, len, flags, nullptr, 0);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
+EXPORT(int, sceNetSend, int sid, const void *msg, unsigned int len, int flags) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
+    return sock->send_packet(msg, len, flags, nullptr, 0);
 }
 
 EXPORT(int, sceNetSendmsg) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetSendto, int s, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
-    int res = send_packet(host.net, s, msg, len, flags, to, tolen);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
+EXPORT(int, sceNetSendto, int sid, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
+    return sock->send_packet(msg, len, flags, to, tolen);
 }
 
 EXPORT(int, sceNetSetDnsInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetSetsockopt, int s, int level, int optname, const void *optval, unsigned int optlen) {
-    int res = set_socket_options(host.net, s, level, optname, optval, optlen);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
-    } else {
-        return res;
+EXPORT(int, sceNetSetsockopt, int sid, int level, int optname, const void *optval, unsigned int optlen) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
     }
+    return sock->set_socket_options(level, optname, optval, optlen);
 }
 
 EXPORT(int, sceNetShowIfconfig) {
@@ -439,23 +339,27 @@ EXPORT(int, sceNetShutdown) {
 }
 
 EXPORT(int, sceNetSocket, const char *name, int domain, int type, int protocol) {
-    if (type < SCE_NET_SOCK_STREAM || type > SCE_NET_SOCK_RAW) { // TODO: P2P type support
-        return RET_ERROR(SCE_NET_ERROR_EINVAL);
-    }
-    int res = open_socket(host.net, domain, type, protocol);
-    if (res < 0) {
-        return RET_ERROR(translate_errorcode());
+    SocketPtr sock;
+    if (type < SCE_NET_SOCK_STREAM || type > SCE_NET_SOCK_RAW) {
+        sock = std::make_shared<P2PSocket>(domain, type, protocol);
     } else {
-        return res;
+        sock = std::make_shared<PosixSocket>(domain, type, protocol);
     }
+    auto id = ++host.net.next_id;
+    host.net.socks.emplace(id, sock);
+    return id;
 }
 
 EXPORT(int, sceNetSocketAbort) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetSocketClose, int s) {
-    return close_socket(host.net, s);
+EXPORT(int, sceNetSocketClose, int sid) {
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    if (!sock) {
+        return -1;
+    }
+    return sock->close();
 }
 
 EXPORT(int, sceNetTerm) {
