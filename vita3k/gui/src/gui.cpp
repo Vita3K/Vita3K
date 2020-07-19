@@ -179,7 +179,7 @@ static void init_user_backgrounds(GuiState &gui, HostState &host) {
     gui.current_user_bg = 0;
 }
 
-void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> &apps_list) {
+void init_apps_icon(GuiState &gui, HostState &host, const std::vector<App> &apps_list) {
     for (const App &app : apps_list) {
         int32_t width = 0;
         int32_t height = 0;
@@ -217,6 +217,9 @@ void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> 
 }
 
 void init_app_background(GuiState &gui, HostState &host) {
+    if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
+        return;
+
     int32_t width = 0;
     int32_t height = 0;
     vfs::FileBuffer buffer;
@@ -240,6 +243,21 @@ void init_app_background(GuiState &gui, HostState &host) {
     stbi_image_free(data);
 }
 
+std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &title_id) {
+    std::vector<App>::iterator app_index;
+
+    if (title_id.find("NPXS") != std::string::npos)
+        app_index = std::find_if(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [&](const App &a) {
+            return a.title_id == title_id;
+        });
+    else
+        app_index = std::find_if(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&](const App &a) {
+            return a.title_id == title_id;
+        });
+
+    return app_index;
+}
+
 void get_sys_apps_title(GuiState &gui, HostState &host) {
     const std::vector<std::string> sys_apps_list = { "NPXS10008", "NPXS10015" };
     for (const auto &app : sys_apps_list) {
@@ -248,6 +266,8 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
             SfoFile sfo_handle;
             sfo::load(sfo_handle, params);
             sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
+            if (host.app_version[0] == '0')
+                host.app_version.erase(host.app_version.begin());
             sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
             if (app != "NPXS10015") {
                 if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
@@ -262,14 +282,14 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
             host.app_version = host.app_category = "N/A";
             if (app == "NPXS10008")
                 host.app_short_title = host.app_title = "Trophy Collection";
-            else
+            else if (app == "NPXS10015")
                 host.app_short_title = host.app_title = "Theme & Background";
         }
-        gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, host.app_short_title, host.app_title, app });
+        gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, host.app_short_title, host.app_title, app });
     }
 }
 
-void get_apps_title(GuiState &gui, HostState &host) {
+void get_user_apps_title(GuiState &gui, HostState &host) {
     fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
     if (!fs::exists(app_path))
         return;
@@ -283,7 +303,10 @@ void get_apps_title(GuiState &gui, HostState &host) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
                 sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
+                if (host.app_version[0] == '0')
+                    host.app_version.erase(host.app_version.begin());
                 sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
+                sfo::get_data_by_key(host.app_parental_level, sfo_handle, "PARENTAL_LEVEL");
                 if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
                     sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
                 if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
@@ -292,9 +315,9 @@ void get_apps_title(GuiState &gui, HostState &host) {
                 boost::trim(host.app_title);
             } else {
                 host.app_short_title = host.app_title = host.io.title_id; // Use TitleID as Short title and Title
-                host.app_version = host.app_category = "N/A";
+                host.app_version = host.app_category = host.app_parental_level = "N/A";
             }
-            gui.app_selector.apps.push_back({ host.app_version, host.app_category, host.app_short_title, host.app_title, host.io.title_id });
+            gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_parental_level, host.app_short_title, host.app_title, host.io.title_id });
         }
     }
 }
@@ -327,10 +350,10 @@ void init(GuiState &gui, HostState &host) {
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);
 
-    get_apps_title(gui, host);
     get_modules_list(gui, host);
+    get_user_apps_title(gui, host);
     get_sys_apps_title(gui, host);
-    init_apps_icon(gui, host, gui.app_selector.apps);
+    init_apps_icon(gui, host, gui.app_selector.user_apps);
 
     if (!host.cfg.user_backgrounds.empty())
         init_user_backgrounds(gui, host);

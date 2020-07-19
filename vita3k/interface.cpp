@@ -289,6 +289,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     LOG_INFO("Version: {}", host.app_version);
     LOG_INFO("Category: {}", host.app_category);
 
+    gui::init_app_background(gui, host);
     init_device_paths(host.io);
     init_savedata_game_path(host.io, host.pref_path);
 

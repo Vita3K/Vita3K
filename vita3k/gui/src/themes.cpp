@@ -205,14 +205,14 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
 }
 
 void init_theme_apps_icon(GuiState &gui, HostState &host, const std::string &content_id) {
-    if (content_id != "default") {
+    const auto THEME_PATH{ fs::path(host.pref_path) / "ux0/theme" / content_id };
+    const auto THEME_PATH_XML{ THEME_PATH / "theme.xml" };
+    if (content_id != "default" && fs::exists(THEME_PATH_XML)) {
         std::map<std::string, std::string> theme_icon_name;
-        const auto theme_path{ fs::path(host.pref_path) / "ux0/theme" / content_id };
 
-        const auto theme_path_xml{ theme_path / "theme.xml" };
         pugi::xml_document doc;
 
-        if (doc.load_file(theme_path_xml.c_str())) {
+        if (doc.load_file(THEME_PATH_XML.c_str())) {
             const auto theme = doc.child("theme");
 
             // Theme Apps Icon
@@ -220,8 +220,10 @@ void init_theme_apps_icon(GuiState &gui, HostState &host, const std::string &con
                 theme_icon_name["NPXS10008"] = theme.child("HomeProperty").child("m_trophy").child("m_iconFilePath").text().as_string();
             if (!theme.child("HomeProperty").child("m_settings").child("m_iconFilePath").text().empty())
                 theme_icon_name["NPXS10015"] = theme.child("HomeProperty").child("m_settings").child("m_iconFilePath").text().as_string();
+            if (!theme.child("HomeProperty").child("m_hostCollabo").child("m_iconFilePath").text().empty())
+                theme_icon_name["NPXS10026"] = theme.child("HomeProperty").child("m_hostCollabo").child("m_iconFilePath").text().as_string();
 
-            if (theme_icon_name["NPXS10008"].empty() && theme_icon_name["NPXS10015"].empty()) {
+            if (theme_icon_name["NPXS10008"].empty() && theme_icon_name["NPXS10015"].empty() && theme_icon_name["NPXS10026"].empty()) {
                 init_apps_icon(gui, host, gui.app_selector.sys_apps);
                 return;
             }

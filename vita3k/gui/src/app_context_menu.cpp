@@ -18,15 +18,8 @@
 #include "private.h"
 
 #include <gui/functions.h>
-#include <gui/state.h>
-
-#include <host/functions.h>
-#include <host/state.h>
-
-#include <io/vfs.h>
 
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <pugixml.hpp>
 #include <sstream>
@@ -38,15 +31,11 @@ namespace gui {
 void delete_app(GuiState &gui, HostState &host) {
     const fs::path app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
-    const auto app_index = std::find_if(gui.app_selector.apps.begin(), gui.app_selector.apps.end(), [&](const App &a) {
-        return a.title == host.app_title && a.title_id == host.io.title_id;
-    });
-
     LOG_INFO_IF(fs::remove_all(app_path), "Application successfully deleted '{} [{}]'.", host.io.title_id, host.app_title);
 
     if (!fs::exists(app_path)) {
         gui.delete_app_icon = true;
-        gui.app_selector.apps.erase(app_index);
+        gui.app_selector.user_apps.erase(get_app_index(gui, host.io.title_id));
     } else
         LOG_ERROR("Failed to delete '{} [{}]'.", host.io.title_id, host.app_title);
 }
@@ -119,13 +108,6 @@ static bool get_app_info(GuiState &gui, HostState &host) {
         app_info["size"] = std::to_string(app_size / MB(1));
     }
 
-    vfs::FileBuffer params;
-    if (vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo")) {
-        SfoFile sfo_handle;
-        sfo::load(sfo_handle, params);
-        sfo::get_data_by_key(app_info["parental"], sfo_handle, "PARENTAL_LEVEL");
-    }
-
     return !app_info.empty();
 }
 
@@ -150,7 +132,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.3f);
         if (ImGui::MenuItem("Boot", host.app_short_title.c_str()))
-            run_app(gui, host);
+            pre_run_app(gui, host);
         if (host.io.title_id.find("NPXS") == std::string::npos) {
             if (ImGui::MenuItem("Check App Compatibility")) {
                 const std::string compat_url = host.io.title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + host.io.title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
@@ -280,8 +262,9 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
                 fs::remove_all(SAVE_DATA_PATH);
             context_dialog.clear();
         }
+        ImGui::PopStyleVar();
         ImGui::EndChild();
-        ImGui::PopStyleVar(2);
+        ImGui::PopStyleVar();
         ImGui::End();
     }
 
@@ -302,7 +285,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
         ImGui::TextColored(GUI_COLOR_TEXT, "Name ");
         ImGui::SameLine();
         ImGui::PushTextWrapPos(display_size.x - (85.f * scal.x));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_title.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, host.io.title_id)->title.c_str());
         ImGui::PopTextWrapPos();
         if (host.io.title_id.find("NPXS") == std::string::npos) {
             ImGui::Spacing();
@@ -310,7 +293,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Trophy Earning  %s", app_info["trophy"].c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Parental Controls  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls  Level %d", *reinterpret_cast<const uint16_t *>(app_info["parental"].c_str()));
+            ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls  Level %d", *reinterpret_cast<const uint16_t *>(get_app_index(gui, host.io.title_id)->parental_level.c_str()));
             ImGui::Spacing();
             ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize("Updated  ").x));
             ImGui::TextColored(GUI_COLOR_TEXT, "Updated  %s", app_info["updated"].c_str());
@@ -319,7 +302,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Size  %s MB", app_info["size"].c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Version  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Version  %s", host.app_version.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "Version  %s", get_app_index(gui, host.io.title_id)->app_ver.c_str());
         }
         ImGui::End();
     }
