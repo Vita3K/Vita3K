@@ -1017,7 +1017,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         }
     }
 
-    if (!gui.live_area.manual) {
+    if (!gui.live_area.content_manager && !gui.live_area.manual) {
         const auto wheel_counter = ImGui::GetIO().MouseWheel;
         const auto app_list_size = int32_t(app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps.size() : gui.app_selector.sys_apps.size());
         if (gui.app_selector.selected_title_id.empty()) {

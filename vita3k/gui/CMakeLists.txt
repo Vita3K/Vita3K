@@ -21,6 +21,7 @@ add_library(
 	src/archive_install_dialog.cpp
 	src/common_dialog.cpp
 	src/condvars_dialog.cpp
+	src/content_manager.cpp
 	src/eventflags_dialog.cpp
 	src/firmware_install_dialog.cpp
 	src/gui.cpp

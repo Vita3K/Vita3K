@@ -51,9 +51,16 @@ struct App {
     std::string title_id;
 };
 
+struct AppInfo {
+    std::string trophy;
+    std::string updated;
+    size_t size;
+};
+
 struct AppsSelector {
     std::vector<App> user_apps;
     std::vector<App> sys_apps;
+    AppInfo app_info;
     std::map<std::string, ImGui_Texture> icons;
     std::string selected_title_id;
     bool is_app_list_sorted{ false };
@@ -65,6 +72,7 @@ struct AppsSelector {
 };
 
 struct LiveAreaState {
+    bool content_manager = false;
     bool live_area_screen = false;
     bool manual = false;
     bool theme_background = false;

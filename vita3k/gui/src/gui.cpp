@@ -259,7 +259,7 @@ std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &title
 }
 
 void get_sys_apps_title(GuiState &gui, HostState &host) {
-    const std::vector<std::string> sys_apps_list = { "NPXS10008", "NPXS10015" };
+    const std::vector<std::string> sys_apps_list = { "NPXS10008", "NPXS10015", "NPXS10026" };
     for (const auto &app : sys_apps_list) {
         vfs::FileBuffer params;
         if (vfs::read_file(VitaIoDevice::vs0, params, host.pref_path, "app/" + app + "/sce_sys/param.sfo")) {
@@ -284,6 +284,8 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
                 host.app_short_title = host.app_title = "Trophy Collection";
             else if (app == "NPXS10015")
                 host.app_short_title = host.app_title = "Theme & Background";
+            else
+                host.app_short_title = host.app_title = "Content Manager";
         }
         gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, host.app_short_title, host.app_title, app });
     }
@@ -413,6 +415,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
 
     if (gui.live_area.trophy_collection)
         draw_trophy_collection(gui, host);
+
+    if (gui.live_area.content_manager)
+        draw_content_manager(gui, host);
 
     ImGui::PopFont();
 }

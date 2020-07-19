@@ -87,30 +87,6 @@ static bool get_update_history(GuiState &gui, HostState &host) {
     return !update_history_infos.empty();
 }
 
-static std::map<std::string, std::string> app_info;
-
-static bool get_app_info(GuiState &gui, HostState &host) {
-    app_info.clear();
-    const auto app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
-
-    if (fs::exists(app_path) && !fs::is_empty(app_path)) {
-        app_info["trophy"] = fs::exists(app_path / "sce_sys/trophy") ? "Eligible" : "Ineligible";
-
-        const auto last_writed = fs::last_write_time(app_path);
-        const auto updated = std::localtime(&last_writed);
-        app_info["updated"] = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}", updated->tm_mday, updated->tm_mon + 1, updated->tm_year + 1900, updated->tm_hour, updated->tm_min);
-
-        size_t app_size = 0;
-        for (const auto &app : fs::recursive_directory_iterator(app_path)) {
-            if (fs::is_regular_file(app.path()))
-                app_size += fs::file_size(app.path());
-        }
-        app_info["size"] = std::to_string(app_size / MB(1));
-    }
-
-    return !app_info.empty();
-}
-
 #ifdef _WIN32
 static const char OS_PREFIX[] = "start ";
 #elif __APPLE__
@@ -187,8 +163,11 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
             }
         }
         if (ImGui::MenuItem("Information", nullptr, &information)) {
-            if (host.io.title_id.find("NPXS") == std::string::npos)
-                get_app_info(gui, host);
+            if (host.io.title_id.find("NPXS") == std::string::npos) {
+                get_app_info(gui, host, host.io.title_id);
+                const auto app_size = get_app_size(host, host.io.title_id);
+                gui.app_selector.app_info.size = app_size;
+            }
         }
         ImGui::EndPopup();
     }
@@ -290,16 +269,16 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
         if (host.io.title_id.find("NPXS") == std::string::npos) {
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Trophy Earning  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Trophy Earning  %s", app_info["trophy"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "Trophy Earning  %s", gui.app_selector.app_info.trophy.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Parental Controls  ").x);
             ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls  Level %d", *reinterpret_cast<const uint16_t *>(get_app_index(gui, host.io.title_id)->parental_level.c_str()));
             ImGui::Spacing();
             ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize("Updated  ").x));
-            ImGui::TextColored(GUI_COLOR_TEXT, "Updated  %s", app_info["updated"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "Updated  %s", gui.app_selector.app_info.updated.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Size  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Size  %s MB", app_info["size"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "Size  %s", get_unit_size(gui.app_selector.app_info.size).c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Version  ").x);
             ImGui::TextColored(GUI_COLOR_TEXT, "Version  %s", get_app_index(gui, host.io.title_id)->app_ver.c_str());

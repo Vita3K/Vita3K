@@ -89,6 +89,9 @@ void pre_run_app(GuiState &gui, HostState &host) {
         } else if (host.io.title_id == "NPXS10015") {
             get_themes_list(gui, host);
             gui.live_area.theme_background = true;
+        } else {
+            get_contents_size(gui, host);
+            gui.live_area.content_manager = true;
         }
     }
 
