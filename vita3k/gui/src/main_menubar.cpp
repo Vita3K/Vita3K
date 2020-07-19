@@ -46,7 +46,7 @@ static void draw_emulation_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginMenu("Emulation")) {
         if (ImGui::MenuItem("Load last App", host.cfg.last_app.c_str(), false, !host.cfg.last_app.empty() && gui.app_selector.selected_title_id.empty())) {
             host.io.title_id = host.cfg.last_app;
-            load_app(gui, host);
+            pre_load_app(gui, host);
         }
         ImGui::EndMenu();
     }

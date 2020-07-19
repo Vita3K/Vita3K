@@ -90,7 +90,6 @@ static std::map<std::string, std::map<std::string, uint64_t>> current_item, last
 static std::map<std::string, std::string> type;
 static std::string start;
 static int32_t current_app;
-static std::vector<gui::App> app_type;
 
 void init_live_area(GuiState &gui, HostState &host) {
     std::string user_lang;
@@ -121,6 +120,8 @@ void init_live_area(GuiState &gui, HostState &host) {
 
     // Init type
     if (items_pos.empty()) {
+        // Content manager
+        items_pos["content_manager"]["gate"]["pos"] = ImVec2(620.f, 364.f);
         // A1
         items_pos["a1"]["gate"]["pos"] = ImVec2(620.f, 364.f);
         items_pos["a1"]["frame1"]["pos"] = ImVec2(900.f, 415.f);
@@ -190,12 +191,9 @@ void init_live_area(GuiState &gui, HostState &host) {
     }
 
     const VitaIoDevice app_device = host.io.title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
-    app_type = app_device == VitaIoDevice::ux0 ? gui.app_selector.apps : gui.app_selector.sys_apps;
 
-    const auto app_index = std::find_if(app_type.begin(), app_type.end(), [&](const App &a) {
-        return a.title_id == host.io.title_id;
-    });
-    current_app = int32_t(std::distance(app_type.begin(), app_index));
+    current_app = int32_t(std::distance(app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps.begin() : gui.app_selector.sys_apps.begin(),
+        get_app_index(gui, host.io.title_id)));
 
     if (gui.live_area_contents.find(host.io.title_id) == gui.live_area_contents.end()) {
         auto default_contents = false;
@@ -969,7 +967,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 25.0f * scal.x, POS_START, IM_COL32(255, 255, 255, 255), start.c_str());
     ImGui::SetCursorPos(SELECT_POS);
     if (ImGui::Selectable("##gate", ImGuiSelectableFlags_None, false, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
-        run_app(gui, host);
+        pre_run_app(gui, host);
         gui.live_area.live_area_screen = false;
     }
     ImGui::PopID();
@@ -1021,28 +1019,28 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
     if (!gui.live_area.manual) {
         const auto wheel_counter = ImGui::GetIO().MouseWheel;
-
+        const auto app_list_size = int32_t(app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps.size() : gui.app_selector.sys_apps.size());
         if (gui.app_selector.selected_title_id.empty()) {
             if (ImGui::IsKeyPressed(host.cfg.keyboard_button_up) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_up) || (wheel_counter == 1)) {
                 if (current_app > 0)
                     --current_app;
                 else
-                    current_app = int(app_type.size()) - 1;
+                    current_app = app_list_size - 1;
             } else if (ImGui::IsKeyPressed(host.cfg.keyboard_button_down) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_down) || (wheel_counter == -1)) {
-                if (current_app < int(app_type.size()) - 1)
+                if (current_app < app_list_size - 1)
                     ++current_app;
                 else
                     current_app = 0;
             }
 
-            if (host.io.title_id != app_type[current_app].title_id) {
-                host.io.title_id = app_type[current_app].title_id;
-                host.app_title = app_type[current_app].title;
+            if (host.io.title_id != (app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps[current_app].title_id : gui.app_selector.sys_apps[current_app].title_id)) {
+                host.io.title_id = (app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps[current_app].title_id : gui.app_selector.sys_apps[current_app].title_id);
+                host.app_title = (app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps[current_app].title_id : gui.app_selector.sys_apps[current_app].title_id);
                 init_live_area(gui, host);
             }
 
             ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x), 44.0f * scal.y));
-            ImGui::VSliderInt("##slider_current_app", ImVec2(60.f, 500.f * scal.y), &current_app, int32_t(app_type.size()) - 1, 0, fmt::format("{}\n_____\n\n{}", current_app + 1, int32_t(app_type.size())).c_str());
+            ImGui::VSliderInt("##slider_current_app", ImVec2(60.f, 500.f * scal.y), &current_app, app_list_size - 1, 0, fmt::format("{}\n_____\n\n{}", current_app + 1, app_list_size).c_str());
         }
 
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f);

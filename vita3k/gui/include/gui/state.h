@@ -45,13 +45,14 @@ enum SortState {
 struct App {
     std::string app_ver;
     std::string category;
+    std::string parental_level;
     std::string stitle;
     std::string title;
     std::string title_id;
 };
 
 struct AppsSelector {
-    std::vector<App> apps;
+    std::vector<App> user_apps;
     std::vector<App> sys_apps;
     std::map<std::string, ImGui_Texture> icons;
     std::string selected_title_id;

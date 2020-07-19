@@ -56,6 +56,7 @@ struct DisplayState {
 struct HostState {
     std::string app_version;
     std::string app_category;
+    std::string app_parental_level;
     std::string app_short_title;
     std::string app_title;
     std::string base_path;
