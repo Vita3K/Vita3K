@@ -682,6 +682,8 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                         config::serialize_config(host.cfg, host.cfg.config_path);
                     }
                     fs::remove_all(fs::path{ host.pref_path } / "ux0/theme" / selected);
+                    if (gui.live_area.content_manager)
+                        get_contents_size(gui, host);
                     get_themes_list(gui, host);
                     popup.clear();
                     selected.clear();
@@ -882,8 +884,11 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                 start.clear();
             else
                 menu.clear();
-        } else
+        } else {
+            if (gui.live_area.content_manager)
+                host.io.title_id = "NPXS10026";
             gui.live_area.theme_background = false;
+        }
     }
 
     if (!selected.empty() && (selected != "default")) {

@@ -58,6 +58,7 @@ void draw_controls_dialog(GuiState &gui, HostState &host);
 void draw_about_dialog(GuiState &gui);
 
 void draw_app_selector(GuiState &gui, HostState &host);
+void draw_content_manager(GuiState &gui, HostState &host);
 void draw_live_area_screen(GuiState &gui, HostState &host);
 void draw_manual(GuiState &gui, HostState &host);
 void draw_start_screen(GuiState &gui, HostState &host);
