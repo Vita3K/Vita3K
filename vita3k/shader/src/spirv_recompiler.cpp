@@ -1466,7 +1466,7 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     features.pack_unpack_half_through_ext = false;
     features.use_ubo = true;
 
-    convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, true);
+    convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, false, true);
 
     free(gxp_program);
 }
