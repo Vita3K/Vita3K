@@ -549,6 +549,11 @@ GLenum translate_minmag_filter(SceGxmTextureFilter src) {
         return GL_NEAREST;
     case SCE_GXM_TEXTURE_FILTER_LINEAR:
         return GL_LINEAR;
+    // TODO support mipmap
+    case SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR:
+        return GL_LINEAR;
+    case SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT:
+        return GL_NEAREST;
     default:
         LOG_WARN("Unsupported texture min/mag filter translated: {}", log_hex(src));
         return GL_LINEAR;
