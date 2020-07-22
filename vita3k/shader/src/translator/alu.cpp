@@ -468,6 +468,12 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask
         break;
     }
 
+    case Opcode::ISUBU32:
+    case Opcode::ISUB32: {
+        result = m_b.createBinOp(spv::OpISub, source_type, vsrc1, vsrc2);
+        break;
+    }
+
     default: {
         LOG_ERROR("Unimplemented ALU opcode instruction: {}", disasm::opcode_str(inst.opcode));
         break;
