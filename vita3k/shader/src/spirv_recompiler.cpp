@@ -394,6 +394,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             const auto pa_iter_size = num_comp * 4;
             const auto pa_iter_var = b.createVariable(spv::StorageClassInput, pa_iter_type, pa_name.c_str());
 
+            // TODO how about centroid?
+            if (input_id == 0xD000) {
+                b.addDecoration(pa_iter_var, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
+            }
+
             translation_state.pa_vars.push_back(
                 { pa_iter_var,
                     pa_offset,

@@ -96,8 +96,8 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
             Opcode::IMULU16,
             Opcode::IADD32,
             Opcode::IADDU32,
-            Opcode::INVALID,
-            Opcode::INVALID },
+            Opcode::ISUB32,
+            Opcode::ISUBU32 },
         { Opcode::IADD8,
             Opcode::ISUB8,
             Opcode::IADDU8,
@@ -148,6 +148,10 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
         }
     }
 
+    if (alu_sel == 1) {
+        filled_dt = DataType::INT32;
+    }
+
     if (alu_sel == 3) {
         filled_dt = DataType::UINT32;
     }
@@ -188,6 +192,7 @@ bool USSETranslatorVisitor::vtst(
     Opcode test_op = decode_test_inst(alu_sel, alu_op, prec, load_data_type);
 
     if (test_op == Opcode::INVALID) {
+        LOG_ERROR("Unsupported comparision: {} {}", alu_sel, alu_op);
         return false;
     }
 
@@ -211,9 +216,11 @@ bool USSETranslatorVisitor::vtst(
 
     const Imm4 load_mask = tb_decode_load_mask[chan_cc];
 
+    bool use_double_reg = alu_sel == 0;
+
     // Build up source
-    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, true, 8, m_second_program);
-    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, true, 8, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, use_double_reg, 8, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, use_double_reg, 8, m_second_program);
 
     inst.opr.src1.type = load_data_type;
     inst.opr.src2.type = load_data_type;

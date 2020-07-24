@@ -458,7 +458,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                 pp = pred (2 bits, ShortPredicate)
                                                   00000011011110000000000000000000000000000 = kill2
         */
-        INST(&V::kill, "KILL ()", "11111001--11000000000pp00000011011110000000000000000000000000000"),
+        INST(&V::kill, "KILL ()", "11111001--11000000000pp0000001101111----------------------------"),
         // Special
         /*
                                11111 = op1
