@@ -177,11 +177,8 @@ public:
         return m_second_program;
     }
 
-    //
-    // Instructions
-    //
-    bool vmov(
-        ExtPredicate pred,
+    // Instructions start
+    bool vmov(ExtPredicate pred,
         bool skipinv,
         Imm1 test_bit_2,
         Imm1 src0_comp_sel,
@@ -206,8 +203,7 @@ public:
         Imm6 src1_n,
         Imm6 src2_n);
 
-    bool vmad(
-        ExtPredicate pred,
+    bool vmad(ExtPredicate pred,
         Imm1 skipinv,
         Imm1 gpi1_swiz_ext,
         Imm1 opcode2,
@@ -236,8 +232,7 @@ public:
         Imm4 src0_swiz,
         Imm6 src0_n);
 
-    bool vmad2(
-        Imm1 dat_fmt,
+    bool vmad2(Imm1 dat_fmt,
         Imm2 pred,
         Imm1 skipinv,
         Imm1 src0_swiz_bits2,
@@ -262,8 +257,7 @@ public:
         Imm6 src1_n,
         Imm6 src2_n);
 
-    bool vnmad32(
-        ExtPredicate pred,
+    bool vnmad32(ExtPredicate pred,
         bool skipinv,
         Imm2 src1_swiz_10_11,
         bool syncstart,
@@ -286,8 +280,7 @@ public:
         Imm6 src1_n,
         Imm6 src2_n);
 
-    bool vnmad16(
-        ExtPredicate pred,
+    bool vnmad16(ExtPredicate pred,
         bool skipinv,
         Imm2 src1_swiz_10_11,
         bool syncstart,
@@ -310,8 +303,33 @@ public:
         Imm6 src1_n,
         Imm6 src2_n);
 
-    bool sop2(
-        Imm2 pred,
+    bool vpck(ExtPredicate pred,
+        bool skipinv,
+        bool nosched,
+        Imm1 unknown,
+        bool syncstart,
+        Imm1 dest_bank_ext,
+        Imm1 end,
+        Imm1 src1_bank_ext,
+        Imm1 src2_bank_ext,
+        RepeatCount repeat_count,
+        Imm3 src_fmt,
+        Imm3 dest_fmt,
+        Imm4 dest_mask,
+        Imm2 dest_bank_sel,
+        Imm2 src1_bank_sel,
+        Imm2 src2_bank_sel,
+        Imm7 dest_n,
+        Imm2 comp_sel_3,
+        Imm1 scale,
+        Imm2 comp_sel_1,
+        Imm2 comp_sel_2,
+        Imm6 src1_n,
+        Imm1 comp0_sel_bit1,
+        Imm6 src2_n,
+        Imm1 comp_sel_0_bit0);
+
+    bool sop2(Imm2 pred,
         Imm1 cmod1,
         Imm1 skipinv,
         Imm1 nosched,
@@ -339,146 +357,7 @@ public:
         Imm7 src1_n,
         Imm7 src2_n);
 
-    bool vpck(
-        ExtPredicate pred,
-        bool skipinv,
-        bool nosched,
-        Imm1 unknown,
-        bool syncstart,
-        Imm1 dest_bank_ext,
-        Imm1 end,
-        Imm1 src1_bank_ext,
-        Imm1 src2_bank_ext,
-        RepeatCount repeat_count,
-        Imm3 src_fmt,
-        Imm3 dest_fmt,
-        Imm4 dest_mask,
-        Imm2 dest_bank_sel,
-        Imm2 src1_bank_sel,
-        Imm2 src2_bank_sel,
-        Imm7 dest_n,
-        Imm2 comp_sel_3,
-        Imm1 scale,
-        Imm2 comp_sel_1,
-        Imm2 comp_sel_2,
-        Imm6 src1_n,
-        Imm1 comp0_sel_bit1,
-        Imm6 src2_n,
-        Imm1 comp_sel_0_bit0);
-
-    bool vbw(
-        Imm3 op1,
-        ExtPredicate pred,
-        Imm1 skipinv,
-        Imm1 nosched,
-        bool repeat_sel,
-        Imm1 sync_start,
-        Imm1 dest_ext,
-        Imm1 end,
-        Imm1 src1_ext,
-        Imm1 src2_ext,
-        RepeatCount repeat_count,
-        Imm1 src2_invert,
-        Imm5 src2_rot,
-        Imm2 src2_exth,
-        Imm1 op2,
-        Imm1 bitwise_partial,
-        Imm2 dest_bank,
-        Imm2 src1_bank,
-        Imm2 src2_bank,
-        Imm7 dest_n,
-        Imm7 src2_sel,
-        Imm7 src1_n,
-        Imm7 src2_n);
-
-    bool vcomp(
-        ExtPredicate pred,
-        bool skipinv,
-        Imm2 dest_type,
-        bool syncstart,
-        bool dest_bank_ext,
-        bool end,
-        bool src1_bank_ext,
-        RepeatCount repeat_count,
-        bool nosched,
-        Imm2 op2,
-        Imm2 src_type,
-        Imm2 src1_mod,
-        Imm2 src_comp,
-        Imm2 dest_bank,
-        Imm2 src1_bank,
-        Imm7 dest_n,
-        Imm7 src1_n,
-        Imm4 write_mask);
-
-    bool vdp(
-        ExtPredicate pred,
-        Imm1 skipinv,
-        bool clip_plane_enable,
-        Imm1 opcode2,
-        Imm1 dest_use_bank_ext,
-        Imm1 end,
-        Imm1 src0_bank_ext,
-        Imm2 increment_mode,
-        Imm1 gpi0_abs,
-        RepeatCount repeat_count,
-        bool nosched,
-        Imm4 write_mask,
-        Imm1 src0_neg,
-        Imm1 src0_abs,
-        Imm3 clip_plane_n,
-        Imm2 dest_bank,
-        Imm2 src0_bank,
-        Imm2 gpi0_n,
-        Imm6 dest_n,
-        Imm4 gpi0_swiz,
-        Imm3 src0_swiz_w,
-        Imm3 src0_swiz_z,
-        Imm3 src0_swiz_y,
-        Imm3 src0_swiz_x,
-        Imm6 src0_n);
-
-    bool br(
-        ExtPredicate pred,
-        Imm1 syncend,
-        bool exception,
-        bool pwait,
-        Imm1 sync_ext,
-        bool nosched,
-        bool br_monitor,
-        bool save_link,
-        Imm1 br_type,
-        Imm1 any_inst,
-        Imm1 all_inst,
-        std::uint32_t br_off);
-
-    bool smp(
-        ExtPredicate pred,
-        Imm1 skipinv,
-        Imm1 nosched,
-        Imm1 syncstart,
-        Imm1 minpack,
-        Imm1 src0_ext,
-        Imm1 src1_ext,
-        Imm1 src2_ext,
-        Imm2 fconv_type,
-        Imm2 mask_count,
-        Imm2 dim,
-        Imm2 lod_mode,
-        bool dest_use_pa,
-        Imm2 sb_mode,
-        Imm2 src0_type,
-        Imm1 src0_bank,
-        Imm2 drc_sel,
-        Imm2 src1_bank,
-        Imm2 src2_bank,
-        Imm7 dest_n,
-        Imm7 src0_n,
-        Imm7 src1_n,
-        Imm7 src2_n);
-
-    bool vtst(
-        ExtPredicate pred,
+    bool vtst(ExtPredicate pred,
         Imm1 skipinv,
         Imm1 onceonly,
         Imm1 syncstart,
@@ -504,8 +383,7 @@ public:
         Imm7 src1_n,
         Imm7 src2_n);
 
-    bool vtstmsk(
-        Imm3 pred,
+    bool vtstmsk(ExtPredicate pred,
         Imm1 skipinv,
         Imm1 onceonly,
         Imm1 syncstart,
@@ -530,8 +408,86 @@ public:
         Imm7 src1_n,
         Imm7 src2_n);
 
-    bool smlsi(
+    bool vbw(Imm3 op1,
+        ExtPredicate pred,
+        Imm1 skipinv,
         Imm1 nosched,
+        bool repeat_sel,
+        Imm1 sync_start,
+        Imm1 dest_ext,
+        Imm1 end,
+        Imm1 src1_ext,
+        Imm1 src2_ext,
+        RepeatCount repeat_count,
+        Imm1 src2_invert,
+        Imm5 src2_rot,
+        Imm2 src2_exth,
+        Imm1 op2,
+        Imm1 bitwise_partial,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm7 src2_sel,
+        Imm7 src1_n,
+        Imm7 src2_n);
+
+    bool phas(Imm1 sprvv,
+        Imm1 end,
+        Imm1 imm,
+        Imm1 src1_bank_ext,
+        Imm1 src2_bank_ext,
+        Imm1 mode,
+        Imm1 rate_hi,
+        Imm1 rate_lo_or_nosched,
+        Imm3 wait_cond,
+        Imm8 temp_count,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm6 exe_addr_high,
+        Imm7 src1_n_or_exe_addr_mid,
+        Imm7 src2_n_or_exe_addr_low);
+
+    bool nop();
+
+    bool br(ExtPredicate pred,
+        Imm1 syncend,
+        bool exception,
+        bool pwait,
+        Imm1 sync_ext,
+        bool nosched,
+        bool br_monitor,
+        bool save_link,
+        Imm1 br_type,
+        Imm1 any_inst,
+        Imm1 all_inst,
+        uint32_t br_off);
+
+    bool smp(ExtPredicate pred,
+        Imm1 skipinv,
+        Imm1 nosched,
+        Imm1 syncstart,
+        Imm1 minpack,
+        Imm1 src0_ext,
+        Imm1 src1_ext,
+        Imm1 src2_ext,
+        Imm2 fconv_type,
+        Imm2 mask_count,
+        Imm2 dim,
+        Imm2 lod_mode,
+        bool dest_use_pa,
+        Imm2 sb_mode,
+        Imm2 src0_type,
+        Imm1 src0_bank,
+        Imm2 drc_sel,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm7 src0_n,
+        Imm7 src1_n,
+        Imm7 src2_n);
+
+    bool smlsi(Imm1 nosched,
         Imm4 temp_limit,
         Imm4 pa_limit,
         Imm4 sa_limit,
@@ -544,8 +500,57 @@ public:
         Imm8 src1_inc,
         Imm8 src2_inc);
 
-    bool vdual(
-        Imm1 comp_count_type,
+    bool kill(ShortPredicate pred);
+
+    bool spec(bool special,
+        SpecialCategory category);
+
+    bool vcomp(ExtPredicate pred,
+        bool skipinv,
+        Imm2 dest_type,
+        bool syncstart,
+        bool dest_bank_ext,
+        bool end,
+        bool src1_bank_ext,
+        RepeatCount repeat_count,
+        bool nosched,
+        Imm2 op2,
+        Imm2 src_type,
+        Imm2 src1_mod,
+        Imm2 src_comp,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm7 dest_n,
+        Imm7 src1_n,
+        Imm4 write_mask);
+
+    bool vdp(ExtPredicate pred,
+        Imm1 skipinv,
+        bool clip_plane_enable,
+        Imm1 opcode2,
+        Imm1 dest_use_bank_ext,
+        Imm1 end,
+        Imm1 src0_bank_ext,
+        Imm2 increment_mode,
+        Imm1 gpi0_abs,
+        RepeatCount repeat_count,
+        bool nosched,
+        Imm4 write_mask,
+        Imm1 src0_neg,
+        Imm1 src0_abs,
+        Imm3 clip_plane_n,
+        Imm2 dest_bank,
+        Imm2 src0_bank,
+        Imm2 gpi0_n,
+        Imm6 dest_n,
+        Imm4 gpi0_swiz,
+        Imm3 src0_swiz_w,
+        Imm3 src0_swiz_z,
+        Imm3 src0_swiz_y,
+        Imm3 src0_swiz_x,
+        Imm6 src0_n);
+
+    bool vdual(Imm1 comp_count_type,
         Imm1 gpi1_neg,
         Imm2 sv_pred,
         Imm1 skipinv,
@@ -572,8 +577,7 @@ public:
         Imm3 write_mask_non_gpi,
         Imm7 unified_store_slot_num);
 
-    bool vldst(
-        Imm2 op1,
+    bool vldst(Imm2 op1,
         ExtPredicate pred,
         Imm1 skipinv,
         Imm1 nosched,
@@ -599,16 +603,7 @@ public:
         Imm7 src0_n,
         Imm7 src1_n,
         Imm7 src2_n);
-
-    bool nop();
-    bool phas();
-
-    bool spec(
-        bool special,
-        SpecialCategory category);
-
-    bool kill(ShortPredicate pred);
-
+    // Instructions end
 private:
     // SPIR-V emitter
     spv::Builder &m_b;

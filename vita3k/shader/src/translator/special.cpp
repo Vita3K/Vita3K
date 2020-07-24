@@ -28,7 +28,22 @@
 using namespace shader;
 using namespace usse;
 
-bool USSETranslatorVisitor::phas() {
+bool USSETranslatorVisitor::phas(
+    Imm1 sprvv,
+    Imm1 end,
+    Imm1 imm,
+    Imm1 src1_bank_ext,
+    Imm1 src2_bank_ext,
+    Imm1 mode,
+    Imm1 rate_hi,
+    Imm1 rate_lo_or_nosched,
+    Imm3 wait_cond,
+    Imm8 temp_count,
+    Imm2 src1_bank,
+    Imm2 src2_bank,
+    Imm6 exe_addr_high,
+    Imm7 src1_n_or_exe_addr_mid,
+    Imm7 src2_n_or_exe_addr_low) {
     LOG_DISASM("{:016x}: PHAS", m_instr);
     return true;
 }

@@ -319,7 +319,7 @@ bool USSETranslatorVisitor::vtst(
 }
 
 bool USSETranslatorVisitor::vtstmsk(
-    Imm3 pred,
+    ExtPredicate pred,
     Imm1 skipinv,
     Imm1 onceonly,
     Imm1 syncstart,
@@ -359,7 +359,7 @@ bool USSETranslatorVisitor::br(
     Imm1 br_type,
     Imm1 any_inst,
     Imm1 all_inst,
-    std::uint32_t br_off) {
+    uint32_t br_off) {
     Opcode op = (br_type == 0) ? Opcode::BA : Opcode::BR;
 
     if (op == Opcode::BR && (br_off & (1 << 19))) {
