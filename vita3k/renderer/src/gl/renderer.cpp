@@ -6,6 +6,7 @@
 #include <renderer/gl/functions.h>
 #include <renderer/gl/types.h>
 
+#include <shader/spirv_recompiler.h>
 #include <shader/usse_program_analyzer.h>
 
 #include <features/state.h>
@@ -245,10 +246,12 @@ bool create(WindowPtr &window, std::unique_ptr<State> &state) {
         const std::string minor = version.substr(dot_pos + 1);
 
         gl_state.features.direct_pack_unpack_half = false;
+        gl_state.features.use_shader_binding = false;
 
         if (std::atoi(major.c_str()) >= 4 && minor.length() >= 1) {
             if (minor[0] >= '2') {
                 gl_state.features.direct_pack_unpack_half = true;
+                gl_state.features.use_shader_binding = true;
             }
         }
     }
@@ -415,11 +418,11 @@ void set_context(GLContext &context, GxmContextState &state, const GLRenderTarge
     // Bind it for programmable blending
     if (features.is_programmable_blending_need_to_bind_color_attachment()) {
         if (features.should_use_shader_interlock())
-            glBindImageTexture(COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, rt->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+            glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, rt->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
         else {
             // Hopefully no one will use slot 12
             // TODO: Move color attachment futher or try to preserve it
-            glActiveTexture(GL_TEXTURE0 + COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
+            glActiveTexture(GL_TEXTURE0 + shader::COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
             glBindTexture(GL_TEXTURE_2D, rt->color_attachment[0]);
         }
     }

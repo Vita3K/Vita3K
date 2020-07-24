@@ -15,6 +15,8 @@ class Builder;
 }
 
 namespace shader {
+static constexpr int COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0; ///< The slot that has our color attachment (for programmable blending) - image2D.
+static constexpr int COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER = 12; ///< The slot that has our color attachment (for programmable blending) - sampler2D.
 
 // Dump generated SPIR-V disassembly up to this point
 void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);

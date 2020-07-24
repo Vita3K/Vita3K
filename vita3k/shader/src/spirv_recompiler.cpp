@@ -564,6 +564,14 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             spv::Id color_attachment = b.createVariable(spv::StorageClassUniformConstant, image_type, "f_colorAttachment");
             translation_state.interfaces.push_back(color_attachment);
+
+            if (features.use_shader_binding) {
+                if (features.should_use_shader_interlock())
+                    b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
+                else
+                    b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
+            }
+
             spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
             translation_state.interfaces.push_back(current_coord);
             translation_state.frag_coord_id = current_coord;
@@ -835,8 +843,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         case SCE_GXM_PARAMETER_CATEGORY_SAMPLER: {
             const auto sampler_spv_var = create_param_sampler(b, parameter);
             samplers.emplace(parameter.resource_index, sampler_spv_var);
-
-            // TODO: I really want to give you binding.
+            if (features.use_shader_binding)
+                b.addDecoration(sampler_spv_var, spv::DecorationBinding, parameter.resource_index);
 
             break;
         }
