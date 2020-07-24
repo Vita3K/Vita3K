@@ -380,7 +380,14 @@ EXPORT(int, sceNetCheckDialogGetPS3ConnectInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetCheckDialogGetResult) {
+typedef struct SceNetCheckDialogResult {
+    SceInt32 result;
+    SceBool psnModeSucceeded;
+    SceUInt8 reserved[124];
+} SceNetCheckDialogResult;
+
+EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
+    result->result = -1;
     return UNIMPLEMENTED();
 }
 

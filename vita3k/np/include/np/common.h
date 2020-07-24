@@ -23,6 +23,19 @@
 
 namespace np {
 
+struct NpOnlineID {
+    // Maximum name is 16 bytes
+    char name[16];
+    char term;
+    char dummy[3];
+};
+
+struct NpId {
+    NpOnlineID online_id;
+    std::uint8_t opt[8];
+    std::uint8_t unk0[8];
+};
+
 struct CommunicationID {
     char data[9];
     char term;

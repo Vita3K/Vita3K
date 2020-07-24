@@ -53,6 +53,7 @@ struct NpTrophyState {
 struct NpState {
     bool inited = false;
     np_callbacks cbs;
+    int state_cb_id;
     int state = -1;
 
     NpTrophyState trophy_state;

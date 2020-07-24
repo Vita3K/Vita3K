@@ -23,19 +23,6 @@
 
 #include <np/functions.h>
 
-struct SceNpOnlineID {
-    // Maximum name is 16 bytes
-    char name[16];
-    char term;
-    char dummy;
-};
-
-struct SceNpId {
-    SceNpOnlineID online_id;
-    std::uint8_t opt[8];
-    std::uint8_t unk0[8];
-};
-
 EXPORT(int, sceNpAuthAbortOAuthRequest) {
     return UNIMPLEMENTED();
 }
@@ -101,25 +88,20 @@ EXPORT(int, sceNpManagerGetContentRatingFlag) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpManagerGetNpId, SceNpId *id) {
-    if (!host.np.inited) {
-        return SCE_NP_MANAGER_ERROR_NOT_INITIALIZED;
-    }
-
-    if (host.cfg.online_id[host.cfg.user_id].length() > 16) {
+EXPORT(int, sceNpManagerGetNpId, np::NpId *id) {
+    auto str = host.cfg.online_id[host.cfg.user_id];
+    if (str.length() > 16) {
         LOG_ERROR("Your online ID has over 16 characters, try again with shorter name");
         return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
     }
-
-    host.cfg.online_id[host.cfg.user_id].copy(id->online_id.name, host.cfg.online_id[host.cfg.user_id].length());
+    strcpy(id->online_id.name, str.c_str());
     id->online_id.term = '\0';
-    id->online_id.dummy = 0;
+    std::fill(id->online_id.dummy, id->online_id.dummy + 3, 0);
 
     // Fill the unused stuffs to 0 (prevent some weird things happen)
     std::fill(id->opt, id->opt + 8, 0);
     std::fill(id->unk0, id->unk0 + 8, 0);
 
-    // Everything is totally fine
     return 0;
 }
 
@@ -130,6 +112,7 @@ EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> dat
     sceNpServiceStateCallback.pc = callback.address();
     sceNpServiceStateCallback.data = data.address();
     host.np.cbs.emplace(cid, sceNpServiceStateCallback);
+    host.np.state_cb_id = cid;
     return 0;
 }
 
@@ -138,12 +121,14 @@ EXPORT(void, sceNpTerm) {
         LOG_WARN("NP library not initialized but termination got called");
         return;
     }
-
     deinit(host.np);
 }
 
 EXPORT(int, sceNpUnregisterServiceStateCallback) {
-    return UNIMPLEMENTED();
+    if (host.np.state_cb_id) {
+        host.np.cbs.erase(host.np.state_cb_id);
+    }
+    return 0;
 }
 
 BRIDGE_IMPL(sceNpAuthAbortOAuthRequest)
