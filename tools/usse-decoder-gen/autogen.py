@@ -157,7 +157,7 @@ def update_visitor():
 
     # update sources
     def src_pat(name):
-        return r'(bool USSETranslatorVisitor::' + name + r'\()[^)]+(\))'
+        return r'(bool USSETranslatorVisitor::' + name + r'\()[^)]*(\))'
     
     files = glob('../../vita3k/shader/src/translator/*.cpp')
     for file in files:
