@@ -7,6 +7,8 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
+#include <shader/spirv_recompiler.h>
+
 #include <gxm/functions.h>
 #include <vector>
 
@@ -183,18 +185,31 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     glDetachShader(program->get(), fragment_shader->get());
     glDetachShader(program->get(), vertex_shader->get());
 
-    glUseProgram(program->get());
-    const auto fragment_program_gxp = fragment_program_gxm.program.get(mem);
-    const auto parameters = gxp::program_parameters(*fragment_program_gxp);
-    for (uint32_t i = 0; i < fragment_program_gxp->parameter_count; ++i) {
-        const auto parameter = &parameters[i];
-        if (parameter->category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-            const auto name = gxp::parameter_name_raw(*parameter);
-            GLint loc = glGetUniformLocation(program->get(), name.c_str());
-            glUniform1i(loc, parameter->resource_index);
+    if (!features.use_shader_binding) {
+        glUseProgram(program->get());
+        const auto fragment_program_gxp = fragment_program_gxm.program.get(mem);
+        const auto parameters = gxp::program_parameters(*fragment_program_gxp);
+        for (uint32_t i = 0; i < fragment_program_gxp->parameter_count; ++i) {
+            const auto parameter = &parameters[i];
+            if (parameter->category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+                const auto name = gxp::parameter_name_raw(*parameter);
+                GLint loc = glGetUniformLocation(program->get(), name.c_str());
+                glUniform1i(loc, parameter->resource_index);
+            }
         }
+        if (fragment_program_gxp->is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
+            GLint loc = glGetUniformLocation(program->get(), "f_colorAttachment");
+
+            // It maybe a hand-written shader. So colorAttachment didn't exist
+            if (loc != -1) {
+                if (features.should_use_shader_interlock())
+                    glUniform1i(loc, shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
+                else
+                    glUniform1i(loc, shader::COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
+            }
+        }
+        glUseProgram(0);
     }
-    glUseProgram(0);
 
     program_cache.emplace(hashes, program);
 

@@ -106,18 +106,6 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         }
     }
 
-    if (fragment_gxp_program.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
-        GLint loc = glGetUniformLocation(program_id, "f_colorAttachment");
-
-        // It maybe a hand-written shader. So colorAttachment didn't exist
-        if (loc != -1) {
-            if (features.should_use_shader_interlock())
-                glUniform1i(loc, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
-            else
-                glUniform1i(loc, COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
-        }
-    }
-
     if (do_hardware_flip) {
         // Try to configure the vertex shader, to output coordinates suited for GXM viewport
         GLuint flip_vec_loc = glGetUniformLocation(program_id, "flip_vec");
