@@ -80,13 +80,13 @@ void remove_watch_memory_addr(KernelState &state, Address addr) {
 }
 
 // TODO use boost icl or interval tree instead if this turns out to be a significant bottleneck
-bool is_watch_memory_addr(KernelState &state, Address addr) {
+Address get_watch_memory_addr(KernelState &state, Address addr) {
     for (const auto &item : state.watch_memory_addrs) {
         if (item.second.start <= addr && addr < item.second.start + item.second.size) {
-            return true;
+            return item.second.start;
         }
     }
-    return false;
+    return 0;
 }
 
 void update_watches(KernelState &state) {

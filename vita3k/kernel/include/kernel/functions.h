@@ -31,6 +31,6 @@ void stop_all_threads(KernelState &kernel);
 
 void add_watch_memory_addr(KernelState &state, Address addr, size_t size);
 void remove_watch_memory_addr(KernelState &state, Address addr);
-bool is_watch_memory_addr(KernelState &state, Address addr);
+Address get_watch_memory_addr(KernelState &state, Address addr);
 
 void update_watches(KernelState &state);

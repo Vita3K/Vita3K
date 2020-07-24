@@ -52,7 +52,7 @@ struct ModuleRegion {
 typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
 typedef std::function<void(CPUState &cpu, uint32_t, SceUID)> CallImport;
 typedef std::function<std::string(Address)> ResolveNIDName;
-typedef std::function<bool(Address)> IsWatchMemoryAddr;
+typedef std::function<Address(Address)> GetWatchMemoryAddr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
 
@@ -60,7 +60,7 @@ struct CPUDepInject {
     CallImport call_import;
     CallSVC call_svc;
     ResolveNIDName resolve_nid_name;
-    IsWatchMemoryAddr is_watch_memory_addr;
+    GetWatchMemoryAddr get_watch_memory_addr;
     std::vector<ModuleRegion> module_regions;
     bool trace_stack;
 };

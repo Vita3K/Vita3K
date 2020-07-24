@@ -218,15 +218,15 @@ CPUDepInject create_cpu_dep_inject(HostState &host) {
     const ResolveNIDName resolve_nid_name = [&host](Address addr) {
         return ::resolve_nid_name(host.kernel, addr);
     };
-    auto is_watch_memory_addr = [&host](Address addr) {
-        return ::is_watch_memory_addr(host.kernel, addr);
+    auto get_watch_memory_addr = [&host](Address addr) {
+        return ::get_watch_memory_addr(host.kernel, addr);
     };
 
     CPUDepInject inject;
     inject.call_import = call_import;
     inject.resolve_nid_name = resolve_nid_name;
     inject.trace_stack = host.cfg.stack_traceback;
-    inject.is_watch_memory_addr = is_watch_memory_addr;
+    inject.get_watch_memory_addr = get_watch_memory_addr;
     inject.module_regions = host.kernel.module_regions;
     return inject;
 }
