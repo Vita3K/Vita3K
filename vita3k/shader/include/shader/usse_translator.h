@@ -103,7 +103,7 @@ public:
         for (std::uint8_t i = 1; i < 5; i++) {
             if (i == 1) {
                 type_f32_v[i] = type_f32;
-                const_f32_v0[i] = m_b.makeFloatConstant(const_f32[0]);
+                const_f32_v0[i] = const_f32[0];
             } else {
                 type_f32_v[i] = m_b.makeVectorType(type_f32, i);
 
