@@ -33,7 +33,7 @@ typedef std::map<Generation, std::string> GenerationNames;
 struct CPUState;
 struct MemState;
 
-typedef std::function<void(CPUState &, MemState &)> BreakpointCallback;
+typedef void (*BreakpointCallback)(CPUState &, MemState &);
 
 struct Breakpoint {
     bool gdb;
