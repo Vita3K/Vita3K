@@ -1226,7 +1226,9 @@ using SceGxmVertexOutputTexCoordInfos = std::array<uint8_t, 10>;
 
 #pragma pack(push, 1)
 struct SceGxmProgramVertexOutput {
-    std::uint8_t unk0[10];
+    std::uint8_t unk0[8];
+    std::uint8_t fragment_output_start; // this might be wrong
+    std::uint8_t unk1;
     std::uint8_t output_param_type;
     std::uint8_t output_comp_count;
 
@@ -1293,9 +1295,7 @@ struct SceGxmProgram {
     std::uint8_t unk12;
     std::uint8_t unk13;
 
-private:
     std::uint8_t type{ 0 }; // shader profile, seems to contain more info in bits after the first(bitfield?)
-public:
     std::uint8_t unk15;
     std::uint8_t unk16;
     std::uint8_t unk17;
