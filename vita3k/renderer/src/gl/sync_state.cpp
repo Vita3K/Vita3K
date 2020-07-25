@@ -112,8 +112,11 @@ void sync_mask(GLContext &context, const GxmContextState &state, const MemState 
         initial_byte = 0xFF;
     }
     std::vector<GLubyte> emptyData(width * height * 4, initial_byte);
+    GLint texId;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &texId);
     glBindTexture(GL_TEXTURE_2D, context.render_target->masktexture[0]);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &emptyData[0]);
+    glBindTexture(GL_TEXTURE_2D, texId);
 }
 
 void sync_viewport(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
@@ -213,9 +216,6 @@ bool sync_depth_data(const GxmContextState &state) {
     // Depth test.
     if (state.depth_stencil_surface.depthData) {
         glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-        glClearDepth(state.depth_stencil_surface.backgroundDepth);
-        glClear(GL_DEPTH_BUFFER_BIT);
         return true;
     }
 
@@ -224,10 +224,7 @@ bool sync_depth_data(const GxmContextState &state) {
 }
 
 void sync_stencil_func(const GxmContextState &state, const MemState &mem, const bool is_back_stencil) {
-    auto frag_program = state.fragment_program.get(mem);
-    if (!frag_program || !frag_program->is_maskupdate) {
-        set_stencil_state(is_back_stencil ? GL_BACK : GL_FRONT, is_back_stencil ? state.back_stencil : state.front_stencil);
-    }
+    set_stencil_state(is_back_stencil ? GL_BACK : GL_FRONT, is_back_stencil ? state.back_stencil : state.front_stencil);
 }
 
 bool sync_stencil_data(const GxmContextState &state, const MemState &mem) {
@@ -359,6 +356,14 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
     sync_clipping(context, state, hardware_flip);
     sync_cull(context, state);
 
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glClearDepth(state.depth_stencil_surface.backgroundDepth);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+
+    sync_mask(context, state, mem);
+
     if (sync_depth_data(state)) {
         sync_front_depth_func(state);
         sync_front_depth_write_enable(state);
@@ -372,7 +377,6 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
     sync_front_polygon_mode(state);
     sync_front_depth_bias(state);
     sync_blending(state, mem);
-    sync_mask(context, state, mem);
 
     // Textures.
     for (size_t i = 0; i < fragment_gxp.parameter_count; ++i) {

@@ -99,7 +99,7 @@ COMMAND(handle_draw) {
     case Backend::OpenGL: {
         gl::draw(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
             *state, features, type, format, indicies, count, mem, base_path, title_id, config.log_active_shaders, config.log_uniforms,
-            config.hardware_flip);
+            config.hardware_flip, config.texture_cache);
 
         break;
     }

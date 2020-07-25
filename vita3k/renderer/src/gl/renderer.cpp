@@ -431,8 +431,22 @@ void set_context(GLContext &context, GxmContextState &state, const MemState &mem
         context.render_target = reinterpret_cast<const GLRenderTarget *>(context.current_render_target);
     }
 
-    // Bind it for programmable blending
+    if (state.fragment_program && state.fragment_program.get(mem)->is_maskupdate) {
+        uint8_t mask = state.writing_mask ? 0xFF : 0;
+        set_uniform_buffer(context, false, 14, sizeof(mask), &mask);
 
+        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
+    }
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glClearDepth(state.depth_stencil_surface.backgroundDepth);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+
+    sync_mask(context, state, mem);
     // TODO: Take request to force load from given memory
 
     // Sync enable/disable depth/stencil based on depth stencil surface.
@@ -445,8 +459,6 @@ void set_context(GLContext &context, GxmContextState &state, const MemState &mem
         sync_stencil_func(state, mem, true);
         sync_stencil_func(state, mem, false);
     }
-
-    sync_mask(context, state, mem);
 }
 
 static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {

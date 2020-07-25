@@ -292,6 +292,7 @@ COMMAND_SET_STATE(stencil_func) {
         } else {
             assert(false);
         }
+        return;
     }
 
     switch (renderer.current_backend) {

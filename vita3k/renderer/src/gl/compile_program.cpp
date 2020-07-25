@@ -197,17 +197,6 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
                 glUniform1i(loc, parameter->resource_index);
             }
         }
-        if (fragment_program_gxp->is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
-            GLint loc = glGetUniformLocation(program->get(), "f_colorAttachment");
-
-            // It maybe a hand-written shader. So colorAttachment didn't exist
-            if (loc != -1) {
-                if (features.should_use_shader_interlock())
-                    glUniform1i(loc, shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
-                else
-                    glUniform1i(loc, shader::COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
-            }
-        }
         glUseProgram(0);
     }
 

@@ -59,7 +59,7 @@ void set_context(GLContext &ctx, GxmContextState &state, const MemState &mem, co
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, const bool do_flip);
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id,
-    const bool log_active_shaders, const bool log_uniforms, const bool do_hardware_flip);
+    const bool log_active_shaders, const bool log_uniforms, const bool do_hardware_flip, const bool texture_cache);
 
 void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);
 
