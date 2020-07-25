@@ -10,6 +10,8 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
+#include <shader/spirv_recompiler.h>
+
 #include <features/state.h>
 #include <gxm/functions.h>
 
@@ -36,7 +38,7 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
 }
 
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, const MemState &mem,
-    const char *base_path, const char *title_id, const bool log_active_shaders, const bool log_uniforms, const bool do_hardware_flip) {
+    const char *base_path, const char *title_id, const bool log_active_shaders, const bool log_uniforms, const bool do_hardware_flip, const bool texture_cache) {
     R_PROFILE(__func__);
 
     GLuint program_id = context.last_draw_program;
@@ -67,8 +69,6 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         }
     }
 
-    const SceGxmProgram &fragment_gxp_program = *state.fragment_program.get(mem)->program.get(mem);
-
     if (log_active_shaders) {
         const std::string hash_text_f = hex_string(state.fragment_program.get(mem)->renderer_data->hash);
         const std::string hash_text_v = hex_string(state.vertex_program.get(mem)->renderer_data->hash);
@@ -81,22 +81,16 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint *>(&program_id));
     }
 
-    if (gxm_fragment_program.is_maskupdate) {
-        uint8_t mask = state.writing_mask ? 0xFF : 0;
-        set_uniform_buffer(context, false, 14, sizeof(mask), &mask);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
-    } else {
-        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
-    }
-
-    const SceGxmProgram &fragment_gxp = *gxm_fragment_program.program.get(mem);
-    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_gxp);
+    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_program_gxp);
     std::array<bool, SCE_GXM_MAX_TEXTURE_UNITS> sampler_slot_used = { false };
-    for (int i = 0; i < fragment_gxp.parameter_count; ++i) {
+    for (int i = 0; i < fragment_program_gxp.parameter_count; ++i) {
         const SceGxmProgramParameter &param = fragment_params[i];
         if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
             continue;
+        }
+        if (context.need_resync_texture_slots.find(param.resource_index) != context.need_resync_texture_slots.end()) {
+            sync_texture(context, state, mem, param.resource_index, texture_cache, base_path, title_id);
+            context.need_resync_texture_slots.erase(param.resource_index);
         }
         sampler_slot_used[param.resource_index] = true;
     }
@@ -109,7 +103,6 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         if (loc != -1) {
             if (features.should_use_shader_interlock()) {
                 glBindImageTexture(image_index, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
-                glUniform1i(loc, image_index);
             } else {
                 // Tries to find unused texture slot
                 auto it = std::find(sampler_slot_used.begin(), sampler_slot_used.end(), false);
@@ -117,17 +110,18 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
                     assert(false); // hahahahahahahahahahaha
                 auto index = it - sampler_slot_used.begin();
                 sampler_slot_used[index] = true;
+                context.need_resync_texture_slots.insert(index);
+                glUniform1i(loc, index);
                 glActiveTexture(GL_TEXTURE0 + index);
                 glBindTexture(GL_TEXTURE_2D, texture);
-                glUniform1i(loc, index);
             }
         }
     };
 
-    if (fragment_gxp_program.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
-        bind_host_texture("f_colorAttachment", COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0]);
+    if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
+        bind_host_texture("f_colorAttachment", shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0]);
     }
-    bind_host_texture("f_mask", MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0]);
+    bind_host_texture("f_mask", shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0]);
 
     if (!features.use_ubo) {
         const SceGxmVertexProgram &gxm_vertex_program = *state.vertex_program.get(mem);
@@ -173,7 +167,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, nullptr, GL_DYNAMIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, indices, GL_DYNAMIC_DRAW);
 
-    if (fragment_gxp_program.is_native_color()) {
+    if (fragment_program_gxp.is_native_color()) {
         if (features.should_use_texture_barrier()) {
             // Needs texture barrier
             glTextureBarrier();

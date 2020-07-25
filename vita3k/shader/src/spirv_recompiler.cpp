@@ -305,18 +305,18 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
     spv::Id f32 = b.makeFloatType(32);
     spv::Id v4 = b.makeVectorType(f32, 4);
     spv::Id sampled_type = b.makeFloatType(32);
-
-    spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
     if (features.should_use_shader_interlock()) {
         sampled = 2;
         img_format = spv::ImageFormatRgba8;
-    } else {
+    }
+    spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
+    if (!features.should_use_shader_interlock()) {
         image_type = b.makeSampledImageType(image_type);
     }
 
-    spv::Id mask = b.createVariable(spv::StorageClassUniformConstant, image_type, name.c_str());
-    translation_state.interfaces.push_back(mask);
-    return mask;
+    spv::Id sampler = b.createVariable(spv::StorageClassUniformConstant, image_type, name.c_str());
+    translation_state.interfaces.push_back(sampler);
+    return sampler;
 }
 
 static DataType gxm_parameter_type_to_usse_data_type(const SceGxmParameterType param_type) {
@@ -551,6 +551,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     auto mask = create_builtin_sampler(b, features, translation_state, "f_mask");
     translation_state.mask_id = mask;
 
+    if (features.should_use_shader_interlock())
+        b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
+
     spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
     translation_state.interfaces.push_back(current_coord);
     translation_state.frag_coord_id = current_coord;
@@ -572,22 +575,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             translation_state.last_frag_data_id = last_frag_data_arr;
         } else if (features.support_shader_interlock || features.support_texture_barrier) {
             // Create a global sampler, which is our color attachment
-            spv::Id v4 = b.makeVectorType(sampled_type, 4);
-
-            // spv::Id color_attachment = b.createVariable(spv::StorageClassUniformConstant, image_type, "f_colorAttachment");
-            // translation_state.interfaces.push_back(color_attachment);
-
-            // // if (features.use_shader_binding) {
-            // //     if (features.should_use_shader_interlock())
-            // //         b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
-            // //     else
-            // //         b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_SAMPLER);
-            // // }
-
-            // // spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
-            // translation_state.interfaces.push_back(current_coord);
-            // translation_state.frag_coord_id = current_coord;
             auto color_attachment = create_builtin_sampler(b, features, translation_state, "f_colorAttachment");
+            if (features.should_use_shader_interlock())
+                b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
             translation_state.color_attachment_id = color_attachment;
 
             spv::Id i32 = b.makeIntegerType(32, true);

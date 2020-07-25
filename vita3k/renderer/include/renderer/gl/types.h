@@ -26,6 +26,7 @@
 
 #include <map>
 #include <memory>
+#include <set>
 #include <tuple>
 #include <vector>
 
@@ -36,9 +37,6 @@ typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
 struct SceGxmProgramParameter;
 
 namespace renderer::gl {
-static constexpr GLint COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0; ///< The slot that has our color attachment (for programmable blending) - image2D.
-static constexpr GLint MASK_TEXTURE_SLOT_IMAGE = 1; ///< The slot that has our color attachment (for programmable blending) - image2D.
-
 struct ExcludedUniform {
     std::string name;
     GLuint program;
@@ -76,6 +74,8 @@ struct GLContext : public renderer::Context {
     GLuint last_draw_program{ 0 };
 
     float viewport_flip[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+    std::set<GLuint> need_resync_texture_slots;
 
     std::vector<UniformSetRequest> vertex_set_requests;
     std::vector<UniformSetRequest> fragment_set_requests;
