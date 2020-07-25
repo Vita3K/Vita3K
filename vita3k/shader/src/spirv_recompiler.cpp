@@ -87,6 +87,7 @@ struct PAVar {
 };
 
 struct TranslationState {
+    std::string hash;
     spv::Id last_frag_data_id = spv::NoResult;
     spv::Id color_attachment_id = spv::NoResult;
     spv::Id mask_id = spv::NoResult;
@@ -1018,7 +1019,18 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     color_val_operand.type = gxm_parameter_type_to_usse_data_type(param_type);
 
-    spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, 0);
+    auto vertex_outputs_ptr = reinterpret_cast<const SceGxmProgramVertexOutput *>(
+        reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
+
+    int reg_off = 0;
+    if (!program.is_native_color() && vertex_outputs_ptr->output_param_type == 1) {
+        reg_off = vertex_outputs_ptr->fragment_output_start;
+        if (reg_off != 0) {
+            LOG_INFO("Non zero pa offset: {} at {}", reg_off, translate_state.hash.c_str());
+        }
+    }
+
+    spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
     if (program.is_native_color() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntegerType(32, true);
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), b.createLoad(translate_state.frag_coord_id));
@@ -1184,6 +1196,8 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
 
     std::string entry_point_name;
     spv::ExecutionModel execution_model;
+
+    translation_state.hash = shader_hash;
 
     switch (program_type) {
     default:
