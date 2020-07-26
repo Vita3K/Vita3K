@@ -1038,16 +1038,20 @@ bool USSETranslatorVisitor::sop2(
             return m_b.createBinOp(spv::OpFSub, type, lhs, rhs);
         }
 
+        case Opcode::FMIN:
         case Opcode::VMIN: {
             return m_b.createBuiltinCall(type, std_builtins, GLSLstd450FMin, { lhs, rhs });
         }
 
+        case Opcode::FMAX:
         case Opcode::VMAX: {
             return m_b.createBuiltinCall(type, std_builtins, GLSLstd450FMax, { lhs, rhs });
         }
 
-        default:
+        default: {
+            LOG_ERROR("Unsuppported sop2 opcode: {}", disasm::opcode_str(op));
             break;
+        }
         }
 
         return spv::NoResult;
