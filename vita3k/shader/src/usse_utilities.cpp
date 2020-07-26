@@ -217,6 +217,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
 }
 
 spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type) {
+    // TODO: doing this for uint8 is probably not right
     switch (type) {
     case DataType::F16: {
         if (!utils.unpack_f16) {
@@ -225,7 +226,7 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
 
         return b.createFunctionCall(utils.unpack_f16, { scalar });
     }
-
+    case DataType::UINT8:
     // TODO: Not really FX8?
     case DataType::C10: {
         if (!utils.unpack_fx8) {
@@ -234,9 +235,10 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
 
         return b.createFunctionCall(utils.unpack_fx8, { scalar });
     }
-
-    default:
+    default: {
+        LOG_ERROR("Unsupported unpack type: {}", log_hex(type));
         break;
+    }
     }
 
     return spv::NoResult;
@@ -251,7 +253,7 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
 
         return b.createFunctionCall(utils.pack_f16, { vec });
     }
-
+    case DataType::UINT8:
     // TODO: Not really FX8?
     case DataType::C10: {
         if (!utils.pack_fx8) {
@@ -261,8 +263,10 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
         return b.createFunctionCall(utils.pack_fx8, { vec });
     }
 
-    default:
+    default: {
+        LOG_ERROR("Unsupported pack type: {}", log_hex(source_type));
         break;
+    }
     }
 
     return spv::NoResult;

@@ -330,6 +330,7 @@ static DataType gxm_parameter_type_to_usse_data_type(const SceGxmParameterType p
         break;
 
     case SCE_GXM_PARAMETER_TYPE_U8:
+        return DataType::C10;
     case SCE_GXM_PARAMETER_TYPE_S8:
         return DataType::C10;
 
