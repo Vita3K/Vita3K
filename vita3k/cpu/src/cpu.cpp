@@ -51,6 +51,8 @@ struct CPUState {
     uc_hook memory_read_hook = 0;
     uc_hook memory_write_hook = 0;
     uc_hook code_hook = 0;
+    bool returning = false;
+    std::stack<Address> lr_stack;
 
     bool did_break = false;
     bool did_inject = false;
@@ -172,26 +174,33 @@ constexpr uint32_t INT_BKPT = 7;
 
 static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
     assert(intno == INT_SVC || intno == INT_BKPT);
-
     CPUState &state = *static_cast<CPUState *>(user_data);
-
     uint32_t pc = read_pc(state);
-    auto thumb_mode = is_thumb_mode(uc);
+
     if (intno == INT_SVC) {
-        if (thumb_mode) {
-            const Address svc_address = pc - 2;
-            uint16_t svc_instruction = 0;
-            uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
-            assert(err == UC_ERR_OK);
-            const uint8_t imm = svc_instruction & 0xff;
+        assert(!is_thumb_mode(uc));
+        uint32_t before_inst = 0;
+        const Address before_addr = pc - 8;
+        uc_err err = uc_mem_read(uc, before_addr, &before_inst, sizeof(before_inst));
+        assert(err == UC_ERR_OK);
+
+        const Address svc_address = pc - 4;
+        uint32_t svc_instruction = 0;
+        err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
+        assert(err == UC_ERR_OK);
+        const uint32_t imm = svc_instruction & 0xffffff;
+
+        if (IMPORT_CALL_LOG_LEVEL != LogCallAndReturn) {
+            state.call_svc(state, imm, pc);
+        } else if (before_inst != 0xef000053) {
+            state.returning = false;
+            push_lr(state, read_lr(state));
+            write_lr(state, pc);
             state.call_svc(state, imm, pc);
         } else {
-            const Address svc_address = pc - 4;
-            uint32_t svc_instruction = 0;
-            uc_err err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
-            assert(err == UC_ERR_OK);
-            const uint32_t imm = svc_instruction & 0xffffff;
-            state.call_svc(state, imm, pc);
+            state.returning = true;
+            state.call_svc(state, 53, pc);
+            write_pc(state, pop_lr(state));
         }
     } else if (intno == INT_BKPT) {
         auto &bks = state.mem->breakpoints;
@@ -273,6 +282,20 @@ void log_stack_frames(CPUState &cpu) {
         LOG_INFO("addr: {}", log_hex(sf.addr));
         LOG_INFO("fp: {}", sf.sp);
     }
+}
+
+bool is_returning(CPUState &cpu) {
+    return cpu.returning;
+}
+
+void push_lr(CPUState &cpu, Address lr) {
+    cpu.lr_stack.push(lr);
+}
+
+Address pop_lr(CPUState &cpu) {
+    int out = cpu.lr_stack.top();
+    cpu.lr_stack.pop();
+    return out;
 }
 
 CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, MemState &mem, CPUDepInject &inject) {

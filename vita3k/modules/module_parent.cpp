@@ -110,10 +110,10 @@ std::string resolve_nid_name(KernelState &kernel, Address addr) {
     return import_name(nid);
 }
 
-static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address pc) {
+static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address lr) {
     if (nid_blacklist.find(nid) == nid_blacklist.end()) {
         const char *const name = import_name(nid);
-        LOG_TRACE("[{}LE] TID: {:<3} FUNC: {} {} at {}", emulation_level, thread_id, log_hex(nid), name, log_hex(pc));
+        LOG_TRACE("[{}LE] TID: {:<3} FUNC: {} {} at {}", emulation_level, thread_id, log_hex(nid), name, log_hex(lr));
     }
 }
 
@@ -122,15 +122,16 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
 
     if (!export_pc) {
         // HLE - call our C++ function
-
+        if (is_returning(cpu))
+            return;
         if (host.kernel.watch_import_calls) {
             const std::unordered_set<uint32_t> hle_nid_blacklist = {
                 0xB295EB61, // sceKernelGetTLSAddr
                 0x46E7BE7B, // sceKernelLockLwMutex
                 0x91FA6614, // sceKernelUnlockLwMutex
             };
-            auto pc = read_pc(cpu);
-            log_import_call('H', nid, thread_id, hle_nid_blacklist, pc);
+            auto lr = read_lr(cpu);
+            log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);
         }
         const ImportFn fn = resolve_import(nid);
         if (fn) {
@@ -144,12 +145,14 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         }
     } else {
         // LLE - directly run ARM code imported from some loaded module
-
-        if (host.kernel.watch_import_calls) {
-            const std::unordered_set<uint32_t> lle_nid_blacklist = {};
-            auto pc = read_pc(cpu);
-            log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
+        if (is_returning(cpu)) {
+            LOG_TRACE("[LLE] TID: {:<3} FUNC: {} returned {}", thread_id, import_name(nid), log_hex(read_reg(cpu, 0)));
+            return;
         }
+
+        const std::unordered_set<uint32_t> lle_nid_blacklist = {};
+        auto pc = read_pc(cpu);
+        log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         write_pc(*thread->cpu, export_pc);
