@@ -153,22 +153,37 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
 
         const ExportNids::iterator export_address = kernel.export_nids.find(nid);
         uint32_t *const stub = entry.get(mem);
-        if (TRACK_IMPORT_CALL_RETURN) {
+        switch (IMPORT_CALL_LOG_LEVEL) {
+        case LogCallAndReturn: {
             stub[0] = 0xef000053; // svc #53 - Call our interrupt hook.
             stub[1] = 0xef000000; // svc #0 - Call our interrupt hook again to log the return value.
             stub[2] = nid; // Our interrupt hook will read this.
-        } else if (export_address == kernel.export_nids.end() || kernel.watch_import_calls) {
+            break;
+        }
+        case LogCall: {
             stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
             stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
             stub[2] = nid; // Our interrupt hook will read this.
-        } else {
-            Address func_address = export_address->second;
-            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)func_address, 12);
-            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(func_address >> 16), 12);
-            stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+            break;
+        }
+        case None: {
+            if (export_address == kernel.export_nids.end()) {
+                // TODO replace these into non-interrupt ones like below when the weak module is loaded
+                stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
+                stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+                stub[2] = nid; // Our interrupt hook will read this.
+            } else {
+                Address func_address = export_address->second;
+                stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)func_address, 12);
+                stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(func_address >> 16), 12);
+                stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+            }
+            break;
+        }
+        default:
+            assert(false);
         }
     }
-
     return true;
 }
 

@@ -110,10 +110,10 @@ std::string resolve_nid_name(KernelState &kernel, Address addr) {
     return import_name(nid);
 }
 
-static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address pc) {
+static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address lr) {
     if (nid_blacklist.find(nid) == nid_blacklist.end()) {
         const char *const name = import_name(nid);
-        LOG_TRACE("[{}LE] TID: {:<3} FUNC: {} {} at {}", emulation_level, thread_id, log_hex(nid), name, log_hex(pc));
+        LOG_TRACE("[{}LE] TID: {:<3} FUNC: {} {} at {}", emulation_level, thread_id, log_hex(nid), name, log_hex(lr));
     }
 }
 
@@ -130,8 +130,8 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
                 0x46E7BE7B, // sceKernelLockLwMutex
                 0x91FA6614, // sceKernelUnlockLwMutex
             };
-            auto pc = read_lr(cpu);
-            log_import_call('H', nid, thread_id, hle_nid_blacklist, pc);
+            auto lr = read_lr(cpu);
+            log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);
         }
         const ImportFn fn = resolve_import(nid);
         if (fn) {

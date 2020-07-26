@@ -27,7 +27,13 @@
 struct CPUState;
 struct MemState;
 
-constexpr bool TRACK_IMPORT_CALL_RETURN = false;
+enum ImportCallLogLevel {
+    None,
+    LogCall,
+    LogCallAndReturn
+};
+
+constexpr ImportCallLogLevel IMPORT_CALL_LOG_LEVEL = None;
 
 struct CPUContext {
     uint32_t cpu_registers[16];

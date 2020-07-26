@@ -188,7 +188,7 @@ static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
         assert(err == UC_ERR_OK);
         const uint32_t imm = svc_instruction & 0xffffff;
 
-        if (!TRACK_IMPORT_CALL_RETURN) {
+        if (IMPORT_CALL_LOG_LEVEL != LogCallAndReturn) {
             state.call_svc(state, imm, pc);
         } else if (before_inst != 0xef000053) {
             state.returning = false;
