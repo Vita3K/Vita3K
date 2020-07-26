@@ -466,11 +466,31 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             const auto swizzle_texcoord = (descriptor->attribute_info & 0x300);
 
             std::string component_type_str = "????";
-
-            if (component_type == 3) {
-                component_type_str = "float";
-            } else if (component_type == 2) {
+            DataType store_type = DataType::F16;
+            switch (component_type) {
+            case 0: {
+                component_type_str = "uchar";
+                store_type = DataType::UINT8;
+                break;
+            }
+            case 1: {
+                //Maybe char?
+                LOG_WARN("Unsupported texture component: {}", component_type);
+                break;
+            }
+            case 2: {
                 component_type_str = "half";
+                store_type = DataType::F16;
+                break;
+            }
+            case 3: {
+                component_type_str = "float";
+                store_type = DataType::F32;
+                break;
+            }
+            default: {
+                LOG_WARN("Unsupported texture component: {}", component_type);
+            }
             }
 
             std::string swizzle_str = ".xy";
@@ -512,7 +532,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             tex_query_var_name += std::to_string(tex_coord_index);
 
             NonDependentTextureQueryCallInfo tex_query_info;
-            tex_query_info.store_type = (component_type == 3) ? static_cast<int>(DataType::F32) : static_cast<int>(DataType::F16);
+            tex_query_info.store_type = static_cast<int>(store_type);
 
             // Size of this extra pa occupied
             // Force this to be PRIVATE

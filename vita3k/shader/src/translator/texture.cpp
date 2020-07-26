@@ -60,6 +60,10 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
         image_sample = m_b.createCompositeConstruct(type_f32_v[2], { pack1, pack2 });
     }
 
+    if (dest_type == DataType::UINT8) {
+        image_sample = utils::pack_one(m_b, m_util_funcs, m_features, image_sample, DataType::UINT8);
+    }
+
     return image_sample;
 }
 
@@ -70,7 +74,24 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
     store_op.type = DataType::F32;
 
     for (auto &texture_query : texture_queries) {
-        const Imm4 dest_mask = (texture_query.store_type == (int)DataType::F16) ? 0b11 : 0b1111;
+        Imm4 dest_mask;
+        switch (texture_query.store_type) {
+        case (int)DataType::F16: {
+            dest_mask = 0b11;
+            break;
+        }
+
+        case (int)DataType::F32: {
+            dest_mask = 0b1111;
+            break;
+        }
+        case (int)DataType::UINT8: {
+            dest_mask = 0b1;
+            break;
+        }
+        default:
+            assert(false);
+        }
         spv::Id fetch_result = do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(texture_query.store_type));
 
         store_op.num = texture_query.dest_offset;
