@@ -1118,6 +1118,11 @@ bool USSETranslatorVisitor::sop2(
     // Final result. Do binary operation and then store
     store(inst.opr.dest, apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs), 0b0111, dest_repeat_offset);
     store(inst.opr.dest, apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs), 0b1000, dest_repeat_offset);
+
+    // TODO log correctly
+    LOG_DISASM("{:016x}: {}", m_instr, disasm::opcode_str(color_op));
+    LOG_DISASM("{:016x}: {}", m_instr, disasm::opcode_str(alpha_op));
+
     END_REPEAT()
 
     return true;
