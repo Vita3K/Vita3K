@@ -33,6 +33,21 @@ enum class ShortPredicate : uint8_t {
     NEGP0,
 };
 
+inline ExtPredicate short_predicate_to_ext(ShortPredicate pred) {
+    switch (pred) {
+    case ShortPredicate::NONE:
+        return ExtPredicate::NONE;
+    case ShortPredicate::P0:
+        return ExtPredicate::P0;
+    case ShortPredicate::P1:
+        return ExtPredicate::P1;
+    case ShortPredicate::NEGP0:
+        return ExtPredicate::NEGP0;
+    default:
+        return ExtPredicate::NONE;
+    }
+}
+
 // NOTE: prepended with "_" to allow for '1' and '2' (so that everything is 1 character long)
 enum class SwizzleChannel {
     _X,

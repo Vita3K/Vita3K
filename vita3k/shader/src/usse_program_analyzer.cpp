@@ -96,6 +96,11 @@ std::uint8_t get_predicate(const std::uint64_t inst) {
             return 0;
         }
     }
+    // SOP2
+    case 0b10000: {
+        uint8_t predicate = ((inst >> 32) & ~0xF9FFFFFF) >> 25;
+        return static_cast<uint8_t>(short_predicate_to_ext(static_cast<ShortPredicate>(predicate)));
+    }
     case 0b00000:
         return ((inst >> 32) & ~0xFCFFFFFF) >> 24;
 
