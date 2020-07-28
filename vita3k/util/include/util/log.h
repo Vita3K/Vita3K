@@ -23,6 +23,10 @@
 
 #include <type_traits>
 
+#include <iomanip>
+#include <iostream>
+#include <vector>
+
 namespace logging {
 
 ExitCode init(const Root &root_paths);
@@ -65,3 +69,5 @@ std::string log_hex(T val) {
     using unsigned_type = typename std::make_unsigned<T>::type;
     return fmt::format("0x{:0X}", static_cast<unsigned_type>(val));
 }
+
+void dump_hex(const std::vector<uint8_t> &bytes, std::ostream &stream);
