@@ -61,6 +61,8 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     }
 
     if (dest_type == DataType::UINT8) {
+        // Texel is normalized we have to denormalize it
+        image_sample = utils::scale_float_for_u8(m_b, image_sample);
         image_sample = utils::pack_one(m_b, m_util_funcs, m_features, image_sample, DataType::UINT8);
     }
 
