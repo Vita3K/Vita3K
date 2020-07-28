@@ -32,6 +32,7 @@ spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val);
 
 spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size);
 
+spv::Id unwrap_type(spv::Builder &b, spv::Id type);
 template <typename F>
 void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite, spv::Id iterator_limit, F body) {
     auto blocks = b.makeNewLoop();
