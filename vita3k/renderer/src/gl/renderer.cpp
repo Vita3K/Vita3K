@@ -474,7 +474,7 @@ static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_
     }
 }
 
-void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, const bool do_flip) {
+void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format, const bool do_flip) {
     R_PROFILE(__func__);
 
     if (pixels == nullptr) {
@@ -482,7 +482,21 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     }
 
     glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
-    glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    if (format == SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR) {
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    } else if (format == SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA) {
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        for (int i = 0; i < width * height; ++i) {
+            uint8_t *pixel = reinterpret_cast<uint8_t *>(&pixels[i]);
+            std::swap(pixel[0], pixel[3]);
+            std::swap(pixel[1], pixel[2]);
+        }
+    } else {
+        // TODO wise color conversino implementation
+        // maybe we can use PBO?
+        assert(false);
+    }
+
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 
     if (do_flip) {

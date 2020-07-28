@@ -56,7 +56,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
 bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip, const std::string &base_path, const std::string &title_id);
 void sync_rendertarget(const GLRenderTarget &rt);
 void set_context(GLContext &ctx, GxmContextState &state, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
-void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, const bool do_flip);
+void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format, const bool do_flip);
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id,
     const bool log_active_shaders, const bool log_uniforms, const bool do_hardware_flip, const bool texture_cache);
