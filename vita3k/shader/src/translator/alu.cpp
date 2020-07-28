@@ -992,10 +992,9 @@ bool USSETranslatorVisitor::sop2(
     inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, false, 7, m_second_program);
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_bank_ext, false, 7, m_second_program);
 
-    // For now, they will have C10 types.
-    inst.opr.src1.type = DataType::C10;
-    inst.opr.src2.type = DataType::C10;
-    inst.opr.dest.type = DataType::C10;
+    inst.opr.src1.type = DataType::UINT8;
+    inst.opr.src2.type = DataType::UINT8;
+    inst.opr.dest.type = DataType::UINT8;
 
     if (cop >= sizeof(operations) / sizeof(Opcode)) {
         LOG_ERROR("Invalid color opcode: {}", (int)cop);
@@ -1085,6 +1084,12 @@ bool USSETranslatorVisitor::sop2(
     spv::Id src1_alpha = load(inst.opr.src1, 0b1000, src1_repeat_offset);
     spv::Id src2_alpha = load(inst.opr.src2, 0b1000, src2_repeat_offset);
 
+    // Normalize u8 values
+    src1_color = utils::unscale_float_for_u8(m_b, src1_color);
+    src2_color = utils::unscale_float_for_u8(m_b, src2_color);
+    src1_alpha = utils::unscale_float_for_u8(m_b, src1_alpha);
+    src2_alpha = utils::unscale_float_for_u8(m_b, src2_alpha);
+
     spv::Id src_color_type = m_b.getTypeId(src1_color);
     spv::Id src_alpha_type = m_b.getTypeId(src1_alpha);
 
@@ -1115,9 +1120,16 @@ bool USSETranslatorVisitor::sop2(
     factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_a_lhs, src1_alpha);
     factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_a_rhs, src2_alpha);
 
+    auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
+    auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
+
+    // Undo normalization
+    color_res = utils::scale_float_for_u8(m_b, color_res);
+    alpha_res = utils::scale_float_for_u8(m_b, alpha_res);
+
     // Final result. Do binary operation and then store
-    store(inst.opr.dest, apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs), 0b0111, dest_repeat_offset);
-    store(inst.opr.dest, apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs), 0b1000, dest_repeat_offset);
+    store(inst.opr.dest, color_res, 0b0111, dest_repeat_offset);
+    store(inst.opr.dest, alpha_res, 0b1000, dest_repeat_offset);
 
     // TODO log correctly
     LOG_DISASM("{:016x}: {}", m_instr, disasm::opcode_str(color_op));
