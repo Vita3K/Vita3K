@@ -252,7 +252,7 @@ bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderSt
     return true;
 }
 
-bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int block_num, const int size, const void *data) {
+bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int block_num, const int size, const void *data, bool log_active_shader) {
     const int binding_base = vertex_shader ? 0 : SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
     glBindBuffer(GL_UNIFORM_BUFFER, context.uniform_buffer[binding_base + block_num]);
     glBufferData(GL_UNIFORM_BUFFER, size, nullptr, GL_STATIC_DRAW);
@@ -260,6 +260,11 @@ bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, binding_base + block_num, context.uniform_buffer[binding_base + block_num]);
+
+    if (log_active_shader) {
+        std::vector<uint8_t> my_data((uint8_t *)data, (uint8_t *)data + size);
+        context.ubo_data[binding_base + block_num] = my_data;
+    }
 
     return true;
 }

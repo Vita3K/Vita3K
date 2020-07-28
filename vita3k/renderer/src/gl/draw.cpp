@@ -7,6 +7,8 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 
+#include <sstream>
+
 #include <gxm/types.h>
 #include <util/log.h>
 
@@ -74,6 +76,14 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         const std::string hash_text_v = hex_string(state.vertex_program.get(mem)->renderer_data->hash);
 
         LOG_DEBUG("\nVertex  : {}\nFragment: {}", hash_text_v, hash_text_f);
+
+        std::stringstream vert_ub("");
+        dump_hex(context.ubo_data[0], vert_ub);
+        LOG_DEBUG("Vertex default uniform buffer: \n{}", vert_ub.str());
+
+        std::stringstream frag_ub("");
+        dump_hex(context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER], frag_ub);
+        LOG_DEBUG("Fragment default uniform buffer: \n{}", frag_ub.str());
     }
 
     if (!program_id) {

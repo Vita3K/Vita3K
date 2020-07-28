@@ -433,7 +433,7 @@ void set_context(GLContext &context, GxmContextState &state, const MemState &mem
 
     if (state.fragment_program && state.fragment_program.get(mem)->is_maskupdate) {
         uint8_t mask = state.writing_mask ? 0xFF : 0;
-        set_uniform_buffer(context, false, 14, sizeof(mask), &mask);
+        set_uniform_buffer(context, false, 14, sizeof(mask), &mask, false);
 
         glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
     } else {

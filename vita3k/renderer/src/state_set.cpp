@@ -105,7 +105,7 @@ COMMAND_SET_STATE(uniform_buffer) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), is_vertex, block_num, size, data);
+        gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), is_vertex, block_num, size, data, config.log_active_shaders);
         delete data;
 
         break;
