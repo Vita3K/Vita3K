@@ -16,6 +16,8 @@ struct SpirvUtilFunctions {
     spv::Function *unpack_f16{ nullptr };
     spv::Function *pack_fx8{ nullptr };
     spv::Function *unpack_fx8{ nullptr };
+    spv::Function *pack_u8{ nullptr };
+    spv::Function *unpack_u8{ nullptr };
 };
 
 spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask);
@@ -33,6 +35,10 @@ spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val);
 spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size);
 
 spv::Id unwrap_type(spv::Builder &b, spv::Id type);
+
+spv::Id scale_float_for_u8(spv::Builder &b, spv::Id opr);
+spv::Id unscale_float_for_u8(spv::Builder &b, spv::Id opr);
+
 template <typename F>
 void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite, spv::Id iterator_limit, F body) {
     auto blocks = b.makeNewLoop();

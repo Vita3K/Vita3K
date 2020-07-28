@@ -167,6 +167,59 @@ static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &fe
     return fx8_pack_func;
 }
 
+static constexpr float MAX_U8 = 255.0f;
+
+static spv::Function *make_u8_unpack_func(spv::Builder &b, const FeatureState &features) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *u8_unpack_func_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
+
+    spv::Function *u8_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v4, "unpack4xU8", { type_f32 },
+        decorations, &u8_unpack_func_block);
+
+    spv::Id extracted = u8_unpack_func->getParamId(0);
+
+    extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
+    extracted = b.createBuiltinCall(type_f32_v4, b.import("GLSL.std.450"), GLSLstd450UnpackUnorm4x8, { extracted });
+
+    extracted = shader::usse::utils::scale_float_for_u8(b, extracted);
+
+    b.makeReturn(false, extracted);
+    b.setBuildPoint(last_build_point);
+
+    return u8_unpack_func;
+}
+
+static spv::Function *make_u8_pack_func(spv::Builder &b, const FeatureState &features) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *u8_pack_func_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
+
+    spv::Function *u8_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "pack4xU8", { type_f32_v4 },
+        decorations, &u8_pack_func_block);
+
+    spv::Id extracted = u8_pack_func->getParamId(0);
+
+    extracted = shader::usse::utils::unscale_float_for_u8(b, extracted);
+    extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackUnorm4x8, { extracted });
+    extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
+
+    b.makeReturn(false, extracted);
+    b.setBuildPoint(last_build_point);
+
+    return u8_pack_func;
+}
+
 static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
@@ -226,8 +279,14 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
 
         return b.createFunctionCall(utils.unpack_f16, { scalar });
     }
-    case DataType::UINT8:
-    // TODO: Not really FX8?
+    case DataType::UINT8: {
+        if (!utils.unpack_u8) {
+            utils.unpack_u8 = make_u8_unpack_func(b, features);
+        }
+
+        return b.createFunctionCall(utils.unpack_u8, { scalar });
+    }
+        // TODO: Not really FX8?
     case DataType::C10: {
         if (!utils.unpack_fx8) {
             utils.unpack_fx8 = make_fx8_unpack_func(b, features);
@@ -253,7 +312,13 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
 
         return b.createFunctionCall(utils.pack_f16, { vec });
     }
-    case DataType::UINT8:
+    case DataType::UINT8: {
+        if (!utils.pack_u8) {
+            utils.pack_u8 = make_u8_pack_func(b, features);
+        }
+
+        return b.createFunctionCall(utils.pack_u8, { vec });
+    }
     // TODO: Not really FX8?
     case DataType::C10: {
         if (!utils.pack_fx8) {
@@ -932,4 +997,40 @@ spv::Id shader::usse::utils::unwrap_type(spv::Builder &b, spv::Id type) {
         return b.getContainedTypeId(type);
     }
     return type;
+}
+
+spv::Id shader::usse::utils::scale_float_for_u8(spv::Builder &b, spv::Id opr) {
+    auto type = unwrap_type(b, b.getTypeId(opr));
+    assert(b.isFloatType(type));
+    spv::Id factor;
+    if (b.getScalarTypeWidth(type) == 16)
+        factor = b.makeFloat16Constant(MAX_U8);
+    else
+        factor = b.makeFloatConstant(MAX_U8);
+    if (b.isVectorType(b.getTypeId(opr))) {
+        std::vector<spv::Id> ops;
+        for (int i = 0; i < b.getNumComponents(opr); ++i)
+            ops.push_back(factor);
+        factor = b.makeCompositeConstant(b.getTypeId(opr), ops);
+    }
+
+    return b.createBinOp(spv::OpFMul, b.getTypeId(opr), opr, factor);
+}
+
+spv::Id shader::usse::utils::unscale_float_for_u8(spv::Builder &b, spv::Id opr) {
+    auto type = unwrap_type(b, b.getTypeId(opr));
+    assert(b.isFloatType(opr));
+    spv::Id factor;
+    if (b.getScalarTypeWidth(type) == 16)
+        factor = b.makeFloat16Constant(MAX_U8);
+    else
+        factor = b.makeFloatConstant(MAX_U8);
+    if (b.isVectorType(b.getTypeId(opr))) {
+        std::vector<spv::Id> ops;
+        for (int i = 0; i < b.getNumComponents(opr); ++i)
+            ops.push_back(factor);
+        factor = b.makeCompositeConstant(b.getTypeId(opr), ops);
+    }
+
+    return b.createBinOp(spv::OpFDiv, b.getTypeId(opr), opr, factor);
 }
