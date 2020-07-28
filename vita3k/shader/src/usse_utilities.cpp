@@ -270,7 +270,6 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
 }
 
 spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type) {
-    // TODO: doing this for uint8 is probably not right
     switch (type) {
     case DataType::F16: {
         if (!utils.unpack_f16) {
