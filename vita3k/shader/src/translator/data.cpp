@@ -531,12 +531,12 @@ bool USSETranslatorVisitor::vpck(
     GET_REPEAT(inst);
 
     if (src2_mask != 0) {
-        LOG_DISASM("{} {} ({} {})", disasm_str, disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset),
+        LOG_DISASM("{} {} ({} {}) [{}]", disasm_str, disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset),
             disasm::operand_to_str(inst.opr.src1, src1_mask, src1_repeat_offset),
-            disasm::operand_to_str(inst.opr.src2, src2_mask, src2_repeat_offset));
+            disasm::operand_to_str(inst.opr.src2, src2_mask, src2_repeat_offset), scale ? "scale" : "noscale");
     } else {
-        LOG_DISASM("{} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset),
-            disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset));
+        LOG_DISASM("{} {} {} [{}]", disasm_str, disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset),
+            disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset), scale ? "scale" : "noscale");
     }
 
     spv::Id source = load(inst.opr.src1, src1_mask, src1_repeat_offset);
