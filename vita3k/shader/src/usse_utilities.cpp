@@ -801,8 +801,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         break;
     }
 
-    case DataType::INT8:
-    case DataType::UINT8: {
+    case DataType::INT8: {
         dest.type = DataType::C10;
         break;
     }
@@ -810,6 +809,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     case DataType::F32:
     case DataType::F16:
     case DataType::C10:
+    case DataType::UINT8:
         break;
 
     default: {
