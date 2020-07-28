@@ -220,7 +220,7 @@ inline std::size_t get_data_type_size(const DataType type) {
 }
 
 inline bool is_unsigned_integer_data_type(const DataType dtype) {
-    return (dtype == DataType::UINT16) || (dtype == DataType::UINT8) || (dtype == DataType::UINT32);
+    return (dtype == DataType::UINT16) || (dtype == DataType::UINT32);
 }
 
 inline bool is_signed_integer_data_type(const DataType dtype) {
