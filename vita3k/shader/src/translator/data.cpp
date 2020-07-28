@@ -387,8 +387,8 @@ bool USSETranslatorVisitor::vpck(
             spv::OpAll,
             spv::OpAll,
             spv::OpAll,
-            spv::OpConvertUToF,
-            spv::OpConvertUToF,
+            spv::OpAll,
+            spv::OpAll,
             spv::OpAll },
         { spv::OpAll,
             spv::OpAll,
@@ -422,7 +422,7 @@ bool USSETranslatorVisitor::vpck(
             spv::OpConvertUToF,
             spv::OpConvertUToF,
             spv::OpAll },
-        { spv::OpConvertFToU,
+        { spv::OpAll,
             spv::OpConvertFToS,
             spv::OpAll,
             spv::OpConvertFToU,
@@ -430,7 +430,7 @@ bool USSETranslatorVisitor::vpck(
             spv::OpAll,
             spv::OpAll,
             spv::OpAll },
-        { spv::OpConvertFToU,
+        { spv::OpAll,
             spv::OpConvertFToS,
             spv::OpAll,
             spv::OpConvertFToU,
@@ -578,6 +578,8 @@ bool USSETranslatorVisitor::vpck(
         }
     }
 
+    auto source_type = utils::make_vector_or_scalar_type(m_b, type_f32, m_b.getNumComponents(source));
+
     // When scale, don't do conversion. Reinterpret them.
     if (repack_opcode[dest_fmt][src_fmt] != spv::OpAll && !scale) {
         // Do conversion
@@ -591,6 +593,14 @@ bool USSETranslatorVisitor::vpck(
 
         std::vector<spv::Id> ops{ source };
         source = m_b.createOp(repack_opcode[dest_fmt][src_fmt], m_b.makeVectorType(dest_type, m_b.getNumComponents(source)), ops);
+    }
+
+    if (scale && src_data_type_table[src_fmt] == DataType::UINT8) {
+        source = utils::unscale_float_for_u8(m_b, source);
+    }
+
+    if (scale && dest_data_type_table[dest_fmt] == DataType::UINT8) {
+        source = utils::scale_float_for_u8(m_b, source);
     }
 
     store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
