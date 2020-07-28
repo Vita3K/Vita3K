@@ -926,3 +926,10 @@ spv::Id shader::usse::utils::make_vector_or_scalar_type(spv::Builder &b, spv::Id
     }
     return b.makeVectorType(component, size);
 }
+
+spv::Id shader::usse::utils::unwrap_type(spv::Builder &b, spv::Id type) {
+    if (b.isVectorType(type)) {
+        return b.getContainedTypeId(type);
+    }
+    return type;
+}
