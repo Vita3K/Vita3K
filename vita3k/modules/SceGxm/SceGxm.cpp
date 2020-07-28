@@ -208,23 +208,11 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
     assert(strideInPixels > 0);
     assert(data);
 
-    if (!surface)
+    if (!surface || !data)
         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    if (outputRegisterSize != SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT)
+    if (outputRegisterSize != SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT || width <= 0 || height <= 0 || strideInPixels <= 0)
         RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
-
-    if (width <= 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
-
-    if (height <= 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
-
-    if (strideInPixels <= 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
-
-    if (!data)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     memset(surface, 0, sizeof(*surface));
     surface->disabled = 0;
@@ -287,10 +275,7 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
     assert(params != nullptr);
     assert(context != nullptr);
 
-    if (!params)
-         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-
-    if (!context)
+    if (!params || !context)
          RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *context = alloc<SceGxmContext>(host.mem, __FUNCTION__);
@@ -318,10 +303,7 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     assert(params != nullptr);
     assert(renderTarget != nullptr);
 
-    if (!params)
-         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-
-    if (!renderTarget)
+    if (!params || !renderTarget)
          RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *renderTarget = alloc<SceGxmRenderTarget>(host.mem, __FUNCTION__);
@@ -373,9 +355,7 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, S
     assert(surface != nullptr);
     assert(strideInSamples > 0);
     
-    if (!surface)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    if (strideInSamples <= 0)
+    if (!surface || strideInSamples <= 0)
         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     SceGxmDepthStencilSurface tmp_surface;
@@ -1166,7 +1146,7 @@ EXPORT(Ptr<const char>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramPa
 EXPORT(unsigned int, sceGxmProgramParameterGetResourceIndex, const SceGxmProgramParameter *parameter) {
     assert(parameter);
     if (parameter == nullptr)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return parameter->resource_index;
 }
 
@@ -1435,15 +1415,15 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     assert(sourceData != nullptr);
 
     if (!uniformBuffer)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (!parameter)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (parameter->container_index != SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     if (componentCount <= 0)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     if (!sourceData)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     size_t size = 0;
     size_t offset = 0;
