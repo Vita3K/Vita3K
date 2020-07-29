@@ -48,7 +48,7 @@ See [`building.md`](./building.md).
 
 ## Running
 Specify the path to a .vpk file as the first command line argument, or run `Vita3K --help` from the command-line for a full list of options.
-For more detailed instructions on running/installing games on all platforms, please read the **#info-faq** channel on our [Discord server](https://discord.gg/MaWhJVH).
+For more detailed instructions on running/installing games on all platforms, please read the **#info-faq** channel on our [Discord Server](https://discord.gg/MaWhJVH).
 
 ## Bugs and issues
 The project is at an early stage, so please be sensitive to that when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
