@@ -276,7 +276,7 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
     assert(context != nullptr);
 
     if (!params || !context)
-         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *context = alloc<SceGxmContext>(host.mem, __FUNCTION__);
     if (!*context) {
@@ -304,7 +304,7 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     assert(renderTarget != nullptr);
 
     if (!params || !renderTarget)
-         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *renderTarget = alloc<SceGxmRenderTarget>(host.mem, __FUNCTION__);
     if (!*renderTarget) {
@@ -354,7 +354,7 @@ EXPORT(int, sceGxmDepthStencilSurfaceGetStrideInSamples) {
 EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, unsigned int strideInSamples, Ptr<void> depthData, Ptr<void> stencilData) {
     assert(surface != nullptr);
     assert(strideInSamples > 0);
-    
+
     if (!surface || strideInSamples <= 0)
         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -443,7 +443,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     assert(oldBuffer);
     assert(newBuffer);
     assert(callbackData);
-    
+
     if (!oldBuffer)
         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (!newBuffer)
@@ -606,9 +606,9 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *ve
     if (!context)
         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     //if (vertexNotification)
-        //RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    //RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     //if (fragmentNotification)
-        //RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    //RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     if (!host.gxm.is_in_scene) {
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
@@ -834,7 +834,6 @@ EXPORT(int, sceGxmMapMemory, void *base, SceSize size, SceGxmMemoryAttribFlags a
     assert(size > 0);
     //assert((attr == SCE_GXM_MEMORY_ATTRIB_READ) || (attr == SCE_GXM_MEMORY_ATTRIB_RW));
 
-    
     if (!base)
         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (size <= 0)
@@ -978,7 +977,6 @@ EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
     assert(program != nullptr);
     assert(memcmp(&program->magic, "GXP", 4) == 0);
 
-    
     if (!program)
         RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (memcmp(&program->magic, "GXP", 4) != 0)
