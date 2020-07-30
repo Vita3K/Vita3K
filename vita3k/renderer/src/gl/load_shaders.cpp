@@ -29,46 +29,6 @@ static std::string load_shader(const char *hash, const char *extension, const ch
     return source;
 }
 
-static void dump_missing_shader(const char *hash, const char *extension, const SceGxmProgram &program, const char *source, const char *spirv,
-    const char *disasm, const char *base_path, const char *title_id) {
-    const fs::path shader_base_dir{ fs::path("shaderlog") / title_id };
-    if (!fs::exists(base_path / shader_base_dir))
-        fs::create_directories(base_path / shader_base_dir);
-
-    const auto shader_base_path = fs_utils::construct_file_name(base_path, shader_base_dir, hash, extension);
-
-    // Dump missing shader GLSL.
-    fs::ofstream glsl_file(shader_base_path);
-    if (glsl_file) {
-        glsl_file << source;
-        glsl_file.close();
-    }
-
-    const auto write_data_with_ext = [&](const char *ext, const char *data, const std::int64_t size) {
-        // Dump missing shader binary.
-        fs::path out_path{ shader_base_path };
-        out_path.replace_extension(ext);
-
-        if (size == -1) {
-            fs::ofstream of{ out_path };
-            if (!of.fail()) {
-                of << data; // This is a normal string
-                of.close();
-            }
-        } else {
-            fs::ofstream of{ out_path, fs::ofstream::binary };
-            if (!of.fail()) {
-                of.write(data, size);
-                of.close();
-            }
-        }
-    };
-
-    write_data_with_ext(".gxp", reinterpret_cast<const char *>(&program), program.size);
-    write_data_with_ext(".dsm", disasm, -1);
-    write_data_with_ext(".spt", spirv, -1);
-}
-
 std::string load_shader(const SceGxmProgram &program, const FeatureState &features, bool maskupdate, const char *base_path, const char *title_id) {
     const Sha256Hash hash_bytes = sha256(&program, program.size);
     auto shader_type_to_str = [](SceGxmProgramType type) {
@@ -87,10 +47,31 @@ std::string load_shader(const SceGxmProgram &program, const FeatureState &featur
         std::string spirv_dump;
         std::string disasm_dump;
 
-        source = shader::convert_gxp_to_glsl(program, hash_text.data(), features, maskupdate, false, &spirv_dump, &disasm_dump);
+        const fs::path shader_base_dir{ fs::path("shaderlog") / title_id };
+        if (!fs::exists(base_path / shader_base_dir))
+            fs::create_directories(base_path / shader_base_dir);
 
-        dump_missing_shader(hash_text.data(), shader_type_str, program, source.c_str(), spirv_dump.c_str(), disasm_dump.c_str(),
-            base_path, title_id);
+        const auto shader_base_path = fs_utils::construct_file_name(base_path, shader_base_dir, hash_text.data(), ".gxp");
+
+        // Dump gxp binary
+        fs::ofstream of{ shader_base_path, fs::ofstream::binary };
+        if (!of.fail()) {
+            of.write(reinterpret_cast<const char *>(&program), program.size);
+            of.close();
+        }
+
+        const auto write_data_with_ext = [&](const std::string &ext, const std::string &data) {
+            fs::path out_path{ shader_base_path };
+            out_path.replace_extension(ext);
+            fs::ofstream of{ out_path };
+            if (!of.fail()) {
+                of << data;
+                of.close();
+            }
+            return true;
+        };
+
+        source = shader::convert_gxp_to_glsl(program, hash_text.data(), features, maskupdate, false, write_data_with_ext);
     }
 
     return source;
