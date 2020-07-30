@@ -51,13 +51,13 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
 
     if (dest_type == DataType::F16) {
         // Pack them
-        spv::Id pack1 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { image_sample, image_sample, 0, 1 });
+        spv::Id pack1 = m_b.createOp(spv::OpVectorShuffle, m_b.makeUintType(32), { image_sample, image_sample, 0, 1 });
         pack1 = utils::pack_one(m_b, m_util_funcs, m_features, pack1, DataType::F16);
 
-        spv::Id pack2 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { image_sample, image_sample, 2, 3 });
+        spv::Id pack2 = m_b.createOp(spv::OpVectorShuffle, m_b.makeUintType(32), { image_sample, image_sample, 2, 3 });
         pack2 = utils::pack_one(m_b, m_util_funcs, m_features, pack2, DataType::F16);
 
-        image_sample = m_b.createCompositeConstruct(type_f32_v[2], { pack1, pack2 });
+        image_sample = m_b.createCompositeConstruct(m_b.makeVectorType(m_b.makeUintType(32), 2), { pack1, pack2 });
     }
 
     return image_sample;

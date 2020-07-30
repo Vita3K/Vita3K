@@ -290,7 +290,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         if (!b.isConstant(var)) {
             var = b.createLoad(var);
             if (total_var_comp > 1)
-                var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
+                var = utils::finalize(b, b.makeUintType(32), var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
         }
 
         utils::store(b, parameters, utils, features, dest, var, dest_mask, 0);
@@ -693,10 +693,10 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
 }
 
 static spv::Id create_uniform_block(spv::Builder &b, const FeatureState &features, const int base_binding, const int size_vec4_granularity, const bool is_vert) {
-    spv::Id f32_type = b.makeFloatType(32);
+    spv::Id i32_type = b.makeUintType(32);
 
-    spv::Id f32_v4_type = b.makeVectorType(f32_type, 4);
-    spv::Id vec4_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(size_vec4_granularity), 16);
+    spv::Id i32_v4_type = b.makeVectorType(i32_type, 4);
+    spv::Id vec4_arr_type = b.makeArrayType(i32_v4_type, b.makeIntConstant(size_vec4_granularity), 16);
 
     std::string name_type = (is_vert ? "vert" : "frag");
 
@@ -732,16 +732,18 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     // Make array type. TODO: Make length configurable
     spv::Id f32_type = b.makeFloatType(32);
     spv::Id i32_type = b.makeIntType(32);
+    spv::Id ui32_type = b.makeUintType(32);
     spv::Id b_type = b.makeBoolType();
 
     spv::Id f32_v4_type = b.makeVectorType(f32_type, 4);
-    spv::Id pa_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(32), 0);
-    spv::Id sa_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(32), 0);
-    spv::Id i_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(3), 0);
-    spv::Id temp_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(20), 0);
+    spv::Id reg_v4_type = b.makeVectorType(ui32_type, 4);
+    spv::Id pa_arr_type = b.makeArrayType(reg_v4_type, b.makeIntConstant(32), 0);
+    spv::Id sa_arr_type = b.makeArrayType(reg_v4_type, b.makeIntConstant(32), 0);
+    spv::Id i_arr_type = b.makeArrayType(reg_v4_type, b.makeIntConstant(3), 0);
+    spv::Id temp_arr_type = b.makeArrayType(reg_v4_type, b.makeIntConstant(20), 0);
     spv::Id index_arr_type = b.makeArrayType(i32_type, b.makeIntConstant(2), 0);
     spv::Id pred_arr_type = b.makeArrayType(b_type, b.makeIntConstant(4), 0);
-    spv::Id o_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(11), 0);
+    spv::Id o_arr_type = b.makeArrayType(reg_v4_type, b.makeIntConstant(11), 0);
 
     // Create register banks
     spv_params.ins = b.createVariable(spv::StorageClassPrivate, pa_arr_type, "pa");
