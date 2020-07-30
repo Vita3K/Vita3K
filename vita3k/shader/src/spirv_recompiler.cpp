@@ -1163,7 +1163,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     return vert_fin_func;
 }
 
-static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
+static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     SpirvCode spirv;
 
     SceGxmProgramType program_type = program.get_type();
@@ -1199,8 +1199,10 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
         break;
     }
 
+    std::string disasm_dump;
+
     // Put disasm storage
-    disasm::disasm_storage = disasm_dump;
+    disasm::disasm_storage = &disasm_dump;
 
     // Entry point
     spv::Function *spv_func_main = b.makeEntryPoint(entry_point_name.c_str());
@@ -1248,10 +1250,18 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     if (!spirv_log.empty())
         LOG_ERROR("SPIR-V Error:\n{}", spirv_log);
 
+    if (dumper) {
+        dumper("dsm", disasm_dump);
+    }
+
     b.dump(spirv);
 
     if (LOG_SHADER_CODE || force_shader_debug) {
-        spirv_disasm_print(spirv, spirv_dump);
+        std::string spirv_dump;
+        spirv_disasm_print(spirv, &spirv_dump);
+        if (dumper) {
+            dumper("spv", spirv_dump);
+        }
     }
 
     if (DUMP_SPIRV_BINARIES) {
@@ -1424,15 +1434,23 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 // * Functions (exposed API) *
 // ***************************
 
-std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, bool maskupdate, bool force_shader_debug, std::string *spirv_dump, std::string *disasm_dump) {
+std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     TranslationState translation_state;
     translation_state.is_maskupdate = maskupdate;
-    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, translation_state, force_shader_debug, spirv_dump, disasm_dump);
+    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, translation_state, force_shader_debug, dumper);
 
     const auto source = convert_spirv_to_glsl(spirv_binary, features, translation_state);
 
     if (LOG_SHADER_CODE || force_shader_debug)
         LOG_DEBUG("Generated GLSL:\n{}", source);
+
+    if (dumper) {
+        if (program.is_fragment()) {
+            dumper("frag", source);
+        } else {
+            dumper("vert", source);
+        }
+    }
 
     return source;
 }
