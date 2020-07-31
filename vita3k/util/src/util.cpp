@@ -42,8 +42,10 @@ static const fs::path &LOG_FILE_NAME = "vita3k.log";
 static const char *LOG_PATTERN = "%^[%H:%M:%S.%e] |%L| [%!]: %v%$";
 std::vector<spdlog::sink_ptr> sinks;
 
-ExitCode init(const Root &root_paths) {
-    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+ExitCode init(const Root &root_paths, bool use_stdout) {
+    sinks.clear();
+    if (use_stdout)
+        sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 
     if (add_sink(root_paths.get_base_path_string() / LOG_FILE_NAME) != Success)
         return InitConfigFailed;

@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     if (!fs::exists(root_paths.get_pref_path()))
         fs::create_directories(root_paths.get_pref_path());
 
-    if (logging::init(root_paths) != Success)
+    if (logging::init(root_paths, true) != Success)
         return InitConfigFailed;
 
     Config cfg{};
