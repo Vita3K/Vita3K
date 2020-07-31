@@ -38,7 +38,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         draw_file_dialog = false;
 
         if (result == NFD_OKAY) {
-            if (install_archive(host, gui, static_cast<fs::path>(archive_path)))
+            if (install_archive(host, &gui, static_cast<fs::path>(archive_path)))
                 content_install_confirm = true;
             else if (!gui.content_reinstall_confirm)
                 ImGui::OpenPopup("Content installation failed");
@@ -64,7 +64,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 65);
         if (ImGui::Button("Yes", BUTTON_SIZE))
-            if (install_archive(host, gui, static_cast<fs::path>(archive_path))) {
+            if (install_archive(host, &gui, static_cast<fs::path>(archive_path))) {
                 gui.content_reinstall_confirm = false;
                 content_install_confirm = true;
             }

@@ -69,7 +69,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
     return true;
 }
 
-bool install_archive(HostState &host, GuiState &gui, const fs::path &path) {
+bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
     if (!fs::exists(path)) {
         LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_path().string());
         return false;
@@ -143,16 +143,19 @@ bool install_archive(HostState &host, GuiState &gui, const fs::path &path) {
 
     const auto created = fs::create_directories(output_path);
     if (!created) {
-        if (!gui.file_menu.archive_install_dialog) {
+        if (!gui) {
+            fs::remove_all(output_path);
+        } else if (!gui->file_menu.archive_install_dialog) {
             gui::GenericDialogState status = gui::UNK_STATE;
-            while (handle_events(host, gui) && (status == 0)) {
-                ImGui_ImplSdl_NewFrame(gui.imgui_state.get());
+
+            while (handle_events(host, *gui) && (status == 0)) {
+                ImGui_ImplSdl_NewFrame(gui->imgui_state.get());
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                gui::draw_ui(gui, host);
+                gui::draw_ui(*gui, host);
                 gui::draw_reinstall_dialog(&status);
                 glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
                 ImGui::Render();
-                ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
+                ImGui_ImplSdl_RenderDrawData(gui->imgui_state.get());
                 SDL_GL_SwapWindow(host.window.get());
             }
             if (status == gui::CANCEL_STATE) {
@@ -162,12 +165,12 @@ bool install_archive(HostState &host, GuiState &gui, const fs::path &path) {
             } else if (status == gui::UNK_STATE) {
                 exit(0);
             }
-        } else if (gui.file_menu.archive_install_dialog && !gui.content_reinstall_confirm) {
+        } else if (gui->file_menu.archive_install_dialog && !gui->content_reinstall_confirm) {
             vfs::FileBuffer params;
             vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
             sfo::load(host.sfo_handle, params);
-            sfo::get_data_by_key(gui.app_ver, host.sfo_handle, "APP_VER");
-            gui.content_reinstall_confirm = true;
+            sfo::get_data_by_key(gui->app_ver, host.sfo_handle, "APP_VER");
+            gui->content_reinstall_confirm = true;
             fclose(vpk_fp);
             return false;
         }
@@ -239,17 +242,9 @@ static auto pre_load_module(HostState &host, const std::vector<std::string> &lib
     return Success;
 }
 
-static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {
+static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, const app::AppRunType run_type) {
     if (path.empty())
         return InvalidApplicationPath;
-
-    if (run_type == app::AppRunType::Vpk) {
-        if (!install_archive(host, gui, path)) {
-            return FileNotFound;
-        }
-    } else if (run_type == app::AppRunType::Extracted) {
-        host.io.title_id = string_utils::wide_to_utf(path);
-    }
 
     vfs::FileBuffer params;
     bool params_found = vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
@@ -301,7 +296,6 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
     LOG_INFO("Version: {}", host.app_version);
     LOG_INFO("Category: {}", host.app_category);
 
-    gui::init_app_background(gui, host);
     init_device_paths(host.io);
     init_savedata_game_path(host.io, host.pref_path);
 
@@ -309,8 +303,6 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         auto addr = var.factory(host);
         host.kernel.export_nids.emplace(var.nid, addr);
     }
-
-    host.renderer->features.hardware_flip = host.cfg.hardware_flip;
 
     // Load pre-loaded libraries
     const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_module" };
@@ -326,26 +318,24 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, Gui
         pre_load_module(host, lib_load_list, VitaIoDevice::app0);
     }
 
-    if (!gui.modules.empty()) {
-        // Load pre-loaded font fw libraries
-        std::vector<std::string> lib_load_list = {
-            "sys/external/libSceFt2.suprx",
-            "sys/external/libpvf.suprx",
+    // Load pre-loaded font fw libraries
+    std::vector<std::string> lib_load_list = {
+        "sys/external/libSceFt2.suprx",
+        "sys/external/libpvf.suprx",
+    };
+
+    if (!is_app) {
+        // Load pre-loaded fw libraries if app libraries not exist
+        const std::vector<std::string> lib_load_list_to_add = {
+            "sys/external/libc.suprx",
+            "sys/external/libfios2.suprx",
+            "sys/external/libult.suprx"
         };
 
-        if (!is_app) {
-            // Load pre-loaded fw libraries if app libraries not exist
-            const std::vector<std::string> lib_load_list_to_add = {
-                "sys/external/libc.suprx",
-                "sys/external/libfios2.suprx",
-                "sys/external/libult.suprx"
-            };
-
-            lib_load_list.insert(lib_load_list.begin(), lib_load_list_to_add.begin(), lib_load_list_to_add.end());
-        }
-
-        pre_load_module(host, lib_load_list, VitaIoDevice::vs0);
+        lib_load_list.insert(lib_load_list.begin(), lib_load_list_to_add.begin(), lib_load_list_to_add.end());
     }
+
+    pre_load_module(host, lib_load_list, VitaIoDevice::vs0);
 
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
@@ -440,8 +430,8 @@ bool handle_events(HostState &host, GuiState &gui) {
     return true;
 }
 
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, GuiState &gui, const std::wstring &path, const app::AppRunType run_type) {
-    if (load_app_impl(entry_point, host, gui, path, run_type) != Success) {
+ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, const app::AppRunType run_type) {
+    if (load_app_impl(entry_point, host, path, run_type) != Success) {
         std::string message = "Failed to load \"";
         message += string_utils::wide_to_utf(path);
         message += "\"";

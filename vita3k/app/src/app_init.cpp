@@ -180,24 +180,26 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
     state.kernel.start_tick = { rtc_base_ticks() };
     state.kernel.base_tick = { rtc_base_ticks() };
 
-    if (renderer::init(state.window, state.renderer, backend)) {
-        update_viewport(state);
-        return true;
-    } else {
-        switch (backend) {
-        case renderer::Backend::OpenGL:
-            error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.1?", nullptr);
-            break;
+    if (!cfg.console) {
+        if (renderer::init(state.window, state.renderer, backend)) {
+            update_viewport(state);
+            return true;
+        } else {
+            switch (backend) {
+            case renderer::Backend::OpenGL:
+                error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.1?", nullptr);
+                break;
 #ifdef USE_VULKAN
-        case renderer::Backend::Vulkan:
-            error_dialog("Could not create Vulkan context!");
-            break;
+            case renderer::Backend::Vulkan:
+                error_dialog("Could not create Vulkan context!");
+                break;
 #endif
-        default:
-            error_dialog(fmt::format("Unknown backend render: {}.", state.cfg.backend_renderer));
-            break;
+            default:
+                error_dialog(fmt::format("Unknown backend render: {}.", state.cfg.backend_renderer));
+                break;
+            }
+            return false;
         }
-        return false;
     }
 
     return true;
