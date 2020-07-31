@@ -500,6 +500,8 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
     }
 
+    host.main_thread_id = main_thread_id;
+
     if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
         app::error_dialog("Failed to run main thread.", host.window.get());
         return RunThreadFailed;

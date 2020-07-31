@@ -179,6 +179,16 @@ int main(int argc, char *argv[]) {
     if (const auto err = run_app(host, entry_point) != Success)
         return err;
 
+    if (cfg.console) {
+        auto main_thread = host.kernel.threads.at(host.main_thread_id);
+        auto lock = std::unique_lock<std::mutex>(main_thread->mutex);
+        main_thread->something_to_do.wait(lock, [&]() {
+            return main_thread->to_do == ThreadToDo::exit;
+        });
+        return Success;
+    } else {
+        gui.imgui_state->do_clear_screen = false;
+    }
 
     app::gl_screen_renderer gl_renderer;
 

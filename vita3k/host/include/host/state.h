@@ -63,6 +63,7 @@ struct HostState {
     std::string default_path;
     std::string pref_path;
     Config cfg;
+    SceUID main_thread_id;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
     uint32_t fps = 0;
