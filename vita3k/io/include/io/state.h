@@ -107,6 +107,8 @@ struct IOState {
 
     std::string user_id;
 
+    bool redirect_stdio;
+
     SceUID next_fd = 0;
     TtyFiles tty_files;
     StdFiles std_files;
