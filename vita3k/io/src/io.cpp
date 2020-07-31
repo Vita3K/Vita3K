@@ -86,7 +86,7 @@ SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path,
 // * End utility functions *
 // ****************************
 
-bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
+bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, bool redirect_stdio) {
     // Iterate through the entire list of devices and create the subdirectories if they do not exist
     for (auto i : VitaIoDevice::_names()) {
         if (!device::is_valid_output_path(i))
@@ -120,6 +120,8 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path) {
 
     fs::create_directory(base_path / "texturelog");
     fs::create_directory(base_path / "shaderlog");
+
+    io.redirect_stdio = redirect_stdio;
 
     return true;
 }
@@ -208,7 +210,7 @@ std::string expand_path(IOState &io, const char *path, const std::string &pref_p
     auto device = device::get_device(path);
 
     const auto translated_path = translate_path(path, device, io.device_paths);
-    return device::construct_emulated_path(device, translated_path, pref_path).string();
+    return device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio).string();
 }
 
 SceUID open_file(IOState &io, const char *path, const int flags, const std::string &pref_path, const char *export_name) {
@@ -241,7 +243,7 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::stri
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto system_path = device::construct_emulated_path(device, translated_path, pref_path);
+    const auto system_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
 
     // Do not allow any new files if they do not have a write flag.
     if (!fs::exists(system_path) && !can_write(flags)) {
@@ -299,10 +301,14 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
             std::string s(reinterpret_cast<char const *>(data), size);
 
             // trim newline
-            if (s.back() == '\n')
-                s.pop_back();
+            if (io.redirect_stdio) {
+                std::cout << s;
+            } else {
+                if (s.back() == '\n')
+                    s.pop_back();
+                LOG_TRACE("*** TTY: {}", s);
+            }
 
-            LOG_TRACE("*** TTY: {}", s);
             return size;
         }
         return IO_ERROR_UNK();
@@ -383,7 +389,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
         }
 
         const auto translated_path = translate_path(file, device, io.device_paths);
-        file_path = device::construct_emulated_path(device, translated_path, pref_path);
+        file_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
         if (!fs::exists(file_path)) {
             LOG_ERROR("Missing file at {} (target path: {})", file_path.string(), file);
             return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -484,7 +490,7 @@ int remove_file(IOState &io, const char *file, const std::string &pref_path, con
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto emulated_path = device::construct_emulated_path(device, translated_path, pref_path);
+    const auto emulated_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
     if (!fs::exists(emulated_path) || fs::is_directory(emulated_path)) {
         LOG_ERROR("File does not exist at path: {} (target path: {})", emulated_path.string(), file);
     }
@@ -498,7 +504,7 @@ SceUID open_dir(IOState &io, const char *path, const std::string &pref_path, con
     auto device = device::get_device(path);
     const auto translated_path = translate_path(path, device, io.device_paths);
 
-    const auto dir_path = device::construct_emulated_path(device, translated_path, pref_path) / "/";
+    const auto dir_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio) / "/";
     if (!fs::exists(dir_path)) {
         LOG_ERROR("File does not exist at: {} (target path: {})", dir_path.string(), path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -563,7 +569,7 @@ int create_dir(IOState &io, const char *dir, int mode, const std::string &pref_p
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto emulated_path = device::construct_emulated_path(device, translated_path, pref_path);
+    const auto emulated_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
     if (recursive)
         return fs::create_directories(emulated_path);
     if (fs::exists(emulated_path))
@@ -612,5 +618,5 @@ int remove_dir(IOState &io, const char *dir, const std::string &pref_path, const
 
     LOG_TRACE("{}: Removing dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
 
-    return fs::remove(device::construct_emulated_path(device, translated_path, pref_path));
+    return fs::remove(device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio));
 }

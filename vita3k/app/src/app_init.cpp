@@ -160,7 +160,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         LOG_WARN("Failed to init audio! Audio will not work.");
     }
 
-    if (!init(state.io, state.base_path, state.pref_path)) {
+    if (!init(state.io, state.base_path, state.pref_path, cfg.console)) {
         LOG_ERROR("Failed to initialize file system for the emulator!");
         return false;
     }
