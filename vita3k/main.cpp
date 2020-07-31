@@ -78,19 +78,25 @@ int main(int argc, char *argv[]) {
         return InitConfigFailed;
     }
 
-    LOG_INFO("{}", window_title);
 
 #ifdef WIN32
     CoInitializeEx(NULL, COINIT_MULTITHREADED);
 #endif
 
-    std::atexit(SDL_Quit);
-    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC | SDL_INIT_VIDEO) < 0) {
-        app::error_dialog("SDL initialisation failed.");
-        return SDLInitFailed;
+    if (cfg.console) {
+        cfg.show_gui = false;
+        if (logging::init(root_paths, false) != Success)
+            return InitConfigFailed;
+    } else {
+        std::atexit(SDL_Quit);
+        if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC | SDL_INIT_VIDEO) < 0) {
+            app::error_dialog("SDL initialisation failed.");
+            return SDLInitFailed;
+        }
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     }
 
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    LOG_INFO("{}", window_title);
 
     app::AppRunType run_type;
     if (cfg.run_title_id)
@@ -126,42 +132,53 @@ int main(int argc, char *argv[]) {
     }
 
     GuiState gui;
-    gui::init(gui, host);
-
+    if (!cfg.console) {
+        gui::init(gui, host);
 #if DISCORD_RPC
-    auto discord_rich_presence_old = host.cfg.discord_rich_presence;
+        auto discord_rich_presence_old = host.cfg.discord_rich_presence;
 #endif
 
-    // Application not provided via argument, show game selector
-    while (run_type == app::AppRunType::Unknown) {
-        if (handle_events(host, gui)) {
-            gui::draw_begin(gui, host);
+        // Application not provided via argument, show game selector
+        while (run_type == app::AppRunType::Unknown) {
+            if (handle_events(host, gui)) {
+                gui::draw_begin(gui, host);
 
 #if DISCORD_RPC
-            discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
+                discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
-            gui::draw_live_area(gui, host);
-            gui::draw_ui(gui, host);
+                gui::draw_live_area(gui, host);
+                gui::draw_ui(gui, host);
 
-            gui::draw_end(gui, host.window.get());
-        } else {
-            return QuitRequested;
-        }
+                gui::draw_end(gui, host.window.get());
+            } else {
+                return QuitRequested;
+            }
 
-        // TODO: Clean this, ie. make load_app overloads called depending on run type
-        if (!gui.app_selector.selected_title_id.empty()) {
-            vpk_path_wide = string_utils::utf_to_wide(gui.app_selector.selected_title_id);
-            run_type = app::AppRunType::Extracted;
+            // TODO: Clean this, ie. make load_app overloads called depending on run type
+            if (!gui.app_selector.selected_title_id.empty()) {
+                vpk_path_wide = string_utils::utf_to_wide(gui.app_selector.selected_title_id);
+                run_type = app::AppRunType::Extracted;
+            }
         }
+        gui::init_app_background(gui, host);
+        host.renderer->features.hardware_flip = host.cfg.hardware_flip;
+    }
+
+    if (run_type == app::AppRunType::Vpk) {
+        auto gui_ptr = cfg.console ? nullptr : &gui;
+        if (!install_archive(host, gui_ptr, vpk_path_wide)) {
+            return FileNotFound;
+        }
+    } else if (run_type == app::AppRunType::Extracted) {
+        host.io.title_id = string_utils::wide_to_utf(vpk_path_wide);
     }
 
     Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, host, gui, vpk_path_wide, run_type) != Success)
+    if (const auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
         return err;
     if (const auto err = run_app(host, entry_point) != Success)
         return err;
 
-    gui.imgui_state->do_clear_screen = false;
 
     app::gl_screen_renderer gl_renderer;
 
