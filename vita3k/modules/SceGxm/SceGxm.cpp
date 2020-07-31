@@ -2527,19 +2527,19 @@ EXPORT(int, sceGxmTransferFinish) {
 }
 
 EXPORT(int, sceGxmUnmapFragmentUsseMemory, void *base) {
-    assert(!base);
+    assert(base);
 
     return 0;
 }
 
 EXPORT(int, sceGxmUnmapMemory, void *base) {
-    assert(!base);
+    assert(base);
 
     return 0;
 }
 
 EXPORT(int, sceGxmUnmapVertexUsseMemory, void *base) {
-    assert(!base);
+    assert(base);
 
     return 0;
 }
