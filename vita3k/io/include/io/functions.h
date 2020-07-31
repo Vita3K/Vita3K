@@ -35,7 +35,7 @@ inline SceUID invalid_fd = -1;
 
 void init_device_paths(IOState &io);
 bool init_savedata_game_path(IOState &io, const fs::path &pref_path);
-bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path);
+bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, bool redirect_stdout);
 
 std::string expand_path(IOState &io, const char *path, const std::string &pref_path);
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths);

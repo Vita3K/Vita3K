@@ -36,6 +36,8 @@
 
 #include <gui/imgui_impl_sdl.h>
 
+#include <regex>
+
 #include <SDL.h>
 
 #ifdef USE_GDBSTUB
@@ -455,6 +457,14 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
     return Success;
 }
 
+static std::vector<std::string> split(const std::string &input, const std::string &regex) {
+    std::regex re(regex);
+    std::sregex_token_iterator
+        first{ input.begin(), input.end(), re, -1 },
+        last;
+    return { first, last };
+}
+
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
         ::call_import(host, cpu, nid, main_thread_id);
@@ -502,7 +512,21 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
     host.main_thread_id = main_thread_id;
 
-    if (start_thread(host.kernel, main_thread_id, 0, Ptr<void>()) < 0) {
+    SceKernelThreadOptParam param;
+    if (host.cfg.console && host.cfg.console_arguments != "") {
+        auto args = split(host.cfg.console_arguments, "\\s+");
+        // why is this flipped
+        std::vector<uint8_t> buf;
+        for (int i = 0; i < args.size(); ++i) {
+            buf.insert(buf.end(), args[i].c_str(), args[i].c_str() + args[i].size() + 1);
+        }
+        auto arr = Ptr<uint8_t>(alloc(host.mem, buf.size(), "arg"));
+        memcpy(arr.get(host.mem), buf.data(), buf.size());
+        auto abc = arr.get(host.mem);
+        param.size = buf.size();
+        param.attr = arr.address();
+    }
+    if (start_thread(host.kernel, main_thread_id, param.size, Ptr<void>(param.attr)) < 0) {
         app::error_dialog("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }

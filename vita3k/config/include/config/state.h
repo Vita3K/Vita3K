@@ -75,6 +75,7 @@ private:
         load_config = rhs.load_config;
         fullscreen = rhs.fullscreen;
         console = rhs.console;
+        console_arguments = rhs.console_arguments;
     }
 
 public:
@@ -88,6 +89,7 @@ public:
 
     // Setting not present in the YAML file
     fs::path config_path = {};
+    std::string console_arguments;
     bool overwrite_config = true;
     bool load_config = false;
     bool fullscreen = false;
