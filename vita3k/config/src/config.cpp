@@ -117,7 +117,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     // Always generate the default configuration file
     Config command_line{};
     serialize_config(command_line, root_paths.get_base_path() / "data/config/default.yml");
-    std::cout << "Config Directory" << root_paths.get_base_path() << std::endl;
     // Load base path configuration by default; otherwise, move the default to the base path
     if (fs::exists(check_path(root_paths.get_base_path())))
         parse(cfg, root_paths.get_base_path(), root_paths.get_pref_path_string());
@@ -230,6 +229,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         }
     }
 
+    if (cfg.console && (cfg.run_title_id || !cfg.vpk_path)) {
+        LOG_ERROR("Console mode only supports vpk for now");
+        return InitConfigFailed;
+    }
+
     // Get LLE modules from the command line, otherwise get the modules from the YML file
     if (!lle_modules.empty()) {
         if (command_line.load_config) {
@@ -245,19 +249,20 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     if (cfg.pref_path.empty())
         cfg.pref_path = root_paths.get_pref_path_string();
 
-    LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");
+    if (!cfg.console) {
+        LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");
 
-    logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
+        logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
 
-    LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
-    LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
-    LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
-    LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
-    LOG_INFO_IF(cfg.log_imports, "{}: enabled", cfg[e_log_imports]);
-    LOG_INFO_IF(cfg.log_exports, "{}: enabled", cfg[e_log_exports]);
-    LOG_INFO_IF(cfg.log_active_shaders, "{}: enabled", cfg[e_log_active_shaders]);
-    LOG_INFO_IF(cfg.log_uniforms, "{}: enabled", cfg[e_log_uniforms]);
-
+        LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
+        LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
+        LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
+        LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
+        LOG_INFO_IF(cfg.log_imports, "{}: enabled", cfg[e_log_imports]);
+        LOG_INFO_IF(cfg.log_exports, "{}: enabled", cfg[e_log_exports]);
+        LOG_INFO_IF(cfg.log_active_shaders, "{}: enabled", cfg[e_log_active_shaders]);
+        LOG_INFO_IF(cfg.log_uniforms, "{}: enabled", cfg[e_log_uniforms]);
+    }
     // Save any changes made in command-line arguments
     if (cfg.overwrite_config || !fs::exists(check_path(cfg.config_path))) {
         if (serialize_config(cfg, cfg.config_path) != Success)
