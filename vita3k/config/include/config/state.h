@@ -74,6 +74,7 @@ private:
         overwrite_config = rhs.overwrite_config;
         load_config = rhs.load_config;
         fullscreen = rhs.fullscreen;
+        console = rhs.console;
     }
 
 public:
@@ -90,6 +91,7 @@ public:
     bool overwrite_config = true;
     bool load_config = false;
     bool fullscreen = false;
+    bool console = false;
 
     Config() {
         update_yaml();
