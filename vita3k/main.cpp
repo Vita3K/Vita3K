@@ -78,7 +78,6 @@ int main(int argc, char *argv[]) {
         return InitConfigFailed;
     }
 
-
 #ifdef WIN32
     CoInitializeEx(NULL, COINIT_MULTITHREADED);
 #endif
