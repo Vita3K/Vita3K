@@ -141,7 +141,7 @@ static uint32_t encode_arm_inst(uint8_t type, uint16_t immed, uint16_t reg) {
     }
 }
 
-static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem, const Config &cfg) {
+static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem, const Config &cfg) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -167,7 +167,26 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
             break;
         }
         case None: {
-            if (export_address == kernel.export_nids.end()) {
+            // This stubs lle pvf functions that don't work yet
+            // by using working function
+            //
+            // TODO remove this
+            // openusermemory and open
+            if (nid == 0x9E65E4ED || nid == 0xE35434BB) {
+                // openuserfile
+                Address func_address = kernel.export_nids.find(0xD535520F)->second;
+                stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)func_address, 12);
+                stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(func_address >> 16), 12);
+                stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+
+                add_breakpoint(mem, false, true, entry.address() + 4 * 2, [](CPUState &cpu, MemState &mem) {
+                    const char *font_path = "sa0:/data/font/pvf/jpn0.pvf";
+                    static Ptr<char> str = Ptr<char>(alloc(mem, strlen(font_path) + 1, "hack"));
+                    strcpy(str.get(mem), font_path);
+                    write_reg(cpu, 1, str.address());
+                    write_reg(cpu, 2, 0);
+                });
+            } else if (export_address == kernel.export_nids.end()) {
                 // TODO replace these into non-interrupt ones like below when the weak module is loaded
                 stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
                 stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
