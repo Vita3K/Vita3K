@@ -482,19 +482,31 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     }
 
     glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
-    if (format == SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR) {
+
+    // TODO Need more check into this
+    switch (format) {
+    case SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR:
+    case SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    } else if (format == SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA) {
+        break;
+    case SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         for (int i = 0; i < width * height; ++i) {
             uint8_t *pixel = reinterpret_cast<uint8_t *>(&pixels[i]);
             std::swap(pixel[0], pixel[3]);
             std::swap(pixel[1], pixel[2]);
         }
-    } else {
-        // TODO wise color conversino implementation
-        // maybe we can use PBO?
-        assert(false);
+        break;
+    case SCE_GXM_COLOR_FORMAT_U8U8U8_BGR:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        break;
+    case SCE_GXM_COLOR_FORMAT_U8_R:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_UNSIGNED_BYTE, pixels);
+        break;
+    default:
+        LOG_ERROR("Color format not implemented: {}, report this to developer", format);
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        break;
     }
 
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
