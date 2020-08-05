@@ -119,10 +119,6 @@ if(WIN32)
 	target_link_libraries(winsock INTERFACE WSOCK32 WS2_32 IPHLPAPI)
 endif()
 
-option(UNICORN_BUILD_SHARED "Build shared instead of static library" OFF)
-set(UNICORN_ARCH "arm")
-add_subdirectory(unicorn)
-target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/include")
 
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
