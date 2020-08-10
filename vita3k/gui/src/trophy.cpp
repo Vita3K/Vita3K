@@ -412,14 +412,15 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
 
     const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy" };
     const char progress_dummy[32] = "";
+    const auto is_background = gui.apps_background.find(host.io.title_id) != gui.apps_background.end();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    if (gui.apps_background.find(host.io.title_id) == gui.apps_background.end())
-        ImGui::SetNextWindowBgAlpha(0.999f);
+    ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##trophy_collection", &gui.live_area.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
-        ImGui::GetWindowDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+    if (is_background)
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * SCAL.x);
         if (np_com_id_selected.empty()) {
@@ -799,6 +800,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     }
     ImGui::PopStyleVar();
     ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 } // namespace gui

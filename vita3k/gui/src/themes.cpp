@@ -65,7 +65,7 @@ static bool add_user_image_background(GuiState &gui, HostState &host) {
         return false;
 }
 
-static std::map<std::string, std::map<std::string, std::string>> param;
+static std::map<std::string, std::string> start_param;
 static std::map<std::string, ImVec2> date;
 static ImU32 date_color;
 
@@ -74,7 +74,7 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
     std::string src_start;
 
     const auto THEME_PATH{ fs::path(host.pref_path) / "ux0/theme" / content_id };
-    param.clear(), gui.information_bar_color.clear();
+    start_param.clear();
     if (content_id != "default") {
         const auto THEME_PATH_XML{ THEME_PATH / "theme.xml" };
         pugi::xml_document doc;
@@ -83,15 +83,9 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
 
             // Start Layout
             if (!theme.child("StartScreenProperty").child("m_dateColor").empty())
-                param["start"]["dateColor"] = theme.child("StartScreenProperty").child("m_dateColor").text().as_string();
+                start_param["dateColor"] = theme.child("StartScreenProperty").child("m_dateColor").text().as_string();
             if (!theme.child("StartScreenProperty").child("m_dateLayout").empty())
-                param["start"]["dateLayout"] = theme.child("StartScreenProperty").child("m_dateLayout").text().as_string();
-
-            // Get Bar Color
-            if (!theme.child("InfomationBarProperty").child("m_barColor").empty())
-                param["start"]["barColor"] = theme.child("InfomationBarProperty").child("m_barColor").text().as_string();
-            if (!theme.child("InfomationBarProperty").child("m_indicatorColor").empty())
-                param["start"]["indicatorColor"] = theme.child("InfomationBarProperty").child("m_indicatorColor").text().as_string();
+                start_param["dateLayout"] = theme.child("StartScreenProperty").child("m_dateLayout").text().as_string();
 
             // Theme Start
             if (!theme.child("StartScreenProperty").child("m_filePath").empty()) {
@@ -133,8 +127,8 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
 
     date["date"] = ImVec2(900.f, 192.f);
     date["clock"] = ImVec2(900.f, 160.f);
-    if (!param["start"]["dateLayout"].empty()) {
-        switch (std::stoi(param["start"]["dateLayout"])) {
+    if (!start_param["dateLayout"].empty()) {
+        switch (std::stoi(start_param["dateLayout"])) {
         case 0:
             break;
         case 1:
@@ -146,38 +140,23 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
             date["clock"].x = 424.f;
             break;
         default:
-            LOG_WARN("Date layout is unknown : {}", param["start"]["dateLayout"]);
+            LOG_WARN("Date layout is unknown : {}", start_param["dateLayout"]);
             break;
         }
     }
 
-    if (!param["start"]["dateColor"].empty()) {
+    if (!start_param["dateColor"].empty()) {
         int color;
-        sscanf(param["start"]["dateColor"].c_str(), "%x", &color);
+        sscanf(start_param["dateColor"].c_str(), "%x", &color);
         date_color = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
     } else
         date_color = 4294967295; // White
-
-    if (!param["start"]["barColor"].empty()) {
-        int color;
-        sscanf(param["start"]["barColor"].c_str(), "%x", &color);
-        gui.information_bar_color["bar"] = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
-    } else
-        gui.information_bar_color["bar"] = 4278190080; // Black
-
-    if (!param["start"]["indicatorColor"].empty()) {
-        int color;
-        sscanf(param["start"]["indicatorColor"].c_str(), "%x", &color);
-        gui.information_bar_color["indicator"] = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
-    } else
-        gui.information_bar_color["indicator"] = 4294967295; // White
 
     if (gui.start_background)
         host.cfg.start_background = src_start;
 }
 
 bool init_user_start_background(GuiState &gui, const std::string &image_path) {
-    param.clear();
     if (!fs::exists(image_path)) {
         LOG_WARN("Image doesn't exist: {}.", image_path);
         return false;
@@ -198,8 +177,7 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     date["date"] = ImVec2(898, 186.f);
     date["clock"] = ImVec2(898.f, 146.f);
 
-    date_color = gui.information_bar_color["indicator"] = 4294967295; // White
-    gui.information_bar_color["bar"] = 4278190080; // Black
+    date_color = 4294967295; // White
 
     return gui.start_background;
 }
@@ -258,8 +236,10 @@ void init_theme_apps_icon(GuiState &gui, HostState &host, const std::string &con
 
 bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
     std::vector<std::string> theme_bg_name;
+    std::map<std::string, std::string> bar_param;
 
     gui.current_theme_bg = 0;
+    gui.information_bar_color.clear();
     gui.theme_backgrounds.clear();
 
     if (content_id != "default") {
@@ -270,6 +250,12 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
 
         if (doc.load_file(theme_path_xml.c_str())) {
             const auto theme = doc.child("theme");
+
+            // Get Bar Color
+            if (!theme.child("InfomationBarProperty").child("m_barColor").empty())
+                bar_param["barColor"] = theme.child("InfomationBarProperty").child("m_barColor").text().as_string();
+            if (!theme.child("InfomationBarProperty").child("m_indicatorColor").empty())
+                bar_param["indicatorColor"] = theme.child("InfomationBarProperty").child("m_indicatorColor").text().as_string();
 
             // Theme Backgrounds
             for (const auto &param : theme.child("HomeProperty").child("m_bgParam")) {
@@ -303,6 +289,20 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
             LOG_ERROR("Theme not found for Content ID: {}, in path: {}", content_id, theme_path_xml.string());
     }
 
+    if (!bar_param["barColor"].empty()) {
+        int color;
+        sscanf(bar_param["barColor"].c_str(), "%x", &color);
+        gui.information_bar_color["bar"] = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
+    } else
+        gui.information_bar_color["bar"] = 4278190080; // Black
+
+    if (!bar_param["indicatorColor"].empty()) {
+        int color;
+        sscanf(bar_param["indicatorColor"].c_str(), "%x", &color);
+        gui.information_bar_color["indicator"] = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
+    } else
+        gui.information_bar_color["indicator"] = 4294967295; // White
+
     return content_id != "default" ? !gui.theme_backgrounds.empty() : true;
 }
 
@@ -318,14 +318,14 @@ static std::map<std::string, Theme> themes_info;
 static std::vector<std::pair<std::string, time_t>> themes_list;
 
 void get_themes_list(GuiState &gui, HostState &host) {
+    gui.themes_preview.clear(), themes_info.clear(), themes_list.clear();
+
     const auto theme_path{ fs::path(host.pref_path) / "ux0/theme" };
     const auto fw_theme_path{ fs::path(host.pref_path) / "vs0/data/internal/theme" };
-    if (fs::is_empty(theme_path) && fs::is_empty(fw_theme_path)) {
+    if ((!fs::exists(fw_theme_path) || fs::is_empty(fw_theme_path)) && (!fs::exists(theme_path) || fs::is_empty(theme_path))) {
         LOG_WARN("Theme path is empty");
         return;
     }
-
-    gui.themes_preview.clear(), themes_info.clear(), themes_list.clear();
 
     std::string user_lang;
     const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
@@ -400,7 +400,7 @@ void get_themes_list(GuiState &gui, HostState &host) {
         }
     }
 
-    std::sort(themes_list.begin(), themes_list.end(), [](const auto &ta, const auto &tb) {
+    std::sort(themes_list.begin(), themes_list.end(), [&](const auto &ta, const auto &tb) {
         return ta.second > tb.second;
     });
 
@@ -479,7 +479,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto scal_font = 19.2f / ImGui::GetFontSize();
 
     const auto DATE_STR = fmt::format("{} {} ({})", local.tm_mday, wmonth[local.tm_mon], wday[local.tm_wday]);
-    if (param["start"]["dateLayout"] == "2") {
+    if (start_param["dateLayout"] == "2") {
         const auto scal_date_font_size = 34.f / ImGui::GetFontSize();
         const auto DATE_SIZE = (ImGui::CalcTextSize(DATE_STR.c_str()).x * scal_font) * scal_date_font_size;
         DATE_POS.x -= DATE_SIZE * SCAL.x;
@@ -519,13 +519,15 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
 
     draw_information_bar(gui);
 
+    const auto is_background = gui.apps_background.find(host.io.title_id) != gui.apps_background.end();
+
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    if (gui.apps_background.find(host.io.title_id) == gui.apps_background.end())
-        ImGui::SetNextWindowBgAlpha(0.999f);
+    ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##themes", &gui.live_area.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
-        ImGui::GetWindowDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+    if (is_background)
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     ImGui::SetWindowFontScale(1.6f * SCAL.x);
     const auto theme_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
     ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
@@ -905,6 +907,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     }
     ImGui::PopStyleVar();
     ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 } // namespace gui

@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
         return InitConfigFailed;
 
     Config cfg{};
+    HostState host;
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {
@@ -67,7 +68,6 @@ int main(int argc, char *argv[]) {
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/user/00/savedata" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "shaderlog" / *cfg.delete_title_id);
             }
-            HostState host;
             if (cfg.pkg_path.is_initialized() && cfg.pkg_zrif.is_initialized()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
                 install_pkg(*cfg.pkg_path, host, *cfg.pkg_zrif);
@@ -124,7 +124,6 @@ int main(int argc, char *argv[]) {
         vpk_path_wide = string_utils::utf_to_wide(*cfg.run_title_id);
     }
 
-    HostState host;
     if (!app::init(host, cfg, root_paths)) {
         app::error_dialog("Host initialization failed.", host.window.get());
         return HostInitFailed;
@@ -154,13 +153,11 @@ int main(int argc, char *argv[]) {
             }
 
             // TODO: Clean this, ie. make load_app overloads called depending on run type
-            if (!gui.app_selector.selected_title_id.empty()) {
-                vpk_path_wide = string_utils::utf_to_wide(gui.app_selector.selected_title_id);
+            if (!host.io.current_title_id.empty()) {
+                vpk_path_wide = string_utils::utf_to_wide(host.io.current_title_id);
                 run_type = app::AppRunType::Extracted;
             }
         }
-        gui::init_app_background(gui, host);
-        host.renderer->features.hardware_flip = host.cfg.hardware_flip;
     }
 
     if (run_type == app::AppRunType::Vpk) {
@@ -169,7 +166,7 @@ int main(int argc, char *argv[]) {
             return FileNotFound;
         }
     } else if (run_type == app::AppRunType::Extracted) {
-        host.io.title_id = string_utils::wide_to_utf(vpk_path_wide);
+        host.io.current_title_id = string_utils::wide_to_utf(vpk_path_wide);
     }
 
     Ptr<const void> entry_point;
@@ -189,6 +186,9 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
+    gui::init_app_background(gui, host);
+    host.renderer->features.hardware_flip = host.cfg.hardware_flip;
+
     app::gl_screen_renderer gl_renderer;
 
     if (!gl_renderer.init(host.base_path))
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
     while (host.frame_count == 0) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.title_id.c_str());
+            host.io.current_title_id.c_str());
 
         gl_renderer.render(host);
 
@@ -216,13 +216,13 @@ int main(int argc, char *argv[]) {
         host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());
 
-        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.app_title, host.io.title_id).c_str());
+        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.current_app_title, host.io.current_title_id).c_str());
     }
 
     while (handle_events(host, gui)) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.title_id.c_str());
+            host.io.current_title_id.c_str());
 
         gl_renderer.render(host);
 

@@ -245,15 +245,16 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     const auto POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
 
+    const auto is_background = gui.apps_background.find(host.io.title_id) != gui.apps_background.end();
+
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 
-    const auto is_founded = gui.apps_background.find(host.io.title_id) != gui.apps_background.end();
-    if (!is_founded)
-        ImGui::SetNextWindowBgAlpha(0.999f);
     ImGui::Begin("##content_manager", &gui.live_area.content_manager, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    if (is_founded)
-        ImGui::GetWindowDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+    if (is_background)
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
 
     ImGui::SetWindowFontScale(1.5f * SCAL.x);
 
@@ -576,6 +577,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     }
     ImGui::PopStyleVar();
     ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 } // namespace gui

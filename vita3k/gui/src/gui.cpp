@@ -244,16 +244,10 @@ void init_app_background(GuiState &gui, HostState &host) {
 }
 
 std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &title_id) {
-    std::vector<App>::iterator app_index;
-
-    if (title_id.find("NPXS") != std::string::npos)
-        app_index = std::find_if(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [&](const App &a) {
-            return a.title_id == title_id;
-        });
-    else
-        app_index = std::find_if(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&](const App &a) {
-            return a.title_id == title_id;
-        });
+    auto &type_app = title_id.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
+    const auto app_index = std::find_if(type_app.begin(), type_app.end(), [&](const App &a) {
+        return a.title_id == title_id;
+    });
 
     return app_index;
 }
@@ -363,8 +357,10 @@ void init(GuiState &gui, HostState &host) {
     if (!host.cfg.theme_content_id.empty()) {
         init_theme(gui, host, host.cfg.theme_content_id);
         init_theme_apps_icon(gui, host, host.cfg.theme_content_id);
-    } else
+    } else {
+        init_theme(gui, host, "default");
         init_apps_icon(gui, host, gui.app_selector.sys_apps);
+    }
 
     if (!host.cfg.start_background.empty()) {
         if (host.cfg.start_background == "image")
@@ -401,8 +397,9 @@ void draw_end(GuiState &gui, SDL_Window *window) {
 void draw_live_area(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.live_area_font);
 
-    if (!host.cfg.run_title_id && !host.cfg.vpk_path && gui.app_selector.selected_title_id.empty())
+    if (!gui.live_area.content_manager && !gui.live_area.live_area_screen && !gui.live_area.theme_background && !gui.live_area.trophy_collection && host.io.current_title_id.empty())
         draw_app_selector(gui, host);
+
     if (gui.live_area.live_area_screen)
         draw_live_area_screen(gui, host);
     if (gui.live_area.manual)
