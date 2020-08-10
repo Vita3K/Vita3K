@@ -128,6 +128,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                     fs::remove(fs::path(work_path));
                     delete_work_file = false;
                 }
+                update_notice_info(gui, host, "content");
                 if (host.app_category == "gd")
                     refresh_app_list(gui, host);
                 pkg_path = nullptr;

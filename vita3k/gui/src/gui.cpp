@@ -318,6 +318,83 @@ void get_user_apps_title(GuiState &gui, HostState &host) {
     }
 }
 
+void update_notice_info(GuiState &gui, HostState &host, const std::string &type) {
+    const auto pos = gui.notice_info.size();
+
+    std::string msg;
+    if (type == "content") {
+        if (host.app_category == "gd") {
+            msg = "The application has been added to the home screen.";
+
+            int32_t width = 0;
+            int32_t height = 0;
+            vfs::FileBuffer buffer;
+
+            vfs::read_app_file(buffer, host.pref_path, host.io.title_id, "sce_sys/pic0.png");
+
+            if (buffer.empty()) {
+                LOG_WARN("Notice icon not found for content {} [{}].", host.io.title_id);
+                return;
+            }
+            stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+            if (!data) {
+                LOG_ERROR("Invalid background for application {} [{}].", host.io.title_id, host.app_title);
+                return;
+            }
+
+            gui.notice_info_icon[pos].init(gui.imgui_state.get(), data, width, height);
+            stbi_image_free(data);
+        } else
+            msg = "Installation complete.";
+
+        gui.notice_info.push_back({ host.io.title_id, host.app_category, type, pos, std::time(0), host.app_title, msg });
+    } else {
+        const auto trophy_data = gui.trophy_unlock_display_requests.back();
+        int32_t width = 0;
+        int32_t height = 0;
+        stbi_uc *data = stbi_load_from_memory(&trophy_data.icon_buf[0], static_cast<int>(trophy_data.icon_buf.size()), &width, &height, nullptr, STBI_rgb_alpha);
+
+        gui.notice_info_icon[pos].init(gui.imgui_state.get(), data, width, height);
+
+        std::string trophy_kind_s = "?";
+
+        switch (trophy_data.trophy_kind) {
+        case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM: {
+            trophy_kind_s = "(Platinum)";
+            break;
+        }
+
+        case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD: {
+            trophy_kind_s = ("Gold");
+            break;
+        }
+
+        case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER: {
+            trophy_kind_s = "(Silver)";
+            break;
+        }
+
+        case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE: {
+            trophy_kind_s = "(Bronze)";
+            break;
+        }
+
+        default:
+            break;
+        }
+        const auto name = trophy_kind_s + " " + trophy_data.trophy_name;
+        msg = "You have earned a trophy!";
+        gui.notice_info.push_back({ trophy_data.np_com_id, trophy_data.trophy_id, type, pos, std::time(0), name, msg });
+    }
+
+    ++gui.notice_info_count_new;
+    gui.notice_info_new[pos] = true;
+
+    std::sort(gui.notice_info.begin(), gui.notice_info.end(), [&](const NoticeInfo &na, const NoticeInfo &nb) {
+        return na.date > nb.date;
+    });
+}
+
 ImTextureID load_image(GuiState &gui, const char *data, const std::uint32_t size) {
     int width;
     int height;

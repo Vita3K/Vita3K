@@ -110,6 +110,7 @@ void draw_trophies_unlocked(GuiState &gui, HostState &host) {
 
     if (!gui.trophy_unlock_display_requests.empty()) {
         if (gui.trophy_window_frame_stage == TrophyAnimationStage::END) {
+            update_notice_info(gui, host, "trophy");
             gui.trophy_unlock_display_requests.pop();
 
             // Destroy the texture
