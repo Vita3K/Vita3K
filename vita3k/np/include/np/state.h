@@ -34,8 +34,9 @@ struct SceNpServiceStateCallback {
 typedef std::map<int, SceNpServiceStateCallback> np_callbacks;
 
 struct NpTrophyUnlockCallbackData {
+    std::string np_com_id;
+    std::string trophy_id;
     std::string trophy_name;
-    std::string description;
     np::trophy::SceNpTrophyGrade trophy_kind;
     std::vector<std::uint8_t> icon_buf;
 };

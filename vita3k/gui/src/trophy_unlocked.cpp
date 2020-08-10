@@ -9,9 +9,9 @@
 namespace gui {
 
 static constexpr float TROPHY_MOVE_DELTA = 12.0f;
-static constexpr float TROPHY_WINDOW_ICON_SIZE = 60.0f;
-static constexpr float TROPHY_WINDOW_MARGIN_PADDING = 10.0f;
-static const ImVec2 TROPHY_WINDOW_SIZE = ImVec2(360, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING * 2);
+static constexpr float TROPHY_WINDOW_ICON_SIZE = 48.0f;
+static constexpr float TROPHY_WINDOW_MARGIN_PADDING = 6.0f;
+static const ImVec2 TROPHY_WINDOW_SIZE = ImVec2(400.f, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING * 2);
 static constexpr int TROPHY_WINDOW_STATIC_FRAME_COUNT = 250;
 static constexpr float TROPHY_WINDOW_Y_POS = 20.0f;
 
@@ -47,18 +47,15 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
     ImGui::SetNextWindowBgAlpha(0.9f);
     ImGui::SetNextWindowPos(gui.trophy_window_pos);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 15.0f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, GUI_SMOOTH_GRAY);
     ImGui::SetNextWindowSize(TROPHY_WINDOW_SIZE);
-    ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    ImGui::SetWindowFontScale(1.3f);
     ImGui::SetCursorPos(ImVec2(TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_MARGIN_PADDING));
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING * 2);
     ImGui::Image((ImTextureID)gui.trophy_window_icon, ImVec2(TROPHY_WINDOW_ICON_SIZE, TROPHY_WINDOW_ICON_SIZE));
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.24f, 0.24f, 0.24f, 1.0f));
-    ImGui::SetColumnWidth(1, ImGui::GetIO().DisplaySize.x - ImGui::GetCursorPosX() - TROPHY_WINDOW_MARGIN_PADDING);
     ImGui::NextColumn();
 
     std::string trophy_kind_s = "?";
@@ -88,16 +85,15 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
         break;
     }
 
-    ImGui::TextWrapped("%s (%s)", callback_data.trophy_name.c_str(), trophy_kind_s.c_str());
+    ImGui::SetWindowFontScale(1.4f);
+    ImGui::SetCursorPosY(TROPHY_WINDOW_MARGIN_PADDING);
+    ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "(%s) %s", trophy_kind_s.c_str(), callback_data.trophy_name.c_str());
 
     ImGui::SetWindowFontScale(1.2f);
-    ImGui::TextWrapped("%s", callback_data.description.c_str());
-
-    ImGui::PopStyleColor();
+    ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "You have earned a trophy!");
     ImGui::End();
     ImGui::PopStyleColor();
-    ImGui::PopStyleVar();
-    ImGui::PopStyleVar();
+    ImGui::PopStyleVar(2);
 
     if (gui.trophy_window_frame_stage == TrophyAnimationStage::STATIC) {
         gui.trophy_window_frame_count++;

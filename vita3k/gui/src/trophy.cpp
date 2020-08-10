@@ -37,6 +37,7 @@ struct NPComId {
     std::map<std::string, std::string> detail;
     std::vector<std::string> group_id;
     std::map<std::string, uint32_t> trophy_count_by_group;
+    std::map<std::string, std::vector<std::string>> trophy_id_by_group;
     std::string updated;
     std::map<std::string, uint32_t> unlocked_count;
     std::map<std::string, uint32_t> progress;
@@ -184,6 +185,11 @@ void get_trophy_np_com_id_list(GuiState &gui, HostState &host) {
                             np_com_id_info[np_com_id].detail[group_id] = conf.child("detail").text().as_string();
                             np_com_id_list_name[np_com_id][group_id] = fmt::format("GR{}.PNG", group_id);
                         }
+                        if (conf.name() == std::string("trophy")) {
+                            const std::string gid = conf.attribute("gid").empty() ? "000" : conf.attribute("gid").as_string();
+                            const std::string trophy_id = conf.attribute("id").as_string();
+                            np_com_id_info[np_com_id].trophy_id_by_group[gid].push_back(trophy_id);
+                        }
                     }
                 }
 
@@ -323,11 +329,11 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
         }
         stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (!data) {
-            LOG_ERROR("Invalid trophy icon for trophy id {} [{}].", icon_name, trophy.first);
+            LOG_ERROR("Invalid trophy icon for trophy id {} [{}].", icon_name, trophy_id);
             continue;
         }
 
-        gui.trophy_list[trophy.first].init(gui.imgui_state.get(), data, width, height);
+        gui.trophy_list[trophy_id].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
 
         const auto trophy_type = np_com_id_info[np_com_id].context.trophy_kinds[std::stoi(trophy_id)];
@@ -369,6 +375,23 @@ static std::string np_com_id_selected, np_com_id_hovered, group_id_selected, tro
 static bool detail_np_com_id, delete_trophy, set_scroll_pos;
 static ImGuiTextFilter search_bar;
 static std::map<std::string, float> scroll_pos;
+
+void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &trophy_id) {
+    np_com_id_selected = np_com_id;
+
+    // Get group id corresponding trophy_id
+    for (const auto &group : np_com_id_info[np_com_id].trophy_id_by_group) {
+        for (const auto &trophy : group.second) {
+            if (trophy == trophy_id) {
+                group_id_selected = group.first;
+                break;
+            }
+        }
+    }
+
+    trophy_id_selected = trophy_id;
+    get_trophy_list(gui, host, np_com_id_selected, group_id_selected);
+}
 
 void draw_trophy_collection(GuiState &gui, HostState &host) {
     draw_information_bar(gui);
@@ -536,11 +559,11 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 }
                 ImGui::PopStyleVar();
                 ImGui::Columns(4, nullptr, false);
-                ImGui::SetColumnWidth(0, (40.f * SCAL.x));
+                ImGui::SetColumnWidth(0, 30.f * SCAL.x);
                 ImGui::SetColumnWidth(1, SIZE_ICON_LIST.x + (10.f * SCAL.x));
-                ImGui::SetColumnWidth(2, 345.f * SCAL.x);
+                ImGui::SetColumnWidth(2, 355.f * SCAL.x);
                 for (const auto &group_id : np_com_id_info[np_com_id_selected].group_id) {
-                    ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + (15.f * SCAL.x) - (ImGui::CalcTextSize("+").x / 2.f), ImGui::GetCursorPosY() + (SIZE_ICON_LIST.y / 2.f) - (ImGui::CalcTextSize("+").y / 2.f)));
+                    ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + (10.f * SCAL.x) - (ImGui::CalcTextSize("+").x / 2.f), ImGui::GetCursorPosY() + (SIZE_ICON_LIST.y / 2.f) - (ImGui::CalcTextSize("+").y / 2.f)));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", group_id != "000" ? "+" : "");
                     ImGui::NextColumn();
                     ImGui::Image(gui.trophy_np_com_id_list[np_com_id_selected][group_id], SIZE_ICON_LIST);
@@ -614,10 +637,12 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 if (ImGui::Selectable(np_com_id_info[np_com_id_selected].name[group_id_selected].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_ICON_LIST.y)))
                     detail_np_com_id = true;
                 ImGui::PopStyleVar();
-                ImGui::Columns(3, nullptr, false);
-                ImGui::SetColumnWidth(0, SIZE_TROPHY_LIST.x + (15.f * SCAL.x));
-                ImGui::SetColumnWidth(1, (40.f * SCAL.x));
+                ImGui::Columns(4, nullptr, false);
+                ImGui::SetColumnWidth(0, 30.f * SCAL.x);
+                ImGui::SetColumnWidth(1, SIZE_TROPHY_LIST.x + (15.f * SCAL.x));
+                ImGui::SetColumnWidth(2, 40.f * SCAL.x);
                 for (const auto &trophy : trophy_list) {
+                    ImGui::NextColumn();
                     ImGui::SetWindowFontScale(1.2f * SCAL.x);
                     if (trophy_info[trophy.id].earned)
                         ImGui::Image(gui.trophy_list[trophy.id], SIZE_TROPHY_LIST);

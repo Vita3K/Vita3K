@@ -273,7 +273,7 @@ const int Context::total_trophy_unlocked() {
     return total;
 }
 
-bool Context::get_trophy_description(const std::int32_t id, std::string &name, std::string &detail) {
+bool Context::get_trophy_name(const std::int32_t id, std::string &name) {
     if (id < 0 || id >= MAX_TROPHIES) {
         return false;
     }
@@ -297,16 +297,15 @@ bool Context::get_trophy_description(const std::int32_t id, std::string &name, s
     }
 
     // Try to find the description for the id
-    for (auto trop : doc.child("trophyconf")) {
-        if ((strncmp(trop.name(), "trophy", 6) == 0) && (trop.attribute("id").as_uint() == id)) {
+    for (const auto &trop : doc.child("trophyconf")) {
+        if ((trop.name() == std::string("trophy")) && (trop.attribute("id").as_uint() == id)) {
             name = trop.child("name").text().as_string();
-            detail = trop.child("detail").text().as_string();
 
-            return true;
+            break;
         }
     }
 
-    return false;
+    return !name.empty();
 }
 
 int Context::install_trophy_conf(IOState *io, const std::string &pref_path, const std::string np_com_id) {

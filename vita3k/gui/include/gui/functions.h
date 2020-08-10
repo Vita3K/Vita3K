@@ -55,6 +55,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id);
 void init_theme_apps_icon(GuiState &gui, HostState &host, const std::string &content_id);
 void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
+void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &trophy_id);
 void pre_load_app(GuiState &gui, HostState &host);
 void pre_run_app(GuiState &gui, HostState &host);
 bool refresh_app_list(GuiState &gui, HostState &host);
