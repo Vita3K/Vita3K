@@ -84,7 +84,7 @@ struct Context {
 
     const bool is_trophy_unlocked(const uint32_t &trophy_index);
     const int total_trophy_unlocked();
-    bool get_trophy_description(const std::int32_t id, std::string &name, std::string &detail);
+    bool get_trophy_name(const std::int32_t id, std::string &name);
 
     explicit Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream,
         const std::string &output_progress_path);

@@ -180,7 +180,6 @@ EXPORT(int, sceNpTrophyTerm) {
 
 static void trophy_unlocked(const NpTrophyUnlockCallbackData &callback_data, const SceNpTrophyID trophy_id) {
     LOG_TRACE("Trophy unlocked: {}, id = {}", callback_data.trophy_name, trophy_id);
-    LOG_TRACE("Detail: {}", callback_data.description);
 }
 
 static int do_trophy_callback(HostState &host, np::trophy::Context *context, SceNpTrophyID trophy_id) {
@@ -191,8 +190,10 @@ static int do_trophy_callback(HostState &host, np::trophy::Context *context, Sce
         return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
     }
 
+    callback_data.np_com_id = fmt::format("{}_{:0>2d}", context->comm_id.data, context->comm_id.num);
+    callback_data.trophy_id = fmt::format("{:0>3d}", trophy_id);
     callback_data.trophy_kind = context->trophy_kinds[trophy_id];
-    if (!context->get_trophy_description(trophy_id, callback_data.trophy_name, callback_data.description)) {
+    if (!context->get_trophy_name(trophy_id, callback_data.trophy_name)) {
         return SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF;
     }
 
