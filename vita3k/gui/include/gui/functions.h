@@ -59,6 +59,7 @@ void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_
 void pre_load_app(GuiState &gui, HostState &host);
 void pre_run_app(GuiState &gui, HostState &host);
 bool refresh_app_list(GuiState &gui, HostState &host);
+void update_notice_info(GuiState &gui, HostState &host, const std::string &type);
 
 void draw_begin(GuiState &gui, HostState &host);
 void draw_end(GuiState &host, SDL_Window *window);
@@ -68,6 +69,7 @@ void draw_ui(GuiState &gui, HostState &host);
 void draw_app_context_menu(GuiState &gui, HostState &host);
 void draw_common_dialog(GuiState &gui, HostState &host);
 void draw_information_bar(GuiState &gui);
+void draw_notice_info(GuiState &gui, HostState &host);
 void draw_reinstall_dialog(GenericDialogState *status);
 void draw_trophies_unlocked(GuiState &gui, HostState &host);
 void draw_perf_overlay(GuiState &gui, HostState &host);

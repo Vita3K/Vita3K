@@ -241,6 +241,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
     gui.current_theme_bg = 0;
     gui.information_bar_color.clear();
     gui.theme_backgrounds.clear();
+    gui.theme_information_bar_notice.clear();
 
     if (content_id != "default") {
         const auto theme_path{ fs::path(host.pref_path) / "ux0/theme" / content_id };
@@ -256,6 +257,36 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
                 bar_param["barColor"] = theme.child("InfomationBarProperty").child("m_barColor").text().as_string();
             if (!theme.child("InfomationBarProperty").child("m_indicatorColor").empty())
                 bar_param["indicatorColor"] = theme.child("InfomationBarProperty").child("m_indicatorColor").text().as_string();
+
+            // Notice Icon
+            std::map<std::string, std::string> notice_name;
+            if (!theme.child("InfomationBarProperty").child("m_noNoticeFilePath").text().empty())
+                notice_name["no"] = theme.child("InfomationBarProperty").child("m_noNoticeFilePath").text().as_string();
+            if (!theme.child("InfomationBarProperty").child("m_newNoticeFilePath").text().empty())
+                notice_name["new"] = theme.child("InfomationBarProperty").child("m_newNoticeFilePath").text().as_string();
+
+            for (const auto &notice : notice_name) {
+                int32_t width = 0;
+                int32_t height = 0;
+                vfs::FileBuffer buffer;
+
+                const auto type = notice.first;
+                const auto name = notice.second;
+
+                vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + name);
+
+                if (buffer.empty()) {
+                    LOG_WARN("Notice icon, Name: '{}', Not found for content id: {}.", name, content_id);
+                    continue;
+                }
+                stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+                if (!data) {
+                    LOG_ERROR("Invalid notice icon for content id: {}.", content_id);
+                    continue;
+                }
+                gui.theme_information_bar_notice[type].init(gui.imgui_state.get(), data, width, height);
+                stbi_image_free(data);
+            }
 
             // Theme Backgrounds
             for (const auto &param : theme.child("HomeProperty").child("m_bgParam")) {

@@ -121,6 +121,16 @@ enum class TrophyAnimationStage {
     END = 3
 };
 
+struct NoticeInfo {
+    std::string id;
+    std::string group;
+    std::string type;
+    size_t pos;
+    time_t date;
+    std::string name;
+    std::string msg;
+};
+
 struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
 
@@ -163,6 +173,12 @@ struct GuiState {
     std::uint64_t current_theme_bg;
     std::map<std::string, std::map<std::string, ImGui_Texture>> themes_preview;
     std::vector<ImGui_Texture> theme_backgrounds;
+    std::map<std::string, ImGui_Texture> theme_information_bar_notice;
+
+    std::map<size_t, bool> notice_info_new;
+    int notice_info_count_new = 0;
+    std::vector<NoticeInfo> notice_info;
+    std::map<size_t, ImGui_Texture> notice_info_icon;
 
     std::uint64_t current_user_bg;
     std::map<std::string, ImGui_Texture> user_backgrounds;

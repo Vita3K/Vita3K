@@ -161,6 +161,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         }
     }
 
+    draw_notice_info(gui, host);
+
     if ((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty())
         ImGui::GetBackgroundDrawList()->AddImage((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]],
             ImVec2(0.f, MENUBAR_HEIGHT), display_size);
