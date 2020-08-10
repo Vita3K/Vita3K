@@ -36,8 +36,8 @@ public:
     void init(ImGui_State *new_state, ImTextureID texture);
     void init(ImGui_State *new_state, void *data, int width, int height);
 
-    operator bool();
-    operator ImTextureID();
+    operator bool() const;
+    operator ImTextureID() const;
     bool operator==(const ImGui_Texture &texture);
 
     ~ImGui_Texture();

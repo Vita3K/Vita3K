@@ -229,11 +229,11 @@ void ImGui_Texture::init(ImGui_State *new_state, void *data, int width, int heig
     init(new_state, ImGui_ImplSdl_CreateTexture(new_state, data, width, height));
 }
 
-ImGui_Texture::operator bool() {
+ImGui_Texture::operator bool() const {
     return texture_id != nullptr;
 }
 
-ImGui_Texture::operator ImTextureID() {
+ImGui_Texture::operator ImTextureID() const {
     return texture_id;
 }
 

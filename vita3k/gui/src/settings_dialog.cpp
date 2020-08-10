@@ -314,7 +314,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                     host.cfg.start_background.clear();
                     gui.start_background = {};
                 }
-                gui.theme_backgrounds.clear();
+                init_theme(gui, host, "default");
                 init_apps_icon(gui, host, gui.app_selector.sys_apps);
             }
             ImGui::SameLine();

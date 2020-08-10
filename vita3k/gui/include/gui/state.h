@@ -62,7 +62,6 @@ struct AppsSelector {
     std::vector<App> sys_apps;
     AppInfo app_info;
     std::map<std::string, ImGui_Texture> icons;
-    std::string selected_title_id;
     bool is_app_list_sorted{ false };
     SortState title_id_sort_state = NOT_SORTED;
     SortState app_ver_sort_state = NOT_SORTED;

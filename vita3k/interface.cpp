@@ -267,18 +267,18 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         return InvalidApplicationPath;
 
     vfs::FileBuffer params;
-    bool params_found = vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
+    bool params_found = vfs::read_app_file(params, host.pref_path, host.io.current_title_id, "sce_sys/param.sfo");
 
     if (params_found) {
         sfo::load(host.sfo_handle, params);
 
-        sfo::get_data_by_key(host.app_title, host.sfo_handle, "TITLE");
-        std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' '); // Restrict title to one line
-        sfo::get_data_by_key(host.io.title_id, host.sfo_handle, "TITLE_ID");
+        sfo::get_data_by_key(host.current_app_title, host.sfo_handle, "TITLE");
+        std::replace(host.current_app_title.begin(), host.current_app_title.end(), '\n', ' '); // Restrict title to one line
+        sfo::get_data_by_key(host.io.current_title_id, host.sfo_handle, "TITLE_ID");
         sfo::get_data_by_key(host.app_version, host.sfo_handle, "APP_VER");
         sfo::get_data_by_key(host.app_category, host.sfo_handle, "CATEGORY");
     } else {
-        host.app_title = host.io.title_id; // Use TitleID as Title
+        host.current_app_title = host.io.current_title_id; // Use TitleID as Title
         host.app_version = host.app_category = "N/A";
     }
 
@@ -294,7 +294,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
-        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.app_title) + " - [" + host.io.title_id + "].log") };
+        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.current_app_title) + " - [" + host.io.current_title_id + "].log") };
         if (logging::add_sink(log_name) != Success)
             return InitConfigFailed;
     }
@@ -311,13 +311,13 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         LOG_INFO("lle-modules: {}", modules);
     }
 
-    LOG_INFO("Title: {}", host.app_title);
-    LOG_INFO("Serial: {}", host.io.title_id);
+    LOG_INFO("Title: {}", host.current_app_title);
+    LOG_INFO("Serial: {}", host.io.current_title_id);
     LOG_INFO("Version: {}", host.app_version);
     LOG_INFO("Category: {}", host.app_category);
 
     init_device_paths(host.io);
-    init_savedata_game_path(host.io, host.pref_path);
+    init_savedata_app_path(host.io, host.pref_path);
 
     for (const auto &var : get_var_exports()) {
         auto addr = var.factory(host);
@@ -325,7 +325,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     }
 
     // Load pre-loaded libraries
-    const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_module" };
+    const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.current_title_id / "sce_module" };
     const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
     if (is_app) {
         // Load application module
@@ -359,7 +359,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
 
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
-    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, EBOOT_PATH)) {
+    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.current_title_id, EBOOT_PATH)) {
         SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
@@ -406,14 +406,14 @@ bool handle_events(HostState &host, GuiState &gui) {
                     gui.is_capturing_keys = false;
                 }
             }
-            if (!gui.app_selector.selected_title_id.empty()) {
+            if (!host.io.current_title_id.empty()) {
                 // toggle gui state
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
-                // Show/Hide Live Area during game run
-                // TODO pause game running
+                // Show/Hide Live Area during app run
+                // TODO pause app running
                 if (!gui.live_area.manual && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {
-                    if (gui.live_area_contents.find(host.io.title_id) == gui.live_area_contents.end())
+                    if (gui.live_area_contents.find(host.io.current_title_id) == gui.live_area_contents.end())
                         gui::init_live_area(gui, host);
                     gui.live_area.live_area_screen = !gui.live_area.live_area_screen;
                 }

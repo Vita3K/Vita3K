@@ -203,7 +203,6 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
 
     std::vector<uint8_t> sfo_buffer(sfo_size);
     SfoFile sfo_file;
-    std::string category;
     std::string content_id;
     infile.seekg(sfo_offset);
     infile.read((char *)&sfo_buffer[0], sfo_size);
@@ -211,13 +210,15 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
     sfo::get_data_by_key(host.app_version, sfo_file, "APP_VER");
     if (!sfo::get_data_by_key(host.app_title, sfo_file, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
         sfo::get_data_by_key(host.app_title, sfo_file, "TITLE");
+    std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
+    boost::trim(host.app_title);
     sfo::get_data_by_key(host.io.title_id, sfo_file, "TITLE_ID");
-    sfo::get_data_by_key(category, sfo_file, "CATEGORY");
+    sfo::get_data_by_key(host.app_category, sfo_file, "CATEGORY");
     sfo::get_data_by_key(content_id, sfo_file, "CONTENT_ID");
     if (type == PkgType::PKG_TYPE_VITA_DLC)
         content_id = content_id.substr(20);
 
-    if (type == PkgType::PKG_TYPE_VITA_APP && strcmp(category.c_str(), "gp") == 0) {
+    if (type == PkgType::PKG_TYPE_VITA_APP && strcmp(host.app_category.c_str(), "gp") == 0) {
         type = PkgType::PKG_TYPE_VITA_PATCH;
     }
 
@@ -236,6 +237,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
         //root_path = device::construct_emulated_path(VitaIoDevice::ux0, "patch/" + title_id, pref_path);
     case PkgType::PKG_TYPE_VITA_THEME:
         root_path = device::construct_emulated_path(VitaIoDevice::ux0, "theme/" + content_id, host.pref_path);
+        host.app_category = "theme";
         break;
     }
 
