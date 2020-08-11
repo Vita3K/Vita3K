@@ -428,7 +428,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             g_offset += format2_entry->offset;
             g_saddr = (format2_entry->symbol_segment == 0xf) ? 0 : symbol_seg_start;
             g_addend = format2_entry->addend;
-            g_type2 = 0;
+            g_type = format2_entry->code;
 
             const auto s = g_saddr;
             const auto a = g_addend;
@@ -440,6 +440,8 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             if (!relocate_entry(Ptr<uint32_t>(p).get(mem), g_type, s, a, p)) {
                 return false;
             }
+
+            g_type2 = 0;
 
             break;
         }
