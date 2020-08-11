@@ -70,6 +70,9 @@ struct GLContext : public renderer::Context {
     GLObjectArray<1> element_buffer;
     GLObjectArray<30> uniform_buffer;
     const GLRenderTarget *render_target;
+
+    std::map<int, std::vector<uint8_t>> ubo_data;
+
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     GLuint last_draw_program{ 0 };
 
