@@ -512,7 +512,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
     host.main_thread_id = main_thread_id;
 
-    SceKernelThreadOptParam param;
+    SceKernelThreadOptParam param{ 0, 0 };
     if (host.cfg.console && host.cfg.console_arguments != "") {
         auto args = split(host.cfg.console_arguments, "\\s+");
         // why is this flipped
