@@ -18,7 +18,7 @@ endif()
 enable_testing()
 
 macro(pre_configure_boost)
-	find_package(Boost COMPONENTS filesystem system QUIET)
+	find_package(Boost COMPONENTS filesystem system icl QUIET)
 
 	if (Boost_FOUND)
 		set(BOOST_INCLUDEDIR ${Boost_INCLUDE_DIRS})
