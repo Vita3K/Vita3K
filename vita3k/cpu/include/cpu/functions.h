@@ -20,12 +20,11 @@
 #include <mem/mem.h> // Address.
 #include <util/types.h>
 
+#include <cpu/common.h>
+
 #include <cstdint>
 #include <functional>
 #include <stack>
-
-struct CPUState;
-struct MemState;
 
 enum ImportCallLogLevel {
     None,
@@ -35,45 +34,13 @@ enum ImportCallLogLevel {
 
 constexpr ImportCallLogLevel IMPORT_CALL_LOG_LEVEL = None;
 
-struct CPUContext {
-    uint32_t cpu_registers[16];
-    uint32_t sp;
-    uint32_t pc;
-    uint32_t lr;
-    uint32_t cpsr;
-};
-
 struct StackFrame {
     uint32_t addr;
     uint32_t sp;
     std::string name;
 };
 
-struct ModuleRegion {
-    uint32_t nid;
-    std::string name;
-    Address start;
-    uint32_t size;
-    Address vaddr;
-};
-
-typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
-typedef std::function<void(CPUState &cpu, uint32_t, SceUID)> CallImport;
-typedef std::function<std::string(Address)> ResolveNIDName;
-typedef std::function<Address(Address)> GetWatchMemoryAddr;
-typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
-typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
-
-struct CPUDepInject {
-    CallImport call_import;
-    CallSVC call_svc;
-    ResolveNIDName resolve_nid_name;
-    GetWatchMemoryAddr get_watch_memory_addr;
-    std::vector<ModuleRegion> module_regions;
-    bool trace_stack;
-};
-
-CPUStatePtr init_cpu(SceUID thread_id, Address pc, Address sp, MemState &mem, CPUDepInject &inject);
+CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address sp, MemState &mem, CPUDepInject &inject);
 int run(CPUState &state, bool callback, Address entry_point);
 int step(CPUState &state, bool callback, Address entry_point);
 void stop(CPUState &state);
@@ -82,35 +49,24 @@ float read_float_reg(CPUState &state, size_t index);
 uint32_t read_sp(CPUState &state);
 uint32_t read_pc(CPUState &state);
 uint32_t read_lr(CPUState &state);
-uint32_t read_fpscr(CPUState &state);
-uint32_t read_cpsr(CPUState &state);
 uint32_t read_tpidruro(CPUState &state);
 void write_reg(CPUState &state, size_t index, uint32_t value);
-void write_float_reg(CPUState &state, size_t index, float value);
 void write_sp(CPUState &state, uint32_t value);
 void write_pc(CPUState &state, uint32_t value);
 void write_lr(CPUState &state, uint32_t value);
-void write_fpscr(CPUState &state, uint32_t value);
-void write_cpsr(CPUState &state, uint32_t value);
 void write_tpidruro(CPUState &state, uint32_t value);
+CPUContextPtr save_context(CPUState &state);
+void load_context(CPUState &state, CPUContext* ctx);
 
 // Debugging helpers
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size = nullptr);
 std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size = nullptr);
 bool hit_breakpoint(CPUState &state);
 void trigger_breakpoint(CPUState &state);
-void log_code_add(CPUState &state);
-void log_mem_add(CPUState &state);
-void log_code_remove(CPUState &state);
-void log_mem_remove(CPUState &state);
-bool log_code_exists(CPUState &state);
-bool log_mem_exists(CPUState &state);
-void save_context(CPUState &state, CPUContext &ctx);
-void load_context(CPUState &state, CPUContext &ctx);
-std::stack<StackFrame> get_stack_frames(CPUState &state);
-void push_stack_frame(CPUState &state, StackFrame sf);
-void log_stack_frames(CPUState &cpu);
+void set_log_code(CPUState &state, bool log);
+void set_log_mem(CPUState &state, bool log);
+bool get_log_code(CPUState &state);
+bool get_log_mem(CPUState &state);
 bool is_returning(CPUState &cpu);
 
-void push_lr(CPUState &cpu, Address lr);
-Address pop_lr(CPUState &cpu);
+std::unique_ptr<ModuleRegion> get_region(CPUState &state, Address addr);
