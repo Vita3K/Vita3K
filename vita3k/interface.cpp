@@ -519,7 +519,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
             inject, nullptr);
         const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
-        const auto ret = run_on_current(*module_thread, module_start, 0, argp);
+        const auto ret = run_on_current(*module_thread, module_start, 0, argp, true);
         module_thread->to_do = ThreadToDo::exit;
         module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
         host.kernel.running_threads.erase(module_thread_id);

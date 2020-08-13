@@ -92,17 +92,17 @@ Address get_watch_memory_addr(KernelState &state, Address addr) {
 void update_watches(KernelState &state) {
     for (const auto &thread : state.threads) {
         auto &cpu = *thread.second->cpu;
-        if (state.watch_code != log_code_exists(cpu)) {
+        if (state.watch_code != get_log_code(cpu)) {
             if (state.watch_code)
-                log_code_add(cpu);
+                set_log_code(cpu, true);
             else
-                log_code_remove(cpu);
+                set_log_code(cpu, false);
         }
-        if (state.watch_memory != log_mem_exists(cpu)) {
+        if (state.watch_memory != get_log_mem(cpu)) {
             if (state.watch_memory)
-                log_mem_add(cpu);
+                set_log_mem(cpu, true);
             else
-                log_mem_remove(cpu);
+                set_log_mem(cpu, false);
         }
     }
 }

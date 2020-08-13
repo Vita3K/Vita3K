@@ -104,15 +104,15 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const Address stack_top = thread->stack->get() + stack_size;
     memset(Ptr<void>(thread->stack->get()).get(mem), 0xcc, stack_size);
 
-    thread->cpu = init_cpu(thid, entry_point.address(), stack_top, mem, inject);
+    thread->cpu = init_cpu(CPUBackend::Dynarmic, thid, entry_point.address(), stack_top, mem, inject);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
     if (kernel.watch_code) {
-        log_code_add(*thread->cpu);
+        set_log_code(*thread->cpu, true);
     }
     if (kernel.watch_memory) {
-        log_mem_add(*thread->cpu);
+        set_log_mem(*thread->cpu, true);
     }
 
     if (option) {
@@ -120,7 +120,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         write_reg(*thread->cpu, 1, option->size);
     }
 
-    thread->cpu_context = std::make_unique<CPUContext>();
+    thread->cpu_context = save_context(*thread->cpu);
     if (!thread->cpu_context) {
         return SCE_KERNEL_ERROR_ERROR;
     }

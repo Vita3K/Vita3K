@@ -34,7 +34,7 @@ class Resource;
 typedef Resource<Address> ThreadStack;
 typedef std::shared_ptr<ThreadStack> ThreadStackPtr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
-typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
+typedef std::unique_ptr<CPUContext> CPUContextPtr;
 
 enum class ThreadToDo {
     exit,
