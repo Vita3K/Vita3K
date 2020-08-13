@@ -35,6 +35,18 @@ struct MemState;
 
 typedef void (*BreakpointCallback)(CPUState &, MemState &);
 
+constexpr size_t KB(size_t kb) {
+    return kb * 1024;
+}
+
+constexpr size_t MB(size_t mb) {
+    return mb * KB(1024);
+}
+
+constexpr size_t GB(size_t gb) {
+    return gb * MB(1024);
+}
+
 struct Breakpoint {
     bool gdb;
     bool thumb_mode;
@@ -51,19 +63,9 @@ struct MemState {
     GenerationNames generation_names;
     std::map<Address, Address> aligned_addr_to_original;
     std::map<Address, Breakpoint> breakpoints;
+
+    std::unique_ptr <std::array<uint8_t *, MB(1)>> pages_cpu;
 };
-
-constexpr size_t KB(size_t kb) {
-    return kb * 1024;
-}
-
-constexpr size_t MB(size_t mb) {
-    return mb * KB(1024);
-}
-
-constexpr size_t GB(size_t gb) {
-    return gb * MB(1024);
-}
 
 bool init(MemState &state);
 Address alloc(MemState &state, size_t size, const char *name);

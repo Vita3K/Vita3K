@@ -102,6 +102,13 @@ bool init(MemState &state) {
     }
 #endif
 
+    state.pages_cpu = std::make_unique<std::array<uint8_t *, MB(1)>>();
+    (*(state.pages_cpu))[0] = state.memory.get();
+
+    for (std::size_t i = 1; i < state.pages_cpu->size(); i++) {
+        (*(state.pages_cpu))[i] = (*(state.pages_cpu))[i - 1] + state.page_size;
+    }
+
     state.allocated_pages.resize(length / state.page_size);
     const Address null_address = alloc(state, 1, "NULL");
     assert(null_address == 0);
