@@ -234,6 +234,12 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
             create_dir(host.io, file_path.c_str(), 0777, host.pref_path, export_name);
             break;
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE_TRUNCATE:
+            if (files[i].buf) {
+                fd = open_file(host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+                seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, host.io, export_name);
+                write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, export_name);
+                close_file(host.io, fd, export_name);
+            }
             fd = open_file(host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, host.pref_path, export_name);
             truncate_file(fd, files[i].bufSize + files[i].offset, host.io, export_name);
             close_file(host.io, fd, export_name);
@@ -259,7 +265,7 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         modified_time.minute = local->tm_min;
         modified_time.second = local->tm_sec;
         slot->slotParam.get(host.mem)->modifiedTime = modified_time;
-        fd = open_file(host.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY, host.pref_path, export_name);
+        fd = open_file(host.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
         write_file(fd, slot->slotParam.get(host.mem), sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
         close_file(host.io, fd, export_name);
     }
@@ -295,6 +301,7 @@ EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveD
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
     read_file(param, host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
     close_file(host.io, fd, export_name);
+    param->status = 0;
     return 0;
 }
 
