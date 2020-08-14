@@ -71,7 +71,7 @@
 	url = https://github.com/nothings/stb
 [submodule "external/unicorn"]
 	path = external/unicorn
-	url = https://github.com/unicorn-engine/unicorn.git
+	url = https://github.com/Vita3K/unicorn.git
 [submodule "external/vita-toolchain"]
 	path = external/vita-toolchain
 	url = https://github.com/Vita3K/vita-toolchain
