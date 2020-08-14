@@ -97,9 +97,8 @@ bool init(AudioState &state, ResumeAudioThread resume_thread) {
     desired.callback = &audio_callback;
     desired.userdata = &state;
 
-    if (SDL_OpenAudioDevice(nullptr, 0, &desired, &state.ro.spec, SDL_AUDIO_ALLOW_FORMAT_CHANGE) == 0) {
-        auto msg = SDL_GetError();
-        LOG_ERROR("SDL audio error: {}", msg);
+    if (SDL_OpenAudio(&desired, &state.ro.spec) != 0) {
+        LOG_ERROR("SDL audio error: {}", SDL_GetError());
         return false;
     }
 
