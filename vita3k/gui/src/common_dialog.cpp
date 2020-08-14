@@ -116,7 +116,7 @@ static void draw_savedata_dialog_list(DialogState &common_dialog, GuiState &gui,
     if (ImGui::Selectable(selectable_buffer, false, ImGuiSelectableFlags_None, ImVec2(WINDOW_SIZE.x - 120, THUMBNAIL_SIZE.y - 5))) {
         common_dialog.savedata.selected_save = loop_index;
         common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-        common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
         common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
     }
     ImGui::SameLine();
