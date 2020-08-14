@@ -23,18 +23,15 @@
 const wchar_t *translate_open_mode(const int flags) {
     if (flags & SCE_O_WRONLY) {
         if (flags & SCE_O_RDONLY) {
-            if (flags & SCE_O_CREAT) {
-                if (flags & SCE_O_APPEND) {
-                    return L"ab+";
-                }
-                return L"wb+";
+            if (flags & SCE_O_APPEND) {
+                return L"ab+";
             }
             return L"rb+";
         }
         if (flags & SCE_O_APPEND) {
             return L"ab";
         }
-        return L"wb";
+        return L"rb+";
     }
     return L"rb";
 }
@@ -42,18 +39,15 @@ const wchar_t *translate_open_mode(const int flags) {
 const char *translate_open_mode(const int flags) {
     if (flags & SCE_O_WRONLY) {
         if (flags & SCE_O_RDONLY) {
-            if (flags & SCE_O_CREAT) {
-                if (flags & SCE_O_APPEND) {
-                    return "ab+";
-                }
-                return "wb+";
+            if (flags & SCE_O_APPEND) {
+                return "ab+";
             }
             return "rb+";
         }
         if (flags & SCE_O_APPEND) {
             return "ab";
         }
-        return "wb";
+        return "rb+";
     }
     return "rb";
 }
