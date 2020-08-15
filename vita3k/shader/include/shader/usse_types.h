@@ -220,11 +220,15 @@ inline std::size_t get_data_type_size(const DataType type) {
 }
 
 inline bool is_unsigned_integer_data_type(const DataType dtype) {
-    return (dtype == DataType::UINT16) || (dtype == DataType::UINT32);
+    return (dtype == DataType::UINT16) || (dtype == DataType::UINT32) || (dtype == DataType::UINT8);
 }
 
 inline bool is_signed_integer_data_type(const DataType dtype) {
     return (dtype == DataType::INT16) || (dtype == DataType::INT8) || (dtype == DataType::INT32);
+}
+
+inline bool is_float_data_type(const DataType dtype) {
+    return (dtype == DataType::C10) || (dtype == DataType::F16) || (dtype == DataType::F32);
 }
 
 // TODO: Make this a std::set?

@@ -331,8 +331,9 @@ static DataType gxm_parameter_type_to_usse_data_type(const SceGxmParameterType p
 
     case SCE_GXM_PARAMETER_TYPE_U8:
         return DataType::UINT8;
+
     case SCE_GXM_PARAMETER_TYPE_S8:
-        return DataType::C10;
+        return DataType::INT8;
 
     default:
         LOG_WARN("Unsupported output register format {}, default to F16", (int)param_type);
@@ -629,7 +630,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             target_to_store.type = gxm_parameter_type_to_usse_data_type(program.get_fragment_output_type());
 
             if (target_to_store.type == DataType::UINT8) {
-                source = utils::scale_float_for_u8(b, source);
+                //source = utils::scale_float_for_u8(b, source);
             }
 
             utils::store(b, parameters, utils, features, target_to_store, source, 0b1111, 0);
@@ -1057,9 +1058,9 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 
     spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
 
-    if (param_type == SCE_GXM_PARAMETER_TYPE_U8) {
-        color = utils::unscale_float_for_u8(b, color);
-    }
+    //if (param_type == SCE_GXM_PARAMETER_TYPE_U8) {
+    //    color = utils::unscale_float_for_u8(b, color);
+    //}
 
     if (program.is_native_color() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntegerType(32, true);
@@ -1176,7 +1177,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                 number_of_comp_vec = 4;
             }
 
-            assert(number_of_comp_vec != 1);
+            //assert(number_of_comp_vec != 1);
             const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), number_of_comp_vec);
             const spv::Id out_var = b.createVariable(spv::StorageClassOutput, out_type, properties.name.c_str());
             translation_state.interfaces.push_back(out_var);

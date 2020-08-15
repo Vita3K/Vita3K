@@ -63,6 +63,10 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
                     access_base = second;
                 }
 
+                if (access_offset == 4) {
+                    LOG_TRACE("asad");
+                }
+
                 if (!b.isScalar(access_base)) {
                     ops.push_back(b.createOp(spv::OpVectorExtractDynamic, type_f32, { access_base, b.makeIntConstant(access_offset) }));
                 } else {
@@ -187,7 +191,7 @@ static spv::Function *make_u8_unpack_func(spv::Builder &b, const FeatureState &f
     extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
     extracted = b.createBuiltinCall(type_f32_v4, b.import("GLSL.std.450"), GLSLstd450UnpackUnorm4x8, { extracted });
 
-    extracted = shader::usse::utils::scale_float_for_u8(b, extracted);
+    //extracted = shader::usse::utils::scale_float_for_u8(b, extracted);
 
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
@@ -210,7 +214,7 @@ static spv::Function *make_u8_pack_func(spv::Builder &b, const FeatureState &fea
 
     spv::Id extracted = u8_pack_func->getParamId(0);
 
-    extracted = shader::usse::utils::unscale_float_for_u8(b, extracted);
+    //extracted = shader::usse::utils::unscale_float_for_u8(b, extracted);
     extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackUnorm4x8, { extracted });
     extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
 
@@ -582,27 +586,26 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
             b.makeIntConstant(4));
     }
 
-    // Default load will get word as default component
-    std::size_t dest_comp_count_to_get = 0;
-    bool already[4] = { false, false, false, false };
-    int lowest_swizzle_bit = 999;
-    int highest_swizzle_bit = -1;
+    const int num_comp_in_single_float = static_cast<int>(4 / size_comp);
+
+    // In here we calculate the highest/lowest offset of component that got written.
+    // Starting from the nearest X component.
+    int lowest_dest_write_offset = 999;               ///< Lowest offset of the component to write.
+    int highest_dest_write_offset = -1;               ///< Highest offset of the component to write.
 
     for (int i = 0; i < 4; i++) {
         const int swizzle_bit = (int)op.swizzle[i] - (int)SwizzleChannel::_X;
 
-        if (dest_mask & (1 << i) && swizzle_bit <= 3 && (already[swizzle_bit * size_comp / 4] == false)) {
-            dest_comp_count_to_get++;
-            already[swizzle_bit * size_comp / 4] = true;
-
-            lowest_swizzle_bit = std::min(lowest_swizzle_bit, swizzle_bit);
-            highest_swizzle_bit = std::max(highest_swizzle_bit, swizzle_bit);
+        if (dest_mask & (1 << i)) {
+            lowest_dest_write_offset = std::min(lowest_dest_write_offset, swizzle_bit);
+            highest_dest_write_offset = std::max(highest_dest_write_offset, swizzle_bit);
         }
     }
 
-    if (lowest_swizzle_bit == 999 || highest_swizzle_bit == -1) {
-        // This is the default value of the lowest swizzle channel, which means that all of the loadable ones
-        // are constant swizzle channel. Iterates through all of them and build a composite constant
+    if (lowest_dest_write_offset == 999 || highest_dest_write_offset == -1) {
+        // This is the default value of the lowest swizzle channel.
+        // Which means that no mask is on, all of the loadable ones, are constant swizzle channel.
+        // Iterates through all of them and build a composite constant
         std::vector<spv::Id> comps;
 
         for (int i = 0; i < 4; i++) {
@@ -620,10 +623,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         }
     }
 
-    lowest_swizzle_bit = lowest_swizzle_bit * static_cast<int>(size_comp) / 4;
-    highest_swizzle_bit = highest_swizzle_bit * static_cast<int>(size_comp) / 4;
-
-    // For non-F32 and non-I32 type, we need to make a destination mask to extract neccessary components out
+    // For non-F32 and non-I32 type, we need to make a destination mask to extract neccessary F32 components out
     // For example: sa6.xz with DataType = f16
     // Would result at least sa6 and sa7 to be extracted out, since sa6 contains f16 x and y, sa7 contains f16 z and w
     Imm4 extract_mask = dest_mask;
@@ -632,7 +632,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     if (size_comp != 4) {
         extract_mask = 0;
 
-        for (int i = 0; i <= highest_swizzle_bit; i++) {
+        for (int i = lowest_dest_write_offset / num_comp_in_single_float; i <= highest_dest_write_offset / num_comp_in_single_float; i++) {
             // Build up an extract mask
             extract_mask |= (1 << i);
         }
@@ -648,6 +648,8 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     spv::Id comp_type = b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)));
     comp_type = b.makePointer(spv::StorageClassPrivate, comp_type);
 
+    // May access two float in the arrays to get U8 or F16 components
+    // Need to divide it with number of source components that each float can hold
     if (idx_in_arr_1 == spv::NoResult) {
         idx_in_arr_1 = b.makeIntConstant((op.num + shift_offset) >> 2);
     }
@@ -669,7 +671,8 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     first_pass = b.createOp(spv::OpAccessChain, comp_type, first_pass_operands);
     connected_friend = b.createOp(spv::OpAccessChain, comp_type, second_pass_operands);
 
-    first_pass = finalize(b, b.createLoad(first_pass), b.createLoad(connected_friend), extract_swizz, op.num + shift_offset, extract_mask);
+    first_pass = finalize(b, b.createLoad(first_pass), b.createLoad(connected_friend), extract_swizz,
+        op.num + shift_offset, extract_mask);
 
     if (first_pass == spv::NoResult) {
         return first_pass;
@@ -677,7 +680,6 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
     if (size_comp != 4) {
         // Second pass: Do unpack
-        // We already handle shift offset above, so now let's use 0
         first_pass = unpack(b, utils, features, first_pass, op.type, op.swizzle, dest_mask, 0);
     }
 
@@ -689,11 +691,12 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     const bool is_signed_integer_dtype = is_signed_integer_data_type(op.type);
 
     // Bitcast them to integer. Those flags assuming bits stores on those float registers are actually integer
+    /*
     if (is_signed_integer_dtype) {
         first_pass = b.createUnaryOp(spv::OpBitcast, utils::make_vector_or_scalar_type(b, b.makeIntType(32), static_cast<int>(dest_comp_count)), first_pass);
     } else if (is_unsigned_integer_dtype) {
         first_pass = b.createUnaryOp(spv::OpBitcast, utils::make_vector_or_scalar_type(b, b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
-    }
+    }*/
 
     return apply_modifiers(b, op.flags, first_pass);
 }
@@ -841,16 +844,17 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     }
 
     // Floor down to nearest size comp
-    nearest_swizz_on = (int)((nearest_swizz_on) / (4 / size_comp) * (4 / size_comp));
+    const int num_comp_in_float = static_cast<int>(4 / size_comp);
+    nearest_swizz_on = (int)((nearest_swizz_on / num_comp_in_float) * num_comp_in_float);
 
     if (dest.type != DataType::F32) {
         std::vector<spv::Id> composites;
 
         // We need to pack source
-        for (auto i = 0; i < static_cast<int>(total_comp_source); i += static_cast<int>(4 / size_comp)) {
+        for (auto i = 0; i < static_cast<int>(total_comp_source); i += num_comp_in_float) {
             // Shuffle to get the type out
             std::vector<spv::Id> ops;
-            for (auto j = 0; j < 4 / size_comp; j++) {
+            for (auto j = 0; j < num_comp_in_float; j++) {
                 if (dest_mask & (1 << (nearest_swizz_on + i + j))) {
                     if (b.isScalar(source) || total_comp_source == 1) {
                         ops.push_back(source);
@@ -860,7 +864,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                 } else {
                     if (elem == spv::NoResult) {
                         // Replace it
-                        const int actual_offset_start_to_store = (int)(insert_offset + (i + nearest_swizz_on) / size_comp);
+                        const int actual_offset_start_to_store = insert_offset + (i + nearest_swizz_on) / num_comp_in_float;
                         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(actual_offset_start_to_store >> 2) });
                         elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem), b.makeIntConstant(actual_offset_start_to_store % 4) });
 
@@ -1018,7 +1022,7 @@ spv::Id shader::usse::utils::scale_float_for_u8(spv::Builder &b, spv::Id opr) {
 
 spv::Id shader::usse::utils::unscale_float_for_u8(spv::Builder &b, spv::Id opr) {
     auto type = unwrap_type(b, b.getTypeId(opr));
-    assert(b.isFloatType(opr));
+    //assert(b.isFloatType(opr));
     spv::Id factor;
     if (b.getScalarTypeWidth(type) == 16)
         factor = b.makeFloat16Constant(MAX_U8);
