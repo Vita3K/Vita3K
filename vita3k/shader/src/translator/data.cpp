@@ -595,13 +595,14 @@ bool USSETranslatorVisitor::vpck(
         source = m_b.createOp(repack_opcode[dest_fmt][src_fmt], m_b.makeVectorType(dest_type, m_b.getNumComponents(source)), ops);
     }
 
+    /* we might need to consider this
     if (scale && src_data_type_table[src_fmt] == DataType::UINT8) {
         source = utils::unscale_float_for_u8(m_b, source);
     }
 
     if (scale && dest_data_type_table[dest_fmt] == DataType::UINT8) {
         source = utils::scale_float_for_u8(m_b, source);
-    }
+    }*/
 
     store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
     END_REPEAT()

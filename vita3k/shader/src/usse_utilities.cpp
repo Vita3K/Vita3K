@@ -187,8 +187,6 @@ static spv::Function *make_u8_unpack_func(spv::Builder &b, const FeatureState &f
     extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
     extracted = b.createBuiltinCall(type_f32_v4, b.import("GLSL.std.450"), GLSLstd450UnpackUnorm4x8, { extracted });
 
-    extracted = shader::usse::utils::scale_float_for_u8(b, extracted);
-
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
 
@@ -210,7 +208,6 @@ static spv::Function *make_u8_pack_func(spv::Builder &b, const FeatureState &fea
 
     spv::Id extracted = u8_pack_func->getParamId(0);
 
-    extracted = shader::usse::utils::unscale_float_for_u8(b, extracted);
     extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackUnorm4x8, { extracted });
     extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
 

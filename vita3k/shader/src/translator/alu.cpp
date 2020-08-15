@@ -1084,12 +1084,6 @@ bool USSETranslatorVisitor::sop2(
     spv::Id src1_alpha = load(inst.opr.src1, 0b1000, src1_repeat_offset);
     spv::Id src2_alpha = load(inst.opr.src2, 0b1000, src2_repeat_offset);
 
-    // Normalize u8 values
-    src1_color = utils::unscale_float_for_u8(m_b, src1_color);
-    src2_color = utils::unscale_float_for_u8(m_b, src2_color);
-    src1_alpha = utils::unscale_float_for_u8(m_b, src1_alpha);
-    src2_alpha = utils::unscale_float_for_u8(m_b, src2_alpha);
-
     spv::Id src_color_type = m_b.getTypeId(src1_color);
     spv::Id src_alpha_type = m_b.getTypeId(src1_alpha);
 
@@ -1123,9 +1117,6 @@ bool USSETranslatorVisitor::sop2(
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
 
-    // Undo normalization
-    color_res = utils::scale_float_for_u8(m_b, color_res);
-    alpha_res = utils::scale_float_for_u8(m_b, alpha_res);
 
     // Final result. Do binary operation and then store
     store(inst.opr.dest, color_res, 0b0111, dest_repeat_offset);
