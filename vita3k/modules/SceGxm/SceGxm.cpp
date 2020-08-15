@@ -2382,7 +2382,7 @@ EXPORT(int, sceGxmTextureSetStride, SceGxmTexture *texture, uint32_t byteStride)
 
 EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
     assert(texture);
-    if (texture)
+    if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     if ((texture->type << 29) == SCE_GXM_TEXTURE_CUBE || (texture->type << 29) == SCE_GXM_TEXTURE_CUBE_ARBITRARY) {
