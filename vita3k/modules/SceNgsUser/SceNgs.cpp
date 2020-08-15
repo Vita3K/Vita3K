@@ -296,7 +296,7 @@ EXPORT(int, sceNgsVoiceGetParamsOutOfRange) {
 
 EXPORT(int, sceNgsVoiceGetStateData, SceNgsVoiceHandle voice_handle, const std::uint32_t unk, void *mem, const std::uint32_t space_size) {
     ngs::Voice *voice = voice_handle.get(host.mem);
-    std::memcpy(mem, &voice->voice_state_data[0], std::min<std::size_t>(space_size, voice->voice_state_data.size()));
+    std::memcpy(mem, voice->voice_state_data.data(), std::min<std::size_t>(space_size, voice->voice_state_data.size()));
 
     return SCE_NGS_OK;
 }
