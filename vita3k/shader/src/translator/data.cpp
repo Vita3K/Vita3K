@@ -452,11 +452,20 @@ bool USSETranslatorVisitor::vpck(
 
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
 
-    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank_sel, dest_bank_ext, false, 7, m_second_program);
-    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
-
     inst.opr.dest.type = dest_data_type_table[dest_fmt];
     inst.opr.src1.type = src_data_type_table[src_fmt];
+
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank_sel, dest_bank_ext, false, 7, m_second_program);
+
+    bool should_src1_dreg = true;
+
+    if (!is_float_data_type(inst.opr.src1.type)) {
+        // For non-float source,
+        src1_n = comp0_sel_bit1 | (src1_n << 1);
+        should_src1_dreg = false;
+    }
+
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank_sel, src1_bank_ext, should_src1_dreg, 7, m_second_program);
 
     if (inst.opr.dest.bank == RegisterBank::SPECIAL || inst.opr.src0.bank == RegisterBank::SPECIAL || inst.opr.src1.bank == RegisterBank::SPECIAL || inst.opr.src2.bank == RegisterBank::SPECIAL) {
         LOG_WARN("Special regs unsupported");
@@ -478,6 +487,19 @@ bool USSETranslatorVisitor::vpck(
     constexpr Imm4 SRC1_LOAD_MASKS[] = { 0, 0b1, 0b11 };
     constexpr Imm4 SRC2_LOAD_MASKS[] = { 0, 0b10, 0b1100 };
 
+    int offset_start_masking = 0;
+
+    // For some occasions the swizzle needs to cycle from the first components to the first bit that was on in the dest mask.
+    bool no_swizzle_cycle_to_mask = (is_float_data_type(inst.opr.src1.type) && is_float_data_type(inst.opr.src2.type))
+        || (scale && ((inst.opr.src1.type == DataType::UINT8) || (inst.opr.dest.type == DataType::UINT8)));
+
+    for (int i = 0; i < 4; i++) {
+        if (dest_mask & (1 << i)) {
+            offset_start_masking = i;
+            break;
+        }
+    }
+
     if (inst.opr.src1.type == DataType::F32) {
         // Need another op
         inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
@@ -488,15 +510,6 @@ bool USSETranslatorVisitor::vpck(
         const bool is_two_source_bank_different = inst.opr.src1.bank != inst.opr.src2.bank;
         const bool src2_needed = src2_comp_handle != 0;
         const bool is_two_source_contiguous = (inst.opr.src1.num + src1_comp_handle == inst.opr.src2.num) && !is_two_source_bank_different;
-
-        int offset_start_masking = 0;
-
-        for (int i = 0; i < 4; i++) {
-            if (dest_mask & (1 << i)) {
-                offset_start_masking = i;
-                break;
-            }
-        }
 
         // We need to explicitly load src2 when we are fall in these situations:
         // - First, src2 must be needed. The only situation we knows it isn't needed is when the dest mask comp count is 1.
@@ -521,6 +534,13 @@ bool USSETranslatorVisitor::vpck(
                 // src2_swizz_indx is the index of src2 swizzle in src1 swizzle
                 inst.opr.src2.swizzle[src2_swizz_indx - src2_swizz_start] = inst.opr.src1.swizzle[src2_swizz_indx];
             }
+        }
+    } else if (!no_swizzle_cycle_to_mask) {
+        shader::usse::Swizzle4 swizz_temp = inst.opr.src1.swizzle;
+
+        // Cycle through swizzle with only one source
+        for (int i = 0; i < 4; i++) {
+            inst.opr.src1.swizzle[(i + offset_start_masking) % 4] = swizz_temp[i];
         }
     }
 
