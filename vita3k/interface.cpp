@@ -96,20 +96,22 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
     int num_files = mz_zip_reader_get_num_files(zip.get());
     fs::path sfo_path = "sce_sys/param.sfo";
     bool theme = false;
-    std::string extra_path = "";
+    std::string extra_path;
 
     for (int i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat))
             continue;
 
-        if (fs::path(file_stat.m_filename).string().find("sce_module/steroid.suprx") != std::string::npos) {
+        std::string m_filename = std::string(file_stat.m_filename);
+
+        if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
             LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
             fclose(vpk_fp);
             return false;
         }
 
-        if (fs::path(file_stat.m_filename).string().find("theme.xml") != std::string::npos)
+        if (m_filename.find("theme.xml") != std::string::npos)
             theme = true;
 
         //This was here before to check if the game files were in the zip root, since this commit
@@ -118,11 +120,11 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
 
         //edited to be compatible right away if someone wants to uncomment it
 
-        //if (fs::path(file_stat.m_filename).string().find(sfo_path.string()) != std::string::npos)
+        //if (m_filename.find(sfo_path.string()) != std::string::npos)
         //break;
 
-        if (fs::path(file_stat.m_filename).string().find("eboot.bin") != std::string::npos) {
-            extra_path = std::string(file_stat.m_filename).replace(std::string(file_stat.m_filename).find("eboot.bin"), sizeof("eboot.bin") - 1, "");
+        if (m_filename.find("eboot.bin") != std::string::npos) {
+            extra_path = m_filename.replace(m_filename.find("eboot.bin"), strlen("eboot.bin"), "");
             continue;
         }
     }
