@@ -1053,7 +1053,6 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 
     spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
 
-
     if (program.is_native_color() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntegerType(32, true);
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), b.createLoad(translate_state.frag_coord_id));

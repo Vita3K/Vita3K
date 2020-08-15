@@ -1117,7 +1117,6 @@ bool USSETranslatorVisitor::sop2(
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
 
-
     // Final result. Do binary operation and then store
     store(inst.opr.dest, color_res, 0b0111, dest_repeat_offset);
     store(inst.opr.dest, alpha_res, 0b1000, dest_repeat_offset);
