@@ -332,7 +332,7 @@ static DataType gxm_parameter_type_to_usse_data_type(const SceGxmParameterType p
     case SCE_GXM_PARAMETER_TYPE_U8:
         return DataType::UINT8;
     case SCE_GXM_PARAMETER_TYPE_S8:
-        return DataType::C10;
+        return DataType::INT8;
 
     default:
         LOG_WARN("Unsupported output register format {}, default to F16", (int)param_type);

@@ -685,13 +685,6 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     const bool is_unsigned_integer_dtype = is_unsigned_integer_data_type(op.type);
     const bool is_signed_integer_dtype = is_signed_integer_data_type(op.type);
 
-    // Bitcast them to integer. Those flags assuming bits stores on those float registers are actually integer
-    if (is_signed_integer_dtype) {
-        first_pass = b.createUnaryOp(spv::OpBitcast, utils::make_vector_or_scalar_type(b, b.makeIntType(32), static_cast<int>(dest_comp_count)), first_pass);
-    } else if (is_unsigned_integer_dtype) {
-        first_pass = b.createUnaryOp(spv::OpBitcast, utils::make_vector_or_scalar_type(b, b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
-    }
-
     return apply_modifiers(b, op.flags, first_pass);
 }
 
@@ -1015,7 +1008,6 @@ spv::Id shader::usse::utils::scale_float_for_u8(spv::Builder &b, spv::Id opr) {
 
 spv::Id shader::usse::utils::unscale_float_for_u8(spv::Builder &b, spv::Id opr) {
     auto type = unwrap_type(b, b.getTypeId(opr));
-    assert(b.isFloatType(opr));
     spv::Id factor;
     if (b.getScalarTypeWidth(type) == 16)
         factor = b.makeFloat16Constant(MAX_U8);
