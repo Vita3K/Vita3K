@@ -119,7 +119,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
         //edited to be compatible right away if someone wants to uncomment it
 
         //if (fs::path(file_stat.m_filename).string().find(sfo_path.string()) != std::string::npos)
-            //break;
+        //break;
 
         if (fs::path(file_stat.m_filename).string().find("eboot.bin") != std::string::npos) {
             extra_path = std::string(file_stat.m_filename).replace(std::string(file_stat.m_filename).find("eboot.bin"), sizeof("eboot.bin") - 1, "");
