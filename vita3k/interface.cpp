@@ -94,27 +94,40 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
     }
 
     int num_files = mz_zip_reader_get_num_files(zip.get());
-    fs::path sfo_path = "sce_sys/param.sfo";
     bool theme = false;
+    std::string extra_path = "";
 
     for (int i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
-        if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
+        if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat))
             continue;
-        }
-        if (fs::path(file_stat.m_filename) == "sce_module/steroid.suprx") {
+
+        if (fs::path(file_stat.m_filename).string().find("sce_module/steroid.suprx") != std::string::npos) {
             LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
             fclose(vpk_fp);
             return false;
         }
-        if (fs::path(file_stat.m_filename) == "theme.xml")
+
+        if (fs::path(file_stat.m_filename).string().find("theme.xml") != std::string::npos)
             theme = true;
-        if (fs::path(file_stat.m_filename) == sfo_path)
-            break;
+
+        //This was here before to check if the game files were in the zip root, since this commit
+        // allows support for the game to be inside folders and install it anyways
+        //i thought we should comment this check
+
+        //edited to be compatible right away if someone wants to uncomment it
+
+        //if (fs::path(file_stat.m_filename).string().find("sce_sys/param.sfo") != std::string::npos)
+        //break;
+
+        if (fs::path(file_stat.m_filename).string().find("eboot.bin") != std::string::npos) {
+            extra_path = std::string(file_stat.m_filename).replace(std::string(file_stat.m_filename).find("eboot.bin"), sizeof("eboot.bin") - 1, "");
+            continue;
+        }
     }
 
     vfs::FileBuffer params;
-    if (!read_file_from_zip(params, sfo_path, zip)) {
+    if (!read_file_from_zip(params, extra_path + "sce_sys/param.sfo", zip)) {
         fclose(vpk_fp);
         return false;
     }
@@ -184,7 +197,9 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
             continue;
         }
 
-        const fs::path file_output = { output_path / file_stat.m_filename };
+        std::string m_filename = file_stat.m_filename;
+        std::string replace_filename = m_filename.substr(extra_path.size());
+        const fs::path file_output = { output_path / replace_filename };
         if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
             fs::create_directories(output_path);
         } else {
