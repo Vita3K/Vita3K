@@ -94,6 +94,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
     }
 
     int num_files = mz_zip_reader_get_num_files(zip.get());
+    fs::path sfo_path = "sce_sys/param.sfo";
     bool theme = false;
     std::string extra_path = "";
 
@@ -117,8 +118,8 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
 
         //edited to be compatible right away if someone wants to uncomment it
 
-        //if (fs::path(file_stat.m_filename).string().find("sce_sys/param.sfo") != std::string::npos)
-        //break;
+        //if (fs::path(file_stat.m_filename).string().find(sfo_path.string()) != std::string::npos)
+            //break;
 
         if (fs::path(file_stat.m_filename).string().find("eboot.bin") != std::string::npos) {
             extra_path = std::string(file_stat.m_filename).replace(std::string(file_stat.m_filename).find("eboot.bin"), sizeof("eboot.bin") - 1, "");
@@ -127,7 +128,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
     }
 
     vfs::FileBuffer params;
-    if (!read_file_from_zip(params, extra_path + "sce_sys/param.sfo", zip)) {
+    if (!read_file_from_zip(params, fs::path(extra_path) / sfo_path, zip)) {
         fclose(vpk_fp);
         return false;
     }
@@ -182,7 +183,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
             }
         } else if (gui->file_menu.archive_install_dialog && !gui->content_reinstall_confirm) {
             vfs::FileBuffer params;
-            vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
+            vfs::read_app_file(params, host.pref_path, host.io.title_id, sfo_path);
             sfo::load(host.sfo_handle, params);
             sfo::get_data_by_key(gui->app_ver, host.sfo_handle, "APP_VER");
             gui->content_reinstall_confirm = true;
