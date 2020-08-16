@@ -117,11 +117,11 @@ public:
             logged.insert(addr);
         }
         mu.unlock();
-        CPUContextPtr context = cpu->save_context();
-        cpu->fallback.load_context(context.get());
+        CPUContext context = cpu->save_context();
+        cpu->fallback.load_context(context);
         std::uint64_t res = static_cast<std::uint64_t>(cpu->fallback.execute_instructions_no_check(static_cast<int>(num_insts)));
         context = cpu->fallback.save_context();
-        cpu->load_context(context.get());
+        cpu->load_context(context);
 
         interpreted += num_insts;
     }
@@ -162,6 +162,7 @@ public:
 std::unique_ptr<Dynarmic::A32::Jit> make_jit(std::unique_ptr<ArmDynarmicCallback> &callback, MemState *mem) {
     Dynarmic::A32::UserConfig config;
     config.callbacks = callback.get();
+    config.fastmem_pointer = mem->memory.get();
 
     if (mem) {
         config.page_table = mem->pages_cpu.get();
@@ -181,28 +182,20 @@ DynarmicCPU::DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code)
     set_lr(pc);
     set_sp(sp);
     set_cpsr((ep & 1) << 5);
+    set_fpscr(fallback.get_fpscr());
 }
 
 DynarmicCPU::~DynarmicCPU() {
 }
 
 /*! Run the CPU */
-int DynarmicCPU::run(bool callback, Address entry_point) {
+int DynarmicCPU::run(Address entry_point) {
     if (jit->IsExecuting()) {
-        auto dyncpu = std::make_unique<DynarmicCPU>(parent, get_pc(), get_sp(), false);
-        auto original_cpu = std::move(parent->cpu);
-        CPUContextPtr context = save_context();
-        dyncpu->load_context(context.get());
-        dyncpu->set_tpidruro(get_tpidruro());
-        dyncpu->set_lr(parent->halt_instruction_pc | 1);
-        parent->cpu = std::move(dyncpu);
-        ::run(*parent, true, entry_point);
-        parent->cpu = std::move(original_cpu);
+        auto ctx = run_worker(*parent, CPUBackend::Dynarmic, entry_point);
+        set_reg(0, ctx.cpu_registers[0]);
         return 0;   
     }
-    if (callback) { 
-        set_lr(parent->halt_instruction_pc | 1);
-    }
+    set_lr(parent->halt_instruction_pc | 1);
     jit->Run();
     return 0;
 }
@@ -310,36 +303,36 @@ void DynarmicCPU::set_fpscr(uint32_t val) {
     jit->SetFpscr(val);
 }
 
-CPUContextPtr DynarmicCPU::save_context() {
-    auto ctx = std::make_unique<CPUContext>();
+CPUContext DynarmicCPU::save_context() {
+    CPUContext ctx;
     const auto dctx = jit->SaveContext();
-    ctx->cpu_registers = dctx.Regs();
+    ctx.cpu_registers = dctx.Regs();
 
-    for (uint8_t i = 0; i < ctx->fpu_registers.size(); i++) {
-        ctx->fpu_registers[i] = dctx.ExtRegs()[i];
+    for (uint8_t i = 0; i < ctx.fpu_registers.size(); i++) {
+        ctx.fpu_registers[i] = dctx.ExtRegs()[i];
     }
 
-    ctx->fpscr = dctx.Fpscr();
-    ctx->cpsr = jit->Cpsr();
+    ctx.fpscr = get_fpscr();
+    ctx.cpsr = jit->Cpsr();
 
     return ctx;
 }
 
-void DynarmicCPU::load_context(CPUContext *ctx) {
+void DynarmicCPU::load_context(CPUContext ctx) {
     Dynarmic::A32::Context dctx;
-    dctx.Regs() = ctx->cpu_registers;
+    dctx.Regs() = ctx.cpu_registers;
 
-    for (uint8_t i = 0; i < ctx->fpu_registers.size(); i++) {
-        dctx.ExtRegs()[i] = ctx->fpu_registers[i];
+    for (uint8_t i = 0; i < ctx.fpu_registers.size(); i++) {
+        dctx.ExtRegs()[i] = ctx.fpu_registers[i];
     }
 
-    dctx.SetFpscr(ctx->fpscr);
-    dctx.SetCpsr(ctx->cpsr);
-    if (ctx->cpu_registers[15] & 1) {
-        dctx.SetCpsr(ctx->cpsr | 0x20);
-        dctx.Regs()[15] = ctx->cpu_registers[15] & 0xFFFFFFFE;
+    dctx.SetCpsr(ctx.cpsr);
+    if (ctx.cpu_registers[15] & 1) {
+        dctx.SetCpsr(ctx.cpsr | 0x20);
+        dctx.Regs()[15] = ctx.cpu_registers[15] & 0xFFFFFFFE;
     }
     jit->LoadContext(dctx);
+    set_fpscr(ctx.fpscr);
 }
 
 uint32_t DynarmicCPU::get_lr() {

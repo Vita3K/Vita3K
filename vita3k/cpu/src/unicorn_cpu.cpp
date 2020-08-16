@@ -102,7 +102,7 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
     assert(intno == INT_SVC || intno == INT_BKPT);
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
     uint32_t pc = state.get_pc();
-
+    state.is_inside_intr_hook = true;
     if (intno == INT_SVC) {
         assert(!state.is_thumb_mode());
         uint32_t before_inst = 0;
@@ -144,6 +144,7 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
             }
         }
     }
+    state.is_inside_intr_hook = false;
 }
 
 static void enable_vfp_fpu(uc_engine *uc) {
@@ -289,13 +290,19 @@ int UnicornCPU::execute_instructions_no_check(int num) {
     return 0;
 }
 
-int UnicornCPU::run(bool callback, Address entry_point) {
+int UnicornCPU::run(Address entry_point) {
+    if (is_inside_intr_hook) {
+        auto ctx = run_worker(*parent, CPUBackend::Unicorn, entry_point);
+        set_reg(0, ctx.cpu_registers[0]);
+        return 1;
+    }
     uint32_t pc = get_pc();
     bool thumb_mode = is_thumb_mode();
     did_break = false;
     if (did_inject && run_after_injected(pc, thumb_mode)) {
         return -1;
     }
+    set_lr(entry_point);
     did_inject = false;
 
     pc = get_pc();
@@ -485,45 +492,38 @@ bool UnicornCPU::is_thumb_mode() {
     return mode & UC_MODE_THUMB;
 }
 
-CPUContextPtr UnicornCPU::save_context() {
-    auto ctx = std::make_unique<CPUContext>();
-    for (auto i = 0; i < ctx->cpu_registers.size() - 3; i++) {
-        ctx->cpu_registers[i] = get_reg(i);
+CPUContext UnicornCPU::save_context() {
+    CPUContext ctx;
+    for (auto i = 0; i < ctx.cpu_registers.size() - 3; i++) {
+        ctx.cpu_registers[i] = get_reg(i);
     }
-    ctx->cpu_registers[13] = get_sp();
-    ctx->cpu_registers[14] = get_lr();
-    ctx->cpu_registers[15] = get_pc();
+    ctx.cpu_registers[13] = get_sp();
+    ctx.cpu_registers[14] = get_lr();
+    ctx.cpu_registers[15] = get_pc();
 
-    for (auto i = 0; i < ctx->fpu_registers.size(); i++) {
-        ctx->fpu_registers[i] = get_float_reg(i);
+    for (auto i = 0; i < ctx.fpu_registers.size(); i++) {
+        ctx.fpu_registers[i] = get_float_reg(i);
     }
 
-    ctx->cpsr = get_cpsr();
-
-    if (ctx->cpsr & 0x20) {
-        ctx->cpu_registers[15] |= 1;
-    }
+    ctx.cpsr = get_cpsr();
+    ctx.fpscr = get_fpscr();
 
     return ctx;
 }
 
-void UnicornCPU::load_context(CPUContext *ctx) {
-    for (auto i = 0; i < ctx->fpu_registers.size(); i++) {
-        set_float_reg(i, ctx->fpu_registers[i]);
+void UnicornCPU::load_context(CPUContext ctx) {
+    for (auto i = 0; i < ctx.fpu_registers.size(); i++) {
+        set_float_reg(i, ctx.fpu_registers[i]);
     }
 
-    set_fpscr(ctx->fpscr);
-    set_cpsr(ctx->cpsr);
-    set_pc(ctx->cpu_registers[15]);
-    if (ctx->cpsr & 0x20) {
-        set_pc(get_pc() | 1);
-    }
+    set_fpscr(ctx.fpscr);
+    set_cpsr(ctx.cpsr);
+    set_pc(ctx.cpu_registers[15]);
+    set_sp(ctx.cpu_registers[13]);
+    set_lr(ctx.cpu_registers[14]);
 
-    set_sp(ctx->cpu_registers[13]);
-    set_lr(ctx->cpu_registers[14]);
-
-    for (auto i = 0; i < ctx->cpu_registers.size() - 3; i++) {
-        set_reg(i, ctx->cpu_registers[i]);
+    for (auto i = 0; i < ctx.cpu_registers.size() - 3; i++) {
+        set_reg(i, ctx.cpu_registers[i]);
     }
 }
 

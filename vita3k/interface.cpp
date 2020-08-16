@@ -297,7 +297,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Version: {}", host.app_version);
     LOG_INFO("Category: {}", host.app_category);
-
+    LOG_INFO("mem start {}", log_hex(reinterpret_cast<uintptr_t>(host.mem.memory.get())));
     init_device_paths(host.io);
     init_savedata_game_path(host.io, host.pref_path);
 
@@ -484,7 +484,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     }
 
     const ThreadStatePtr main_thread = util::find(main_thread_id, host.kernel.threads);
-
+    
     // Run `module_start` export (entry point) of loaded libraries
     for (auto &mod : host.kernel.loaded_modules) {
         const auto module = mod.second;
@@ -501,7 +501,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
             inject, nullptr);
         const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
-        const auto ret = run_on_current(*module_thread, module_start, 0, argp, true);
+        const auto ret = run_guest_function(*module_thread, module_start.address(), 0, argp);
         module_thread->to_do = ThreadToDo::exit;
         module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
         host.kernel.running_threads.erase(module_thread_id);

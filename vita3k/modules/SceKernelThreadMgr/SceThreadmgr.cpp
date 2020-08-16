@@ -18,6 +18,7 @@
 #include "SceThreadmgr.h"
 
 #include <host/functions.h>
+#include <kernel/thread/thread_functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread/sync_primitives.h>
 #include <util/lock_and_find.h>
@@ -572,14 +573,7 @@ EXPORT(int, sceKernelExitDeleteThread, int status) {
     stop(*thread->cpu);
     thread->something_to_do.notify_all();
 
-    for (auto t : thread->waiting_threads) {
-        const std::lock_guard<std::mutex> lock(t->mutex);
-        assert(t->to_do == ThreadToDo::wait);
-        t->to_do = ThreadToDo::run;
-        t->something_to_do.notify_one();
-    }
-
-    thread->waiting_threads.clear();
+    raise_waiting_threads(thread.get());
 
     // need to unlock thread->mutex because thread destructor (delete_thread) will get called, and it locks that mutex
     thread_lock.unlock();

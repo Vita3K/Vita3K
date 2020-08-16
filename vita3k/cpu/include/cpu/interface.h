@@ -7,7 +7,7 @@
 
 /*! \brief Base class for all CPU backend implementation */
 struct CPUInterface {
-    virtual int run(bool callback, Address entry_point) = 0;
+    virtual int run(Address entry_point) = 0;
     virtual void stop() = 0;
 
     virtual uint32_t get_reg(uint8_t idx) = 0;
@@ -34,8 +34,8 @@ struct CPUInterface {
     virtual uint32_t get_fpscr() = 0;
     virtual void set_fpscr(uint32_t val) = 0;
 
-    virtual CPUContextPtr save_context() = 0;
-    virtual void load_context(CPUContext* context) = 0;
+    virtual CPUContext save_context() = 0;
+    virtual void load_context(CPUContext context) = 0;
 
     virtual bool is_thumb_mode() = 0;
     virtual int step(Address entry_point) = 0;

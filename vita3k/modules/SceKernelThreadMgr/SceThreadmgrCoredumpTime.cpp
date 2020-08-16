@@ -18,6 +18,7 @@
 #include "SceThreadmgrCoredumpTime.h"
 
 #include <util/lock_and_find.h>
+#include <kernel/thread/thread_functions.h>
 
 EXPORT(int, sceKernelExitThread, int status) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
@@ -27,13 +28,7 @@ EXPORT(int, sceKernelExitThread, int status) {
     stop(*thread->cpu);
     thread->something_to_do.notify_all();
 
-    for (auto &waiting_thread : thread->waiting_threads) {
-        const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
-        assert(waiting_thread->to_do == ThreadToDo::wait);
-        waiting_thread->to_do = ThreadToDo::run;
-        waiting_thread->something_to_do.notify_one();
-    }
-    thread->waiting_threads.clear();
+    raise_waiting_threads(thread.get());
 
     return status;
 }

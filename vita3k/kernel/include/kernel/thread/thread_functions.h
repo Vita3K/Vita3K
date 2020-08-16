@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cpu/functions.h>
 #include <kernel/state.h>
 #include <mem/ptr.h>
 //#include <psp2/types.h>
@@ -35,7 +36,44 @@ typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CPUDepInject &inject, const SceKernelThreadOptParam *option);
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp);
 Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, KernelState &kernel, MemState &mem);
-bool run_thread(ThreadState &thread, bool callback);
-bool run_callback(ThreadState &thread, Address &pc, Address &data);
-uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp, bool callback = false);
+bool run_thread(ThreadState &thread);
 void raise_waiting_threads(ThreadState *thread);
+
+template <typename T>
+uint32_t unpack(T v) {
+    return v;
+}
+
+template <typename P>
+uint32_t unpack(Ptr<P> ptr) {
+    return ptr.address();
+}
+
+template <size_t i, typename T>
+void write_args(CPUState &cpu, T v) {
+    if (i < 4) {
+        write_reg(cpu, i, unpack(v));
+    } else {
+        // TODO implement this and float
+        static_assert(false);
+    }
+}
+
+template <size_t i, typename T, typename... Args>
+void write_args(CPUState &cpu, T first, Args... args) {
+    write_args<i>(cpu, first);
+    write_args<i + 1, Args...>(cpu, args...);
+}
+
+template <typename... Args>
+uint32_t run_guest_function(ThreadState &thread, const Address &entry_point, Args... args) {
+    std::unique_lock<std::mutex> lock(thread.mutex);
+    const auto ctx = save_context(*thread.cpu);
+    write_args<0>(*thread.cpu, args...);
+    write_pc(*thread.cpu, entry_point);
+    lock.unlock();
+    run_thread(thread);
+    auto out = read_reg(*thread.cpu, 0);
+    load_context(*thread.cpu, ctx);
+    return out;
+}

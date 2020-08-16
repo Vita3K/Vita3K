@@ -24,6 +24,8 @@ class UnicornCPU : public CPUInterface {
     uc_hook memory_read_hook_handle = 0;
     uc_hook memory_write_hook_handle = 0;
     uc_hook code_hook_handle = 0;
+    
+    bool is_inside_intr_hook = false;
 
     std::stack<StackFrame> stack_frames;
 
@@ -52,7 +54,7 @@ public:
 
     int execute_instructions_no_check(int num);
 
-    int run(bool callback, Address entry_point) override;
+    int run(Address entry_point) override;
     int step(Address entry_point) override;
 
     void stop() override;
@@ -83,8 +85,8 @@ public:
 
     bool is_thumb_mode() override;
 
-    CPUContextPtr save_context() override;
-    void load_context(CPUContext *context) override;
+    CPUContext save_context() override;
+    void load_context(CPUContext context) override;
 
     bool is_returning() override;
     bool hit_breakpoint() override;

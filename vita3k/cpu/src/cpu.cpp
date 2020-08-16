@@ -24,8 +24,8 @@
 #include <util/log.h>
 #include <util/types.h>
 
-#include <cpu/unicorn_cpu.h>
 #include <cpu/dynarmic_cpu.h>
+#include <cpu/unicorn_cpu.h>
 
 #include <cassert>
 #include <cpu/state.h>
@@ -47,7 +47,7 @@ CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address s
     state->thread_id = thread_id;
     state->module_regions = inject.module_regions;
     Ptr<uint16_t> halt_inst = Ptr<uint16_t>(alloc(mem, 2, "halt_instruction"));
-    *halt_inst.get(mem) = 0xDF44;
+    *halt_inst.get(mem) = 0xDF44; // SVC #44 
     state->halt_instruction_pc = halt_inst.address();
 
     if (!init(state->disasm)) {
@@ -70,14 +70,34 @@ CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address s
     return state;
 }
 
-int run(CPUState &state, bool callback, Address entry_point) {
-    return state.cpu->run(callback, entry_point);
+int run(CPUState &state, Address entry_point) {
+    return state.cpu->run(entry_point);
 }
 
-int step(CPUState &state, bool callback, Address entry_point) {
-    if (callback) {
-        state.cpu->set_lr(entry_point);
+CPUContext run_worker(CPUState &state, CPUBackend backend, Address pc) {
+    CPUInterfacePtr newcpu;
+    switch (backend) {
+    case CPUBackend::Dynarmic: {
+        newcpu = std::make_unique<DynarmicCPU>(&state, read_pc(state), read_sp(state), false);
+        break;
     }
+    case CPUBackend::Unicorn: {
+        newcpu = std::make_unique<UnicornCPU>(&state, read_pc(state), read_sp(state), false);
+        break;
+    }
+    }
+    auto original_cpu = std::move(state.cpu);
+    CPUContext context = original_cpu->save_context();
+    newcpu->set_tpidruro(original_cpu->get_tpidruro());
+    newcpu->load_context(context);
+    state.cpu = std::move(newcpu);
+    run(state, pc);
+    auto out = save_context(state);
+    state.cpu = std::move(original_cpu);
+    return out;
+}
+
+int step(CPUState &state, Address entry_point) {
     return state.cpu->step(entry_point);
 }
 
@@ -190,10 +210,10 @@ std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size) {
     return disassemble(state, at, thumb, insn_size);
 }
 
-CPUContextPtr save_context(CPUState &state) {
+CPUContext save_context(CPUState &state) {
     return state.cpu->save_context();
 }
 
-void load_context(CPUState &state, CPUContext *ctx) {
+void load_context(CPUState &state, CPUContext ctx) {
     state.cpu->load_context(ctx);
 }

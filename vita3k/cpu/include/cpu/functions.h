@@ -41,8 +41,14 @@ struct StackFrame {
 };
 
 CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address sp, MemState &mem, CPUDepInject &inject);
-int run(CPUState &state, bool callback, Address entry_point);
-int step(CPUState &state, bool callback, Address entry_point);
+// run a guest function
+// if this is called inside interrupt handler
+// it will not modify current cpu state
+int run(CPUState &state, Address entry_point);
+// run a guest function inside another cpu instance
+// this does not modify the current cpu state
+CPUContext run_worker(CPUState &state, CPUBackend backend, Address pc);
+int step(CPUState &state, Address entry_point);
 void stop(CPUState &state);
 uint32_t read_reg(CPUState &state, size_t index);
 float read_float_reg(CPUState &state, size_t index);
@@ -56,8 +62,8 @@ void write_pc(CPUState &state, uint32_t value);
 void write_lr(CPUState &state, uint32_t value);
 void write_tpidruro(CPUState &state, uint32_t value);
 bool is_thumb_mode(CPUState &state);
-CPUContextPtr save_context(CPUState &state);
-void load_context(CPUState &state, CPUContext* ctx);
+CPUContext save_context(CPUState &state);
+void load_context(CPUState &state, CPUContext ctx);
 
 // Debugging helpers
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size = nullptr);

@@ -126,9 +126,9 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
             return;
         if (host.kernel.watch_import_calls) {
             const std::unordered_set<uint32_t> hle_nid_blacklist = {
-               // 0xB295EB61, // sceKernelGetTLSAddr
-               // 0x46E7BE7B, // sceKernelLockLwMutex
-               // 0x91FA6614, // sceKernelUnlockLwMutex
+               0xB295EB61, // sceKernelGetTLSAddr
+               0x46E7BE7B, // sceKernelLockLwMutex
+               0x91FA6614, // sceKernelUnlockLwMutex
             };
             auto lr = read_lr(cpu);
             log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);
@@ -155,7 +155,14 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
-        write_pc(*thread->cpu, export_pc);
+        /*if (nid == 0x76945919) {
+            auto lr = read_lr(cpu);
+            auto ctx = run_in(*thread->cpu, CPUBackend::Unicorn, export_pc);
+            write_reg(cpu, 0, ctx->cpu_registers[0]);
+        } else {*/
+            write_pc(*thread->cpu, export_pc);
+        //}
+        
     }
 }
 
@@ -193,7 +200,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
                 const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
                     static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), inject, nullptr);
                 const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
-                const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp, true);
+                const auto ret = run_guest_function(*module_thread, lib_entry_point.address(), 0, argp);
 
                 module_thread->to_do = ThreadToDo::exit;
                 module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?

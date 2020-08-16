@@ -55,18 +55,13 @@ static int SDLCALL thread_function(void *data) {
         // Any following threads opened with thread_function will not wait.
         params.kernel->wait_for_debugger = false;
     }
-    const bool succeeded = run_thread(*thread, false);
+    const bool succeeded = run_thread(*thread);
     assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
 
     const std::lock_guard<std::mutex> lock(thread->mutex);
-
-    for (auto &waiting_thread : thread->waiting_threads) {
-        waiting_thread->to_do = ThreadToDo::run;
-        waiting_thread->something_to_do.notify_all();
-    }
-
-    thread->waiting_threads.clear();
+    thread->to_do = ThreadToDo::exit;
+    raise_waiting_threads(thread.get());
 
     return r0;
 }
@@ -104,7 +99,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const Address stack_top = thread->stack->get() + stack_size;
     memset(Ptr<void>(thread->stack->get()).get(mem), 0xcc, stack_size);
 
-    thread->cpu = init_cpu(CPUBackend::Dynarmic, thid, entry_point.address(), stack_top, mem, inject);
+    thread->cpu = init_cpu(CPUBackend::Unicorn, thid, entry_point.address(), stack_top, mem, inject);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -121,9 +116,6 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     }
 
     thread->cpu_context = save_context(*thread->cpu);
-    if (!thread->cpu_context) {
-        return SCE_KERNEL_ERROR_ERROR;
-    }
 
     alloc_name = fmt::format("TLS for thread {} (#{})", name, thid);
 
@@ -143,8 +135,6 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 void raise_waiting_threads(ThreadState *thread) {
     for (auto t : thread->waiting_threads) {
         const std::unique_lock<std::mutex> lock(t->mutex);
-        assert(t->to_do == ThreadToDo::wait);
-        t->to_do = ThreadToDo::run;
         t->something_to_do.notify_one();
     }
     thread->waiting_threads.clear();
@@ -214,7 +204,7 @@ Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, Kerne
     return new_argp;
 }
 
-bool run_thread(ThreadState &thread, bool callback) {
+bool run_thread(ThreadState &thread) {
     int res = 0;
     std::unique_lock<std::mutex> lock(thread.mutex);
     while (true) {
@@ -224,11 +214,15 @@ bool run_thread(ThreadState &thread, bool callback) {
         case ThreadToDo::run:
         case ThreadToDo::step:
             lock.unlock();
+            if (std::string(thread.name).find("Gxm") == std::string::npos) {
+                auto a = 0;
+            }
             if (thread.to_do == ThreadToDo::step) {
-                res = step(*thread.cpu, callback, thread.entry_point);
+                res = step(*thread.cpu, thread.entry_point);
                 thread.to_do = ThreadToDo::wait;
+              
             } else
-                res = run(*thread.cpu, callback, thread.entry_point);
+                res = run(*thread.cpu, thread.entry_point);
 #ifdef USE_GDBSTUB
             if (hit_breakpoint(*thread.cpu)) {
                 thread.to_do = ThreadToDo::wait;
@@ -237,47 +231,16 @@ bool run_thread(ThreadState &thread, bool callback) {
 #endif
             if (res < 0) {
                 LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
+                thread.to_do = ThreadToDo::exit;
                 return false;
             }
-            if (callback) {
-                return true;
+            if (thread.to_do == ThreadToDo::step) {
+                break;
             }
-            if (res == 1) {
-                const std::unique_lock<std::mutex> lock(thread.mutex);
-                raise_waiting_threads(&thread);
-                thread.to_do = ThreadToDo::exit;
-                return true;
-            }
-            lock.lock();
-            break;
+            return true;
         case ThreadToDo::wait:
             thread.something_to_do.wait(lock);
             break;
         }
     }
-}
-
-bool run_callback(ThreadState &thread, Address &pc, Address &data) {
-    std::unique_lock<std::mutex> lock(thread.mutex);
-    write_reg(*thread.cpu, 0, data);
-    write_pc(*thread.cpu, pc);
-    lock.unlock();
-    return run_thread(thread, true);
-}
-
-uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp, bool callback) {
-    std::unique_lock<std::mutex> lock(thread.mutex);
-    auto reg0 = read_reg(*thread.cpu, 0);
-    auto reg1 = read_reg(*thread.cpu, 1);
-    auto pc = read_pc(*thread.cpu);
-    
-    write_reg(*thread.cpu, 0, arglen);
-    write_reg(*thread.cpu, 1, argp.address());
-    write_pc(*thread.cpu, entry_point.address());
-    lock.unlock();
-    run_thread(thread, true);
-    auto out = read_reg(*thread.cpu, 0);
-  
-    write_pc(*thread.cpu, pc);
-    return out;
 }

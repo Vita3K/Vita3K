@@ -44,7 +44,7 @@ typedef struct SceFiber {
     Address addrContext;
     SceSize sizeContext;
     char name[32];
-    CPUContextPtr cpu;
+    CPUContext* cpu;
 } SceFiber;
 
 BRIDGE_DECL(_sceFiberAttachContextAndRun)

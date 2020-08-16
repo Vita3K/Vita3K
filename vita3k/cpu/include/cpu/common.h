@@ -20,7 +20,6 @@ typedef std::function<void(CPUState &cpu, uint32_t, SceUID)> CallImport;
 typedef std::function<std::string(Address)> ResolveNIDName;
 typedef std::function<Address(Address)> GetWatchMemoryAddr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
-typedef std::unique_ptr<CPUContext> CPUContextPtr;
 typedef std::unique_ptr<CPUInterface> CPUInterfacePtr;
 
 struct CPUContext {

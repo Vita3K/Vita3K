@@ -746,7 +746,7 @@ static int SDLCALL thread_function(void *data) {
                 break;
         }
         const ThreadStatePtr display_thread = util::find(params.thid, params.kernel->threads);
-        run_callback(*display_thread, display_callback->pc, display_callback->data);
+        run_guest_function(*display_thread, display_callback->pc, display_callback->data);
 
         free(*params.mem, display_callback->data);
 
@@ -1874,14 +1874,7 @@ EXPORT(int, sceGxmTerminate) {
     stop(*thread->cpu);
     thread->something_to_do.notify_all();
 
-    for (auto t : thread->waiting_threads) {
-        const std::lock_guard<std::mutex> lock(t->mutex);
-        assert(t->to_do == ThreadToDo::wait);
-        t->to_do = ThreadToDo::run;
-        t->something_to_do.notify_one();
-    }
-
-    thread->waiting_threads.clear();
+    raise_waiting_threads(thread.get());
 
     // need to unlock thread->mutex because thread destructor (delete_thread) will get called, and it locks that mutex
     thread_lock.unlock();

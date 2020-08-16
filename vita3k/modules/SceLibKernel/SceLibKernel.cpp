@@ -1265,7 +1265,7 @@ EXPORT(int, sceKernelLoadStartModule, char *path, SceSize args, Ptr<void> argp, 
 
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
 
-    uint32_t result = run_on_current(*thread, entry_point, args, argp, true);
+    uint32_t result = run_guest_function(*thread, entry_point.address(), args, argp);
     char *module_name = module->module_name;
 
     LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(result));
@@ -1575,7 +1575,7 @@ EXPORT(int, sceKernelWaitSignalCB) {
 int wait_thread_end(HostState &host, SceUID thread_id, SceUID thid) {
     const ThreadStatePtr current_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
-    const std::lock_guard<std::mutex> current_thread_lock(current_thread->mutex);
+    std::unique_lock<std::mutex> current_thread_lock(current_thread->mutex);
 
     {
         const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
@@ -1587,10 +1587,8 @@ int wait_thread_end(HostState &host, SceUID thread_id, SceUID thid) {
 
         thread->waiting_threads.push_back(current_thread);
     }
-
-    assert(current_thread->to_do == ThreadToDo::run);
-    current_thread->to_do = ThreadToDo::wait;
-    stop(*current_thread->cpu);
+    
+    current_thread->something_to_do.wait(current_thread_lock);
 
     return SCE_KERNEL_OK;
 }

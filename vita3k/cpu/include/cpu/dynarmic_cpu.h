@@ -25,7 +25,7 @@ class DynarmicCPU : public CPUInterface {
 public:
     DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code);
     ~DynarmicCPU();
-    int run(bool callback, Address entry_point) override;
+    int run(Address entry_point) override;
     void stop() override;
 
     uint32_t get_reg(uint8_t idx) override;
@@ -52,8 +52,8 @@ public:
     uint32_t get_fpscr() override;
     void set_fpscr(uint32_t val) override;
 
-    CPUContextPtr save_context() override;
-    void load_context(CPUContext *context) override;
+    CPUContext save_context() override;
+    void load_context(CPUContext context) override;
 
     bool is_thumb_mode() override;
     int step(Address entry_point) override;
