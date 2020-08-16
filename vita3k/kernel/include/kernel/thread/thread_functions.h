@@ -51,18 +51,14 @@ uint32_t unpack(Ptr<P> ptr) {
 
 template <size_t i, typename T>
 void write_args(CPUState &cpu, T v) {
-    if (i < 4) {
-        write_reg(cpu, i, unpack(v));
-    } else {
-        // TODO implement this and float
-        static_assert(false);
-    }
+    static_assert(i < 4);
+    write_reg(cpu, i, unpack(v));
 }
 
 template <size_t i, typename T, typename... Args>
 void write_args(CPUState &cpu, T first, Args... args) {
     write_args<i>(cpu, first);
-    write_args<i + 1, Args...>(cpu, args...);
+    write_args<i + 1>(cpu, args...);
 }
 
 template <typename... Args>
@@ -72,8 +68,7 @@ uint32_t run_guest_function(ThreadState &thread, const Address &entry_point, Arg
     write_args<0>(*thread.cpu, args...);
     write_pc(*thread.cpu, entry_point);
     lock.unlock();
-    run_thread(thread);
-    auto out = read_reg(*thread.cpu, 0);
+    run_thread(thread); 
     load_context(*thread.cpu, ctx);
-    return out;
+    return ctx.cpu_registers[0];
 }
