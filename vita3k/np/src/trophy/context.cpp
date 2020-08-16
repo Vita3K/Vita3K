@@ -147,7 +147,7 @@ static constexpr std::uint32_t TROPHY_USR_MAGIC = 0x12D5819A;
 
 void Context::save_trophy_progress_file() {
     // Open the file
-    const SceUID output = open_file(*io, trophy_progress_output_file_path.c_str(), SCE_O_WRONLY, pref_path, "save_trophy_progress");
+    const SceUID output = open_file(*io, trophy_progress_output_file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, pref_path, "save_trophy_progress");
 
     auto write_stuff = [&](const void *data, std::uint32_t amount) -> int {
         return write_file(output, data, amount, *io, "save_trophy_progress_file");
@@ -322,7 +322,7 @@ int Context::install_trophy_conf(IOState *io, const std::string &pref_path, cons
         copy_file_data_from_trophy_file(file.filename.c_str(), &buf[0], &size);
 
         auto trophy_conf_file = trophy_conf_path + file.filename;
-        const SceUID trophy_conf_id = open_file(*io, trophy_conf_file.c_str(), SCE_O_WRONLY, pref_path, "install_trophy_context");
+        const SceUID trophy_conf_id = open_file(*io, trophy_conf_file.c_str(), SCE_O_WRONLY | SCE_O_CREAT, pref_path, "install_trophy_context");
 
         write_file(trophy_conf_id, buf.data(), size, *io, "install_trophy_context");
 
