@@ -43,7 +43,7 @@
 
 int main(int argc, char *argv[]) {
     Root root_paths;
-    root_paths.set_base_path(SDL_GetBasePath());
+    root_paths.set_base_path(string_utils::utf_to_wide(SDL_GetBasePath()));
     root_paths.set_pref_path(SDL_GetPrefPath(org_name, app_name));
 
     // Create default preference path for safety

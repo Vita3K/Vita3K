@@ -31,7 +31,7 @@ bool delete_pup_file;
 nfdchar_t *pup_path;
 
 static void get_firmware_version(HostState &host) {
-    std::ifstream versionFile(host.pref_path + "/PUP_DEC/PUP/version.txt");
+    fs::ifstream versionFile(host.pref_path + L"/PUP_DEC/PUP/version.txt");
 
     if (versionFile.is_open()) {
         std::getline(versionFile, fw_version);

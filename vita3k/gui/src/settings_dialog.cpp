@@ -31,6 +31,7 @@
 
 #include <util/fs.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <kernel/functions.h>
 
@@ -81,17 +82,17 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
     nfdchar_t *emulator_path = nullptr;
     nfdresult_t result = NFD_PickFolder(nullptr, &emulator_path);
 
-    if (result == NFD_OKAY && emulator_path != host.pref_path) {
+    if (result == NFD_OKAY && string_utils::utf_to_wide(emulator_path) != host.pref_path) {
         // Refresh the working paths
-        host.cfg.pref_path = static_cast<std::string>(emulator_path) + '/';
-        host.pref_path = host.cfg.pref_path;
+        host.cfg.pref_path = string_utils::wide_to_utf(string_utils::utf_to_wide(emulator_path) + L'/');
+        host.pref_path = string_utils::utf_to_wide(host.cfg.pref_path);
 
         config::serialize_config(host.cfg, host.cfg.config_path);
 
         // TODO: Move app old to new path
         get_modules_list(gui, host);
         refresh_app_list(gui, host);
-        LOG_INFO("Successfully moved Vita3K path to: {}", host.pref_path);
+        LOG_INFO("Successfully moved Vita3K path to: {}", string_utils::wide_to_utf(host.pref_path));
     }
 }
 
@@ -261,16 +262,16 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (host.cfg.pref_path != host.default_path) {
             ImGui::SameLine();
             if (ImGui::Button("Reset Path Emulator")) {
-                if (host.default_path != host.pref_path) {
-                    host.pref_path = host.default_path;
-                    host.cfg.pref_path = host.pref_path;
+                if (string_utils::utf_to_wide(host.default_path) != host.pref_path) {
+                    host.pref_path = string_utils::utf_to_wide(host.default_path);
+                    host.cfg.pref_path = string_utils::wide_to_utf(host.pref_path);
 
                     config::serialize_config(host.cfg, host.cfg.config_path);
 
                     // Refresh the working paths
                     get_modules_list(gui, host);
                     refresh_app_list(gui, host);
-                    LOG_INFO("Successfully restore default path for Vita3K files to: {}", host.pref_path);
+                    LOG_INFO("Successfully restore default path for Vita3K files to: {}", string_utils::wide_to_utf(host.pref_path));
                 }
             }
             if (ImGui::IsItemHovered())

@@ -62,7 +62,7 @@ static fs::path check_path(const fs::path &output_path) {
     return output_path;
 }
 
-static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string &root_pref_path) {
+static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &root_pref_path) {
     const auto loaded_path = check_path(load_path);
     if (loaded_path.empty() || !fs::exists(loaded_path)) {
         LOG_ERROR("Config file input path invalid (did you make sure to name the extension \".yml\"?)");
@@ -77,9 +77,9 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const std::string 
     }
 
     if (cfg.pref_path.empty())
-        cfg.pref_path = root_pref_path;
+        cfg.pref_path = root_pref_path.string();
     else {
-        if (cfg.pref_path != root_pref_path && !fs::exists(cfg.pref_path)) {
+        if (string_utils::utf_to_wide(cfg.pref_path) != root_pref_path && !fs::exists(string_utils::utf_to_wide(cfg.pref_path))) {
             LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
             return InvalidApplicationPath;
         }
@@ -119,7 +119,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     serialize_config(command_line, root_paths.get_base_path() / "data/config/default.yml");
     // Load base path configuration by default; otherwise, move the default to the base path
     if (fs::exists(check_path(root_paths.get_base_path())))
-        parse(cfg, root_paths.get_base_path(), root_paths.get_pref_path_string());
+        parse(cfg, root_paths.get_base_path(), root_paths.get_base_path());
     else
         fs::copy(root_paths.get_base_path() / "data/config/default.yml", root_paths.get_base_path() / "config.yml");
 
@@ -226,7 +226,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         if (command_line.config_path.empty()) {
             command_line.config_path = root_paths.get_base_path();
         } else {
-            if (parse(command_line, command_line.config_path, root_paths.get_pref_path_string()) != Success)
+            if (parse(command_line, command_line.config_path, root_paths.get_base_path()) != Success)
                 return InitConfigFailed;
         }
     }

@@ -95,7 +95,7 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
     return fmt::format("unknown-0x{:X}.pkg", filetype);
 }
 
-static void extract_pup_files(const std::wstring &pup, const std::string &output) {
+static void extract_pup_files(const std::wstring &pup, const std::wstring &output) {
     constexpr int SCEUF_HEADER_SIZE = 0x80;
     constexpr int SCEUF_FILEREC_SIZE = 0x20;
     fs::ifstream infile(pup, std::ios::binary);
@@ -146,7 +146,7 @@ static void extract_pup_files(const std::wstring &pup, const std::string &output
             filename = make_filename((unsigned char *)hdr, filetype);
         }
 
-        std::ofstream outfile(fmt::format("{}/{}", output, filename), std::ios::binary);
+        fs::ofstream outfile(fmt::format(L"{}/{}", output, string_utils::utf_to_wide(filename)), std::ios::binary);
         infile.seekg(offset);
         std::vector<char> buffer(length);
         infile.read(&buffer[0], length);
@@ -157,7 +157,7 @@ static void extract_pup_files(const std::wstring &pup, const std::string &output
     infile.close();
 }
 
-static void decrypt_segments(std::ifstream &infile, const std::string &outdir, const std::string &filename, KeyStore &SCE_KEYS) {
+static void decrypt_segments(std::ifstream &infile, const std::wstring &outdir, const std::wstring &filename, KeyStore &SCE_KEYS) {
     char sceheaderbuffer[SceHeader::Size];
     infile.read(sceheaderbuffer, SceHeader::Size);
     const SceHeader sce_hdr = SceHeader(sceheaderbuffer);
@@ -167,7 +167,7 @@ static void decrypt_segments(std::ifstream &infile, const std::string &outdir, c
 
     const auto scesegs = get_segments(infile, sce_hdr, SCE_KEYS, sysver, selftype);
     for (const auto &sceseg : scesegs) {
-        std::ofstream outfile(fmt::format("{}/{}.seg02", outdir, filename), std::ios::binary);
+        fs::ofstream outfile(fmt::format(L"{}/{}.seg02", outdir, filename), std::ios::binary);
         infile.seekg(sceseg.offset);
         std::vector<unsigned char> encrypted_data(sceseg.size);
         infile.read((char *)&encrypted_data[0], sceseg.size);
@@ -187,7 +187,7 @@ static void decrypt_segments(std::ifstream &infile, const std::string &outdir, c
     }
 };
 
-static void join_files(const std::string &path, const std::string &filename, const std::string &output) {
+static void join_files(const std::wstring &path, const std::string &filename, const std::wstring &output) {
     std::vector<std::string> files;
 
     for (auto &p : fs::directory_iterator(path)) {
@@ -198,9 +198,9 @@ static void join_files(const std::string &path, const std::string &filename, con
 
     std::sort(files.begin(), files.end());
 
-    std::ofstream fileout(output, std::ios::binary);
+    fs::ofstream fileout(output, std::ios::binary);
     for (const auto &file : files) {
-        std::ifstream filein(file, std::ios::binary);
+        fs::ifstream filein(file, std::ios::binary);
         std::vector<char> buffer(fs::file_size(file));
         filein.read(&buffer[0], fs::file_size(file));
         fileout.write(&buffer[0], fs::file_size(file));
@@ -210,41 +210,41 @@ static void join_files(const std::string &path, const std::string &filename, con
     fileout.close();
 }
 
-static void decrypt_pup_packages(const std::string &src, const std::string &dest, KeyStore &SCE_KEYS) {
-    std::vector<std::string> pkgfiles;
+static void decrypt_pup_packages(const std::wstring &src, const std::wstring &dest, KeyStore &SCE_KEYS) {
+    std::vector<std::wstring> pkgfiles;
 
     for (const auto &p : fs::directory_iterator(src)) {
         if (p.path().filename().extension().string() == ".pkg")
-            pkgfiles.push_back(p.path().filename().string());
+            pkgfiles.push_back(p.path().filename().generic_wstring());
     }
 
     for (const auto &filename : pkgfiles) {
-        const std::string &filepath = fmt::format("{}/{}", src, filename);
-        std::ifstream infile(filepath, std::ios::binary);
+        const std::wstring &filepath = fmt::format(L"{}/{}", src, filename);
+        fs::ifstream infile(filepath, std::ios::binary);
         decrypt_segments(infile, dest, filename, SCE_KEYS);
         infile.close();
     }
 
-    join_files(dest, "os0-", dest + "/os0.img");
-    join_files(dest, "vs0-", dest + "/vs0.img");
-    join_files(dest, "sa0-", dest + "/sa0.img");
+    join_files(dest, "os0-", dest + L"/os0.img");
+    join_files(dest, "vs0-", dest + L"/vs0.img");
+    join_files(dest, "sa0-", dest + L"/sa0.img");
 }
 
-void install_pup(const std::string &pref_path, const std::string &pup_path) {
-    if (fs::exists(pref_path + "/PUP_DEC")) {
+void install_pup(const std::wstring &pref_path, const std::string &pup_path) {
+    if (fs::exists(pref_path + L"/PUP_DEC")) {
         LOG_WARN("Path already exists, deleting it and reinstalling");
-        fs::remove_all(pref_path + "/PUP_DEC");
+        fs::remove_all(pref_path + L"/PUP_DEC");
     }
 
-    LOG_INFO("Extracting {} to {}", pup_path, pref_path + "/PUP_DEC");
+    LOG_INFO("Extracting {} to {}", pup_path, string_utils::wide_to_utf(pref_path + L"/PUP_DEC"));
 
-    fs::create_directory(pref_path + "/PUP_DEC");
-    const auto pup_dest = fmt::format("{}/PUP", pref_path + "/PUP_DEC");
+    fs::create_directory(pref_path + L"/PUP_DEC");
+    const auto pup_dest = fmt::format(L"{}/PUP", pref_path + L"/PUP_DEC");
     fs::create_directory(pup_dest);
 
     extract_pup_files(string_utils::utf_to_wide(pup_path), pup_dest);
 
-    const auto pup_dec = fmt::format("{}/PUP_dec", pref_path + "/PUP_DEC");
+    const auto pup_dec = fmt::format(L"{}/PUP_dec", pref_path + L"/PUP_DEC");
     fs::create_directory(pup_dec);
 
     KeyStore SCE_KEYS;
@@ -252,9 +252,9 @@ void install_pup(const std::string &pref_path, const std::string &pup_path) {
 
     decrypt_pup_packages(pup_dest, pup_dec, SCE_KEYS);
 
-    if (fs::file_size(pup_dec + "/os0.img") > 0) {
+    if (fs::file_size(pup_dec + L"/os0.img") > 0) {
         extract_fat(pup_dec, "os0.img", pref_path);
-        for (const auto &file : fs::recursive_directory_iterator(pref_path + "/os0")) {
+        for (const auto &file : fs::recursive_directory_iterator(pref_path + L"/os0")) {
             if (fs::is_regular_file(file.path())) {
                 const auto filePathString = file.path().string();
                 const auto extention = file.path().filename().extension();
@@ -268,11 +268,11 @@ void install_pup(const std::string &pref_path, const std::string &pup_path) {
             }
         }
     }
-    if (fs::file_size(pup_dec + "/sa0.img") > 0)
+    if (fs::file_size(pup_dec + L"/sa0.img") > 0)
         extract_fat(pup_dec, "sa0.img", pref_path);
-    if (fs::file_size(pup_dec + "/vs0.img") > 0) {
+    if (fs::file_size(pup_dec + L"/vs0.img") > 0) {
         extract_fat(pup_dec, "vs0.img", pref_path);
-        for (const auto &file : fs::recursive_directory_iterator(pref_path + "/vs0")) {
+        for (const auto &file : fs::recursive_directory_iterator(pref_path + L"/vs0")) {
             if (fs::is_regular_file(file.path())) {
                 const auto filePathString = file.path().string();
                 const auto extention = file.path().filename().extension();

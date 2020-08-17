@@ -47,7 +47,7 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
     if (use_stdout)
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 
-    if (add_sink(root_paths.get_base_path_string() / LOG_FILE_NAME) != Success)
+    if (add_sink(root_paths.get_base_path() / LOG_FILE_NAME) != Success)
         return InitConfigFailed;
 
     spdlog::set_error_handler([](const std::string &msg) {

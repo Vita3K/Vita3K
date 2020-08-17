@@ -26,6 +26,7 @@
 #include <rtc/rtc.h>
 #include <util/log.h>
 #include <util/preprocessor.h>
+#include <util/string_utils.h>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -54,7 +55,7 @@ static int io_error_impl(const int retval, const char *export_name, const char *
 
 namespace vfs {
 
-bool read_file(const VitaIoDevice device, FileBuffer &buf, const std::string &pref_path, const fs::path &vfs_file_path) {
+bool read_file(const VitaIoDevice device, FileBuffer &buf, const std::wstring &pref_path, const fs::path &vfs_file_path) {
     const auto host_file_path = device::construct_emulated_path(device, vfs_file_path, pref_path).generic_path();
 
     fs::ifstream f{ host_file_path, fs::ifstream::binary };
@@ -67,11 +68,11 @@ bool read_file(const VitaIoDevice device, FileBuffer &buf, const std::string &pr
     return true;
 }
 
-bool read_app_file(FileBuffer &buf, const std::string &pref_path, const std::string &title_id, const fs::path &vfs_file_path) {
+bool read_app_file(FileBuffer &buf, const std::wstring &pref_path, const std::string &title_id, const fs::path &vfs_file_path) {
     return read_file(VitaIoDevice::ux0, buf, pref_path, fs::path("app") / title_id / vfs_file_path);
 }
 
-SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path, const std::string &pref_path) {
+SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path, const std::wstring &pref_path) {
     SpaceInfo space_info;
     const auto host_path = device::construct_emulated_path(device, vfs_path, pref_path);
     space_info.max_capacity = fs::space(host_path).capacity;
@@ -206,14 +207,14 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
     return relative_path;
 }
 
-std::string expand_path(IOState &io, const char *path, const std::string &pref_path) {
+std::string expand_path(IOState &io, const char *path, const std::wstring &pref_path) {
     auto device = device::get_device(path);
 
     const auto translated_path = translate_path(path, device, io.device_paths);
     return device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio).string();
 }
 
-SceUID open_file(IOState &io, const char *path, const int flags, const std::string &pref_path, const char *export_name) {
+SceUID open_file(IOState &io, const char *path, const int flags, const std::wstring &pref_path, const char *export_name) {
     auto device = device::get_device(path);
     if (device == VitaIoDevice::_INVALID) {
         LOG_ERROR("Cannot find device for path: {}", path);
@@ -379,7 +380,7 @@ SceOff tell_file(IOState &io, const SceUID fd, const char *export_name) {
     return std_file->second.tell();
 }
 
-int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string &pref_path, SceUInt64 base_tick, const char *export_name,
+int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::wstring &pref_path, SceUInt64 base_tick, const char *export_name,
     const SceUID fd) {
     assert(statp != nullptr);
 
@@ -458,7 +459,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::string
     return 0;
 }
 
-int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const std::string &pref_path, SceUInt64 base_tick, const char *export_name) {
+int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const std::wstring &pref_path, SceUInt64 base_tick, const char *export_name) {
     assert(statp != nullptr);
     memset(statp, '\0', sizeof(SceIoStat));
 
@@ -482,7 +483,7 @@ int close_file(IOState &io, const SceUID fd, const char *export_name) {
     return 0;
 }
 
-int remove_file(IOState &io, const char *file, const std::string &pref_path, const char *export_name) {
+int remove_file(IOState &io, const char *file, const std::wstring &pref_path, const char *export_name) {
     auto device = device::get_device(file);
     if (device == VitaIoDevice::_INVALID) {
         LOG_ERROR("Cannot find device for path: {}", file);
@@ -505,7 +506,7 @@ int remove_file(IOState &io, const char *file, const std::string &pref_path, con
     return fs::remove(emulated_path);
 }
 
-SceUID open_dir(IOState &io, const char *path, const std::string &pref_path, const char *export_name) {
+SceUID open_dir(IOState &io, const char *path, const std::wstring &pref_path, const char *export_name) {
     auto device = device::get_device(path);
     const auto translated_path = translate_path(path, device, io.device_paths);
 
@@ -531,7 +532,7 @@ SceUID open_dir(IOState &io, const char *path, const std::string &pref_path, con
     return fd;
 }
 
-SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::string &pref_path, const SceUInt64 base_tick, const char *export_name) {
+SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::wstring &pref_path, const SceUInt64 base_tick, const char *export_name) {
     assert(dent != nullptr);
 
     memset(dent->d_name, '\0', sizeof(dent->d_name));
@@ -566,7 +567,7 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::stri
     return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 }
 
-int create_dir(IOState &io, const char *dir, int mode, const std::string &pref_path, const char *export_name, const bool recursive) {
+int create_dir(IOState &io, const char *dir, int mode, const std::wstring &pref_path, const char *export_name, const bool recursive) {
     auto device = device::get_device(dir);
     const auto translated_path = translate_path(dir, device, io.device_paths);
     if (translated_path.empty()) {
@@ -608,7 +609,7 @@ int close_dir(IOState &io, const SceUID fd, const char *export_name) {
     return 0;
 }
 
-int remove_dir(IOState &io, const char *dir, const std::string &pref_path, const char *export_name) {
+int remove_dir(IOState &io, const char *dir, const std::wstring &pref_path, const char *export_name) {
     auto device = device::get_device(dir);
     if (device == VitaIoDevice::_INVALID) {
         LOG_ERROR("Cannot find device for path: {}", dir);

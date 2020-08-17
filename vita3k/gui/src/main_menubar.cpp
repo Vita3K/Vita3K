@@ -17,6 +17,8 @@
 
 #include <gui/functions.h>
 
+#include <util/string_utils.h>
+
 #include "private.h"
 
 #ifdef _WIN32
@@ -32,7 +34,7 @@ namespace gui {
 static void draw_file_menu(FileMenuState &state, HostState &host) {
     if (ImGui::BeginMenu("File")) {
         if (ImGui::MenuItem("Open Pref Path")) {
-            system((OS_PREFIX + host.pref_path).c_str());
+            system((OS_PREFIX + string_utils::wide_to_utf(host.pref_path)).c_str());
         }
         ImGui::Separator();
         ImGui::MenuItem("Install Firmware", nullptr, &state.firmware_install_dialog);
