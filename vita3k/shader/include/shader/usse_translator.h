@@ -257,7 +257,7 @@ public:
         Imm6 src1_n,
         Imm6 src2_n);
 
-    bool vnmad32(ExtPredicate pred,
+    bool v32nmad(ExtPredicate pred,
         bool skipinv,
         Imm2 src1_swiz_10_11,
         bool syncstart,
@@ -280,7 +280,7 @@ public:
         Imm6 src1_n,
         Imm6 src2_n);
 
-    bool vnmad16(ExtPredicate pred,
+    bool v16nmad(ExtPredicate pred,
         bool skipinv,
         Imm2 src1_swiz_10_11,
         bool syncstart,
@@ -329,7 +329,7 @@ public:
         Imm6 src2_n,
         Imm1 comp_sel_0_bit0);
 
-    bool sop2(Imm2 pred,
+    bool sop(Imm2 pred,
         Imm1 cmod1,
         Imm1 skipinv,
         Imm1 nosched,
@@ -357,7 +357,7 @@ public:
         Imm7 src1_n,
         Imm7 src2_n);
 
-    bool imad(ExtPredicate pred,
+    bool i32mad2(ExtPredicate pred,
         Imm1 nosched,
         Imm2 sn,
         bool dest_bank_ext,
