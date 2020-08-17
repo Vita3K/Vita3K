@@ -140,7 +140,8 @@ bool USSETranslatorVisitor::vmad(
     return true;
 }
 
-bool USSETranslatorVisitor::imad(ExtPredicate pred,
+bool USSETranslatorVisitor::imad(
+    ExtPredicate pred,
     Imm1 nosched,
     Imm2 sn,
     bool dest_bank_ext,
@@ -160,6 +161,46 @@ bool USSETranslatorVisitor::imad(ExtPredicate pred,
     Imm7 src0_n,
     Imm7 src1_n,
     Imm7 src2_n) {
+    Instruction inst;
+    inst.opcode = Opcode::IMAD;
+
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_bank_ext, false, 7, m_second_program);
+    inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, false, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, false, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, false, 7, m_second_program);
+
+    const DataType inst_dt = is_signed ? DataType::INT32 : DataType::UINT32;
+
+    inst.opr.dest.type = inst_dt;
+    inst.opr.src0.type = inst_dt;
+    inst.opr.src1.type = inst_dt;
+    inst.opr.src2.type = inst_dt;
+
+    if (negative_src1) {
+        inst.opr.src1.flags |= RegisterFlags::Negative;
+    }
+
+    if (negative_src2) {
+        inst.opr.src2.flags |= RegisterFlags::Negative;
+    }
+
+    spv::Id vsrc0 = load(inst.opr.src0, 0b1, 0, true);
+    spv::Id vsrc1 = load(inst.opr.src0, 0b1, 0, true);
+    spv::Id vsrc2 = load(inst.opr.src0, 0b1, 0, true);
+
+    auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
+    auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+
+    if (add_result != spv::NoResult) {
+        store(inst.opr.dest, add_result, 0b1, 0, true);
+    }
+
+    // TODO not sure about sn
+
+    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::e_predicate_str(pred), "IMAD", disasm::operand_to_str(inst.opr.dest, 0b1),
+        disasm::operand_to_str(inst.opr.src0, 0b1), disasm::operand_to_str(inst.opr.src1, 0b1), disasm::operand_to_str(inst.opr.src2, 0b1));
+
+    return true;
 }
 
 bool USSETranslatorVisitor::vmad2(
