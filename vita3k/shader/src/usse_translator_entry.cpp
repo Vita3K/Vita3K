@@ -250,6 +250,34 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                             AAAAAAA = src2_n (7 bits)
         */
         INST(&V::sop2, "SOP2 ()", "10000ppcsnaaderbmooofllggghhhittkkjjqqqqqqquvvwwxyzzzzzzzAAAAAAA"),
+        // Integer multiply-add
+        /*
+                                   11010 = op1
+                                        ppp = pred (3 bits, ExtPredicate)
+                                           - = don't care
+                                            n = nosched (1 bit)
+                                             ss = sn (2 bits)
+                                               d = dest_bank_ext (1 bit, bool)
+                                                e = end (1 bit)
+                                                 r = src1_bank_ext (1 bit, bool)
+                                                  c = src2_bank_ext (1 bit, bool)
+                                                   b = src0_bank_ext (1 bit, bool)
+                                                    ooo = count (3 bits)
+                                                       00 = unk0
+                                                         i = is_signed (1 bit, bool)
+                                                          g = negative_src1 (1 bit)
+                                                           a = negative_src2 (1 bit)
+                                                            0000 = unk1
+                                                                k = src0_bank (1 bit)
+                                                                 tt = dest_bank (2 bits)
+                                                                   ff = src1_bank (2 bits)
+                                                                     hh = src2_bank (2 bits)
+                                                                       jjjjjjj = dest_n (7 bits)
+                                                                              lllllll = src0_n (7 bits)
+                                                                                     mmmmmmm = src1_n (7 bits)
+                                                                                            qqqqqqq = src2_n (7 bits)
+        */
+        INST(&V::imad, "IMAD ()", "11010ppp-nssdercbooo00iga0000kttffhhjjjjjjjlllllllmmmmmmmqqqqqqq"),
         // Test Instructions
         /*
                                    01001 = op1
