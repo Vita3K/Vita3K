@@ -159,7 +159,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                              hhhhhh = src1_n (6 bits)
                                                                                                    jjjjjj = src2_n (6 bits)
         */
-        INST(&V::vnmad32, "VNMAD32 ()", "00001pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
+        INST(&V::v32nmad, "VNMAD32 ()", "00001pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
         // Vector operations except for MAD (F16)
         /*
                                          00010 = opcode1
@@ -186,7 +186,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                              hhhhhh = src1_n (6 bits)
                                                                                                    jjjjjj = src2_n (6 bits)
         */
-        INST(&V::vnmad16, "VNMAD16 ()", "00010pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
+        INST(&V::v16nmad, "VNMAD16 ()", "00010pppsrrydcbawwwwneeeemmoiittkkllffffffzzzzzzzggghhhhhhjjjjjj"),
         // Vector pack/unpack
         /*
                                    01000 = op1
@@ -249,7 +249,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                      zzzzzzz = src1_n (7 bits)
                                                                                             AAAAAAA = src2_n (7 bits)
         */
-        INST(&V::sop2, "SOP2 ()", "10000ppcsnaaderbmooofllggghhhittkkjjqqqqqqquvvwwxyzzzzzzzAAAAAAA"),
+        INST(&V::sop, "SOP2 ()", "10000ppcsnaaderbmooofllggghhhittkkjjqqqqqqquvvwwxyzzzzzzzAAAAAAA"),
         // Integer multiply-add
         /*
                                    11010 = op1
@@ -277,7 +277,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                      mmmmmmm = src1_n (7 bits)
                                                                                             qqqqqqq = src2_n (7 bits)
         */
-        INST(&V::imad, "IMAD ()", "11010ppp-nssdercbooo00iga0000kttffhhjjjjjjjlllllllmmmmmmmqqqqqqq"),
+        INST(&V::i32mad2, "IMAD ()", "11010ppp-nssdercbooo00iga0000kttffhhjjjjjjjlllllllmmmmmmmqqqqqqq"),
         // Test Instructions
         /*
                                    01001 = op1

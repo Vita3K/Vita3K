@@ -140,7 +140,7 @@ bool USSETranslatorVisitor::vmad(
     return true;
 }
 
-bool USSETranslatorVisitor::imad(
+bool USSETranslatorVisitor::i32mad2(
     ExtPredicate pred,
     Imm1 nosched,
     Imm2 sn,
@@ -546,7 +546,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask
     return result;
 }
 
-bool USSETranslatorVisitor::vnmad32(
+bool USSETranslatorVisitor::v32nmad(
     ExtPredicate pred,
     bool skipinv,
     Imm2 src1_swiz_10_11,
@@ -659,7 +659,7 @@ bool USSETranslatorVisitor::vnmad32(
     return true;
 }
 
-bool USSETranslatorVisitor::vnmad16(
+bool USSETranslatorVisitor::v16nmad(
     ExtPredicate pred,
     bool skipinv,
     Imm2 src1_swiz_10_11,
@@ -683,7 +683,7 @@ bool USSETranslatorVisitor::vnmad16(
     Imm6 src1_n,
     Imm6 src2_n) {
     // TODO
-    return vnmad32(pred, skipinv, src1_swiz_10_11, syncstart, dest_bank_ext, src1_swiz_9, src1_bank_ext, src2_bank_ext, src2_swiz, nosched, dest_mask, src1_mod, src2_mod, src1_swiz_7_8, dest_bank_sel, src1_bank_sel, src2_bank_sel, dest_n, src1_swiz_0_6, op2, src1_n, src2_n);
+    return v32nmad(pred, skipinv, src1_swiz_10_11, syncstart, dest_bank_ext, src1_swiz_9, src1_bank_ext, src2_bank_ext, src2_swiz, nosched, dest_mask, src1_mod, src2_mod, src1_swiz_7_8, dest_bank_sel, src1_bank_sel, src2_bank_sel, dest_n, src1_swiz_0_6, op2, src1_n, src2_n);
 }
 
 bool USSETranslatorVisitor::vbw(
@@ -939,7 +939,7 @@ bool USSETranslatorVisitor::vcomp(
     return true;
 }
 
-bool USSETranslatorVisitor::sop2(
+bool USSETranslatorVisitor::sop(
     Imm2 pred,
     Imm1 cmod1,
     Imm1 skipinv,
@@ -1111,7 +1111,7 @@ bool USSETranslatorVisitor::sop2(
         }
 
         default: {
-            LOG_ERROR("Unsuppported sop2 opcode: {}", disasm::opcode_str(op));
+            LOG_ERROR("Unsuppported sop opcode: {}", disasm::opcode_str(op));
             break;
         }
         }
