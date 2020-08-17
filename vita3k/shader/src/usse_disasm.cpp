@@ -158,6 +158,10 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
 std::string operand_to_str(Operand op, Imm4 write_mask, std::uint32_t shift) {
     std::string opstr = reg_to_str(op.bank, op.num + shift);
 
+    if (op.bank == RegisterBank::IMMEDIATE) {
+        return "0x" + opstr;
+    }
+
     if (write_mask != 0) {
         opstr += "." + swizzle_to_str<4>(op.swizzle, write_mask, shift);
     }
