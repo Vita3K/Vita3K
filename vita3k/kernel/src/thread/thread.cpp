@@ -220,7 +220,7 @@ bool run_thread(ThreadState &thread) {
             if (thread.to_do == ThreadToDo::step) {
                 res = step(*thread.cpu, thread.entry_point);
                 thread.to_do = ThreadToDo::wait;
-              
+
             } else
                 res = run(*thread.cpu, thread.entry_point);
 #ifdef USE_GDBSTUB

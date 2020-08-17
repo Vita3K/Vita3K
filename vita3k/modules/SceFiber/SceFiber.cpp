@@ -54,7 +54,7 @@ void _resetFiber(HostState &host, SceFiber *fiber) {
     memset(Ptr<void>(ifiber->start).get(host.mem), 0xCC, ifiber->end - ifiber->start);
 }
 
-int _fiberSwitch(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, CPUContext& backup_cpu_context, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun, bool reset) {
+int _fiberSwitch(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, CPUContext &backup_cpu_context, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun, bool reset) {
     backup_cpu_context = save_context(*thread->cpu);
 
     bool suspended = false;

@@ -68,7 +68,7 @@ uint32_t run_guest_function(ThreadState &thread, const Address &entry_point, Arg
     write_args<0>(*thread.cpu, args...);
     write_pc(*thread.cpu, entry_point);
     lock.unlock();
-    run_thread(thread); 
+    run_thread(thread);
     load_context(*thread.cpu, ctx);
     return ctx.cpu_registers[0];
 }

@@ -1587,7 +1587,7 @@ int wait_thread_end(HostState &host, SceUID thread_id, SceUID thid) {
 
         thread->waiting_threads.push_back(current_thread);
     }
-    
+
     current_thread->something_to_do.wait(current_thread_lock);
 
     return SCE_KERNEL_OK;

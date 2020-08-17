@@ -24,7 +24,7 @@ struct CPUInterface {
 
     virtual uint32_t get_cpsr() = 0;
     virtual void set_cpsr(uint32_t val) = 0;
-   
+
     virtual uint32_t get_tpidruro() = 0;
     virtual void set_tpidruro(uint32_t val) = 0;
 

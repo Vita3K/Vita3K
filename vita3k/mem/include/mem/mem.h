@@ -64,7 +64,7 @@ struct MemState {
     std::map<Address, Address> aligned_addr_to_original;
     std::map<Address, Breakpoint> breakpoints;
 
-    std::unique_ptr <std::array<uint8_t *, MB(1)>> pages_cpu;
+    std::unique_ptr<std::array<uint8_t *, MB(1)>> pages_cpu;
 };
 
 bool init(MemState &state);

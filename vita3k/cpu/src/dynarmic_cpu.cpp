@@ -1,9 +1,9 @@
 #include <cpu/dynarmic_cpu.h>
 #include <cpu/interface.h>
 #include <cpu/state.h>
-#include <util/log.h>
-#include <set>
 #include <dynarmic/A32/context.h>
+#include <set>
+#include <util/log.h>
 
 #include <mem/ptr.h>
 
@@ -17,10 +17,10 @@ class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
     bool log_read = false;
     bool log_write = false;
 
-    
 public:
-    explicit ArmDynarmicCallback(CPUState &parent, DynarmicCPU& cpu)
-        : parent(&parent), cpu(&cpu) {}
+    explicit ArmDynarmicCallback(CPUState &parent, DynarmicCPU &cpu)
+        : parent(&parent)
+        , cpu(&cpu) {}
 
     ~ArmDynarmicCallback() {}
 
@@ -131,7 +131,6 @@ public:
         case Dynarmic::A32::Exception::Breakpoint:
             return;
         case Dynarmic::A32::Exception::UndefinedInstruction: {
-            
             break;
         }
         default:
@@ -193,7 +192,7 @@ int DynarmicCPU::run(Address entry_point) {
     if (jit->IsExecuting()) {
         auto ctx = run_worker(*parent, CPUBackend::Dynarmic, entry_point);
         set_reg(0, ctx.cpu_registers[0]);
-        return 0;   
+        return 0;
     }
     set_lr(parent->halt_instruction_pc | 1);
     jit->Run();
@@ -350,4 +349,3 @@ void DynarmicCPU::set_float_reg(uint8_t idx, float val) {
 bool DynarmicCPU::is_thumb_mode() {
     return jit->Cpsr() & 0x20;
 }
-

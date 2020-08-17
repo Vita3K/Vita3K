@@ -8,7 +8,6 @@
 #include <functional>
 #include <memory>
 
-
 class ArmDynarmicCallback;
 
 class DynarmicCPU : public CPUInterface {
@@ -22,6 +21,7 @@ class DynarmicCPU : public CPUInterface {
 
     Address ep;
     Address tpidruro;
+
 public:
     DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code);
     ~DynarmicCPU();

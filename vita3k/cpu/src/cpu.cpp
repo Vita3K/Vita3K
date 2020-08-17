@@ -47,7 +47,7 @@ CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address s
     state->thread_id = thread_id;
     state->module_regions = inject.module_regions;
     Ptr<uint16_t> halt_inst = Ptr<uint16_t>(alloc(mem, 2, "halt_instruction"));
-    *halt_inst.get(mem) = 0xDF44; // SVC #44 
+    *halt_inst.get(mem) = 0xDF44; // SVC #44
     state->halt_instruction_pc = halt_inst.address();
 
     if (!init(state->disasm)) {

@@ -484,7 +484,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     }
 
     const ThreadStatePtr main_thread = util::find(main_thread_id, host.kernel.threads);
-    
+
     // Run `module_start` export (entry point) of loaded libraries
     for (auto &mod : host.kernel.loaded_modules) {
         const auto module = mod.second;
@@ -512,7 +512,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
     host.main_thread_id = main_thread_id;
 
-    SceKernelThreadOptParam param {0,0};
+    SceKernelThreadOptParam param{ 0, 0 };
     if (host.cfg.console && host.cfg.console_arguments != "") {
         auto args = split(host.cfg.console_arguments, "\\s+");
         // why is this flipped

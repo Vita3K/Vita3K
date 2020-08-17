@@ -2,9 +2,9 @@
 
 #include <cpu/interface.h>
 
-#include <unicorn/unicorn.h>
-#include <disasm/state.h>
 #include <cpu/state.h>
+#include <disasm/state.h>
+#include <unicorn/unicorn.h>
 
 #include <array>
 #include <functional>
@@ -24,7 +24,7 @@ class UnicornCPU : public CPUInterface {
     uc_hook memory_read_hook_handle = 0;
     uc_hook memory_write_hook_handle = 0;
     uc_hook code_hook_handle = 0;
-    
+
     bool is_inside_intr_hook = false;
 
     std::stack<StackFrame> stack_frames;
@@ -76,7 +76,7 @@ public:
 
     uint32_t get_tpidruro() override;
     void set_tpidruro(uint32_t val) override;
-    
+
     uint32_t get_fpscr() override;
     void set_fpscr(uint32_t val) override;
 
