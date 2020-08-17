@@ -46,7 +46,7 @@
 	url = https://github.com/jonasmr/microprofile
 [submodule "external/nativefiledialog-cmake"]
 	path = external/nativefiledialog-cmake
-	url = https://github.com/illusionman1212/nativefiledialog-cmake
+	url = https://github.com/Vita3K/nativefiledialog-cmake
 [submodule "external/printf"]
 	path = external/printf
 	url = https://github.com/Vita3K/printf
