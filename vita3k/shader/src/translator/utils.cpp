@@ -33,12 +33,47 @@
 using namespace shader;
 using namespace usse;
 
-spv::Id USSETranslatorVisitor::load(Operand op, const Imm4 dest_mask, const int shift_offset) {
-    return utils::load(m_b, m_spirv_params, m_util_funcs, m_features, op, dest_mask, shift_offset);
+static spv::Id get_int_max_value_constant(spv::Builder &b, DataType type) {
+    int max_value;
+    switch (type) {
+    case DataType::UINT8:
+        max_value = 0xFF;
+        break;
+    case DataType::INT8:
+        max_value = 0x7F;
+        break;
+    case DataType::UINT16:
+        max_value = 0xFFFF;
+        break;
+    case DataType::INT16:
+        max_value = 0x7FFF;
+        break;
+    case DataType::UINT32:
+        max_value = 0xFFFFFFFF;
+        break;
+    case DataType::INT32:
+        max_value = 0x7FFFFFFF;
+        break;
+    }
+    return b.makeIntConstant(max_value);
 }
 
-void USSETranslatorVisitor::store(Operand dest, spv::Id source, std::uint8_t dest_mask, int shift_offset) {
-    return utils::store(m_b, m_spirv_params, m_util_funcs, m_features, dest, source, dest_mask, shift_offset);
+spv::Id USSETranslatorVisitor::load(Operand op, const Imm4 dest_mask, const int shift_offset, bool is_integer) {
+    spv::Id out = utils::load(m_b, m_spirv_params, m_util_funcs, m_features, op, dest_mask, shift_offset);
+    if (is_integer) {
+        out = m_b.createBinOp(spv::OpFMul, type_f32_v[4], out, get_int_max_value_constant(m_b, op.type));
+        spv::Id out_type = m_b.makeVectorType(type_ui32, 4);
+        out = m_b.createUnaryOp(spv::OpConvertSToF, out_type, out);
+    }
+    return out;
+}
+
+void USSETranslatorVisitor::store(Operand dest, spv::Id source, std::uint8_t dest_mask, int shift_offset, bool is_integer) {
+    if (is_integer) {
+        source = m_b.createUnaryOp(spv::OpConvertSToF, type_f32_v[4], source);
+        source = m_b.createBinOp(spv::OpFDiv, type_f32_v[4], source, get_int_max_value_constant(m_b, dest.type));
+    }
+    utils::store(m_b, m_spirv_params, m_util_funcs, m_features, dest, source, dest_mask, shift_offset);
 }
 
 spv::Id USSETranslatorVisitor::swizzle_to_spv_comp(spv::Id composite, spv::Id type, SwizzleChannel swizzle) {
