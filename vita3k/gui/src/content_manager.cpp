@@ -245,7 +245,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     const auto POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
 
-    const auto is_background = gui.apps_background.find(host.io.title_id) != gui.apps_background.end();
+    const auto is_background = gui.apps_background.find(host.app_title_id) != gui.apps_background.end();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -254,7 +254,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     ImGui::Begin("##content_manager", &gui.live_area.content_manager, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.app_title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
 
     ImGui::SetWindowFontScale(1.5f * SCAL.x);
 
@@ -319,7 +319,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Selectable("Themes", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT))) {
-            host.io.title_id = "NPXS10015";
+            host.app_title_id = "NPXS10015";
             pre_run_app(gui, host);
         }
         ImGui::NextColumn();

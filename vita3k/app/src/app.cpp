@@ -51,7 +51,7 @@ void calculate_fps(HostState &host) {
 void set_window_title(HostState &host) {
     if (host.should_update_window_title) {
         const std::string title_to_set = fmt::format("{} | {} ({}) | {} ms/frame ({} frames/sec)", window_title,
-            host.current_app_title, host.io.current_title_id, host.ms_per_frame, host.fps);
+            host.current_app_title, host.io.title_id, host.ms_per_frame, host.fps);
 
         SDL_SetWindowTitle(host.window.get(), title_to_set.c_str());
         host.should_update_window_title = false;

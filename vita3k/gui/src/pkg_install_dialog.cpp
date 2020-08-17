@@ -108,7 +108,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             zRIF.clear();
         } else if (state == "succes") {
             title = "PKG successfully installed";
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s]", host.io.title_id.c_str(), host.app_title.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s]", host.app_title_id.c_str(), host.app_title.c_str());
             if (host.app_category == std::string("gd"))
                 ImGui::TextColored(GUI_COLOR_TEXT, "App version: %s", host.app_version.c_str());
             ImGui::Spacing();

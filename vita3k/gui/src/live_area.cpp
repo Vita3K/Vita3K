@@ -142,17 +142,17 @@ void draw_notice_info(GuiState &gui, HostState &host) {
                 ImGui::PushStyleColor(ImGuiCol_Header, SELECT_COLOR);
                 ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECT_COLOR_HOVERED);
                 ImGui::PushStyleColor(ImGuiCol_HeaderActive, SELECT_COLOR_ACTIVE);
-                if (ImGui::Selectable("##icon", gui.notice_info_new[notice.pos], host.io.current_title_id.empty() || ((notice.type == "content") && (notice.group == "theme")) || (notice.type == "trophy") ? ImGuiSelectableFlags_SpanAllColumns : ImGuiSelectableFlags_Disabled, SELECT_SIZE)) {
+                if (ImGui::Selectable("##icon", gui.notice_info_new[notice.pos], host.io.title_id.empty() || ((notice.type == "content") && (notice.group == "theme")) || (notice.type == "trophy") ? ImGuiSelectableFlags_SpanAllColumns : ImGuiSelectableFlags_Disabled, SELECT_SIZE)) {
                     gui.notice_info_count_new = 0;
                     gui.notice_info_new.clear();
                     if (notice.type == "content") {
                         if (notice.group == "theme")
-                            host.io.title_id = "NPXS10015";
+                            host.app_title_id = "NPXS10015";
                         else
-                            host.io.title_id = notice.id;
+                            host.app_title_id = notice.id;
                         pre_run_app(gui, host);
                     } else {
-                        host.io.title_id = "NPXS10008";
+                        host.app_title_id = "NPXS10008";
                         pre_run_app(gui, host);
                         open_trophy_unlocked(gui, host, notice.id, notice.group);
                     }
@@ -350,7 +350,7 @@ void init_live_area(GuiState &gui, HostState &host) {
         items_pos["psmobile"]["frame4"]["size"] = ImVec2(440.f, 34.f);
     }
 
-    const auto title_id = host.io.current_title_id.empty() ? host.io.title_id : host.io.current_title_id;
+    const auto title_id = host.io.title_id.empty() ? host.app_title_id : host.io.title_id;
     const VitaIoDevice app_device = title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
 
     current_app = int32_t(std::distance(app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps.begin() : gui.app_selector.sys_apps.begin(),
@@ -717,7 +717,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto title_id = host.io.current_title_id.empty() ? host.io.title_id : host.io.current_title_id;
+    const auto title_id = host.io.title_id.empty() ? host.app_title_id : host.io.title_id;
     const VitaIoDevice app_device = title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
     const auto is_background = !gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty();
 
@@ -1192,7 +1192,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     if (!gui.live_area.content_manager && !gui.live_area.manual) {
         const auto wheel_counter = ImGui::GetIO().MouseWheel;
         const auto app_list_size = int32_t(app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps.size() : gui.app_selector.sys_apps.size());
-        if (host.io.current_title_id.empty()) {
+        if (host.io.title_id.empty()) {
             if (ImGui::IsKeyPressed(host.cfg.keyboard_button_up) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_up) || (wheel_counter == 1)) {
                 if (current_app > 0)
                     --current_app;
@@ -1205,8 +1205,8 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                     current_app = 0;
             }
 
-            if (host.io.title_id != (app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps[current_app].title_id : gui.app_selector.sys_apps[current_app].title_id)) {
-                host.io.title_id = (app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps[current_app].title_id : gui.app_selector.sys_apps[current_app].title_id);
+            if (host.app_title_id != (app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps[current_app].title_id : gui.app_selector.sys_apps[current_app].title_id)) {
+                host.app_title_id = (app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps[current_app].title_id : gui.app_selector.sys_apps[current_app].title_id);
                 host.app_title = (app_device == VitaIoDevice::ux0 ? gui.app_selector.user_apps[current_app].title_id : gui.app_selector.sys_apps[current_app].title_id);
                 init_live_area(gui, host);
             }

@@ -138,7 +138,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
     SfoFile sfo_handle;
     std::string content_id, dlc_foldername;
     sfo::load(sfo_handle, params);
-    sfo::get_data_by_key(host.io.title_id, sfo_handle, "TITLE_ID");
+    sfo::get_data_by_key(host.app_title_id, sfo_handle, "TITLE_ID");
     sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
     sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
     sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
@@ -151,13 +151,13 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
             host.app_title += " (Theme)";
         } else {
             dlc_foldername = content_id.substr(20);
-            output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.io.title_id / dlc_foldername };
+            output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.app_title_id / dlc_foldername };
             host.app_title = host.app_title + " (DLC)";
         }
     } else if (host.app_category == "gp")
-        output_path = { fs::path(host.pref_path) / "ux0/patch" / host.io.title_id };
+        output_path = { fs::path(host.pref_path) / "ux0/patch" / host.app_title_id };
     else
-        output_path = { fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
+        output_path = { fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
 
     const auto created = fs::create_directories(output_path);
     if (!created) {
@@ -177,7 +177,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
                 SDL_GL_SwapWindow(host.window.get());
             }
             if (status == gui::CANCEL_STATE) {
-                LOG_INFO("{} already installed, launching application...", host.io.title_id);
+                LOG_INFO("{} already installed, launching application...", host.app_title_id);
                 fclose(vpk_fp);
                 return true;
             } else if (status == gui::UNK_STATE) {
@@ -185,7 +185,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
             }
         } else if (gui->file_menu.archive_install_dialog && !gui->content_reinstall_confirm) {
             vfs::FileBuffer params;
-            vfs::read_app_file(params, host.pref_path, host.io.title_id, sfo_path);
+            vfs::read_app_file(params, host.pref_path, host.app_title_id, sfo_path);
             sfo::load(host.sfo_handle, params);
             sfo::get_data_by_key(gui->app_ver, host.sfo_handle, "APP_VER");
             gui->content_reinstall_confirm = true;
@@ -228,7 +228,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
         }
     }
 
-    LOG_INFO("{} [{}] installed succesfully!", host.io.title_id, host.app_title);
+    LOG_INFO("{} [{}] installed succesfully!", host.app_title_id, host.app_title);
     fclose(vpk_fp);
     return true;
 }
@@ -267,18 +267,18 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         return InvalidApplicationPath;
 
     vfs::FileBuffer params;
-    bool params_found = vfs::read_app_file(params, host.pref_path, host.io.current_title_id, "sce_sys/param.sfo");
+    bool params_found = vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
 
     if (params_found) {
         sfo::load(host.sfo_handle, params);
 
         sfo::get_data_by_key(host.current_app_title, host.sfo_handle, "TITLE");
         std::replace(host.current_app_title.begin(), host.current_app_title.end(), '\n', ' '); // Restrict title to one line
-        sfo::get_data_by_key(host.io.current_title_id, host.sfo_handle, "TITLE_ID");
+        sfo::get_data_by_key(host.io.title_id, host.sfo_handle, "TITLE_ID");
         sfo::get_data_by_key(host.app_version, host.sfo_handle, "APP_VER");
         sfo::get_data_by_key(host.app_category, host.sfo_handle, "CATEGORY");
     } else {
-        host.current_app_title = host.io.current_title_id; // Use TitleID as Title
+        host.current_app_title = host.io.title_id; // Use TitleID as Title
         host.app_version = host.app_category = "N/A";
     }
 
@@ -294,7 +294,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
-        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.current_app_title) + " - [" + host.io.current_title_id + "].log") };
+        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.current_app_title) + " - [" + host.io.title_id + "].log") };
         if (logging::add_sink(log_name) != Success)
             return InitConfigFailed;
     }
@@ -312,7 +312,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     }
 
     LOG_INFO("Title: {}", host.current_app_title);
-    LOG_INFO("Serial: {}", host.io.current_title_id);
+    LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Version: {}", host.app_version);
     LOG_INFO("Category: {}", host.app_category);
 
@@ -325,7 +325,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     }
 
     // Load pre-loaded libraries
-    const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.current_title_id / "sce_module" };
+    const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_module" };
     const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
     if (is_app) {
         // Load application module
@@ -359,7 +359,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
 
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
-    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.current_title_id, EBOOT_PATH)) {
+    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, EBOOT_PATH)) {
         SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
@@ -406,14 +406,14 @@ bool handle_events(HostState &host, GuiState &gui) {
                     gui.is_capturing_keys = false;
                 }
             }
-            if (!host.io.current_title_id.empty()) {
+            if (!host.io.title_id.empty()) {
                 // toggle gui state
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
                 // Show/Hide Live Area during app run
                 // TODO pause app running
                 if (!gui.live_area.manual && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {
-                    if (gui.live_area_contents.find(host.io.current_title_id) == gui.live_area_contents.end())
+                    if (gui.live_area_contents.find(host.io.title_id) == gui.live_area_contents.end())
                         gui::init_live_area(gui, host);
                     gui.live_area.live_area_screen = !gui.live_area.live_area_screen;
                 }
@@ -469,7 +469,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
 
 #if DISCORD_RPC
     if (host.cfg.discord_rich_presence)
-        discord::update_presence(host.io.title_id, host.app_title);
+        discord::update_presence(host.io.title_id, host.current_app_title);
 #endif
 
     return Success;

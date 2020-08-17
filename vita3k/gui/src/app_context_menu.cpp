@@ -29,22 +29,22 @@
 namespace gui {
 
 void delete_app(GuiState &gui, HostState &host) {
-    const fs::path app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
+    const fs::path app_path{ fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
 
-    LOG_INFO_IF(fs::remove_all(app_path), "Application successfully deleted '{} [{}]'.", host.io.title_id, host.app_title);
+    LOG_INFO_IF(fs::remove_all(app_path), "Application successfully deleted '{} [{}]'.", host.app_title_id, host.app_title);
 
     if (!fs::exists(app_path)) {
         gui.delete_app_icon = true;
-        gui.app_selector.user_apps.erase(get_app_index(gui, host.io.title_id));
+        gui.app_selector.user_apps.erase(get_app_index(gui, host.app_title_id));
     } else
-        LOG_ERROR("Failed to delete '{} [{}]'.", host.io.title_id, host.app_title);
+        LOG_ERROR("Failed to delete '{} [{}]'.", host.app_title_id, host.app_title);
 }
 
 static std::map<double, std::string> update_history_infos;
 
 static bool get_update_history(GuiState &gui, HostState &host) {
     update_history_infos.clear();
-    const auto change_info_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_sys/changeinfo/" };
+    const auto change_info_path{ fs::path(host.pref_path) / "ux0/app" / host.app_title_id / "sce_sys/changeinfo/" };
 
     std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", host.cfg.sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", host.cfg.sys_lang) : "changeinfo.xml";
 
@@ -99,30 +99,30 @@ static std::string context_dialog;
 static auto information = false;
 
 void draw_app_context_menu(GuiState &gui, HostState &host) {
-    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
-    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / host.io.title_id };
-    const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user/00/savedata" / host.io.title_id };
-    const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / host.io.title_id };
+    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
+    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / host.app_title_id };
+    const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user/00/savedata" / host.app_title_id };
+    const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / host.app_title_id };
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.3f);
         if (ImGui::MenuItem("Boot", host.app_short_title.c_str()))
             pre_run_app(gui, host);
-        if (host.io.title_id.find("NPXS") == std::string::npos) {
+        if (host.app_title_id.find("NPXS") == std::string::npos) {
             if (ImGui::MenuItem("Check App Compatibility")) {
-                const std::string compat_url = host.io.title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + host.io.title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
+                const std::string compat_url = host.app_title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + host.app_title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
                 system((OS_PREFIX + compat_url).c_str());
             }
             if (ImGui::BeginMenu("Copy App Info")) {
                 if (ImGui::MenuItem("ID and Name")) {
                     ImGui::LogToClipboard();
-                    ImGui::LogText("%s [%s]", host.io.title_id.c_str(), host.app_title.c_str());
+                    ImGui::LogText("%s [%s]", host.app_title_id.c_str(), host.app_title.c_str());
                     ImGui::LogFinish();
                 }
                 if (ImGui::MenuItem("ID")) {
                     ImGui::LogToClipboard();
-                    ImGui::LogText("%s", host.io.title_id.c_str());
+                    ImGui::LogText("%s", host.app_title_id.c_str());
                     ImGui::LogFinish();
                 }
                 if (ImGui::MenuItem("Name")) {
@@ -159,13 +159,13 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
                 if (get_update_history(gui, host))
                     context_dialog = "history";
                 else
-                    LOG_WARN("Patch note Error for title: {}", host.io.title_id);
+                    LOG_WARN("Patch note Error for title: {}", host.app_title_id);
             }
         }
         if (ImGui::MenuItem("Information", nullptr, &information)) {
-            if (host.io.title_id.find("NPXS") == std::string::npos) {
-                get_app_info(gui, host, host.io.title_id);
-                const auto app_size = get_app_size(host, host.io.title_id);
+            if (host.app_title_id.find("NPXS") == std::string::npos) {
+                get_app_info(gui, host, host.app_title_id);
+                const auto app_size = get_app_size(host, host.app_title_id);
                 gui.app_selector.app_info.size = app_size;
             }
         }
@@ -208,9 +208,9 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * scal.y)));
         } else {
             // Delete Data
-            if (gui.app_selector.icons.find(host.io.title_id) != gui.app_selector.icons.end()) {
+            if (gui.app_selector.icons.find(host.app_title_id) != gui.app_selector.icons.end()) {
                 ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), 24.f * scal.y));
-                ImGui::Image(gui.app_selector.icons[host.io.title_id], PUPOP_ICON_SIZE);
+                ImGui::Image(gui.app_selector.icons[host.app_title_id], PUPOP_ICON_SIZE);
             }
             ImGui::SetWindowFontScale(1.6f * scal.x);
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(host.app_short_title.c_str()).x / 2.f));
@@ -256,23 +256,23 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
         ImGui::SetCursorPos(ImVec2(10.0f * scal.x, 10.0f * scal.y));
         if (ImGui::Button("X", ImVec2(40.f * scal.x, 40.f * scal.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
             information = false;
-        if (gui.app_selector.icons.find(host.io.title_id) != gui.app_selector.icons.end()) {
+        if (gui.app_selector.icons.find(host.app_title_id) != gui.app_selector.icons.end()) {
             ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * scal.y));
-            ImGui::Image(gui.app_selector.icons[host.io.title_id], INFO_ICON_SIZE);
+            ImGui::Image(gui.app_selector.icons[host.app_title_id], INFO_ICON_SIZE);
         }
         ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize("Name  ").x, INFO_ICON_SIZE.y + (50.f * scal.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "Name ");
         ImGui::SameLine();
         ImGui::PushTextWrapPos(display_size.x - (85.f * scal.x));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, host.io.title_id)->title.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, host.app_title_id)->title.c_str());
         ImGui::PopTextWrapPos();
-        if (host.io.title_id.find("NPXS") == std::string::npos) {
+        if (host.app_title_id.find("NPXS") == std::string::npos) {
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Trophy Earning  ").x);
             ImGui::TextColored(GUI_COLOR_TEXT, "Trophy Earning  %s", gui.app_selector.app_info.trophy.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Parental Controls  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls  Level %d", *reinterpret_cast<const uint16_t *>(get_app_index(gui, host.io.title_id)->parental_level.c_str()));
+            ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls  Level %d", *reinterpret_cast<const uint16_t *>(get_app_index(gui, host.app_title_id)->parental_level.c_str()));
             ImGui::Spacing();
             ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize("Updated  ").x));
             ImGui::TextColored(GUI_COLOR_TEXT, "Updated  %s", gui.app_selector.app_info.updated.c_str());
@@ -281,7 +281,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Size  %s", get_unit_size(gui.app_selector.app_info.size).c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Version  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Version  %s", get_app_index(gui, host.io.title_id)->app_ver.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "Version  %s", get_app_index(gui, host.app_title_id)->app_ver.c_str());
         }
         ImGui::End();
     }

@@ -212,7 +212,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
         sfo::get_data_by_key(host.app_title, sfo_file, "TITLE");
     std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
     boost::trim(host.app_title);
-    sfo::get_data_by_key(host.io.title_id, sfo_file, "TITLE_ID");
+    sfo::get_data_by_key(host.app_title_id, sfo_file, "TITLE_ID");
     sfo::get_data_by_key(host.app_category, sfo_file, "CATEGORY");
     sfo::get_data_by_key(content_id, sfo_file, "CONTENT_ID");
     if (type == PkgType::PKG_TYPE_VITA_DLC)
@@ -226,15 +226,15 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
 
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
-        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "app/" + host.io.title_id, host.pref_path);
+        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "app/" + host.app_title_id, host.pref_path);
         break;
     case PkgType::PKG_TYPE_VITA_DLC:
-        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "addcont/" + host.io.title_id + "/" + content_id, host.pref_path);
+        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "addcont/" + host.app_title_id + "/" + content_id, host.pref_path);
         break;
     case PkgType::PKG_TYPE_VITA_PATCH:
         app::error_dialog("Sorry, but game updates/patches are not supported at this time.", nullptr);
         return false;
-        //root_path = device::construct_emulated_path(VitaIoDevice::ux0, "patch/" + title_id, pref_path);
+        //root_path = device::construct_emulated_path(VitaIoDevice::ux0, "patch/" + host.app_title_id, pref_path);
     case PkgType::PKG_TYPE_VITA_THEME:
         root_path = device::construct_emulated_path(VitaIoDevice::ux0, "theme/" + content_id, host.pref_path);
         host.app_category = "theme";
