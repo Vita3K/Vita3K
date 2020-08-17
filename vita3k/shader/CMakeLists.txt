@@ -16,9 +16,11 @@ add_library(
 	include/shader/spirv_recompiler.h
 
 	src/translator/alu.cpp
+	src/translator/ialu.cpp
 	src/translator/branch_cond.cpp
 	src/translator/data.cpp
 	src/translator/special.cpp
+	src/translator/illegal.cpp
 	src/translator/texture.cpp
 	src/translator/utils.cpp
 	src/usse_disasm.cpp
