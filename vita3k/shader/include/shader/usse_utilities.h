@@ -12,12 +12,10 @@ struct FeatureState;
 namespace shader::usse::utils {
 
 struct SpirvUtilFunctions {
-    spv::Function *pack_f16{ nullptr };
-    spv::Function *unpack_f16{ nullptr };
+    std::map<DataType, spv::Function *> unpack_funcs;
+    std::map<DataType, spv::Function *> pack_funcs;
     spv::Function *pack_fx8{ nullptr };
     spv::Function *unpack_fx8{ nullptr };
-    spv::Function *pack_u8{ nullptr };
-    spv::Function *unpack_u8{ nullptr };
 };
 
 spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask);
