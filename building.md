@@ -2,7 +2,7 @@
 
 ## Windows (Visual Studio)
 
-- Install Visual Studio 2017 or 2019 and choose to install `Desktop development with C++`. You will get compiler and `cmake` required for building.
+- Install Visual Studio 2017 or 2019 and choose to install `Desktop development with C++`. You will get the compiler and `cmake` required for building.
 
 Example for Visual Studio 2019:
 
