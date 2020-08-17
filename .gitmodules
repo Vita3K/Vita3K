@@ -84,3 +84,9 @@
 [submodule "external/psvpfstools"]
 	path = external/psvpfstools
 	url = https://github.com/korewawatchful/psvpfstools.git
+[submodule "external/dynarmic"]
+	path = external/dynarmic
+	url = https://github.com/sunho/dynarmic.git
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt

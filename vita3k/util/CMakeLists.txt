@@ -21,4 +21,4 @@ add_library(
 )
 
 target_include_directories(util PUBLIC include)
-target_link_libraries(util PUBLIC ${Boost_LIBRARIES} spdlog)
+target_link_libraries(util PUBLIC ${Boost_LIBRARIES} fmt spdlog)
