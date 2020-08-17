@@ -1193,6 +1193,36 @@ bool USSETranslatorVisitor::sop(
     return true;
 }
 
+bool shader::usse::USSETranslatorVisitor::sop2() {
+    LOG_DISASM("Unimplmenet Opcode: sop2");
+    return true;
+}
+
+bool shader::usse::USSETranslatorVisitor::sop3() {
+    LOG_DISASM("Unimplmenet Opcode: sop3");
+    return true;
+}
+
+bool shader::usse::USSETranslatorVisitor::i8mad() {
+    LOG_DISASM("Unimplmenet Opcode: i8mad");
+    return true;
+}
+
+bool shader::usse::USSETranslatorVisitor::i16mad() {
+    LOG_DISASM("Unimplmenet Opcode: i16mad");
+    return true;
+}
+
+bool shader::usse::USSETranslatorVisitor::i32mad() {
+    LOG_DISASM("Unimplmenet Opcode: i32mad");
+    return true;
+}
+
+bool shader::usse::USSETranslatorVisitor::i8mad2() {
+    LOG_DISASM("Unimplmenet Opcode: i8mad2");
+    return true;
+}
+
 enum class DualSrcId {
     INTERAL0,
     INTERNAL1,

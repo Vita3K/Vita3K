@@ -28,6 +28,26 @@
 using namespace shader;
 using namespace usse;
 
+bool shader::usse::USSETranslatorVisitor::illegal22() {
+    LOG_ERROR("Illegal shader opcode: 22");
+    return false;
+}
+
+bool shader::usse::USSETranslatorVisitor::illegal23() {
+    LOG_ERROR("Illegal shader opcode: 23");
+    return false;
+}
+
+bool shader::usse::USSETranslatorVisitor::illegal24() {
+    LOG_ERROR("Illegal shader opcode: 24");
+    return false;
+}
+
+bool shader::usse::USSETranslatorVisitor::illegal27() {
+    LOG_ERROR("Illegal shader opcode: 27");
+    return false;
+}
+
 bool USSETranslatorVisitor::phas(
     Imm1 sprvv,
     Imm1 end,
@@ -48,8 +68,7 @@ bool USSETranslatorVisitor::phas(
     return true;
 }
 
-bool USSETranslatorVisitor::nop(
-    ) {
+bool USSETranslatorVisitor::nop() {
     LOG_DISASM("{:016x}: NOP", m_instr);
     return true;
 }
