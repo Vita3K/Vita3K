@@ -357,6 +357,27 @@ public:
         Imm7 src1_n,
         Imm7 src2_n);
 
+    bool imad(ExtPredicate pred,
+        Imm1 nosched,
+        Imm2 sn,
+        bool dest_bank_ext,
+        Imm1 end,
+        bool src1_bank_ext,
+        bool src2_bank_ext,
+        bool src0_bank_ext,
+        Imm3 count,
+        bool is_signed,
+        Imm1 negative_src1,
+        Imm1 negative_src2,
+        Imm1 src0_bank,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm7 src0_n,
+        Imm7 src1_n,
+        Imm7 src2_n);
+
     bool vtst(ExtPredicate pred,
         Imm1 skipinv,
         Imm1 onceonly,
