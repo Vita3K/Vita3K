@@ -949,90 +949,6 @@ SMP:
         - src2_n:
             size: 7
             offset: 0
-# 11101 11110
-VLDST:
-    description: Load and Store
-    members:
-        - op1_cnst: '111'
-        - op1:
-            size: 2
-            offset: 59
-        - pred:
-            size: 3
-            offset: 56
-            type: ExtPredicate
-        - skipinv:
-            size: 1
-            offset: 55
-        - nosched:
-            size: 1
-            offset: 54
-        - moe_expand:
-            size: 1
-            offest: 53
-        - sync_start:
-            size: 1
-            offset: 52
-        - cache_ext:
-            size: 1
-            offset: 51
-        - src0_bank_ext:
-            size: 1
-            offset: 50
-        - src1_bank_ext:
-            size: 1
-            offset: 49
-        - src2_bank_ext:
-            size: 1
-            offset: 48
-        - mask_count:
-            size: 4
-            offset: 44
-        - addr_mode:
-            size: 2
-            offset: 42
-        - mode:
-            size: 2
-            offset: 40
-        - dest_bank_primattr:
-            size: 1
-            offset: 39
-        - range_enable:
-            size: 1
-            offset: 38
-        - data_type:
-            size: 2
-            offset: 36
-        - increment_or_decrement:
-            size: 1
-            offset: 35
-        - src0_bank:
-            size: 1
-            offset: 34
-        - cache_by_pass12:
-            size: 1
-            offset: 33
-        - drc_sel:
-            size: 1
-            offset: 32
-        - src1_bank:
-            size: 2
-            offset: 30
-        - src2_bank:
-            size: 2
-            offset: 28
-        - dest_n:
-            size: 7
-            offset: 21
-        - src0_n:
-            size: 7
-            offset: 14
-        - src1_n:
-            size: 7
-            offset: 7
-        - src2_n:
-            size: 7
-            offset: 0
 PHAS:
     description: Phase
     members:
@@ -1316,3 +1232,87 @@ SPEC:
         - category:
             size: 2
             type: SpecialCategory
+# 11101 11110
+VLDST:
+    description: Load and Store
+    members:
+        - op1_cnst: '111'
+        - op1:
+            size: 2
+            offset: 59
+        - pred:
+            size: 3
+            offset: 56
+            type: ExtPredicate
+        - skipinv:
+            size: 1
+            offset: 55
+        - nosched:
+            size: 1
+            offset: 54
+        - moe_expand:
+            size: 1
+            offest: 53
+        - sync_start:
+            size: 1
+            offset: 52
+        - cache_ext:
+            size: 1
+            offset: 51
+        - src0_bank_ext:
+            size: 1
+            offset: 50
+        - src1_bank_ext:
+            size: 1
+            offset: 49
+        - src2_bank_ext:
+            size: 1
+            offset: 48
+        - mask_count:
+            size: 4
+            offset: 44
+        - addr_mode:
+            size: 2
+            offset: 42
+        - mode:
+            size: 2
+            offset: 40
+        - dest_bank_primattr:
+            size: 1
+            offset: 39
+        - range_enable:
+            size: 1
+            offset: 38
+        - data_type:
+            size: 2
+            offset: 36
+        - increment_or_decrement:
+            size: 1
+            offset: 35
+        - src0_bank:
+            size: 1
+            offset: 34
+        - cache_by_pass12:
+            size: 1
+            offset: 33
+        - drc_sel:
+            size: 1
+            offset: 32
+        - src1_bank:
+            size: 2
+            offset: 30
+        - src2_bank:
+            size: 2
+            offset: 28
+        - dest_n:
+            size: 7
+            offset: 21
+        - src0_n:
+            size: 7
+            offset: 14
+        - src1_n:
+            size: 7
+            offset: 7
+        - src2_n:
+            size: 7
+            offset: 0

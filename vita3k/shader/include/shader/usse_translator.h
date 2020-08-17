@@ -569,33 +569,6 @@ public:
         Imm7 src1_n,
         Imm7 src2_n);
 
-    bool vldst(Imm2 op1,
-        ExtPredicate pred,
-        Imm1 skipinv,
-        Imm1 nosched,
-        Imm1 moe_expand,
-        Imm1 sync_start,
-        Imm1 cache_ext,
-        Imm1 src0_bank_ext,
-        Imm1 src1_bank_ext,
-        Imm1 src2_bank_ext,
-        Imm4 mask_count,
-        Imm2 addr_mode,
-        Imm2 mode,
-        Imm1 dest_bank_primattr,
-        Imm1 range_enable,
-        Imm2 data_type,
-        Imm1 increment_or_decrement,
-        Imm1 src0_bank,
-        Imm1 cache_by_pass12,
-        Imm1 drc_sel,
-        Imm2 src1_bank,
-        Imm2 src2_bank,
-        Imm7 dest_n,
-        Imm7 src0_n,
-        Imm7 src1_n,
-        Imm7 src2_n);
-
     bool phas(Imm1 sprvv,
         Imm1 end,
         Imm1 imm,
@@ -644,6 +617,33 @@ public:
 
     bool spec(bool special,
         SpecialCategory category);
+
+    bool vldst(Imm2 op1,
+        ExtPredicate pred,
+        Imm1 skipinv,
+        Imm1 nosched,
+        Imm1 moe_expand,
+        Imm1 sync_start,
+        Imm1 cache_ext,
+        Imm1 src0_bank_ext,
+        Imm1 src1_bank_ext,
+        Imm1 src2_bank_ext,
+        Imm4 mask_count,
+        Imm2 addr_mode,
+        Imm2 mode,
+        Imm1 dest_bank_primattr,
+        Imm1 range_enable,
+        Imm2 data_type,
+        Imm1 increment_or_decrement,
+        Imm1 src0_bank,
+        Imm1 cache_by_pass12,
+        Imm1 drc_sel,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm7 src0_n,
+        Imm7 src1_n,
+        Imm7 src2_n);
     // Instructions end
 private:
     // SPIR-V emitter
