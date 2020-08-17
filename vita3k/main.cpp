@@ -153,8 +153,8 @@ int main(int argc, char *argv[]) {
             }
 
             // TODO: Clean this, ie. make load_app overloads called depending on run type
-            if (!host.io.current_title_id.empty()) {
-                vpk_path_wide = string_utils::utf_to_wide(host.io.current_title_id);
+            if (!host.io.title_id.empty()) {
+                vpk_path_wide = string_utils::utf_to_wide(host.io.title_id);
                 run_type = app::AppRunType::Extracted;
             }
         }
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
             return FileNotFound;
         }
     } else if (run_type == app::AppRunType::Extracted) {
-        host.io.current_title_id = string_utils::wide_to_utf(vpk_path_wide);
+        host.io.title_id = string_utils::wide_to_utf(vpk_path_wide);
     }
 
     Ptr<const void> entry_point;
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
-    gui::init_app_background(gui, host);
+    gui::init_app_background(gui, host, host.io.title_id);
     host.renderer->features.hardware_flip = host.cfg.hardware_flip;
 
     app::gl_screen_renderer gl_renderer;
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
     while (host.frame_count == 0) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.current_title_id.c_str());
+            host.io.title_id.c_str());
 
         gl_renderer.render(host);
 
@@ -208,21 +208,25 @@ int main(int argc, char *argv[]) {
             // Display application background
             ImGui::GetForegroundDrawList()->AddImage(gui.apps_background[host.io.title_id],
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+        // Application background not found
+        else if (!gui.theme_backgrounds.empty())
+            // Display theme background if exist
+            ImGui::GetForegroundDrawList()->AddImage(gui.theme_backgrounds[0], ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
         else if (!gui.user_backgrounds.empty())
-            // Application background not found, Display user background if exist
-            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]],
+            // Display user background if exist
+            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.user_backgrounds[0]],
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
 
         host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());
 
-        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.current_app_title, host.io.current_title_id).c_str());
+        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.current_app_title, host.io.title_id).c_str());
     }
 
     while (handle_events(host, gui)) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.current_title_id.c_str());
+            host.io.title_id.c_str());
 
         gl_renderer.render(host);
 

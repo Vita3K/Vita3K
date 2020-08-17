@@ -1639,7 +1639,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     fp->is_maskupdate = false;
     fp->program = programId->program;
 
-    if (!renderer::create(fp->renderer_data, *host.renderer, *programId->program.get(mem), blendInfo, host.renderer->gxp_ptr_map, host.base_path.c_str(), host.io.current_title_id.c_str())) {
+    if (!renderer::create(fp->renderer_data, *host.renderer, *programId->program.get(mem), blendInfo, host.renderer->gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 

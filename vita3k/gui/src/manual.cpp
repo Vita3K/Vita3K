@@ -33,7 +33,7 @@ static std::map<std::string, std::pair<bool, bool>> zoom;
 
 bool init_manual(GuiState &gui, HostState &host) {
     current_page = 0;
-    const auto title_id = host.io.current_title_id.empty() ? host.io.title_id : host.io.current_title_id;
+    const auto title_id = host.io.title_id.empty() ? host.app_title_id : host.io.title_id;
     if (gui.manuals.find(title_id) == gui.manuals.end()) {
         std::vector<std::string> manual_page_list;
         const auto app_path{ fs::path(host.pref_path) / "ux0/app" / title_id };
@@ -89,7 +89,7 @@ void draw_manual(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowBgAlpha(0.999f);
     ImGui::Begin("##manual", &gui.live_area.manual, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    const auto title_id = host.io.current_title_id.empty() ? host.io.title_id : host.io.current_title_id;
+    const auto title_id = host.io.title_id.empty() ? host.io.title_id : host.io.title_id;
     if (zoom[title_id].first && ImGui::IsMouseDoubleClicked(0)) {
         zoom[title_id].second ? size_page[title_id]["current"] = size_page[title_id]["mini"] : size_page[title_id]["current"] = size_page[title_id]["max"];
         zoom[title_id].second = !zoom[title_id].second;

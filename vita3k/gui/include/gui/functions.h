@@ -47,7 +47,7 @@ void get_trophy_np_com_id_list(GuiState &gui, HostState &host);
 std::string get_unit_size(const size_t &size);
 void get_user_apps_title(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);
-void init_app_background(GuiState &gui, HostState &host);
+void init_app_background(GuiState &gui, HostState &host, const std::string &title_id);
 void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> &apps_list);
 void init_live_area(GuiState &gui, HostState &host);
 bool init_manual(GuiState &gui, HostState &host);

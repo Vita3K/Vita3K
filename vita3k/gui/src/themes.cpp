@@ -550,7 +550,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
 
     draw_information_bar(gui);
 
-    const auto is_background = gui.apps_background.find(host.io.title_id) != gui.apps_background.end();
+    const auto is_background = gui.apps_background.find(host.app_title_id) != gui.apps_background.end();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -558,7 +558,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##themes", &gui.live_area.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.app_title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     ImGui::SetWindowFontScale(1.6f * SCAL.x);
     const auto theme_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
     ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
@@ -919,7 +919,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                 menu.clear();
         } else {
             if (gui.live_area.content_manager)
-                host.io.title_id = "NPXS10026";
+                host.app_title_id = "NPXS10026";
             gui.live_area.theme_background = false;
         }
     }

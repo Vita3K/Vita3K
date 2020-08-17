@@ -82,20 +82,20 @@ void pre_load_app(GuiState &gui, HostState &host) {
 }
 
 void pre_run_app(GuiState &gui, HostState &host) {
-    if (host.io.title_id.find("NPXS") == std::string::npos) {
-        host.io.current_title_id = host.io.title_id;
+    if (host.app_title_id.find("NPXS") == std::string::npos) {
+        host.io.title_id = host.app_title_id;
 
         if (host.cfg.overwrite_config) {
             host.cfg.last_app = host.io.title_id.c_str();
             config::serialize_config(host.cfg, host.cfg.config_path);
         }
     } else {
-        init_app_background(gui, host);
+        init_app_background(gui, host, host.app_title_id);
 
-        if (host.io.title_id == "NPXS10008") {
+        if (host.app_title_id == "NPXS10008") {
             get_trophy_np_com_id_list(gui, host);
             gui.live_area.trophy_collection = true;
-        } else if (host.io.title_id == "NPXS10015") {
+        } else if (host.app_title_id == "NPXS10015") {
             get_themes_list(gui, host);
             gui.live_area.theme_background = true;
         } else {
@@ -168,8 +168,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImVec2(0.f, MENUBAR_HEIGHT), display_size);
 
     if (gui.delete_app_icon) {
-        if (gui.app_selector.icons.find(host.io.title_id) != gui.app_selector.icons.end())
-            gui.app_selector.icons.erase(host.io.title_id);
+        if (gui.app_selector.icons.find(host.app_title_id) != gui.app_selector.icons.end())
+            gui.app_selector.icons.erase(host.app_title_id);
         gui.delete_app_icon = false;
     }
 
@@ -371,7 +371,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 if (app.title_id.find("NPXS") == std::string::npos) {
                     if (!fs::exists(fs::path(host.pref_path) / "ux0/app" / app.title_id)) {
                         host.app_title = app.title;
-                        host.io.title_id = app.title_id;
+                        host.app_title_id = app.title_id;
                         LOG_ERROR("Application not found: {} [{}], deleting the entry for it.", app.title_id, app.title);
                         delete_app(gui, host);
                     }
@@ -395,9 +395,9 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     host.app_version = app.app_ver;
                     host.app_short_title = app.stitle;
                     host.app_title = app.title;
-                    host.io.title_id = app.title_id;
+                    host.app_title_id = app.title_id;
                 }
-                if (host.io.title_id == app.title_id)
+                if (host.app_title_id == app.title_id)
                     draw_app_context_menu(gui, host);
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();

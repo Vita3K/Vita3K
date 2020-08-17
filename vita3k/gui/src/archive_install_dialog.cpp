@@ -55,7 +55,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginPopupModal("Content reinstallation", &gui.content_reinstall_confirm, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
-        ImGui::TextColored(GUI_COLOR_TEXT, "This content is already installed:\n%s [%s].", host.io.title_id.c_str(), host.app_title.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "This content is already installed:\n%s [%s].", host.app_title_id.c_str(), host.app_title.c_str());
         if (!gui.app_ver.empty() && gui.app_ver != host.app_version)
             ImGui::TextColored(GUI_COLOR_TEXT, "Update content version from: %s to: %s.", gui.app_ver.c_str(), host.app_version.c_str());
         ImGui::Spacing();
@@ -85,7 +85,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginPopupModal("Content installation succes", &content_install_confirm, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 5);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Succesfully installed content.\n%s [%s] %s", host.io.title_id.c_str(), host.app_title.c_str(), host.app_version.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "Succesfully installed content.\n%s [%s] %s", host.app_title_id.c_str(), host.app_title.c_str(), host.app_version.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
