@@ -29,6 +29,7 @@
 #include <io/vfs.h>
 #include <util/fs.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <SDL_video.h>
 
@@ -158,14 +159,23 @@ static void init_live_area_font(GuiState &gui, HostState &host) {
 
 static void init_user_backgrounds(GuiState &gui, HostState &host) {
     for (const auto &background : host.cfg.user_backgrounds) {
-        if (!fs::exists(fs::path(background))) {
+        const std::wstring background_wstr = string_utils::utf_to_wide(background);
+
+        if (!fs::exists(fs::path(background_wstr))) {
             LOG_WARN("Image doesn't exist: {}.", background);
             continue;
         }
 
         int32_t width = 0;
         int32_t height = 0;
-        stbi_uc *data = stbi_load(background.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+
+#ifdef _WIN32
+        FILE *f = _wfopen(background_wstr.c_str(), L"rb");
+#else
+        FILE *f = fopen(background.c_str(), "rb");
+#endif
+
+        stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
 
         if (!data) {
             LOG_ERROR("Invalid or corrupted image: {}.", background);

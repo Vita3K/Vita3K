@@ -21,6 +21,7 @@
 #include <gui/functions.h>
 
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <io/device.h>
 
@@ -31,32 +32,40 @@
 namespace gui {
 
 static void add_user_image_background(GuiState &gui, HostState &host) {
-    nfdchar_t *image_path = nullptr;
+    nfdchar_t *image_path;
     nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &image_path);
 
     if ((result == NFD_OKAY) && (gui.user_backgrounds.find(image_path) == gui.user_backgrounds.end())) {
-        const std::string image_path_str = static_cast<std::string>(image_path);
+        const std::wstring image_path_wstr = string_utils::utf_to_wide(image_path);
 
-        if (!fs::exists(fs::path(image_path_str))) {
-            LOG_WARN("Image doesn't exist: {}.", image_path_str);
+        if (!fs::exists(fs::path(image_path_wstr))) {
+            LOG_WARN("Image doesn't exist: {}.", image_path);
             return;
         }
 
         int32_t width = 0;
         int32_t height = 0;
-        stbi_uc *data = stbi_load(image_path_str.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+
+#ifdef _WIN32
+        FILE *f = _wfopen(image_path_wstr.c_str(), L"rb");
+#else
+        FILE *f = fopen(image_path, "rb");
+#endif
+
+        stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
 
         if (!data) {
             LOG_ERROR("Invalid or corrupted image: {}.", image_path);
             return;
         }
 
-        gui.user_backgrounds[image_path_str].init(gui.imgui_state.get(), data, width, height);
+        gui.user_backgrounds[image_path].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
+        fclose(f);
 
-        if (gui.user_backgrounds[image_path_str]) {
+        if (gui.user_backgrounds[image_path]) {
             gui.current_user_bg = 0;
-            host.cfg.user_backgrounds.push_back(image_path_str);
+            host.cfg.user_backgrounds.push_back(image_path);
             host.cfg.use_theme_background = false;
             config::serialize_config(host.cfg, host.cfg.config_path);
         }
@@ -148,7 +157,9 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
 }
 
 bool init_user_start_background(GuiState &gui, const std::string &image_path) {
-    if (!fs::exists(image_path)) {
+    const std::wstring image_path_wstr = string_utils::utf_to_wide(image_path);
+
+    if (!fs::exists(image_path_wstr)) {
         LOG_WARN("Image doesn't exist: {}.", image_path);
         return false;
     }
@@ -156,7 +167,14 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     gui.start_background = {};
     int32_t width = 0;
     int32_t height = 0;
-    stbi_uc *data = stbi_load(image_path.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+
+#ifdef _WIN32
+    FILE *f = _wfopen(image_path_wstr.c_str(), L"rb");
+#else
+    FILE *f = fopen(image_path.c_str(), "rb");
+#endif
+
+    stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
         LOG_ERROR("Invalid or corrupted image: {}.", image_path);
@@ -165,6 +183,7 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
 
     gui.start_background.init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
+    fclose(f);
 
     date["date"] = ImVec2(898, 186.f);
     date["clock"] = ImVec2(898.f, 146.f);
@@ -860,11 +879,11 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                         start.clear();
                     }
                 } else if (start == "image") {
-                    nfdchar_t *image_path = nullptr;
+                    nfdchar_t *image_path;
                     nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &image_path);
 
-                    if ((result == NFD_OKAY) && init_user_start_background(gui, static_cast<std::string>(image_path))) {
-                        host.cfg.user_start_background = static_cast<std::string>(image_path);
+                    if ((result == NFD_OKAY) && init_user_start_background(gui, image_path)) {
+                        host.cfg.user_start_background = image_path;
                         host.cfg.start_background = "image";
                         config::serialize_config(host.cfg, host.cfg.config_path);
                     }
