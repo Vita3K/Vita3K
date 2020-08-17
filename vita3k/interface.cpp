@@ -96,41 +96,25 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
     int num_files = mz_zip_reader_get_num_files(zip.get());
     fs::path sfo_path = "sce_sys/param.sfo";
     bool theme = false;
-    std::string extra_path;
 
     for (int i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
-        if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat))
+        if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
-
-        std::string m_filename = std::string(file_stat.m_filename);
-
-        if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
+        }
+        if (fs::path(file_stat.m_filename) == "sce_module/steroid.suprx") {
             LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
             fclose(vpk_fp);
             return false;
         }
-
-        if (m_filename.find("theme.xml") != std::string::npos)
+        if (fs::path(file_stat.m_filename) == "theme.xml")
             theme = true;
-
-        //This was here before to check if the game files were in the zip root, since this commit
-        // allows support for the game to be inside folders and install it anyways
-        //i thought we should comment this check
-
-        //edited to be compatible right away if someone wants to uncomment it
-
-        //if (m_filename.find(sfo_path.string()) != std::string::npos)
-        //break;
-
-        if (m_filename.find("eboot.bin") != std::string::npos) {
-            extra_path = m_filename.replace(m_filename.find("eboot.bin"), strlen("eboot.bin"), "");
-            continue;
-        }
+        if (fs::path(file_stat.m_filename) == sfo_path)
+            break;
     }
 
     vfs::FileBuffer params;
-    if (!read_file_from_zip(params, fs::path(extra_path) / sfo_path, zip)) {
+    if (!read_file_from_zip(params, sfo_path, zip)) {
         fclose(vpk_fp);
         return false;
     }
@@ -138,7 +122,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
     SfoFile sfo_handle;
     std::string content_id, dlc_foldername;
     sfo::load(sfo_handle, params);
-    sfo::get_data_by_key(host.app_title_id, sfo_handle, "TITLE_ID");
+    sfo::get_data_by_key(host.io.title_id, sfo_handle, "TITLE_ID");
     sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
     sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
     sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
@@ -151,13 +135,13 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
             host.app_title += " (Theme)";
         } else {
             dlc_foldername = content_id.substr(20);
-            output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.app_title_id / dlc_foldername };
+            output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.io.title_id / dlc_foldername };
             host.app_title = host.app_title + " (DLC)";
         }
     } else if (host.app_category == "gp")
-        output_path = { fs::path(host.pref_path) / "ux0/patch" / host.app_title_id };
+        output_path = { fs::path(host.pref_path) / "ux0/patch" / host.io.title_id };
     else
-        output_path = { fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
+        output_path = { fs::path(host.pref_path) / "ux0/app" / host.io.title_id };
 
     const auto created = fs::create_directories(output_path);
     if (!created) {
@@ -177,7 +161,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
                 SDL_GL_SwapWindow(host.window.get());
             }
             if (status == gui::CANCEL_STATE) {
-                LOG_INFO("{} already installed, launching application...", host.app_title_id);
+                LOG_INFO("{} already installed, launching application...", host.io.title_id);
                 fclose(vpk_fp);
                 return true;
             } else if (status == gui::UNK_STATE) {
@@ -185,7 +169,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
             }
         } else if (gui->file_menu.archive_install_dialog && !gui->content_reinstall_confirm) {
             vfs::FileBuffer params;
-            vfs::read_app_file(params, host.pref_path, host.app_title_id, sfo_path);
+            vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
             sfo::load(host.sfo_handle, params);
             sfo::get_data_by_key(gui->app_ver, host.sfo_handle, "APP_VER");
             gui->content_reinstall_confirm = true;
@@ -200,9 +184,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
             continue;
         }
 
-        std::string m_filename = file_stat.m_filename;
-        std::string replace_filename = m_filename.substr(extra_path.size());
-        const fs::path file_output = { output_path / replace_filename };
+        const fs::path file_output = { output_path / file_stat.m_filename };
         if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
             fs::create_directories(output_path);
         } else {
@@ -228,7 +210,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
         }
     }
 
-    LOG_INFO("{} [{}] installed succesfully!", host.app_title_id, host.app_title);
+    LOG_INFO("{} [{}] installed succesfully!", host.io.title_id, host.app_title);
     fclose(vpk_fp);
     return true;
 }
@@ -272,13 +254,13 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     if (params_found) {
         sfo::load(host.sfo_handle, params);
 
-        sfo::get_data_by_key(host.current_app_title, host.sfo_handle, "TITLE");
-        std::replace(host.current_app_title.begin(), host.current_app_title.end(), '\n', ' '); // Restrict title to one line
+        sfo::get_data_by_key(host.app_title, host.sfo_handle, "TITLE");
+        std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' '); // Restrict title to one line
         sfo::get_data_by_key(host.io.title_id, host.sfo_handle, "TITLE_ID");
         sfo::get_data_by_key(host.app_version, host.sfo_handle, "APP_VER");
         sfo::get_data_by_key(host.app_category, host.sfo_handle, "CATEGORY");
     } else {
-        host.current_app_title = host.io.title_id; // Use TitleID as Title
+        host.app_title = host.io.title_id; // Use TitleID as Title
         host.app_version = host.app_category = "N/A";
     }
 
@@ -294,7 +276,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
-        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.current_app_title) + " - [" + host.io.title_id + "].log") };
+        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.app_title) + " - [" + host.io.title_id + "].log") };
         if (logging::add_sink(log_name) != Success)
             return InitConfigFailed;
     }
@@ -311,13 +293,13 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         LOG_INFO("lle-modules: {}", modules);
     }
 
-    LOG_INFO("Title: {}", host.current_app_title);
+    LOG_INFO("Title: {}", host.app_title);
     LOG_INFO("Serial: {}", host.io.title_id);
     LOG_INFO("Version: {}", host.app_version);
     LOG_INFO("Category: {}", host.app_category);
 
     init_device_paths(host.io);
-    init_savedata_app_path(host.io, host.pref_path);
+    init_savedata_game_path(host.io, host.pref_path);
 
     for (const auto &var : get_var_exports()) {
         auto addr = var.factory(host);
@@ -406,12 +388,12 @@ bool handle_events(HostState &host, GuiState &gui) {
                     gui.is_capturing_keys = false;
                 }
             }
-            if (!host.io.title_id.empty()) {
+            if (!gui.app_selector.selected_title_id.empty()) {
                 // toggle gui state
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
-                // Show/Hide Live Area during app run
-                // TODO pause app running
+                // Show/Hide Live Area during game run
+                // TODO pause game running
                 if (!gui.live_area.manual && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {
                     if (gui.live_area_contents.find(host.io.title_id) == gui.live_area_contents.end())
                         gui::init_live_area(gui, host);
@@ -469,7 +451,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
 
 #if DISCORD_RPC
     if (host.cfg.discord_rich_presence)
-        discord::update_presence(host.io.title_id, host.current_app_title);
+        discord::update_presence(host.io.title_id, host.app_title);
 #endif
 
     return Success;
@@ -530,7 +512,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
     host.main_thread_id = main_thread_id;
 
-    SceKernelThreadOptParam param{ 0, 0 };
+    SceKernelThreadOptParam param {0,0};
     if (host.cfg.console && host.cfg.console_arguments != "") {
         auto args = split(host.cfg.console_arguments, "\\s+");
         // why is this flipped

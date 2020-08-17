@@ -144,10 +144,10 @@ public:
 
     void CallSVC(uint32_t svc) override {
         if (svc == 0x44) {
-            stop(*parent);
+            cpu->stop();
             return;
         }
-        parent->call_svc(*parent, svc, parent->cpu->get_pc());
+        parent->call_svc(*parent, svc, cpu->get_pc());
     }
 
     void AddTicks(uint64_t ticks) override {
@@ -190,11 +190,14 @@ DynarmicCPU::~DynarmicCPU() {
 int DynarmicCPU::run(bool callback, Address entry_point) {
     if (jit->IsExecuting()) {
         auto dyncpu = std::make_unique<DynarmicCPU>(parent, get_pc(), get_sp(), false);
+        auto original_cpu = std::move(parent->cpu);
         CPUContextPtr context = save_context();
         dyncpu->load_context(context.get());
         dyncpu->set_tpidruro(get_tpidruro());
         dyncpu->set_lr(parent->halt_instruction_pc | 1);
-        dyncpu->run(true, entry_point);
+        parent->cpu = std::move(dyncpu);
+        ::run(*parent, true, entry_point);
+        parent->cpu = std::move(original_cpu);
         return 0;   
     }
     if (callback) { 
@@ -251,7 +254,8 @@ uint32_t DynarmicCPU::get_sp() {
 
 /*! Get the program counter */
 uint32_t DynarmicCPU::get_pc() {
-    return jit->Regs()[15];
+    auto out = jit->Regs()[15];
+    return out;
 }
 
 /*! Set a Rx register */

@@ -1168,7 +1168,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                 number_of_comp_vec = 4;
             }
 
-            assert(number_of_comp_vec != 1);
+            //assert(number_of_comp_vec != 1);
             const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), number_of_comp_vec);
             const spv::Id out_var = b.createVariable(spv::StorageClassOutput, out_type, properties.name.c_str());
             translation_state.interfaces.push_back(out_var);

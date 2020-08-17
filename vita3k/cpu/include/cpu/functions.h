@@ -55,6 +55,7 @@ void write_sp(CPUState &state, uint32_t value);
 void write_pc(CPUState &state, uint32_t value);
 void write_lr(CPUState &state, uint32_t value);
 void write_tpidruro(CPUState &state, uint32_t value);
+bool is_thumb_mode(CPUState &state);
 CPUContextPtr save_context(CPUState &state);
 void load_context(CPUState &state, CPUContext* ctx);
 

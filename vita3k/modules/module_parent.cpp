@@ -126,9 +126,9 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
             return;
         if (host.kernel.watch_import_calls) {
             const std::unordered_set<uint32_t> hle_nid_blacklist = {
-                0xB295EB61, // sceKernelGetTLSAddr
-                0x46E7BE7B, // sceKernelLockLwMutex
-                0x91FA6614, // sceKernelUnlockLwMutex
+               // 0xB295EB61, // sceKernelGetTLSAddr
+               // 0x46E7BE7B, // sceKernelLockLwMutex
+               // 0x91FA6614, // sceKernelUnlockLwMutex
             };
             auto lr = read_lr(cpu);
             log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);

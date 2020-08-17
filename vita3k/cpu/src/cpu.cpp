@@ -137,6 +137,10 @@ void write_tpidruro(CPUState &state, uint32_t value) {
     state.cpu->set_tpidruro(value);
 }
 
+bool is_thumb_mode(CPUState &state) {
+    return state.cpu->is_thumb_mode();
+}
+
 bool hit_breakpoint(CPUState &state) {
     return state.cpu->hit_breakpoint();
 }

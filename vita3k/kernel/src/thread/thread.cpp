@@ -267,13 +267,17 @@ bool run_callback(ThreadState &thread, Address &pc, Address &data) {
 
 uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, Ptr<void> &argp, bool callback) {
     std::unique_lock<std::mutex> lock(thread.mutex);
-    auto context = save_context(*thread.cpu);
+    auto reg0 = read_reg(*thread.cpu, 0);
+    auto reg1 = read_reg(*thread.cpu, 1);
+    auto pc = read_pc(*thread.cpu);
+    
     write_reg(*thread.cpu, 0, arglen);
     write_reg(*thread.cpu, 1, argp.address());
     write_pc(*thread.cpu, entry_point.address());
     lock.unlock();
     run_thread(thread, true);
     auto out = read_reg(*thread.cpu, 0);
-    load_context(*thread.cpu, context.get());
+  
+    write_pc(*thread.cpu, pc);
     return out;
 }
