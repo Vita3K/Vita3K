@@ -32,6 +32,7 @@
 #include <gxm/types.h>
 #include <renderer/functions.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 namespace renderer {
 COMMAND(handle_create_context) {

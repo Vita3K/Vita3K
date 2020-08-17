@@ -30,6 +30,7 @@
 #include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #if DISCORD_RPC
 #include <app/discord.h>
@@ -110,12 +111,12 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
     state.default_path = root_paths.get_pref_path_string();
 
     // If configuration does not provide a preference path, use SDL's default
-    if (state.cfg.pref_path == root_paths.get_pref_path_string() || state.cfg.pref_path.empty())
-        state.pref_path = root_paths.get_pref_path_string();
+    if (state.cfg.pref_path == root_paths.get_pref_path() || state.cfg.pref_path.empty())
+        state.pref_path = string_utils::utf_to_wide(root_paths.get_pref_path_string());
     else {
         if (state.cfg.pref_path.back() != '/')
             state.cfg.pref_path += '/';
-        state.pref_path = state.cfg.pref_path;
+        state.pref_path = string_utils::utf_to_wide(state.cfg.pref_path);
     }
 
     renderer::Backend backend = renderer::Backend::OpenGL;

@@ -119,7 +119,7 @@ inline std::string remove_duplicate_device(const std::string &path, VitaIoDevice
   * \param ext The extension of the file (optional).
   * \return A complete Boost.Filesystem path normalized.
   */
-inline fs::path construct_emulated_path(const VitaIoDevice dev, const fs::path &path, const std::string &base_path, const bool redirect_pwd = false, const std::string &ext = "") {
+inline fs::path construct_emulated_path(const VitaIoDevice dev, const fs::path &path, const std::wstring &base_path, const bool redirect_pwd = false, const std::string &ext = "") {
     if (redirect_pwd && dev == +VitaIoDevice::host0) {
         return fs::current_path() / path;
     }

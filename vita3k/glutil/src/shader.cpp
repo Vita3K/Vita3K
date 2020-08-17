@@ -21,6 +21,7 @@
 #include <glutil/object.h>
 
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <fstream>
 #include <sstream>
@@ -39,7 +40,7 @@ UniqueGLObject gl::load_shaders(const std::string &vertex_file_path, const std::
 
     // Read the vertex/fragment shader code from files
     std::string vs_code;
-    std::ifstream vs_stream(vertex_file_path, std::ios::in);
+    fs::ifstream vs_stream(vertex_file_path, std::ios::in);
     if (vs_stream.is_open()) {
         std::stringstream sstr;
         sstr << vs_stream.rdbuf();
@@ -51,7 +52,7 @@ UniqueGLObject gl::load_shaders(const std::string &vertex_file_path, const std::
     }
 
     std::string fs_code;
-    std::ifstream fs_stream(fragment_file_path, std::ios::in);
+    fs::ifstream fs_stream(fragment_file_path, std::ios::in);
     if (fs_stream.is_open()) {
         std::stringstream sstr;
         sstr << fs_stream.rdbuf();
