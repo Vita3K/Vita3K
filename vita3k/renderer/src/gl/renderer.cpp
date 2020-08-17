@@ -495,6 +495,20 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     case SCE_GXM_COLOR_FORMAT_F32F32_GR:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RG, GL_FLOAT, pixels);
         break;
+    case SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB:
+    case SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR: {
+        std::vector<uint16_t> temp_bytes(width * height * 3);
+        GLenum rfmt = (format == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR) ? GL_BGR : GL_RGB;
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), rfmt, GL_HALF_FLOAT, temp_bytes.data());
+        for (int i = 0, iptr = 0; i < width * height; ++i) {
+            uint32_t pixel = 0;
+            pixel |= (uint32_t(temp_bytes[iptr++] << 17) & (0x3FFFF << 18)); // Exp + 9 bits
+            pixel |= (uint32_t(temp_bytes[iptr++] << 8) & (0x1FF << 9));
+            pixel |= (uint32_t(temp_bytes[iptr++] >> 1) & (0x1FF << 0));
+            pixels[i] = pixel;
+        }
+        break;
+    }
     default:
         LOG_ERROR("Color format not implemented: {}, report this to developer", format);
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);

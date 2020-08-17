@@ -128,6 +128,31 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
     return 0;
 }
 
+/**
+ * \brief Try to decompress texture to 16-bit RGB floating point color.
+ *
+ * \param fmt    Texture base format.
+ * \param dest   Destination texture data. Size must be sufficient enough of align(width, 4) * height * 4 (bytes).
+ * \param data   Source data to decompress.
+ * \param width  Texture width.
+ * \param height Texture height.
+ *
+ * \return Void.
+ */
+void decompress_packed_float_e5m9m9m9(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height) {
+    const uint32_t *in = reinterpret_cast<const uint32_t *>(data);
+    uint16_t *out = reinterpret_cast<uint16_t *>(dest);
+
+    for (uint32_t in_offset = 0, out_offset = 0; in_offset < width * height; ++in_offset) {
+        const uint32_t packed = in[in_offset];
+        const uint16_t exponent = static_cast<uint16_t>(packed >> 17);
+
+        out[out_offset++] = exponent | ((packed & (0x1FF << 18)) >> 17);
+        out[out_offset++] = exponent | ((packed & (0x1FF << 9)) >> 8);
+        out[out_offset++] = exponent | ((packed & 0x1FF) << 1);
+    }
+}
+
 void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
 
@@ -192,7 +217,18 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                 pixels = texture_data_decompressed.data();
             }
 
-            if (!((base_format >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (base_format <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP))) {
+            switch (base_format) {
+            case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+            case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+            case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+            case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+                break;
+            case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
+                texture_data_decompressed.resize(width * height * 6);
+                decompress_packed_float_e5m9m9m9(base_format, texture_data_decompressed.data(), pixels, width, height);
+                pixels = texture_data_decompressed.data();
+                break;
+            default:
                 // Convert data
                 texture_pixels_lineared.resize(width * height * bytes_per_pixel);
 
@@ -207,6 +243,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
                 if (need_decompress_and_unswizzle_on_cpu)
                     texture_data_decompressed.clear();
+                break;
             }
 
             pixels_per_stride = width;
