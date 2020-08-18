@@ -522,8 +522,10 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     ImGui::GetForegroundDrawList()->AddText(gui.live_area_font_large, (124.0f * scal_font_large) * SCAL.x, CLOCK_POS, date_color, fmt::format("{:0>2d}:{:0>2d}", local.tm_hour, local.tm_min).c_str());
     ImGui::PopFont();
 
-    if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+    if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
         gui.live_area.start_screen = false;
+        gui.live_area.app_selector = true;
+    }
 
     ImGui::End();
 }
@@ -920,6 +922,12 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
         } else {
             if (gui.live_area.content_manager)
                 host.app_title_id = "NPXS10026";
+            else {
+                if (gui.live_area_contents.find("NPXS10015") != gui.live_area_contents.end())
+                    gui.live_area.live_area_screen = true;
+                else
+                    gui.live_area.app_selector = true;
+            }
             gui.live_area.theme_background = false;
         }
     }

@@ -40,6 +40,7 @@ void delete_app(GuiState &gui, HostState &host);
 void get_app_info(GuiState &gui, HostState &host, const std::string &title_id);
 size_t get_app_size(HostState &host, const std::string &title_id);
 std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &title_id);
+std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &title_id);
 void get_contents_size(GuiState &gui, HostState &host);
 void get_modules_list(GuiState &gui, HostState &host);
 void get_themes_list(GuiState &gui, HostState &host);
@@ -56,7 +57,7 @@ void init_theme_apps_icon(GuiState &gui, HostState &host, const std::string &con
 void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
 void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &trophy_id);
-void pre_load_app(GuiState &gui, HostState &host);
+void pre_load_app(GuiState &gui, HostState &host, bool live_area);
 void pre_run_app(GuiState &gui, HostState &host);
 bool refresh_app_list(GuiState &gui, HostState &host);
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type);

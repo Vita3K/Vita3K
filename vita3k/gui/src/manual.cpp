@@ -33,7 +33,7 @@ static std::map<std::string, std::pair<bool, bool>> zoom;
 
 bool init_manual(GuiState &gui, HostState &host) {
     current_page = 0;
-    const auto title_id = host.io.title_id.empty() ? host.app_title_id : host.io.title_id;
+    const auto title_id = gui.apps_list_opened[gui.current_app_selected];
     if (gui.manuals.find(title_id) == gui.manuals.end()) {
         std::vector<std::string> manual_page_list;
         const auto app_path{ fs::path(host.pref_path) / "ux0/app" / title_id };
@@ -89,7 +89,7 @@ void draw_manual(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowBgAlpha(0.999f);
     ImGui::Begin("##manual", &gui.live_area.manual, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    const auto title_id = host.io.title_id.empty() ? host.io.title_id : host.io.title_id;
+    const auto title_id = gui.apps_list_opened[gui.current_app_selected];
     if (zoom[title_id].first && ImGui::IsMouseDoubleClicked(0)) {
         zoom[title_id].second ? size_page[title_id]["current"] = size_page[title_id]["mini"] : size_page[title_id]["current"] = size_page[title_id]["max"];
         zoom[title_id].second = !zoom[title_id].second;
@@ -107,8 +107,10 @@ void draw_manual(GuiState &gui, HostState &host) {
     const auto BUTTON_SIZE = ImVec2(65.f * scal.x, 30.f * scal.y);
 
     ImGui::SetCursorPos(ImVec2(size_child.x - ((!zoom[title_id].second ? 70.0f : 85.f) * scal.x), 10.0f * scal.y));
-    if (!hiden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton))
+    if (!hiden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton)) {
         gui.live_area.manual = false;
+        gui.live_area.live_area_screen = true;
+    }
 
     const auto wheel_counter = ImGui::GetIO().MouseWheel;
     if (current_page > 0) {
