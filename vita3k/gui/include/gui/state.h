@@ -71,6 +71,7 @@ struct AppsSelector {
 };
 
 struct LiveAreaState {
+    bool app_selector = false;
     bool content_manager = false;
     bool live_area_screen = false;
     bool manual = false;
@@ -169,6 +170,9 @@ struct GuiState {
     GLuint display = 0;
 
     ImGuiTextFilter app_search_bar;
+
+    std::vector<std::string> apps_list_opened;
+    int32_t current_app_selected = -1;
 
     std::uint64_t current_theme_bg;
     std::map<std::string, std::map<std::string, ImGui_Texture>> themes_preview;

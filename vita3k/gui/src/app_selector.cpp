@@ -34,8 +34,10 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
     auto app_list_size = gui.app_selector.user_apps.size();
 
     gui.apps_background.clear();
+    gui.apps_list_opened.clear();
     gui.app_selector.user_apps.clear();
     gui.app_selector.icons.clear();
+    gui.current_app_selected = -1;
     gui.live_area_contents.clear();
     gui.live_items.clear();
 
@@ -70,10 +72,18 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
     return true;
 }
 
+std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &title_id) {
+    return std::find(gui.apps_list_opened.begin(), gui.apps_list_opened.end(), title_id);
+}
+
 static std::map<std::string, uint64_t> last_time;
 
-void pre_load_app(GuiState &gui, HostState &host) {
-    if (host.cfg.show_live_area_screen) {
+void pre_load_app(GuiState &gui, HostState &host, bool livea_area) {
+    if (get_app_open_list_index(gui, host.app_title_id) == gui.apps_list_opened.end())
+        gui.apps_list_opened.push_back(host.app_title_id);
+    gui.current_app_selected = int32_t(std::distance(gui.apps_list_opened.begin(), get_app_open_list_index(gui, host.app_title_id)));
+    gui.live_area.app_selector = false;
+    if (livea_area) {
         last_time["home"] = 0;
         init_live_area(gui, host);
         gui.live_area.live_area_screen = true;
@@ -111,17 +121,20 @@ inline uint64_t current_time() {
         .count();
 }
 
-static auto MENUBAR_HEIGHT = 22.f;
-
 void draw_app_selector(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+    const auto MENUBAR_HEIGHT = host.display.imgui_render ? 22 : 32.f * scal.y;
+
+    if (!host.display.imgui_render)
+        draw_information_bar(gui);
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
-    if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty())
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    if ((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty())
         ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
-    ImGui::Begin("##app_selector", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##app_selector", &gui.live_area.app_selector, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     if (gui.start_background && !gui.file_menu.pkg_install_dialog) {
         if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
@@ -133,6 +146,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             while (last_time["start"] + host.cfg.delay_start < current_time()) {
                 last_time["start"] += host.cfg.delay_start;
                 last_time["home"] = 0;
+                gui.live_area.app_selector = false;
                 gui.live_area.start_screen = true;
             }
         }
@@ -343,9 +357,10 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImGui::Columns(1);
         }
         ImGui::Separator();
-        static const auto POS_APP_LIST = ImVec2(54.f, 70.f);
-        ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, 68.f), ImGuiCond_Always);
-        ImGui::BeginChild("##apps_list", ImVec2(host.cfg.apps_list_grid ? display_size.x - POS_APP_LIST.x : display_size.x, display_size.y - POS_APP_LIST.y), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        const auto POS_APP_LIST = ImVec2(60.f * scal.x, 48.f + MENUBAR_HEIGHT);
+        const auto SIZE_APP_LIST = ImVec2((host.cfg.apps_list_grid ? 840.f : 900.f) * scal.x, display_size.y - POS_APP_LIST.y);
+        ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
+        ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         const auto GRID_ICON_SIZE = ImVec2(128.f * scal.x, 128.f * scal.y);
         if (!host.cfg.apps_list_grid) {
             ImGui::Columns(5, nullptr, true);
@@ -419,19 +434,36 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::NextColumn();
                 }
                 if (selected)
-                    pre_load_app(gui, host);
+                    pre_load_app(gui, host, host.cfg.show_live_area_screen);
             }
         };
         // System Applications
         display_app(gui.app_selector.sys_apps);
         // User Applications
-        display_app(gui.app_selector.user_apps);
+        if (host.io.title_id.empty())
+            display_app(gui.app_selector.user_apps);
         ImGui::PopStyleColor();
         ImGui::Columns(1);
         ImGui::EndChild();
         break;
     }
+
+    if (!gui.apps_list_opened.empty()) {
+        const auto SELECT_SIZE = ImVec2(50.f * scal.x, 60.f * scal.y);
+        ImGui::SetWindowFontScale(2.f * scal.x);
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+        ImGui::SetCursorPos(ImVec2(display_size.x - SELECT_SIZE.x - (5.f * scal.x), (display_size.y / 2.f) - (SELECT_SIZE.y / 2.f)));
+        if ((ImGui::Selectable(">", false, ImGuiSelectableFlags_None, SELECT_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right)) {
+            last_time["start"] = 0;
+            ++gui.current_app_selected;
+            gui.live_area.app_selector = false;
+            gui.live_area.live_area_screen = true;
+        }
+        ImGui::PopStyleVar();
+        ImGui::SetWindowFontScale(1.f * scal.x);
+    }
     ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 } // namespace gui

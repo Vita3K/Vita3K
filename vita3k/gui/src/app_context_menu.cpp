@@ -108,7 +108,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.3f);
         if (ImGui::MenuItem("Boot", host.app_short_title.c_str()))
-            pre_run_app(gui, host);
+            pre_load_app(gui, host, false);
         if (host.app_title_id.find("NPXS") == std::string::npos) {
             if (ImGui::MenuItem("Check App Compatibility")) {
                 const std::string compat_url = host.app_title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + host.app_title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;

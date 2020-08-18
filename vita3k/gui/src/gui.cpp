@@ -414,6 +414,10 @@ ImTextureID load_image(GuiState &gui, const char *data, const std::uint32_t size
 void init(GuiState &gui, HostState &host) {
     ImGui::CreateContext();
     gui.imgui_state.reset(ImGui_ImplSdl_Init(host.renderer.get(), host.window.get(), host.base_path));
+
+    if (host.cfg.show_gui)
+        host.display.imgui_render = true;
+
     assert(gui.imgui_state);
 
     init_style();
@@ -444,9 +448,13 @@ void init(GuiState &gui, HostState &host) {
             init_user_start_background(gui, host.cfg.user_start_background);
         else
             init_theme_start_background(gui, host, host.cfg.start_background == "default" ? "default" : host.cfg.theme_content_id);
+    }
 
-        if (!host.cfg.run_title_id && !host.cfg.vpk_path && gui.start_background)
+    if (!host.cfg.run_title_id && !host.cfg.vpk_path) {
+        if (gui.start_background)
             gui.live_area.start_screen = true;
+        else
+            gui.live_area.app_selector = true;
     }
 
     // Initialize trophy callback
@@ -474,7 +482,7 @@ void draw_end(GuiState &gui, SDL_Window *window) {
 void draw_live_area(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.live_area_font);
 
-    if (!gui.live_area.content_manager && !gui.live_area.live_area_screen && !gui.live_area.theme_background && !gui.live_area.trophy_collection && host.io.title_id.empty())
+    if (gui.live_area.app_selector)
         draw_app_selector(gui, host);
 
     if (gui.live_area.live_area_screen)

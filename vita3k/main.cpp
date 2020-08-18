@@ -145,7 +145,8 @@ int main(int argc, char *argv[]) {
                 discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
                 gui::draw_live_area(gui, host);
-                gui::draw_ui(gui, host);
+                if (host.display.imgui_render)
+                    gui::draw_ui(gui, host);
 
                 gui::draw_end(gui, host.window.get());
             } else {
@@ -237,7 +238,7 @@ int main(int argc, char *argv[]) {
         gui::draw_common_dialog(gui, host);
         gui::draw_live_area(gui, host);
 
-        if (host.cfg.performance_overlay)
+        if (host.cfg.performance_overlay && !gui.live_area.app_selector && !gui.live_area.live_area_screen)
             gui::draw_perf_overlay(gui, host);
 
         gui::draw_trophies_unlocked(gui, host);
