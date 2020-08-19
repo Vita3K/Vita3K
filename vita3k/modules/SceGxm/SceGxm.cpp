@@ -990,10 +990,8 @@ EXPORT(int, sceGxmPrecomputedDrawInit, SceGxmPrecomputedDraw *state, Ptr<const S
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetAllVertexStreams, SceGxmPrecomputedDraw *state, const Ptr<const void> *vertex_streams) {
-    for (uint32_t a = 0; a < 4; a++) {
-        //LOG_INFO("stream[{}] = {}", a, log_hex(vertex_streams.get(host.mem)[a].address()));
+    for (uint32_t a = 0; a < 4; a++)
         state->vertex_stream[a] = vertex_streams[a];
-    }
 
     return 0;
 }
@@ -1011,8 +1009,15 @@ EXPORT(int, sceGxmPrecomputedDrawSetParamsInstanced) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmPrecomputedDrawSetVertexStream) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmPrecomputedDrawSetVertexStream, SceGxmPrecomputedDraw *precomputedDraw, uint32_t streamIndex, Ptr<const void> streamData) {
+    if (!precomputedDraw || !streamData)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    else if (streamIndex < 0)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+
+    precomputedDraw->vertex_stream[streamIndex] = streamData;
+
+    return 0;
 }
 
 EXPORT(Ptr<const void>, sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer, SceGxmPrecomputedFragmentState *state) {
