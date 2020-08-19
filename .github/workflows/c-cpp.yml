@@ -99,7 +99,7 @@ jobs:
         uses: Xotl/cool-github-releases@v1
         with:
           mode: update
-          isPrerelease: true
+          isPrerelease: false
           tag_name: continous
           release_name: "Automatic CI builds"
           body_mrkdwn: |
