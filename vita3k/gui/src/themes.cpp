@@ -486,8 +486,6 @@ static const char *const wday[] = {
 };
 
 void draw_start_screen(GuiState &gui, HostState &host) {
-    draw_information_bar(gui);
-
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
     const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
@@ -550,9 +548,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     const auto SIZE_MINI_PACKAGE = ImVec2(170.f * SCAL.x, 96.f * SCAL.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
 
-    draw_information_bar(gui);
-
-    const auto is_background = gui.apps_background.find(host.app_title_id) != gui.apps_background.end();
+    const auto is_background = gui.apps_background.find("NPXS10015") != gui.apps_background.end();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -560,7 +556,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##themes", &gui.live_area.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.app_title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     ImGui::SetWindowFontScale(1.6f * SCAL.x);
     const auto theme_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
     ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
@@ -920,10 +916,10 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
             else
                 menu.clear();
         } else {
-            if (gui.live_area.content_manager)
-                host.app_title_id = "NPXS10026";
-            else {
-                if (gui.live_area_contents.find("NPXS10015") != gui.live_area_contents.end())
+            if (host.app_title_id == "NPXS10026") {
+                gui.live_area.content_manager = true;
+            } else {
+                if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10015")
                     gui.live_area.live_area_screen = true;
                 else
                     gui.live_area.app_selector = true;

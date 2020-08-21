@@ -49,7 +49,7 @@ struct DisplayState {
     std::mutex mutex;
     std::condition_variable condvar;
     std::atomic<bool> abort{ false };
-    std::atomic<bool> imgui_render{ false };
+    std::atomic<bool> imgui_render{ true };
     std::atomic<bool> fullscreen{ false };
 };
 
