@@ -168,6 +168,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
                 const auto app_size = get_app_size(host, host.app_title_id);
                 gui.app_selector.app_info.size = app_size;
             }
+            gui.live_area.information_bar = false;
         }
         ImGui::EndPopup();
     }
@@ -254,8 +255,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
         ImGui::Begin("##information", &information, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(1.5f * scal.x);
         ImGui::SetCursorPos(ImVec2(10.0f * scal.x, 10.0f * scal.y));
-        if (ImGui::Button("X", ImVec2(40.f * scal.x, 40.f * scal.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+        if (ImGui::Button("X", ImVec2(40.f * scal.x, 40.f * scal.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
             information = false;
+            gui.live_area.information_bar = true;
+        }
         if (gui.app_selector.icons.find(host.app_title_id) != gui.app_selector.icons.end()) {
             ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * scal.y));
             ImGui::Image(gui.app_selector.icons[host.app_title_id], INFO_ICON_SIZE);

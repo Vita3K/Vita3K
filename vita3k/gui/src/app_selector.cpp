@@ -76,36 +76,44 @@ std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const 
     return std::find(gui.apps_list_opened.begin(), gui.apps_list_opened.end(), title_id);
 }
 
+void update_apps_list_opened(GuiState &gui, const std::string &title_id) {
+    if (get_app_open_list_index(gui, title_id) == gui.apps_list_opened.end())
+        gui.apps_list_opened.push_back(title_id);
+    gui.current_app_selected = int32_t(std::distance(gui.apps_list_opened.begin(), get_app_open_list_index(gui, title_id)));
+}
+
 static std::map<std::string, uint64_t> last_time;
 
-void pre_load_app(GuiState &gui, HostState &host, bool livea_area) {
-    if (get_app_open_list_index(gui, host.app_title_id) == gui.apps_list_opened.end())
-        gui.apps_list_opened.push_back(host.app_title_id);
-    gui.current_app_selected = int32_t(std::distance(gui.apps_list_opened.begin(), get_app_open_list_index(gui, host.app_title_id)));
+void pre_load_app(GuiState &gui, HostState &host, bool live_area) {
     gui.live_area.app_selector = false;
-    if (livea_area) {
+    if (live_area) {
+        update_apps_list_opened(gui, host.app_title_id);
         last_time["home"] = 0;
         init_live_area(gui, host);
         gui.live_area.live_area_screen = true;
     } else
-        pre_run_app(gui, host);
+        pre_run_app(gui, host, host.app_title_id);
 }
 
-void pre_run_app(GuiState &gui, HostState &host) {
-    if (host.app_title_id.find("NPXS") == std::string::npos) {
-        host.io.title_id = host.app_title_id;
+void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id) {
+    gui.live_area.live_area_screen = false;
+    if (title_id.find("NPXS") == std::string::npos) {
+        if (host.io.title_id != title_id) {
+            host.io.title_id = title_id;
 
-        if (host.cfg.overwrite_config) {
-            host.cfg.last_app = host.io.title_id.c_str();
-            config::serialize_config(host.cfg, host.cfg.config_path);
+            if (host.cfg.overwrite_config) {
+                host.cfg.last_app = title_id;
+                config::serialize_config(host.cfg, host.cfg.config_path);
+            }
         }
+        gui.live_area.information_bar = false;
     } else {
-        init_app_background(gui, host, host.app_title_id);
+        init_app_background(gui, host, title_id);
 
-        if (host.app_title_id == "NPXS10008") {
+        if (title_id == "NPXS10008") {
             get_trophy_np_com_id_list(gui, host);
             gui.live_area.trophy_collection = true;
-        } else if (host.app_title_id == "NPXS10015") {
+        } else if (title_id == "NPXS10015") {
             get_themes_list(gui, host);
             gui.live_area.theme_background = true;
         } else {
@@ -124,17 +132,19 @@ inline uint64_t current_time() {
 void draw_app_selector(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto MENUBAR_HEIGHT = host.display.imgui_render ? 22 : 32.f * scal.y;
+    const auto MENUBAR_HEIGHT = 32.f * scal.y;
+    const auto MENUBAR_BG_HEIGHT = !gui.live_area.information_bar ? 22.f : 32.f * scal.y;
 
-    if (!host.display.imgui_render)
-        draw_information_bar(gui);
+    const auto is_background = (host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    if ((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty())
-        ImGui::SetNextWindowBgAlpha(host.cfg.background_alpha);
+    ImGui::SetNextWindowBgAlpha(is_background ? host.cfg.background_alpha : 0.f);
     ImGui::Begin("##app_selector", &gui.live_area.app_selector, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
+
+    if (!host.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
+        gui.live_area.information_bar = true;
 
     if (gui.start_background && !gui.file_menu.pkg_install_dialog) {
         if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
@@ -175,11 +185,11 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         }
     }
 
-    draw_notice_info(gui, host);
-
-    if ((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty())
+    if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]],
-            ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+            ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size);
+    else
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawCornerFlags_All);
 
     if (gui.delete_app_icon) {
         if (gui.app_selector.icons.find(host.app_title_id) != gui.app_selector.icons.end())

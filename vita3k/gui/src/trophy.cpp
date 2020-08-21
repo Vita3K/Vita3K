@@ -394,8 +394,6 @@ void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_
 }
 
 void draw_trophy_collection(GuiState &gui, HostState &host) {
-    draw_information_bar(gui);
-
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
     const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
@@ -412,7 +410,8 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
 
     const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy" };
     const char progress_dummy[32] = "";
-    const auto is_background = gui.apps_background.find(host.app_title_id) != gui.apps_background.end();
+
+    const auto is_background = gui.apps_background.find("NPXS10008") != gui.apps_background.end();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -420,7 +419,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##trophy_collection", &gui.live_area.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.app_title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10008"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * SCAL.x);
         if (np_com_id_selected.empty()) {
@@ -735,9 +734,11 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 set_scroll_pos = true;
             }
         } else {
-            gui.live_area.trophy_collection = false;
-            if (host.cfg.show_live_area_screen)
+            if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10008")
                 gui.live_area.live_area_screen = true;
+            else
+                gui.live_area.app_selector = true;
+            gui.live_area.trophy_collection = false;
         }
     }
 

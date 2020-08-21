@@ -109,6 +109,7 @@ void draw_manual(GuiState &gui, HostState &host) {
     ImGui::SetCursorPos(ImVec2(size_child.x - ((!zoom[title_id].second ? 70.0f : 85.f) * scal.x), 10.0f * scal.y));
     if (!hiden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton)) {
         gui.live_area.manual = false;
+        gui.live_area.information_bar = true;
         gui.live_area.live_area_screen = true;
     }
 

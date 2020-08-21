@@ -415,9 +415,6 @@ void init(GuiState &gui, HostState &host) {
     ImGui::CreateContext();
     gui.imgui_state.reset(ImGui_ImplSdl_Init(host.renderer.get(), host.window.get(), host.base_path));
 
-    if (host.cfg.show_gui)
-        host.display.imgui_render = true;
-
     assert(gui.imgui_state);
 
     init_style();
@@ -451,6 +448,7 @@ void init(GuiState &gui, HostState &host) {
     }
 
     if (!host.cfg.run_title_id && !host.cfg.vpk_path) {
+        gui.live_area.information_bar = true;
         if (gui.start_background)
             gui.live_area.start_screen = true;
         else
@@ -484,6 +482,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
 
     if (gui.live_area.app_selector)
         draw_app_selector(gui, host);
+
+    if (gui.live_area.information_bar)
+        draw_information_bar(gui, host);
 
     if (gui.live_area.live_area_screen)
         draw_live_area_screen(gui, host);

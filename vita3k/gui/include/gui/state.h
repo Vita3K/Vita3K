@@ -73,6 +73,7 @@ struct AppsSelector {
 struct LiveAreaState {
     bool app_selector = false;
     bool content_manager = false;
+    bool information_bar = false;
     bool live_area_screen = false;
     bool manual = false;
     bool theme_background = false;

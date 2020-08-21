@@ -228,8 +228,6 @@ static float scroll_pos;
 static ImGuiTextFilter search_bar;
 
 void draw_content_manager(GuiState &gui, HostState &host) {
-    draw_information_bar(gui);
-
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
     const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
@@ -245,7 +243,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     const auto POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
 
-    const auto is_background = gui.apps_background.find(host.app_title_id) != gui.apps_background.end();
+    const auto is_background = gui.apps_background.find("NPXS10026") != gui.apps_background.end();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -254,7 +252,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     ImGui::Begin("##content_manager", &gui.live_area.content_manager, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.app_title_id], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10026"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
 
     ImGui::SetWindowFontScale(1.5f * SCAL.x);
 
@@ -319,8 +317,9 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Selectable("Themes", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT))) {
-            host.app_title_id = "NPXS10015";
-            pre_run_app(gui, host);
+            host.app_title_id = "NPXS10026";
+            gui.live_area.content_manager = false;
+            pre_run_app(gui, host, "NPXS10015");
         }
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
@@ -542,8 +541,13 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     set_scroll_pos = true;
                 } else
                     menu.clear();
-            } else
+            } else {
+                if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10026")
+                    gui.live_area.live_area_screen = true;
+                else
+                    gui.live_area.app_selector = true;
                 gui.live_area.content_manager = false;
+            }
         }
     } else {
         ImGui::SetWindowFontScale(1.5f * SCAL.x);
