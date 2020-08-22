@@ -56,7 +56,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal("install", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, title.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
