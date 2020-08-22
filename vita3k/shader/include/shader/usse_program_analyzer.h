@@ -67,12 +67,6 @@ struct USSEBlock {
     }
 };
 
-struct UniformBuffer {
-    int base;
-    int size;
-    int cursor;
-};
-
 using UniformBufferMap = std::map<int, UniformBuffer>;
 
 using USSEOffset = std::uint32_t;

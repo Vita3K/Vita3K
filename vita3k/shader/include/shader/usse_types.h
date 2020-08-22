@@ -277,6 +277,12 @@ struct Instruction {
     }
 };
 
+struct UniformBuffer {
+    int base;
+    int size;
+    bool rw;
+};
+
 enum class ShaderPhase {
     SampleRate, // Secondary phase
     Pixel, // Primary phase
