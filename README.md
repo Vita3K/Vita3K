@@ -1,7 +1,5 @@
 # Vita3K
 
-[![Build Status](https://travis-ci.org/Vita3K/Vita3K.svg?branch=master)](https://travis-ci.org/Vita3K/Vita3K)
-[![Build status](https://ci.appveyor.com/api/projects/status/tlvkwrsj13vq3gor/branch/master?svg=true)](https://ci.appveyor.com/project/Vita3K/vita3k/branch/master)
 ![C/C++ CI](https://github.com/Vita3K/Vita3K/workflows/C/C++%20CI/badge.svg)
 
 ## Introduction
