@@ -556,27 +556,7 @@ bool USSETranslatorVisitor::v32nmad(
 
     const auto src1_swizzle_enc = src1_swiz_0_6 | src1_swiz_7_8 << 7 | src1_swiz_9 << 9 | src1_swiz_10_11 << 10;
     inst.opr.src1.swizzle = decode_swizzle4(src1_swizzle_enc);
-
-    static const Swizzle4 tb_decode_src2_swizzle[] = {
-        SWIZZLE_CHANNEL_4(X, X, X, X),
-        SWIZZLE_CHANNEL_4(Y, Y, Y, Y),
-        SWIZZLE_CHANNEL_4(Z, Z, Z, Z),
-        SWIZZLE_CHANNEL_4(W, W, W, W),
-        SWIZZLE_CHANNEL_4(X, Y, Z, W),
-        SWIZZLE_CHANNEL_4(Y, Z, W, W),
-        SWIZZLE_CHANNEL_4(X, Y, Z, Z),
-        SWIZZLE_CHANNEL_4(X, X, Y, Z),
-        SWIZZLE_CHANNEL_4(X, Y, X, Y),
-        SWIZZLE_CHANNEL_4(X, Y, W, Z),
-        SWIZZLE_CHANNEL_4(Z, X, Y, W),
-        SWIZZLE_CHANNEL_4(Z, W, Z, W),
-        SWIZZLE_CHANNEL_4(Y, Z, X, Z),
-        SWIZZLE_CHANNEL_4(X, X, Y, Y),
-        SWIZZLE_CHANNEL_4(X, Z, W, W),
-        SWIZZLE_CHANNEL_4(X, Y, Z, 1),
-    };
-
-    inst.opr.src2.swizzle = tb_decode_src2_swizzle[src2_swiz];
+    inst.opr.src2.swizzle = decode_vec34_swizzle(src2_swiz, false, 2);
 
     // TODO: source modifiers
 
