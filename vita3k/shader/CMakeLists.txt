@@ -13,6 +13,7 @@ add_library(
 	include/shader/usse_translator_entry.h
 	include/shader/usse_translator_types.h
 	include/shader/usse_utilities.h
+	include/shader/gxp_parser.h
 	include/shader/spirv_recompiler.h
 
 	src/translator/alu.cpp
@@ -23,6 +24,7 @@ add_library(
 	src/translator/illegal.cpp
 	src/translator/texture.cpp
 	src/translator/utils.cpp
+	src/gxp_parser.cpp
 	src/usse_disasm.cpp
 	src/usse_program_analyzer.cpp
 	src/usse_decode_helpers.cpp

@@ -29,6 +29,7 @@
 #include <shader/usse_utilities.h>
 #include <util/fs.h>
 #include <util/log.h>
+#include <shader/gxp_parser.h>
 
 #include <SPIRV/SpvBuilder.h>
 #include <SPIRV/disassemble.h>
@@ -332,28 +333,6 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
     return sampler;
 }
 
-static DataType gxm_parameter_type_to_usse_data_type(const SceGxmParameterType param_type) {
-    switch (param_type) {
-    case SCE_GXM_PARAMETER_TYPE_F16:
-        return DataType::F16;
-
-    case SCE_GXM_PARAMETER_TYPE_F32:
-        return DataType::F32;
-        break;
-
-    case SCE_GXM_PARAMETER_TYPE_U8:
-        return DataType::UINT8;
-    case SCE_GXM_PARAMETER_TYPE_S8:
-        return DataType::INT8;
-
-    default:
-        LOG_WARN("Unsupported output register format {}, default to F16", (int)param_type);
-        break;
-    }
-
-    return DataType::F16;
-}
-
 static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
     const SceGxmProgram &program) {
     static const std::unordered_map<std::uint32_t, std::string> name_map = {
@@ -638,59 +617,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             target_to_store.bank = RegisterBank::OUTPUT;
             target_to_store.num = 0;
-            target_to_store.type = gxm_parameter_type_to_usse_data_type(program.get_fragment_output_type());
+            target_to_store.type = std::get<0>(shader::get_parameter_type_store_and_name(program.get_fragment_output_type()));
 
             utils::store(b, parameters, utils, features, target_to_store, source, 0b1111, 0);
         }
-    }
-}
-
-static void get_parameter_type_store_and_name(const SceGxmProgramParameter &parameter, DataType &store_type, const char *&param_type_name) {
-    switch (parameter.type) {
-    case SCE_GXM_PARAMETER_TYPE_F16: {
-        param_type_name = "half";
-        store_type = DataType::F16;
-        break;
-    }
-
-    case SCE_GXM_PARAMETER_TYPE_U16: {
-        param_type_name = "ushort";
-        store_type = DataType::UINT16;
-        break;
-    }
-
-    case SCE_GXM_PARAMETER_TYPE_S16: {
-        param_type_name = "ishort";
-        store_type = DataType::INT16;
-        break;
-    }
-
-    case SCE_GXM_PARAMETER_TYPE_U8: {
-        param_type_name = "uchar";
-        store_type = DataType::UINT8;
-        break;
-    }
-
-    case SCE_GXM_PARAMETER_TYPE_S8: {
-        param_type_name = "ichar";
-        store_type = DataType::INT8;
-        break;
-    }
-
-    case SCE_GXM_PARAMETER_TYPE_U32: {
-        param_type_name = "uint";
-        store_type = DataType::UINT32;
-        break;
-    }
-
-    case SCE_GXM_PARAMETER_TYPE_S32: {
-        param_type_name = "int";
-        store_type = DataType::INT32;
-        break;
-    }
-
-    default:
-        break;
     }
 }
 
@@ -887,10 +817,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
             all_buffers_in_register[parameter.container_index] = container;
 
-            auto param_type_name = "float";
-            DataType store_type = DataType::F32;
-
-            get_parameter_type_store_and_name(parameter, store_type, param_type_name);
+            const auto parameter_type = gxp::parameter_type(parameter);
+            const auto [store_type, param_type_name] = shader::get_parameter_type_store_and_name(parameter_type);
 
             // Make the type
             std::string param_log = fmt::format("[{} + {}] {}a{} = ({}{}) {}",
@@ -904,7 +832,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             LOG_DEBUG(param_log);
 
             if (!is_uniform || !features.use_ubo) {
-                int type_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>((uint16_t)parameter.type));
+                int type_size = gxp::get_parameter_type_size(parameter_type);
                 spv::Id var = b.createVariable(spv::StorageClassInput, param_type, var_name.c_str());
                 translation_state.interfaces.push_back(var);
                 translation_state.pa_vars.push_back(
@@ -1074,7 +1002,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color_val_operand.bank = program.is_native_color() ? RegisterBank::OUTPUT : RegisterBank::PRIMATTR;
     color_val_operand.num = 0;
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    color_val_operand.type = gxm_parameter_type_to_usse_data_type(param_type);
+    color_val_operand.type = std::get<0>(shader::get_parameter_type_store_and_name(param_type));
 
     auto vertex_outputs_ptr = reinterpret_cast<const SceGxmProgramVertexOutput *>(
         reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
