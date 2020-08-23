@@ -27,7 +27,7 @@ void draw_semaphores_dialog(GuiState &gui, HostState &host) {
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
 
-    for (auto semaphore : host.kernel.semaphores) {
+    for (const auto &semaphore : host.kernel.semaphores) {
         std::shared_ptr<Semaphore> sema_state = semaphore.second;
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d/%02d              %02zu",
             semaphore.first,

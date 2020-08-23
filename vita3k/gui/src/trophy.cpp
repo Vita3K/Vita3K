@@ -150,7 +150,7 @@ void get_trophy_np_com_id_list(GuiState &gui, HostState &host) {
                 // Read Updated time
                 const auto updated = fs::last_write_time(trophy_data_np_com_id_path / "TROPUSR.DAT");
                 const auto updated_date = std::localtime(&updated);
-                np_com_id_info[np_com_id].updated = fmt::format("{}/{}/{}  {}:{:0>2d}", updated_date->tm_mday, updated_date->tm_mon + 1, updated_date->tm_year + 1900, updated_date->tm_hour, updated_date->tm_min).c_str();
+                np_com_id_info[np_com_id].updated = fmt::format("{}/{}/{}  {}:{:0>2d}", updated_date->tm_mday, updated_date->tm_mon + 1, updated_date->tm_year + 1900, updated_date->tm_hour, updated_date->tm_min);
 
                 // Open trophy progress file
                 const auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + host.io.user_id + "/trophy/data/" + np_com_id + "/TROPUSR.DAT");
@@ -696,7 +696,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "Earned");
                 ImGui::SameLine(250.f * SCAL.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, trophy_info[trophy_id_selected].earned ? trophy_info[trophy_id_selected].unlocked_time.c_str() : "Not Earned");
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", trophy_info[trophy_id_selected].earned ? trophy_info[trophy_id_selected].unlocked_time.c_str() : "Not Earned");
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "Details");
                 ImGui::SameLine(250.f * SCAL.x);

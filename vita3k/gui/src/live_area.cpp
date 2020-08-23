@@ -25,8 +25,6 @@
 
 #include <pugixml.hpp>
 
-#include <SDL_keycode.h>
-
 #include <chrono>
 #include <sstream>
 #include <stb_image.h>
