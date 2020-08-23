@@ -21,8 +21,6 @@
 
 #include <util/log.h>
 
-#include <SDL_keycode.h>
-
 #include <stb_image.h>
 
 namespace gui {

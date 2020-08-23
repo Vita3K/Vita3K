@@ -24,8 +24,6 @@
 #include <pugixml.hpp>
 #include <sstream>
 
-#include <SDL_keycode.h>
-
 namespace gui {
 
 void delete_app(GuiState &gui, HostState &host) {

@@ -27,7 +27,7 @@ void draw_condvars_dialog(GuiState &gui, HostState &host) {
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
 
-    for (auto condvar : host.kernel.condvars) {
+    for (const auto &condvar : host.kernel.condvars) {
         std::shared_ptr<Condvar> sema_state = condvar.second;
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d             %02zu",
             condvar.first,
@@ -44,7 +44,7 @@ void draw_lw_condvars_dialog(GuiState &gui, HostState &host) {
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
 
-    for (auto condvar : host.kernel.lwcondvars) {
+    for (const auto &condvar : host.kernel.lwcondvars) {
         std::shared_ptr<Condvar> sema_state = condvar.second;
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d             %02zu",
             condvar.first,
