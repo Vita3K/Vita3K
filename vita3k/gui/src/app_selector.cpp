@@ -157,6 +157,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 last_time["start"] += host.cfg.delay_start;
                 last_time["home"] = 0;
                 gui.live_area.app_selector = false;
+                gui.live_area.information_bar = true;
                 gui.live_area.start_screen = true;
             }
         }

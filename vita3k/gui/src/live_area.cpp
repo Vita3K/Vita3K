@@ -207,8 +207,6 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(display_size.x, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::Begin("##information_bar", &gui.live_area.information_bar, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    const auto scal_default_font = 19.2f / ImGui::GetFontSize();
-
     const auto now = std::chrono::system_clock::now();
     const auto tt = std::chrono::system_clock::to_time_t(now);
     const auto local = *localtime(&tt);
@@ -229,9 +227,11 @@ void draw_information_bar(GuiState &gui, HostState &host) {
         }
     }
 
+    const auto scal_default_font = 19.2f * (19.2f / ImGui::GetFontSize());
+    const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
     const auto clock_size = ImGui::CalcTextSize(clock_str.c_str());
 
-    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, (19.2f * scal_default_font) * SCAL.x, ImVec2(display_size.x - (62.f * SCAL.x) - ((clock_size.x * scal_default_font) * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - (((clock_size.y * scal_default_font) * SCAL.y) / 2.f)), is_theme_color ? gui.information_bar_color["indicator"] : DEFAUL_INDICATOR_COLOR, clock_str.c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, scal_default_font * SCAL.x, ImVec2(display_size.x - (62.f * SCAL.x) - ((clock_size.x * scal_font_size) * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - (((clock_size.y * scal_font_size) * SCAL.y) / 2.f)), is_theme_color ? gui.information_bar_color["indicator"] : DEFAUL_INDICATOR_COLOR, clock_str.c_str());
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCAL.x) - is_notif_pos, 12.f * SCAL.y), ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 20 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawCornerFlags_All);
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 5.f * SCAL.y), ImVec2(display_size.x - (12.f * SCAL.x) - is_notif_pos, 27 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f, ImDrawCornerFlags_All);
 
@@ -272,32 +272,32 @@ static std::map<std::string, std::map<std::string, std::map<std::string, ImVec2>
 static std::map<std::string, std::map<std::string, std::string>> target;
 static std::map<std::string, std::map<std::string, uint64_t>> current_item, last_time;
 static std::map<std::string, std::string> type;
-static std::string start;
+static std::string start, resume;
 
 void init_live_area(GuiState &gui, HostState &host) {
     std::string user_lang;
     const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
     switch (sys_lang) {
-    case SCE_SYSTEM_PARAM_LANG_JAPANESE: user_lang = "ja", start = u8"はじめる"; break;
-    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: user_lang = "en", start = "Start"; break;
-    case SCE_SYSTEM_PARAM_LANG_FRENCH: user_lang = "fr", start = "Demarrer"; break;
-    case SCE_SYSTEM_PARAM_LANG_SPANISH: user_lang = "es", start = "Iniciar"; break;
-    case SCE_SYSTEM_PARAM_LANG_GERMAN: user_lang = "de", start = "Starten"; break;
-    case SCE_SYSTEM_PARAM_LANG_ITALIAN: user_lang = "it", start = "Avvia"; break;
-    case SCE_SYSTEM_PARAM_LANG_DUTCH: user_lang = "nl", start = "Starten"; break;
-    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: user_lang = "pt", start = "Iniciar"; break;
-    case SCE_SYSTEM_PARAM_LANG_RUSSIAN: user_lang = "ru", start = u8"Запуск"; break;
-    case SCE_SYSTEM_PARAM_LANG_KOREAN: user_lang = "ko", start = u8"시작"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_lang = "ch", start = u8"开始"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_lang = "zh", start = u8"啟動"; break;
-    case SCE_SYSTEM_PARAM_LANG_FINNISH: user_lang = "fi", start = "Rozpocznij"; break;
-    case SCE_SYSTEM_PARAM_LANG_SWEDISH: user_lang = "sv", start = "Starta"; break;
-    case SCE_SYSTEM_PARAM_LANG_DANISH: user_lang = "da", start = "Start"; break;
-    case SCE_SYSTEM_PARAM_LANG_NORWEGIAN: user_lang = "no", start = "Start"; break;
-    case SCE_SYSTEM_PARAM_LANG_POLISH: user_lang = "pl", start = "Rozpocznij"; break;
-    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: user_lang = "pt-br", start = "Iniciar"; break;
-    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB: user_lang = "en-gb", start = "Start"; break;
-    case SCE_SYSTEM_PARAM_LANG_TURKISH: user_lang = "tr", start = u8"Başlat"; break;
+    case SCE_SYSTEM_PARAM_LANG_JAPANESE: user_lang = "ja", start = u8"はじめる", resume = u8"つづける"; break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: user_lang = "en", start = u8"Start", resume = u8"Continue"; break;
+    case SCE_SYSTEM_PARAM_LANG_FRENCH: user_lang = "fr", start = u8"Démarrer", resume = u8"Continuer"; break;
+    case SCE_SYSTEM_PARAM_LANG_SPANISH: user_lang = "es", start = u8"Iniciar", resume = u8"Continuar"; break;
+    case SCE_SYSTEM_PARAM_LANG_GERMAN: user_lang = "de", start = u8"Starten", resume = u8"Fortfahren"; break;
+    case SCE_SYSTEM_PARAM_LANG_ITALIAN: user_lang = "it", start = u8"Avvia", resume = u8"Continua"; break;
+    case SCE_SYSTEM_PARAM_LANG_DUTCH: user_lang = "nl", start = u8"Starten", resume = u8"Doorgaan"; break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: user_lang = "pt", start = u8"Iniciar", resume = u8"Continuar"; break;
+    case SCE_SYSTEM_PARAM_LANG_RUSSIAN: user_lang = "ru", start = u8"Запуск", resume = u8"Продолжить"; break;
+    case SCE_SYSTEM_PARAM_LANG_KOREAN: user_lang = "ko", start = u8"시작", resume = u8"계속"; break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_lang = "ch", start = u8"开始", resume = u8"繼續"; break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_lang = "zh", start = u8"啟動", resume = u8"继续"; break;
+    case SCE_SYSTEM_PARAM_LANG_FINNISH: user_lang = "fi", start = u8"Rozpocznij", resume = u8"Jatka"; break;
+    case SCE_SYSTEM_PARAM_LANG_SWEDISH: user_lang = "sv", start = u8"Starta", resume = u8"Fortsätt"; break;
+    case SCE_SYSTEM_PARAM_LANG_DANISH: user_lang = "da", start = u8"Start", resume = u8"Fortsæt"; break;
+    case SCE_SYSTEM_PARAM_LANG_NORWEGIAN: user_lang = "no", start = u8"Start", resume = u8"Fortsett"; break;
+    case SCE_SYSTEM_PARAM_LANG_POLISH: user_lang = "pl", start = u8"Rozpocznij", resume = u8"Kontynuuj"; break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: user_lang = "pt-br", start = u8"Iniciar", resume = u8"Continuar"; break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB: user_lang = "en-gb", start = u8"Start", resume = u8"Continue"; break;
+    case SCE_SYSTEM_PARAM_LANG_TURKISH: user_lang = "tr", start = u8"Başlat", resume = u8"Devam"; break;
     default: break;
     }
 
@@ -1127,10 +1127,13 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         }
     }
 
+    const auto scal_default_font = 25.f * (19.2f / ImGui::GetFontSize());
+    const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
+
+    const std::string BUTTON_STR = title_id == host.io.title_id ? resume : start;
     const auto GATE_SIZE = ImVec2(280.0f * scal.x, 158.0f * scal.y);
     const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[title_id]]["gate"]["pos"].x * scal.x), display_size.y - (items_pos[type[title_id]]["gate"]["pos"].y * scal.y));
-    const auto scal_font_size = 25.0f / ImGui::GetFontSize();
-    const auto START_SIZE = ImVec2((ImGui::CalcTextSize(start.c_str()).x * scal_font_size), (ImGui::CalcTextSize(start.c_str()).y * scal_font_size));
+    const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * scal_font_size), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * scal_font_size));
     const auto START_BUTTON_SIZE = ImVec2((START_SIZE.x + 26.0f) * scal.x, (START_SIZE.y + 5.0f) * scal.y);
     const auto POS_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.08f));
     const auto POS_START = ImVec2(POS_BUTTON.x + (START_BUTTON_SIZE.x - (START_SIZE.x * scal.x)) / 2,
@@ -1147,7 +1150,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
     ImGui::PushID(title_id.c_str());
     ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * scal.x, ImDrawCornerFlags_All);
-    ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 25.0f * scal.x, POS_START, IM_COL32(255, 255, 255, 255), start.c_str());
+    ImGui::GetWindowDrawList()->AddText(gui.live_area_font, scal_default_font * scal.x, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
     if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
         pre_run_app(gui, host, title_id);
