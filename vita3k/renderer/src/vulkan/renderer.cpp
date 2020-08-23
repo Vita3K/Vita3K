@@ -389,7 +389,7 @@ void destroy_image(VulkanState &state, vk::Image image, VmaAllocation allocation
     vmaDestroyImage(state.allocator, image, allocation);
 }
 
-bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state) {
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state) {
     auto &vulkan_state = dynamic_cast<VulkanState &>(*state);
 
     // Create Instance
@@ -418,7 +418,7 @@ bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state) {
     // Create Surface
     {
         VkSurfaceKHR surface = VK_NULL_HANDLE;
-        bool surface_error = SDL_Vulkan_CreateSurface(window.get(), vulkan_state.instance, &surface);
+        bool surface_error = SDL_Vulkan_CreateSurface(window, vulkan_state.instance, &surface);
         if (!surface_error) {
             const char *error = SDL_GetError();
             LOG_ERROR("Failed to create vulkan surface. SDL Error: {}.", error);
@@ -549,7 +549,7 @@ bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state) {
     }
 
     int width, height;
-    SDL_Vulkan_GetDrawableSize(window.get(), &width, &height);
+    SDL_Vulkan_GetDrawableSize(window, &width, &height);
     resize_swapchain(vulkan_state, vk::Extent2D(width, height));
 
     return true;
