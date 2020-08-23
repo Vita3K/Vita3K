@@ -137,7 +137,7 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
             break;
         case 2:
             date["date"].x = 50.f;
-            date["clock"].x = 424.f;
+            date["clock"].x = 50.f;
             break;
         default:
             LOG_WARN("Date layout is unknown : {}", start_param["dateLayout"]);
@@ -420,7 +420,7 @@ void get_themes_list(GuiState &gui, HostState &host) {
                 const auto updated = fs::last_write_time(theme_path / content_id);
                 const auto updated_date = std::localtime(&updated);
 
-                themes_info[content_id].updated = fmt::format("{}/{}/{}  {:0>2d}:{:0>2d}", updated_date->tm_mday, updated_date->tm_mon + 1, updated_date->tm_year + 1900, updated_date->tm_hour, updated_date->tm_min).c_str();
+                themes_info[content_id].updated = fmt::format("{}/{}/{}  {:0>2d}:{:0>2d}", updated_date->tm_mday, updated_date->tm_mon + 1, updated_date->tm_year + 1900, updated_date->tm_hour, updated_date->tm_min);
 
                 themes_info[content_id].size = theme_size / KB(1);
                 themes_info[content_id].version = infomation.child("m_contentVer").text().as_string();
@@ -490,7 +490,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
     const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
     auto DATE_POS = ImVec2(display_size.x - (date["date"].x * SCAL.x), display_size.y - (date["date"].y * SCAL.y));
-    const auto CLOCK_POS = ImVec2(display_size.x - (date["clock"].x * SCAL.x), display_size.y - (date["clock"].y * SCAL.y));
+    auto CLOCK_POS = ImVec2(display_size.x - (date["clock"].x * SCAL.x), display_size.y - (date["clock"].y * SCAL.y));
 
     ImGui::SetNextWindowPos(ImVec2(0.f, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
@@ -505,19 +505,27 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto now = std::chrono::system_clock::now();
     const auto tt = std::chrono::system_clock::to_time_t(now);
     const auto local = *localtime(&tt);
-    const auto scal_font = 19.2f / ImGui::GetFontSize();
+
+    const auto scal_default_font = 19.2f / ImGui::GetFontSize();
+    const auto scal_date_font_size = 34.f * scal_default_font;
+    const auto scal_data_font = scal_date_font_size / ImGui::GetFontSize();
+
+    const auto scal_clock_font_size = 124.f * scal_default_font;
+    const auto scal_clock_font = scal_clock_font_size / ImGui::GetFontSize();
 
     const auto DATE_STR = fmt::format("{} {} ({})", local.tm_mday, wmonth[local.tm_mon], wday[local.tm_wday]);
+    const auto CLOCK_STR = fmt::format("{:0>2d}:{:0>2d}", local.tm_hour, local.tm_min);
+
     if (start_param["dateLayout"] == "2") {
-        const auto scal_date_font_size = 34.f / ImGui::GetFontSize();
-        const auto DATE_SIZE = (ImGui::CalcTextSize(DATE_STR.c_str()).x * scal_font) * scal_date_font_size;
+        const auto DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str()).x * scal_data_font;
+        const auto CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str()).x * scal_clock_font;
         DATE_POS.x -= DATE_SIZE * SCAL.x;
+        CLOCK_POS.x -= CLOCK_SIZE * SCAL.x;
     }
 
-    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, (34.0f * scal_font) * SCAL.x, DATE_POS, date_color, DATE_STR.c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, scal_date_font_size * SCAL.x, DATE_POS, date_color, DATE_STR.c_str());
     ImGui::PushFont(gui.live_area_font_large);
-    const auto scal_font_large = 124.f / ImGui::GetFontSize();
-    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font_large, (124.0f * scal_font_large) * SCAL.x, CLOCK_POS, date_color, fmt::format("{:0>2d}:{:0>2d}", local.tm_hour, local.tm_min).c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font_large, scal_clock_font_size * SCAL.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
     ImGui::PopFont();
 
     if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
