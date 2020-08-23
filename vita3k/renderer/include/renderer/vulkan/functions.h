@@ -22,7 +22,7 @@
 namespace renderer::vulkan {
 #define VULKAN_CHECK(a) assert(a == vk::Result::eSuccess)
 
-bool create(const WindowPtr &window, std::unique_ptr<renderer::State> &state);
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state);
 void close(std::unique_ptr<renderer::State> &state);
 
 // I think I will drop this approach but this is fine for now.

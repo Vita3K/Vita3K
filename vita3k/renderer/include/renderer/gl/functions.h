@@ -48,7 +48,7 @@ bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderSt
 
 bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int block_num, const int size, const void *data, bool log_active_shader);
 
-bool create(WindowPtr &window, std::unique_ptr<renderer::State> &state);
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state);
 bool create(std::unique_ptr<Context> &context);
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
