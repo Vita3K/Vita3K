@@ -5,6 +5,19 @@
 
 using namespace shader::usse;
 
+GenericType shader::translate_generic_type(const gxp::GenericParameterType &type) {
+    switch (type) {
+    case gxp::GenericParameterType::Scalar:
+        return GenericType::SCALER;
+    case gxp::GenericParameterType::Vector:
+        return GenericType::VECTOR;
+    case gxp::GenericParameterType::Array:
+        return GenericType::ARRAY;
+    default:
+        return GenericType::INVALID;
+    }
+}
+
 std::tuple<DataType, std::string> shader::get_parameter_type_store_and_name(const SceGxmParameterType &type) {
     switch (type) {
     case SCE_GXM_PARAMETER_TYPE_F16: {
