@@ -93,11 +93,12 @@ struct StructDeclContext {
     void clear() { *this = {}; }
 };
 
-struct PAVar {
+struct VarToReg {
     spv::Id var;
-    uint32_t pa_offset;
-    uint32_t pa_size;
-    DataType pa_dtype;
+    bool pa; // otherwise sa
+    uint32_t offset;
+    uint32_t size;
+    DataType dtype;
 };
 
 struct TranslationState {
@@ -107,7 +108,7 @@ struct TranslationState {
     spv::Id mask_id = spv::NoResult;
     spv::Id frag_coord_id = spv::NoResult; ///< gl_FragCoord, not built-in in SPIR-V.
     spv::Id flip_vec_id = spv::NoResult;
-    std::vector<PAVar> pa_vars;
+    std::vector<VarToReg> var_to_regs;
     std::vector<spv::Id> interfaces;
     bool is_maskupdate;
 };
@@ -409,8 +410,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 b.addDecoration(pa_iter_var, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
             }
 
-            translation_state.pa_vars.push_back(
+            translation_state.var_to_regs.push_back(
                 { pa_iter_var,
+                    true,
                     pa_offset,
                     pa_iter_size,
                     pa_dtype });
@@ -726,42 +728,38 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     std::vector<literal_pair> literal_pairs;
 
     const auto program_input = shader::get_program_input(program);
+    const auto add_var_to_reg = [&](const Input &input, const std::string &name, bool pa) {
+        const spv::Id param_type = get_param_type(b, input);
+        int type_size = get_data_type_size(input.type);
+        spv::Id var = b.createVariable(spv::StorageClassInput, param_type, name.c_str());
+        translation_state.interfaces.push_back(var);
+        VarToReg var_to_reg;
+        var_to_reg.var = var;
+        var_to_reg.pa = pa;
+        var_to_reg.offset = input.offset;
+        var_to_reg.size = input.array_size * input.component_count * 4;
+        var_to_reg.dtype = input.type;
+        translation_state.var_to_regs.push_back(var_to_reg);
+    };
 
     for (const auto &input : program_input.inputs) {
-        std::visit(
-            overloaded{
-                [&](const LiteralInputSource &s) {
-                    literal_pairs.emplace_back(input.offset, b.makeFloatConstant(s.data));
-                    // Pair sort automatically sort offset for us
-                    std::sort(literal_pairs.begin(), literal_pairs.end());
-                },
-                [&](const UniformInputSource &s) {
-                    if (!features.use_ubo) {
-                        const spv::Id param_type = get_param_type(b, input);
-                        int type_size = get_data_type_size(input.type);
-                        spv::Id var = b.createVariable(spv::StorageClassInput, param_type, s.name.c_str());
-                        translation_state.interfaces.push_back(var);
-                        translation_state.pa_vars.push_back(
-                            { var,
-                                input.offset,
-                                input.array_size * input.component_count * 4,
-                                input.type });
-                    }
-                },
-                [&](const AttributeInputSoucre &s) {
-                    const spv::Id param_type = get_param_type(b, input);
-                    int type_size = get_data_type_size(input.type);
-                    spv::Id var = b.createVariable(spv::StorageClassInput, param_type, s.name.c_str());
-                    translation_state.interfaces.push_back(var);
-                    translation_state.pa_vars.push_back(
-                        { var,
-                            input.offset,
-                            input.array_size * input.component_count * 4,
-                            input.type });
-                } },
+        std::visit(overloaded{
+                       [&](const LiteralInputSource &s) {
+                           literal_pairs.emplace_back(input.offset, b.makeFloatConstant(s.data));
+                           // Pair sort automatically sort offset for us
+                           std::sort(literal_pairs.begin(), literal_pairs.end());
+                       },
+                       [&](const UniformInputSource &s) {
+                           // In ubo mode we copy
+                           if (!features.use_ubo) {
+                               add_var_to_reg(input, s.name, false);
+                           }
+                       },
+                       [&](const AttributeInputSoucre &s) {
+                           add_var_to_reg(input, s.name, true);
+                       } },
             input.source);
     }
-
 
     for (const auto &sampler : program_input.samplers) {
         const auto sampler_spv_var = create_param_sampler(b, sampler.name);
@@ -782,11 +780,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
+    // We should avoid ugly and long GLSL code generated. Also, inefficient SPIR-V code.
+    // Packing literals into vector may help solving this.
     if (literal_pairs.size() != 0) {
         std::uint32_t composite_base = literal_pairs[0].first;
 
-        // We should avoid ugly and long GLSL code generated. Also, inefficient SPIR-V code.
-        // Packing literals into vector may help solving this.
         std::vector<spv::Id> constituents;
         constituents.push_back(literal_pairs[0].second);
 
@@ -1094,9 +1092,9 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
         end_hook_func = make_vert_finalize_function(b, parameters, program, utils, features, translation_state);
     }
 
-    for (auto &pa_var : translation_state.pa_vars) {
-        create_input_variable(b, parameters, utils, features, "", RegisterBank::PRIMATTR,
-            pa_var.pa_offset, spv::NoResult, pa_var.pa_size, pa_var.var, pa_var.pa_dtype);
+    for (auto &var_to_reg : translation_state.var_to_regs) {
+        create_input_variable(b, parameters, utils, features, "", var_to_reg.pa ? RegisterBank::PRIMATTR : RegisterBank::SECATTR,
+            var_to_reg.offset, spv::NoResult, var_to_reg.size, var_to_reg.var, var_to_reg.dtype);
     }
 
     // Initialize vertex output to 0
