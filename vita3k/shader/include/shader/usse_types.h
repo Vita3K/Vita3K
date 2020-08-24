@@ -285,10 +285,57 @@ enum class GenericType {
     INVALID
 };
 
+struct Sampler {
+    std::string name;
+    bool dependent;
+    uint32_t index;
+    uint32_t offset; // SA offset for dependent sampler
+};
+
 struct UniformBuffer {
     int base;
     int size;
     bool rw;
+    bool reg;
+};
+
+// TODO do we need this
+struct UniformBlock {
+    int block_num;
+    uint32_t offset;
+    uint32_t size;
+};
+
+struct UniformInputSource {
+    std::string name;
+    uint32_t index;
+};
+
+struct AttributeInputSoucre {
+    std::string name;
+    uint32_t index;
+};
+
+struct LiteralInputSource {
+    float data;
+};
+
+using InputSource = std::variant<UniformInputSource, LiteralInputSource, AttributeInputSoucre>;
+
+struct Input {
+    RegisterBank bank;
+    DataType type;
+    GenericType generic_type;
+    uint32_t offset;
+    uint32_t component_count;
+    uint32_t array_size;
+    InputSource source;
+};
+
+struct ProgramInput {
+    std::vector<Input> inputs;
+    std::vector<Sampler> samplers;
+    std::unordered_map<int, UniformBlock> uniform_blocks;
 };
 
 enum class ShaderPhase {

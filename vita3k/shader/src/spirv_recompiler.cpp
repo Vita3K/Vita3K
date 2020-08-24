@@ -23,13 +23,14 @@
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
+#include <shader/gxp_parser.h>
 #include <shader/profile.h>
 #include <shader/usse_translator_entry.h>
 #include <shader/usse_translator_types.h>
 #include <shader/usse_utilities.h>
 #include <util/fs.h>
 #include <util/log.h>
-#include <shader/gxp_parser.h>
+#include <util/overloaded.h>
 
 #include <SPIRV/SpvBuilder.h>
 #include <SPIRV/disassemble.h>
@@ -129,11 +130,11 @@ using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, Ve
 // * Functions (implementation) *
 // ******************************
 
-static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, const SceGxmProgramParameter &parameter, const uint32_t explicit_array_size = 0) {
+static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, const Input &input, const uint32_t explicit_array_size = 0) {
     // disabled
     return param_id;
 
-    const auto array_size = explicit_array_size == 0 ? parameter.array_size : explicit_array_size;
+    const auto array_size = explicit_array_size == 0 ? input.array_size : explicit_array_size;
     if (array_size > 1) {
         const auto array_size_id = b.makeUintConstant(array_size);
         return b.makeArrayType(param_id, array_size_id, 0);
@@ -141,28 +142,26 @@ static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, c
     return param_id;
 }
 
-static spv::Id get_type_basic(spv::Builder &b, const SceGxmProgramParameter &parameter) {
-    SceGxmParameterType type = gxp::parameter_type(parameter);
-
-    switch (type) {
+static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
+    switch (input.type) {
     // clang-format off
-    case SCE_GXM_PARAMETER_TYPE_F16:
-    case SCE_GXM_PARAMETER_TYPE_F32:
+    case DataType::F16:
+    case DataType::F32:
          return b.makeFloatType(32);
 
-    case SCE_GXM_PARAMETER_TYPE_U8:
-    case SCE_GXM_PARAMETER_TYPE_U16:
-    case SCE_GXM_PARAMETER_TYPE_U32:
+    case DataType::UINT8:
+    case DataType::UINT16:
+    case DataType::UINT32:
         return b.makeUintType(32);
 
-    case SCE_GXM_PARAMETER_TYPE_S8:
-    case SCE_GXM_PARAMETER_TYPE_S16:
-    case SCE_GXM_PARAMETER_TYPE_S32:
+    case DataType::INT8:
+    case DataType::INT16:
+    case DataType::INT32:
         return b.makeIntType(32);
 
     // clang-format on
     default: {
-        LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(type));
+        LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(input.type));
         return get_type_fallback(b);
     }
     }
@@ -172,44 +171,42 @@ static spv::Id get_type_fallback(spv::Builder &b) {
     return b.makeFloatType(32);
 }
 
-static spv::Id get_type_scalar(spv::Builder &b, const SceGxmProgramParameter &parameter) {
-    spv::Id param_id = get_type_basic(b, parameter);
-    param_id = create_array_if_needed(b, param_id, parameter);
+static spv::Id get_type_scalar(spv::Builder &b, const Input &input) {
+    spv::Id param_id = get_type_basic(b, input);
+    param_id = create_array_if_needed(b, param_id, input);
     return param_id;
 }
 
-static spv::Id get_type_vector(spv::Builder &b, const SceGxmProgramParameter &parameter) {
-    if (parameter.component_count == 1) {
-        return get_type_scalar(b, parameter);
+static spv::Id get_type_vector(spv::Builder &b, const Input &input) {
+    if (input.component_count == 1) {
+        return get_type_scalar(b, input);
     }
-    spv::Id param_id = get_type_basic(b, parameter);
-    param_id = b.makeVectorType(param_id, parameter.component_count);
+    spv::Id param_id = get_type_basic(b, input);
+    param_id = b.makeVectorType(param_id, input.component_count);
 
     return param_id;
 }
 
-static spv::Id get_type_array(spv::Builder &b, const SceGxmProgramParameter &parameter) {
-    spv::Id param_id = get_type_basic(b, parameter);
-    if (parameter.component_count > 1) {
-        param_id = b.makeVectorType(param_id, parameter.component_count);
+static spv::Id get_type_array(spv::Builder &b, const Input &input) {
+    spv::Id param_id = get_type_basic(b, input);
+    if (input.component_count > 1) {
+        param_id = b.makeVectorType(param_id, input.component_count);
     }
 
     // TODO: Stride
-    param_id = b.makeArrayType(param_id, b.makeUintConstant(parameter.array_size), 1);
+    param_id = b.makeArrayType(param_id, b.makeUintConstant(input.array_size), 1);
 
     return param_id;
 }
 
-static spv::Id get_param_type(spv::Builder &b, const SceGxmProgramParameter &parameter) {
-    gxp::GenericParameterType param_type = gxp::parameter_generic_type(parameter);
-
-    switch (param_type) {
-    case gxp::GenericParameterType::Scalar:
-        return get_type_scalar(b, parameter);
-    case gxp::GenericParameterType::Vector:
-        return get_type_vector(b, parameter);
-    case gxp::GenericParameterType::Array:
-        return get_type_array(b, parameter);
+static spv::Id get_param_type(spv::Builder &b, const Input &input) {
+    switch (input.generic_type) {
+    case GenericType::SCALER:
+        return get_type_scalar(b, input);
+    case GenericType::VECTOR:
+        return get_type_vector(b, input);
+    case GenericType::ARRAY:
+        return get_type_array(b, input);
     default:
         return get_type_fallback(b);
     }
@@ -246,12 +243,10 @@ spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     return spv::StorageClassMax;
 }
 
-static spv::Id create_param_sampler(spv::Builder &b, const SceGxmProgramParameter &parameter) {
+static spv::Id create_param_sampler(spv::Builder &b, const std::string &name) {
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
     spv::Id sampled_image_type = b.makeSampledImageType(image_type);
-    std::string name = gxp::parameter_name(parameter);
-
     return b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
@@ -723,148 +718,71 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     SamplerMap samplers;
- 
-    spv::Id ite_copy = b.createVariable(spv::StorageClassFunction, i32_type, "i");
-    std::array<const SceGxmProgramParameterContainer *, SCE_GXM_REAL_MAX_UNIFORM_BUFFER> all_buffers_in_register;
 
-    // Empty them out
-    for (auto &buffer : all_buffers_in_register) {
-        buffer = nullptr;
+    spv::Id ite_copy = b.createVariable(spv::StorageClassFunction, i32_type, "i");
+
+    using literal_pair = std::pair<std::uint32_t, spv::Id>;
+
+    std::vector<literal_pair> literal_pairs;
+
+    const auto program_input = shader::get_program_input(program);
+
+    for (const auto &input : program_input.inputs) {
+        std::visit(
+            overloaded{
+                [&](const LiteralInputSource &s) {
+                    literal_pairs.emplace_back(input.offset, b.makeFloatConstant(s.data));
+                    // Pair sort automatically sort offset for us
+                    std::sort(literal_pairs.begin(), literal_pairs.end());
+                },
+                [&](const UniformInputSource &s) {
+                    if (!features.use_ubo) {
+                        const spv::Id param_type = get_param_type(b, input);
+                        int type_size = get_data_type_size(input.type);
+                        spv::Id var = b.createVariable(spv::StorageClassInput, param_type, s.name.c_str());
+                        translation_state.interfaces.push_back(var);
+                        translation_state.pa_vars.push_back(
+                            { var,
+                                input.offset,
+                                input.array_size * input.component_count * 4,
+                                input.type });
+                    }
+                },
+                [&](const AttributeInputSoucre &s) {
+                    const spv::Id param_type = get_param_type(b, input);
+                    int type_size = get_data_type_size(input.type);
+                    spv::Id var = b.createVariable(spv::StorageClassInput, param_type, s.name.c_str());
+                    translation_state.interfaces.push_back(var);
+                    translation_state.pa_vars.push_back(
+                        { var,
+                            input.offset,
+                            input.array_size * input.component_count * 4,
+                            input.type });
+                } },
+            input.source);
     }
 
-    for (size_t i = 0; i < program.parameter_count; ++i) {
-        const SceGxmProgramParameter &parameter = gxp_parameters[i];
 
-        usse::RegisterBank param_reg_type = usse::RegisterBank::PRIMATTR;
-        uint16_t curi = parameter.category;
-
-        switch (parameter.category) {
-        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
-            param_reg_type = usse::RegisterBank::SECATTR;
-            [[fallthrough]];
-
-        // fallthrough
-        case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE: {
-            spv::Id param_type = get_param_type(b, parameter);
-
-            const bool is_uniform = param_reg_type == usse::RegisterBank::SECATTR;
-
-            std::string var_name = gxp::parameter_name(parameter);
-
-            auto container = gxp::get_container_by_index(program, parameter.container_index);
-            std::uint32_t offset = parameter.resource_index;
-
-            if (container && parameter.resource_index < container->size_in_f32) {
-                offset = container->base_sa_offset + parameter.resource_index;
-            }
-
-            all_buffers_in_register[parameter.container_index] = container;
-
-            const auto parameter_type = gxp::parameter_type(parameter);
-            const auto [store_type, param_type_name] = shader::get_parameter_type_store_and_name(parameter_type);
-
-            // Make the type
-            std::string param_log = fmt::format("[{} + {}] {}a{} = ({}{}) {}",
-                gxp::get_container_name(parameter.container_index), parameter.resource_index,
-                is_uniform ? "s" : "p", offset, param_type_name, parameter.component_count, var_name);
-
-            if (parameter.array_size > 1) {
-                param_log += fmt::format("[{}]", parameter.array_size);
-            }
-
-            LOG_DEBUG(param_log);
-
-            if (!is_uniform || !features.use_ubo) {
-                int type_size = gxp::get_parameter_type_size(parameter_type);
-                spv::Id var = b.createVariable(spv::StorageClassInput, param_type, var_name.c_str());
-                translation_state.interfaces.push_back(var);
-                translation_state.pa_vars.push_back(
-                    { var,
-                        offset,
-                        parameter.array_size * parameter.component_count * 4,
-                        store_type });
-            }
-
-            break;
+    for (const auto &sampler : program_input.samplers) {
+        const auto sampler_spv_var = create_param_sampler(b, sampler.name);
+        samplers.emplace(sampler.index, sampler_spv_var);
+        if (features.use_shader_binding) {
+            b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index);
         }
-
-        case SCE_GXM_PARAMETER_CATEGORY_SAMPLER: {
-            const auto sampler_spv_var = create_param_sampler(b, parameter);
-            samplers.emplace(parameter.resource_index, sampler_spv_var);
-            if (features.use_shader_binding)
-                b.addDecoration(sampler_spv_var, spv::DecorationBinding, parameter.resource_index);
-
-            break;
-        }
-        case SCE_GXM_PARAMETER_CATEGORY_AUXILIARY_SURFACE: {
-            assert(parameter.component_count == 0);
-            LOG_CRITICAL("auxiliary_surface used in shader");
-            break;
-        }
-        default: {
-            LOG_CRITICAL("Unknown parameter type used in shader.");
-            break;
-        }
+        if (sampler.dependent) {
+            spv_params.samplers.emplace(sampler.offset, sampler_spv_var);
         }
     }
 
     if (features.use_ubo) {
-        for (const auto &buffer_in_register : all_buffers_in_register) {
-            if (buffer_in_register && buffer_in_register->size_in_f32 != 0) {
-                // Create an array of vec4
-                const int buffer_block_num = (buffer_in_register->container_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
-                const int total_vec4 = static_cast<int>((buffer_in_register->size_in_f32 + 3) / 4);
-                spv::Id default_buffer = create_uniform_block(b, features, buffer_block_num, total_vec4, !program.is_fragment());
-                copy_uniform_block_to_register(b, spv_params.uniforms, default_buffer, ite_copy, buffer_in_register->base_sa_offset / 4, total_vec4);
-            }
+        for (const auto [_, block] : program_input.uniform_blocks) {
+            const int total_vec4 = static_cast<int>((block.size + 3) / 4);
+            spv::Id default_buffer = create_uniform_block(b, features, block.block_num, total_vec4, !program.is_fragment());
+            copy_uniform_block_to_register(b, spv_params.uniforms, default_buffer, ite_copy, block.offset / 4, total_vec4);
         }
     }
 
-    const SceGxmProgramParameterContainer *container = gxp::get_container_by_index(program, 19);
-
-    if (container) {
-        // Create dependent sampler
-        const SceGxmDependentSampler *dependent_samplers = reinterpret_cast<const SceGxmDependentSampler *>(reinterpret_cast<const std::uint8_t *>(&program.dependent_sampler_offset)
-            + program.dependent_sampler_offset);
-
-        for (std::uint32_t i = 0; i < program.dependent_sampler_count; i++) {
-            const std::uint32_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;
-            spv_params.samplers.emplace(container->base_sa_offset + dependent_samplers[i].sa_offset, samplers[rsc_index]);
-        }
-    }
-
-    const std::uint32_t *literals = reinterpret_cast<const std::uint32_t *>(reinterpret_cast<const std::uint8_t *>(&program.literals_offset)
-        + program.literals_offset);
-
-    // Get base SA offset for literal
-    // The container index of those literals are 16
-    container = gxp::get_container_by_index(program, 16);
-
-    if (!container) {
-        // Alternative is 19, which is DATA
-        container = gxp::get_container_by_index(program, 19);
-    }
-
-    if (!container) {
-        LOG_WARN("Container for literal not found, skipping creating literals!");
-    } else if (program.literals_count != 0) {
-        spv::Id f32_type = b.makeFloatType(32);
-        using literal_pair = std::pair<std::uint32_t, spv::Id>;
-
-        std::vector<literal_pair> literal_pairs;
-
-        for (std::uint32_t i = 0; i < program.literals_count * 2; i += 2) {
-            auto literal_offset = container->base_sa_offset + literals[i];
-            auto literal_data = *reinterpret_cast<const float *>(&literals[i + 1]);
-
-            literal_pairs.emplace_back(literal_offset, b.makeFloatConstant(literal_data));
-
-            // Pair sort automatically sort offset for us
-            std::sort(literal_pairs.begin(), literal_pairs.end());
-
-            LOG_TRACE("[LITERAL + {}] sa{} = {} (0x{:X})", literals[i], literal_offset, literal_data, literals[i + 1]);
-        }
-
+    if (literal_pairs.size() != 0) {
         std::uint32_t composite_base = literal_pairs[0].first;
 
         // We should avoid ugly and long GLSL code generated. Also, inefficient SPIR-V code.

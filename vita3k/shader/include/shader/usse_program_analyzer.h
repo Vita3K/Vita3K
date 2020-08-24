@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <map>
 #include <queue>
+#include <shader/usse_types.h>
 #include <tuple>
 
 using UniformBufferSizes = std::array<std::uint32_t, 15>;
