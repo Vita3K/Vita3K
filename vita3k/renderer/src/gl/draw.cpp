@@ -51,24 +51,20 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
     // If it's different, we need to switch. Else just stick to it.
-    // Pass 1: Check pointer.
-    if (state.last_draw_vertex_program.address() != state.vertex_program.address() || state.last_draw_fragment_program.address() != state.fragment_program.address()) {
-        // Pass 2: Check content
-        if (!state.last_draw_vertex_program || !state.last_draw_fragment_program || (state.last_draw_vertex_program.get(mem)->renderer_data->hash != state.vertex_program.get(mem)->renderer_data->hash) || (state.last_draw_fragment_program.get(mem)->renderer_data->hash != state.fragment_program.get(mem)->renderer_data->hash)) {
-            // Need to recompile!
-            SharedGLObject program = gl::compile_program(renderer.program_cache, renderer.vertex_shader_cache,
-                renderer.fragment_shader_cache, state, features, mem, gxm_fragment_program.is_maskupdate, base_path, title_id);
+    if (state.vertex_program.get(mem)->renderer_data->hash != state.last_draw_vertex_program_hash || state.fragment_program.get(mem)->renderer_data->hash != state.last_draw_fragment_program_hash) {
+        // Need to recompile!
+        SharedGLObject program = gl::compile_program(renderer.program_cache, renderer.vertex_shader_cache,
+            renderer.fragment_shader_cache, state, features, mem, gxm_fragment_program.is_maskupdate, base_path, title_id);
 
-            if (!program) {
-                LOG_ERROR("Fail to get program!");
-            }
-
-            // Use it
-            program_id = (*program).get();
-            context.last_draw_program = program_id;
-        } else {
-            program_id = context.last_draw_program;
+        if (!program) {
+            LOG_ERROR("Fail to get program!");
         }
+
+        // Use it
+        program_id = (*program).get();
+        context.last_draw_program = program_id;
+    } else {
+        program_id = context.last_draw_program;
     }
 
     if (log_active_shaders) {
@@ -191,7 +187,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
     glDrawElements(mode, static_cast<GLsizei>(count), gl_type, nullptr);
 
-    state.last_draw_vertex_program = state.vertex_program;
-    state.last_draw_fragment_program = state.fragment_program;
+    state.last_draw_vertex_program_hash = state.vertex_program.get(mem)->renderer_data->hash;
+    state.last_draw_fragment_program_hash = state.fragment_program.get(mem)->renderer_data->hash;
 }
 } // namespace renderer::gl
