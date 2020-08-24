@@ -1128,8 +1128,8 @@ struct GxmContextState {
     Ptr<const SceGxmFragmentProgram> fragment_program;
     Ptr<const SceGxmVertexProgram> vertex_program;
 
-    Ptr<const SceGxmFragmentProgram> last_draw_fragment_program;
-    Ptr<const SceGxmVertexProgram> last_draw_vertex_program;
+    std::string last_draw_fragment_program_hash;
+    std::string last_draw_vertex_program_hash;
 
     // Uniforms.
     UniformBuffers fragment_uniform_buffers;
