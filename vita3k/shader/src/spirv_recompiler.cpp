@@ -1310,6 +1310,20 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
             pa_var.pa_offset, spv::NoResult, pa_var.pa_size, pa_var.var, pa_var.pa_dtype);
     }
 
+    // Initialize vertex output to 0
+    if (program.is_vertex()) {
+        spv::Id i32_type = b.makeIntType(32);
+        spv::Id ite = b.createVariable(spv::StorageClassFunction, i32_type, "i");
+        spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
+        spv::Id rezero = b.makeFloatConstant(0.0f);
+        spv::Id rezero_v = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
+        utils::make_for_loop(b, ite, b.makeIntConstant(0), b.makeIntConstant(REG_O_COUNT / 4), [&]() {
+            Operand target_to_store;
+            spv::Id dest = b.createAccessChain(spv::StorageClassPrivate, parameters.outs, { b.createLoad(ite) });
+            b.createStore(rezero_v, dest);
+        });
+    }
+
     generate_shader_body(b, parameters, program, features, utils, end_hook_func, texture_queries);
 
     // Add entry point to Builder
