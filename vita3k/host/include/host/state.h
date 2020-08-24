@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <audio/state.h>
 #include <config/state.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
@@ -40,6 +39,8 @@
 #include <atomic>
 #include <memory>
 #include <string>
+
+struct AudioState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -79,7 +80,7 @@ struct HostState {
     MemState mem;
     CtrlState ctrl;
     KernelState kernel;
-    AudioState audio;
+    std::unique_ptr<AudioState> audio;
     GxmState gxm;
     bool renderer_focused;
     IOState io;

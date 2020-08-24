@@ -30,6 +30,8 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
+#include <SDL_thread.h>
+
 struct SceGxmContext {
     GxmContextState state;
     GXMRecordState record;

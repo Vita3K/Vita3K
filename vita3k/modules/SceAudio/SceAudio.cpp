@@ -17,6 +17,7 @@
 
 #include "SceAudio.h"
 
+#include <audio/state.h>
 #include <util/lock_and_find.h>
 
 enum SceAudioOutMode {
@@ -76,7 +77,7 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
     }
 
     const int channels = (mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
-    const AudioStreamPtr stream(SDL_NewAudioStream(AUDIO_S16LSB, channels, freq, host.audio.ro.spec.format, host.audio.ro.spec.channels, host.audio.ro.spec.freq), SDL_FreeAudioStream);
+    const AudioStreamPtr stream(SDL_NewAudioStream(AUDIO_S16LSB, channels, freq, host.audio->ro.spec.format, host.audio->ro.spec.channels, host.audio->ro.spec.freq), SDL_FreeAudioStream);
     if (!stream) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_NOT_OPENED);
     }
@@ -85,15 +86,15 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
     port->ro.len_bytes = len * channels * sizeof(int16_t);
     port->shared.stream = stream;
 
-    const std::lock_guard<std::mutex> lock(host.audio.shared.mutex);
-    const int port_id = host.audio.shared.next_port_id++;
-    host.audio.shared.out_ports.emplace(port_id, port);
+    const std::lock_guard<std::mutex> lock(host.audio->shared.mutex);
+    const int port_id = host.audio->shared.next_port_id++;
+    host.audio->shared.out_ports.emplace(port_id, port);
 
     return port_id;
 }
 
 EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
-    const AudioOutPortPtr prt = lock_and_find(port, host.audio.shared.out_ports, host.audio.shared.mutex);
+    const AudioOutPortPtr prt = lock_and_find(port, host.audio->shared.out_ports, host.audio->shared.mutex);
     if (!prt) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
@@ -110,7 +111,7 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
 
     // If there's lots of audio left to play, stop this thread.
     // The audio callback will wake it up later when it's running out of data.
-    if (available > host.audio.ro.spec.size) {
+    if (available > host.audio->ro.spec.size) {
         prt->shared.thread = thread_id;
         lock.unlock();
 

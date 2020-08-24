@@ -19,6 +19,7 @@
 
 #include <app/functions.h>
 #include <app/screen_render.h>
+#include <audio/state.h>
 #include <config/functions.h>
 #include <config/version.h>
 #include <gui/functions.h>
@@ -55,6 +56,7 @@ int main(int argc, char *argv[]) {
 
     Config cfg{};
     HostState host;
+    host.audio = std::make_unique<AudioState>();
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {

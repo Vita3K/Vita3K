@@ -156,7 +156,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
-    if (!init(state.audio, resume_thread)) {
+    if (!init(*state.audio, resume_thread)) {
         LOG_WARN("Failed to init audio! Audio will not work.");
     }
 
