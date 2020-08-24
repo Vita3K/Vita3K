@@ -714,12 +714,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv_params.indexes = b.createVariable(spv::StorageClassPrivate, index_arr_type, "idx");
     spv_params.outs = b.createVariable(spv::StorageClassPrivate, o_arr_type, "outs");
 
-    const auto buffers = shader::get_uniform_buffers(program);
-    for (const auto &buffer : buffers) {
-        spv::Id block = create_uniform_block(b, features, buffer.rw, buffer.size, !program.is_fragment());
-        spv_params.buffers.emplace(buffer.base, block);
-    }
-
     SamplerMap samplers;
 
     spv::Id ite_copy = b.createVariable(spv::StorageClassFunction, i32_type, "i");
@@ -729,6 +723,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     std::vector<literal_pair> literal_pairs;
 
     const auto program_input = shader::get_program_input(program);
+    for (const auto &buffer : program_input.uniform_buffers) {
+        spv::Id block = create_uniform_block(b, features, buffer.rw, buffer.size, !program.is_fragment());
+        spv_params.buffers.emplace(buffer.base, block);
+    }
+
     const auto add_var_to_reg = [&](const Input &input, const std::string &name, bool pa) {
         const spv::Id param_type = get_param_type(b, input);
         int type_size = get_data_type_size(input.type);
