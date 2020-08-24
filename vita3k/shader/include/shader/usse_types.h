@@ -278,6 +278,9 @@ struct Instruction {
     }
 };
 
+/**
+ * Container type for gxp parameters
+ */
 enum class GenericType {
     SCALER,
     VECTOR,
@@ -285,18 +288,24 @@ enum class GenericType {
     INVALID
 };
 
+/**
+ * Samplers that are attached to gxp shader program
+ */
 struct Sampler {
     std::string name;
     bool dependent;
-    uint32_t index;
+    uint32_t index; // resource index
     uint32_t offset; // SA offset for dependent sampler
 };
 
+/**
+ * Uniform buffers that are attached to gxp shader program
+ */
 struct UniformBuffer {
     int base;
     int size;
-    bool rw;
-    bool reg;
+    bool rw; // TODO confirm this
+    bool reg; // register buffer TODO confirm this
 };
 
 // TODO do we need this
@@ -308,30 +317,47 @@ struct UniformBlock {
 
 struct UniformInputSource {
     std::string name;
+    // resource index
     uint32_t index;
 };
 
 struct AttributeInputSoucre {
     std::string name;
+    // resource index
     uint32_t index;
 };
 
 struct LiteralInputSource {
+    // The constant data
     float data;
 };
 
+// Read source field in Input struct
 using InputSource = std::variant<UniformInputSource, LiteralInputSource, AttributeInputSoucre>;
 
+/**
+ * Input parameters that are usually copied into PA or SA
+ * registers before shader program starts.
+ */
 struct Input {
+    // Destination reigster bank
     RegisterBank bank;
+    // The type of parameter
     DataType type;
+    // The container type of parameter
     GenericType generic_type;
+    // Offset of destination register
     uint32_t offset;
-    uint32_t component_count;
-    uint32_t array_size;
+    uint32_t component_count
+        uint32_t array_size;
+    // The source where shader fetches the data
+    // e.g. vertex attributes
     InputSource source;
 };
 
+/**
+ * Contains the metadata of various input data of gxp shader program
+ */
 struct ProgramInput {
     std::vector<Input> inputs;
     std::vector<Sampler> samplers;
