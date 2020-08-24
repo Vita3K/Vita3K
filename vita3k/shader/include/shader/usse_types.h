@@ -4,6 +4,7 @@
 
 #include <array>
 #include <functional>
+#include <variant>
 #include <vector>
 
 namespace shader {
@@ -275,6 +276,13 @@ struct Instruction {
         , flags(0)
         , dest_mask(0) {
     }
+};
+
+enum class GenericType {
+    SCALER,
+    VECTOR,
+    ARRAY,
+    INVALID
 };
 
 struct UniformBuffer {
