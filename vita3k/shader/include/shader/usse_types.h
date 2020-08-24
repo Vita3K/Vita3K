@@ -4,6 +4,8 @@
 
 #include <array>
 #include <functional>
+#include <string>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -348,8 +350,8 @@ struct Input {
     GenericType generic_type;
     // Offset of destination register
     uint32_t offset;
-    uint32_t component_count
-        uint32_t array_size;
+    uint32_t component_count;
+    uint32_t array_size;
     // The source where shader fetches the data
     // e.g. vertex attributes
     InputSource source;
@@ -361,6 +363,7 @@ struct Input {
 struct ProgramInput {
     std::vector<Input> inputs;
     std::vector<Sampler> samplers;
+    std::vector<UniformBuffer> uniform_buffers;
     std::unordered_map<int, UniformBlock> uniform_blocks;
 };
 

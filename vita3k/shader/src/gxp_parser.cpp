@@ -127,6 +127,9 @@ std::vector<UniformBuffer> shader::get_uniform_buffers(const SceGxmProgram &prog
 
 ProgramInput shader::get_program_input(const SceGxmProgram &program) {
     ProgramInput program_input;
+    program_input.uniform_buffers = get_uniform_buffers(program);
+
+    // TODO split these to functions (e.g. get_literals, get_paramters)
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
     for (size_t i = 0; i < program.parameter_count; ++i) {
