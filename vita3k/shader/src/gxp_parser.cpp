@@ -20,6 +20,10 @@ GenericType shader::translate_generic_type(const gxp::GenericParameterType &type
 
 std::tuple<DataType, std::string> shader::get_parameter_type_store_and_name(const SceGxmParameterType &type) {
     switch (type) {
+    case SCE_GXM_PARAMETER_TYPE_F32: {
+        return std::make_tuple(DataType::F32, "float");
+    }
+
     case SCE_GXM_PARAMETER_TYPE_F16: {
         return std::make_tuple(DataType::F16, "half");
     }
