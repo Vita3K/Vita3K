@@ -93,6 +93,7 @@ struct StructDeclContext {
     void clear() { *this = {}; }
 };
 
+// TODO do we need this? This is made to avoid spir-v validation error regarding interface variables
 struct VarToReg {
     spv::Id var;
     bool pa; // otherwise sa
@@ -750,7 +751,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            std::sort(literal_pairs.begin(), literal_pairs.end());
                        },
                        [&](const UniformInputSource &s) {
-                           // In ubo mode we copy
+                           // In ubo mode we copy using default uniform buffer
                            if (!features.use_ubo) {
                                add_var_to_reg(input, s.name, false);
                            }
@@ -772,6 +773,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
+    // This one usually copies default uniform buffer to SA registers
     if (features.use_ubo) {
         for (const auto [_, block] : program_input.uniform_blocks) {
             const int total_vec4 = static_cast<int>((block.size + 3) / 4);
