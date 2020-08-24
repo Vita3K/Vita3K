@@ -17,6 +17,9 @@
 
 #include <touch/touch.h>
 
+#include <ctrl/state.h>
+#include <host/state.h>
+
 #include <SDL_events.h>
 
 #include <cstring>
@@ -146,7 +149,7 @@ int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData
             ++pData->reportNum;
         }
 
-        if (!host.ctrl.touch_mode[port]) {
+        if (!host.ctrl->touch_mode[port]) {
             pData->reportNum = 0;
         }
     } else if (registered_touch() == true && port == touchscreen_port) {

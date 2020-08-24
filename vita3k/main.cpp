@@ -22,6 +22,7 @@
 #include <audio/state.h>
 #include <config/functions.h>
 #include <config/version.h>
+#include <ctrl/state.h>
 #include <gui/functions.h>
 #include <gui/state.h>
 #include <host/pkg.h>
@@ -57,6 +58,7 @@ int main(int argc, char *argv[]) {
     Config cfg{};
     HostState host;
     host.audio = std::make_unique<AudioState>();
+    host.ctrl = std::make_unique<CtrlState>();
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {

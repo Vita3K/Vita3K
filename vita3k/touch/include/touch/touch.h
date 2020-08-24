@@ -17,12 +17,13 @@
 
 #pragma once
 
-#include <host/state.h>
 #include <util/types.h>
 
 #define SCE_TOUCH_MAX_REPORT 8
 
+struct HostState;
 struct SDL_TouchFingerEvent;
+struct SceTouchData;
 
 enum SceTouchErrorCode {
     SCE_TOUCH_ERROR_INVALID_ARG = 0x80350001,
