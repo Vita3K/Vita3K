@@ -54,6 +54,18 @@ using namespace shader::usse;
 namespace shader {
 
 // **************
+// * Constants *
+// **************
+
+static constexpr int REG_PA_COUNT = 32 * 4;
+static constexpr int REG_SA_COUNT = 40 * 4;
+static constexpr int REG_I_COUNT = 3 * 4;
+static constexpr int REG_TEMP_COUNT = 20 * 4;
+static constexpr int REG_INDEX_COUNT = 2 * 4;
+static constexpr int REG_PRED_COUNT = 4 * 4;
+static constexpr int REG_O_COUNT = 11 * 4;
+
+// **************
 // * Prototypes *
 // **************
 
@@ -757,13 +769,13 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv::Id b_type = b.makeBoolType();
 
     spv::Id f32_v4_type = b.makeVectorType(f32_type, 4);
-    spv::Id pa_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(32), 0);
-    spv::Id sa_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(40), 0);
-    spv::Id i_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(3), 0);
-    spv::Id temp_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(20), 0);
-    spv::Id index_arr_type = b.makeArrayType(i32_type, b.makeIntConstant(2), 0);
-    spv::Id pred_arr_type = b.makeArrayType(b_type, b.makeIntConstant(4), 0);
-    spv::Id o_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(11), 0);
+    spv::Id pa_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(REG_PA_COUNT / 4), 0);
+    spv::Id sa_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(REG_SA_COUNT / 4), 0);
+    spv::Id i_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(REG_I_COUNT / 4), 0);
+    spv::Id temp_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(REG_TEMP_COUNT / 4), 0);
+    spv::Id index_arr_type = b.makeArrayType(i32_type, b.makeIntConstant(REG_INDEX_COUNT / 4), 0);
+    spv::Id pred_arr_type = b.makeArrayType(b_type, b.makeIntConstant(REG_PRED_COUNT / 4), 0);
+    spv::Id o_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(REG_O_COUNT / 4), 0);
 
     // Create register banks
     spv_params.ins = b.createVariable(spv::StorageClassPrivate, pa_arr_type, "pa");
