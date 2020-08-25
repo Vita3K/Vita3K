@@ -19,6 +19,7 @@
 
 #include <config/functions.h>
 #include <gui/functions.h>
+#include <gxm/state.h>
 #include <host/functions.h>
 #include <host/load_self.h>
 #include <host/pkg.h>
@@ -391,7 +392,7 @@ bool handle_events(HostState &host, GuiState &gui) {
         switch (event.type) {
         case SDL_QUIT:
             stop_all_threads(host.kernel);
-            host.gxm.display_queue.abort();
+            host.gxm->display_queue.abort();
             host.display.abort.exchange(true);
             host.display.condvar.notify_all();
             return false;

@@ -26,6 +26,7 @@
 #include <dialog/state.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <gxm/state.h>
 #include <host/pkg.h>
 #include <host/state.h>
 #include <renderer/functions.h>
@@ -61,6 +62,7 @@ int main(int argc, char *argv[]) {
     host.audio = std::make_unique<AudioState>();
     host.common_dialog = std::make_unique<DialogState>();
     host.ctrl = std::make_unique<CtrlState>();
+    host.gxm = std::make_shared<GxmState>();
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {
