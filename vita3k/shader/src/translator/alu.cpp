@@ -464,7 +464,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask
 
     case Opcode::VDP:
     case Opcode::VF16DP: {
-        result = m_b.createBinOp(spv::OpDot, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::OpDot, m_b.makeFloatType(32), vsrc1, vsrc2);
         break;
     }
 
