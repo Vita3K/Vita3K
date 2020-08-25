@@ -1358,6 +1358,11 @@ bool USSETranslatorVisitor::vdual(
             result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(first), first, second);
             break;
         }
+        case Opcode::FRSQ: {
+            const spv::Id source = load(ops[0], write_mask_source);
+            result = m_b.createBuiltinCall(m_b.getTypeId(source), std_builtins, GLSLstd450InverseSqrt, { source });
+            break;
+        }
         case Opcode::FMUL:
         case Opcode::VMUL: {
             const spv::Id first = load(ops[0], write_mask_source);
