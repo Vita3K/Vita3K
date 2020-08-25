@@ -1358,6 +1358,24 @@ bool USSETranslatorVisitor::vdual(
             result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(first), first, second);
             break;
         }
+        case Opcode::FRCP: {
+            const spv::Id source = load(ops[0], write_mask_source);
+            const int num_comp = m_b.getNumComponents(source);
+            const spv::Id one_const = m_b.makeFloatConstant(1.0f);
+            spv::Id one_v = spv::NoResult;
+
+            if (num_comp == 1) {
+                one_v = one_const;
+            } else {
+                std::vector<spv::Id> ones;
+                ones.insert(ones.begin(), num_comp, one_const);
+
+                one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], ones);
+            }
+
+            result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(source), one_v, source);
+            break;
+        }
         case Opcode::FRSQ: {
             const spv::Id source = load(ops[0], write_mask_source);
             result = m_b.createBuiltinCall(m_b.getTypeId(source), std_builtins, GLSLstd450InverseSqrt, { source });
