@@ -21,6 +21,7 @@
 
 #include <gui/functions.h>
 
+#include <io/state.h>
 #include <io/VitaIoDevice.h>
 
 #include <util/log.h>
@@ -94,8 +95,8 @@ void pre_load_app(GuiState &gui, HostState &host, bool live_area) {
 void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id) {
     gui.live_area.live_area_screen = false;
     if (title_id.find("NPXS") == std::string::npos) {
-        if (host.io.title_id != title_id) {
-            host.io.title_id = title_id;
+        if (host.io->title_id != title_id) {
+            host.io->title_id = title_id;
 
             if (host.cfg.overwrite_config) {
                 host.cfg.last_app = title_id;
@@ -449,7 +450,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         // System Applications
         display_app(gui.app_selector.sys_apps, gui.app_selector.sys_apps_icon);
         // User Applications
-        if (host.io.title_id.empty())
+        if (host.io->title_id.empty())
             display_app(gui.app_selector.user_apps, gui.app_selector.user_apps_icon);
         ImGui::PopStyleColor();
         ImGui::Columns(1);

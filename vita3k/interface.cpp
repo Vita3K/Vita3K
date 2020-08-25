@@ -26,6 +26,7 @@
 #include <host/sfo.h>
 #include <io/device.h>
 #include <io/functions.h>
+#include <io/state.h>
 #include <io/vfs.h>
 #include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
@@ -242,7 +243,7 @@ static auto pre_load_module(HostState &host, const std::vector<std::string> &lib
         const auto MODULE_PATH_ABS = fmt::format("{}:{}", device._to_string(), module_path);
 
         if (device == VitaIoDevice::app0)
-            res = vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path);
+            res = vfs::read_app_file(module_buffer, host.pref_path, host.io->title_id, module_path);
         else
             res = vfs::read_file(device, module_buffer, host.pref_path, module_path);
 
@@ -268,18 +269,18 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         return InvalidApplicationPath;
 
     vfs::FileBuffer params;
-    bool params_found = vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
+    bool params_found = vfs::read_app_file(params, host.pref_path, host.io->title_id, "sce_sys/param.sfo");
 
     if (params_found) {
         sfo::load(host.sfo_handle, params);
 
         sfo::get_data_by_key(host.current_app_title, host.sfo_handle, "TITLE");
         std::replace(host.current_app_title.begin(), host.current_app_title.end(), '\n', ' '); // Restrict title to one line
-        sfo::get_data_by_key(host.io.title_id, host.sfo_handle, "TITLE_ID");
+        sfo::get_data_by_key(host.io->title_id, host.sfo_handle, "TITLE_ID");
         sfo::get_data_by_key(host.app_version, host.sfo_handle, "APP_VER");
         sfo::get_data_by_key(host.app_category, host.sfo_handle, "CATEGORY");
     } else {
-        host.current_app_title = host.io.title_id; // Use TitleID as Title
+        host.current_app_title = host.io->title_id; // Use TitleID as Title
         host.app_version = host.app_category = "N/A";
     }
 
@@ -289,13 +290,13 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
             config::serialize_config(host.cfg, host.cfg.config_path);
     }
 
-    if (host.io.user_id.empty())
-        host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
+    if (host.io->user_id.empty())
+        host.io->user_id = fmt::format("{:0>2d}", host.cfg.user_id);
 
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
-        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.current_app_title) + " - [" + host.io.title_id + "].log") };
+        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.current_app_title) + " - [" + host.io->title_id + "].log") };
         if (logging::add_sink(log_name) != Success)
             return InitConfigFailed;
     }
@@ -314,12 +315,12 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     }
 
     LOG_INFO("Title: {}", host.current_app_title);
-    LOG_INFO("Serial: {}", host.io.title_id);
+    LOG_INFO("Serial: {}", host.io->title_id);
     LOG_INFO("Version: {}", host.app_version);
     LOG_INFO("Category: {}", host.app_category);
 
-    init_device_paths(host.io);
-    init_savedata_app_path(host.io, host.pref_path);
+    init_device_paths(*host.io);
+    init_savedata_app_path(*host.io, host.pref_path);
 
     for (const auto &var : get_var_exports()) {
         auto addr = var.factory(host);
@@ -327,7 +328,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     }
 
     // Load pre-loaded libraries
-    const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_module" };
+    const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io->title_id / "sce_module" };
     const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
     if (is_app) {
         // Load application module
@@ -361,7 +362,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
 
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
-    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, EBOOT_PATH)) {
+    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io->title_id, EBOOT_PATH)) {
         SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
@@ -409,15 +410,15 @@ bool handle_events(HostState &host, GuiState &gui) {
                 }
             }
             // toggle gui state
-            if (!host.io.title_id.empty() && !gui.configuration_menu.profiles_manager_dialog && !gui.configuration_menu.settings_dialog && !gui.captured_key) {
+            if (!host.io->title_id.empty() && !gui.configuration_menu.profiles_manager_dialog && !gui.configuration_menu.settings_dialog && !gui.captured_key) {
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
             }
-            if (!host.io.title_id.empty() && !gui.live_area.app_selector && gui::get_live_area_sys_app_state(gui)) {
+            if (!host.io->title_id.empty() && !gui.live_area.app_selector && gui::get_live_area_sys_app_state(gui)) {
                 // Show/Hide Live Area during app run
                 // TODO pause app running
                 if (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton) {
-                    gui::update_apps_list_opened(gui, host.io.title_id);
+                    gui::update_apps_list_opened(gui, host.io->title_id);
                     gui::init_live_area(gui, host);
                     gui.live_area.information_bar = !gui.live_area.information_bar;
                     gui.live_area.live_area_screen = !gui.live_area.live_area_screen;
@@ -474,7 +475,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
 
 #if DISCORD_RPC
     if (host.cfg.discord_rich_presence)
-        discord::update_presence(host.io.title_id, host.current_app_title);
+        discord::update_presence(host.io->title_id, host.current_app_title);
 #endif
 
     return Success;
@@ -498,7 +499,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     };
 
     auto inject = create_cpu_dep_inject(host);
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
+    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io->title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
         inject, nullptr);
 
     if (main_thread_id < 0) {

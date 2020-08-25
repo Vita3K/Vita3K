@@ -166,7 +166,7 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
 EXPORT(int, sceAvPlayerAddSource, SceUID player_handle, const char *path) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
 
-    player_info->player.queue(expand_path(host.io, path, host.pref_path));
+    player_info->player.queue(expand_path(*host.io, path, host.pref_path));
 
     return 0;
 }

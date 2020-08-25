@@ -29,6 +29,7 @@
 #include <gxm/state.h>
 #include <host/pkg.h>
 #include <host/state.h>
+#include <io/state.h>
 #include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
@@ -63,6 +64,7 @@ int main(int argc, char *argv[]) {
     host.common_dialog = std::make_unique<DialogState>();
     host.ctrl = std::make_unique<CtrlState>();
     host.gxm = std::make_shared<GxmState>();
+    host.io = std::make_unique<IOState>();
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {
@@ -161,8 +163,8 @@ int main(int argc, char *argv[]) {
             }
 
             // TODO: Clean this, ie. make load_app overloads called depending on run type
-            if (!host.io.title_id.empty()) {
-                vpk_path_wide = string_utils::utf_to_wide(host.io.title_id);
+            if (!host.io->title_id.empty()) {
+                vpk_path_wide = string_utils::utf_to_wide(host.io->title_id);
                 run_type = app::AppRunType::Extracted;
             }
         }
@@ -174,7 +176,7 @@ int main(int argc, char *argv[]) {
             return FileNotFound;
         }
     } else if (run_type == app::AppRunType::Extracted) {
-        host.io.title_id = string_utils::wide_to_utf(vpk_path_wide);
+        host.io->title_id = string_utils::wide_to_utf(vpk_path_wide);
     }
 
     Ptr<const void> entry_point;
@@ -194,7 +196,7 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
-    gui::init_app_background(gui, host, host.io.title_id);
+    gui::init_app_background(gui, host, host.io->title_id);
     host.renderer->features.hardware_flip = host.cfg.hardware_flip;
 
     app::gl_screen_renderer gl_renderer;
@@ -205,16 +207,16 @@ int main(int argc, char *argv[]) {
     while (host.frame_count == 0) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.title_id.c_str());
+            host.io->title_id.c_str());
 
         gl_renderer.render(host);
 
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
 
-        if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
+        if (gui.apps_background.find(host.io->title_id) != gui.apps_background.end())
             // Display application background
-            ImGui::GetForegroundDrawList()->AddImage(gui.apps_background[host.io.title_id],
+            ImGui::GetForegroundDrawList()->AddImage(gui.apps_background[host.io->title_id],
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
         // Application background not found
         else if (!gui.theme_backgrounds.empty())
@@ -228,13 +230,13 @@ int main(int argc, char *argv[]) {
         host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());
 
-        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.current_app_title, host.io.title_id).c_str());
+        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.current_app_title, host.io->title_id).c_str());
     }
 
     while (handle_events(host, gui)) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.title_id.c_str());
+            host.io->title_id.c_str());
 
         gl_renderer.render(host);
 

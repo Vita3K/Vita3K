@@ -151,7 +151,7 @@ EXPORT(int, sceAppUtilDrmClose) {
 }
 
 EXPORT(int, sceAppUtilDrmOpen, SceAppUtilDrmAddcontId *dirName, SceAppUtilMountPoint *mountPoint) {
-    const auto drm_content_id_path{ fs::path(host.pref_path) / (+VitaIoDevice::ux0)._to_string() / host.io.device_paths.addcont0 / reinterpret_cast<char *>(dirName->data) };
+    const auto drm_content_id_path{ fs::path(host.pref_path) / (+VitaIoDevice::ux0)._to_string() / host.io->device_paths.addcont0 / reinterpret_cast<char *>(dirName->data) };
 
     if (dirName == nullptr)
         return RET_ERROR(SCE_APPUTIL_ERROR_NOT_INITIALIZED);
@@ -216,11 +216,11 @@ std::string construct_slotparam_path(const unsigned int data) {
 
 EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataRemoveItem *files, unsigned int fileNum, SceAppUtilSaveDataMountPoint *mountPoint) {
     for (unsigned int i = 0; i < fileNum; i++) {
-        remove_file(host.io, construct_savedata0_path(files[i].dataPath.get(host.mem)).c_str(), host.pref_path, export_name);
+        remove_file(*host.io, construct_savedata0_path(files[i].dataPath.get(host.mem)).c_str(), host.pref_path, export_name);
     }
 
     if (slot && files[0].mode == SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT) {
-        remove_file(host.io, construct_slotparam_path(slot->id).c_str(), host.pref_path, export_name);
+        remove_file(*host.io, construct_slotparam_path(slot->id).c_str(), host.pref_path, export_name);
     }
     return 0;
 }
@@ -232,25 +232,25 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         const auto file_path = construct_savedata0_path(files[i].dataPath.get(host.mem));
         switch (files[i].mode) {
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_DIRECTORY:
-            create_dir(host.io, file_path.c_str(), 0777, host.pref_path, export_name);
+            create_dir(*host.io, file_path.c_str(), 0777, host.pref_path, export_name);
             break;
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE_TRUNCATE:
             if (files[i].buf) {
-                fd = open_file(host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-                seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, host.io, export_name);
-                write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, export_name);
-                close_file(host.io, fd, export_name);
+                fd = open_file(*host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+                seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, *host.io, export_name);
+                write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, *host.io, export_name);
+                close_file(*host.io, fd, export_name);
             }
-            fd = open_file(host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, host.pref_path, export_name);
-            truncate_file(fd, files[i].bufSize + files[i].offset, host.io, export_name);
-            close_file(host.io, fd, export_name);
+            fd = open_file(*host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, host.pref_path, export_name);
+            truncate_file(fd, files[i].bufSize + files[i].offset, *host.io, export_name);
+            close_file(*host.io, fd, export_name);
             break;
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE:
         default:
-            fd = open_file(host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-            seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, host.io, export_name);
-            write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, export_name);
-            close_file(host.io, fd, export_name);
+            fd = open_file(*host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+            seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, *host.io, export_name);
+            write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, *host.io, export_name);
+            close_file(*host.io, fd, export_name);
             break;
         }
     }
@@ -266,17 +266,17 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         modified_time.minute = local->tm_min;
         modified_time.second = local->tm_sec;
         slot->slotParam.get(host.mem)->modifiedTime = modified_time;
-        fd = open_file(host.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-        write_file(fd, slot->slotParam.get(host.mem), sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
-        close_file(host.io, fd, export_name);
+        fd = open_file(*host.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+        write_file(fd, slot->slotParam.get(host.mem), sizeof(SceAppUtilSaveDataSlotParam), *host.io, export_name);
+        close_file(*host.io, fd, export_name);
     }
 
     return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataGetQuota, SceSize *quotaSizeKiB, SceSize *usedSizeKiB, const SceAppUtilMountPoint *mountPoint) {
-    *quotaSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, host.io.device_paths.savedata0, host.pref_path).max_capacity / KB(1);
-    *usedSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, host.io.device_paths.savedata0, host.pref_path).used / KB(1);
+    *quotaSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, host.io->device_paths.savedata0, host.pref_path).max_capacity / KB(1);
+    *usedSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, host.io->device_paths.savedata0, host.pref_path).used / KB(1);
     return 0;
 }
 
@@ -285,23 +285,23 @@ EXPORT(int, sceAppUtilSaveDataMount) {
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
-    const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
-    close_file(host.io, fd, export_name);
+    const auto fd = open_file(*host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), *host.io, export_name);
+    close_file(*host.io, fd, export_name);
     return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotDelete, unsigned int slotId, SceAppUtilSaveDataMountPoint *mountPoint) {
-    remove_file(host.io, construct_slotparam_path(slotId).c_str(), host.pref_path, export_name);
+    remove_file(*host.io, construct_slotparam_path(slotId).c_str(), host.pref_path, export_name);
     return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
-    const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+    const auto fd = open_file(*host.io, construct_slotparam_path(slotId).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    read_file(param, host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-    close_file(host.io, fd, export_name);
+    read_file(param, *host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+    close_file(*host.io, fd, export_name);
     param->status = 0;
     return 0;
 }
@@ -311,11 +311,11 @@ EXPORT(int, sceAppUtilSaveDataSlotSearch) {
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotSetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
-    const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+    const auto fd = open_file(*host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
-    close_file(host.io, fd, export_name);
+    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), *host.io, export_name);
+    close_file(*host.io, fd, export_name);
     return 0;
 }
 

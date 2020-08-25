@@ -23,6 +23,7 @@
 
 #include <io/device.h>
 #include <io/functions.h>
+#include <io/state.h>
 
 #include <nfd.h>
 #include <pugixml.hpp>
@@ -124,9 +125,9 @@ static bool load_trophy_progress(IOState &io, const SceUID &progress_input_file,
 static std::string np_com_id_sort;
 
 void get_trophy_np_com_id_list(GuiState &gui, HostState &host) {
-    host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
+    host.io->user_id = fmt::format("{:0>2d}", host.cfg.user_id);
 
-    const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy" };
+    const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io->user_id / "trophy" };
     const auto TROPHY_CONF_PATH = TROPHY_PATH / "conf";
 
     gui.trophy_np_com_id_list.clear(), np_com_id_info.clear(), np_com_id_list.clear();
@@ -153,18 +154,18 @@ void get_trophy_np_com_id_list(GuiState &gui, HostState &host) {
                 np_com_id_info[np_com_id].updated = fmt::format("{}/{}/{}  {}:{:0>2d}", updated_date->tm_mday, updated_date->tm_mon + 1, updated_date->tm_year + 1900, updated_date->tm_hour, updated_date->tm_min);
 
                 // Open trophy progress file
-                const auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + host.io.user_id + "/trophy/data/" + np_com_id + "/TROPUSR.DAT");
-                const auto progress_input_file = open_file(host.io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, host.pref_path, "load_trophy_progress_file");
+                const auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + host.io->user_id + "/trophy/data/" + np_com_id + "/TROPUSR.DAT");
+                const auto progress_input_file = open_file(*host.io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, host.pref_path, "load_trophy_progress_file");
 
-                if (!load_trophy_progress(host.io, progress_input_file, np_com_id)) {
+                if (!load_trophy_progress(*host.io, progress_input_file, np_com_id)) {
                     LOG_ERROR("Fail load trophy progress for Np Com ID: {}, clean trophy file.", np_com_id);
-                    close_file(host.io, progress_input_file, "load_trophy_progress_file");
+                    close_file(*host.io, progress_input_file, "load_trophy_progress_file");
                     fs::remove_all(trophy_data_np_com_id_path);
                     fs::remove_all(trophy_conf_np_com_id_path);
                     continue;
                 }
 
-                close_file(host.io, progress_input_file, "load_trophy_progress_file");
+                close_file(*host.io, progress_input_file, "load_trophy_progress_file");
 
                 const std::string sfm_name = fs::exists(trophy_conf_np_com_id_path / fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang) : "TROP.SFM";
 
@@ -242,7 +243,7 @@ void get_trophy_np_com_id_list(GuiState &gui, HostState &host) {
             int32_t height = 0;
             vfs::FileBuffer buffer;
 
-            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "user/" + host.io.user_id + "/trophy/conf/" + np_com_id.first + "/" + group.second);
+            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "user/" + host.io->user_id + "/trophy/conf/" + np_com_id.first + "/" + group.second);
 
             if (buffer.empty()) {
                 LOG_WARN("Icon, Name: '{}', Not found for NPComId: {}.", group.second, np_com_id.first);
@@ -288,7 +289,7 @@ static std::vector<TrophySort> trophy_list;
 static std::string trophy_sort;
 
 static void get_trophy_list(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &group_id) {
-    const auto trophy_conf_id_path{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy/conf" / np_com_id };
+    const auto trophy_conf_id_path{ fs::path(host.pref_path) / "ux0/user" / host.io->user_id / "trophy/conf" / np_com_id };
     if (fs::is_empty(trophy_conf_id_path)) {
         LOG_WARN("Trophy conf path is empty");
         return;
@@ -408,7 +409,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     const auto SIZE_INFO = ImVec2(780 * SCAL.x, 484.f * SCAL.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
 
-    const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy" };
+    const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io->user_id / "trophy" };
     const char progress_dummy[32] = "";
 
     const auto is_background = gui.apps_background.find("NPXS10008") != gui.apps_background.end();

@@ -19,6 +19,7 @@
 
 #include <config/functions.h>
 #include <host/state.h>
+#include <io/state.h>
 #include <misc/cpp/imgui_stdlib.h>
 
 namespace gui {
@@ -56,9 +57,9 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
             if (update_online_id == host.cfg.online_id.end() && !(gui.online_id.length() > 16)) {
                 host.cfg.online_id.push_back(gui.online_id);
                 host.cfg.user_id += ((int)host.cfg.online_id.size() - 1) - host.cfg.user_id;
-                host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
-                if (!fs::exists(user_path / host.io.user_id))
-                    fs::create_directories(user_path / host.io.user_id / "savedata");
+                host.io->user_id = fmt::format("{:0>2d}", host.cfg.user_id);
+                if (!fs::exists(user_path / host.io->user_id))
+                    fs::create_directories(user_path / host.io->user_id / "savedata");
                 gui.online_id.clear();
             }
             ImGui::CloseCurrentPopup();
@@ -105,12 +106,12 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
             ImGui::PopStyleColor();
             const auto delete_online_id = std::find(host.cfg.online_id.begin(), host.cfg.online_id.end(), host.cfg.online_id[host.cfg.user_id]);
 
-            if (fs::exists(user_path / host.io.user_id)) {
-                ImGui::TextColored(GUI_COLOR_TEXT, "Do you want also delete folder for this user?\nUser ID: %s, Online ID: %s", host.io.user_id.c_str(), host.cfg.online_id[host.cfg.user_id].c_str());
+            if (fs::exists(user_path / host.io->user_id)) {
+                ImGui::TextColored(GUI_COLOR_TEXT, "Do you want also delete folder for this user?\nUser ID: %s, Online ID: %s", host.io->user_id.c_str(), host.cfg.online_id[host.cfg.user_id].c_str());
                 ImGui::Separator();
                 ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 100);
                 if (ImGui::Button("Yes", BUTTON_SIZE)) {
-                    fs::remove_all(user_path / host.io.user_id);
+                    fs::remove_all(user_path / host.io->user_id);
                     host.cfg.online_id.erase(delete_online_id);
                     if (host.cfg.user_id < static_cast<int>(host.cfg.online_id.size())) {
                         auto o = host.cfg.user_id + 1, n = host.cfg.user_id;
@@ -135,7 +136,7 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
                 }
 
             } else {
-                ImGui::TextColored(GUI_COLOR_TEXT, "Do you really want delete this user?\nUser ID: %s, Online ID: %s", host.io.user_id.c_str(), host.cfg.online_id[host.cfg.user_id].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "Do you really want delete this user?\nUser ID: %s, Online ID: %s", host.io->user_id.c_str(), host.cfg.online_id[host.cfg.user_id].c_str());
                 ImGui::Separator();
                 ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 65);
                 if (ImGui::Button("Yes", BUTTON_SIZE)) {
@@ -215,8 +216,8 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
     if (static_cast<int>(host.cfg.online_id.size()) - 1 < host.cfg.user_id)
         --host.cfg.user_id;
 
-    if (host.io.user_id.empty() || std::stoi(host.io.user_id) != host.cfg.user_id)
-        host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
+    if (host.io->user_id.empty() || std::stoi(host.io->user_id) != host.cfg.user_id)
+        host.io->user_id = fmt::format("{:0>2d}", host.cfg.user_id);
 
     if (host.cfg.overwrite_config)
         config::serialize_config(host.cfg, host.cfg.config_path);

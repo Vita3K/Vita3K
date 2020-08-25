@@ -37,7 +37,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
     }
 
     np::NpTrophyError err = np::NpTrophyError::TROPHY_ERROR_NONE;
-    *context = create_trophy_context(host.np, &host.io, host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg.sys_lang),
+    *context = create_trophy_context(host.np, host.io.get(), host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg.sys_lang),
         &err);
 
     if (*context == np::trophy::INVALID_CONTEXT_HANDLE) {

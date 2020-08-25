@@ -22,6 +22,7 @@
 #include <host/functions.h>
 #include <io/device.h>
 #include <io/functions.h>
+#include <io/state.h>
 #include <io/vfs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -660,7 +661,7 @@ static void check_empty_param(HostState &host, const SceAppUtilSaveDataSlotEmpty
     if (empty_param != nullptr) {
         host.common_dialog->savedata.title[host.common_dialog->savedata.selected_save] = empty_param->title.get(host.mem) == nullptr ? "New Saved Data" : empty_param->title.get(host.mem);
         auto device = device::get_device(empty_param->iconPath.get(host.mem));
-        auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io.device_paths);
+        auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io->device_paths);
         vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
         host.common_dialog->savedata.icon_buffer[host.common_dialog->savedata.selected_save] = thumbnail_buffer;
         host.common_dialog->savedata.icon_loaded[0] = true;
@@ -680,14 +681,14 @@ static void check_save_file(SceUID fd, std::vector<SceAppUtilSaveDataSlotParam> 
         if (empty_param != nullptr) {
             host.common_dialog->savedata.title[index] = empty_param->title.get(host.mem) == nullptr ? "New Saved Data" : empty_param->title.get(host.mem);
             auto device = device::get_device(empty_param->iconPath.get(host.mem));
-            auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io.device_paths);
+            auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io->device_paths);
             vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
             host.common_dialog->savedata.icon_buffer[index] = thumbnail_buffer;
             host.common_dialog->savedata.icon_loaded[index] = true;
         }
     } else {
-        read_file(&slot_param[index], host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-        close_file(host.io, fd, export_name);
+        read_file(&slot_param[index], *host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+        close_file(*host.io, fd, export_name);
         host.common_dialog->savedata.slot_info[index].isExist = 1;
         host.common_dialog->savedata.title[index] = slot_param[index].title;
         host.common_dialog->savedata.subtitle[index] = slot_param[index].subTitle;
@@ -695,7 +696,7 @@ static void check_save_file(SceUID fd, std::vector<SceAppUtilSaveDataSlotParam> 
         host.common_dialog->savedata.date[index] = slot_param[index].modifiedTime;
         host.common_dialog->savedata.has_date[index] = true;
         auto device = device::get_device(slot_param[index].iconPath);
-        auto thumbnail_path = translate_path(slot_param[index].iconPath, device, host.io.device_paths);
+        auto thumbnail_path = translate_path(slot_param[index].iconPath, device, host.io->device_paths);
         vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
         host.common_dialog->savedata.icon_buffer[index] = thumbnail_buffer;
         host.common_dialog->savedata.icon_loaded[index] = true;
@@ -871,20 +872,20 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
         host.common_dialog->savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
         slot_param.resize(1);
         host.common_dialog->savedata.icon_loaded.resize(1);
-        fd = open_file(host.io, construct_slotparam_path(host.common_dialog->savedata.slot_id[host.common_dialog->savedata.selected_save]).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+        fd = open_file(*host.io, construct_slotparam_path(host.common_dialog->savedata.slot_id[host.common_dialog->savedata.selected_save]).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
         if (fd < 0) {
             host.common_dialog->savedata.slot_info[host.common_dialog->savedata.selected_save].isExist = 0;
         } else {
             host.common_dialog->savedata.slot_info[host.common_dialog->savedata.selected_save].isExist = 1;
-            read_file(&slot_param[0], host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-            close_file(host.io, fd, export_name);
+            read_file(&slot_param[0], *host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+            close_file(*host.io, fd, export_name);
             host.common_dialog->savedata.title[host.common_dialog->savedata.selected_save] = slot_param[0].title;
             host.common_dialog->savedata.subtitle[host.common_dialog->savedata.selected_save] = slot_param[0].subTitle;
             host.common_dialog->savedata.details[host.common_dialog->savedata.selected_save] = slot_param[0].detail;
             host.common_dialog->savedata.date[host.common_dialog->savedata.selected_save] = slot_param[0].modifiedTime;
             host.common_dialog->savedata.has_date[host.common_dialog->savedata.selected_save] = true;
             auto device = device::get_device(slot_param[0].iconPath);
-            auto thumbnail_path = translate_path(slot_param[0].iconPath, device, host.io.device_paths);
+            auto thumbnail_path = translate_path(slot_param[0].iconPath, device, host.io->device_paths);
             vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
             host.common_dialog->savedata.icon_buffer[host.common_dialog->savedata.selected_save] = thumbnail_buffer;
             host.common_dialog->savedata.icon_loaded[0] = true;
@@ -973,7 +974,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
         slot_param.resize(host.common_dialog->savedata.slot_list_size);
         host.common_dialog->savedata.icon_loaded.resize(host.common_dialog->savedata.slot_list_size);
         for (int i = 0; i < host.common_dialog->savedata.slot_list_size; i++) {
-            fd = open_file(host.io, construct_slotparam_path(host.common_dialog->savedata.slot_id[i]).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+            fd = open_file(*host.io, construct_slotparam_path(host.common_dialog->savedata.slot_id[i]).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
             check_save_file(fd, slot_param, i, host, export_name);
         }
         break;
@@ -1088,7 +1089,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         slot_param.resize(1);
         initialize_savedata_vectors(host, 1);
         host.common_dialog->savedata.slot_id[0] = fixed_param->targetSlot.id;
-        fd = open_file(host.io, construct_slotparam_path(fixed_param->targetSlot.id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+        fd = open_file(*host.io, construct_slotparam_path(fixed_param->targetSlot.id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
         if (fd < 0) {
             host.common_dialog->savedata.slot_info[0].isExist = 0;
             host.common_dialog->savedata.title[0] = "";
@@ -1097,15 +1098,15 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
             host.common_dialog->savedata.has_date[0] = false;
         } else {
             host.common_dialog->savedata.slot_info[0].isExist = 1;
-            read_file(&slot_param[0], host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-            close_file(host.io, fd, export_name);
+            read_file(&slot_param[0], *host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+            close_file(*host.io, fd, export_name);
             host.common_dialog->savedata.title[0] = slot_param[0].title;
             host.common_dialog->savedata.subtitle[0] = slot_param[0].subTitle;
             host.common_dialog->savedata.details[0] = slot_param[0].detail;
             host.common_dialog->savedata.date[0] = slot_param[0].modifiedTime;
             vfs::FileBuffer thumbnail_buffer;
             auto device = device::get_device(slot_param[0].iconPath);
-            auto thumbnail_path = translate_path(slot_param[0].iconPath, device, host.io.device_paths);
+            auto thumbnail_path = translate_path(slot_param[0].iconPath, device, host.io->device_paths);
             vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
             host.common_dialog->savedata.icon_buffer[0] = thumbnail_buffer;
             host.common_dialog->savedata.icon_loaded[0] = true;
@@ -1141,7 +1142,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
             slot_list[i] = list_param->slotList.get(host.mem)[i];
             host.common_dialog->savedata.slot_id[i] = slot_list[i].id;
             host.common_dialog->savedata.list_empty_param = slot_list[0].emptyParam.get(host.mem);
-            fd = open_file(host.io, construct_slotparam_path(slot_list[i].id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+            fd = open_file(*host.io, construct_slotparam_path(slot_list[i].id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
             check_save_file(fd, slot_param, i, host, export_name);
         }
         break;
@@ -1153,7 +1154,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         host.common_dialog->savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
         host.common_dialog->savedata.msg = reinterpret_cast<const char *>(user_message->msg.get(host.mem));
 
-        fd = open_file(host.io, construct_slotparam_path(user_message->targetSlot.id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+        fd = open_file(*host.io, construct_slotparam_path(user_message->targetSlot.id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
         check_save_file(fd, slot_param, 0, host, export_name);
 
         handle_user_message(user_message, host);

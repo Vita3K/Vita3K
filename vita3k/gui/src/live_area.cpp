@@ -19,6 +19,7 @@
 
 #include <gui/functions.h>
 
+#include <io/state.h>
 #include <io/VitaIoDevice.h>
 #include <io/vfs.h>
 #include <util/log.h>
@@ -112,7 +113,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
                 ImGui::PushStyleColor(ImGuiCol_Header, SELECT_COLOR);
                 ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECT_COLOR_HOVERED);
                 ImGui::PushStyleColor(ImGuiCol_HeaderActive, SELECT_COLOR_ACTIVE);
-                if (ImGui::Selectable("##icon", gui.notice_info_new[notice.pos], host.io.title_id.empty() || ((notice.type == "content") && (notice.group == "theme")) || (notice.type == "trophy") ? ImGuiSelectableFlags_SpanAllColumns : ImGuiSelectableFlags_Disabled, SELECT_SIZE)) {
+                if (ImGui::Selectable("##icon", gui.notice_info_new[notice.pos], host.io->title_id.empty() || ((notice.type == "content") && (notice.group == "theme")) || (notice.type == "trophy") ? ImGuiSelectableFlags_SpanAllColumns : ImGuiSelectableFlags_Disabled, SELECT_SIZE)) {
                     gui.notice_info_count_new = 0;
                     gui.notice_info_new.clear();
                     if (notice.type == "content") {
@@ -1131,7 +1132,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     const auto scal_default_font = 25.f * (19.2f / ImGui::GetFontSize());
     const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
 
-    const std::string BUTTON_STR = title_id == host.io.title_id ? resume : start;
+    const std::string BUTTON_STR = title_id == host.io->title_id ? resume : start;
     const auto GATE_SIZE = ImVec2(280.0f * scal.x, 158.0f * scal.y);
     const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[title_id]]["gate"]["pos"].x * scal.x), display_size.y - (items_pos[type[title_id]]["gate"]["pos"].y * scal.y));
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * scal_font_size), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * scal_font_size));
@@ -1206,7 +1207,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
     if (!gui.live_area.content_manager && !gui.live_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f);
-        if (host.io.title_id != title_id) {
+        if (host.io->title_id != title_id) {
             ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x) - BUTTON_SIZE.x, 44.0f * scal.y));
             if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
                 gui.apps_list_opened.erase(get_app_open_list_index(gui, title_id));
