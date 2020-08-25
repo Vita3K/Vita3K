@@ -18,7 +18,6 @@
 #pragma once
 
 #include <config/state.h>
-#include <dialog/state.h>
 #include <gxm/state.h>
 #include <host/sfo.h>
 #include <host/window.h>
@@ -41,6 +40,7 @@
 
 struct AudioState;
 struct CtrlState;
+struct DialogState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -88,7 +88,7 @@ struct HostState {
     ngs::State ngs;
     NpState np;
     DisplayState display;
-    DialogState common_dialog;
+    std::unique_ptr<DialogState> common_dialog;
     SfoFile sfo_handle;
     NIDSet missing_nids;
 #ifdef USE_GDBSTUB

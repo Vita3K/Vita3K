@@ -17,6 +17,7 @@
 
 #include "SceAppUtil.h"
 
+#include <dialog/types.h>
 #include <host/app_util.h>
 #include <io/device.h>
 #include <io/functions.h>

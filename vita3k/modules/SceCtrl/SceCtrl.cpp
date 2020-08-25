@@ -18,6 +18,7 @@
 #include "SceCtrl.h"
 
 #include <ctrl/state.h>
+#include <dialog/state.h>
 #include <util/log.h>
 
 #include <SDL_gamecontroller.h>
@@ -333,7 +334,7 @@ static int peek_buffer(HostState &host, int port, SceCtrlData *&pad_data, int co
     memset(pad_data, 0, sizeof(*pad_data));
     pad_data->timeStamp = timestamp++; // TODO Use the real time and units.
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_NONE) {
+    if (host.common_dialog->status != SCE_COMMON_DIALOG_STATUS_NONE) {
         return 0;
     }
 

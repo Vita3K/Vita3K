@@ -2,6 +2,7 @@
 
 #include <mem/ptr.h>
 #include <threads/queue.h>
+#include <util/types.h>
 
 typedef void SceGxmDisplayQueueCallback(Ptr<const void> callbackData);
 

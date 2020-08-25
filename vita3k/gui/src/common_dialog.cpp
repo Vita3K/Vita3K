@@ -17,8 +17,8 @@
 
 #include "private.h"
 
+#include <dialog/state.h>
 #include <gui/functions.h>
-
 #include <gui/imgui_impl_sdl.h>
 #include <util/string_utils.h>
 
@@ -381,19 +381,19 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
 
 void draw_common_dialog(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.live_area_font);
-    if (host.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
-        switch (host.common_dialog.type) {
+    if (host.common_dialog->status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+        switch (host.common_dialog->type) {
         case IME_DIALOG:
-            draw_ime_dialog(host.common_dialog);
+            draw_ime_dialog(*host.common_dialog);
             break;
         case MESSAGE_DIALOG:
-            draw_message_dialog(host.common_dialog);
+            draw_message_dialog(*host.common_dialog);
             break;
         case TROPHY_SETUP_DIALOG:
-            draw_trophy_setup_dialog(host.common_dialog);
+            draw_trophy_setup_dialog(*host.common_dialog);
             break;
         case SAVEDATA_DIALOG:
-            draw_savedata_dialog(host.common_dialog, gui);
+            draw_savedata_dialog(*host.common_dialog, gui);
             break;
         default:
             break;
