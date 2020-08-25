@@ -18,13 +18,14 @@
 #include "SceNet.h"
 
 #include <kernel/functions.h>
+#include <kernel/state.h>
 
 #include <net/functions.h>
 #include <net/types.h>
 #include <util/lock_and_find.h>
 
 EXPORT(int, sceNetAccept, int sid, SceNetSockaddr *addr, unsigned int *addrlen) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -38,7 +39,7 @@ EXPORT(int, sceNetAccept, int sid, SceNetSockaddr *addr, unsigned int *addrlen) 
 }
 
 EXPORT(int, sceNetBind, int sid, const SceNetSockaddr *addr, unsigned int addrlen) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -50,7 +51,7 @@ EXPORT(int, sceNetClearDnsCache) {
 }
 
 EXPORT(int, sceNetConnect, int sid, const SceNetSockaddr *addr, unsigned int addrlen) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -157,7 +158,7 @@ EXPORT(int, sceNetGetpeername) {
 }
 
 EXPORT(int, sceNetGetsockname, int sid, SceNetSockaddr *name, unsigned int *namelen) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -221,7 +222,7 @@ EXPORT(int, sceNetInit, SceNetInitParam *param) {
 }
 
 EXPORT(int, sceNetListen, int sid, int backlog) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -241,7 +242,7 @@ EXPORT(unsigned short int, sceNetNtohs, unsigned short int n) {
 }
 
 EXPORT(int, sceNetRecv, int sid, void *buf, unsigned int len, int flags) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -249,7 +250,7 @@ EXPORT(int, sceNetRecv, int sid, void *buf, unsigned int len, int flags) {
 }
 
 EXPORT(int, sceNetRecvfrom, int sid, void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -289,7 +290,7 @@ EXPORT(int, sceNetResolverStartNtoa, int rid, const char *hostname, SceNetInAddr
 }
 
 EXPORT(int, sceNetSend, int sid, const void *msg, unsigned int len, int flags) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -301,7 +302,7 @@ EXPORT(int, sceNetSendmsg) {
 }
 
 EXPORT(int, sceNetSendto, int sid, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -313,7 +314,7 @@ EXPORT(int, sceNetSetDnsInfo) {
 }
 
 EXPORT(int, sceNetSetsockopt, int sid, int level, int optname, const void *optval, unsigned int optlen) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }
@@ -356,7 +357,7 @@ EXPORT(int, sceNetSocketAbort) {
 }
 
 EXPORT(int, sceNetSocketClose, int sid) {
-    auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
+    auto sock = lock_and_find(sid, host.net.socks, host.kernel->mutex);
     if (!sock) {
         return -1;
     }

@@ -30,6 +30,7 @@
 #include <host/pkg.h>
 #include <host/state.h>
 #include <io/state.h>
+#include <kernel/state.h>
 #include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
@@ -65,6 +66,7 @@ int main(int argc, char *argv[]) {
     host.ctrl = std::make_unique<CtrlState>();
     host.gxm = std::make_shared<GxmState>();
     host.io = std::make_unique<IOState>();
+    host.kernel = std::make_shared<KernelState>();
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {
@@ -186,7 +188,7 @@ int main(int argc, char *argv[]) {
         return err;
 
     if (cfg.console) {
-        auto main_thread = host.kernel.threads.at(host.main_thread_id);
+        auto main_thread = host.kernel->threads.at(host.main_thread_id);
         auto lock = std::unique_lock<std::mutex>(main_thread->mutex);
         main_thread->something_to_do.wait(lock, [&]() {
             return main_thread->to_do == ThreadToDo::exit;

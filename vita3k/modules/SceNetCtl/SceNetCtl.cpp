@@ -17,6 +17,7 @@
 
 #include "SceNetCtl.h"
 
+#include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
 
@@ -115,7 +116,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
 
     host.net.state = 1;
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
     for (auto &callback : host.net.cbs) {
         Ptr<void> argp = Ptr<void>(callback.second.data);
         run_on_current(*thread, Ptr<void>(callback.second.pc), 1, argp);
@@ -166,8 +167,8 @@ EXPORT(int, sceNetCtlInetGetState, uint32_t *state) {
 }
 
 EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, uint32_t *cid) {
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    *cid = host.kernel.get_next_uid();
+    const std::lock_guard<std::mutex> lock(host.kernel->mutex);
+    *cid = host.kernel->get_next_uid();
     SceNetCtlCallback sceNetCtlCallback;
     sceNetCtlCallback.pc = callback.address();
     sceNetCtlCallback.data = data.address();

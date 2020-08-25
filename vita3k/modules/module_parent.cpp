@@ -25,6 +25,7 @@
 #include <io/device.h>
 #include <io/vfs.h>
 #include <kernel/functions.h>
+#include <kernel/state.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
 #include <util/find.h>
@@ -118,13 +119,13 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
 }
 
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id) {
-    Address export_pc = resolve_export(host.kernel, nid);
+    Address export_pc = resolve_export(*host.kernel, nid);
 
     if (!export_pc) {
         // HLE - call our C++ function
         if (is_returning(cpu))
             return;
-        if (host.kernel.watch_import_calls) {
+        if (host.kernel->watch_import_calls) {
             const std::unordered_set<uint32_t> hle_nid_blacklist = {
                 0xB295EB61, // sceKernelGetTLSAddr
                 0x46E7BE7B, // sceKernelLockLwMutex
@@ -137,7 +138,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         if (fn) {
             fn(host, cpu, thread_id);
         } else if (host.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
-            const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+            const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
             LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
 
             if (!LOG_UNK_NIDS_ALWAYS)
@@ -153,7 +154,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         const std::unordered_set<uint32_t> lle_nid_blacklist = {};
         auto pc = read_pc(cpu);
         log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
-        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         write_pc(*thread->cpu, export_pc);
     }
@@ -174,8 +175,8 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
         Ptr<const void> lib_entry_point;
 
         if (vfs::read_file(VitaIoDevice::vs0, module_buffer, host.pref_path, module_path)) {
-            SceUID loaded_module_uid = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), module_path, host.cfg);
-            const auto module = host.kernel.loaded_modules[loaded_module_uid];
+            SceUID loaded_module_uid = load_self(lib_entry_point, *host.kernel, host.mem, module_buffer.data(), module_path, host.cfg);
+            const auto module = host.kernel->loaded_modules[loaded_module_uid];
             const auto module_name = module->module_name;
 
             if (loaded_module_uid >= 0) {
@@ -190,17 +191,17 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
 
                 Ptr<void> argp = Ptr<void>();
                 auto inject = create_cpu_dep_inject(host);
-                const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
+                const SceUID module_thread_id = create_thread(lib_entry_point, *host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
                     static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), inject, nullptr);
-                const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
+                const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel->threads);
                 const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
 
                 module_thread->to_do = ThreadToDo::exit;
                 module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
 
-                const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-                host.kernel.running_threads.erase(module_thread_id);
-                host.kernel.threads.erase(module_thread_id);
+                const std::lock_guard<std::mutex> lock(host.kernel->mutex);
+                host.kernel->running_threads.erase(module_thread_id);
+                host.kernel->threads.erase(module_thread_id);
                 LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
             }
 
@@ -210,7 +211,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
         }
     }
 
-    host.kernel.loaded_sysmodules.push_back(module_id);
+    host.kernel->loaded_sysmodules.push_back(module_id);
     return true;
 }
 
@@ -219,10 +220,10 @@ CPUDepInject create_cpu_dep_inject(HostState &host) {
         ::call_import(host, cpu, nid, main_thread_id);
     };
     const ResolveNIDName resolve_nid_name = [&host](Address addr) {
-        return ::resolve_nid_name(host.kernel, addr);
+        return ::resolve_nid_name(*host.kernel, addr);
     };
     auto get_watch_memory_addr = [&host](Address addr) {
-        return ::get_watch_memory_addr(host.kernel, addr);
+        return ::get_watch_memory_addr(*host.kernel, addr);
     };
 
     CPUDepInject inject;
@@ -230,6 +231,6 @@ CPUDepInject create_cpu_dep_inject(HostState &host) {
     inject.resolve_nid_name = resolve_nid_name;
     inject.trace_stack = host.cfg.stack_traceback;
     inject.get_watch_memory_addr = get_watch_memory_addr;
-    inject.module_regions = host.kernel.module_regions;
+    inject.module_regions = host.kernel->module_regions;
     return inject;
 }

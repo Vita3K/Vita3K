@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <kernel/state.h>
+#include <kernel/state.h> // Condvar
 
 enum class SyncWeight {
     Light, // lightweight

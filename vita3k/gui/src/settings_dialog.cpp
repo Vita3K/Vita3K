@@ -33,6 +33,7 @@
 #include <util/log.h>
 
 #include <kernel/functions.h>
+#include <kernel/state.h>
 
 #include <algorithm>
 #include <nfd.h>
@@ -386,19 +387,19 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
         ImGui::Spacing();
-        if (ImGui::Button(host.kernel.watch_code ? "Unwatch code" : "Watch code")) {
-            host.kernel.watch_code = !host.kernel.watch_code;
-            update_watches(host.kernel);
+        if (ImGui::Button(host.kernel->watch_code ? "Unwatch code" : "Watch code")) {
+            host.kernel->watch_code = !host.kernel->watch_code;
+            update_watches(*host.kernel);
         }
         ImGui::SameLine();
-        if (ImGui::Button(host.kernel.watch_memory ? "Unwatch memory" : "Watch memory")) {
-            host.kernel.watch_memory = !host.kernel.watch_memory;
-            update_watches(host.kernel);
+        if (ImGui::Button(host.kernel->watch_memory ? "Unwatch memory" : "Watch memory")) {
+            host.kernel->watch_memory = !host.kernel->watch_memory;
+            update_watches(*host.kernel);
         }
         ImGui::Spacing();
-        if (ImGui::Button(host.kernel.watch_import_calls ? "Unwatch import calls" : "Watch import calls")) {
-            host.kernel.watch_import_calls = !host.kernel.watch_import_calls;
-            update_watches(host.kernel);
+        if (ImGui::Button(host.kernel->watch_import_calls ? "Unwatch import calls" : "Watch import calls")) {
+            host.kernel->watch_import_calls = !host.kernel->watch_import_calls;
+            update_watches(*host.kernel);
         }
         ImGui::EndTabItem();
     } else

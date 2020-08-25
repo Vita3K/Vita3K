@@ -17,6 +17,7 @@
 
 #include "SceVideodecUser.h"
 
+#include <kernel/state.h>
 #include <util/lock_and_find.h>
 
 enum SceVideodecType {
@@ -120,10 +121,10 @@ struct SceAvcdecArrayPicture {
 EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, SceAvcdecCtrl *decoder, const SceAvcdecQueryDecoderInfo *query) {
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
 
-    SceUID handle = host.kernel.get_next_uid();
+    SceUID handle = host.kernel->get_next_uid();
     decoder->handle = handle;
 
-    host.kernel.decoders[handle] = std::make_shared<H264DecoderState>(query->horizontal, query->vertical);
+    host.kernel->decoders[handle] = std::make_shared<H264DecoderState>(query->horizontal, query->vertical);
 
     return 0;
 }
@@ -145,7 +146,7 @@ EXPORT(int, sceAvcdecCscInternal) {
 }
 
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel->decoders, host.kernel->mutex);
 
     H264DecoderOptions options = {};
     options.pts_upper = au->pts.upper;
@@ -183,14 +184,14 @@ EXPORT(int, sceAvcdecDecodeAuNongameapp) {
 }
 
 EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel->decoders, host.kernel->mutex);
 
     return H264DecoderState::buffer_size(
         { decoder_info->get(DecoderQuery::WIDTH), decoder_info->get(DecoderQuery::HEIGHT) });
 }
 
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel->decoders, host.kernel->mutex);
 
     decoder_info->flush();
 
@@ -226,7 +227,7 @@ EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
 }
 
 EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *picture) {
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel->decoders, host.kernel->mutex);
 
     uint8_t *output = picture->pPicture.get(host.mem)[0].get(host.mem)->frame.pPicture[0].cast<uint8_t>().get(host.mem);
     decoder_info->receive(output);
@@ -243,7 +244,7 @@ EXPORT(int, sceAvcdecDecodeWithWorkPicture) {
 }
 
 EXPORT(int, sceAvcdecDeleteDecoder, SceAvcdecCtrl *decoder) {
-    host.kernel.decoders.erase(decoder->handle);
+    host.kernel->decoders.erase(decoder->handle);
 
     return 0;
 }

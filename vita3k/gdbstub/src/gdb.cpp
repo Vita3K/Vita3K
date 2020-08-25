@@ -26,6 +26,7 @@
 
 #include <cpu/functions.h>
 #include <kernel/functions.h>
+#include <kernel/state.h>
 
 #include <mem/mem.h>
 #include <spdlog/fmt/bundled/printf.h>
@@ -170,9 +171,9 @@ static std::string cmd_reply_empty(HostState &state, PacketCommand &command) {
 
 static SceUID select_thread(HostState &state, int thread_id) {
     if (thread_id == 0) {
-        if (state.kernel.threads.empty())
+        if (state.kernel->threads.empty())
             return -1;
-        return state.kernel.threads.begin()->first;
+        return state.kernel->threads.begin()->first;
     }
     return thread_id;
 }
@@ -265,10 +266,10 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
 
 static std::string cmd_read_registers(HostState &state, PacketCommand &command) {
     if (state.gdb.current_thread == -1
-        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        || state.kernel->threads.find(state.gdb.current_thread) == state.kernel->threads.end())
         return "E00";
 
-    CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
+    CPUState &cpu = *state.kernel->threads[state.gdb.current_thread]->cpu.get();
 
     std::stringstream stream;
     for (uint32_t a = 0; a <= 15; a++) {
@@ -280,10 +281,10 @@ static std::string cmd_read_registers(HostState &state, PacketCommand &command) 
 
 static std::string cmd_write_registers(HostState &state, PacketCommand &command) {
     if (state.gdb.current_thread == -1
-        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        || state.kernel->threads.find(state.gdb.current_thread) == state.kernel->threads.end())
         return "E00";
 
-    CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
+    CPUState &cpu = *state.kernel->threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command).substr(1);
 
@@ -297,10 +298,10 @@ static std::string cmd_write_registers(HostState &state, PacketCommand &command)
 
 static std::string cmd_read_register(HostState &state, PacketCommand &command) {
     if (state.gdb.current_thread == -1
-        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        || state.kernel->threads.find(state.gdb.current_thread) == state.kernel->threads.end())
         return "E00";
 
-    CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
+    CPUState &cpu = *state.kernel->threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command);
     int32_t reg = parse_hex(content.substr(1, content.size() - 1));
@@ -310,10 +311,10 @@ static std::string cmd_read_register(HostState &state, PacketCommand &command) {
 
 static std::string cmd_write_register(HostState &state, PacketCommand &command) {
     if (state.gdb.current_thread == -1
-        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        || state.kernel->threads.find(state.gdb.current_thread) == state.kernel->threads.end())
         return "E00";
 
-    CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
+    CPUState &cpu = *state.kernel->threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command);
     uint32_t equal_index = content.find('=');
@@ -429,16 +430,16 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
             if (colon != std::string::npos) {
                 const int32_t thread_id = parse_hex(text.substr(colon + 1));
 
-                if (state.kernel.threads.find(thread_id) == state.kernel.threads.end())
+                if (state.kernel->threads.find(thread_id) == state.kernel->threads.end())
                     return "E00";
 
-                ThreadStatePtr thread = state.kernel.threads[thread_id];
+                ThreadStatePtr thread = state.kernel->threads[thread_id];
                 if (thread) {
                     thread->to_do = step ? ThreadToDo::step : ThreadToDo::run;
                     thread->something_to_do.notify_one();
                 }
             } else {
-                for (const auto &thread : state.kernel.threads) {
+                for (const auto &thread : state.kernel->threads) {
                     if (thread.second) {
                         thread.second->to_do = step ? ThreadToDo::step : ThreadToDo::run;
                         thread.second->something_to_do.notify_one();
@@ -451,7 +452,7 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
             if (!step) {
                 bool hit_break = false;
                 while (!hit_break) {
-                    for (const auto &thread : state.kernel.threads) {
+                    for (const auto &thread : state.kernel->threads) {
                         if (thread.second->to_do == ThreadToDo::wait && hit_breakpoint(*thread.second->cpu)) {
                             hit_break = true;
                             break;
@@ -484,7 +485,7 @@ static std::string cmd_thread_alive(HostState &state, PacketCommand &command) {
     const int32_t thread_id = parse_hex(content.substr(1));
 
     // Assuming a thread is removed from the map when it closes or is killed.
-    if (state.kernel.threads.find(thread_id) != state.kernel.threads.end())
+    if (state.kernel->threads.find(thread_id) != state.kernel->threads.end())
         return "OK";
 
     return "E00";
@@ -512,9 +513,9 @@ static std::string cmd_list_threads(HostState &state, PacketCommand &command) {
     stream << "m";
 
     uint32_t count = 0;
-    for (const auto &thread : state.kernel.threads) {
+    for (const auto &thread : state.kernel->threads) {
         stream << to_hex(static_cast<uint32_t>(thread.first));
-        if (count != state.kernel.threads.size() - 1)
+        if (count != state.kernel->threads.size() - 1)
             stream << ",";
         count++;
     }
@@ -709,7 +710,7 @@ static void server_listen(HostState &state) {
         return;
     }
 
-    for (const auto &thread : state.kernel.threads) {
+    for (const auto &thread : state.kernel->threads) {
         stop(*thread.second->cpu);
         thread.second->to_do = ThreadToDo::wait;
     }

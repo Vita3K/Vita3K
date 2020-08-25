@@ -18,13 +18,19 @@
 #pragma once
 
 #include <kernel/state.h>
-#include <mem/ptr.h>
+#include <mem/mem.h> // Address
+
 //#include <psp2/types.h>
 
 #include <functional>
 #include <memory>
 
+template <class T>
+class Ptr;
+
 struct CPUState;
+struct KernelState;
+struct MemState;
 struct ThreadState;
 struct CPUDepInject;
 

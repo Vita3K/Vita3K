@@ -20,7 +20,7 @@
 #include <config/state.h>
 #include <host/sfo.h>
 #include <host/window.h>
-#include <kernel/state.h>
+#include <kernel/types.h>
 #include <net/state.h>
 #include <ngs/state.h>
 #include <nids/types.h>
@@ -33,6 +33,7 @@
 #endif
 
 #include <atomic>
+#include <condition_variable>
 #include <memory>
 #include <string>
 
@@ -41,6 +42,7 @@ struct CtrlState;
 struct DialogState;
 struct GxmState;
 struct IOState;
+struct KernelState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -79,7 +81,7 @@ struct HostState {
     SceFVector2 viewport_size = { 0, 0 };
     MemState mem;
     std::unique_ptr<CtrlState> ctrl;
-    KernelState kernel;
+    std::shared_ptr<KernelState> kernel;
     std::unique_ptr<AudioState> audio;
     std::shared_ptr<GxmState> gxm;
     bool renderer_focused;

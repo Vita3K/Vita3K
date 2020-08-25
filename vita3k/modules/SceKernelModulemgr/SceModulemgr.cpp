@@ -63,7 +63,7 @@ EXPORT(int, sceKernelGetModuleIdByAddr) {
 }
 
 EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
-    KernelState *const state = &host.kernel;
+    KernelState *const state = host.kernel.get();
     const SceKernelModuleInfoPtrs::const_iterator module = state->loaded_modules.find(modid);
     assert(module != state->loaded_modules.end());
 
@@ -73,9 +73,9 @@ EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
 }
 
 EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(host.kernel->mutex);
     int i = 0;
-    for (SceKernelModuleInfoPtrs::iterator module = host.kernel.loaded_modules.begin(); module != host.kernel.loaded_modules.end(); ++module) {
+    for (SceKernelModuleInfoPtrs::iterator module = host.kernel->loaded_modules.begin(); module != host.kernel->loaded_modules.end(); ++module) {
         modids[i] = module->first;
         i++;
     }

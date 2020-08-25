@@ -28,7 +28,7 @@ EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {
     const bool lle_modules_enabled = host.cfg.auto_lle ? true : !host.cfg.lle_modules.empty();
 
     if (lle_modules_enabled && is_lle_module(module_id, host))
-        if (is_module_loaded(host.kernel, module_id))
+        if (is_module_loaded(*host.kernel, module_id))
             return SCE_SYSMODULE_LOADED;
         else
             return SCE_SYSMODULE_ERROR_UNLOADED;

@@ -18,6 +18,7 @@
 #include "SceLibc.h"
 
 #include <io/functions.h>
+#include <kernel/state.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -861,7 +862,7 @@ EXPORT(int, perror) {
 EXPORT(int, printf, const char *format, module::vargs args) {
     std::vector<char> buffer(1024);
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;

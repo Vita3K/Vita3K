@@ -330,15 +330,15 @@ EXPORT(SceInt32, sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[],
     vfs::FileBuffer exec_buffer;
     if (vfs::read_app_file(exec_buffer, host.pref_path, host.io->title_id, exec_path)) {
         Ptr<const void> exec_entry_point;
-        const auto exec_id = load_self(exec_entry_point, host.kernel, host.mem, exec_buffer.data(), appPath, host.cfg);
+        const auto exec_id = load_self(exec_entry_point, *host.kernel, host.mem, exec_buffer.data(), appPath, host.cfg);
         if (exec_id >= 0) {
-            const auto exec_load = host.kernel.loaded_modules[exec_id];
+            const auto exec_load = host.kernel->loaded_modules[exec_id];
 
             LOG_INFO("Exec executable {} ({}) loaded", exec_load->module_name, exec_path);
 
             auto inject = create_cpu_dep_inject(host);
             // Init exec thread
-            const auto exec_thread_id = create_thread(exec_entry_point, host.kernel, host.mem, exec_load->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
+            const auto exec_thread_id = create_thread(exec_entry_point, *host.kernel, host.mem, exec_load->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
                 inject, nullptr);
 
             if (exec_thread_id < 0) {
@@ -357,7 +357,7 @@ EXPORT(SceInt32, sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[],
             }
 
             // Start exec thread
-            const auto exec = start_thread(host.kernel, exec_thread_id, size_argv, argv ? Ptr<void>(*argv) : Ptr<void>());
+            const auto exec = start_thread(*host.kernel, exec_thread_id, size_argv, argv ? Ptr<void>(*argv) : Ptr<void>());
             if (exec < 0) {
                 LOG_ERROR("Failed to run exec thread.");
                 return RET_ERROR(exec);
@@ -367,15 +367,15 @@ EXPORT(SceInt32, sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[],
 
             // Erase current module/thread
             // TODO Unload and Erase it inside memory
-            auto run_exec_thread = util::find(exec_thread_id, host.kernel.running_threads);
-            host.kernel.running_threads[thread_id].swap(run_exec_thread);
-            host.kernel.running_threads.erase(thread_id);
+            auto run_exec_thread = util::find(exec_thread_id, host.kernel->running_threads);
+            host.kernel->running_threads[thread_id].swap(run_exec_thread);
+            host.kernel->running_threads.erase(thread_id);
 
-            auto exec_thread = util::find(exec_thread_id, host.kernel.threads);
-            host.kernel.threads[thread_id].swap(exec_thread);
-            host.kernel.threads.erase(thread_id);
+            auto exec_thread = util::find(exec_thread_id, host.kernel->threads);
+            host.kernel->threads[thread_id].swap(exec_thread);
+            host.kernel->threads.erase(thread_id);
 
-            host.kernel.loaded_modules.erase(thread_id - 1);
+            host.kernel->loaded_modules.erase(thread_id - 1);
 
             return 0;
         }

@@ -29,6 +29,7 @@
 #include <io/state.h>
 #include <io/vfs.h>
 #include <kernel/functions.h>
+#include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <modules/module_parent.h>
 #include <touch/touch.h>
@@ -248,9 +249,9 @@ static auto pre_load_module(HostState &host, const std::vector<std::string> &lib
             res = vfs::read_file(device, module_buffer, host.pref_path, module_path);
 
         if (res) {
-            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), MODULE_PATH_ABS, host.cfg);
+            SceUID module_id = load_self(lib_entry_point, *host.kernel, host.mem, module_buffer.data(), MODULE_PATH_ABS, host.cfg);
             if (module_id >= 0) {
-                const auto module = host.kernel.loaded_modules[module_id];
+                const auto module = host.kernel->loaded_modules[module_id];
 
                 LOG_INFO("Pre-load module {} (at \"{}\") loaded", module->module_name, module_path);
             } else
@@ -324,7 +325,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
 
     for (const auto &var : get_var_exports()) {
         auto addr = var.factory(host);
-        host.kernel.export_nids.emplace(var.nid, addr);
+        host.kernel->export_nids.emplace(var.nid, addr);
     }
 
     // Load pre-loaded libraries
@@ -363,9 +364,9 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
     if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io->title_id, EBOOT_PATH)) {
-        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
+        SceUID module_id = load_self(entry_point, *host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
         if (module_id >= 0) {
-            const auto module = host.kernel.loaded_modules[module_id];
+            const auto module = host.kernel->loaded_modules[module_id];
 
             LOG_INFO("Main executable {} ({}) loaded", module->module_name, EBOOT_PATH);
         } else
@@ -392,7 +393,7 @@ bool handle_events(HostState &host, GuiState &gui) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
         case SDL_QUIT:
-            stop_all_threads(host.kernel);
+            stop_all_threads(*host.kernel);
             host.gxm->display_queue.abort();
             host.display.abort.exchange(true);
             host.display.condvar.notify_all();
@@ -495,11 +496,11 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     };
 
     const ResolveNIDName resolve_nid_name = [&host](Address addr) {
-        return ::resolve_nid_name(host.kernel, addr);
+        return ::resolve_nid_name(*host.kernel, addr);
     };
 
     auto inject = create_cpu_dep_inject(host);
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io->title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
+    const SceUID main_thread_id = create_thread(entry_point, *host.kernel, host.mem, host.io->title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
         inject, nullptr);
 
     if (main_thread_id < 0) {
@@ -507,10 +508,10 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         return InitThreadFailed;
     }
 
-    const ThreadStatePtr main_thread = util::find(main_thread_id, host.kernel.threads);
+    const ThreadStatePtr main_thread = util::find(main_thread_id, host.kernel->threads);
 
     // Run `module_start` export (entry point) of loaded libraries
-    for (auto &mod : host.kernel.loaded_modules) {
+    for (auto &mod : host.kernel->loaded_modules) {
         const auto module = mod.second;
         const auto module_start = module->module_start;
         const auto module_name = module->module_name;
@@ -522,14 +523,14 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
         auto argp = Ptr<void>();
         auto inject = create_cpu_dep_inject(host);
-        const SceUID module_thread_id = create_thread(module_start, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
+        const SceUID module_thread_id = create_thread(module_start, *host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT),
             inject, nullptr);
-        const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
+        const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel->threads);
         const auto ret = run_on_current(*module_thread, module_start, 0, argp);
         module_thread->to_do = ThreadToDo::exit;
         module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
-        host.kernel.running_threads.erase(module_thread_id);
-        host.kernel.threads.erase(module_thread_id);
+        host.kernel->running_threads.erase(module_thread_id);
+        host.kernel->threads.erase(module_thread_id);
 
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
     }
@@ -550,7 +551,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         param.size = buf.size();
         param.attr = arr.address();
     }
-    if (start_thread(host.kernel, main_thread_id, param.size, Ptr<void>(param.attr)) < 0) {
+    if (start_thread(*host.kernel, main_thread_id, param.size, Ptr<void>(param.attr)) < 0) {
         app::error_dialog("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }

@@ -19,6 +19,7 @@
 
 #include <host/functions.h>
 #include <kernel/functions.h>
+#include <kernel/state.h>
 #include <kernel/thread/sync_primitives.h>
 #include <util/lock_and_find.h>
 
@@ -412,7 +413,7 @@ EXPORT(int, sceKernelChangeThreadCpuAffinityMask) {
 EXPORT(int, sceKernelChangeThreadPriority, SceUID thid, int priority) {
     STUBBED("STUB");
 
-    const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel->threads, host.kernel->mutex);
     const std::lock_guard<std::mutex> lock(thread->mutex);
     thread.get()->priority = priority;
 
@@ -520,11 +521,11 @@ EXPORT(int, sceKernelDeleteCallback) {
 }
 
 EXPORT(int, sceKernelDeleteCond, SceUID condition_variable_id) {
-    return condvar_delete(host.kernel, export_name, thread_id, condition_variable_id, SyncWeight::Heavy);
+    return condvar_delete(*host.kernel, export_name, thread_id, condition_variable_id, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelDeleteEventFlag, SceUID event_id) {
-    return eventflag_delete(host.kernel, export_name, thread_id, event_id);
+    return eventflag_delete(*host.kernel, export_name, thread_id, event_id);
 }
 
 EXPORT(int, sceKernelDeleteMsgPipe) {
@@ -532,7 +533,7 @@ EXPORT(int, sceKernelDeleteMsgPipe) {
 }
 
 EXPORT(int, sceKernelDeleteMutex, SceUID mutexid) {
-    return mutex_delete(host.kernel, export_name, thread_id, mutexid, SyncWeight::Heavy);
+    return mutex_delete(*host.kernel, export_name, thread_id, mutexid, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelDeleteRWLock) {
@@ -540,7 +541,7 @@ EXPORT(int, sceKernelDeleteRWLock) {
 }
 
 EXPORT(int, sceKernelDeleteSema, SceUID semaid) {
-    return semaphore_delete(host.kernel, export_name, thread_id, semaid);
+    return semaphore_delete(*host.kernel, export_name, thread_id, semaid);
 }
 
 EXPORT(int, sceKernelDeleteSimpleEvent) {
@@ -548,24 +549,24 @@ EXPORT(int, sceKernelDeleteSimpleEvent) {
 }
 
 EXPORT(int, sceKernelDeleteThread, SceUID thid) {
-    const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thid, host.kernel->threads, host.kernel->mutex);
 
     // TODO: This causes a deadlock
-    //const std::lock_guard<std::mutex> lock2(host.kernel.mutex);
-    host.kernel.running_threads.erase(thid);
-    host.kernel.waiting_threads.erase(thid);
-    host.kernel.threads.erase(thid);
+    //const std::lock_guard<std::mutex> lock2(host.kernel->mutex);
+    host.kernel->running_threads.erase(thid);
+    host.kernel->waiting_threads.erase(thid);
+    host.kernel->threads.erase(thid);
     return 0;
 }
 
 EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
-    host.kernel.timers.erase(timer_handle);
+    host.kernel->timers.erase(timer_handle);
 
     return 0;
 }
 
 EXPORT(int, sceKernelExitDeleteThread, int status) {
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
     std::unique_lock<std::mutex> thread_lock(thread->mutex);
 
     thread->to_do = ThreadToDo::exit;
@@ -585,10 +586,10 @@ EXPORT(int, sceKernelExitDeleteThread, int status) {
     thread_lock.unlock();
 
     // TODO: This causes a deadlock
-    //const std::lock_guard<std::mutex> lock2(host.kernel.mutex);
-    host.kernel.running_threads.erase(thread_id);
-    host.kernel.waiting_threads.erase(thread_id);
-    host.kernel.threads.erase(thread_id);
+    //const std::lock_guard<std::mutex> lock2(host.kernel->mutex);
+    host.kernel->running_threads.erase(thread_id);
+    host.kernel->waiting_threads.erase(thread_id);
+    host.kernel->threads.erase(thread_id);
 
     return status;
 }
@@ -619,7 +620,7 @@ EXPORT(int, sceKernelGetThreadStackFreeSize) {
 }
 
 EXPORT(Ptr<void>, sceKernelGetThreadTLSAddr, SceUID thid, int key) {
-    return get_thread_tls_addr(host.kernel, host.mem, thid, key);
+    return get_thread_tls_addr(*host.kernel, host.mem, thid, key);
 }
 
 EXPORT(int, sceKernelGetThreadmgrUIDClass) {
@@ -627,7 +628,7 @@ EXPORT(int, sceKernelGetThreadmgrUIDClass) {
 }
 
 EXPORT(int, sceKernelGetTimerBaseWide, SceUID timer_handle) {
-    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
+    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel->timers, host.kernel->mutex);
 
     if (!timer_info)
         return -1;
@@ -636,7 +637,7 @@ EXPORT(int, sceKernelGetTimerBaseWide, SceUID timer_handle) {
 }
 
 EXPORT(uint64_t, sceKernelGetTimerTimeWide, SceUID timer_handle) {
-    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
+    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel->timers, host.kernel->mutex);
 
     if (!timer_info)
         return -1;
@@ -686,15 +687,15 @@ EXPORT(SceUID, sceKernelOpenTimer, const char *name) {
     SceUID timer_handle = -1;
     TimerPtr timer_info;
 
-    host.kernel.mutex.lock();
-    for (const auto &timer : host.kernel.timers) {
+    host.kernel->mutex.lock();
+    for (const auto &timer : host.kernel->timers) {
         if (timer.second->name == name) {
             timer_handle = timer.first;
             timer_info = timer.second;
             break;
         }
     }
-    host.kernel.mutex.unlock();
+    host.kernel->mutex.unlock();
 
     assert(timer_info->openable);
 
@@ -703,7 +704,7 @@ EXPORT(SceUID, sceKernelOpenTimer, const char *name) {
 
 EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
     assert(needCount >= 0);
-    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel.semaphores, host.kernel.mutex);
+    const SemaphorePtr semaphore = lock_and_find(semaid, host.kernel->semaphores, host.kernel->mutex);
     if (!semaphore) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
@@ -729,7 +730,7 @@ EXPORT(int, sceKernelResumeThreadForVM) {
 
 EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
     STUBBED("sceKernelSendSignal");
-    const auto thread = lock_and_find(target_thread_id, host.kernel.threads, host.kernel.mutex);
+    const auto thread = lock_and_find(target_thread_id, host.kernel->threads, host.kernel->mutex);
     LOG_TRACE("signaling thread {}", target_thread_id);
     thread->signal.notify();
     return SCE_KERNEL_OK;
@@ -740,7 +741,7 @@ EXPORT(int, sceKernelSetEvent) {
 }
 
 EXPORT(int, sceKernelSetEventFlag, SceUID eventid, unsigned int flags) {
-    return eventflag_set(host.kernel, export_name, thread_id, eventid, flags);
+    return eventflag_set(*host.kernel, export_name, thread_id, eventid, flags);
 }
 
 EXPORT(int, sceKernelSetTimerTimeWide) {
@@ -748,26 +749,26 @@ EXPORT(int, sceKernelSetTimerTimeWide) {
 }
 
 EXPORT(int, sceKernelSignalCond, SceUID condid) {
-    return condvar_signal(host.kernel, export_name, thread_id, condid,
+    return condvar_signal(*host.kernel, export_name, thread_id, condid,
         Condvar::SignalTarget(Condvar::SignalTarget::Type::Any), SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelSignalCondAll, SceUID condid) {
-    return condvar_signal(host.kernel, export_name, thread_id, condid,
+    return condvar_signal(*host.kernel, export_name, thread_id, condid,
         Condvar::SignalTarget(Condvar::SignalTarget::Type::All), SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelSignalCondTo, SceUID condid, SceUID thread_target) {
-    return condvar_signal(host.kernel, export_name, thread_id, condid,
+    return condvar_signal(*host.kernel, export_name, thread_id, condid,
         Condvar::SignalTarget(Condvar::SignalTarget::Type::Specific, thread_target), SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
-    return semaphore_signal(host.kernel, export_name, thread_id, semaid, signal);
+    return semaphore_signal(*host.kernel, export_name, thread_id, semaid, signal);
 }
 
 EXPORT(int, sceKernelStartTimer, SceUID timer_handle) {
-    const TimerPtr &timer_info = host.kernel.timers[timer_handle];
+    const TimerPtr &timer_info = host.kernel->timers[timer_handle];
 
     if (timer_info->is_started)
         return false;
@@ -779,7 +780,7 @@ EXPORT(int, sceKernelStartTimer, SceUID timer_handle) {
 }
 
 EXPORT(int, sceKernelStopTimer, SceUID timer_handle) {
-    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
+    const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel->timers, host.kernel->mutex);
 
     if (!timer_info->is_started)
         return false;
@@ -795,7 +796,7 @@ EXPORT(int, sceKernelSuspendThreadForVM) {
 }
 
 EXPORT(int, sceKernelTryLockMutex, SceUID mutexid, int lock_count) {
-    return mutex_try_lock(host.kernel, export_name, thread_id, mutexid, lock_count, SyncWeight::Heavy);
+    return mutex_try_lock(*host.kernel, export_name, thread_id, mutexid, lock_count, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelTryLockReadRWLock) {
@@ -807,7 +808,7 @@ EXPORT(int, sceKernelTryLockWriteRWLock) {
 }
 
 EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
-    return mutex_unlock(host.kernel, export_name, thread_id, mutexid, unlock_count, SyncWeight::Heavy);
+    return mutex_unlock(*host.kernel, export_name, thread_id, mutexid, unlock_count, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelUnlockReadRWLock) {

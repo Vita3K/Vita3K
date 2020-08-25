@@ -19,6 +19,7 @@
 
 #include <io/functions.h>
 #include <kernel/thread/thread_functions.h>
+#include <kernel/state.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -164,7 +165,7 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
 }
 
 EXPORT(int, sceAvPlayerAddSource, SceUID player_handle, const char *path) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
 
     player_info->player.queue(expand_path(*host.io, path, host.pref_path));
 
@@ -172,13 +173,13 @@ EXPORT(int, sceAvPlayerAddSource, SceUID player_handle, const char *path) {
 }
 
 EXPORT(int, sceAvPlayerClose, SceUID player_handle) {
-    host.kernel.players.erase(player_handle);
+    host.kernel->players.erase(player_handle);
 
     return 0;
 }
 
 EXPORT(uint64_t, sceAvPlayerCurrentTime, SceUID player_handle) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
 
     return player_info->player.last_timestamp;
 }
@@ -192,7 +193,7 @@ EXPORT(int, sceAvPlayerEnableStream) {
 }
 
 EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, SceAvPlayerFrameInfo *frame_info) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
 
     Ptr<uint8_t> buffer;
 
@@ -230,7 +231,7 @@ EXPORT(int, sceAvPlayerGetStreamInfo) {
 }
 
 EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, SceAvPlayerFrameInfo *frame_info) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
 
     Ptr<uint8_t> buffer;
 
@@ -275,9 +276,9 @@ EXPORT(int, sceAvPlayerGetVideoDataEx) {
 }
 
 EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
-    SceUID player_handle = host.kernel.get_next_uid();
+    SceUID player_handle = host.kernel->get_next_uid();
     PlayerPtr player = std::make_shared<PlayerInfoState>();
-    host.kernel.players[player_handle] = player;
+    host.kernel->players[player_handle] = player;
 
     if (info->memory_allocator.general_allocator)
         LOG_WARN("General Allocator will not be used.");
@@ -295,7 +296,7 @@ EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
 }
 
 EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
 
     return !player_info->player.video_playing.empty();
 }
@@ -305,7 +306,7 @@ EXPORT(int, sceAvPlayerJumpToTime) {
 }
 
 EXPORT(int, sceAvPlayerPause, SceUID player_handle) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
     player_info->paused = true;
 
     return 0;
@@ -316,14 +317,14 @@ EXPORT(int, sceAvPlayerPostInit) {
 }
 
 EXPORT(int, sceAvPlayerResume, SceUID player_handle) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
     player_info->paused = false;
 
     return 0;
 }
 
 EXPORT(int, sceAvPlayerSetLooping, SceUID player_handle, bool do_loop) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
     player_info->do_loop = do_loop;
 
     return STUBBED("LOOPING NOT IMPLEMENTED");
@@ -334,14 +335,14 @@ EXPORT(int, sceAvPlayerSetTrickSpeed) {
 }
 
 EXPORT(int, sceAvPlayerStart, SceUID player_handle) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
     player_info->player.pop_video();
 
     return 0;
 }
 
 EXPORT(int, sceAvPlayerStop, SceUID player_handle) {
-    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel->players, host.kernel->mutex);
     player_info->player.free_video();
 
     return 0;

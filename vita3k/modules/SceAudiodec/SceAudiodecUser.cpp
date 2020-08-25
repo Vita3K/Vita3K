@@ -17,6 +17,7 @@
 
 #include "SceAudiodecUser.h"
 
+#include <kernel/state.h>
 #include <util/lock_and_find.h>
 
 enum SceAudiodecCodec : uint32_t {
@@ -82,16 +83,16 @@ EXPORT(int, sceAudiodecClearContext) {
 }
 
 EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
-    std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    std::lock_guard<std::mutex> lock(host.kernel->mutex);
 
-    SceUID handle = host.kernel.get_next_uid();
+    SceUID handle = host.kernel->get_next_uid();
     ctrl->handle = handle;
 
     switch (codec) {
     case SCE_AUDIODEC_TYPE_AT9: {
         SceAudiodecInfoAt9 &info = ctrl->info.get(host.mem)->at9;
         DecoderPtr decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
-        host.kernel.decoders[handle] = decoder;
+        host.kernel->decoders[handle] = decoder;
 
         uint32_t block_align = decoder->get(DecoderQuery::AT9_BLOCK_ALIGN);
         uint32_t sps = decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME);
@@ -124,7 +125,7 @@ EXPORT(int, sceAudiodecCreateDecoderResident) {
 }
 
 EXPORT(int, sceAudiodecDecode, SceAudiodecCtrl *ctrl) {
-    const DecoderPtr &decoder = lock_and_find(ctrl->handle, host.kernel.decoders, host.kernel.mutex);
+    const DecoderPtr &decoder = lock_and_find(ctrl->handle, host.kernel->decoders, host.kernel->mutex);
 
     DecoderSize size = {};
 
@@ -149,8 +150,8 @@ EXPORT(int, sceAudiodecDecodeNStreams) {
 }
 
 EXPORT(int, sceAudiodecDeleteDecoder, SceAudiodecCtrl *ctrl) {
-    std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    host.kernel.decoders.erase(ctrl->handle);
+    std::lock_guard<std::mutex> lock(host.kernel->mutex);
+    host.kernel->decoders.erase(ctrl->handle);
 
     return 0;
 }

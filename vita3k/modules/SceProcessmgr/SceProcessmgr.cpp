@@ -18,6 +18,7 @@
 #include "SceProcessmgr.h"
 
 #include <io/functions.h>
+#include <kernel/state.h>
 #include <rtc/rtc.h>
 
 #include <ctime>
@@ -81,7 +82,7 @@ EXPORT(int, sceKernelGetProcessName) {
 }
 
 EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void *args) {
-    return host.kernel.process_param;
+    return host.kernel->process_param;
 }
 
 EXPORT(int, sceKernelGetProcessTimeCore) {
@@ -125,11 +126,11 @@ EXPORT(int, sceKernelIsGameBudget) {
 }
 
 EXPORT(VitaTime, sceKernelLibcClock) {
-    return rtc_get_ticks(host.kernel.base_tick.tick) - rtc_get_ticks(host.kernel.start_tick.tick);
+    return rtc_get_ticks(host.kernel->base_tick.tick) - rtc_get_ticks(host.kernel->start_tick.tick);
 }
 
 EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAddr) {
-    const auto ticks = rtc_get_ticks(host.kernel.base_tick.tick) - RTC_OFFSET;
+    const auto ticks = rtc_get_ticks(host.kernel->base_tick.tick) - RTC_OFFSET;
     if (timeAddr != nullptr) {
         timeAddr->tv_sec = static_cast<std::uint32_t>(ticks / VITA_CLOCKS_PER_SEC);
         timeAddr->tv_usec = ticks % VITA_CLOCKS_PER_SEC;
@@ -163,7 +164,7 @@ EXPORT(int, sceKernelLibcMktime) {
 }
 
 EXPORT(VitaTime, sceKernelLibcTime, VitaTime *time) {
-    const auto secs = (rtc_get_ticks(host.kernel.base_tick.tick) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC;
+    const auto secs = (rtc_get_ticks(host.kernel->base_tick.tick) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC;
 
     if (time) {
         *time = static_cast<VitaTime>(secs);

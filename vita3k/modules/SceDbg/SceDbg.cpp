@@ -21,9 +21,10 @@
 #include <v3kprintf.h>
 
 #include <kernel/functions.h>
+#include <kernel/state.h>
 
 EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop, const char *component, module::vargs messages) {
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
@@ -37,7 +38,7 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
     LOG_INFO("file {}, line {}, {}", filename, line, buffer.data());
 
     if (do_stop)
-        stop_all_threads(host.kernel);
+        stop_all_threads(*host.kernel);
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
