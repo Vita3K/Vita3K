@@ -295,29 +295,46 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
                     gui.theme_backgrounds.push_back({});
                 }
             }
-
-            for (auto pos = 0; pos < theme_bg_name.size(); pos++) {
-                int32_t width = 0;
-                int32_t height = 0;
-                vfs::FileBuffer buffer;
-
-                vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + theme_bg_name[pos]);
-
-                if (buffer.empty()) {
-                    LOG_WARN("background, Name: '{}', Not found for content id: {}.", theme_bg_name[pos], content_id);
-                    continue;
-                }
-                stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-                if (!data) {
-                    LOG_ERROR("Invalid Background for title: {}.", content_id);
-                    continue;
-                }
-
-                gui.theme_backgrounds[pos].init(gui.imgui_state.get(), data, width, height);
-                stbi_image_free(data);
-            }
         } else
             LOG_ERROR("Theme not found for Content ID: {}, in path: {}", content_id, theme_path_xml.string());
+    } else {
+        const std::vector<std::string> app_id_bg_list = {
+            "NPXS10002",
+            "NPXS10006",
+            "NPXS10013",
+            "NPXS10018",
+            "NPXS10098",
+        };
+        for (const auto &bg : app_id_bg_list) {
+            if (fs::exists(fs::path(host.pref_path) / "vs0/app" / bg / "sce_sys/pic0.png")) {
+                gui.theme_backgrounds.push_back({});
+                theme_bg_name.push_back(bg);
+            }
+        }
+    }
+
+    for (auto pos = 0; pos < theme_bg_name.size(); pos++) {
+        int32_t width = 0;
+        int32_t height = 0;
+        vfs::FileBuffer buffer;
+
+        if (content_id == "default")
+            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + theme_bg_name[pos] + "/sce_sys/pic0.png");
+        else
+            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + theme_bg_name[pos]);
+
+        if (buffer.empty()) {
+            LOG_WARN("background, Name: '{}', Not found for content id: {}.", theme_bg_name[pos], content_id);
+            continue;
+        }
+        stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+        if (!data) {
+            LOG_ERROR("Invalid Background for title: {}.", content_id);
+            continue;
+        }
+
+        gui.theme_backgrounds[pos].init(gui.imgui_state.get(), data, width, height);
+        stbi_image_free(data);
     }
 
     if (!bar_param["barColor"].empty()) {
