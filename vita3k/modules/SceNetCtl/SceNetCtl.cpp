@@ -19,6 +19,7 @@
 
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
+#include <net/state.h>
 #include <util/lock_and_find.h>
 
 #define SCE_NETCTL_INFO_SSID_LEN_MAX 32
@@ -110,14 +111,14 @@ EXPORT(int, sceNetCtlAdhocUnregisterCallback) {
 }
 
 EXPORT(int, sceNetCtlCheckCallback) {
-    if (host.net.state == 1) {
+    if (host.net->state == 1) {
         return 0;
     }
 
-    host.net.state = 1;
+    host.net->state = 1;
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
-    for (auto &callback : host.net.cbs) {
+    for (auto &callback : host.net->cbs) {
         Ptr<void> argp = Ptr<void>(callback.second.data);
         run_on_current(*thread, Ptr<void>(callback.second.pc), 1, argp);
     }
@@ -172,12 +173,12 @@ EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> callback, Ptr<void> data, u
     SceNetCtlCallback sceNetCtlCallback;
     sceNetCtlCallback.pc = callback.address();
     sceNetCtlCallback.data = data.address();
-    host.net.cbs.emplace(*cid, sceNetCtlCallback);
+    host.net->cbs.emplace(*cid, sceNetCtlCallback);
     return 0;
 }
 
 EXPORT(int, sceNetCtlInetUnregisterCallback, uint32_t cid) {
-    host.net.cbs.erase(cid);
+    host.net->cbs.erase(cid);
     return 0;
 }
 

@@ -31,6 +31,7 @@
 #include <host/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
+#include <net/state.h>
 #include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
     host.gxm = std::make_shared<GxmState>();
     host.io = std::make_unique<IOState>();
     host.kernel = std::make_shared<KernelState>();
+    host.net = std::make_unique<NetState>();
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {

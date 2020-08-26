@@ -23,6 +23,7 @@
 #include <io/functions.h>
 #include <io/io.h>
 #include <io/vfs.h>
+#include <net/sockets.h>
 
 #include <cstring>
 

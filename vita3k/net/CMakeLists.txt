@@ -2,6 +2,7 @@ add_library(
 net
 STATIC
 include/net/functions.h
+include/net/sockets.h
 include/net/state.h
 include/net/types.h
 include/net/socket.h

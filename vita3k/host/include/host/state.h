@@ -21,7 +21,6 @@
 #include <host/sfo.h>
 #include <host/window.h>
 #include <kernel/types.h>
-#include <net/state.h>
 #include <ngs/state.h>
 #include <nids/types.h>
 #include <np/state.h>
@@ -43,6 +42,7 @@ struct DialogState;
 struct GxmState;
 struct IOState;
 struct KernelState;
+struct NetState;
 
 struct DisplayState {
     Ptr<const void> base;
@@ -86,7 +86,7 @@ struct HostState {
     std::shared_ptr<GxmState> gxm;
     bool renderer_focused;
     std::unique_ptr<IOState> io;
-    NetState net;
+    std::unique_ptr<NetState> net;
     ngs::State ngs;
     NpState np;
     DisplayState display;
