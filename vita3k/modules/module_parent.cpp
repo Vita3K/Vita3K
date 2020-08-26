@@ -17,6 +17,7 @@
 
 #include <modules/module_parent.h>
 
+#include <config/state.h>
 #include <cpu/functions.h>
 #include <host/import_fn.h>
 #include <host/import_var.h>
@@ -41,8 +42,6 @@ static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 #include <nids/nids.h>
 #undef NID
 #undef VAR_NID
-
-struct HostState;
 
 static ImportFn resolve_import(uint32_t nid) {
     switch (nid) {
@@ -175,7 +174,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
         Ptr<const void> lib_entry_point;
 
         if (vfs::read_file(VitaIoDevice::vs0, module_buffer, host.pref_path, module_path)) {
-            SceUID loaded_module_uid = load_self(lib_entry_point, *host.kernel, host.mem, module_buffer.data(), module_path, host.cfg);
+            SceUID loaded_module_uid = load_self(lib_entry_point, *host.kernel, host.mem, module_buffer.data(), module_path, *host.cfg);
             const auto module = host.kernel->loaded_modules[loaded_module_uid];
             const auto module_name = module->module_name;
 
@@ -229,7 +228,7 @@ CPUDepInject create_cpu_dep_inject(HostState &host) {
     CPUDepInject inject;
     inject.call_import = call_import;
     inject.resolve_nid_name = resolve_nid_name;
-    inject.trace_stack = host.cfg.stack_traceback;
+    inject.trace_stack = host.cfg->stack_traceback;
     inject.get_watch_memory_addr = get_watch_memory_addr;
     inject.module_regions = host.kernel->module_regions;
     return inject;

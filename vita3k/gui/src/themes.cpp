@@ -18,6 +18,7 @@
 #include "private.h"
 
 #include <config/functions.h>
+#include <config/state.h>
 #include <gui/functions.h>
 
 #include <util/log.h>
@@ -65,9 +66,9 @@ static void add_user_image_background(GuiState &gui, HostState &host) {
 
         if (gui.user_backgrounds[image_path]) {
             gui.current_user_bg = 0;
-            host.cfg.user_backgrounds.push_back(image_path);
-            host.cfg.use_theme_background = false;
-            config::serialize_config(host.cfg, host.cfg.config_path);
+            host.cfg->user_backgrounds.push_back(image_path);
+            host.cfg->use_theme_background = false;
+            config::serialize_config(*host.cfg, host.cfg->config_path);
         }
     }
 }
@@ -378,7 +379,7 @@ void get_themes_list(GuiState &gui, HostState &host) {
     }
 
     std::string user_lang;
-    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
+    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg->sys_lang);
     switch (sys_lang) {
     case SCE_SYSTEM_PARAM_LANG_JAPANESE: user_lang = "m_ja"; break;
     case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: user_lang = "m_en"; break;
@@ -548,7 +549,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     ImGui::GetForegroundDrawList()->AddText(gui.live_area_font_large, scal_clock_font_size * SCAL.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
     ImGui::PopFont();
 
-    if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+    if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg->keyboard_button_circle)) {
         gui.live_area.start_screen = false;
         gui.live_area.app_selector = true;
     }
@@ -618,14 +619,14 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
         if (!themes_info.empty()) {
             if (ImGui::Selectable("Theme", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
                 menu = "theme";
-            if (!host.cfg.theme_content_id.empty()) {
+            if (!host.cfg->theme_content_id.empty()) {
                 ImGui::SetWindowFontScale(0.74f);
-                const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[host.cfg.theme_content_id].title.c_str(), 0, false, 260.f * SCAL.x).y / 2.f;
+                const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[host.cfg->theme_content_id].title.c_str(), 0, false, 260.f * SCAL.x).y / 2.f;
                 ImGui::SameLine(0, 420.f * SCAL.x);
                 const auto CALC_POS_TITLE = (SIZE_SELECT / 2.f) - CALC_TITLE;
                 ImGui::SetCursorPosY(CALC_POS_TITLE);
                 ImGui::PushTextWrapPos(SIZE_LIST.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[host.cfg.theme_content_id].title.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[host.cfg->theme_content_id].title.c_str());
                 ImGui::PopTextWrapPos();
                 ImGui::SetWindowFontScale(1.2f);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (CALC_POS_TITLE > 0 ? CALC_POS_TITLE : -CALC_POS_TITLE));
@@ -675,7 +676,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     ImGui::SetWindowFontScale(1.8f);
-                    if (ImGui::Selectable(host.cfg.theme_content_id == theme.first ? "V" : "##preview", false, ImGuiSelectableFlags_None, SIZE_PACKAGE)) {
+                    if (ImGui::Selectable(host.cfg->theme_content_id == theme.first ? "V" : "##preview", false, ImGuiSelectableFlags_None, SIZE_PACKAGE)) {
                         selected = theme.first;
                         scroll_pos = ImGui::GetScrollY();
                     }
@@ -704,16 +705,16 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     }
                     ImGui::SetWindowFontScale(1.2f);
                     ImGui::SetCursorPos(ImVec2((SIZE_LIST.x / 2.f) - (BUTTON_SIZE.x / 2.f), (SIZE_LIST.y - 82.f) - BUTTON_SIZE.y));
-                    if ((selected != host.cfg.theme_content_id) && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
-                        host.cfg.user_start_background.clear();
+                    if ((selected != host.cfg->theme_content_id) && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_cross))) {
+                        host.cfg->user_start_background.clear();
                         if (init_theme(gui, host, selected)) {
-                            host.cfg.theme_content_id = selected;
-                            host.cfg.use_theme_background = true;
+                            host.cfg->theme_content_id = selected;
+                            host.cfg->use_theme_background = true;
                         } else
-                            host.cfg.use_theme_background = false;
+                            host.cfg->use_theme_background = false;
                         init_theme_start_background(gui, host, selected);
-                        host.cfg.start_background = (selected == "default") ? "default" : "theme";
-                        config::serialize_config(host.cfg, host.cfg.config_path);
+                        host.cfg->start_background = (selected == "default") ? "default" : "theme";
+                        config::serialize_config(*host.cfg, host.cfg->config_path);
                         set_scroll_pos = true;
                         selected.clear();
                     }
@@ -739,20 +740,20 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     ImGui::TextColored(GUI_COLOR_TEXT, "This theme will be deleted.");
                     ImGui::SetCursorPos(ImVec2(50.f, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
                     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
-                    if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+                    if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_circle))
                         popup.clear();
                     ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - 50.f - BUTTON_SIZE.x, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
-                    if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
-                        if (selected == host.cfg.theme_content_id) {
-                            host.cfg.user_start_background.clear();
-                            host.cfg.theme_content_id = "default";
+                    if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_cross)) {
+                        if (selected == host.cfg->theme_content_id) {
+                            host.cfg->user_start_background.clear();
+                            host.cfg->theme_content_id = "default";
                             init_apps_icon(gui, host, gui.app_selector.sys_apps);
                             if (init_theme(gui, host, "default"))
-                                host.cfg.use_theme_background = true;
+                                host.cfg->use_theme_background = true;
                             else
-                                host.cfg.use_theme_background = false;
+                                host.cfg->use_theme_background = false;
                             init_theme_start_background(gui, host, "default");
-                            config::serialize_config(host.cfg, host.cfg.config_path);
+                            config::serialize_config(*host.cfg, host.cfg->config_path);
                         }
                         fs::remove_all(fs::path{ host.pref_path } / "ux0/theme" / selected);
                         if (host.app_title_id == "NPXS10026")
@@ -811,35 +812,35 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                 ImGui::SetWindowFontScale(0.72f);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
                 const auto PACKAGE_POS_Y = (SIZE_LIST.y / 2.f) - (SIZE_PACKAGE.y / 2.f) - (72.f * SCAL.y);
-                const auto is_not_default = !host.cfg.theme_content_id.empty() && (host.cfg.theme_content_id != "default");
+                const auto is_not_default = !host.cfg->theme_content_id.empty() && (host.cfg->theme_content_id != "default");
                 if (is_not_default) {
                     const auto THEME_POS = ImVec2(15.f * SCAL.x, PACKAGE_POS_Y);
-                    if (gui.themes_preview[host.cfg.theme_content_id].find("package") != gui.themes_preview[host.cfg.theme_content_id].end()) {
+                    if (gui.themes_preview[host.cfg->theme_content_id].find("package") != gui.themes_preview[host.cfg->theme_content_id].end()) {
                         ImGui::SetCursorPos(THEME_POS);
-                        ImGui::Image(gui.themes_preview[host.cfg.theme_content_id]["package"], SIZE_PACKAGE);
+                        ImGui::Image(gui.themes_preview[host.cfg->theme_content_id]["package"], SIZE_PACKAGE);
                     }
                     ImGui::SetCursorPos(THEME_POS);
                     ImGui::SetWindowFontScale(1.8f);
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-                    if (ImGui::Selectable(host.cfg.start_background == "theme" ? "V" : "##theme", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
+                    if (ImGui::Selectable(host.cfg->start_background == "theme" ? "V" : "##theme", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
                         start = "theme";
                     ImGui::PopStyleColor();
                     ImGui::SetWindowFontScale(0.72f);
                     ImGui::SetCursorPosX(15.f * SCAL.x);
                     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + SIZE_PACKAGE.x);
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[host.cfg.theme_content_id].title.c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[host.cfg->theme_content_id].title.c_str());
                     ImGui::PopTextWrapPos();
                 }
                 const auto IMAGE_POS = ImVec2(is_not_default ? (SIZE_LIST.x / 2.f) - (SIZE_PACKAGE.x / 2.f) : 15.f * SCAL.x, PACKAGE_POS_Y);
-                if ((host.cfg.start_background == "image") && gui.start_background) {
+                if ((host.cfg->start_background == "image") && gui.start_background) {
                     ImGui::SetCursorPos(IMAGE_POS);
                     ImGui::Image(gui.start_background, SIZE_PACKAGE);
                 }
                 ImGui::SetCursorPos(IMAGE_POS);
-                if (host.cfg.start_background == "image")
+                if (host.cfg->start_background == "image")
                     ImGui::SetWindowFontScale(1.8f);
                 ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-                if (ImGui::Selectable(host.cfg.start_background == "image" ? "V" : "Add Image", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
+                if (ImGui::Selectable(host.cfg->start_background == "image" ? "V" : "Add Image", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
                     start = "image";
                 ImGui::PopStyleColor();
                 ImGui::SetWindowFontScale(0.72f);
@@ -852,7 +853,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     ImGui::SetCursorPos(DEFAULT_POS);
                     ImGui::SetWindowFontScale(1.8f);
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-                    if (ImGui::Selectable(host.cfg.start_background == "default" ? "V" : "##default", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
+                    if (ImGui::Selectable(host.cfg->start_background == "default" ? "V" : "##default", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
                         start = "default";
                     ImGui::PopStyleColor();
                     ImGui::SetWindowFontScale(0.72f);
@@ -865,17 +866,17 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                 const auto START_PREVIEW_POS = ImVec2((SIZE_LIST.x / 2.f) - (SIZE_PREVIEW.x / 2.f), (SIZE_LIST.y / 2.f) - (SIZE_PREVIEW.y / 2.f) - (72.f * SCAL.y));
                 const auto SELECT_BUTTON_POS = ImVec2((SIZE_LIST.x / 2.f) - (BUTTON_SIZE.x / 2.f), (SIZE_LIST.y - 82.f) - BUTTON_SIZE.y);
                 if (start == "theme") {
-                    title = themes_info[host.cfg.theme_content_id].title;
-                    if (gui.themes_preview[host.cfg.theme_content_id].find("start") != gui.themes_preview[host.cfg.theme_content_id].end()) {
+                    title = themes_info[host.cfg->theme_content_id].title;
+                    if (gui.themes_preview[host.cfg->theme_content_id].find("start") != gui.themes_preview[host.cfg->theme_content_id].end()) {
                         ImGui::SetCursorPos(START_PREVIEW_POS);
-                        ImGui::Image(gui.themes_preview[host.cfg.theme_content_id]["start"], SIZE_PREVIEW);
+                        ImGui::Image(gui.themes_preview[host.cfg->theme_content_id]["start"], SIZE_PREVIEW);
                     }
                     ImGui::SetCursorPos(SELECT_BUTTON_POS);
-                    if ((host.cfg.start_background != "theme") && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
-                        host.cfg.user_start_background.clear();
-                        host.cfg.start_background = "theme";
-                        init_theme_start_background(gui, host, host.cfg.theme_content_id);
-                        config::serialize_config(host.cfg, host.cfg.config_path);
+                    if ((host.cfg->start_background != "theme") && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_cross))) {
+                        host.cfg->user_start_background.clear();
+                        host.cfg->start_background = "theme";
+                        init_theme_start_background(gui, host, host.cfg->theme_content_id);
+                        config::serialize_config(*host.cfg, host.cfg->config_path);
                         start.clear();
                     }
                 } else if (start == "image") {
@@ -883,9 +884,9 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &image_path);
 
                     if ((result == NFD_OKAY) && init_user_start_background(gui, image_path)) {
-                        host.cfg.user_start_background = image_path;
-                        host.cfg.start_background = "image";
-                        config::serialize_config(host.cfg, host.cfg.config_path);
+                        host.cfg->user_start_background = image_path;
+                        host.cfg->start_background = "image";
+                        config::serialize_config(*host.cfg, host.cfg->config_path);
                     }
                     start.clear();
                 } else if (start == "default") {
@@ -895,11 +896,11 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                         ImGui::Image(gui.themes_preview["default"]["start"], SIZE_PREVIEW);
                     }
                     ImGui::SetCursorPos(SELECT_BUTTON_POS);
-                    if ((host.cfg.start_background != "default") && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
-                        host.cfg.user_start_background.clear();
+                    if ((host.cfg->start_background != "default") && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_cross))) {
+                        host.cfg->user_start_background.clear();
                         init_theme_start_background(gui, host, "default");
-                        host.cfg.start_background = "default";
-                        config::serialize_config(host.cfg, host.cfg.config_path);
+                        host.cfg->start_background = "default";
+                        config::serialize_config(*host.cfg, host.cfg->config_path);
                         start.clear();
                     }
                 }
@@ -909,21 +910,21 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
 
             // Delete user background
             if (!delete_user_background.empty()) {
-                const auto bg = std::find(host.cfg.user_backgrounds.begin(), host.cfg.user_backgrounds.end(), delete_user_background);
-                host.cfg.user_backgrounds.erase(bg);
+                const auto bg = std::find(host.cfg->user_backgrounds.begin(), host.cfg->user_backgrounds.end(), delete_user_background);
+                host.cfg->user_backgrounds.erase(bg);
                 gui.user_backgrounds.erase(delete_user_background);
-                if (host.cfg.user_backgrounds.size())
+                if (host.cfg->user_backgrounds.size())
                     gui.current_user_bg = 0;
                 else if (!gui.theme_backgrounds.empty())
-                    host.cfg.use_theme_background = true;
-                config::serialize_config(host.cfg, host.cfg.config_path);
+                    host.cfg->use_theme_background = true;
+                config::serialize_config(*host.cfg, host.cfg->config_path);
                 delete_user_background.clear();
             }
 
             ImGui::SetWindowFontScale(0.90f);
             ImGui::Columns(3, nullptr, false);
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 1.0f));
-            for (const auto &background : host.cfg.user_backgrounds) {
+            for (const auto &background : host.cfg->user_backgrounds) {
                 const auto IMAGE_POS = ImGui::GetCursorPosY();
                 ImGui::Image(gui.user_backgrounds[background], SIZE_PACKAGE);
                 ImGui::SetCursorPosY(IMAGE_POS);
@@ -973,7 +974,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
 
     if (!selected.empty() && (selected != "default")) {
         ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCAL.x), display_size.y - (84.f * SCAL.y)));
-        if ((popup != "information") && ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
+        if ((popup != "information") && ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg->keyboard_button_triangle))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...")) {
             if (ImGui::MenuItem("Information"))

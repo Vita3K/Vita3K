@@ -15,12 +15,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "SceNpTrophy.h"
+
+#include <config/config.h>
+#include <config/state.h>
 #include <np/functions.h>
 #include <np/state.h>
 #include <np/trophy/context.h>
 #include <util/log.h>
-
-#include "SceNpTrophy.h"
 
 EXPORT(int, sceNpTrophyAbortHandle) {
     STUBBED("Stubbed with SCE_OK");
@@ -38,7 +40,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
     }
 
     np::NpTrophyError err = np::NpTrophyError::TROPHY_ERROR_NONE;
-    *context = create_trophy_context(*host.np, host.io.get(), host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg.sys_lang),
+    *context = create_trophy_context(*host.np, host.io.get(), host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg->sys_lang),
         &err);
 
     if (*context == np::trophy::INVALID_CONTEXT_HANDLE) {

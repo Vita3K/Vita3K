@@ -17,6 +17,8 @@
 
 #include "private.h"
 
+#include <config/state.h>
+
 #include <gui/functions.h>
 
 #include <util/log.h>
@@ -44,7 +46,7 @@ static bool get_update_history(GuiState &gui, HostState &host) {
     update_history_infos.clear();
     const auto change_info_path{ fs::path(host.pref_path) / "ux0/app" / host.app_title_id / "sce_sys/changeinfo/" };
 
-    std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", host.cfg.sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", host.cfg.sys_lang) : "changeinfo.xml";
+    std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", host.cfg->sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", host.cfg->sys_lang) : "changeinfo.xml";
 
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file((change_info_path.string() + fname).c_str());
@@ -139,7 +141,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
                     system((OS_PREFIX + SAVE_DATA_PATH.string()).c_str());
                 ImGui::EndMenu();
             }
-            if (!host.cfg.show_live_area_screen && ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
+            if (!host.cfg->show_live_area_screen && ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
                 init_live_area(gui, host);
             if (ImGui::BeginMenu("Delete")) {
                 if (ImGui::MenuItem("Application"))
@@ -224,13 +226,13 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
                 ImGui::SetTooltip("Deleting a application may take a while\ndepending on its size and your hardware.");
             ImGui::SetWindowFontScale(1.4f * scal.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * scal.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * scal.y)));
-            if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+            if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_circle)) {
                 context_dialog.clear();
             }
             ImGui::SameLine();
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * scal.x));
         }
-        if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+        if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_cross)) {
             if (context_dialog == "app") {
                 fs::remove_all(DLC_PATH);
                 fs::remove_all(SAVE_DATA_PATH);
@@ -253,7 +255,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
         ImGui::Begin("##information", &information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(1.5f * scal.x);
         ImGui::SetCursorPos(ImVec2(10.0f * scal.x, 10.0f * scal.y));
-        if (ImGui::Button("X", ImVec2(40.f * scal.x, 40.f * scal.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+        if (ImGui::Button("X", ImVec2(40.f * scal.x, 40.f * scal.y)) || ImGui::IsKeyPressed(host.cfg->keyboard_button_circle)) {
             information = false;
             gui.live_area.information_bar = true;
         }

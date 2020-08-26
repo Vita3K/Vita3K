@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <config/state.h>
 #include <host/sfo.h>
 #include <host/window.h>
 #include <kernel/types.h>
@@ -35,6 +34,7 @@
 #include <string>
 
 struct AudioState;
+struct Config;
 struct CtrlState;
 struct DialogState;
 struct DisplayState;
@@ -55,7 +55,7 @@ struct HostState {
     std::string base_path;
     std::string default_path;
     std::string pref_path;
-    Config cfg;
+    std::unique_ptr<Config> cfg;
     SceUID main_thread_id;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;

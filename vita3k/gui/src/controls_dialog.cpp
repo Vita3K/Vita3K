@@ -17,9 +17,10 @@
 
 #include "private.h"
 
+#include <config/config.h>
 #include <config/functions.h>
+#include <config/state.h>
 #include <gui/functions.h>
-#include <host/state.h>
 #include <interface.h>
 
 namespace gui {
@@ -56,7 +57,7 @@ static void remapper_button(GuiState &gui, HostState &host, int *button, const c
             if (*button < 0 || *button > 231)
                 *button = 0;
         }
-        config::serialize_config(host.cfg, host.cfg.config_path);
+        config::serialize_config(*host.cfg, host.cfg->config_path);
     }
 }
 
@@ -67,36 +68,36 @@ void draw_controls_dialog(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("Controls", &gui.controls_menu.controls_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s    %-16s", "Button", "Mapped button");
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_up, "Left stick up", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_down, "Left stick down", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_right, "Left stick right", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_left, "Left stick left", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_up, "Right stick up", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_down, "Right stick down", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_right, "Right stick right", ImVec2(0.3f, 0.3f));
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_left, "Right stick left", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_up, "D-pad up", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_down, "D-pad down", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_right, "D-pad right", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_left, "D-pad left", ImVec2(7.0f, 7.0f));
-    if (host.cfg.pstv_mode) {
-        remapper_button(gui, host, &host.cfg.keyboard_button_l1, "L1 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R1 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_l2, "L2 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_r2, "R2 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_l3, "L3 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_r3, "R3 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_leftstick_up, "Left stick up", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_leftstick_down, "Left stick down", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_leftstick_right, "Left stick right", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_leftstick_left, "Left stick left", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_rightstick_up, "Right stick up", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_rightstick_down, "Right stick down", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_rightstick_right, "Right stick right", ImVec2(0.3f, 0.3f));
+    remapper_button(gui, host, &host.cfg->keyboard_rightstick_left, "Right stick left", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_up, "D-pad up", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_down, "D-pad down", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_right, "D-pad right", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_left, "D-pad left", ImVec2(7.0f, 7.0f));
+    if (host.cfg->pstv_mode) {
+        remapper_button(gui, host, &host.cfg->keyboard_button_l1, "L1 button", ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg->keyboard_button_r1, "R1 button", ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg->keyboard_button_l2, "L2 button", ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg->keyboard_button_r2, "R2 button", ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg->keyboard_button_l3, "L3 button", ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg->keyboard_button_r3, "R3 button", ImVec2(7.0f, 7.0f));
     } else {
-        remapper_button(gui, host, &host.cfg.keyboard_button_l1, "L button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R button", ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg->keyboard_button_l1, "L button", ImVec2(7.0f, 7.0f));
+        remapper_button(gui, host, &host.cfg->keyboard_button_r1, "R button", ImVec2(7.0f, 7.0f));
     }
-    remapper_button(gui, host, &host.cfg.keyboard_button_square, "Square button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_cross, "Cross button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_circle, "Circle button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_triangle, "Triangle button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_start, "Start button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_select, "Select button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_psbutton, "PS Button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_square, "Square button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_cross, "Cross button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_circle, "Circle button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_triangle, "Triangle button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_start, "Start button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_select, "Select button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg->keyboard_button_psbutton, "PS Button", ImVec2(7.0f, 7.0f));
     ImGui::Separator();
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s", "GUI");
     ImGui::Text("%-16s    %-16s", "Toggle Touch", "T");

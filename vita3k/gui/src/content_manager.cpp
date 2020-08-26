@@ -19,6 +19,8 @@
 
 #include <boost/algorithm/string/trim.hpp>
 
+#include <config/state.h>
+
 #include <gui/functions.h>
 
 #include <host/functions.h>
@@ -85,7 +87,7 @@ struct SaveData {
 static std::vector<SaveData> save_data_list;
 
 static void get_save_data_list(GuiState &gui, HostState &host) {
-    host.io->user_id = fmt::format("{:0>2d}", host.cfg.user_id);
+    host.io->user_id = fmt::format("{:0>2d}", host.cfg->user_id);
     save_data_list.clear();
 
     fs::path SAVE_PATH{ fs::path{ host.pref_path } / "ux0/user" / host.io->user_id / "savedata" };
@@ -215,7 +217,7 @@ static void get_content_info(GuiState &gui, HostState &host) {
             if (vfs::read_file(VitaIoDevice::ux0, params, host.pref_path, content_path.string() + "/sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
-                if (!sfo::get_data_by_key(dlc_info[content_id].name, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+                if (!sfo::get_data_by_key(dlc_info[content_id].name, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg->sys_lang)))
                     sfo::get_data_by_key(dlc_info[content_id].name, sfo_handle, "TITLE");
             }
             boost::trim(dlc_info[content_id].name);
@@ -374,11 +376,11 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(ImVec2(106.f * SCAL.x, ImGui::GetCursorPosY() + (76.f * SCAL.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Data to be Deleted: %s", size_selected_contents.c_str());
             ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (10.f * SCAL.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCAL.y)));
-            if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+            if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_circle)) {
                 popup = false;
             }
             ImGui::SameLine(0, 20.f * SCAL.x);
-            if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+            if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_cross)) {
                 content_delete = true;
                 popup = false;
             }

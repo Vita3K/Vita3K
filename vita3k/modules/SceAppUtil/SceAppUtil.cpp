@@ -17,6 +17,8 @@
 
 #include "SceAppUtil.h"
 
+#include <config/config.h>
+#include <config/state.h>
 #include <dialog/types.h>
 #include <host/app_util.h>
 #include <io/device.h>
@@ -337,8 +339,8 @@ EXPORT(int, sceAppUtilStoreBrowse) {
 }
 
 EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
-    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
-    const auto sys_button = static_cast<SceSystemParamEnterButtonAssign>(host.cfg.sys_button);
+    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg->sys_lang);
+    const auto sys_button = static_cast<SceSystemParamEnterButtonAssign>(host.cfg->sys_button);
 
     switch (paramId) {
     case SCE_SYSTEM_PARAM_ID_LANG:

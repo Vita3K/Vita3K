@@ -330,7 +330,7 @@ EXPORT(SceInt32, sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[],
     vfs::FileBuffer exec_buffer;
     if (vfs::read_app_file(exec_buffer, host.pref_path, host.io->title_id, exec_path)) {
         Ptr<const void> exec_entry_point;
-        const auto exec_id = load_self(exec_entry_point, *host.kernel, host.mem, exec_buffer.data(), appPath, host.cfg);
+        const auto exec_id = load_self(exec_entry_point, *host.kernel, host.mem, exec_buffer.data(), appPath, *host.cfg);
         if (exec_id >= 0) {
             const auto exec_load = host.kernel->loaded_modules[exec_id];
 

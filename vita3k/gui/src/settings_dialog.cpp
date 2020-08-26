@@ -84,10 +84,10 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
 
     if (result == NFD_OKAY && emulator_path != host.pref_path) {
         // Refresh the working paths
-        host.cfg.pref_path = static_cast<std::string>(emulator_path) + '/';
-        host.pref_path = host.cfg.pref_path;
+        host.cfg->pref_path = static_cast<std::string>(emulator_path) + '/';
+        host.pref_path = host.cfg->pref_path;
 
-        config::serialize_config(host.cfg, host.cfg.config_path);
+        config::serialize_config(*host.cfg, host.cfg->config_path);
 
         // TODO: Move app old to new path
         get_modules_list(gui, host);
@@ -107,7 +107,7 @@ void get_modules_list(GuiState &gui, HostState &host) {
         }
 
         for (auto &m : gui.modules)
-            m.second = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), m.first) != host.cfg.lle_modules.end();
+            m.second = std::find(host.cfg->lle_modules.begin(), host.cfg->lle_modules.end(), m.first) != host.cfg->lle_modules.end();
 
         std::sort(gui.modules.begin(), gui.modules.end(), [](const auto &ma, const auto &mb) {
             if (ma.second == mb.second)
@@ -134,11 +134,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select Automatic or Manuel mode for load modules list.");
             ImGui::Spacing();
-            if (ImGui::RadioButton("Automatic", host.cfg.auto_lle))
-                host.cfg.auto_lle = true;
+            if (ImGui::RadioButton("Automatic", host.cfg->auto_lle))
+                host.cfg->auto_lle = true;
             ImGui::SameLine();
-            if (ImGui::RadioButton("Manual", !host.cfg.auto_lle))
-                host.cfg.auto_lle = false;
+            if (ImGui::RadioButton("Manual", !host.cfg->auto_lle))
+                host.cfg->auto_lle = false;
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -149,15 +149,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::PushItemWidth(240);
             if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 8)) {
                 for (auto &m : gui.modules) {
-                    const auto module = std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), m.first);
-                    const bool module_existed = (module != host.cfg.lle_modules.end());
+                    const auto module = std::find(host.cfg->lle_modules.begin(), host.cfg->lle_modules.end(), m.first);
+                    const bool module_existed = (module != host.cfg->lle_modules.end());
                     if (!gui.module_search_bar.PassFilter(m.first.c_str()))
                         continue;
-                    if (ImGui::Selectable(m.first.c_str(), &m.second, host.cfg.auto_lle ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None)) {
+                    if (ImGui::Selectable(m.first.c_str(), &m.second, host.cfg->auto_lle ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None)) {
                         if (module_existed)
-                            host.cfg.lle_modules.erase(module);
+                            host.cfg->lle_modules.erase(module);
                         else
-                            host.cfg.lle_modules.push_back(m.first);
+                            host.cfg->lle_modules.push_back(m.first);
                     }
                 }
                 ImGui::ListBoxFooter();
@@ -168,7 +168,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             gui.module_search_bar.Draw("##module_search_bar", 200);
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
-                host.cfg.lle_modules.clear();
+                host.cfg->lle_modules.clear();
                 for (auto &m : gui.modules)
                     m.second = false;
             }
@@ -192,7 +192,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GPU")) {
         ImGui::PopStyleColor();
-        ImGui::Checkbox("Hardware Flip", &host.cfg.hardware_flip);
+        ImGui::Checkbox("Hardware Flip", &host.cfg->hardware_flip);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable texture flipping from GPU side.\nIt is recommended to disable this option for homebrew.");
         ImGui::EndTabItem();
@@ -203,17 +203,17 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
-        ImGui::Combo("Console Language", &host.cfg.sys_lang, LIST_SYS_LANG, SYS_LANG_COUNT, 6);
+        ImGui::Combo("Console Language", &host.cfg->sys_lang, LIST_SYS_LANG, SYS_LANG_COUNT, 6);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your language. \nNote that some applications might not have your language.");
         ImGui::Spacing();
         ImGui::TextColored(GUI_COLOR_TEXT, "Enter Button Assignment \nSelect your 'Enter' Button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");
-        ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
-        ImGui::RadioButton("Cross", &host.cfg.sys_button, 1);
+        ImGui::RadioButton("Circle", &host.cfg->sys_button, 0);
+        ImGui::RadioButton("Cross", &host.cfg->sys_button, 1);
         ImGui::Spacing();
-        ImGui::Checkbox("Emulated Console \nSelect your Console mode.", &host.cfg.pstv_mode);
+        ImGui::Checkbox("Emulated Console \nSelect your Console mode.", &host.cfg->pstv_mode);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable PS TV mode.");
         ImGui::EndTabItem();
@@ -225,48 +225,48 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
+        ImGui::Combo("Log Level", &host.cfg->log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred log level.");
         if (ImGui::Button("Apply Log Level"))
-            logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
+            logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg->log_level));
         ImGui::Spacing();
-        ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
+        ImGui::Checkbox("Archive Log", &host.cfg->archive_log);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable Archiving Log.");
         ImGui::SameLine();
-        ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
+        ImGui::Checkbox("Discord Rich Presence", &host.cfg->discord_rich_presence);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on discord");
-        ImGui::Checkbox("Performance overlay", &host.cfg.performance_overlay);
+        ImGui::Checkbox("Performance overlay", &host.cfg->performance_overlay);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Display performance information on the screen as an overlay.");
         ImGui::SameLine();
-        ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
+        ImGui::Checkbox("Texture Cache", &host.cfg->texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
-        ImGui::Checkbox("Disable experimental ngs support", &host.cfg.disable_ngs);
+        ImGui::Checkbox("Disable experimental ngs support", &host.cfg->disable_ngs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Disable experimental support for advanced audio library ngs");
         ImGui::Separator();
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Emulated System Storage Folder");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", host.cfg.pref_path.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", host.cfg->pref_path.c_str());
         ImGui::PopItemWidth();
         ImGui::Spacing();
         if (ImGui::Button("Change Emulator Path"))
             change_emulator_path(gui, host);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Change Vita3K emulator path like wanted.\nNeed move folder old to new manualy.");
-        if (host.cfg.pref_path != host.default_path) {
+        if (host.cfg->pref_path != host.default_path) {
             ImGui::SameLine();
             if (ImGui::Button("Reset Path Emulator")) {
                 if (host.default_path != host.pref_path) {
                     host.pref_path = host.default_path;
-                    host.cfg.pref_path = host.pref_path;
+                    host.cfg->pref_path = host.pref_path;
 
-                    config::serialize_config(host.cfg, host.cfg.config_path);
+                    config::serialize_config(*host.cfg, host.cfg->config_path);
 
                     // Refresh the working paths
                     get_modules_list(gui, host);
@@ -285,20 +285,20 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GUI")) {
         ImGui::PopStyleColor();
-        ImGui::Checkbox("GUI Visible", &host.cfg.show_gui);
+        ImGui::Checkbox("GUI Visible", &host.cfg->show_gui);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show GUI after booting a application.");
         ImGui::SameLine();
-        ImGui::Checkbox("Live Area App Screen", &host.cfg.show_live_area_screen);
+        ImGui::Checkbox("Live Area App Screen", &host.cfg->show_live_area_screen);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open Live Area by default when clicking on a application.\nIf disabled, use the right click on application to open it.");
         ImGui::Spacing();
-        ImGui::Checkbox("Grid mode", &host.cfg.apps_list_grid);
+        ImGui::Checkbox("Grid mode", &host.cfg->apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable app list in grid mode.");
-        if (!host.cfg.apps_list_grid) {
+        if (!host.cfg->apps_list_grid) {
             ImGui::Spacing();
-            ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 32, 128);
+            ImGui::SliderInt("App Icon Size", &host.cfg->icon_size, 32, 128);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred icon size.");
         }
@@ -309,55 +309,55 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (title / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Theme & Background");
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", host.cfg.theme_content_id.c_str());
-        if (host.cfg.theme_content_id != "default") {
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", host.cfg->theme_content_id.c_str());
+        if (host.cfg->theme_content_id != "default") {
             ImGui::Spacing();
             if (ImGui::Button("Reset Default Theme")) {
-                host.cfg.theme_content_id = "default";
-                host.cfg.use_theme_background = false;
+                host.cfg->theme_content_id = "default";
+                host.cfg->use_theme_background = false;
                 if (init_theme(gui, host, "default"))
-                    host.cfg.use_theme_background = true;
-                host.cfg.user_start_background.clear();
-                host.cfg.start_background = "default";
+                    host.cfg->use_theme_background = true;
+                host.cfg->user_start_background.clear();
+                host.cfg->start_background = "default";
                 init_theme_start_background(gui, host, "default");
                 init_apps_icon(gui, host, gui.app_selector.sys_apps);
             }
             ImGui::SameLine();
         }
         if (!gui.theme_backgrounds.empty())
-            ImGui::Checkbox("Using theme background", &host.cfg.use_theme_background);
+            ImGui::Checkbox("Using theme background", &host.cfg->use_theme_background);
 
         if (!gui.user_backgrounds.empty()) {
             ImGui::Spacing();
             if (ImGui::Button("Clean User Backgrounds")) {
                 if (!gui.theme_backgrounds.empty())
-                    host.cfg.use_theme_background = true;
-                host.cfg.user_backgrounds.clear();
+                    host.cfg->use_theme_background = true;
+                host.cfg->user_backgrounds.clear();
                 gui.user_backgrounds.clear();
             }
         }
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current start background: %s", host.cfg.start_background.c_str());
-        if (((host.cfg.theme_content_id == "default") && (host.cfg.start_background != "default")) || ((host.cfg.theme_content_id != "default") && (host.cfg.start_background != "theme"))) {
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current start background: %s", host.cfg->start_background.c_str());
+        if (((host.cfg->theme_content_id == "default") && (host.cfg->start_background != "default")) || ((host.cfg->theme_content_id != "default") && (host.cfg->start_background != "theme"))) {
             ImGui::Spacing();
             if (ImGui::Button("Reset Start Background")) {
-                host.cfg.user_start_background.clear();
-                init_theme_start_background(gui, host, host.cfg.theme_content_id.empty() ? "default" : host.cfg.theme_content_id);
-                host.cfg.start_background = host.cfg.theme_content_id.empty() || (host.cfg.theme_content_id == "default") ? "default" : "theme";
+                host.cfg->user_start_background.clear();
+                init_theme_start_background(gui, host, host.cfg->theme_content_id.empty() ? "default" : host.cfg->theme_content_id);
+                host.cfg->start_background = host.cfg->theme_content_id.empty() || (host.cfg->theme_content_id == "default") ? "default" : "theme";
             }
         }
         if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty()) {
             ImGui::Spacing();
-            ImGui::SliderFloat("Background Alpha", &host.cfg.background_alpha, 0.999f, 0.000f);
+            ImGui::SliderFloat("Background Alpha", &host.cfg->background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred transparent background effect.\nThe minimum slider is opaque and the maximum is transparent.");
         }
         if (!gui.theme_backgrounds.empty() || (gui.user_backgrounds.size() > 1)) {
             ImGui::Spacing();
-            ImGui::SliderInt("Delay for backgrounds", &host.cfg.delay_background, 4, 32);
+            ImGui::SliderInt("Delay for backgrounds", &host.cfg->delay_background, 4, 32);
         }
         ImGui::Spacing();
-        ImGui::SliderInt("Delay for start screen", &host.cfg.delay_start, 10, 60);
+        ImGui::SliderInt("Delay for start screen", &host.cfg->delay_start, 10, 60);
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
@@ -366,24 +366,24 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
-        ImGui::Checkbox("Log Imports", &host.cfg.log_imports);
+        ImGui::Checkbox("Log Imports", &host.cfg->log_imports);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module import symbols.");
-        ImGui::Checkbox("Log Exports", &host.cfg.log_exports);
+        ImGui::Checkbox("Log Exports", &host.cfg->log_exports);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module export symbols.");
         ImGui::Spacing();
-        ImGui::Checkbox("Log Shaders", &host.cfg.log_active_shaders);
+        ImGui::Checkbox("Log Shaders", &host.cfg->log_active_shaders);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shaders being used on each draw call.");
-        ImGui::Checkbox("Enable Stack Traceback", &host.cfg.stack_traceback);
-        ImGui::Checkbox("Log Uniforms", &host.cfg.log_uniforms);
+        ImGui::Checkbox("Enable Stack Traceback", &host.cfg->stack_traceback);
+        ImGui::Checkbox("Log Uniforms", &host.cfg->log_uniforms);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shader uniform names and values.");
         ImGui::SameLine();
-        ImGui::Checkbox("Save color surfaces", &host.cfg.color_surface_debug);
+        ImGui::Checkbox("Save color surfaces", &host.cfg->color_surface_debug);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
         ImGui::Spacing();
@@ -405,8 +405,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     } else
         ImGui::PopStyleColor();
 
-    if (host.cfg.overwrite_config)
-        config::serialize_config(host.cfg, host.cfg.config_path);
+    if (host.cfg->overwrite_config)
+        config::serialize_config(*host.cfg, host.cfg->config_path);
 
     ImGui::EndTabBar();
     ImGui::End();

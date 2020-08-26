@@ -21,6 +21,7 @@
 #include <rif2zrif.h>
 
 #include <app/functions.h>
+#include <config/state.h>
 #include <crypto/aes.h>
 #include <io/device.h>
 
@@ -208,7 +209,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
     infile.read((char *)&sfo_buffer[0], sfo_size);
     sfo::load(sfo_file, sfo_buffer);
     sfo::get_data_by_key(host.app_version, sfo_file, "APP_VER");
-    if (!sfo::get_data_by_key(host.app_title, sfo_file, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+    if (!sfo::get_data_by_key(host.app_title, sfo_file, fmt::format("TITLE_{:0>2d}", host.cfg->sys_lang)))
         sfo::get_data_by_key(host.app_title, sfo_file, "TITLE");
     std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
     boost::trim(host.app_title);

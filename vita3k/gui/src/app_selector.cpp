@@ -17,7 +17,9 @@
 
 #include "private.h"
 
+#include <config/config.h>
 #include <config/functions.h>
+#include <config/state.h>
 
 #include <display/display_state.h>
 
@@ -100,9 +102,9 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id) {
         if (host.io->title_id != title_id) {
             host.io->title_id = title_id;
 
-            if (host.cfg.overwrite_config) {
-                host.cfg.last_app = title_id;
-                config::serialize_config(host.cfg, host.cfg.config_path);
+            if (host.cfg->overwrite_config) {
+                host.cfg->last_app = title_id;
+                config::serialize_config(*host.cfg, host.cfg->config_path);
             }
         }
         gui.live_area.information_bar = false;
@@ -134,12 +136,12 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     const auto MENUBAR_HEIGHT = 32.f * scal.y;
     const auto MENUBAR_BG_HEIGHT = !gui.live_area.information_bar ? 22.f : 32.f * scal.y;
 
-    const auto is_background = (host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
+    const auto is_background = (host.cfg->use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::SetNextWindowBgAlpha(is_background ? host.cfg.background_alpha : 0.f);
+    ImGui::SetNextWindowBgAlpha(is_background ? host.cfg->background_alpha : 0.f);
     ImGui::Begin("##app_selector", &gui.live_area.app_selector, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     if (!host.display->imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
@@ -152,8 +154,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             if (last_time["start"] == 0)
                 last_time["start"] = current_time();
 
-            while (last_time["start"] + host.cfg.delay_start < current_time()) {
-                last_time["start"] += host.cfg.delay_start;
+            while (last_time["start"] + host.cfg->delay_start < current_time()) {
+                last_time["start"] += host.cfg->delay_start;
                 last_time["home"] = 0;
                 gui.live_area.app_selector = false;
                 gui.live_area.information_bar = true;
@@ -166,10 +168,10 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         if (last_time["home"] == 0)
             last_time["home"] = current_time();
 
-        while (last_time["home"] + host.cfg.delay_background < current_time()) {
-            last_time["home"] += host.cfg.delay_background;
+        while (last_time["home"] + host.cfg->delay_background < current_time()) {
+            last_time["home"] += host.cfg->delay_background;
 
-            if (host.cfg.use_theme_background) {
+            if (host.cfg->use_theme_background) {
                 if (gui.current_theme_bg < uint64_t(gui.theme_backgrounds.size() - 1))
                     ++gui.current_theme_bg;
                 else
@@ -186,7 +188,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     }
 
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]],
+        ImGui::GetBackgroundDrawList()->AddImage((host.cfg->use_theme_background && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[host.cfg->user_backgrounds[gui.current_user_bg]],
             ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawCornerFlags_All);
@@ -197,7 +199,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         gui.delete_app_icon = false;
     }
 
-    const float icon_size = static_cast<float>(host.cfg.icon_size);
+    const float icon_size = static_cast<float>(host.cfg->icon_size);
 
     switch (gui.app_selector.state) {
     case SELECT_APP:
@@ -209,7 +211,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         std::string cateogry_label = "Category";
         float cateogry_size = (ImGui::CalcTextSize(cateogry_label.c_str()).x + 30.f) * scal.x;
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-        if (!host.cfg.apps_list_grid) {
+        if (!host.cfg->apps_list_grid) {
             ImGui::Columns(5);
             ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
             ImGui::NextColumn();
@@ -362,18 +364,18 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         ImGui::TextColored(GUI_COLOR_TEXT, "Search");
         ImGui::SameLine();
         gui.app_search_bar.Draw("##app_search_bar", (120.f * scal.x));
-        if (!host.cfg.apps_list_grid) {
+        if (!host.cfg->apps_list_grid) {
             ImGui::NextColumn();
             ImGui::Columns(1);
         }
         ImGui::Separator();
         const auto POS_APP_LIST = ImVec2(60.f * scal.x, 48.f + MENUBAR_HEIGHT);
-        const auto SIZE_APP_LIST = ImVec2((host.cfg.apps_list_grid ? 840.f : 900.f) * scal.x, display_size.y - POS_APP_LIST.y);
-        ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
+        const auto SIZE_APP_LIST = ImVec2((host.cfg->apps_list_grid ? 840.f : 900.f) * scal.x, display_size.y - POS_APP_LIST.y);
+        ImGui::SetNextWindowPos(host.cfg->apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
         ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
         const auto GRID_ICON_SIZE = ImVec2(128.f * scal.x, 128.f * scal.y);
         const auto GRID_COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * scal.x);
-        if (!host.cfg.apps_list_grid) {
+        if (!host.cfg->apps_list_grid) {
             ImGui::Columns(5, nullptr, true);
             ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
             ImGui::SetColumnWidth(1, title_id_size);
@@ -404,17 +406,17 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 const auto POS_ICON = ImGui::GetCursorPosY();
                 const auto GRID_INIT_POS = ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE / 2.f) - 10.f;
                 if (apps_icon.find(app.title_id) != apps_icon.end()) {
-                    if (host.cfg.apps_list_grid)
+                    if (host.cfg->apps_list_grid)
                         ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
-                    ImGui::Image(apps_icon[app.title_id], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
+                    ImGui::Image(apps_icon[app.title_id], host.cfg->apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
                 }
                 ImGui::SetCursorPosY(POS_ICON);
-                if (host.cfg.apps_list_grid)
+                if (host.cfg->apps_list_grid)
                     ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
                 else
                     ImGui::SetCursorPosY(POS_ICON);
                 ImGui::PushID(app.title_id.c_str());
-                ImGui::Selectable("##icon", &selected, host.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
+                ImGui::Selectable("##icon", &selected, host.cfg->apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg->apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
                 ImGui::PopID();
                 if (ImGui::IsItemHovered()) {
                     host.app_version = app.app_ver;
@@ -424,10 +426,10 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 }
                 if (host.app_title_id == app.title_id)
                     draw_app_context_menu(gui, host);
-                if (!host.cfg.apps_list_grid) {
+                if (!host.cfg->apps_list_grid) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-                    ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && host.cfg.use_theme_background ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
+                    ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && host.cfg->use_theme_background ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
                     ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
                     ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
@@ -441,12 +443,12 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 } else {
                     ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * scal.x)).x / 2.f));
                     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * scal.x)));
-                    ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && host.cfg.use_theme_background ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
+                    ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && host.cfg->use_theme_background ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
                     ImGui::PopTextWrapPos();
                     ImGui::NextColumn();
                 }
                 if (selected)
-                    pre_load_app(gui, host, host.cfg.show_live_area_screen);
+                    pre_load_app(gui, host, host.cfg->show_live_area_screen);
             }
         };
         // System Applications
@@ -465,7 +467,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         ImGui::SetWindowFontScale(2.f * scal.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
         ImGui::SetCursorPos(ImVec2(display_size.x - SELECT_SIZE.x - (5.f * scal.x), (display_size.y / 2.f) - (SELECT_SIZE.y / 2.f)));
-        if ((ImGui::Selectable(">", false, ImGuiSelectableFlags_None, SELECT_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right)) {
+        if ((ImGui::Selectable(">", false, ImGuiSelectableFlags_None, SELECT_SIZE)) || ImGui::IsKeyPressed(host.cfg->keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg->keyboard_leftstick_right)) {
             last_time["start"] = 0;
             ++gui.current_app_selected;
             gui.live_area.app_selector = false;

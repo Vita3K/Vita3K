@@ -17,7 +17,9 @@
 
 #include "interface.h"
 
+#include <config/config.h>
 #include <config/functions.h>
+#include <config/state.h>
 #include <display/display_state.h>
 #include <gui/functions.h>
 #include <gxm/state.h>
@@ -250,7 +252,7 @@ static auto pre_load_module(HostState &host, const std::vector<std::string> &lib
             res = vfs::read_file(device, module_buffer, host.pref_path, module_path);
 
         if (res) {
-            SceUID module_id = load_self(lib_entry_point, *host.kernel, host.mem, module_buffer.data(), MODULE_PATH_ABS, host.cfg);
+            SceUID module_id = load_self(lib_entry_point, *host.kernel, host.mem, module_buffer.data(), MODULE_PATH_ABS, *host.cfg);
             if (module_id >= 0) {
                 const auto module = host.kernel->loaded_modules[module_id];
 
@@ -286,16 +288,16 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         host.app_version = host.app_category = "N/A";
     }
 
-    if (static_cast<int>(host.cfg.online_id.size()) - 1 < host.cfg.user_id || host.cfg.user_id < 0) {
-        host.cfg.user_id = 0;
-        if (host.cfg.overwrite_config)
-            config::serialize_config(host.cfg, host.cfg.config_path);
+    if (static_cast<int>(host.cfg->online_id.size()) - 1 < host.cfg->user_id || host.cfg->user_id < 0) {
+        host.cfg->user_id = 0;
+        if (host.cfg->overwrite_config)
+            config::serialize_config(*host.cfg, host.cfg->config_path);
     }
 
     if (host.io->user_id.empty())
-        host.io->user_id = fmt::format("{:0>2d}", host.cfg.user_id);
+        host.io->user_id = fmt::format("{:0>2d}", host.cfg->user_id);
 
-    if (host.cfg.archive_log) {
+    if (host.cfg->archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
         const auto log_name{ log_directory / (string_utils::remove_special_chars(host.current_app_title) + " - [" + host.io->title_id + "].log") };
@@ -303,13 +305,13 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
             return InitConfigFailed;
     }
 
-    LOG_INFO_IF(host.cfg.hardware_flip, "{}: enabled", host.cfg[e_hardware_flip]);
-    LOG_INFO("ngs experimental state: {}", !host.cfg.disable_ngs);
-    if (host.cfg.auto_lle)
-        LOG_INFO("{}: enabled", host.cfg[e_auto_lle]);
-    else if (!host.cfg.lle_modules.empty()) {
+    LOG_INFO_IF(host.cfg->hardware_flip, "{}: enabled", (*host.cfg)[e_hardware_flip]);
+    LOG_INFO("ngs experimental state: {}", !host.cfg->disable_ngs);
+    if (host.cfg->auto_lle)
+        LOG_INFO("{}: enabled", (*host.cfg)[e_auto_lle]);
+    else if (!host.cfg->lle_modules.empty()) {
         std::string modules;
-        for (const auto &mod : host.cfg.lle_modules) {
+        for (const auto &mod : host.cfg->lle_modules) {
             modules += mod + ",";
         }
         modules.pop_back();
@@ -365,7 +367,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     // Load main executable (eboot.bin)
     vfs::FileBuffer eboot_buffer;
     if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io->title_id, EBOOT_PATH)) {
-        SceUID module_id = load_self(entry_point, *host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
+        SceUID module_id = load_self(entry_point, *host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, *host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel->loaded_modules[module_id];
 
@@ -419,7 +421,7 @@ bool handle_events(HostState &host, GuiState &gui) {
             if (!host.io->title_id.empty() && !gui.live_area.app_selector && gui::get_live_area_sys_app_state(gui)) {
                 // Show/Hide Live Area during app run
                 // TODO pause app running
-                if (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton) {
+                if (event.key.keysym.scancode == host.cfg->keyboard_button_psbutton) {
                     gui::update_apps_list_opened(gui, host.io->title_id);
                     gui::init_live_area(gui, host);
                     gui.live_area.information_bar = !gui.live_area.information_bar;
@@ -468,7 +470,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
         return ModuleLoadFailed;
     }
 
-    if (!host.cfg.show_gui)
+    if (!host.cfg->show_gui)
         host.display->imgui_render = false;
 
 #ifdef USE_GDBSTUB
@@ -476,7 +478,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
 #endif
 
 #if DISCORD_RPC
-    if (host.cfg.discord_rich_presence)
+    if (host.cfg->discord_rich_presence)
         discord::update_presence(host.io->title_id, host.current_app_title);
 #endif
 
@@ -539,8 +541,8 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     host.main_thread_id = main_thread_id;
 
     SceKernelThreadOptParam param{ 0, 0 };
-    if (host.cfg.console && host.cfg.console_arguments != "") {
-        auto args = split(host.cfg.console_arguments, "\\s+");
+    if (host.cfg->console && host.cfg->console_arguments != "") {
+        auto args = split(host.cfg->console_arguments, "\\s+");
         // why is this flipped
         std::vector<uint8_t> buf;
         for (int i = 0; i < args.size(); ++i) {

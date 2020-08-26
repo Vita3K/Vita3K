@@ -22,6 +22,8 @@
 #include <gui/imgui_impl_sdl.h>
 
 #include <boost/algorithm/string/trim.hpp>
+#include <config/config.h>
+#include <config/state.h>
 #include <glutil/gl.h>
 #include <host/functions.h>
 #include <host/state.h>
@@ -159,7 +161,7 @@ static void init_live_area_font(GuiState &gui, HostState &host) {
 }
 
 static void init_user_backgrounds(GuiState &gui, HostState &host) {
-    for (const auto &background : host.cfg.user_backgrounds) {
+    for (const auto &background : host.cfg->user_backgrounds) {
         const std::wstring background_wstr = string_utils::utf_to_wide(background);
 
         if (!fs::exists(fs::path(background_wstr))) {
@@ -285,9 +287,9 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
                 host.app_version.erase(host.app_version.begin());
             sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
             if (app != "NPXS10015") {
-                if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
+                if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg->sys_lang)))
                     sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
-                if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+                if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg->sys_lang)))
                     sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
                 std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
             } else
@@ -324,9 +326,9 @@ void get_user_apps_title(GuiState &gui, HostState &host) {
                     host.app_version.erase(host.app_version.begin());
                 sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
                 sfo::get_data_by_key(host.app_parental_level, sfo_handle, "PARENTAL_LEVEL");
-                if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
+                if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg->sys_lang)))
                     sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
-                if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+                if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg->sys_lang)))
                     sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
                 std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
                 boost::trim(host.app_title);
@@ -450,17 +452,17 @@ void init(GuiState &gui, HostState &host) {
     get_sys_apps_title(gui, host);
     init_apps_icon(gui, host, gui.app_selector.user_apps);
 
-    if (!host.cfg.user_backgrounds.empty())
+    if (!host.cfg->user_backgrounds.empty())
         init_user_backgrounds(gui, host);
 
-    init_theme(gui, host, host.cfg.theme_content_id.empty() ? "default" : host.cfg.theme_content_id);
+    init_theme(gui, host, host.cfg->theme_content_id.empty() ? "default" : host.cfg->theme_content_id);
 
-    if (host.cfg.start_background == "image")
-        init_user_start_background(gui, host.cfg.user_start_background);
+    if (host.cfg->start_background == "image")
+        init_user_start_background(gui, host.cfg->user_start_background);
     else
-        init_theme_start_background(gui, host, host.cfg.theme_content_id);
+        init_theme_start_background(gui, host, host.cfg->theme_content_id);
 
-    if (!host.cfg.run_title_id && !host.cfg.vpk_path) {
+    if (!host.cfg->run_title_id && !host.cfg->vpk_path) {
         gui.live_area.information_bar = true;
         if (gui.start_background)
             gui.live_area.start_screen = true;

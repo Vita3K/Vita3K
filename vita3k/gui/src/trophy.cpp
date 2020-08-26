@@ -17,6 +17,8 @@
 
 #include "private.h"
 
+#include <config/state.h>
+
 #include <gui/functions.h>
 
 #include <util/log.h>
@@ -125,7 +127,7 @@ static bool load_trophy_progress(IOState &io, const SceUID &progress_input_file,
 static std::string np_com_id_sort;
 
 void get_trophy_np_com_id_list(GuiState &gui, HostState &host) {
-    host.io->user_id = fmt::format("{:0>2d}", host.cfg.user_id);
+    host.io->user_id = fmt::format("{:0>2d}", host.cfg->user_id);
 
     const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io->user_id / "trophy" };
     const auto TROPHY_CONF_PATH = TROPHY_PATH / "conf";
@@ -167,9 +169,9 @@ void get_trophy_np_com_id_list(GuiState &gui, HostState &host) {
 
                 close_file(*host.io, progress_input_file, "load_trophy_progress_file");
 
-                const std::string sfm_name = fs::exists(trophy_conf_np_com_id_path / fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang) : "TROP.SFM";
+                const std::string sfm_name = fs::exists(trophy_conf_np_com_id_path / fmt::format("TROP_{:0>2d}.SFM", host.cfg->sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", host.cfg->sys_lang) : "TROP.SFM";
 
-                np_com_id_list_name[np_com_id]["000"] = fs::exists(trophy_conf_np_com_id_path / fmt::format("ICON0_{:0>2d}.PNG", host.cfg.sys_lang)) ? fmt::format("ICON0_{:0>2d}.PNG", host.cfg.sys_lang) : "ICON0.PNG";
+                np_com_id_list_name[np_com_id]["000"] = fs::exists(trophy_conf_np_com_id_path / fmt::format("ICON0_{:0>2d}.PNG", host.cfg->sys_lang)) ? fmt::format("ICON0_{:0>2d}.PNG", host.cfg->sys_lang) : "ICON0.PNG";
 
                 pugi::xml_document doc;
                 if (doc.load_file((trophy_conf_np_com_id_path / sfm_name).c_str())) {
@@ -297,7 +299,7 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
 
     gui.trophy_list.clear(), trophy_info.clear(), trophy_list.clear();
 
-    const std::string sfm_name = fs::exists(trophy_conf_id_path / fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang) : "TROP.SFM";
+    const std::string sfm_name = fs::exists(trophy_conf_id_path / fmt::format("TROP_{:0>2d}.SFM", host.cfg->sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", host.cfg->sys_lang) : "TROP.SFM";
 
     pugi::xml_document doc;
     if (doc.load_file((trophy_conf_id_path / sfm_name).c_str())) {
@@ -534,10 +536,10 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize("This trophy information saved on this user will be deleted.").x / 2.f), POPUP_SIZE.y / 2.f));
                 ImGui::TextColored(GUI_COLOR_TEXT, "This trophy information saved on this user will be deleted.");
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCAL.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCAL.y)));
-                if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+                if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_circle))
                     delete_trophy = false;
                 ImGui::SameLine(0, 20.f * SCAL.x);
-                if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_cross)) {
                     fs::remove_all(TROPHY_PATH / "conf" / np_com_id_hovered);
                     fs::remove_all(TROPHY_PATH / "data" / np_com_id_hovered);
                     delete_np_com_id = np_com_id_hovered;
@@ -745,7 +747,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
 
     if (trophy_id_selected.empty() && !detail_np_com_id && (np_com_id_selected.empty() || !group_id_selected.empty())) {
         ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCAL.x), display_size.y - (84.f * SCAL.y)));
-        if (ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
+        if (ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg->keyboard_button_triangle))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Sort");

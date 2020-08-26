@@ -17,6 +17,8 @@
 
 #include "SceNpManager.h"
 
+#include <config/config.h>
+#include <config/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/state.h>
 #include <np/state.h>
@@ -91,7 +93,7 @@ EXPORT(int, sceNpManagerGetContentRatingFlag) {
 }
 
 EXPORT(int, sceNpManagerGetNpId, np::NpId *id) {
-    auto str = host.cfg.online_id[host.cfg.user_id];
+    auto str = host.cfg->online_id[host.cfg->user_id];
     if (str.length() > 16) {
         LOG_ERROR("Your online ID has over 16 characters, try again with shorter name");
         return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;

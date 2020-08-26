@@ -17,6 +17,8 @@
 
 #include "private.h"
 
+#include <config/state.h>
+
 #include <display/display_state.h>
 
 #include <gui/functions.h>
@@ -124,7 +126,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
                             pre_load_app(gui, host, false);
                         } else {
                             host.app_title_id = notice.id;
-                            pre_load_app(gui, host, host.cfg.show_live_area_screen);
+                            pre_load_app(gui, host, host.cfg->show_live_area_screen);
                         }
                     } else {
                         host.app_title_id = "NPXS10008";
@@ -159,7 +161,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
 
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
             ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCAL.x), display_size.y - (52.f * SCAL.y)));
-            if (ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
+            if (ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg->keyboard_button_triangle))
                 ImGui::OpenPopup("...");
             if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
                 if (ImGui::Button("Delete All"))
@@ -172,11 +174,11 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize("The notifications will be deleted.").x / 2.f), (DELETE_POPUP_SIZE.y / 2.f) - (46.f * SCAL.y)));
                     ImGui::TextColored(GUI_COLOR_TEXT, "The notifications will be deleted.");
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCAL.x)), DELETE_POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCAL.y)));
-                    if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+                    if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_circle)) {
                         ImGui::CloseCurrentPopup();
                     }
                     ImGui::SameLine(0.f, 20.f);
-                    if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                    if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_cross)) {
                         gui.notice_info.clear();
                         gui.notice_info_icon.clear();
                         gui.notice_info_count_new = 0;
@@ -279,7 +281,7 @@ static std::string start, resume;
 
 void init_live_area(GuiState &gui, HostState &host) {
     std::string user_lang;
-    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
+    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg->sys_lang);
     switch (sys_lang) {
     case SCE_SYSTEM_PARAM_LANG_JAPANESE: user_lang = "ja", start = u8"はじめる", resume = u8"つづける"; break;
     case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: user_lang = "en", start = u8"Start", resume = u8"Continue"; break;
@@ -741,7 +743,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
     const auto title_id = gui.apps_list_opened[gui.current_app_selected];
     const VitaIoDevice app_device = title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
-    const auto is_background = (host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
+    const auto is_background = (host.cfg->use_theme_background && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
@@ -750,7 +752,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     ImGui::Begin("##live_area", &gui.live_area.live_area_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage((host.cfg.use_theme_background && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[host.cfg.user_backgrounds[gui.current_user_bg]],
+        ImGui::GetBackgroundDrawList()->AddImage((host.cfg->use_theme_background && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[host.cfg->user_backgrounds[gui.current_user_bg]],
             ImVec2(0.f, 32.f), display_size);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 180.f), 0.f, ImDrawCornerFlags_All);
@@ -1156,7 +1158,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * scal.x, ImDrawCornerFlags_All);
     ImGui::GetWindowDrawList()->AddText(gui.live_area_font, scal_default_font * scal.x, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
-    if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
+    if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_cross))
         pre_run_app(gui, host, title_id);
     ImGui::PopID();
     ImGui::GetWindowDrawList()->AddRect(GATE_POS, SIZE_GATE, IM_COL32(192, 192, 192, 255), 15.f, ImDrawCornerFlags_All, 12.f);
@@ -1211,7 +1213,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f);
         if (host.io->title_id != title_id) {
             ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x) - BUTTON_SIZE.x, 44.0f * scal.y));
-            if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+            if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg->keyboard_button_circle)) {
                 gui.apps_list_opened.erase(get_app_open_list_index(gui, title_id));
                 if (gui.current_app_selected == 0) {
                     gui.live_area.live_area_screen = false;
@@ -1270,7 +1272,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     ImGui::SetWindowFontScale(2.f * scal.x);
     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
     ImGui::SetCursorPos(SELECTABLE_POS);
-    if ((ImGui::Selectable("<", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_left) || (wheel_counter == 1)) {
+    if ((ImGui::Selectable("<", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg->keyboard_button_l1) || ImGui::IsKeyPressed(host.cfg->keyboard_leftstick_left) || (wheel_counter == 1)) {
         if (gui.current_app_selected == 0) {
             gui.live_area.live_area_screen = false;
             gui.live_area.app_selector = true;
@@ -1279,7 +1281,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
     if (gui.current_app_selected < gui.apps_list_opened.size() - 1) {
         ImGui::SetCursorPos(ImVec2(display_size.x - SELECTABLE_SIZE.x - SELECTABLE_POS.x, SELECTABLE_POS.y));
-        if ((ImGui::Selectable(">", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right) || (wheel_counter == -1))
+        if ((ImGui::Selectable(">", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg->keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg->keyboard_leftstick_right) || (wheel_counter == -1))
             ++gui.current_app_selected;
     }
     ImGui::SetWindowFontScale(1.0f * scal.x);

@@ -20,7 +20,9 @@
 #include <app/functions.h>
 #include <app/screen_render.h>
 #include <audio/state.h>
+#include <config/config.h>
 #include <config/functions.h>
+#include <config/state.h>
 #include <config/version.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
@@ -65,6 +67,7 @@ int main(int argc, char *argv[]) {
     Config cfg{};
     HostState host;
     host.audio = std::make_unique<AudioState>();
+    host.cfg = std::make_unique<Config>();
     host.common_dialog = std::make_unique<DialogState>();
     host.ctrl = std::make_unique<CtrlState>();
     host.display = std::make_unique<DisplayState>();
@@ -151,7 +154,7 @@ int main(int argc, char *argv[]) {
     if (!cfg.console) {
         gui::init(gui, host);
 #if DISCORD_RPC
-        auto discord_rich_presence_old = host.cfg.discord_rich_presence;
+        auto discord_rich_presence_old = host.cfg->discord_rich_presence;
 #endif
 
         // Application not provided via argument, show game selector
@@ -160,7 +163,7 @@ int main(int argc, char *argv[]) {
                 gui::draw_begin(gui, host);
 
 #if DISCORD_RPC
-                discord::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
+                discord::update_init_status(host.cfg->discord_rich_presence, &discord_rich_presence_old);
 #endif
                 gui::draw_live_area(gui, host);
                 gui::draw_ui(gui, host);
@@ -205,7 +208,7 @@ int main(int argc, char *argv[]) {
     }
 
     gui::init_app_background(gui, host, host.io->title_id);
-    host.renderer->features.hardware_flip = host.cfg.hardware_flip;
+    host.renderer->features.hardware_flip = host.cfg->hardware_flip;
 
     app::gl_screen_renderer gl_renderer;
 
@@ -214,7 +217,7 @@ int main(int argc, char *argv[]) {
 
     while (host.frame_count == 0) {
         // Driver acto!
-        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
+        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, *host.cfg, host.base_path.c_str(),
             host.io->title_id.c_str());
 
         gl_renderer.render(host);
@@ -232,7 +235,7 @@ int main(int argc, char *argv[]) {
             ImGui::GetForegroundDrawList()->AddImage(gui.theme_backgrounds[0], ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
         else if (!gui.user_backgrounds.empty())
             // Display user background if exist
-            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[host.cfg.user_backgrounds[0]],
+            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[host.cfg->user_backgrounds[0]],
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
 
         host.display->condvar.notify_all();
@@ -243,7 +246,7 @@ int main(int argc, char *argv[]) {
 
     while (handle_events(host, gui)) {
         // Driver acto!
-        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
+        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, *host.cfg, host.base_path.c_str(),
             host.io->title_id.c_str());
 
         gl_renderer.render(host);
@@ -255,7 +258,7 @@ int main(int argc, char *argv[]) {
         gui::draw_common_dialog(gui, host);
         gui::draw_live_area(gui, host);
 
-        if (host.cfg.performance_overlay && !gui.live_area.app_selector && !gui.live_area.live_area_screen && gui::get_live_area_sys_app_state(gui))
+        if (host.cfg->performance_overlay && !gui.live_area.app_selector && !gui.live_area.live_area_screen && gui::get_live_area_sys_app_state(gui))
             gui::draw_perf_overlay(gui, host);
 
         gui::draw_trophies_unlocked(gui, host);

@@ -17,6 +17,7 @@
 
 #include "SceNpCommon.h"
 
+#include <config/state.h>
 #include <np/common.h>
 
 EXPORT(int, sceNpAuthAbortRequest) {
@@ -61,7 +62,7 @@ EXPORT(int, sceNpAuthTerm) {
 
 EXPORT(int, sceNpCmpNpId, np::NpId *npid1, np::NpId *npid2) {
     STUBBED("assume single user");
-    auto username = host.cfg.online_id[host.cfg.user_id];
+    auto username = host.cfg->online_id[host.cfg->user_id];
     if (std::string(npid1->online_id.name) == username && std::string(npid2->online_id.name) == username) {
         return 0;
     }
