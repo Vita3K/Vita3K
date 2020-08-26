@@ -32,6 +32,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
+#include <np/state.h>
 #include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
@@ -69,6 +70,7 @@ int main(int argc, char *argv[]) {
     host.io = std::make_unique<IOState>();
     host.kernel = std::make_shared<KernelState>();
     host.net = std::make_unique<NetState>();
+    host.np = std::make_unique<NpState>();
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.is_initialized()) {

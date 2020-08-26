@@ -27,6 +27,7 @@
 #include <host/state.h>
 #include <io/VitaIoDevice.h>
 #include <io/vfs.h>
+#include <np/state.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -468,7 +469,7 @@ void init(GuiState &gui, HostState &host) {
     }
 
     // Initialize trophy callback
-    host.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
+    host.np->trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
         const std::lock_guard<std::mutex> guard(gui.trophy_unlock_display_requests_access_mutex);
         gui.trophy_unlock_display_requests.push(std::move(callback_data));
     };

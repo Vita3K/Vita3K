@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <np/functions.h>
+#include <np/state.h>
 #include <np/trophy/context.h>
 #include <util/log.h>
 
@@ -28,7 +29,7 @@ EXPORT(int, sceNpTrophyAbortHandle) {
 
 EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const np::CommunicationID *comm_id,
     void *comm_sign, const std::uint64_t options) {
-    if (!host.np.trophy_state.inited) {
+    if (!host.np->trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
 
@@ -37,7 +38,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
     }
 
     np::NpTrophyError err = np::NpTrophyError::TROPHY_ERROR_NONE;
-    *context = create_trophy_context(host.np, host.io.get(), host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg.sys_lang),
+    *context = create_trophy_context(*host.np, host.io.get(), host.pref_path, comm_id, static_cast<std::uint32_t>(host.cfg.sys_lang),
         &err);
 
     if (*context == np::trophy::INVALID_CONTEXT_HANDLE) {
@@ -55,7 +56,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
         }
     }
 
-    np::trophy::Context *ctx_ptr = get_trophy_context(host.np.trophy_state, *context);
+    np::trophy::Context *ctx_ptr = get_trophy_context(host.np->trophy_state, *context);
     LOG_TRACE("Trophy context for {}_{:0>2d} create successfuly!", ctx_ptr->comm_id.data, ctx_ptr->comm_id.num);
 
     return 0;
@@ -70,7 +71,7 @@ EXPORT(int, sceNpTrophyCreateHandle, SceNpTrophyHandle *handle) {
 }
 
 EXPORT(int, sceNpTrophyDestroyContext, np::trophy::ContextHandle handle) {
-    const bool result = destroy_trophy_context(host.np.trophy_state, handle);
+    const bool result = destroy_trophy_context(host.np->trophy_state, handle);
 
     if (!result) {
         return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;
@@ -84,16 +85,16 @@ EXPORT(int, sceNpTrophyDestroyHandle, SceNpTrophyHandle handle) {
     return 0;
 }
 
-#define NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)                                       \
-    if (!host.np.trophy_state.inited) {                                                      \
-        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;                                          \
-    }                                                                                        \
-    if (!size) {                                                                             \
-        return SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT;                                         \
-    }                                                                                        \
-    np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle); \
-    if (!context) {                                                                          \
-        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;                                          \
+#define NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)                                        \
+    if (!host.np->trophy_state.inited) {                                                      \
+        return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;                                           \
+    }                                                                                         \
+    if (!size) {                                                                              \
+        return SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT;                                          \
+    }                                                                                         \
+    np::trophy::Context *context = get_trophy_context(host.np->trophy_state, context_handle); \
+    if (!context) {                                                                           \
+        return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;                                           \
     }
 
 EXPORT(int, sceNpTrophyGetGameIcon, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
@@ -134,7 +135,7 @@ EXPORT(int, sceNpTrophyGetTrophyInfo) {
 
 EXPORT(int, sceNpTrophyGetTrophyUnlockState, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     np::trophy::TrophyFlagArray *flag_array, std::uint32_t *count) {
-    if (!host.np.trophy_state.inited) {
+    if (!host.np->trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
 
@@ -143,7 +144,7 @@ EXPORT(int, sceNpTrophyGetTrophyUnlockState, np::trophy::ContextHandle context_h
     }
 
     // Get context
-    np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
+    np::trophy::Context *context = get_trophy_context(host.np->trophy_state, context_handle);
     if (!context) {
         return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
@@ -155,11 +156,11 @@ EXPORT(int, sceNpTrophyGetTrophyUnlockState, np::trophy::ContextHandle context_h
 }
 
 EXPORT(int, sceNpTrophyInit, void *opt) {
-    if (host.np.trophy_state.inited) {
+    if (host.np->trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_ALREADY_INITIALIZED;
     }
 
-    if (!init(host.np.trophy_state)) {
+    if (!init(host.np->trophy_state)) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
 
@@ -167,11 +168,11 @@ EXPORT(int, sceNpTrophyInit, void *opt) {
 }
 
 EXPORT(int, sceNpTrophyTerm) {
-    if (!host.np.trophy_state.inited) {
+    if (!host.np->trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
 
-    if (!deinit(host.np.trophy_state)) {
+    if (!deinit(host.np->trophy_state)) {
         return SCE_NP_TROPHY_ERROR_ABORT;
     }
 
@@ -200,7 +201,7 @@ static int do_trophy_callback(HostState &host, np::trophy::Context *context, Sce
     trophy_unlocked(callback_data, trophy_id);
 
     // Call this async.
-    if (host.np.trophy_state.trophy_unlock_callback) {
+    if (host.np->trophy_state.trophy_unlock_callback) {
         std::uint32_t buf_size = 0;
 
         // Make filename
@@ -210,7 +211,7 @@ static int do_trophy_callback(HostState &host, np::trophy::Context *context, Sce
         callback_data.icon_buf.resize(buf_size);
         context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
 
-        host.np.trophy_state.trophy_unlock_callback(callback_data);
+        host.np->trophy_state.trophy_unlock_callback(callback_data);
     }
 
     return 0;
@@ -218,7 +219,7 @@ static int do_trophy_callback(HostState &host, np::trophy::Context *context, Sce
 
 EXPORT(int, sceNpTrophyUnlockTrophy, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     SceNpTrophyID trophy_id, SceNpTrophyID *platinum_id) {
-    if (!host.np.trophy_state.inited) {
+    if (!host.np->trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
 
@@ -228,7 +229,7 @@ EXPORT(int, sceNpTrophyUnlockTrophy, np::trophy::ContextHandle context_handle, S
     }
 
     // Get context
-    np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
+    np::trophy::Context *context = get_trophy_context(host.np->trophy_state, context_handle);
     if (!context) {
         return SCE_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
