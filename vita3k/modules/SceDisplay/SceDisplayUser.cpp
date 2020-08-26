@@ -17,6 +17,8 @@
 
 #include "SceDisplayUser.h"
 
+#include <display/display_state.h>
+
 enum SceDisplaySetBufSync {
     SCE_DISPLAY_SETBUF_IMMEDIATE = 0,
     SCE_DISPLAY_SETBUF_NEXTFRAME = 1
@@ -80,11 +82,11 @@ EXPORT(int, sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pParam, SceDisplayS
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
     }
 
-    host.display.base = pParam->base;
-    host.display.pitch = pParam->pitch;
-    host.display.pixelformat = pParam->pixelformat;
-    host.display.image_size.x = pParam->width;
-    host.display.image_size.y = pParam->height;
+    host.display->base = pParam->base;
+    host.display->pitch = pParam->pitch;
+    host.display->pixelformat = pParam->pixelformat;
+    host.display->image_size.x = pParam->width;
+    host.display->image_size.y = pParam->height;
     ++host.frame_count;
 
     MicroProfileFlip(nullptr);

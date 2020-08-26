@@ -18,6 +18,7 @@
 #include "interface.h"
 
 #include <config/functions.h>
+#include <display/display_state.h>
 #include <gui/functions.h>
 #include <gxm/state.h>
 #include <host/functions.h>
@@ -395,8 +396,8 @@ bool handle_events(HostState &host, GuiState &gui) {
         case SDL_QUIT:
             stop_all_threads(*host.kernel);
             host.gxm->display_queue.abort();
-            host.display.abort.exchange(true);
-            host.display.condvar.notify_all();
+            host.display->abort.exchange(true);
+            host.display->condvar.notify_all();
             return false;
 
         case SDL_KEYDOWN:
@@ -413,7 +414,7 @@ bool handle_events(HostState &host, GuiState &gui) {
             // toggle gui state
             if (!host.io->title_id.empty() && !gui.configuration_menu.profiles_manager_dialog && !gui.configuration_menu.settings_dialog && !gui.captured_key) {
                 if (event.key.keysym.sym == SDLK_g)
-                    host.display.imgui_render = !host.display.imgui_render;
+                    host.display->imgui_render = !host.display->imgui_render;
             }
             if (!host.io->title_id.empty() && !gui.live_area.app_selector && gui::get_live_area_sys_app_state(gui)) {
                 // Show/Hide Live Area during app run
@@ -428,12 +429,12 @@ bool handle_events(HostState &host, GuiState &gui) {
             if (event.key.keysym.sym == SDLK_t)
                 toggle_touchscreen();
             if (event.key.keysym.sym == SDLK_F11) {
-                host.display.fullscreen = !host.display.fullscreen;
+                host.display->fullscreen = !host.display->fullscreen;
 
-                if (host.display.fullscreen.load())
+                if (host.display->fullscreen.load())
                     SDL_MaximizeWindow(host.window.get());
 
-                SDL_SetWindowFullscreen(host.window.get(), host.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+                SDL_SetWindowFullscreen(host.window.get(), host.display->fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
             }
 
         case SDL_WINDOWEVENT:
@@ -468,7 +469,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
     }
 
     if (!host.cfg.show_gui)
-        host.display.imgui_render = false;
+        host.display->imgui_render = false;
 
 #ifdef USE_GDBSTUB
     server_open(host);

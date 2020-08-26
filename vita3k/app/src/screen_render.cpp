@@ -17,6 +17,7 @@
 
 #include <app/screen_render.h>
 
+#include <display/display_state.h>
 #include <host/state.h>
 #include <util/log.h>
 
@@ -79,7 +80,7 @@ bool gl_screen_renderer::init(const std::string &base_path) {
 }
 
 void gl_screen_renderer::render(const HostState &host) {
-    const DisplayState &display = host.display;
+    const DisplayState &display = *host.display;
     const MemState &mem = host.mem;
 
     // Backup GL state

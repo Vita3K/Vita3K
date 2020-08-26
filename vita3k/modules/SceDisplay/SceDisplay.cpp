@@ -17,7 +17,7 @@
 
 #include "SceDisplay.h"
 
-#include <host/functions.h>
+#include <display/display_state.h>
 
 enum SceDisplayErrorCode {
     SCE_DISPLAY_ERROR_OK = 0,
@@ -34,10 +34,10 @@ enum SceDisplayErrorCode {
 };
 
 static int display_wait(HostState &host) {
-    std::unique_lock<std::mutex> lock(host.display.mutex);
-    host.display.condvar.wait(lock);
+    std::unique_lock<std::mutex> lock(host.display->mutex);
+    host.display->condvar.wait(lock);
 
-    if (host.display.abort.load())
+    if (host.display->abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
 
     return SCE_DISPLAY_ERROR_OK;

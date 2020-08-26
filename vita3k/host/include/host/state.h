@@ -21,7 +21,7 @@
 #include <host/sfo.h>
 #include <host/window.h>
 #include <kernel/types.h>
-#include <mem/ptr.h>
+#include <mem/mem.h>
 #include <ngs/state.h>
 #include <nids/types.h>
 #include <renderer/state.h>
@@ -31,31 +31,18 @@
 #include <gdbstub/state.h>
 #endif
 
-#include <atomic>
-#include <condition_variable>
 #include <memory>
 #include <string>
 
 struct AudioState;
 struct CtrlState;
 struct DialogState;
+struct DisplayState;
 struct GxmState;
 struct IOState;
 struct KernelState;
 struct NetState;
 struct NpState;
-
-struct DisplayState {
-    Ptr<const void> base;
-    uint32_t pitch = 0;
-    uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-    SceIVector2 image_size = { 0, 0 };
-    std::mutex mutex;
-    std::condition_variable condvar;
-    std::atomic<bool> abort{ false };
-    std::atomic<bool> imgui_render{ true };
-    std::atomic<bool> fullscreen{ false };
-};
 
 struct HostState {
     std::string app_version;
@@ -90,7 +77,7 @@ struct HostState {
     std::unique_ptr<NetState> net;
     ngs::State ngs;
     std::unique_ptr<NpState> np;
-    DisplayState display;
+    std::unique_ptr<DisplayState> display;
     std::unique_ptr<DialogState> common_dialog;
     SfoFile sfo_handle;
     NIDSet missing_nids;

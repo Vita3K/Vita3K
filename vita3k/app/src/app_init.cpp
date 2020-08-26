@@ -20,6 +20,7 @@
 #include <audio/functions.h>
 #include <config/functions.h>
 #include <config/version.h>
+#include <display/display_state.h>
 #include <gui/imgui_impl_sdl.h>
 #include <host/state.h>
 #include <io/functions.h>
@@ -142,7 +143,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
     }
 
     if (cfg.fullscreen) {
-        state.display.fullscreen = true;
+        state.display->fullscreen = true;
         window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);

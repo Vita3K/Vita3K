@@ -19,6 +19,8 @@
 
 #include <config/functions.h>
 
+#include <display/display_state.h>
+
 #include <gui/functions.h>
 
 #include <io/state.h>
@@ -140,7 +142,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowBgAlpha(is_background ? host.cfg.background_alpha : 0.f);
     ImGui::Begin("##app_selector", &gui.live_area.app_selector, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
-    if (!host.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
+    if (!host.display->imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
         gui.live_area.information_bar = true;
 
     if (!gui.file_menu.pkg_install_dialog) {

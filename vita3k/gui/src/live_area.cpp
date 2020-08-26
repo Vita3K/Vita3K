@@ -17,6 +17,8 @@
 
 #include "private.h"
 
+#include <display/display_state.h>
+
 #include <gui/functions.h>
 
 #include <io/state.h>
@@ -236,7 +238,7 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCAL.x) - is_notif_pos, 12.f * SCAL.y), ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 20 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawCornerFlags_All);
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 5.f * SCAL.y), ImVec2(display_size.x - (12.f * SCAL.x) - is_notif_pos, 27 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f, ImDrawCornerFlags_All);
 
-    if (host.display.imgui_render && !gui.live_area.start_screen && !gui.live_area.live_area_screen && get_live_area_sys_app_state(gui) && ImGui::IsWindowHovered(ImGuiHoveredFlags_None))
+    if (host.display->imgui_render && !gui.live_area.start_screen && !gui.live_area.live_area_screen && get_live_area_sys_app_state(gui) && ImGui::IsWindowHovered(ImGuiHoveredFlags_None))
         gui.live_area.information_bar = false;
 
     if (is_notif_pos)
