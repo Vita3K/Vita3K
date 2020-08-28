@@ -305,37 +305,41 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (title / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Theme & Background");
         ImGui::Spacing();
-        if (!host.cfg.theme_content_id.empty()) {
-            ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", host.cfg.theme_content_id.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", host.cfg.theme_content_id.c_str());
+        if (host.cfg.theme_content_id != "default") {
             ImGui::Spacing();
-            if (ImGui::Button("Reset theme")) {
-                host.cfg.theme_content_id.clear();
-                if (host.cfg.start_background == "theme") {
-                    host.cfg.start_background.clear();
-                    gui.start_background = {};
-                }
-                init_theme(gui, host, "default");
+            if (ImGui::Button("Reset Default Theme")) {
+                host.cfg.theme_content_id = "default";
+                host.cfg.use_theme_background = false;
+                if (init_theme(gui, host, "default"))
+                    host.cfg.use_theme_background = true;
+                host.cfg.user_start_background.clear();
+                host.cfg.start_background = "default";
+                init_theme_start_background(gui, host, "default");
                 init_apps_icon(gui, host, gui.app_selector.sys_apps);
             }
             ImGui::SameLine();
-            if (!gui.theme_backgrounds.empty())
-                ImGui::Checkbox("Using theme background", &host.cfg.use_theme_background);
         }
+        if (!gui.theme_backgrounds.empty())
+            ImGui::Checkbox("Using theme background", &host.cfg.use_theme_background);
+
         if (!gui.user_backgrounds.empty()) {
             ImGui::Spacing();
-            if (ImGui::Button("Reset User Background")) {
-                if (!host.cfg.theme_content_id.empty())
+            if (ImGui::Button("Clean User Backgrounds")) {
+                if (!gui.theme_backgrounds.empty())
                     host.cfg.use_theme_background = true;
                 host.cfg.user_backgrounds.clear();
                 gui.user_backgrounds.clear();
             }
         }
-        if (!host.cfg.start_background.empty()) {
+        ImGui::Spacing();
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current start background: %s", host.cfg.start_background.c_str());
+        if (((host.cfg.theme_content_id == "default") && (host.cfg.start_background != "default")) || ((host.cfg.theme_content_id != "default") && (host.cfg.start_background != "theme"))) {
             ImGui::Spacing();
             if (ImGui::Button("Reset Start Background")) {
                 host.cfg.user_start_background.clear();
-                host.cfg.start_background.clear();
-                gui.start_background = {};
+                init_theme_start_background(gui, host, host.cfg.theme_content_id.empty() ? "default" : host.cfg.theme_content_id);
+                host.cfg.start_background = host.cfg.theme_content_id.empty() || (host.cfg.theme_content_id == "default") ? "default" : "theme";
             }
         }
         if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty()) {
@@ -348,10 +352,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::SliderInt("Delay for backgrounds", &host.cfg.delay_background, 4, 32);
         }
-        if (gui.start_background) {
-            ImGui::Spacing();
-            ImGui::SliderInt("Delay for start screen", &host.cfg.delay_start, 10, 60);
-        }
+        ImGui::Spacing();
+        ImGui::SliderInt("Delay for start screen", &host.cfg.delay_start, 10, 60);
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

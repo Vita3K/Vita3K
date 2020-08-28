@@ -146,7 +146,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     if (!host.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
         gui.live_area.information_bar = true;
 
-    if (gui.start_background && !gui.file_menu.pkg_install_dialog) {
+    if (!gui.file_menu.pkg_install_dialog) {
         if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
             last_time["start"] = 0;
         else {
@@ -428,6 +428,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
+                    ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && host.cfg.use_theme_background ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
                     ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
                     ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
@@ -435,12 +436,13 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
                     ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                    ImGui::PopStyleColor();
                     ImGui::PopStyleVar();
                     ImGui::NextColumn();
                 } else {
                     ImGui::SetCursorPos(ImVec2(POS_STITLE.x + ((GRID_ICON_SIZE.x / 2.f) - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x).x / 2.f)), POS_STITLE.y));
                     ImGui::PushTextWrapPos(POS_STITLE.x + GRID_ICON_SIZE.x);
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", app.stitle.c_str());
+                    ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && host.cfg.use_theme_background ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
                     ImGui::PopTextWrapPos();
                     ImGui::NextColumn();
                 }

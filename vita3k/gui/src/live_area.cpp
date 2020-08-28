@@ -755,8 +755,9 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     const auto background_size = ImVec2(840.0f * scal.x, 500.0f * scal.y);
 
     if (gui.live_area_contents[title_id].find("livearea-background") != gui.live_area_contents[title_id].end())
-        ImGui::GetWindowDrawList()->AddImage(gui.live_area_contents[title_id]["livearea-background"],
-            pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y));
+        ImGui::GetWindowDrawList()->AddImage(gui.live_area_contents[title_id]["livearea-background"], pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y));
+    else
+        ImGui::GetWindowDrawList()->AddRectFilled(pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y), IM_COL32(148.f, 164.f, 173.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
     for (const auto &frame : frames[title_id]) {
         if (frame.autoflip != 0) {

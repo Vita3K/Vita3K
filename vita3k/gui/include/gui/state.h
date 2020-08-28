@@ -178,6 +178,7 @@ struct GuiState {
     std::uint64_t current_theme_bg;
     std::map<std::string, std::map<std::string, ImGui_Texture>> themes_preview;
     std::vector<ImGui_Texture> theme_backgrounds;
+    std::vector<ImVec4> theme_backgrounds_font_color;
     std::map<std::string, ImGui_Texture> theme_information_bar_notice;
 
     std::map<size_t, bool> notice_info_new;
