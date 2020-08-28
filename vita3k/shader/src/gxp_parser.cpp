@@ -118,7 +118,7 @@ std::vector<UniformBuffer> shader::get_uniform_buffers(const SceGxmProgram &prog
 
         UniformBuffer item;
         item.base = this_buffer_base;
-        item.rw = ((buffer->reside_buffer + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER) == 0; // TODO: confirm this
+        item.index = ((buffer->reside_buffer + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER);
         item.size = buffer_size;
         output_buffers.push_back(item);
     }

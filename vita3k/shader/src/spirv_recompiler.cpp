@@ -724,7 +724,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     const auto program_input = shader::get_program_input(program);
     for (const auto &buffer : program_input.uniform_buffers) {
-        spv::Id block = create_uniform_block(b, features, buffer.rw, buffer.size, !program.is_fragment());
+        spv::Id block = create_uniform_block(b, features, buffer.index, buffer.size, !program.is_fragment());
         spv_params.buffers.emplace(buffer.base, block);
     }
 
