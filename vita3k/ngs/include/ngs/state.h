@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <vector>
 
+#include <mem/mempool.h>
 #include <mem/ptr.h>
 #include <ngs/common.h>
-#include <ngs/mempool.h>
 
 struct MemState;
 

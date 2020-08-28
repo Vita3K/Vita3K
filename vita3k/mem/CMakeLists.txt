@@ -2,6 +2,7 @@ add_library(
 	mem
 	STATIC
 	src/mem.cpp
+	include/mem/mempool.h
 	include/mem/mem.h
 	include/mem/ptr.h
 )
