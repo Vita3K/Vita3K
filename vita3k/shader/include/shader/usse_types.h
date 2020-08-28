@@ -306,6 +306,7 @@ struct Sampler {
 struct UniformBuffer {
     int base;
     int size;
+    int index;
     bool rw; // TODO confirm this
     bool reg; // register buffer TODO confirm this
 };
