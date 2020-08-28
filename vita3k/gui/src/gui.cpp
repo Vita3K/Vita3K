@@ -432,20 +432,13 @@ void init(GuiState &gui, HostState &host) {
     if (!host.cfg.user_backgrounds.empty())
         init_user_backgrounds(gui, host);
 
-    if (!host.cfg.theme_content_id.empty()) {
-        init_theme(gui, host, host.cfg.theme_content_id);
-        init_theme_apps_icon(gui, host, host.cfg.theme_content_id);
-    } else {
-        init_theme(gui, host, "default");
-        init_apps_icon(gui, host, gui.app_selector.sys_apps);
-    }
+    init_theme(gui, host, host.cfg.theme_content_id.empty() ? "default" : host.cfg.theme_content_id);
+    init_theme_apps_icon(gui, host, host.cfg.theme_content_id.empty() ? "default" : host.cfg.theme_content_id);
 
-    if (!host.cfg.start_background.empty()) {
-        if (host.cfg.start_background == "image")
-            init_user_start_background(gui, host.cfg.user_start_background);
-        else
-            init_theme_start_background(gui, host, host.cfg.start_background == "default" ? "default" : host.cfg.theme_content_id);
-    }
+    if (host.cfg.start_background == "image")
+        init_user_start_background(gui, host.cfg.user_start_background);
+    else
+        init_theme_start_background(gui, host, host.cfg.start_background.empty() ? "default" : host.cfg.theme_content_id);
 
     if (!host.cfg.run_title_id && !host.cfg.vpk_path) {
         gui.live_area.information_bar = true;

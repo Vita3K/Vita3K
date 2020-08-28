@@ -416,8 +416,7 @@ bool handle_events(HostState &host, GuiState &gui) {
                 // TODO pause app running
                 if (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton) {
                     gui::update_apps_list_opened(gui, host.io.title_id);
-                    if (gui.live_area_contents.find(host.io.title_id) == gui.live_area_contents.end())
-                        gui::init_live_area(gui, host);
+                    gui::init_live_area(gui, host);
                     gui.live_area.information_bar = !gui.live_area.information_bar;
                     gui.live_area.live_area_screen = !gui.live_area.live_area_screen;
                 }

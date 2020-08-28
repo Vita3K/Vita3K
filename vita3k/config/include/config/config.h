@@ -42,8 +42,8 @@
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(bool, "auto-lle", false, auto_lle)                                                             \
     code(std::string, "user-start-background", std::string{}, user_start_background)                    \
-    code(std::string, "start-background",  std::string{}, start_background)                             \
-    code(std::string, "theme-content-id", std::string{}, theme_content_id)                              \
+    code(std::string, "start-background",  std::string{"default"}, start_background)                    \
+    code(std::string, "theme-content-id", std::string{"default"}, theme_content_id)                     \
     code(bool, "use-theme-background", false, use_theme_background)                                     \
     code(int, "delay-background", 4, delay_background)                                                  \
     code(int, "delay-start", 10, delay_start)                                                           \
