@@ -1069,6 +1069,7 @@ struct SceGxmContextParams {
 };
 
 typedef std::array<Ptr<const void>, 15> UniformBuffers;
+typedef std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> TextureDatas;
 typedef std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> StreamDatas;
 
 struct GxmViewport {
@@ -1167,7 +1168,7 @@ struct GxmContextState {
     int back_depth_bias_units = 0;
 
     // Textures.
-    std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> fragment_textures;
+    TextureDatas fragment_textures;
 
     // Mask
     bool writing_mask;
@@ -1482,29 +1483,36 @@ enum {
     SCE_GXM_PRECOMPUTED_DRAW_WORD_COUNT = 11,
 };
 
+static constexpr size_t SCE_GXM_PRECOMPUTED_DRAW_EXTRA_SIZE = sizeof(StreamDatas);
+
 struct SceGxmPrecomputedDraw {
     Ptr<const SceGxmVertexProgram> program;
-    Ptr<void> extra_data;
 
     SceGxmPrimitiveType type;
-    uint32_t vertex_count;
+
+    Ptr<StreamDatas> stream_data;
+    uint16_t stream_count;
+
     SceGxmIndexFormat index_format;
     Ptr<const void> index_data;
-
-    Ptr<const void> vertex_stream[4];
+    uint32_t vertex_count;
 };
+
+static constexpr size_t SCE_GXM_PRECOMPUTED_FRAGMENT_STATE_EXTRA_SIZE = sizeof(TextureDatas);
 
 struct SceGxmPrecomputedFragmentState {
     Ptr<const SceGxmFragmentProgram> program;
-    Ptr<void> extra_data;
+
+    Ptr<TextureDatas> textures;
+    uint16_t texture_count;
 
     Ptr<const void> default_uniform_buffer;
-    constexpr static uint32_t texture_count = 4;
 };
+
+static constexpr size_t SEC_GXM_PRECOMPUTED_VERTEX_STATE_EXTRA_SIZE = 0;
 
 struct SceGxmPrecomputedVertexState {
     Ptr<const SceGxmVertexProgram> program;
-    Ptr<void> extra_data;
 
     Ptr<const void> default_uniform_buffer;
 };
