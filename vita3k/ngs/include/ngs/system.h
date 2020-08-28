@@ -7,8 +7,8 @@
 
 #include <mem/ptr.h>
 
+#include <mem/mempool.h>
 #include <ngs/common.h>
-#include <ngs/mempool.h>
 #include <ngs/scheduler.h>
 
 struct MemState;
