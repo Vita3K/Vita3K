@@ -1529,6 +1529,15 @@ EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode
     renderer::set_two_sided_enable(*host.renderer, context->renderer.get(), &context->state, mode);
 }
 
+template <typename T>
+static void convert_uniform_data(std::vector<std::uint8_t> &converted_data, const float *sourceData, unsigned int componentCount) {
+    converted_data.resize(componentCount * sizeof(T));
+    for (int i = 0; i < componentCount; ++i) {
+        T converted = static_cast<T>(sourceData[i]);
+        std::memcpy(&converted_data[i * sizeof(T)], &converted, sizeof(T));
+    }
+}
+
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, unsigned int componentOffset, unsigned int componentCount, const float *sourceData) {
     //assert(uniformBuffer != nullptr);
     assert(parameter);
@@ -1545,6 +1554,7 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
 
     size_t size = 0;
     size_t offset = 0;
+    bool is_float = false;
 
     const std::uint16_t param_type = parameter->type;
 
@@ -1553,15 +1563,58 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     const std::uint8_t *source = reinterpret_cast<const std::uint8_t *>(sourceData);
     std::vector<std::uint8_t> converted_data;
 
-    if (parameter->type == SCE_GXM_PARAMETER_TYPE_F16) {
-        // Convert this thing!!!
-        // Yeah the GXM library happens to convert the data for developer. I think U8 and U16 are kept
-        // TODO (pent0): Check more.
-        // AVX conversion requires number of dest aligned to 8
+    switch (parameter->type) {
+    case SCE_GXM_PARAMETER_TYPE_S8: {
+        convert_uniform_data<int8_t>(converted_data, sourceData, componentCount);
+        source = converted_data.data();
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_U8: {
+        convert_uniform_data<uint8_t>(converted_data, sourceData, componentCount);
+        source = converted_data.data();
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_U16: {
+        convert_uniform_data<uint16_t>(converted_data, sourceData, componentCount);
+        source = converted_data.data();
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_S16: {
+        convert_uniform_data<int16_t>(converted_data, sourceData, componentCount);
+        source = converted_data.data();
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_U32: {
+        convert_uniform_data<uint32_t>(converted_data, sourceData, componentCount);
+        source = converted_data.data();
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_S32: {
+        convert_uniform_data<int32_t>(converted_data, sourceData, componentCount);
+        source = converted_data.data();
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_F16: {
         converted_data.resize(((componentCount + 7) / 8) * 8 * 2);
         float_to_half(sourceData, reinterpret_cast<std::uint16_t *>(converted_data.data()), componentCount);
 
         source = converted_data.data();
+        is_float = true;
+        break;
+    }
+
+    case SCE_GXM_PARAMETER_TYPE_F32: {
+        is_float = true;
+        break;
+    }
+    default:
+        assert(false);
     }
 
     if (parameter->array_size == 1 || parameter->component_count == 1) {
@@ -1581,9 +1634,16 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
         size = parameter->component_count * comp_size;
         int align_bytes = 0;
 
-        // Align it to 64-bit boundary (8 bytes)
-        if ((size & 7) != 0) {
-            align_bytes = 8 - (size & 7);
+        if (is_float) {
+            // Align it to 64-bit boundary (8 bytes)
+            if ((size & 7) != 0) {
+                align_bytes = 8 - (size & 7);
+            }
+        } else {
+            // Align it to 32-bit boundary (4 bytes)
+            if ((size & 3) != 0) {
+                align_bytes = 4 - (size & 3);
+            }
         }
 
         // wtf
