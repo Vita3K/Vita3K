@@ -20,6 +20,7 @@
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/pkg.h>
+#include <host/state.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <rif2zrif.h>
 #include <util/log.h>

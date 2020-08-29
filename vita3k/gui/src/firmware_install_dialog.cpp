@@ -19,6 +19,7 @@
 
 #include <gui/functions.h>
 #include <host/functions.h>
+#include <host/state.h>
 #include <util/log.h>
 
 #include <nfd.h>

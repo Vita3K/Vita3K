@@ -37,6 +37,7 @@
 #include <net/state.h>
 #include <np/state.h>
 #include <renderer/functions.h>
+#include <renderer/state.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>

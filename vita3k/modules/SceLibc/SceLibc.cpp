@@ -25,6 +25,8 @@
 #include <dlmalloc.h>
 #include <v3kprintf.h>
 
+#include <cstring>
+
 Ptr<void> g_dso;
 
 EXPORT(int, _Assert) {

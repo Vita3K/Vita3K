@@ -18,9 +18,8 @@
 #include "private.h"
 
 #include <config/state.h>
-
+#include <host/state.h>
 #include <io/vfs.h>
-
 #include <util/log.h>
 
 #include <stb_image.h>

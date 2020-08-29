@@ -19,6 +19,7 @@
 
 #include <ctrl/state.h>
 #include <touch/touch.h>
+#include <util/log.h>
 
 EXPORT(int, sceTouchActivateRegion) {
     return UNIMPLEMENTED();

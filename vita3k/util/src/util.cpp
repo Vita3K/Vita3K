@@ -29,10 +29,8 @@
 #include <memory>
 #include <set>
 #include <sstream>
-#include <string>
-
-#include <memory>
 #include <stdexcept>
+#include <string>
 
 #include <immintrin.h>
 

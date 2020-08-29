@@ -22,6 +22,8 @@
 #include <net/state.h>
 #include <util/lock_and_find.h>
 
+#include <cstring>
+
 #define SCE_NETCTL_INFO_SSID_LEN_MAX 32
 #define SCE_NETCTL_INFO_CONFIG_NAME_LEN_MAX 64
 

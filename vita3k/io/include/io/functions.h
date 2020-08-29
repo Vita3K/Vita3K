@@ -29,8 +29,6 @@
 
 #include <string>
 
-struct IOState;
-
 inline SceUID invalid_fd = -1;
 
 void init_device_paths(IOState &io);

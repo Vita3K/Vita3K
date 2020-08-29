@@ -19,6 +19,7 @@
 
 #include <kernel/state.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
 
 enum SceAudiodecCodec : uint32_t {
     SCE_AUDIODEC_TYPE_AT9 = 0x1003,

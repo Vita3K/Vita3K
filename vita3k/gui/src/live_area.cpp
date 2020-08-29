@@ -18,13 +18,11 @@
 #include "private.h"
 
 #include <config/state.h>
-
 #include <display/display_state.h>
-
 #include <gui/functions.h>
-
-#include <io/state.h>
+#include <host/state.h>
 #include <io/VitaIoDevice.h>
+#include <io/state.h>
 #include <io/vfs.h>
 #include <util/log.h>
 

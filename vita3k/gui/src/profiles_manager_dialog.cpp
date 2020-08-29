@@ -19,6 +19,7 @@
 
 #include <config/functions.h>
 #include <config/state.h>
+#include <host/state.h>
 #include <io/state.h>
 #include <misc/cpp/imgui_stdlib.h>
 

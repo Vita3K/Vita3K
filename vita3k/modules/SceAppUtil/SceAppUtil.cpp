@@ -26,6 +26,7 @@
 #include <io/io.h>
 #include <io/vfs.h>
 #include <net/sockets.h>
+#include <util/log.h>
 
 #include <cstring>
 

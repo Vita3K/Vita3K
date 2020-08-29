@@ -21,6 +21,7 @@
 #include <config/state.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
+#include <kernel/types.h>
 #include <util/log.h>
 
 #include <SDL_gamecontroller.h>

@@ -25,6 +25,8 @@
 
 struct GuiState;
 struct HostState;
+template <class T>
+class Ptr;
 
 typedef std::shared_ptr<mz_zip_archive> ZipPtr;
 typedef std::shared_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;

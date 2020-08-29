@@ -8,7 +8,6 @@
 #include <renderer/gl/functions.h>
 
 #include <renderer/functions.h>
-#include <util/log.h>
 
 namespace renderer {
 COMMAND(handle_nop) {

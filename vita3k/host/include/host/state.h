@@ -19,11 +19,10 @@
 
 #include <host/sfo.h>
 #include <host/window.h>
-#include <kernel/types.h>
 #include <mem/mem.h>
 #include <ngs/state.h>
 #include <nids/types.h>
-#include <renderer/state.h>
+#include <util/types.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
 #ifdef USE_GDBSTUB

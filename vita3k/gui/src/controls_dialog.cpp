@@ -21,6 +21,7 @@
 #include <config/functions.h>
 #include <config/state.h>
 #include <gui/functions.h>
+#include <host/state.h>
 #include <interface.h>
 
 namespace gui {

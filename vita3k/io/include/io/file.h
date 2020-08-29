@@ -17,9 +17,6 @@
 
 #pragma once
 
-#include <io/util.h>
-
-#include <cassert>
 #include <cstring>
 #include <vector>
 

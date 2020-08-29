@@ -20,6 +20,7 @@
 #include <audio/state.h>
 #include <kernel/state.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
 
 enum SceAudioOutMode {
     SCE_AUDIO_OUT_MODE_MONO = 0,

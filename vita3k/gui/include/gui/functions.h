@@ -23,10 +23,8 @@
 #include <string>
 #include <vector>
 
-struct DisplayState;
 struct HostState;
 struct SDL_Window;
-struct NpTrophyUnlockCallbackData;
 
 namespace gui {
 

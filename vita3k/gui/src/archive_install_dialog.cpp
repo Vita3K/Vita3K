@@ -19,6 +19,7 @@
 #include "private.h"
 
 #include <gui/functions.h>
+#include <host/state.h>
 
 #include <util/string_utils.h>
 

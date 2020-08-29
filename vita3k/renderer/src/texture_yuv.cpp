@@ -1,9 +1,5 @@
 #include <renderer/functions.h>
 
-#include <util/log.h>
-
-#include <algorithm>
-
 extern "C" {
 #include <libswscale/swscale.h>
 }

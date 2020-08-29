@@ -21,6 +21,7 @@
 #include <config/state.h>
 #include <kernel/state.h>
 #include <kernel/types.h>
+#include <util/log.h>
 
 struct SceKernelAllocMemBlockOpt {
     SceSize size;

@@ -18,9 +18,8 @@
 #include "private.h"
 
 #include <config/state.h>
-
 #include <gui/functions.h>
-
+#include <host/state.h>
 #include <util/log.h>
 
 #include <pugixml.hpp>

@@ -19,8 +19,6 @@
 
 #include "bridge.h"
 
-#include <util/log.h>
-
 int unimplemented_impl(const char *name);
 #define UNIMPLEMENTED() unimplemented_impl(export_name)
 

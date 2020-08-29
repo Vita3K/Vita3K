@@ -20,6 +20,9 @@
 #include <util/fs.h>
 
 #ifdef WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <util/string_utils.h>
 #endif
 

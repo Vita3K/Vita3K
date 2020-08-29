@@ -30,6 +30,7 @@
 #include <mem/mem.h>
 #include <nids/functions.h>
 #include <renderer/functions.h>
+#include <renderer/state.h>
 #include <rtc/rtc.h>
 #include <util/fs.h>
 #include <util/lock_and_find.h>

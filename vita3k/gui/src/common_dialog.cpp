@@ -20,6 +20,7 @@
 #include <dialog/state.h>
 #include <gui/functions.h>
 #include <gui/imgui_impl_sdl.h>
+#include <host/state.h>
 #include <util/string_utils.h>
 
 #include <SDL.h>

@@ -25,6 +25,7 @@
 #include <kernel/thread/thread_functions.h>
 #include <modules/module_parent.h>
 #include <util/find.h>
+#include <util/log.h>
 
 EXPORT(SceInt32, _sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion) {
     memset(appState, 0, sizeofSceAppMgrAppState);

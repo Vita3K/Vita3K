@@ -17,6 +17,8 @@
 
 #include "SceFios2Kernel02.h"
 
+#include <cstring>
+
 EXPORT(int, sceFiosKernelOverlayAddForProcess02) {
     return UNIMPLEMENTED();
 }

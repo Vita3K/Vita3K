@@ -8,8 +8,6 @@
 #include <condition_variable>
 #include <mutex>
 
-struct SDL_Cursor;
-
 namespace renderer {
 struct State {
     Backend current_backend;

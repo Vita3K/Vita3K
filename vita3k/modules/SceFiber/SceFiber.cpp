@@ -17,11 +17,11 @@
 
 #include "SceFiber.h"
 
-#include "cpu/functions.h"
-
 #include <kernel/state.h>
 #include <util/lock_and_find.h>
-#include <util/log.h>
+
+#include <cassert>
+#include <cstring>
 
 const static int DEFAULT_FIBER_STACK_SIZE = 4096;
 

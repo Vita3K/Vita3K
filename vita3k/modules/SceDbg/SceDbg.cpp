@@ -17,11 +17,12 @@
 
 #include "SceDbg.h"
 
-#include <util/lock_and_find.h>
 #include <v3kprintf.h>
 
 #include <kernel/functions.h>
 #include <kernel/state.h>
+#include <util/lock_and_find.h>
+#include <util/log.h>
 
 EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop, const char *component, module::vargs messages) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);

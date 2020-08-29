@@ -20,6 +20,8 @@
 #include <kernel/state.h>
 #include <util/lock_and_find.h>
 
+#include <cassert>
+
 EXPORT(int, sceKernelExitThread, int status) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel->threads, host.kernel->mutex);
     const std::lock_guard<std::mutex> lock(thread->mutex);

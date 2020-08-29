@@ -18,6 +18,5 @@
 #pragma once
 
 struct NetState;
-struct SceNetSockaddr;
 
 bool init(NetState &state);

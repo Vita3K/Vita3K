@@ -3,7 +3,6 @@
 
 #include <gxm/types.h>
 #include <mem/ptr.h>
-#include <util/log.h>
 
 namespace renderer {
 namespace texture {

@@ -23,8 +23,6 @@ struct Config;
 struct HostState;
 struct SDL_Window;
 struct ImGui_State;
-template <class T>
-class Ptr;
 class Root;
 
 namespace app {

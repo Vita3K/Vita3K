@@ -20,8 +20,6 @@
 #include <net/socket.h>
 #include <net/types.h>
 
-struct Socket;
-
 typedef std::map<int, SocketPtr> NetSockets;
 typedef std::map<int, SceNetCtlCallback> NetCtlCallbacks;
 

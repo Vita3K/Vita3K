@@ -20,11 +20,11 @@
 #include <config/functions.h>
 #include <config/state.h>
 #include <gui/functions.h>
-
+#include <host/state.h>
+#include <io/device.h>
+#include <io/vfs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
-
-#include <io/device.h>
 
 #include <nfd.h>
 #include <pugixml.hpp>

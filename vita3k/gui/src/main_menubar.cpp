@@ -17,6 +17,7 @@
 
 #include <config/state.h>
 #include <gui/functions.h>
+#include <host/state.h>
 #include <io/state.h>
 
 #include "private.h"

@@ -27,6 +27,7 @@
 #include <io/vfs.h>
 #include <kernel/functions.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_functions.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
 #include <util/find.h>

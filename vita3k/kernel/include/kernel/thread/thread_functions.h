@@ -20,8 +20,6 @@
 #include <kernel/state.h>
 #include <mem/mem.h> // Address
 
-//#include <psp2/types.h>
-
 #include <functional>
 #include <memory>
 

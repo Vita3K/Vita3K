@@ -21,18 +21,20 @@
 
 #include <gxm/functions.h>
 #include <gxm/state.h>
-#include <immintrin.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <mem/mempool.h>
 #include <renderer/functions.h>
+#include <renderer/state.h>
 #include <renderer/types.h>
 #include <util/bytes.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
 #include <SDL_thread.h>
+
+#include <algorithm>
 
 struct SceGxmContext {
     GxmContextState state;

@@ -22,6 +22,7 @@
 #include <kernel/state.h>
 #include <kernel/thread/sync_primitives.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
 
 #include <SDL_timer.h>
 

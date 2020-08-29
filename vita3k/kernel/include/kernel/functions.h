@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <kernel/types.h>
+#include <mem/mem.h>
 #include <util/types.h>
 
 template <class T>

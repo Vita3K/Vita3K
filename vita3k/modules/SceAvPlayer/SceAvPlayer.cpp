@@ -18,8 +18,8 @@
 #include "SceAvPlayer.h"
 
 #include <io/functions.h>
-#include <kernel/thread/thread_functions.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 

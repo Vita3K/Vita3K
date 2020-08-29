@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <util/types.h>
-
 #include <string>
 
 struct Config;

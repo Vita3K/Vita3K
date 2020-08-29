@@ -17,6 +17,9 @@
 
 #include "SceLibRng.h"
 
+#include <kernel/types.h>
+#include <util/log.h>
+
 #include <algorithm>
 #include <random>
 

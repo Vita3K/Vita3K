@@ -6,7 +6,6 @@
 #include <mem/ptr.h>
 #include <util/log.h>
 
-#include <algorithm> // find
 #include <cstring> // memcmp
 #include <numeric> // accumulate, reduce
 #ifdef WIN32

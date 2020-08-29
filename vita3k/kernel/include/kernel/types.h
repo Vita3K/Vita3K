@@ -1,8 +1,7 @@
 #pragma once
+
 #include <mem/ptr.h>
 #include <util/types.h>
-
-#include <atomic>
 
 #define SCE_KERNEL_DEFAULT_PRIORITY static_cast<SceInt32>(0x10000100)
 #define SCE_KERNEL_DEFAULT_PRIORITY_USER SCE_KERNEL_DEFAULT_PRIORITY

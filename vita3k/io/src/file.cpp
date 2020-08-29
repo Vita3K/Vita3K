@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <io/file.h>
+#include <io/util.h>
 
 ReadOnlyInMemFile::ReadOnlyInMemFile() = default;
 

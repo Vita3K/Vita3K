@@ -18,7 +18,6 @@
 #include <SDL.h>
 #include <SDL_video.h>
 
-#include <cassert>
 #include <sstream>
 
 namespace renderer::gl {

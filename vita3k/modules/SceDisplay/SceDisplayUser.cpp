@@ -18,6 +18,7 @@
 #include "SceDisplayUser.h"
 
 #include <display/display_state.h>
+#include <util/log.h>
 
 enum SceDisplaySetBufSync {
     SCE_DISPLAY_SETBUF_IMMEDIATE = 0,

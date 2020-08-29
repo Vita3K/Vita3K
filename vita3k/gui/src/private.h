@@ -19,8 +19,7 @@
 
 #include <gui/state.h>
 
-#include <host/state.h>
-
+struct HostState;
 struct ImVec4;
 
 namespace gui {

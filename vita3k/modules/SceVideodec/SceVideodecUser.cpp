@@ -20,6 +20,8 @@
 #include <kernel/state.h>
 #include <util/lock_and_find.h>
 
+#include <cassert>
+
 enum SceVideodecType {
     SCE_VIDEODEC_TYPE_HW_AVCDEC = 0x1001
 };

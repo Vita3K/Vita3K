@@ -18,14 +18,12 @@
 #include "private.h"
 
 #include <config/state.h>
-
 #include <gui/functions.h>
-
-#include <util/log.h>
-
+#include <host/state.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/state.h>
+#include <util/log.h>
 
 #include <nfd.h>
 #include <pugixml.hpp>

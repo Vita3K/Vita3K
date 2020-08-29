@@ -20,11 +20,9 @@
 #include <boost/algorithm/string/trim.hpp>
 
 #include <config/state.h>
-
 #include <gui/functions.h>
-
 #include <host/functions.h>
-
+#include <host/state.h>
 #include <io/VitaIoDevice.h>
 #include <io/functions.h>
 

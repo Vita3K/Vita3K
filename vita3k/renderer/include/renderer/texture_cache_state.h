@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glutil/object_array.h>
-
 #include <gxm/types.h>
 
 #include <array>

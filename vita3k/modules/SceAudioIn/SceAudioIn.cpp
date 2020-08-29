@@ -19,6 +19,7 @@
 
 #include <audio/state.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
 
 #define PORT_ID 0
 

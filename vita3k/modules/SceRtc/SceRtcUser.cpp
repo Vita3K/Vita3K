@@ -19,6 +19,7 @@
 
 #include <kernel/state.h>
 #include <rtc/rtc.h>
+#include <util/log.h>
 
 #include <chrono>
 #include <ctime>

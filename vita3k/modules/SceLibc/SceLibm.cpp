@@ -17,6 +17,8 @@
 
 #include "SceLibm.h"
 
+#include <cmath>
+
 EXPORT(int, _Cosh) {
     return UNIMPLEMENTED();
 }
