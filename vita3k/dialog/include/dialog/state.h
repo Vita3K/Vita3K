@@ -46,7 +46,7 @@ struct MsgState {
     std::string btn[3];
     uint32_t btn_val[3];
     uint32_t status;
-    uint32_t bar_rate = 0;
+    uint32_t bar_percent = 0;
     bool has_progress_bar = false;
 };
 
@@ -78,7 +78,7 @@ struct SavedataState {
     std::vector<SceDateTime> date;
     std::vector<bool> has_date = { false };
 
-    uint32_t bar_rate = 0;
+    uint32_t bar_percent = 0;
     bool has_progress_bar = false;
 
     SceAppUtilSaveDataSlotEmptyParam *list_empty_param = nullptr;

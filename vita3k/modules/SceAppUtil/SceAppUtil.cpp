@@ -310,7 +310,7 @@ EXPORT(int, sceAppUtilSaveDataSlotSearch) {
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotSetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilSaveDataMountPoint *mountPoint) {
-    const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY, host.pref_path, export_name);
+    const auto fd = open_file(host.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
     write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);

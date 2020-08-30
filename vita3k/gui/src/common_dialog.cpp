@@ -70,9 +70,9 @@ static void draw_message_dialog(DialogState &common_dialog) {
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_PROGRESS_BAR_BG);
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - PROGRESS_BAR_SIZE.x / 2);
-        ImGui::ProgressBar(common_dialog.msg.bar_rate / 100.f, PROGRESS_BAR_SIZE, dummy_buf);
+        ImGui::ProgressBar(common_dialog.msg.bar_percent / 100.f, PROGRESS_BAR_SIZE, dummy_buf);
         ImGui::PopStyleColor(2);
-        std::string progress = std::to_string(static_cast<int>(common_dialog.msg.bar_rate)).append("%");
+        std::string progress = std::to_string(static_cast<int>(common_dialog.msg.bar_percent)).append("%");
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - ImGui::CalcTextSize(progress.c_str()).x / 2);
         ImGui::Text("%s", progress.c_str());
     }
@@ -269,9 +269,9 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_PROGRESS_BAR_BG);
             ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - PROGRESS_BAR_SIZE.x / 2);
-            ImGui::ProgressBar(common_dialog.savedata.bar_rate / 100.f, PROGRESS_BAR_SIZE, dummy_buf);
+            ImGui::ProgressBar(common_dialog.savedata.bar_percent / 100.f, PROGRESS_BAR_SIZE, dummy_buf);
             ImGui::PopStyleColor(2);
-            std::string progress = std::to_string(static_cast<int>(common_dialog.savedata.bar_rate)).append("%");
+            std::string progress = std::to_string(static_cast<int>(common_dialog.savedata.bar_percent)).append("%");
             ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(progress.c_str()).x / 2);
             ImGui::Text("%s", progress.c_str());
         }

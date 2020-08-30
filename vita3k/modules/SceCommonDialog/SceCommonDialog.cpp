@@ -332,7 +332,7 @@ EXPORT(int, sceMsgDialogProgressBarInc, SceMsgDialogProgressBarTarget target, Sc
     if (host.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.msg.bar_rate += delta;
+    host.common_dialog.msg.bar_percent += delta;
     return 0;
 }
 
@@ -356,9 +356,9 @@ EXPORT(int, sceMsgDialogProgressBarSetValue, SceMsgDialogProgressBarTarget targe
     if (host.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.msg.bar_rate = rate;
-    if (host.common_dialog.msg.bar_rate > 100) {
-        host.common_dialog.msg.bar_rate = 100;
+    host.common_dialog.msg.bar_percent = rate;
+    if (host.common_dialog.msg.bar_percent > 100) {
+        host.common_dialog.msg.bar_percent = 100;
     }
     return 0;
 }
@@ -627,6 +627,7 @@ EXPORT(int, sceSaveDataDialogAbort) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
 
+    host.common_dialog.savedata.bar_percent = 0;
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     host.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
     host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
@@ -980,6 +981,7 @@ EXPORT(int, sceSaveDataDialogFinish, Ptr<const SceSaveDataDialogFinishParam> fin
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
 
+    host.common_dialog.savedata.bar_percent = 0;
     host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     return 0;
@@ -998,13 +1000,18 @@ EXPORT(int, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result) {
         return RET_ERROR(SCE_SAVEDATA_DIALOG_ERROR_PARAM);
     }
 
-    result.get(host.mem)->mode = host.common_dialog.savedata.mode;
+    auto save_dialog = host.common_dialog.savedata;
+    auto result_slotinfo = result.get(host.mem)->slotInfo.get(host.mem);
+
+    result.get(host.mem)->mode = save_dialog.mode;
     result.get(host.mem)->result = host.common_dialog.result;
-    result.get(host.mem)->buttonId = host.common_dialog.savedata.button_id;
-    result.get(host.mem)->slotId = host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save];
-    result.get(host.mem)->slotInfo.get(host.mem)->isExist = host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist;
-    result.get(host.mem)->slotInfo.get(host.mem)->slotParam = host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].slotParam;
-    result.get(host.mem)->userdata = host.common_dialog.savedata.userdata;
+    result.get(host.mem)->buttonId = save_dialog.button_id;
+    result.get(host.mem)->slotId = save_dialog.slot_id[save_dialog.selected_save];
+    if (result.get(host.mem)->slotInfo) {
+        result_slotinfo->isExist = save_dialog.slot_info[save_dialog.selected_save].isExist;
+        result_slotinfo->slotParam = save_dialog.slot_info[save_dialog.selected_save].slotParam;
+    }
+    result.get(host.mem)->userdata = save_dialog.userdata;
     return 0;
 }
 
@@ -1162,7 +1169,10 @@ EXPORT(int, sceSaveDataDialogProgressBarInc, SceSaveDataDialogProgressBarTarget 
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    host.common_dialog.savedata.bar_rate += delta;
+    host.common_dialog.savedata.bar_percent += delta;
+    if (host.common_dialog.savedata.bar_percent >= 100) {
+        host.common_dialog.savedata.bar_percent = 100;
+    }
     return 0;
 }
 
@@ -1175,9 +1185,9 @@ EXPORT(int, sceSaveDataDialogProgressBarSetValue, SceSaveDataDialogProgressBarTa
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    host.common_dialog.savedata.bar_rate = rate;
-    if (host.common_dialog.savedata.bar_rate > 100) {
-        host.common_dialog.savedata.bar_rate = 100;
+    host.common_dialog.savedata.bar_percent = rate;
+    if (host.common_dialog.savedata.bar_percent >= 100) {
+        host.common_dialog.savedata.bar_percent = 100;
     }
     return 0;
 }
@@ -1202,6 +1212,7 @@ EXPORT(int, sceSaveDataDialogTerm) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
 
+    host.common_dialog.savedata.bar_percent = 0;
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     host.common_dialog.type = NO_DIALOG;
     return 0;

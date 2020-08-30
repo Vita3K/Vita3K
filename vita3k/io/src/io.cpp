@@ -250,6 +250,9 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::stri
         LOG_ERROR("Missing file at {} (target path: {})", system_path.string(), path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     } else if (!fs::exists(system_path) && (flags & SCE_O_CREAT)) {
+        if (!fs::exists(system_path.parent_path())) {
+            fs::create_directories(system_path.parent_path());
+        }
         std::ofstream file(system_path.string());
     }
 
