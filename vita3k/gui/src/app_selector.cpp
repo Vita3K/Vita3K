@@ -36,17 +36,12 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
     gui.apps_background.clear();
     gui.apps_list_opened.clear();
     gui.app_selector.user_apps.clear();
-    gui.app_selector.icons.clear();
+    gui.app_selector.user_apps_icon.clear();
     gui.current_app_selected = -1;
     gui.live_area_contents.clear();
     gui.live_items.clear();
 
     get_user_apps_title(gui, host);
-
-    if (host.cfg.theme_content_id.empty())
-        init_apps_icon(gui, host, gui.app_selector.sys_apps);
-    else
-        init_theme_apps_icon(gui, host, host.cfg.theme_content_id);
 
     if (gui.app_selector.user_apps.empty())
         return false;
@@ -90,6 +85,7 @@ void pre_load_app(GuiState &gui, HostState &host, bool live_area) {
         update_apps_list_opened(gui, host.app_title_id);
         last_time["home"] = 0;
         init_live_area(gui, host);
+        gui.live_area.information_bar = true;
         gui.live_area.live_area_screen = true;
     } else
         pre_run_app(gui, host, host.app_title_id);
@@ -193,8 +189,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawCornerFlags_All);
 
     if (gui.delete_app_icon) {
-        if (gui.app_selector.icons.find(host.app_title_id) != gui.app_selector.icons.end())
-            gui.app_selector.icons.erase(host.app_title_id);
+        if (gui.app_selector.user_apps_icon.find(host.app_title_id) != gui.app_selector.user_apps_icon.end())
+            gui.app_selector.user_apps_icon.erase(host.app_title_id);
         gui.delete_app_icon = false;
     }
 
@@ -371,8 +367,9 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         const auto POS_APP_LIST = ImVec2(60.f * scal.x, 48.f + MENUBAR_HEIGHT);
         const auto SIZE_APP_LIST = ImVec2((host.cfg.apps_list_grid ? 840.f : 900.f) * scal.x, display_size.y - POS_APP_LIST.y);
         ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
-        ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
         const auto GRID_ICON_SIZE = ImVec2(128.f * scal.x, 128.f * scal.y);
+        const auto GRID_COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * scal.x);
         if (!host.cfg.apps_list_grid) {
             ImGui::Columns(5, nullptr, true);
             ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
@@ -381,16 +378,15 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImGui::SetColumnWidth(3, cateogry_size);
         } else {
             ImGui::Columns(4, nullptr, false);
-            const auto COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * scal.x);
-            ImGui::SetColumnWidth(0, COLUMN_SIZE);
-            ImGui::SetColumnWidth(1, COLUMN_SIZE);
-            ImGui::SetColumnWidth(2, COLUMN_SIZE);
-            ImGui::SetColumnWidth(3, COLUMN_SIZE);
+            ImGui::SetColumnWidth(0, GRID_COLUMN_SIZE);
+            ImGui::SetColumnWidth(1, GRID_COLUMN_SIZE);
+            ImGui::SetColumnWidth(2, GRID_COLUMN_SIZE);
+            ImGui::SetColumnWidth(3, GRID_COLUMN_SIZE);
         }
         ImGui::SetWindowFontScale(!gui.live_area_font_data.empty() ? 0.82f * scal.x : 1.f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-        const auto display_app = [&](const std::vector<gui::App> &app_list) {
-            for (const auto &app : app_list) {
+        const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
+            for (const auto &app : apps_list) {
                 bool selected = false;
                 if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
                     continue;
@@ -403,15 +399,15 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     }
                 }
                 const auto POS_ICON = ImGui::GetCursorPosY();
-                if (gui.app_selector.icons.find(app.title_id) != gui.app_selector.icons.end()) {
+                const auto GRID_INIT_POS = ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE / 2.f) - 10.f;
+                if (apps_icon.find(app.title_id) != apps_icon.end()) {
                     if (host.cfg.apps_list_grid)
-                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f));
-                    ImGui::Image(gui.app_selector.icons[app.title_id], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
+                        ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
+                    ImGui::Image(apps_icon[app.title_id], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
                 }
-                const auto POS_STITLE = ImVec2(ImGui::GetCursorPosX() + (30.f * scal.x), ImGui::GetCursorPosY());
                 ImGui::SetCursorPosY(POS_ICON);
                 if (host.cfg.apps_list_grid)
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (GRID_ICON_SIZE.x / 2.f) - 10.f));
+                    ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
                 else
                     ImGui::SetCursorPosY(POS_ICON);
                 ImGui::PushID(app.title_id.c_str());
@@ -440,8 +436,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::PopStyleVar();
                     ImGui::NextColumn();
                 } else {
-                    ImGui::SetCursorPos(ImVec2(POS_STITLE.x + ((GRID_ICON_SIZE.x / 2.f) - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x).x / 2.f)), POS_STITLE.y));
-                    ImGui::PushTextWrapPos(POS_STITLE.x + GRID_ICON_SIZE.x);
+                    ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * scal.x)).x / 2.f));
+                    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * scal.x)));
                     ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && host.cfg.use_theme_background ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
                     ImGui::PopTextWrapPos();
                     ImGui::NextColumn();
@@ -451,10 +447,10 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             }
         };
         // System Applications
-        display_app(gui.app_selector.sys_apps);
+        display_app(gui.app_selector.sys_apps, gui.app_selector.sys_apps_icon);
         // User Applications
         if (host.io.title_id.empty())
-            display_app(gui.app_selector.user_apps);
+            display_app(gui.app_selector.user_apps, gui.app_selector.user_apps_icon);
         ImGui::PopStyleColor();
         ImGui::Columns(1);
         ImGui::EndChild();

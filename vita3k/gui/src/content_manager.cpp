@@ -258,7 +258,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     if (menu == "info") {
         ImGui::SetCursorPos(ImVec2(90.f * SCAL.x, 10.f * SCAL.y));
-        ImGui::Image(gui.app_selector.icons[app_selected], SIZE_ICON_DETAIL);
+        ImGui::Image(gui.app_selector.user_apps_icon[app_selected], SIZE_ICON_DETAIL);
         const auto CALC_NAME = ImGui::CalcTextSize(get_app_index(gui, app_selected)->title.c_str(), nullptr, false, SIZE_INFO.x - SIZE_ICON_DETAIL.x).y / 2.f;
         ImGui::SetCursorPos(ImVec2((110.f * SCAL.x) + SIZE_ICON_DETAIL.x, (SIZE_ICON_DETAIL.y / 2.f) - CALC_NAME + (10.f * SCAL.y)));
         ImGui::PushTextWrapPos(SIZE_INFO.x);
@@ -344,19 +344,13 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             for (const auto &content : contents_selected) {
                 if (content.second) {
                     if (menu == "app") {
-                        const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / content.first };
-                        if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH))
-                            fs::remove_all(APP_PATH);
-                        const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / content.first };
-                        if (fs::exists(DLC_PATH) && !fs::is_empty(DLC_PATH))
-                            fs::remove_all(DLC_PATH);
-
+                        fs::remove_all(fs::path(host.pref_path) / "ux0/app" / content.first);
+                        fs::remove_all(fs::path(host.pref_path) / "ux0/addcont" / content.first);
                         gui.app_selector.user_apps.erase(get_app_index(gui, content.first));
-                        gui.app_selector.icons.erase(content.first);
+                        gui.app_selector.user_apps_icon.erase(content.first);
                     }
                     const auto SAVE_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / content.first };
-                    if (fs::exists(SAVE_PATH) && !fs::is_empty(SAVE_PATH))
-                        fs::remove_all(SAVE_PATH);
+                    fs::remove_all(SAVE_PATH);
                 }
             }
             get_contents_size(gui, host);
@@ -421,7 +415,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     ImGui::Checkbox("##selected", &contents_selected[app.title_id]);
                     ImGui::NextColumn();
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (8.f * SCAL.y));
-                    ImGui::Image(gui.app_selector.icons[app.title_id], SIZE_ICON_LIST);
+                    ImGui::Image(gui.app_selector.user_apps_icon[app.title_id], SIZE_ICON_LIST);
                     ImGui::NextColumn();
                     const auto Title_POS = ImGui::GetCursorPosY();
                     ImGui::SetWindowFontScale(1.1f);
@@ -469,7 +463,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     ImGui::Checkbox("##selected", &contents_selected[save.title_id]);
                     ImGui::NextColumn();
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (8.f * SCAL.y));
-                    ImGui::Image(gui.app_selector.icons[save.title_id], SIZE_ICON_LIST);
+                    ImGui::Image(gui.app_selector.user_apps_icon[save.title_id], SIZE_ICON_LIST);
                     ImGui::NextColumn();
                     const auto Title_POS = ImGui::GetCursorPosY();
                     ImGui::SetWindowFontScale(1.1f);

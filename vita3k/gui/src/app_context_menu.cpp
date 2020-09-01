@@ -105,7 +105,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.3f);
-        if (ImGui::MenuItem("Boot", host.app_short_title.c_str()))
+        if (ImGui::MenuItem("Boot"))
             pre_load_app(gui, host, false);
         if (host.app_title_id.find("NPXS") == std::string::npos) {
             if (ImGui::MenuItem("Check App Compatibility")) {
@@ -183,16 +183,16 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
     if (!context_dialog.empty()) {
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-        ImGui::Begin("##context_dialog", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("##context_dialog", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetNextWindowBgAlpha(0.999f);
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
-        ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
         // Update History
         if (context_dialog == "history") {
             ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + 20.f * scal.x, ImGui::GetWindowPos().y + BUTTON_SIZE.y));
-            ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * scal.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * scal.y)), false, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+            ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * scal.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * scal.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
             for (const auto &update : update_history_infos) {
                 ImGui::SetWindowFontScale(1.4f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "Version %.2f", update.first);
@@ -207,9 +207,9 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * scal.y)));
         } else {
             // Delete Data
-            if (gui.app_selector.icons.find(host.app_title_id) != gui.app_selector.icons.end()) {
+            if (gui.app_selector.user_apps_icon.find(host.app_title_id) != gui.app_selector.user_apps_icon.end()) {
                 ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), 24.f * scal.y));
-                ImGui::Image(gui.app_selector.icons[host.app_title_id], PUPOP_ICON_SIZE);
+                ImGui::Image(gui.app_selector.user_apps_icon[host.app_title_id], PUPOP_ICON_SIZE);
             }
             ImGui::SetWindowFontScale(1.6f * scal.x);
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(host.app_short_title.c_str()).x / 2.f));
@@ -250,16 +250,16 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
     if (information) {
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-        ImGui::Begin("##information", &information, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("##information", &information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(1.5f * scal.x);
         ImGui::SetCursorPos(ImVec2(10.0f * scal.x, 10.0f * scal.y));
         if (ImGui::Button("X", ImVec2(40.f * scal.x, 40.f * scal.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
             information = false;
             gui.live_area.information_bar = true;
         }
-        if (gui.app_selector.icons.find(host.app_title_id) != gui.app_selector.icons.end()) {
+        if (get_app_icon(gui, host.app_title_id)->first == host.app_title_id) {
             ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * scal.y));
-            ImGui::Image(gui.app_selector.icons[host.app_title_id], INFO_ICON_SIZE);
+            ImGui::Image(get_app_icon(gui, host.app_title_id)->second, INFO_ICON_SIZE);
         }
         ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize("Name  ").x, INFO_ICON_SIZE.y + (50.f * scal.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "Name ");

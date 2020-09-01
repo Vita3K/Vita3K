@@ -39,7 +39,8 @@ enum GenericDialogState {
 void delete_app(GuiState &gui, HostState &host);
 void get_app_info(GuiState &gui, HostState &host, const std::string &title_id);
 size_t get_app_size(HostState &host, const std::string &title_id);
-std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &title_id);
+std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string &title_id);
+std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &title_id);
 std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &title_id);
 void get_contents_size(GuiState &gui, HostState &host);
 bool get_live_area_sys_app_state(GuiState &gui);
@@ -54,7 +55,6 @@ void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> 
 void init_live_area(GuiState &gui, HostState &host);
 bool init_manual(GuiState &gui, HostState &host);
 bool init_theme(GuiState &gui, HostState &host, const std::string &content_id);
-void init_theme_apps_icon(GuiState &gui, HostState &host, const std::string &content_id);
 void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
 void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &trophy_id);

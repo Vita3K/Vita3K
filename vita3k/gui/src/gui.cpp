@@ -211,7 +211,10 @@ void init_apps_icon(GuiState &gui, HostState &host, const std::vector<App> &apps
             LOG_ERROR("Invalid icon for title {}, {}.", app.title_id, app.title);
             continue;
         }
-        gui.app_selector.icons[app.title_id].init(gui.imgui_state.get(), data, width, height);
+        if (app.title_id.find("NPXS") != std::string::npos)
+            gui.app_selector.sys_apps_icon[app.title_id].init(gui.imgui_state.get(), data, width, height);
+        else
+            gui.app_selector.user_apps_icon[app.title_id].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 }
@@ -243,9 +246,18 @@ void init_app_background(GuiState &gui, HostState &host, const std::string &titl
     stbi_image_free(data);
 }
 
-std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &title_id) {
-    auto &type_app = title_id.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
-    const auto app_index = std::find_if(type_app.begin(), type_app.end(), [&](const App &a) {
+std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &title_id) {
+    const auto &app_type = title_id.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+    const auto app_icon = std::find_if(app_type.begin(), app_type.end(), [&](const auto &i) {
+        return i.first == title_id;
+    });
+
+    return app_icon;
+}
+
+std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string &title_id) {
+    const auto &app_type = title_id.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
+    const auto app_index = std::find_if(app_type.begin(), app_type.end(), [&](const App &a) {
         return a.title_id == title_id;
     });
 
@@ -433,12 +445,11 @@ void init(GuiState &gui, HostState &host) {
         init_user_backgrounds(gui, host);
 
     init_theme(gui, host, host.cfg.theme_content_id.empty() ? "default" : host.cfg.theme_content_id);
-    init_theme_apps_icon(gui, host, host.cfg.theme_content_id.empty() ? "default" : host.cfg.theme_content_id);
 
     if (host.cfg.start_background == "image")
         init_user_start_background(gui, host.cfg.user_start_background);
     else
-        init_theme_start_background(gui, host, host.cfg.start_background.empty() ? "default" : host.cfg.theme_content_id);
+        init_theme_start_background(gui, host, host.cfg.theme_content_id);
 
     if (!host.cfg.run_title_id && !host.cfg.vpk_path) {
         gui.live_area.information_bar = true;

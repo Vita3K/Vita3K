@@ -434,7 +434,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
         ImGui::SetWindowFontScale(1.f);
     }
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (!trophy_id_selected.empty() || detail_np_com_id ? 48.0f : 90.f) * SCAL.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
-    ImGui::BeginChild("##trophy_collection_child", !trophy_id_selected.empty() || detail_np_com_id ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##trophy_collection_child", !trophy_id_selected.empty() || detail_np_com_id ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     // Trophy Collection
     if (np_com_id_list.empty()) {
@@ -709,7 +709,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     ImGui::EndChild();
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
-    ImGui::SetCursorPos(ImVec2(6.f, display_size.y - (84.f * SCAL.y)));
+    ImGui::SetCursorPos(ImVec2(8.f, display_size.y - (84.f * SCAL.y)));
     if (ImGui::Button("Back", ImVec2(64.f * SCAL.x, 40.f * SCAL.y))) {
         if (!np_com_id_selected.empty()) {
             if (detail_np_com_id) {
