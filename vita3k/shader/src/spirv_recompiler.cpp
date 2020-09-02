@@ -255,7 +255,6 @@ static spv::Id create_param_sampler(spv::Builder &b, const std::string &name) {
 static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
     std::uint32_t total_var_comp = size / 4;
     spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
-
     Operand dest;
     dest.bank = bank;
     dest.num = offset;
@@ -300,8 +299,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 
         if (!b.isConstant(var)) {
             var = b.createLoad(var);
-            if (total_var_comp > 1)
-                var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
+            var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
         }
 
         utils::store(b, parameters, utils, features, dest, var, dest_mask, 0);
@@ -418,7 +416,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     pa_iter_size,
                     pa_dtype });
             translation_state.interfaces.push_back(pa_iter_var);
-
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
             if (input_id >= 0 && input_id <= 0x9000) {
@@ -987,26 +984,18 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     o_op.num = 0;
     o_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
-    const Imm4 DEST_MASKS[] = { 0, 0b1, 0b11, 0b111, 0b1111 };
-
     for (const auto vo : vertex_outputs_list) {
         if (vertex_outputs & vo) {
             const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
             VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
 
-            int number_of_comp_vec = properties.component_count;
-
-            if (vo >= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0 && vo <= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9) {
-                number_of_comp_vec = 4;
-            }
-
-            assert(number_of_comp_vec != 1);
-            const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), number_of_comp_vec);
+            // TODO: use the actual size of variable
+            const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), 4);
             const spv::Id out_var = b.createVariable(spv::StorageClassOutput, out_type, properties.name.c_str());
             translation_state.interfaces.push_back(out_var);
 
             // Do store
-            spv::Id o_val = utils::load(b, parameters, utils, features, o_op, DEST_MASKS[number_of_comp_vec], 0);
+            spv::Id o_val = utils::load(b, parameters, utils, features, o_op, 0b1111, 0);
 
             // TODO: More decorations needed?
             if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION) {
@@ -1018,7 +1007,6 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
             }
 
             b.createStore(o_val, out_var);
-
             o_op.num += properties.component_count;
         }
     }
