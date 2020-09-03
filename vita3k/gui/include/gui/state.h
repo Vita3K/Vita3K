@@ -58,10 +58,11 @@ struct AppInfo {
 };
 
 struct AppsSelector {
-    std::vector<App> user_apps;
     std::vector<App> sys_apps;
+    std::vector<App> user_apps;
     AppInfo app_info;
-    std::map<std::string, ImGui_Texture> icons;
+    std::map<std::string, ImGui_Texture> sys_apps_icon;
+    std::map<std::string, ImGui_Texture> user_apps_icon;
     bool is_app_list_sorted{ false };
     SortState title_id_sort_state = NOT_SORTED;
     SortState app_ver_sort_state = NOT_SORTED;

@@ -218,8 +218,10 @@ void draw_information_bar(GuiState &gui, HostState &host) {
         for (auto a = 0; a < gui.apps_list_opened.size(); a++) {
             const auto icon_scal_pos = ImVec2((display_size.x / 2.f) - (16.f * SCAL.x) - (decal_icon_pos * SCAL.x) + (a * (38.f * SCAL.x)), display_size.y - (544.f * SCAL.y));
             const auto icon_scal_size = ImVec2(icon_scal_pos.x + (32.0f * SCAL.x), icon_scal_pos.y + (32.f * SCAL.y));
-            if (gui.app_selector.icons.find(gui.apps_list_opened[a]) != gui.app_selector.icons.end())
-                ImGui::GetForegroundDrawList()->AddImage(gui.app_selector.icons[gui.apps_list_opened[a]], icon_scal_pos, icon_scal_size);
+            if (get_app_icon(gui, gui.apps_list_opened[a])->first == gui.apps_list_opened[a])
+                ImGui::GetForegroundDrawList()->AddImage(get_app_icon(gui, gui.apps_list_opened[a])->second, icon_scal_pos, icon_scal_size);
+            else
+                ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32_WHITE, 0.f, ImDrawCornerFlags_All);
             if (gui.apps_list_opened[a] != gui.apps_list_opened[gui.current_app_selected])
                 ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32(0.f, 0.f, 0.f, 140.f), 0.f, ImDrawCornerFlags_All);
         }

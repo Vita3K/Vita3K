@@ -58,8 +58,7 @@ static void add_user_image_background(GuiState &gui, HostState &host) {
             gui.current_user_bg = 0;
             host.cfg.user_backgrounds.push_back(image_path_str);
             host.cfg.use_theme_background = false;
-            if (host.cfg.overwrite_config)
-                config::serialize_config(host.cfg, host.cfg.config_path);
+            config::serialize_config(host.cfg, host.cfg.config_path);
         }
     }
 }
@@ -73,7 +72,7 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
 
     start_param.clear();
     gui.start_background = {};
-    if (content_id != "default") {
+    if (!content_id.empty() && content_id != "default") {
         const auto THEME_PATH_XML{ fs::path(host.pref_path) / "ux0/theme" / content_id / "theme.xml" };
         pugi::xml_document doc;
         if (doc.load_file(THEME_PATH_XML.c_str())) {
@@ -119,28 +118,28 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
     } else
         date_color = 4294967295; // White
 
-    const auto DEFAULT_START_PATH{ fs::path("data/internal/keylock/keylock.png") };
-    if (theme_start_name.empty() && (!fs::exists(fs::path(host.pref_path) / "vs0" / DEFAULT_START_PATH))) {
-        LOG_WARN("Firmware not found for content id: {}, Install firmware for fix this!", content_id);
-        return;
-    }
-
     int32_t width = 0;
     int32_t height = 0;
     vfs::FileBuffer buffer;
 
-    if (theme_start_name.empty())
-        vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, DEFAULT_START_PATH);
-    else
+    if (theme_start_name.empty()) {
+        const auto DEFAULT_START_PATH{ fs::path("data/internal/keylock/keylock.png") };
+        if (fs::exists(fs::path(host.pref_path) / "vs0" / DEFAULT_START_PATH))
+            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, DEFAULT_START_PATH);
+        else {
+            LOG_WARN("Default start background not found, install firmware for fix this.");
+            return;
+        }
+    } else
         vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + theme_start_name);
 
     if (buffer.empty()) {
-        LOG_WARN("background, Name: '{}', Not found for content id: {}.", theme_start_name, content_id);
+        LOG_WARN("Background not found: '{}', for content id: {}.", theme_start_name, content_id);
         return;
     }
     stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
-        LOG_ERROR("Invalid Background for title: {}.", content_id);
+        LOG_ERROR("Invalid Background: '{}' for content id: {}.", theme_start_name, content_id);
         return;
     }
 
@@ -154,6 +153,7 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
         return false;
     }
 
+    gui.start_background = {};
     int32_t width = 0;
     int32_t height = 0;
     stbi_uc *data = stbi_load(image_path.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
@@ -174,15 +174,23 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     return gui.start_background;
 }
 
-void init_theme_apps_icon(GuiState &gui, HostState &host, const std::string &content_id) {
-    const auto THEME_PATH{ fs::path(host.pref_path) / "ux0/theme" / content_id };
-    const auto THEME_PATH_XML{ THEME_PATH / "theme.xml" };
-    if (content_id != "default" && fs::exists(THEME_PATH_XML)) {
-        std::map<std::string, std::string> theme_icon_name;
+bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
+    std::vector<std::string> theme_bg_name;
+    std::map<std::string, std::string> bar_param;
+    std::map<std::string, std::string> theme_icon_name;
 
+    gui.app_selector.sys_apps_icon.clear();
+    gui.current_theme_bg = 0;
+    gui.information_bar_color.clear();
+    gui.theme_backgrounds.clear();
+    gui.theme_backgrounds_font_color.clear();
+    gui.theme_information_bar_notice.clear();
+
+    if (content_id != "default") {
+        const auto THEME_XML_PATH{ fs::path(host.pref_path) / "ux0/theme" / content_id / "theme.xml" };
         pugi::xml_document doc;
 
-        if (doc.load_file(THEME_PATH_XML.c_str())) {
+        if (doc.load_file(THEME_XML_PATH.c_str())) {
             const auto theme = doc.child("theme");
 
             // Theme Apps Icon
@@ -192,58 +200,6 @@ void init_theme_apps_icon(GuiState &gui, HostState &host, const std::string &con
                 theme_icon_name["NPXS10015"] = theme.child("HomeProperty").child("m_settings").child("m_iconFilePath").text().as_string();
             if (!theme.child("HomeProperty").child("m_hostCollabo").child("m_iconFilePath").text().empty())
                 theme_icon_name["NPXS10026"] = theme.child("HomeProperty").child("m_hostCollabo").child("m_iconFilePath").text().as_string();
-
-            if (theme_icon_name["NPXS10008"].empty() && theme_icon_name["NPXS10015"].empty() && theme_icon_name["NPXS10026"].empty()) {
-                init_apps_icon(gui, host, gui.app_selector.sys_apps);
-                return;
-            }
-
-            for (const auto &icon : theme_icon_name) {
-                int32_t width = 0;
-                int32_t height = 0;
-                vfs::FileBuffer buffer;
-
-                const auto title_id = icon.first;
-                const auto name = icon.second;
-
-                vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + name);
-
-                if (buffer.empty()) {
-                    LOG_WARN("Name: '{}', Not found icon for content id: {}.", name, content_id);
-                    continue;
-                }
-                stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-                if (!data) {
-                    LOG_ERROR("Name: '{}', Invalid icon for content id: {}.", name, content_id);
-                    continue;
-                }
-
-                gui.app_selector.icons[title_id].init(gui.imgui_state.get(), data, width, height);
-                stbi_image_free(data);
-            }
-        }
-    } else
-        init_apps_icon(gui, host, gui.app_selector.sys_apps);
-}
-
-bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
-    std::vector<std::string> theme_bg_name;
-    std::map<std::string, std::string> bar_param;
-
-    gui.current_theme_bg = 0;
-    gui.information_bar_color.clear();
-    gui.theme_backgrounds.clear();
-    gui.theme_backgrounds_font_color.clear();
-    gui.theme_information_bar_notice.clear();
-
-    if (content_id != "default") {
-        const auto theme_path{ fs::path(host.pref_path) / "ux0/theme" / content_id };
-
-        const auto theme_path_xml{ theme_path / "theme.xml" };
-        pugi::xml_document doc;
-
-        if (doc.load_file(theme_path_xml.c_str())) {
-            const auto theme = doc.child("theme");
 
             // Get Bar Color
             if (!theme.child("InfomationBarProperty").child("m_barColor").empty())
@@ -296,7 +252,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
                 }
             }
         } else
-            LOG_ERROR("Theme not found for Content ID: {}, in path: {}", content_id, theme_path_xml.string());
+            LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH.string());
     } else {
         const std::vector<std::string> app_id_bg_list = {
             "NPXS10002",
@@ -327,6 +283,33 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
     } else
         gui.information_bar_color["indicator"] = 4294967295; // White
 
+    if (!theme_icon_name.empty()) {
+        for (const auto &icon : theme_icon_name) {
+            int32_t width = 0;
+            int32_t height = 0;
+            vfs::FileBuffer buffer;
+
+            const auto title_id = icon.first;
+            const auto name = icon.second;
+
+            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + name);
+
+            if (buffer.empty()) {
+                LOG_WARN("Name: '{}', Not found icon for content id: {}.", name, content_id);
+                continue;
+            }
+            stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+            if (!data) {
+                LOG_ERROR("Name: '{}', Invalid icon for content id: {}.", name, content_id);
+                continue;
+            }
+
+            gui.app_selector.sys_apps_icon[title_id].init(gui.imgui_state.get(), data, width, height);
+            stbi_image_free(data);
+        }
+    } else
+        init_apps_icon(gui, host, gui.app_selector.sys_apps);
+
     for (auto pos = 0; pos < theme_bg_name.size(); pos++) {
         int32_t width = 0;
         int32_t height = 0;
@@ -338,12 +321,12 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
             vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + theme_bg_name[pos]);
 
         if (buffer.empty()) {
-            LOG_WARN("background, Name: '{}', Not found for content id: {}.", theme_bg_name[pos], content_id);
+            LOG_WARN("Background not found: '{}', for content id: {}.", theme_bg_name[pos], content_id);
             continue;
         }
         stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (!data) {
-            LOG_ERROR("Invalid Background for title: {}.", content_id);
+            LOG_ERROR("Invalid Background: '{}', for content id: {}.", theme_bg_name[pos], content_id);
             continue;
         }
 
@@ -461,7 +444,7 @@ void get_themes_list(GuiState &gui, HostState &host) {
         themes_info["default"].title = "Default";
         themes_list.push_back({ "default", {} });
     } else
-        LOG_WARN("Firmware not found, install it for fix this.");
+        LOG_WARN("Default theme not found, install firmware fix this!");
 
     for (const auto &theme : themes_info) {
         for (const auto &name : theme_preview_name[theme.first]) {
@@ -554,7 +537,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     ImGui::End();
 }
 
-static std::string popup, menu, selected, title, start, delete_user_background;
+static std::string popup, menu, selected, title, start, delete_user_background, delete_theme;
 static ImGuiTextFilter search_bar;
 static float scroll_pos;
 static bool set_scroll_pos;
@@ -605,7 +588,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     ImGui::Separator();
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (!menu.empty() ? 118.f : 96.0f) * SCAL.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
-    ImGui::BeginChild("##themes_child", SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##themes_child", SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     // Themes & Backgrounds
     if (menu.empty()) {
@@ -642,6 +625,17 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
             // Theme List
             if (selected.empty()) {
                 title = "Theme";
+
+                // Delete Theme
+                if (!delete_theme.empty()) {
+                    gui.themes_preview.erase(delete_theme);
+                    themes_info.erase(delete_theme);
+                    const auto theme_list_index = std::find_if(themes_list.begin(), themes_list.end(), [&](const auto &t) {
+                        return t.first == delete_theme;
+                    });
+                    themes_list.erase(theme_list_index);
+                    delete_theme.clear();
+                }
 
                 // Set Scroll Pos
                 if (set_scroll_pos) {
@@ -691,21 +685,16 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     }
                     ImGui::SetWindowFontScale(1.2f);
                     ImGui::SetCursorPos(ImVec2((SIZE_LIST.x / 2.f) - (BUTTON_SIZE.x / 2.f), (SIZE_LIST.y - 82.f) - BUTTON_SIZE.y));
-                    if (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                    if ((selected != host.cfg.theme_content_id) && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
                         host.cfg.user_start_background.clear();
                         if (init_theme(gui, host, selected)) {
                             host.cfg.theme_content_id = selected;
                             host.cfg.use_theme_background = true;
-                        } else {
+                        } else
                             host.cfg.use_theme_background = false;
-                            host.cfg.theme_content_id = "default";
-                        }
-                        init_theme_apps_icon(gui, host, selected);
-                        host.cfg.start_background.clear();
                         init_theme_start_background(gui, host, selected);
                         host.cfg.start_background = (selected == "default") ? "default" : "theme";
-                        if (host.cfg.overwrite_config)
-                            config::serialize_config(host.cfg, host.cfg.config_path);
+                        config::serialize_config(host.cfg, host.cfg.config_path);
                         set_scroll_pos = true;
                         selected.clear();
                     }
@@ -736,18 +725,20 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - 50.f - BUTTON_SIZE.x, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
                     if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
                         if (selected == host.cfg.theme_content_id) {
-                            if (host.cfg.start_background == "theme") {
-                                host.cfg.start_background.clear();
-                                gui.start_background = {};
-                            }
-                            host.cfg.theme_content_id.clear();
-                            gui.theme_backgrounds.clear();
+                            host.cfg.user_start_background.clear();
+                            host.cfg.theme_content_id = "default";
+                            init_apps_icon(gui, host, gui.app_selector.sys_apps);
+                            if (init_theme(gui, host, "default"))
+                                host.cfg.use_theme_background = true;
+                            else
+                                host.cfg.use_theme_background = false;
+                            init_theme_start_background(gui, host, "default");
                             config::serialize_config(host.cfg, host.cfg.config_path);
                         }
                         fs::remove_all(fs::path{ host.pref_path } / "ux0/theme" / selected);
-                        if (gui.live_area.content_manager)
+                        if (host.app_title_id == "NPXS10026")
                             get_contents_size(gui, host);
-                        get_themes_list(gui, host);
+                        delete_theme = selected;
                         popup.clear();
                         selected.clear();
                         set_scroll_pos = true;
@@ -856,67 +847,60 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                 const auto SELECT_BUTTON_POS = ImVec2((SIZE_LIST.x / 2.f) - (BUTTON_SIZE.x / 2.f), (SIZE_LIST.y - 82.f) - BUTTON_SIZE.y);
                 if (start == "theme") {
                     title = themes_info[host.cfg.theme_content_id].title;
-                    if (gui.themes_preview[host.cfg.theme_content_id].find("start") != gui.themes_preview[selected].end()) {
+                    if (gui.themes_preview[host.cfg.theme_content_id].find("start") != gui.themes_preview[host.cfg.theme_content_id].end()) {
                         ImGui::SetCursorPos(START_PREVIEW_POS);
                         ImGui::Image(gui.themes_preview[host.cfg.theme_content_id]["start"], SIZE_PREVIEW);
                     }
                     ImGui::SetCursorPos(SELECT_BUTTON_POS);
-                    if (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                    if ((host.cfg.start_background != "theme") && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
                         host.cfg.user_start_background.clear();
+                        host.cfg.start_background = "theme";
                         init_theme_start_background(gui, host, host.cfg.theme_content_id);
-                        host.cfg.start_background = gui.start_background ? "theme" : "default";
+                        config::serialize_config(host.cfg, host.cfg.config_path);
                         start.clear();
-                        if (host.cfg.overwrite_config)
-                            config::serialize_config(host.cfg, host.cfg.config_path);
                     }
                 } else if (start == "image") {
                     nfdchar_t *image_path = nullptr;
                     nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &image_path);
 
-                    if (result == NFD_OKAY) {
-                        const std::string image_path_str = static_cast<std::string>(image_path);
-
-                        if (init_user_start_background(gui, image_path)) {
-                            host.cfg.user_start_background = image_path_str;
-                            host.cfg.start_background = "image";
-                            if (host.cfg.overwrite_config)
-                                config::serialize_config(host.cfg, host.cfg.config_path);
-                            start.clear();
-                        } else
-                            start.clear();
-                    } else
-                        start.clear();
+                    if ((result == NFD_OKAY) && init_user_start_background(gui, static_cast<std::string>(image_path))) {
+                        host.cfg.user_start_background = static_cast<std::string>(image_path);
+                        host.cfg.start_background = "image";
+                        config::serialize_config(host.cfg, host.cfg.config_path);
+                    }
+                    start.clear();
                 } else if (start == "default") {
                     title = "Default";
-                    if (gui.themes_preview["default"].find("start") != gui.themes_preview[selected].end()) {
+                    if (gui.themes_preview["default"].find("start") != gui.themes_preview["default"].end()) {
                         ImGui::SetCursorPos(START_PREVIEW_POS);
                         ImGui::Image(gui.themes_preview["default"]["start"], SIZE_PREVIEW);
                     }
                     ImGui::SetCursorPos(SELECT_BUTTON_POS);
-                    if (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                    if ((host.cfg.start_background != "default") && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
                         host.cfg.user_start_background.clear();
                         init_theme_start_background(gui, host, "default");
                         host.cfg.start_background = "default";
-                        if (host.cfg.overwrite_config)
-                            config::serialize_config(host.cfg, host.cfg.config_path);
+                        config::serialize_config(host.cfg, host.cfg.config_path);
                         start.clear();
                     }
                 }
             }
         } else if (menu == "background") {
             title = "Background";
+
+            // Delete user background
             if (!delete_user_background.empty()) {
-                const auto b = std::find(host.cfg.user_backgrounds.begin(), host.cfg.user_backgrounds.end(), delete_user_background);
-                host.cfg.user_backgrounds.erase(b);
+                const auto bg = std::find(host.cfg.user_backgrounds.begin(), host.cfg.user_backgrounds.end(), delete_user_background);
+                host.cfg.user_backgrounds.erase(bg);
                 gui.user_backgrounds.erase(delete_user_background);
                 if (host.cfg.user_backgrounds.size())
                     gui.current_user_bg = 0;
                 else if (!gui.theme_backgrounds.empty())
                     host.cfg.use_theme_background = true;
-                if (host.cfg.overwrite_config)
-                    config::serialize_config(host.cfg, host.cfg.config_path);
+                config::serialize_config(host.cfg, host.cfg.config_path);
                 delete_user_background.clear();
             }
+
             ImGui::SetWindowFontScale(0.90f);
             ImGui::Columns(3, nullptr, false);
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 1.0f));
