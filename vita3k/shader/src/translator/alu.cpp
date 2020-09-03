@@ -957,6 +957,11 @@ bool USSETranslatorVisitor::sop(
     spv::Id src1_alpha = load(inst.opr.src1, 0b1000, src1_repeat_offset);
     spv::Id src2_alpha = load(inst.opr.src2, 0b1000, src2_repeat_offset);
 
+    src1_color = utils::convert_to_float(m_b, src1_color, DataType::UINT8, true);
+    src2_color = utils::convert_to_float(m_b, src2_color, DataType::UINT8, true);
+    src1_alpha = utils::convert_to_float(m_b, src1_alpha, DataType::UINT8, true);
+    src2_alpha = utils::convert_to_float(m_b, src2_alpha, DataType::UINT8, true);
+
     spv::Id src_color_type = m_b.getTypeId(src1_color);
     spv::Id src_alpha_type = m_b.getTypeId(src1_alpha);
 
@@ -989,6 +994,9 @@ bool USSETranslatorVisitor::sop(
 
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
+
+    color_res = utils::convert_to_int(m_b, color_res, DataType::UINT8, true);
+    alpha_res = utils::convert_to_int(m_b, alpha_res, DataType::UINT8, true);
 
     // Final result. Do binary operation and then store
     store(inst.opr.dest, color_res, 0b0111, dest_repeat_offset);
