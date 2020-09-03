@@ -381,73 +381,6 @@ bool USSETranslatorVisitor::vpck(
             Opcode::VPCKC10C10 }
     };
 
-    const spv::Op repack_opcode[][static_cast<int>(DataType::TOTAL_TYPE)] = {
-        { spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll },
-        { spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpConvertSToF,
-            spv::OpConvertSToF,
-            spv::OpAll },
-        { spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll },
-        { spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpConvertUToF,
-            spv::OpConvertUToF,
-            spv::OpAll },
-        { spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpConvertUToF,
-            spv::OpConvertUToF,
-            spv::OpAll },
-        { spv::OpAll,
-            spv::OpConvertFToS,
-            spv::OpAll,
-            spv::OpConvertFToU,
-            spv::OpConvertFToS,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll },
-        { spv::OpAll,
-            spv::OpConvertFToS,
-            spv::OpAll,
-            spv::OpConvertFToU,
-            spv::OpConvertFToS,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll },
-        { spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll,
-            spv::OpAll }
-    };
-
     inst.opcode = op_table[dest_fmt][src_fmt];
 
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
@@ -600,29 +533,15 @@ bool USSETranslatorVisitor::vpck(
 
     auto source_type = utils::make_vector_or_scalar_type(m_b, type_f32, m_b.getNumComponents(source));
 
-    // When scale, don't do conversion. Reinterpret them.
-    if (repack_opcode[dest_fmt][src_fmt] != spv::OpAll && !scale) {
-        // Do conversion
-        spv::Id dest_type = type_f32;
-
-        if (is_signed_integer_data_type(inst.opr.dest.type)) {
-            dest_type = m_b.makeIntType(32);
-        } else if (is_unsigned_integer_data_type(inst.opr.dest.type)) {
-            dest_type = type_ui32;
-        }
-
-        std::vector<spv::Id> ops{ source };
-        source = m_b.createOp(repack_opcode[dest_fmt][src_fmt], m_b.makeVectorType(dest_type, m_b.getNumComponents(source)), ops);
+    // source is float destination is int
+    if (is_float_data_type(inst.opr.dest.type) && !is_float_data_type(inst.opr.src1.type)) {
+        source = utils::convert_to_float(m_b, source, inst.opr.src1.type, scale);
     }
 
-    /* we might need to consider this
-    if (scale && src_data_type_table[src_fmt] == DataType::UINT8) {
-        source = utils::unscale_float_for_u8(m_b, source);
+    // source is int destination is float
+    if (!is_float_data_type(inst.opr.dest.type) && is_float_data_type(inst.opr.src1.type)) {
+        source = utils::convert_to_int(m_b, source, inst.opr.dest.type, scale);
     }
-
-    if (scale && dest_data_type_table[dest_fmt] == DataType::UINT8) {
-        source = utils::scale_float_for_u8(m_b, source);
-    }*/
 
     store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
     END_REPEAT()
