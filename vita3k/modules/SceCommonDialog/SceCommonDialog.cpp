@@ -228,6 +228,11 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             host.common_dialog.msg.btn[1] = "Cancel";
             host.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
             break;
+        case SCE_MSG_DIALOG_BUTTON_TYPE_CANCEL:
+            host.common_dialog.msg.btn_num = 1;
+            host.common_dialog.msg.btn[0] = "Cancel";
+            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
+            break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_3BUTTONS:
             bp = up->buttonParam.get(host.mem);
             host.common_dialog.msg.btn_num = 3;
@@ -241,6 +246,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
         }
         break;
     case SCE_MSG_DIALOG_MODE_SYSTEM_MSG:
+        // TODO: implement the remaining system message types
         switch (p->sysMsgParam.get(host.mem)->sysMsgType) {
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT:
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_SMALL:
@@ -253,7 +259,15 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_MAGNETIC_CALIBRATION:
             host.common_dialog.msg.message = "Move away from the source of interference, or adjust the compass by moving your PS Vita system as shown below.";
-            host.common_dialog.msg.btn_num = 0;
+            host.common_dialog.msg.btn_num = 1;
+            host.common_dialog.msg.btn[0] = "Cancel";
+            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
+            break;
+        case SCE_MSG_DIALOG_SYSMSG_TYPE_MIC_DISABLED:
+            host.common_dialog.msg.message = "The microphone is disabled";
+            host.common_dialog.msg.btn_num = 1;
+            host.common_dialog.msg.btn[0] = "Cancel";
+            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
             host.common_dialog.msg.message = "Please wait.";
@@ -292,7 +306,9 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
         break;
     case SCE_MSG_DIALOG_MODE_ERROR_CODE:
         host.common_dialog.msg.message = fmt::format("An error occurred. Errorcode: {}", log_hex(p->errorCodeParam.get(host.mem)->errorCode));
-        host.common_dialog.msg.btn_num = 0;
+        host.common_dialog.msg.btn_num = 1;
+        host.common_dialog.msg.btn[0] = "OK";
+        host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_MSG_DIALOG_MODE_PROGRESS_BAR:
         pp = p->progBarParam.get(host.mem);
