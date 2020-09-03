@@ -60,12 +60,22 @@ static void draw_ime_dialog(DialogState &common_dialog) {
 }
 
 static void draw_message_dialog(DialogState &common_dialog) {
-    const ImVec2 PROGRESS_BAR_SIZE = ImVec2(120.f, 5.f);
+    const ImVec2 BUTTON_SIZE = ImVec2(200.f, 35.f);
+    const ImVec2 WINDOW_SIZE = ImVec2(ImGui::GetIO().DisplaySize.x / 1.7f, ImGui::GetIO().DisplaySize.y / 1.5f);
+    const ImVec2 PROGRESS_BAR_SIZE = ImVec2(WINDOW_SIZE.x - 120.f, 7.f);
+
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(0, 0));
-    ImGui::Begin("Message Dialog");
+    ImGui::SetNextWindowSize(WINDOW_SIZE);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, GUI_COMMON_DIALOG_BG);
+    ImGui::Begin("##Message Dialog", nullptr, ImGuiWindowFlags_NoDecoration);
+    ImGui::SetCursorPosY(WINDOW_SIZE.y / 2 - 40);
+    ImGui::BeginGroup();
+    ImGui::PushTextWrapPos(WINDOW_SIZE.x - 50.f);
+    ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(common_dialog.msg.message.c_str(), 0, false, WINDOW_SIZE.x - 100.f).x / 2);
     ImGui::Text("%s", common_dialog.msg.message.c_str());
+    ImGui::PopTextWrapPos();
     if (common_dialog.msg.has_progress_bar) {
+        ImGui::Spacing();
         const char dummy_buf[32] = "";
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_PROGRESS_BAR_BG);
@@ -76,13 +86,22 @@ static void draw_message_dialog(DialogState &common_dialog) {
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - ImGui::CalcTextSize(progress.c_str()).x / 2);
         ImGui::Text("%s", progress.c_str());
     }
-    for (int i = 0; i < common_dialog.msg.btn_num; i++) {
-        if (ImGui::Button(common_dialog.msg.btn[i].c_str())) {
-            common_dialog.msg.status = common_dialog.msg.btn_val[i];
-            common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-            common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    ImGui::EndGroup();
+    if (common_dialog.msg.btn_num != 0) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+        const auto buttons_width = common_dialog.msg.btn_num == 2 ? BUTTON_SIZE.x : BUTTON_SIZE.x / 2;
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - buttons_width, WINDOW_SIZE.y - 50));
+        ImGui::BeginGroup();
+        for (int i = 0; i < common_dialog.msg.btn_num; i++) {
+            if (ImGui::Button(common_dialog.msg.btn[i].c_str(), BUTTON_SIZE)) {
+                common_dialog.msg.status = common_dialog.msg.btn_val[i];
+                common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+                common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            }
+            ImGui::SameLine();
         }
-        ImGui::SameLine();
+        ImGui::PopStyleVar();
+        ImGui::EndGroup();
     }
     ImGui::End();
 }
