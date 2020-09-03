@@ -68,6 +68,7 @@ bool USSETranslatorVisitor::vbw(
 
     inst.opr.src1.type = DataType::UINT32;
     inst.opr.src2.type = DataType::UINT32;
+    inst.opr.dest.type = DataType::UINT32;
 
     BEGIN_REPEAT(repeat_count, 1)
     GET_REPEAT(inst);
