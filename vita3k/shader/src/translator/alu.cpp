@@ -470,7 +470,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask
 
     case Opcode::ISUBU32:
     case Opcode::ISUB32: {
-        result = m_b.createBinOp(spv::OpISub, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::OpISub, m_b.makeIntType(32), vsrc1, vsrc2);
         break;
     }
 
