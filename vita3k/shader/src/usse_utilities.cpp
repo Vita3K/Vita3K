@@ -42,8 +42,7 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
 
     std::vector<spv::Id> ops;
 
-    // Create a f32 pointer type first
-    spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id target_type = utils::unwrap_type(b, b.getTypeId(first));
 
     const auto first_comp_count = b.getNumComponents(first);
 
@@ -66,7 +65,7 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
                 }
 
                 if (!b.isScalar(access_base)) {
-                    ops.push_back(b.createOp(spv::OpVectorExtractDynamic, type_f32, { access_base, b.makeIntConstant(access_offset) }));
+                    ops.push_back(b.createOp(spv::OpVectorExtractDynamic, target_type, { access_base, b.makeIntConstant(access_offset) }));
                 } else {
                     ops.push_back(access_base);
                 }
@@ -78,7 +77,7 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
         return ops[0];
     }
 
-    return b.createCompositeConstruct(b.makeVectorType(type_f32, static_cast<int>(ops.size())), ops);
+    return b.createCompositeConstruct(b.makeVectorType(target_type, static_cast<int>(ops.size())), ops);
 }
 
 static size_t dest_mask_to_comp_count(shader::usse::Imm4 dest_mask) {
@@ -169,129 +168,232 @@ static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &fe
     return fx8_pack_func;
 }
 
-static constexpr float MAX_U8 = 255.0f;
-
 static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &features, DataType source_type) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
-    spv::Block *u8_unpack_func_block;
+    spv::Block *unpack_func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
     spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id type_i32 = b.makeIntType(32);
     spv::Id type_ui32 = b.makeUintType(32);
 
     std::string func_name;
     spv::Id output_type;
     GLSLstd450 convert_func;
+    int comp_count;
+    int bias;
 
     switch (source_type) {
-    case DataType::F16: {
-        func_name = "unpack2xF16";
-        output_type = b.makeVectorType(type_f32, 2);
-        convert_func = GLSLstd450::GLSLstd450UnpackHalf2x16;
+    case DataType::UINT16: {
+        func_name = "unpack2xU16";
+        output_type = b.makeVectorType(type_ui32, 2);
+        comp_count = 2;
+        bias = 0;
         break;
     }
     case DataType::INT16: {
         func_name = "unpack2xS16";
-        output_type = b.makeVectorType(type_f32, 2);
-        convert_func = GLSLstd450::GLSLstd450UnpackSnorm2x16;
-        break;
-    }
-    case DataType::UINT16: {
-        func_name = "unpack2xU16";
-        output_type = b.makeVectorType(type_f32, 2);
-        convert_func = GLSLstd450::GLSLstd450UnpackUnorm2x16;
+        output_type = b.makeVectorType(type_i32, 2);
+        comp_count = 2;
+        bias = 32768;
         break;
     }
     case DataType::UINT8: {
         func_name = "unpack4xU8";
-        output_type = b.makeVectorType(type_f32, 4);
-        convert_func = GLSLstd450::GLSLstd450UnpackUnorm4x8;
+        output_type = b.makeVectorType(type_ui32, 4);
+        comp_count = 4;
+        bias = 0;
         break;
     }
     case DataType::INT8: {
         func_name = "unpack4xS8";
-        output_type = b.makeVectorType(type_f32, 4);
-        convert_func = GLSLstd450::GLSLstd450UnpackSnorm4x8;
+        output_type = b.makeVectorType(type_i32, 4);
+        comp_count = 4;
+        bias = 128;
         break;
     }
     default:
         assert(false);
     }
 
-    spv::Function *u8_unpack_func = b.makeFunctionEntry(spv::NoPrecision, output_type, func_name.c_str(), { type_f32 },
-        decorations, &u8_unpack_func_block);
-
-    spv::Id extracted = u8_unpack_func->getParamId(0);
+    spv::Function *unpack_func = b.makeFunctionEntry(spv::NoPrecision, output_type, func_name.c_str(), { type_f32 },
+        decorations, &unpack_func_block);
+    spv::Id extracted = unpack_func->getParamId(0);
 
     extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
-    extracted = b.createBuiltinCall(output_type, b.import("GLSL.std.450"), convert_func, { extracted });
 
-    b.makeReturn(false, extracted);
+    const auto make_mask = [](int n) {
+        uint32_t out = 0;
+        for (int i = 0; i < n; ++i) {
+            out = (out << 2) | 0xFF;
+        }
+        return out;
+    };
+
+    const auto bias_id = b.makeIntConstant(bias);
+    std::vector<spv::Id> comps;
+    std::vector<spv::Id> bias_comps;
+
+    for (int i = 0; i < comp_count; ++i) {
+        const auto mask = make_mask(4 / comp_count);
+        const auto mask_id = b.makeUintConstant(mask);
+        const auto comp = b.createBinOp(spv::OpBitwiseAnd, type_ui32, extracted, mask_id);
+        extracted = b.createBinOp(spv::OpShiftRightLogical, type_ui32, extracted, b.makeIntConstant(32 / comp_count));
+        comps.push_back(comp);
+        bias_comps.push_back(bias_id);
+    }
+
+    auto output = b.createCompositeConstruct(b.makeVectorType(type_ui32, comp_count), comps);
+    if (bias != 0) {
+        output = b.createUnaryOp(spv::OpSatConvertUToS, b.makeVectorType(type_i32, comp_count), output);
+        const auto bias_vec = b.createCompositeConstruct(b.makeVectorType(type_i32, comp_count), bias_comps);
+        output = b.createBinOp(spv::OpISub, b.makeVectorType(type_i32, comp_count), output, bias_vec);
+    }
+
+    b.makeReturn(false, output);
     b.setBuildPoint(last_build_point);
 
-    return u8_unpack_func;
+    return unpack_func;
 }
 
 static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &features, DataType source_type) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
-    spv::Block *u8_pack_func_block;
+    spv::Block *pack_func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
     spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_i32 = b.makeIntType(32);
     spv::Id type_f32 = b.makeFloatType(32);
 
     std::string func_name;
     spv::Id input_type;
-    GLSLstd450 convert_func;
+    int comp_count;
+    int bias;
     switch (source_type) {
-    case DataType::F16: {
-        func_name = "pack2xF16";
-        input_type = b.makeVectorType(type_f32, 2);
-        convert_func = GLSLstd450::GLSLstd450PackHalf2x16;
+    case DataType::UINT16: {
+        func_name = "pack2xU16";
+        input_type = b.makeVectorType(type_ui32, 2);
+        comp_count = 2;
+        bias = 0;
         break;
     }
     case DataType::INT16: {
         func_name = "pack2xS16";
-        input_type = b.makeVectorType(type_f32, 2);
-        convert_func = GLSLstd450::GLSLstd450PackSnorm2x16;
-        break;
-    }
-    case DataType::UINT16: {
-        func_name = "pack2xU16";
-        input_type = b.makeVectorType(type_f32, 2);
-        convert_func = GLSLstd450::GLSLstd450PackUnorm2x16;
+        input_type = b.makeVectorType(type_i32, 2);
+        comp_count = 2;
+        bias = 32768;
         break;
     }
     case DataType::UINT8: {
         func_name = "pack4xU8";
-        input_type = b.makeVectorType(type_f32, 4);
-        convert_func = GLSLstd450::GLSLstd450PackUnorm4x8;
+        input_type = b.makeVectorType(type_ui32, 4);
+        comp_count = 4;
+        bias = 0;
         break;
     }
     case DataType::INT8: {
         func_name = "pack4xS8";
-        input_type = b.makeVectorType(type_f32, 4);
-        convert_func = GLSLstd450::GLSLstd450PackSnorm4x8;
+        input_type = b.makeVectorType(type_i32, 4);
+        comp_count = 4;
+        bias = 128;
         break;
     }
     default:
         assert(false);
     }
 
-    spv::Function *u8_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { input_type },
-        decorations, &u8_pack_func_block);
+    spv::Function *pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { input_type },
+        decorations, &pack_func_block);
+    spv::Id extracted = pack_func->getParamId(0);
 
-    spv::Id extracted = u8_pack_func->getParamId(0);
+    const auto make_mask = [](int n) {
+        uint32_t out = 0;
+        for (int i = 0; i < n; ++i) {
+            out = (out << 2) | 0xFF;
+        }
+        return out;
+    };
 
-    extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), convert_func, { extracted });
+    if (bias != 0) {
+        std::vector<spv::Id> bias_comps;
+        const auto bias_id = b.makeIntConstant(bias);
+        for (int i = 0; i < comp_count; ++i) {
+            bias_comps.push_back(bias_id);
+        }
+        const auto bias_vec = b.createCompositeConstruct(b.makeVectorType(type_i32, comp_count), bias_comps);
+        extracted = b.createBinOp(spv::OpIAdd, b.makeVectorType(type_i32, comp_count), extracted, bias_vec);
+        extracted = b.createUnaryOp(spv::OpSatConvertSToU, b.makeVectorType(type_ui32, comp_count), extracted);
+    }
+
+    auto output = b.makeUintConstant(0);
+    for (int i = 0; i < comp_count; ++i) {
+        const auto mask = make_mask(4 / comp_count);
+        const auto mask_id = b.makeUintConstant(mask);
+        auto comp = b.createBinOp(spv::OpVectorExtractDynamic, type_ui32, extracted, b.makeIntConstant(comp_count - i - 1));
+        comp = b.createBinOp(spv::OpBitwiseAnd, type_ui32, comp, mask_id);
+        output = b.createBinOp(spv::OpBitwiseOr, type_ui32, output, comp);
+        if (i != comp_count - 1) {
+            output = b.createBinOp(spv::OpShiftLeftLogical, type_ui32, output, b.makeIntConstant(32 / comp_count));
+        }
+    }
+
+    output = b.createUnaryOp(spv::OpBitcast, type_f32, output);
+
+    b.makeReturn(false, output);
+    b.setBuildPoint(last_build_point);
+
+    return pack_func;
+}
+
+static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &features) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *f16_unpack_func_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
+
+    spv::Function *f16_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 },
+        decorations, &f16_unpack_func_block);
+
+    spv::Id extracted = f16_unpack_func->getParamId(0);
+
+    extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
+    extracted = b.createBuiltinCall(type_f32_v2, b.import("GLSL.std.450"), GLSLstd450UnpackHalf2x16, { extracted });
+
+    b.makeReturn(false, extracted);
+    b.setBuildPoint(last_build_point);
+
+    return f16_unpack_func;
+}
+
+static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &features) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *f16_pack_func_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
+
+    spv::Function *f16_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 },
+        decorations, &f16_pack_func_block);
+
+    spv::Id extracted = f16_pack_func->getParamId(0);
+
+    // use packHalf2x16
+    extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackHalf2x16, { extracted });
     extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
 
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
 
-    return u8_pack_func;
+    return f16_pack_func;
 }
 
 spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type) {
@@ -299,10 +401,15 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
     case DataType::INT8:
     case DataType::UINT8:
     case DataType::UINT16:
-    case DataType::INT16:
-    case DataType::F16: {
+    case DataType::INT16: {
         if (utils.unpack_funcs.find(type) == utils.unpack_funcs.end()) {
             utils.unpack_funcs[type] = make_unpack_func(b, features, type);
+        }
+        return b.createFunctionCall(utils.unpack_funcs.at(type), { scalar });
+    }
+    case DataType::F16: {
+        if (utils.unpack_funcs.find(type) == utils.unpack_funcs.end()) {
+            utils.unpack_funcs[type] = make_f16_unpack_func(b, features);
         }
         return b.createFunctionCall(utils.unpack_funcs.at(type), { scalar });
     }
@@ -328,10 +435,15 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
     case DataType::INT8:
     case DataType::UINT8:
     case DataType::UINT16:
-    case DataType::INT16:
-    case DataType::F16: {
+    case DataType::INT16: {
         if (utils.pack_funcs.find(source_type) == utils.pack_funcs.end()) {
             utils.pack_funcs[source_type] = make_pack_func(b, features, source_type);
+        }
+        return b.createFunctionCall(utils.pack_funcs.at(source_type), { vec });
+    }
+    case DataType::F16: {
+        if (utils.pack_funcs.find(source_type) == utils.pack_funcs.end()) {
+            utils.pack_funcs[source_type] = make_f16_pack_func(b, features);
         }
         return b.createFunctionCall(utils.pack_funcs.at(source_type), { vec });
     }
@@ -694,14 +806,15 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     if (size_comp != 4) {
         // Second pass: Do unpack
         first_pass = unpack(b, utils, features, first_pass, op.type, op.swizzle, dest_mask, 0);
+    } else if (op.type == DataType::INT32) {
+        first_pass = b.createUnaryOp(spv::OpBitcast, b.makeVectorType(b.makeIntType(32), static_cast<int>(dest_comp_count)), first_pass);
+    } else if (op.type == DataType::UINT32) {
+        first_pass = b.createUnaryOp(spv::OpBitcast, b.makeVectorType(b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
     }
 
     if (first_pass == spv::NoResult) {
         return first_pass;
     }
-
-    const bool is_unsigned_integer_dtype = is_unsigned_integer_data_type(op.type);
-    const bool is_signed_integer_dtype = is_signed_integer_data_type(op.type);
 
     return apply_modifiers(b, op.flags, first_pass);
 }
@@ -779,50 +892,29 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
 
     const std::size_t size_comp = get_data_type_size(dest.type);
 
-    // If the source to store, is not in float form, bitcast it to float
     spv::Id source_elm_type_id = b.getTypeId(source);
     if (b.isVectorType(source_elm_type_id)) {
         source_elm_type_id = b.getContainedTypeId(source_elm_type_id);
     }
 
+    if (is_float_data_type(dest.type) && (b.isIntType(source_elm_type_id) || b.isUintType(source_elm_type_id))) {
+        LOG_CRITICAL("Trying to store float to int storage");
+        return;
+    }
+
+    if (!is_float_data_type(dest.type) && !b.isIntType(source_elm_type_id) && !b.isUintType(source_elm_type_id)) {
+        LOG_CRITICAL("Trying to store int to float storage");
+        return;
+    }
+
     spv::Id type_f32 = b.makeFloatType(32);
 
-    if (b.isIntType(source_elm_type_id) || b.isUintType(source_elm_type_id)) {
+    if (dest.type == DataType::UINT32 || dest.type == DataType::INT32) {
         std::vector<spv::Id> ops{ source };
         spv::Id bitcast_type = utils::make_vector_or_scalar_type(b, type_f32, total_comp_source);
 
         source = b.createOp(spv::OpBitcast, bitcast_type, ops);
-    }
-
-    // Since we have bitcasted non-float type to float, we might as well do type transformation with dest store type
-    switch (dest.type) {
-    case DataType::INT16:
-    case DataType::UINT16: {
-        dest.type = DataType::F16;
-        break;
-    }
-
-    case DataType::INT32:
-    case DataType::UINT32: {
         dest.type = DataType::F32;
-        break;
-    }
-
-    case DataType::INT8: {
-        dest.type = DataType::C10;
-        break;
-    }
-
-    case DataType::F32:
-    case DataType::F16:
-    case DataType::C10:
-    case DataType::UINT8:
-        break;
-
-    default: {
-        LOG_ERROR("Unsupported source type {}", static_cast<int>(dest.type));
-        return;
-    }
     }
 
     if (dest.bank == RegisterBank::FPINTERNAL) {
@@ -854,7 +946,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
 
     if (dest.type != DataType::F32) {
         std::vector<spv::Id> composites;
-
+        spv::Id vec_comp_type = utils::unwrap_type(b, b.getTypeId(source));
         // We need to pack source
         for (auto i = 0; i < static_cast<int>(total_comp_source); i += num_comp_in_float) {
             // Shuffle to get the type out
@@ -864,24 +956,24 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                     if (b.isScalar(source) || total_comp_source == 1) {
                         ops.push_back(source);
                     } else {
-                        ops.push_back(b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { source, b.makeIntConstant(std::min(i + j, (int)total_comp_source - 1)) }));
+                        ops.push_back(b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { source, b.makeIntConstant(std::min(i + j, (int)total_comp_source - 1)) }));
                     }
                 } else {
                     if (elem == spv::NoResult) {
                         // Replace it
                         const int actual_offset_start_to_store = insert_offset + (i + nearest_swizz_on) / num_comp_in_float;
                         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(actual_offset_start_to_store >> 2) });
-                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem), b.makeIntConstant(actual_offset_start_to_store % 4) });
+                        elem = b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { b.createLoad(elem), b.makeIntConstant(actual_offset_start_to_store % 4) });
 
                         // Extract to f16
                         elem = unpack_one(b, utils, features, elem, dest.type);
                     }
 
-                    ops.push_back(b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { elem, b.makeIntConstant(j) }));
+                    ops.push_back(b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { elem, b.makeIntConstant(j) }));
                 }
             }
 
-            spv::Id result_type = utils::make_vector_or_scalar_type(b, type_f32, (int)ops.size());
+            spv::Id result_type = utils::make_vector_or_scalar_type(b, vec_comp_type, (int)ops.size());
             spv::Id result = ops.size() == 1 ? ops[0] : b.createCompositeConstruct(result_type, ops);
             result = pack_one(b, utils, features, result, dest.type);
 
@@ -966,6 +1058,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     }
 
     spv::Id shuffled = b.createOp(spv::OpVectorShuffle, b.makeVectorType(type_f32, 4), ops);
+
     b.createStore(shuffled, elem);
 }
 

@@ -126,7 +126,7 @@ public:
      * 
      * \returns A copy of given operand
     */
-    spv::Id load(Operand op, const Imm4 dest_mask, int shift_offset = 0, bool is_integer = false);
+    spv::Id load(Operand op, const Imm4 dest_mask, int shift_offset = 0);
 
 private:
     //
@@ -158,7 +158,7 @@ private:
         return repeat_increase[op.index][repeat_index];
     }
 
-    void store(Operand dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int shift_offset = 0, bool is_integer = false);
+    void store(Operand dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int shift_offset = 0);
     spv::Id swizzle_to_spv_comp(spv::Id composite, spv::Id type, SwizzleChannel swizzle);
 
     // TODO: Separate file for translator helpers?
