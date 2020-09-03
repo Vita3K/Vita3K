@@ -86,6 +86,7 @@ struct SavedataState {
     uint32_t list_style;
     std::string list_title;
     uint32_t selected_save = 0;
+    bool draw_info_window = false;
 };
 
 struct DialogState {
