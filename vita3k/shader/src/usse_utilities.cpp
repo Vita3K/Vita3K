@@ -1100,37 +1100,89 @@ spv::Id shader::usse::utils::unwrap_type(spv::Builder &b, spv::Id type) {
     return type;
 }
 
-spv::Id shader::usse::utils::scale_float_for_u8(spv::Builder &b, spv::Id opr) {
-    auto type = unwrap_type(b, b.getTypeId(opr));
-    assert(b.isFloatType(type));
-    spv::Id factor;
-    if (b.getScalarTypeWidth(type) == 16)
-        factor = b.makeFloat16Constant(MAX_U8);
-    else
-        factor = b.makeFloatConstant(MAX_U8);
-    if (b.isVectorType(b.getTypeId(opr))) {
-        std::vector<spv::Id> ops;
-        for (int i = 0; i < b.getNumComponents(opr); ++i)
-            ops.push_back(factor);
-        factor = b.makeCompositeConstant(b.getTypeId(opr), ops);
+// will break in 32-bit host
+static std::tuple<float, float> get_int_normalize_constants(DataType type) {
+    float max_value;
+    switch (type) {
+    case DataType::UINT8:
+        return std::make_tuple(255.0f, 0.0f);
+    case DataType::INT8:
+        return std::make_tuple(255.0f, 128.0f);
+    case DataType::UINT16:
+        return std::make_tuple(65535.0f, 0.0f);
+    case DataType::INT16:
+        return std::make_tuple(65535.0f, 32768.0f);
+    case DataType::UINT32:
+        return std::make_tuple(4294967295.0f, 0.0f);
+    case DataType::INT32:
+        return std::make_tuple(4294967295.0f, 2147483648.0f);
+    default:
+        assert(false);
     }
-
-    return b.createBinOp(spv::OpFMul, b.getTypeId(opr), opr, factor);
 }
 
-spv::Id shader::usse::utils::unscale_float_for_u8(spv::Builder &b, spv::Id opr) {
-    auto type = unwrap_type(b, b.getTypeId(opr));
-    spv::Id factor;
-    if (b.getScalarTypeWidth(type) == 16)
-        factor = b.makeFloat16Constant(MAX_U8);
-    else
-        factor = b.makeFloatConstant(MAX_U8);
-    if (b.isVectorType(b.getTypeId(opr))) {
-        std::vector<spv::Id> ops;
-        for (int i = 0; i < b.getNumComponents(opr); ++i)
-            ops.push_back(factor);
-        factor = b.makeCompositeConstant(b.getTypeId(opr), ops);
+static spv::Id create_constant_vector_or_scalar(spv::Builder &b, spv::Id constant, int comp_count) {
+    if (comp_count == 1) {
+        return constant;
+    }
+    std::vector<spv::Id> oprs;
+    for (int i = 0; i < comp_count; ++i) {
+        oprs.push_back(constant);
+    }
+    return b.createCompositeConstruct(b.makeVectorType(b.getTypeId(constant), comp_count), oprs);
+}
+
+spv::Id shader::usse::utils::convert_to_float(spv::Builder &b, spv::Id opr, DataType type, bool normal) {
+    auto spv_type = unwrap_type(b, b.getTypeId(opr));
+    int comp_count = b.isVector(opr) ? 1 : b.getNumComponents(opr);
+    auto target_type = b.isVector(opr) ? b.makeVectorType(b.makeFloatType(32), b.getNumComponents(opr)) : b.makeFloatType(32);
+    assert(b.isIntType(spv_type) || b.isUintType(spv_type));
+
+    if (b.isIntType(spv_type)) {
+        opr = b.createUnaryOp(spv::OpConvertSToF, target_type, opr);
+    } else {
+        opr = b.createUnaryOp(spv::OpConvertUToF, target_type, opr);
     }
 
-    return b.createBinOp(spv::OpFDiv, b.getTypeId(opr), opr, factor);
+    if (normal) {
+        const auto constants = get_int_normalize_constants(type);
+        const auto normalizer = b.makeFloatConstant(std::get<0>(constants));
+        const auto bias = b.makeFloatConstant(std::get<1>(constants));
+        const auto normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
+        const auto bias_vec = create_constant_vector_or_scalar(b, bias, comp_count);
+
+        opr = b.createBinOp(spv::OpFDiv, target_type, opr, normalizer_vec);
+        opr = b.createBinOp(spv::OpFAdd, target_type, opr, bias_vec);
+    }
+    return opr;
+}
+
+spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataType type, bool normal) {
+    auto opr_type = b.getTypeId(opr);
+    auto spv_type = unwrap_type(b, b.getTypeId(opr));
+    assert(b.isFloatType(spv_type));
+
+    int comp_count = b.isVector(opr) ? 1 : b.getNumComponents(opr);
+    bool is_uint = is_unsigned_integer_data_type(type);
+    auto target_comp_type = is_uint ? b.makeUintType(32) : b.makeIntType(32);
+    auto target_type = b.isVector(opr) ? b.makeVectorType(target_comp_type, b.getNumComponents(opr)) : target_comp_type;
+
+    if (normal) {
+        const auto constants = get_int_normalize_constants(type);
+        const auto normalizer = b.makeFloatConstant(std::get<0>(constants));
+        const auto bias = b.makeFloatConstant(std::get<1>(constants));
+        const auto normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
+        const auto bias_vec = create_constant_vector_or_scalar(b, bias, comp_count);
+
+        opr = b.createBinOp(spv::OpFSub, opr_type, opr, bias_vec);
+        opr = b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec);
+    }
+
+    if (!is_uint) {
+        opr = b.createUnaryOp(spv::OpConvertFToS, target_type, opr);
+    } else {
+        opr = b.createUnaryOp(spv::OpConvertFToU, target_type, opr);
+    }
+
+    return opr;
 }

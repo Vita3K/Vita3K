@@ -34,8 +34,8 @@ spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size)
 
 spv::Id unwrap_type(spv::Builder &b, spv::Id type);
 
-spv::Id scale_float_for_u8(spv::Builder &b, spv::Id opr);
-spv::Id unscale_float_for_u8(spv::Builder &b, spv::Id opr);
+spv::Id convert_to_float(spv::Builder &b, spv::Id opr, DataType type, bool normal);
+spv::Id convert_to_int(spv::Builder &b, spv::Id opr, DataType type, bool normal);
 
 template <typename F>
 void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite, spv::Id iterator_limit, F body) {
