@@ -616,6 +616,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             target_to_store.bank = RegisterBank::OUTPUT;
             target_to_store.num = 0;
             target_to_store.type = std::get<0>(shader::get_parameter_type_store_and_name(program.get_fragment_output_type()));
+            if (!is_float_data_type(target_to_store.type)) {
+                source = utils::convert_to_int(b, source, target_to_store.type, true);
+            }
 
             utils::store(b, parameters, utils, features, target_to_store, source, 0b1111, 0);
         }
@@ -876,6 +879,9 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     }
 
     spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
+    if (!is_float_data_type(color_val_operand.type)) {
+        color = utils::convert_to_float(b, color, color_val_operand.type, true);
+    }
 
     if (program.is_native_color() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntegerType(32, true);
