@@ -199,15 +199,15 @@ bool USSETranslatorVisitor::i32mad2(
         inst.opr.src2.flags |= RegisterFlags::Negative;
     }
 
-    spv::Id vsrc0 = load(inst.opr.src0, 0b1, 0, true);
-    spv::Id vsrc1 = load(inst.opr.src0, 0b1, 0, true);
-    spv::Id vsrc2 = load(inst.opr.src0, 0b1, 0, true);
+    spv::Id vsrc0 = load(inst.opr.src0, 0b1, 0);
+    spv::Id vsrc1 = load(inst.opr.src0, 0b1, 0);
+    spv::Id vsrc2 = load(inst.opr.src0, 0b1, 0);
 
     auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
     auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
     if (add_result != spv::NoResult) {
-        store(inst.opr.dest, add_result, 0b1, 0, true);
+        store(inst.opr.dest, add_result, 0b1, 0);
     }
 
     // TODO not sure about sn
