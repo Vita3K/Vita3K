@@ -711,9 +711,9 @@ static void handle_user_message(SceSaveDataDialogUserMessageParam *user_message,
         break;
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_YESNO:
         host.common_dialog.savedata.btn_num = 2;
-        host.common_dialog.savedata.btn[0] = "NO";
+        host.common_dialog.savedata.btn[0] = "No";
         host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        host.common_dialog.savedata.btn[1] = "YES";
+        host.common_dialog.savedata.btn[1] = "Yes";
         host.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_NONE:
@@ -743,17 +743,17 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
             break;
         }
         host.common_dialog.savedata.btn_num = 2;
-        host.common_dialog.savedata.btn[0] = "NO";
+        host.common_dialog.savedata.btn[0] = "No";
         host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        host.common_dialog.savedata.btn[1] = "YES";
+        host.common_dialog.savedata.btn[1] = "Yes";
         host.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_OVERWRITE:
         host.common_dialog.savedata.msg = "Do you want to overwrite this saved data?";
         host.common_dialog.savedata.btn_num = 2;
-        host.common_dialog.savedata.btn[0] = "NO";
+        host.common_dialog.savedata.btn[0] = "No";
         host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        host.common_dialog.savedata.btn[1] = "YES";
+        host.common_dialog.savedata.btn[1] = "Yes";
         host.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NOSPACE:
@@ -803,9 +803,9 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
             break;
         }
         host.common_dialog.savedata.btn_num = 2;
-        host.common_dialog.savedata.btn[0] = "NO";
+        host.common_dialog.savedata.btn[0] = "No";
         host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        host.common_dialog.savedata.btn[1] = "YES";
+        host.common_dialog.savedata.btn[1] = "Yes";
         host.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_FILE_CORRUPTED:
@@ -932,6 +932,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
             }
             break;
         case SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR:
+            host.common_dialog.savedata.btn_num = 0;
             progress_bar = p->progressBarParam.get(host.mem);
             host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save] = progress_bar->targetSlot.id;
             host.common_dialog.savedata.has_progress_bar = true;
