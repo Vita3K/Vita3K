@@ -64,6 +64,5 @@ spv::Id USSETranslatorVisitor::swizzle_to_spv_comp(spv::Id composite, spv::Id ty
 size_t USSETranslatorVisitor::dest_mask_to_comp_count(Imm4 dest_mask) {
     std::bitset<4> bs(dest_mask);
     const auto bit_count = bs.count();
-    assert(bit_count <= 4 && bit_count > 0);
     return bit_count;
 }

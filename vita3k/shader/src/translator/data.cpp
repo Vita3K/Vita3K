@@ -414,12 +414,6 @@ bool USSETranslatorVisitor::vpck(
 
     inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_CAST(comp_sel_0, comp_sel_1, comp_sel_2, comp_sel_3);
 
-    Imm8 src1_mask = dest_mask;
-    Imm8 src2_mask = 0;
-
-    constexpr Imm4 SRC1_LOAD_MASKS[] = { 0, 0b1, 0b11 };
-    constexpr Imm4 SRC2_LOAD_MASKS[] = { 0, 0b10, 0b1100 };
-
     int offset_start_masking = 0;
 
     // For some occasions the swizzle needs to cycle from the first components to the first bit that was on in the dest mask.
@@ -433,42 +427,25 @@ bool USSETranslatorVisitor::vpck(
         }
     }
 
-    if (inst.opr.src1.type == DataType::F32) {
-        // Need another op
-        inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
+    bool should_use_src2 = false;
+    constexpr Imm4 CONTIGUOUS_MASKS[] = { 0b1, 0b11, 0b111, 0b1111 };
 
-        const int src1_comp_handle = (static_cast<int>(dest_mask_to_comp_count(dest_mask) + 1) >> 1);
-        const int src2_comp_handle = static_cast<int>(dest_mask_to_comp_count(dest_mask)) - src1_comp_handle;
-
-        const bool is_two_source_bank_different = inst.opr.src1.bank != inst.opr.src2.bank;
-        const bool src2_needed = src2_comp_handle != 0;
-        const bool is_two_source_contiguous = (inst.opr.src1.num + src1_comp_handle == inst.opr.src2.num) && !is_two_source_bank_different;
-
-        // We need to explicitly load src2 when we are fall in these situations:
-        // - First, src2 must be needed. The only situation we knows it isn't needed is when the dest mask comp count is 1.
-        //   In that case, only src1 is used.
-        // - Two sources are not contiguous. We call it contigous when two sources are in the same bank. Also,
-        //   the total component that src1 handles, when adding with src1 offset, must reach exactly to offset where src2
-        //   resides
-        //
-        // Case where this doesn't apply (found when testing, need more confirmation)
-        // - src2 bank is immidiate.
-        if (!is_two_source_contiguous && src2_needed && inst.opr.src2.bank != RegisterBank::IMMEDIATE) {
-            // Seperate the mask
-            src1_mask = ((dest_mask >> offset_start_masking) & SRC1_LOAD_MASKS[src1_comp_handle]) << offset_start_masking;
-            src2_mask = (((dest_mask >> offset_start_masking) & SRC2_LOAD_MASKS[src2_comp_handle]) >> src1_comp_handle) << offset_start_masking;
-
-            // Performs swizzle cycling
-            // Calculate the offset distance from src2 to src1.
-            const Imm6 diff_off = inst.opr.src2.num - inst.opr.src1.num;
-            const Imm6 src2_swizz_start = (diff_off % 4);
-
-            for (Imm6 src2_swizz_indx = src2_swizz_start; src2_swizz_indx < 4; src2_swizz_indx++) {
-                // src2_swizz_indx is the index of src2 swizzle in src1 swizzle
-                inst.opr.src2.swizzle[src2_swizz_indx - src2_swizz_start] = inst.opr.src1.swizzle[src2_swizz_indx];
+    if (inst.opr.src1.type == DataType::F32 && inst.opr.src2.bank != RegisterBank::IMMEDIATE) {
+        const bool is_two_source_same = inst.opr.src1.num == inst.opr.src2.num && inst.opr.src1.bank == inst.opr.src2.bank;
+        bool is_contiguous = false;
+        for (const auto mask : CONTIGUOUS_MASKS) {
+            if (dest_mask == mask) {
+                is_contiguous = true;
+                break;
             }
         }
-    } else if (!no_swizzle_cycle_to_mask) {
+        if (!is_default(inst.opr.src1.swizzle, dest_mask_to_comp_count(dest_mask)) || !is_two_source_same || !is_contiguous) {
+            inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, true, 7, m_second_program);
+            should_use_src2 = true;
+        }
+    }
+
+    if (inst.opr.src1.type != DataType::F32 && !no_swizzle_cycle_to_mask) {
         shader::usse::Swizzle4 swizz_temp = inst.opr.src1.swizzle;
 
         // Cycle through swizzle with only one source
@@ -483,55 +460,32 @@ bool USSETranslatorVisitor::vpck(
     BEGIN_REPEAT(repeat_count, 2)
     GET_REPEAT(inst);
 
-    if (src2_mask != 0) {
+    if (should_use_src2) {
+        // TODO correctly log
         LOG_DISASM("{} {} ({} {}) [{}]", disasm_str, disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset),
-            disasm::operand_to_str(inst.opr.src1, src1_mask, src1_repeat_offset),
-            disasm::operand_to_str(inst.opr.src2, src2_mask, src2_repeat_offset), scale ? "scale" : "noscale");
+            disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset),
+            disasm::operand_to_str(inst.opr.src2, 0b1111, src2_repeat_offset), scale ? "scale" : "noscale");
     } else {
         LOG_DISASM("{} {} {} [{}]", disasm_str, disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset),
             disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset), scale ? "scale" : "noscale");
     }
 
-    spv::Id source = load(inst.opr.src1, src1_mask, src1_repeat_offset);
+    spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
 
     if (source == spv::NoResult) {
         LOG_ERROR("Source not loaded");
         return false;
     }
 
-    if (src2_mask != 0) {
-        // Need to load this also, then create a merge between these twos
-        spv::Id source2 = load(inst.opr.src2, src2_mask, src2_repeat_offset);
-
-        if (source2 == spv::NoResult) {
-            LOG_ERROR("Source 2 not loaded");
-            return false;
-        }
-
-        // Merge using op vector shuffle
-        const int num_comp = static_cast<int>(dest_mask_to_comp_count(dest_mask));
-
-        spv::Id vector_type = m_b.getTypeId(source2);
-
-        if (!m_b.isScalarType(vector_type)) {
-            vector_type = m_b.getContainedTypeId(vector_type);
-        }
-
-        vector_type = m_b.makeVectorType(vector_type, num_comp);
-
-        if (num_comp == 2) {
-            // Each source currently only contains 1 component. Create a composite construct
-            source = m_b.createCompositeConstruct(vector_type, { source, source2 });
-        } else {
-            std::vector<spv::Id> merge_ops{ source, source2 };
-            merge_ops.resize(2 + num_comp);
-
-            std::iota(merge_ops.begin() + 2, merge_ops.end(), 0);
-            source = m_b.createOp(spv::OpVectorShuffle, vector_type, merge_ops);
-        }
+    if (should_use_src2) {
+        Operand src1 = inst.opr.src1;
+        Operand src2 = inst.opr.src2;
+        src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+        src2.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+        spv::Id source1 = load(src1, 0b11, src1_repeat_offset);
+        spv::Id source2 = load(src2, 0b11, src2_repeat_offset);
+        source = utils::finalize(m_b, source1, source2, inst.opr.src1.swizzle, 0, dest_mask);
     }
-
-    auto source_type = utils::make_vector_or_scalar_type(m_b, type_f32, m_b.getNumComponents(source));
 
     // source is float destination is int
     if (is_float_data_type(inst.opr.dest.type) && !is_float_data_type(inst.opr.src1.type)) {
