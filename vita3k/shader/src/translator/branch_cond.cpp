@@ -148,15 +148,50 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
         }
     }
 
-    if (alu_sel == 1) {
+    const auto test_op = test_ops[alu_sel][alu_op];
+
+    switch (test_op) {
+    case Opcode::IADDU32:
+    case Opcode::ISUBU32: {
+        filled_dt = DataType::UINT32;
+        break;
+    }
+    case Opcode::ISUB32:
+    case Opcode::IADD32: {
         filled_dt = DataType::INT32;
+        break;
+    }
+    case Opcode::IADD16:
+    case Opcode::ISUB16:
+    case Opcode::IMUL16: {
+        filled_dt = DataType::INT16;
+        break;
+    }
+    case Opcode::IADDU16:
+    case Opcode::ISUBU16:
+    case Opcode::IMULU16: {
+        filled_dt = DataType::UINT16;
+        break;
+    }
+    case Opcode::IADD8:
+    case Opcode::ISUB8:
+    case Opcode::IMUL8: {
+        filled_dt = DataType::INT8;
+        break;
+    }
+    case Opcode::IADDU8:
+    case Opcode::ISUBU8:
+    case Opcode::IMULU8: {
+        filled_dt = DataType::UINT8;
+        break;
+    }
     }
 
     if (alu_sel == 3) {
         filled_dt = DataType::UINT32;
     }
 
-    return test_ops[alu_sel][alu_op];
+    return test_op;
 }
 
 bool USSETranslatorVisitor::vtst(
