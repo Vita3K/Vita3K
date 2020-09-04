@@ -304,24 +304,18 @@ struct Sampler {
  * Uniform buffers that are attached to gxp shader program
  */
 struct UniformBuffer {
-    int base;
-    int size;
-    int index;
-    bool rw; // TODO confirm this
-    bool reg; // register buffer TODO confirm this
-};
-
-// TODO do we need this
-struct UniformBlock {
-    int block_num;
-    uint32_t offset;
+    uint32_t index;
     uint32_t size;
+    uint32_t reg_start_offset;
+    uint32_t reg_block_size;
+    bool rw; // TODO confirm this
 };
 
 struct UniformInputSource {
     std::string name;
     // resource index
     uint32_t index;
+    bool in_mem;
 };
 
 struct AttributeInputSoucre {
@@ -335,8 +329,14 @@ struct LiteralInputSource {
     float data;
 };
 
+struct UniformBufferInputSource {
+    uint32_t base;
+    // resource index
+    uint32_t index;
+};
+
 // Read source field in Input struct
-using InputSource = std::variant<UniformInputSource, LiteralInputSource, AttributeInputSoucre>;
+using InputSource = std::variant<UniformInputSource, UniformBufferInputSource, LiteralInputSource, AttributeInputSoucre>;
 
 /**
  * Input parameters that are usually copied into PA or SA
@@ -365,7 +365,6 @@ struct ProgramInput {
     std::vector<Input> inputs;
     std::vector<Sampler> samplers;
     std::vector<UniformBuffer> uniform_buffers;
-    std::unordered_map<int, UniformBlock> uniform_blocks;
 };
 
 enum class ShaderPhase {
