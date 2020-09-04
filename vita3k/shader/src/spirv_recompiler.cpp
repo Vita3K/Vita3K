@@ -60,7 +60,7 @@ namespace shader {
 // **************
 
 static constexpr int REG_PA_COUNT = 32 * 4;
-static constexpr int REG_SA_COUNT = 40 * 4;
+static constexpr int REG_SA_COUNT = 32 * 4;
 static constexpr int REG_I_COUNT = 3 * 4;
 static constexpr int REG_TEMP_COUNT = 20 * 4;
 static constexpr int REG_INDEX_COUNT = 2 * 4;
