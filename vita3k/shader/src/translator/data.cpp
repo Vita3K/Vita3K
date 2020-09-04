@@ -572,7 +572,9 @@ bool USSETranslatorVisitor::vldst(
     to_store.num = dest_n;
     to_store.type = DataType::F32;
 
-    spv::Id buffer = m_spirv_params.buffers.at(src0_n);
+    SpirvUniformBuffrerBase buffer_and_base = m_spirv_params.buffers.at(src0_n);
+    const uint32_t buffer_base = std::get<0>(buffer_and_base);
+    const spv::Id buffer = std::get<1>(buffer_and_base);
     const bool is_load = true;
     spv::Id previous = spv::NoResult;
 
@@ -611,7 +613,7 @@ bool USSETranslatorVisitor::vldst(
             spv::Id friend2 = m_b.createAccessChain(spv::StorageClassUniform, buffer, { zero, m_b.makeIntConstant(off_vec4 + 1) });
 
             // Do swizzling the load from aligned
-            const unsigned int unaligned_start = src1_n & 3;
+            const unsigned int unaligned_start = base & 3;
             std::vector<spv::Id> operands = { friend1, friend2 };
 
             for (int i = 0; i < num_comp; i++) {
@@ -629,9 +631,9 @@ bool USSETranslatorVisitor::vldst(
     to_store.type = DataType::F32;
 
     // Since there is only maximum of 16 ints being fetched, not really hurt to not use loop
-    for (int i = src1_n / 4; i < (src1_n / 4) + total_number_to_fetch_in_vec4_granularity; i++) {
+    for (int i = buffer_base / 4; i < (buffer_base / 4) + total_number_to_fetch_in_vec4_granularity; i++) {
         if (is_load) {
-            spv::Id to_load = fetch_ublock_data(src1_n, i, 4);
+            spv::Id to_load = fetch_ublock_data(buffer_base, i, 4);
             store(to_store, to_load, 0b1111, 0);
             to_store.num += 4;
         }
@@ -641,7 +643,7 @@ bool USSETranslatorVisitor::vldst(
 
     if (is_load && total_number_to_fetch_left_in_f32) {
         // Load the rest of the one unaligned as F32 if possible
-        spv::Id to_load = fetch_ublock_data(src1_n, (src1_n / 4) + total_number_to_fetch_in_vec4_granularity, total_number_to_fetch_left_in_f32);
+        spv::Id to_load = fetch_ublock_data(buffer_base, (buffer_base / 4) + total_number_to_fetch_in_vec4_granularity, total_number_to_fetch_left_in_f32);
         std::uint8_t mask = mask_fetch[total_number_to_fetch_left_in_f32];
 
         store(to_store, to_load, mask);

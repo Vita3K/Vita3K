@@ -721,11 +721,22 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     using literal_pair = std::pair<std::uint32_t, spv::Id>;
 
     std::vector<literal_pair> literal_pairs;
+    std::map<int, spv::Id> uniform_buffers;
 
     const auto program_input = shader::get_program_input(program);
     for (const auto &buffer : program_input.uniform_buffers) {
-        spv::Id block = create_uniform_block(b, features, buffer.index, buffer.size, !program.is_fragment());
-        spv_params.buffers.emplace(buffer.base, block);
+        spv::Id block = create_uniform_block(b, features, buffer.index, (buffer.size + 3) / 4, !program.is_fragment());
+        uniform_buffers.emplace(buffer.index, block);
+    }
+
+    if (features.use_ubo) {
+        for (const auto buffer : program_input.uniform_buffers) {
+            if (buffer.reg_block_size > 0) {
+                const uint32_t reg_block_size_in_f32v = (buffer.reg_block_size + 3) / 4;
+                const auto spv_buffer = uniform_buffers.at(buffer.index);
+                copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset / 4, reg_block_size_in_f32v);
+            }
+        }
     }
 
     const auto add_var_to_reg = [&](const Input &input, const std::string &name, bool pa) {
@@ -755,6 +766,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                                add_var_to_reg(input, s.name, false);
                            }
                        },
+                       [&](const UniformBufferInputSource &s) {
+                           const auto spv_buffer = uniform_buffers.at(s.index);
+                           spv_params.buffers.emplace(input.offset, std::make_tuple(s.base, spv_buffer));
+                       },
                        [&](const AttributeInputSoucre &s) {
                            add_var_to_reg(input, s.name, true);
                        } },
@@ -769,15 +784,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
         if (sampler.dependent) {
             spv_params.samplers.emplace(sampler.offset, sampler_spv_var);
-        }
-    }
-
-    // This one usually copies default uniform buffer to SA registers
-    if (features.use_ubo) {
-        for (const auto [_, block] : program_input.uniform_blocks) {
-            const int total_vec4 = static_cast<int>((block.size + 3) / 4);
-            spv::Id default_buffer = create_uniform_block(b, features, block.block_num, total_vec4, !program.is_fragment());
-            copy_uniform_block_to_register(b, spv_params.uniforms, default_buffer, ite_copy, block.offset / 4, total_vec4);
         }
     }
 

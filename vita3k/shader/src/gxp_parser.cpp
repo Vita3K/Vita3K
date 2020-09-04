@@ -1,6 +1,7 @@
 #include <gxm/functions.h>
 #include <shader/gxp_parser.h>
 #include <shader/usse_program_analyzer.h>
+#include <util/align.h>
 #include <util/log.h>
 
 using namespace shader::usse;
@@ -56,78 +57,9 @@ std::tuple<DataType, std::string> shader::get_parameter_type_store_and_name(cons
     }
 }
 
-std::vector<UniformBuffer> shader::get_uniform_buffers(const SceGxmProgram &program) {
-    std::vector<UniformBuffer> output_buffers;
-
-    const std::uint64_t *secondary_program_insts = reinterpret_cast<const std::uint64_t *>(
-        reinterpret_cast<const std::uint8_t *>(&program.secondary_program_offset) + program.secondary_program_offset);
-
-    const std::uint64_t *primary_program_insts = program.primary_program_start();
-
-    UniformBufferMap buffer_size_map;
-    // Analyze the shader to get maximum uniform buffer data
-    // Analyze secondary program
-    data_analyze(
-        static_cast<shader::usse::USSEOffset>((program.secondary_program_offset_end + 4 - program.secondary_program_offset)) / 8,
-        [&](USSEOffset off) -> std::uint64_t {
-            return secondary_program_insts[off];
-        },
-        buffer_size_map);
-
-    // Analyze primary program
-    data_analyze(
-        static_cast<shader::usse::USSEOffset>(program.primary_program_instr_count),
-        [&](USSEOffset off) -> std::uint64_t {
-            return primary_program_insts[off];
-        },
-        buffer_size_map);
-
-    // move into load buffers function now?
-    const auto buffer_info = reinterpret_cast<const SceGxmUniformBufferInfo *>(
-        reinterpret_cast<const std::uint8_t *>(&program.uniform_buffer_offset) + program.uniform_buffer_offset);
-
-    auto buffer_container = gxp::get_container_by_index(program, 19);
-    uint32_t buffer_base = buffer_container ? buffer_container->base_sa_offset : 0;
-
-    for (size_t i = 0; i < program.uniform_buffer_count; ++i) {
-        //const SceGxmProgramParameter &parameter = gxp_parameters[i];
-        const SceGxmUniformBufferInfo *buffer = &buffer_info[i];
-        //const SceGxmProgramParameter *parameter = nullptr;
-
-        //for (uint32_t a = 0; a < program.parameter_count; a++) {
-        //    if (gxp_parameters[a].resource_index == buffer->reside_buffer) {
-        //        parameter = &gxp_parameters[a];
-        //        break;
-        //    }
-        //}
-
-        uint32_t this_buffer_base = buffer_base + buffer->base_offset;
-
-        auto buffer_info = buffer_size_map.find(this_buffer_base);
-        if (buffer_info == buffer_size_map.end()) {
-            LOG_WARN("Cannot find buffer at index {} and base {}, skipping.", i, this_buffer_base);
-            continue;
-        }
-
-        uint32_t buffer_size = buffer_info->second.size;
-
-        if (buffer_size == -1) {
-            LOG_WARN("Could not analyze buffer size at index {} and base {}, skipping.", i, this_buffer_base);
-            continue;
-        }
-
-        UniformBuffer item;
-        item.base = this_buffer_base;
-        item.index = ((buffer->reside_buffer + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER);
-        item.size = buffer_size;
-        output_buffers.push_back(item);
-    }
-    return output_buffers;
-}
-
 ProgramInput shader::get_program_input(const SceGxmProgram &program) {
     ProgramInput program_input;
-    program_input.uniform_buffers = get_uniform_buffers(program);
+    std::map<int, UniformBuffer> uniform_buffers;
 
     // TODO split these to functions (e.g. get_literals, get_paramters)
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
@@ -150,16 +82,8 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             auto container = gxp::get_container_by_index(program, parameter.container_index);
             std::uint32_t offset = parameter.resource_index;
 
-            if (container && parameter.resource_index < container->size_in_f32) {
+            if (container) {
                 offset = container->base_sa_offset + parameter.resource_index;
-            }
-
-            if (container && container->size_in_f32 > 0) {
-                UniformBlock block;
-                block.block_num = (container->container_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
-                block.offset = container->base_sa_offset;
-                block.size = container->size_in_f32;
-                program_input.uniform_blocks.emplace(container->container_index, block);
             }
 
             const auto parameter_type = gxp::parameter_type(parameter);
@@ -193,7 +117,32 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
                 UniformInputSource source;
                 source.name = var_name;
                 source.index = parameter.resource_index;
+                const uint32_t reg_block_size = container ? container->size_in_f32 : 0;
+                source.in_mem = parameter.resource_index > reg_block_size;
                 item.source = source;
+                uint32_t vector_size = parameter.component_count * get_data_type_size(store_type);
+                if (parameter.array_size != 1) {
+                    if (is_float_data_type(store_type) && parameter.component_count != 1) {
+                        vector_size = align(vector_size, 8);
+                    } else {
+                        vector_size = align(vector_size, 4);
+                    }
+                }
+                const uint32_t parameter_size = parameter.array_size * vector_size;
+                const uint32_t parameter_size_in_f32 = (parameter_size + 3) / 4;
+                if (uniform_buffers.find(parameter.container_index) == uniform_buffers.end()) {
+                    UniformBuffer buffer;
+                    buffer.index = (parameter.container_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
+                    buffer.reg_block_size = reg_block_size;
+                    buffer.rw = false;
+                    buffer.reg_start_offset = parameter.resource_index;
+                    buffer.size = parameter.resource_index + parameter_size_in_f32;
+                    uniform_buffers.emplace(parameter.container_index, buffer);
+                } else {
+                    auto &buffer = uniform_buffers.at(parameter.container_index);
+                    buffer.size = std::max(parameter.resource_index + parameter_size_in_f32, buffer.size);
+                    buffer.reg_start_offset = std::min(buffer.reg_start_offset, static_cast<uint32_t>(parameter.resource_index));
+                }
             }
 
             program_input.inputs.push_back(item);
@@ -214,11 +163,43 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             LOG_CRITICAL("auxiliary_surface used in shader");
             break;
         }
+        case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER: {
+        }
         default: {
             LOG_CRITICAL("Unknown parameter type used in shader.");
             break;
         }
         }
+    }
+
+    for (auto &[_, buffer] : uniform_buffers) {
+        program_input.uniform_buffers.push_back(buffer);
+    }
+
+    const auto buffer_infoes = reinterpret_cast<const SceGxmUniformBufferInfo *>(
+        reinterpret_cast<const std::uint8_t *>(&program.uniform_buffer_offset) + program.uniform_buffer_offset);
+
+    const auto buffer_container = gxp::get_container_by_index(program, 19);
+    const uint32_t base_offset = buffer_container ? buffer_container->base_sa_offset : 0;
+
+    for (size_t i = 0; i < program.uniform_buffer_count; ++i) {
+        const SceGxmUniformBufferInfo *buffer_info = &buffer_infoes[i];
+
+        const uint32_t offset = base_offset + buffer_info->base_offset;
+
+        const auto buffer = uniform_buffers.at(buffer_info->reside_buffer);
+
+        Input item;
+        item.type = DataType::UINT32;
+        item.offset = offset;
+        item.component_count = 1;
+        item.array_size = 1;
+        UniformBufferInputSource source;
+        source.base = buffer.reg_block_size;
+        source.index = buffer.index;
+        item.source = source;
+
+        program_input.inputs.push_back(item);
     }
 
     const SceGxmProgramParameterContainer *container = gxp::get_container_by_index(program, 19);
