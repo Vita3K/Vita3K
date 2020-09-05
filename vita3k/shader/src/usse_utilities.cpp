@@ -333,6 +333,8 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
         const auto mask_id = b.makeUintConstant(mask);
         auto comp = b.createBinOp(spv::OpVectorExtractDynamic, type_ui32, extracted, b.makeIntConstant(comp_count - i - 1));
         comp = b.createBinOp(spv::OpBitwiseAnd, type_ui32, comp, mask_id);
+        // or this
+        //comp = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450UMin, { comp, mask_id });
         output = b.createBinOp(spv::OpBitwiseOr, type_ui32, output, comp);
         if (i != comp_count - 1) {
             output = b.createBinOp(spv::OpShiftLeftLogical, type_ui32, output, b.makeIntConstant(32 / comp_count));
@@ -1173,7 +1175,10 @@ spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataTy
         const auto bias = b.makeFloatConstant(std::get<1>(constants));
         const auto normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
         const auto bias_vec = create_constant_vector_or_scalar(b, bias, comp_count);
+        const auto zero_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(0.0), comp_count);
+        const auto one_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(1.0), comp_count);
 
+        opr = b.createBuiltinCall(opr_type, b.import("GLSL.std.450"), GLSLstd450FClamp, { opr, zero_vec, one_vec });
         opr = b.createBinOp(spv::OpFSub, opr_type, opr, bias_vec);
         opr = b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec);
     }
