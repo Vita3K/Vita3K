@@ -112,6 +112,7 @@ struct TranslationState {
     std::vector<VarToReg> var_to_regs;
     std::vector<spv::Id> interfaces;
     bool is_maskupdate;
+    bool is_fragment;
 };
 
 struct VertexProgramOutputProperties {
@@ -889,7 +890,9 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 
     if (program.is_native_color() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntegerType(32, true);
-        spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), b.createLoad(translate_state.frag_coord_id));
+        spv::Id coord_id = b.createLoad(translate_state.frag_coord_id);
+        spv::Id depth = b.createOp(spv::OpAccessChain, b.makeFloatType(32), { coord_id, b.makeIntConstant(2) });
+        spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
         translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { translated_id, translated_id, 0, 1 });
         b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id), translated_id, color });
     } else {
@@ -1285,6 +1288,9 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureSt
         glsl.set_name(translation_state.frag_coord_id, "gl_FragCoord");
     }
     if (features.support_shader_interlock) {
+        if (translation_state.is_fragment) {
+            glsl.add_header_line("layout(early_fragment_tests) in;\n");
+        }
         glsl.require_extension("GL_ARB_fragment_shader_interlock");
     }
     // Compile to GLSL, ready to give to GL driver.
@@ -1313,6 +1319,7 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 
 std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     TranslationState translation_state;
+    translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
     std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, translation_state, force_shader_debug, dumper);
 
