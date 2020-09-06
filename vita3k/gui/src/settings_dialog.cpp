@@ -244,6 +244,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
+        ImGui::Checkbox("Disable experimental ngs support", &host.cfg.disable_ngs);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Disable experimental support for advanced audio library ngs");
         ImGui::Separator();
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Emulated System Storage Folder");
         ImGui::Spacing();
