@@ -573,7 +573,7 @@ bool USSETranslatorVisitor::vldst(
     to_store.type = DataType::F32;
 
     SpirvUniformBuffrerBase buffer_and_base = m_spirv_params.buffers.at(src0_n);
-    const uint32_t buffer_base = std::get<0>(buffer_and_base);
+    const uint32_t buffer_base = std::get<0>(buffer_and_base) + src1_n;
     const spv::Id buffer = std::get<1>(buffer_and_base);
     const bool is_load = true;
     spv::Id previous = spv::NoResult;
