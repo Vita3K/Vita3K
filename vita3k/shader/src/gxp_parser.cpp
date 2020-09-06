@@ -164,6 +164,19 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER: {
+            if (uniform_buffers.find(parameter.resource_index) == uniform_buffers.end()) {
+                UniformBuffer buffer;
+                buffer.index = (parameter.resource_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
+                buffer.reg_block_size = 0;
+                buffer.rw = false;
+                buffer.reg_start_offset = 0;
+                buffer.size = (parameter.array_size + 3) / 4;
+                uniform_buffers.emplace(parameter.resource_index, buffer);
+            } else {
+                auto &buffer = uniform_buffers.at(parameter.resource_index);
+                buffer.size = std::max((parameter.array_size + 3) / 4, buffer.size);
+            }
+            break;
         }
         default: {
             LOG_CRITICAL("Unknown parameter type used in shader.");
