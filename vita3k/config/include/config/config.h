@@ -38,6 +38,7 @@
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
     code(bool, "texture-cache", true, texture_cache)                                                    \
+    code(bool, "disable-ngs", true, disable_ngs)                                                        \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(bool, "auto-lle", false, auto_lle)                                                             \
