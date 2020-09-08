@@ -203,28 +203,26 @@ void init_apps_icon(GuiState &gui, HostState &host, const std::vector<App> &apps
         const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
         const auto default_icon{ fs::path(host.base_path) / "data/image/icon.png" };
 
-        if ((buffer.empty() && (fs::exists(default_fw_icon) || fs::exists(default_icon)))) {
-            LOG_INFO("Default icon found for title {}, {}.", app.title_id, app.title);
-            std::ifstream image_stream(default_fw_icon.string(), std::ios::binary | std::ios::ate);
-            if (!fs::exists(default_fw_icon))
-                image_stream = std::ifstream(default_icon.string(), std::ios::binary | std::ios::ate);
-            const std::size_t fsize = image_stream.tellg();
-            buffer.resize(fsize);
-            image_stream.seekg(0, std::ios::beg);
-            image_stream.read(reinterpret_cast<char *>(&buffer[0]), fsize);
-        } else if (buffer.empty()) {
-            LOG_WARN("Default icon not found for title {}, {}.", app.title_id, app.title);
-            continue;
+        if (buffer.empty()) {
+            if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
+                LOG_INFO("Default icon found for title {}, [{}].", app.title_id, app.title);
+                std::ifstream image_stream(fs::exists(default_fw_icon) ? default_fw_icon.string() : default_icon.string(), std::ios::binary | std::ios::ate);
+                const std::size_t fsize = image_stream.tellg();
+                buffer.resize(fsize);
+                image_stream.seekg(0, std::ios::beg);
+                image_stream.read(reinterpret_cast<char *>(&buffer[0]), fsize);
+            } else {
+                LOG_WARN("Default icon not found for title {}, [{}].", app.title_id, app.title);
+                continue;
+            }
         }
         stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (!data || width != 128 || height != 128) {
-            LOG_ERROR("Invalid icon for title {}, {}.", app.title_id, app.title);
+            LOG_ERROR("Invalid icon for title {}, [{}].", app.title_id, app.title);
             continue;
         }
-        if (app.title_id.find("NPXS") != std::string::npos)
-            gui.app_selector.sys_apps_icon[app.title_id].init(gui.imgui_state.get(), data, width, height);
-        else
-            gui.app_selector.user_apps_icon[app.title_id].init(gui.imgui_state.get(), data, width, height);
+        auto &app_icon = app.title_id.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+        app_icon[app.title_id].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 }

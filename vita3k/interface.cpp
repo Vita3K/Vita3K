@@ -300,6 +300,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     }
 
     LOG_INFO_IF(host.cfg.hardware_flip, "{}: enabled", host.cfg[e_hardware_flip]);
+    LOG_INFO("ngs experimental state: {}", !host.cfg.disable_ngs);
     if (host.cfg.auto_lle)
         LOG_INFO("{}: enabled", host.cfg[e_auto_lle]);
     else if (!host.cfg.lle_modules.empty()) {
