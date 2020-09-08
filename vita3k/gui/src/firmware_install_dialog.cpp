@@ -20,14 +20,15 @@
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <nfd.h>
 
 namespace gui {
 
 std::string fw_version;
-bool delete_fw_file = false;
-nfdchar_t *fw_path = nullptr;
+bool delete_pup_file;
+nfdchar_t *pup_path;
 
 static void get_firmware_version(HostState &host) {
     std::ifstream versionFile(host.pref_path + "/PUP_DEC/PUP/version.txt");
@@ -47,11 +48,11 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
     static bool draw_file_dialog = true;
 
     if (draw_file_dialog) {
-        result = NFD_OpenDialog("PUP", nullptr, &fw_path);
+        result = NFD_OpenDialog("PUP", nullptr, &pup_path);
         draw_file_dialog = false;
 
         if (result == NFD_OKAY) {
-            install_pup(fw_path, host.pref_path);
+            install_pup(host.pref_path, pup_path);
             get_firmware_version(host);
         } else if (result == NFD_CANCEL) {
             gui.file_menu.firmware_install_dialog = false;
@@ -73,16 +74,16 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        ImGui::Checkbox("Delete the firmware installation file?", &delete_fw_file);
+        ImGui::Checkbox("Delete the firmware installation file?", &delete_pup_file);
         ImGui::Spacing();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
         if (ImGui::Button("OK", BUTTON_SIZE)) {
-            if (delete_fw_file) {
-                fs::remove(fs::path(fw_path));
-                delete_fw_file = false;
+            if (delete_pup_file) {
+                fs::remove(fs::path(string_utils::utf_to_wide(pup_path)));
+                delete_pup_file = false;
             }
             fw_version.clear();
-            fw_path = nullptr;
+            pup_path = nullptr;
             get_modules_list(gui, host);
             gui.file_menu.firmware_install_dialog = false;
             draw_file_dialog = true;

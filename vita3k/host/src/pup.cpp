@@ -21,6 +21,7 @@
 #include <util/fs.h>
 
 #include <fstream>
+#include <util/string_utils.h>
 
 // Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
 
@@ -94,10 +95,10 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
     return fmt::format("unknown-0x{:X}.pkg", filetype);
 }
 
-static void extract_pup_files(const std::string &pup, const std::string &output) {
+static void extract_pup_files(const std::wstring &pup, const std::string &output) {
     constexpr int SCEUF_HEADER_SIZE = 0x80;
     constexpr int SCEUF_FILEREC_SIZE = 0x20;
-    std::ifstream infile(pup, std::ios::binary);
+    fs::ifstream infile(pup, std::ios::binary);
     char header[SCEUF_HEADER_SIZE];
     infile.read(header, SCEUF_HEADER_SIZE);
 
@@ -229,19 +230,19 @@ static void decrypt_pup_packages(const std::string &src, const std::string &dest
     join_files(dest, "sa0-", dest + "/sa0.img");
 }
 
-void install_pup(const std::string &pup, const std::string &pref_path) {
+void install_pup(const std::string &pref_path, const std::string &pup_path) {
     if (fs::exists(pref_path + "/PUP_DEC")) {
         LOG_WARN("Path already exists, deleting it and reinstalling");
         fs::remove_all(pref_path + "/PUP_DEC");
     }
 
-    LOG_INFO("Extracting {} to {}", pup, pref_path + "/PUP_DEC");
+    LOG_INFO("Extracting {} to {}", pup_path, pref_path + "/PUP_DEC");
 
     fs::create_directory(pref_path + "/PUP_DEC");
     const auto pup_dest = fmt::format("{}/PUP", pref_path + "/PUP_DEC");
     fs::create_directory(pup_dest);
 
-    extract_pup_files(pup, pup_dest);
+    extract_pup_files(string_utils::utf_to_wide(pup_path), pup_dest);
 
     const auto pup_dec = fmt::format("{}/PUP_dec", pref_path + "/PUP_DEC");
     fs::create_directory(pup_dec);
