@@ -83,4 +83,4 @@
 	url = https://github.com/jbeder/yaml-cpp
 [submodule "external/psvpfstools"]
 	path = external/psvpfstools
-	url = https://github.com/korewawatchful/psvpfstools.git
+	url = https://github.com/Vita3K/psvpfstools.git

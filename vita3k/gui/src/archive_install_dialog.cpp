@@ -20,12 +20,14 @@
 
 #include <gui/functions.h>
 
+#include <util/string_utils.h>
+
 #include <nfd.h>
 
 namespace gui {
 
-bool delete_archive_file = false;
-nfdchar_t *archive_path = nullptr;
+static bool delete_archive_file;
+static nfdchar_t *archive_path;
 
 void draw_archive_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
@@ -38,7 +40,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         draw_file_dialog = false;
 
         if (result == NFD_OKAY) {
-            if (install_archive(host, &gui, static_cast<fs::path>(archive_path)))
+            if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path))))
                 content_install_confirm = true;
             else if (!gui.content_reinstall_confirm)
                 ImGui::OpenPopup("Content installation failed");
@@ -64,7 +66,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 65);
         if (ImGui::Button("Yes", BUTTON_SIZE))
-            if (install_archive(host, &gui, static_cast<fs::path>(archive_path))) {
+            if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path)))) {
                 gui.content_reinstall_confirm = false;
                 content_install_confirm = true;
             }
@@ -94,13 +96,14 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
         if (ImGui::Button("Ok", BUTTON_SIZE)) {
             if (delete_archive_file) {
-                fs::remove(fs::path(archive_path));
+                fs::remove(fs::path(string_utils::utf_to_wide(archive_path)));
                 delete_archive_file = false;
             }
             content_install_confirm = false;
             draw_file_dialog = true;
             archive_path = nullptr;
-            refresh_app_list(gui, host);
+            if (host.app_category == "gd")
+                refresh_app_list(gui, host);
             gui.file_menu.archive_install_dialog = false;
         }
         ImGui::EndPopup();
@@ -119,7 +122,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
         if (ImGui::Button("Ok", BUTTON_SIZE)) {
             if (delete_archive_file) {
-                fs::remove(fs::path(archive_path));
+                fs::remove(fs::path(string_utils::utf_to_wide(archive_path)));
                 delete_archive_file = false;
             }
             draw_file_dialog = true;

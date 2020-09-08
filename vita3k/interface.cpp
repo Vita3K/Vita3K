@@ -71,9 +71,9 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
     return true;
 }
 
-bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
-    if (!fs::exists(path)) {
-        LOG_CRITICAL("Failed to load VPK file path: {}", path.generic_path().string());
+bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_path) {
+    if (!fs::exists(archive_path)) {
+        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());
         return false;
     }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
@@ -82,9 +82,9 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &path) {
     FILE *vpk_fp;
 
 #ifdef WIN32
-    _wfopen_s(&vpk_fp, path.generic_path().wstring().c_str(), L"rb");
+    _wfopen_s(&vpk_fp, archive_path.generic_path().wstring().c_str(), L"rb");
 #else
-    vpk_fp = fopen(path.generic_path().string().c_str(), "rb");
+    vpk_fp = fopen(archive_path.generic_path().string().c_str(), "rb");
 #endif
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {

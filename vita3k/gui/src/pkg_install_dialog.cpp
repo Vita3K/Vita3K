@@ -23,15 +23,16 @@
 #include <misc/cpp/imgui_stdlib.h>
 #include <rif2zrif.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <nfd.h>
 
 namespace gui {
 
-static nfdchar_t *pkg_path, *work_path = nullptr;
+static nfdchar_t *pkg_path, *work_path;
 static std::string state, title, zRIF;
 static bool draw_file_dialog = true;
-static bool delete_pkg_file, delete_work_file = false;
+static bool delete_pkg_file, delete_work_file;
 
 void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
@@ -76,8 +77,8 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
         } else if (state == "work") {
             result = NFD_OpenDialog("bin", nullptr, &work_path);
             if (result == NFD_OKAY) {
-                std::string work_path_str = static_cast<std::string>(work_path);
-                zRIF = rif2zrif(work_path_str);
+                fs::ifstream binfile(string_utils::utf_to_wide(std::string(work_path)), std::ios::in | std::ios::binary | std::ios::ate);
+                zRIF = rif2zrif(binfile);
                 state = "install";
             } else
                 state.clear();
@@ -121,11 +122,11 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 if (delete_pkg_file) {
-                    fs::remove(fs::path(pkg_path));
+                    fs::remove(fs::path(string_utils::utf_to_wide(std::string(pkg_path))));
                     delete_pkg_file = false;
                 }
                 if (delete_work_file) {
-                    fs::remove(fs::path(work_path));
+                    fs::remove(fs::path(string_utils::utf_to_wide(std::string(work_path))));
                     delete_work_file = false;
                 }
                 update_notice_info(gui, host, "content");
