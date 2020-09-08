@@ -32,6 +32,7 @@
 
 #include <util/bytes.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 // Credits to mmozeiko https://github.com/mmozeiko/pkg2zip
 
@@ -71,16 +72,14 @@ static void aes128_ctr_xor(aes_context *ctx, const uint8_t *iv, uint64_t block, 
 bool decrypt_install_nonpdrm(std::string &drmlicpath, const std::string &title_path) {
     std::string title_id_src = title_path;
     std::string title_id_dst = title_path + "_dec";
-    std::string zRIF = rif2zrif(drmlicpath);
+    fs::ifstream binfile(string_utils::utf_to_wide(drmlicpath), std::ios::in | std::ios::binary | std::ios::ate);
+    std::string zRIF = rif2zrif(binfile);
     F00DEncryptorTypes f00d_enc_type = F00DEncryptorTypes::native;
     std::string f00d_arg = std::string();
 
-    if (execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) {
-        if (title_path.find("theme") != std::string::npos)
-            LOG_WARN("Theme detected, keystone is missing, skip error");
-        else
-            return false;
-    }
+    if ((execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) && (title_path.find("theme") == std::string::npos))
+        return false;
+
     fs::remove_all(fs::path(title_id_src));
     fs::rename(fs::path(title_id_dst), fs::path(title_id_src));
 
@@ -89,7 +88,7 @@ bool decrypt_install_nonpdrm(std::string &drmlicpath, const std::string &title_p
     std::vector<uint8_t> temp_klicensee = get_temp_klicensee(zRIF);
 
     for (const auto &file : fs::recursive_directory_iterator(title_id_src)) {
-        if (file.path().extension() == ".suprx" || file.path().extension() == ".self" || file.path().filename() == "eboot.bin") {
+        if ((file.path().extension() == ".suprx") || (file.path().extension() == ".self") || (file.path().filename() == "eboot.bin")) {
             self2elf(file.path().string(), file.path().string() + "elf", SCE_KEYS, temp_klicensee.data());
             fs::rename(file.path().string() + "elf", file.path().string());
             make_fself(file.path().string(), file.path().string() + "fself");
@@ -102,7 +101,8 @@ bool decrypt_install_nonpdrm(std::string &drmlicpath, const std::string &title_p
 }
 
 bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
-    std::ifstream infile(pkg, std::ios::binary);
+    std::wstring pkg_path = string_utils::utf_to_wide(pkg);
+    fs::ifstream infile(pkg_path, std::ios::binary);
     PkgHeader pkg_header;
     PkgExtHeader ext_header;
     infile.read(reinterpret_cast<char *>(&pkg_header), sizeof(PkgHeader));
@@ -114,12 +114,12 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
         return false;
     }
 
-    if (fs::file_size(pkg) < byte_swap(pkg_header.total_size)) {
+    if (fs::file_size(pkg_path) < byte_swap(pkg_header.total_size)) {
         LOG_ERROR("The pkg file is too small");
         return false;
     }
 
-    if (fs::file_size(pkg) < byte_swap(pkg_header.data_offset) + byte_swap(pkg_header.file_count) * 32) {
+    if (fs::file_size(pkg_path) < byte_swap(pkg_header.data_offset) + byte_swap(pkg_header.file_count) * 32) {
         LOG_ERROR("The pkg file is too small");
         return false;
     }
@@ -248,7 +248,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF) {
         infile.read(reinterpret_cast<char *>(&entry), sizeof(PkgEntry));
         aes128_ctr_xor(&aes_ctx, pkg_header.pkg_data_iv, file_offset / 16, reinterpret_cast<unsigned char *>(&entry), sizeof(PkgEntry));
 
-        if (fs::file_size(pkg) < byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset) + byte_swap(entry.name_size) || fs::file_size(pkg) < byte_swap(pkg_header.data_offset) + byte_swap(entry.data_offset) + byte_swap(entry.data_size)) {
+        if (fs::file_size(pkg_path) < byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset) + byte_swap(entry.name_size) || fs::file_size(pkg_path) < byte_swap(pkg_header.data_offset) + byte_swap(entry.data_offset) + byte_swap(entry.data_size)) {
             LOG_ERROR("The pkg file size is too small, possibly corrupted");
             return false;
         }
