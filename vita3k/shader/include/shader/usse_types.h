@@ -295,9 +295,7 @@ enum class GenericType {
  */
 struct Sampler {
     std::string name;
-    bool dependent;
     uint32_t index; // resource index
-    uint32_t offset; // SA offset for dependent sampler
 };
 
 /**
@@ -335,8 +333,13 @@ struct UniformBufferInputSource {
     uint32_t index;
 };
 
+struct DependentSamplerInputSource {
+    std::string name;
+    uint32_t index; // resource index
+};
+
 // Read source field in Input struct
-using InputSource = std::variant<UniformInputSource, UniformBufferInputSource, LiteralInputSource, AttributeInputSoucre>;
+using InputSource = std::variant<UniformInputSource, UniformBufferInputSource, LiteralInputSource, AttributeInputSoucre, DependentSamplerInputSource>;
 
 /**
  * Input parameters that are usually copied into PA or SA

@@ -153,7 +153,6 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             const std::string name = gxp::parameter_name(parameter);
             Sampler sampler;
             sampler.name = name;
-            sampler.dependent = false;
             sampler.index = parameter.resource_index;
             program_input.samplers.push_back(sampler);
             break;
@@ -226,8 +225,18 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             const std::uint32_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;
 
             const auto sampler = std::find_if(program_input.samplers.begin(), program_input.samplers.end(), [=](auto x) { return x.index == rsc_index; });
-            sampler->dependent = true;
-            sampler->offset = container->base_sa_offset + dependent_samplers[i].sa_offset;
+
+            Input item;
+            item.type = DataType::UINT32;
+            item.offset = container->base_sa_offset + dependent_samplers[i].sa_offset;
+            item.component_count = 1;
+            item.array_size = 1;
+            DependentSamplerInputSource source;
+            source.name = sampler->name;
+            source.index = rsc_index;
+            item.source = source;
+
+            program_input.inputs.push_back(item);
         }
     }
 
