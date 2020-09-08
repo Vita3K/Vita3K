@@ -753,6 +753,14 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         translation_state.var_to_regs.push_back(var_to_reg);
     };
 
+    for (const auto &sampler : program_input.samplers) {
+        const auto sampler_spv_var = create_param_sampler(b, sampler.name);
+        samplers.emplace(sampler.index, sampler_spv_var);
+        if (features.use_shader_binding) {
+            b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index);
+        }
+    }
+
     for (const auto &input : program_input.inputs) {
         std::visit(overloaded{
                        [&](const LiteralInputSource &s) {
@@ -770,21 +778,14 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            const auto spv_buffer = uniform_buffers.at(s.index);
                            spv_params.buffers.emplace(input.offset, std::make_tuple(s.base, spv_buffer));
                        },
+                       [&](const DependentSamplerInputSource &s) {
+                           const auto spv_sampler = samplers.at(s.index);
+                           spv_params.samplers.emplace(input.offset, spv_sampler);
+                       },
                        [&](const AttributeInputSoucre &s) {
                            add_var_to_reg(input, s.name, true);
                        } },
             input.source);
-    }
-
-    for (const auto &sampler : program_input.samplers) {
-        const auto sampler_spv_var = create_param_sampler(b, sampler.name);
-        samplers.emplace(sampler.index, sampler_spv_var);
-        if (features.use_shader_binding) {
-            b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index);
-        }
-        if (sampler.dependent) {
-            spv_params.samplers.emplace(sampler.offset, sampler_spv_var);
-        }
     }
 
     // We should avoid ugly and long GLSL code generated. Also, inefficient SPIR-V code.
