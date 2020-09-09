@@ -21,6 +21,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <string>
 
 struct _FILETIME;
 
@@ -56,6 +57,32 @@ struct SceRtcTick {
     SceUInt64 tick;
 };
 
+#if defined(_WIN32)
+inline time_t rtc_timegm(struct tm *tm) { return _mkgmtime(tm); }
+#elif (defined(__GLIBC__) && !defined(__ANDROID__))
+#define rtc_timegm timegm
+#else
+inline time_t rtc_timegm(struct tm *tm) {
+    time_t ret;
+    char *tz;
+    std::string tzcopy;
+
+    tz = getenv("TZ");
+    if (tz)
+        tzcopy = tz;
+
+    setenv("TZ", "", 1);
+    tzset();
+    ret = mktime(tm);
+    if (tz)
+        setenv("TZ", tzcopy.c_str(), 1);
+    else
+        unsetenv("TZ");
+    tzset();
+    return ret;
+}
+#endif
+
 std::uint64_t rtc_base_ticks();
 std::uint64_t rtc_get_ticks(uint64_t base_tick);
 #ifdef WIN32
@@ -63,7 +90,6 @@ std::uint64_t convert_filetime(const _FILETIME &filetime);
 #else
 std::uint64_t convert_timespec(const timespec &timespec);
 #endif
-time_t rtc_timegm(struct tm *tm);
-void __RtcPspTimeToTm(tm &val, const SceDateTime *pt);
+void __RtcPspTimeToTm(tm *val, const SceDateTime *pt);
 void __RtcTicksToPspTime(SceDateTime *t, std::uint64_t ticks);
 std::uint64_t __RtcPspTimeToTicks(const SceDateTime *pt);

@@ -105,8 +105,63 @@ EXPORT(int, sceRtcFormatRFC2822) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRtcFormatRFC2822LocalTime) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcFormatRFC2822LocalTime, char *pszDateTime, const SceRtcTick *utc) {
+    // The following code is from PPSSPP
+    // Copyright (c) 2012- PPSSPP Project.
+
+    // Get timezone difference
+    std::time_t epoch_plus_11h = 60 * 60 * 11;
+    auto local_tz_hour = std::localtime(&epoch_plus_11h)->tm_hour;
+    const auto local_tz_minute = std::localtime(&epoch_plus_11h)->tm_min;
+    const auto gmt_tz_hour = std::gmtime(&epoch_plus_11h)->tm_hour;
+    const auto gmt_tz_minute = std::gmtime(&epoch_plus_11h)->tm_min;
+    const auto tz_minute_diff = local_tz_minute - gmt_tz_minute;
+    if (tz_minute_diff != 0 && gmt_tz_hour > local_tz_hour)
+        local_tz_hour++;
+    const auto tz_hour_diff = local_tz_hour - gmt_tz_hour;
+
+    if (utc) { // format utc in localtime
+        SceDateTime date;
+        memset(&date, 0, sizeof(date));
+        tm gmt;
+        __RtcTicksToPspTime(&date, utc->tick);
+        __RtcPspTimeToTm(&gmt, &date);
+        while (gmt.tm_year < 70)
+            gmt.tm_year += 400;
+        while (gmt.tm_year >= 470)
+            gmt.tm_year -= 400;
+
+        time_t time = rtc_timegm(&gmt);
+        auto local_time = std::localtime(&time);
+
+        char *end = pszDateTime + 32;
+        pszDateTime += strftime(pszDateTime, end - pszDateTime, "%a, %d %b ", local_time);
+        pszDateTime += snprintf(pszDateTime, end - pszDateTime, "%04d", date.year);
+        pszDateTime += strftime(pszDateTime, end - pszDateTime, " %H:%M:%S ", local_time);
+
+        if (local_tz_hour < gmt_tz_hour || local_time->tm_mday < gmt.tm_mday) {
+            pszDateTime += snprintf(pszDateTime, end - pszDateTime, "-%02d%02d", abs(tz_hour_diff), abs(tz_minute_diff));
+        } else {
+            pszDateTime += snprintf(pszDateTime, end - pszDateTime, "+%02d%02d", abs(tz_hour_diff), abs(tz_minute_diff));
+        }
+    } else { // format current time
+        time_t time = std::time(nullptr);
+        auto local_time = *std::localtime(&time);
+        time_t gmtime = std::time(nullptr);
+        auto gmt = *std::gmtime(&gmtime);
+
+        char *end = pszDateTime + 32;
+        pszDateTime += strftime(pszDateTime, end - pszDateTime, "%a, %d %b ", &local_time);
+        pszDateTime += snprintf(pszDateTime, end - pszDateTime, "%04d", local_time.tm_year + 1900);
+        pszDateTime += strftime(pszDateTime, end - pszDateTime, " %H:%M:%S ", &local_time);
+
+        if (local_tz_hour < gmt_tz_hour || local_time.tm_mday < gmt.tm_mday) {
+            pszDateTime += snprintf(pszDateTime, end - pszDateTime, "-%02d%02d", abs(tz_hour_diff), abs(tz_minute_diff));
+        } else {
+            pszDateTime += snprintf(pszDateTime, end - pszDateTime, "+%02d%02d", abs(tz_hour_diff), abs(tz_minute_diff));
+        }
+    }
+    return 0;
 }
 
 EXPORT(int, sceRtcFormatRFC3339) {

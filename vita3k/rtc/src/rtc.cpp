@@ -53,32 +53,6 @@ std::uint64_t convert_timespec(const timespec &timespec) {
 // The following functions are from PPSSPP
 // Copyright (c) 2012- PPSSPP Project.
 
-#if defined(_WIN32)
-time_t rtc_timegm(struct tm *tm) { return _mkgmtime(tm); }
-#elif (defined(__GLIBC__) && !defined(__ANDROID__))
-#define rtc_timegm timegm
-#else
-time_t rtc_timegm(struct tm *tm) {
-    time_t ret;
-    char *tz;
-    std::string tzcopy;
-
-    tz = getenv("TZ");
-    if (tz)
-        tzcopy = tz;
-
-    setenv("TZ", "", 1);
-    tzset();
-    ret = mktime(tm);
-    if (tz)
-        setenv("TZ", tzcopy.c_str(), 1);
-    else
-        unsetenv("TZ");
-    tzset();
-    return ret;
-}
-#endif
-
 void __RtcPspTimeToTm(tm *val, const SceDateTime *pt) {
     val->tm_year = pt->year - 1900;
     val->tm_mon = pt->month - 1;
