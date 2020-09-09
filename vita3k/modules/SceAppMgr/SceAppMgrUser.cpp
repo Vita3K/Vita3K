@@ -17,12 +17,35 @@
 
 #include "SceAppMgrUser.h"
 
+#include <host/app_util.h>
 #include <host/functions.h>
 #include <host/load_self.h>
+#include <io/functions.h>
 #include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <modules/module_parent.h>
 #include <util/find.h>
+
+struct SceAppMgrSaveDataDataDelete {
+    int size;
+    unsigned int slotId;
+    Ptr<SceAppUtilSaveDataSlotParam> slotParam;
+    uint8_t reserved[32];
+    Ptr<SceAppUtilSaveDataDataSaveItem> files;
+    int fileNum;
+    SceAppUtilSaveDataMountPoint *mountPoint;
+};
+
+struct SceAppMgrSaveDataData {
+    int size;
+    unsigned int slotId;
+    Ptr<SceAppUtilSaveDataSlotParam> slotParam;
+    uint8_t reserved[32];
+    Ptr<SceAppUtilSaveDataDataSaveItem> files;
+    int fileNum;
+    SceAppUtilSaveDataMountPoint *mountPoint;
+    unsigned int *requiredSizeKB;
+};
 
 EXPORT(SceInt32, _sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion) {
     memset(appState, 0, sizeofSceAppMgrAppState);
@@ -453,16 +476,51 @@ EXPORT(int, sceAppMgrSaveDataAddMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSaveDataDataRemove) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSaveDataDataRemove, Ptr<SceAppMgrSaveDataDataDelete> data) {
+    for (unsigned int i = 0; i < data.get(host.mem)->fileNum; i++) {
+        remove_file(host.io, construct_savedata0_path(data.get(host.mem)->files.get(host.mem)[i].dataPath.get(host.mem)).c_str(), host.pref_path, export_name);
+    }
+    return 0;
 }
 
 EXPORT(int, sceAppMgrSaveDataDataRemove2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSaveDataDataSave) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSaveDataDataSave, Ptr<SceAppMgrSaveDataData> data) {
+    SceUID fd;
+
+    for (unsigned int i = 0; i < data.get(host.mem)->fileNum; i++) {
+        auto files = data.get(host.mem)->files.get(host.mem);
+
+        const auto file_path = construct_savedata0_path(files[i].dataPath.get(host.mem));
+        switch (files[i].mode) {
+        case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_DIRECTORY:
+            create_dir(host.io, file_path.c_str(), 0777, host.pref_path, export_name);
+            break;
+        case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE_TRUNCATE:
+            if (files[i].buf) {
+                fd = open_file(host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+                seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, host.io, export_name);
+                write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, export_name);
+                close_file(host.io, fd, export_name);
+            }
+            fd = open_file(host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, host.pref_path, export_name);
+            truncate_file(fd, files[i].bufSize + files[i].offset, host.io, export_name);
+            close_file(host.io, fd, export_name);
+            break;
+        case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE:
+        default:
+            fd = open_file(host.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+            seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, host.io, export_name);
+            if (files[i].buf.get(host.mem)) {
+                write_file(fd, files[i].buf.get(host.mem), files[i].bufSize, host.io, export_name);
+            }
+            close_file(host.io, fd, export_name);
+            break;
+        }
+    }
+    return 0;
 }
 
 EXPORT(int, sceAppMgrSaveDataDataSave2) {
