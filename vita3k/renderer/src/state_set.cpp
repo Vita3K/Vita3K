@@ -371,7 +371,7 @@ COMMAND_SET_STATE(vertex_stream) {
     case Backend::OpenGL: {
         gl::upload_vertex_stream(*reinterpret_cast<gl::GLContext *>(render_context), stream_index, stream_data_length,
             stream_data);
-        delete[stream_data_length] stream_data;
+        delete[] stream_data;
         break;
     }
 
