@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -190,7 +190,7 @@ struct GuiState {
     std::uint64_t current_user_bg;
     std::map<std::string, ImGui_Texture> user_backgrounds;
 
-    std::map<std::string, std::map<std::string, ImGui_Texture>> trophy_np_com_id_list;
+    std::map<std::string, std::map<std::string, ImGui_Texture>> trophy_np_com_id_list_icons;
     std::map<std::string, ImGui_Texture> trophy_list;
 
     ImGui_Texture start_background;

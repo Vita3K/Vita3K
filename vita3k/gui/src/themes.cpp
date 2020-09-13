@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -367,7 +367,7 @@ struct Theme {
 static std::map<std::string, Theme> themes_info;
 static std::vector<std::pair<std::string, time_t>> themes_list;
 
-void get_themes_list(GuiState &gui, HostState &host) {
+void init_themes(GuiState &gui, HostState &host) {
     gui.themes_preview.clear(), themes_info.clear(), themes_list.clear();
 
     const auto theme_path{ fs::path(host.pref_path) / "ux0/theme" };
@@ -756,7 +756,7 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                         }
                         fs::remove_all(fs::path{ host.pref_path } / "ux0/theme" / selected);
                         if (host.app_title_id == "NPXS10026")
-                            get_contents_size(gui, host);
+                            init_content_manager(gui, host);
                         delete_theme = selected;
                         popup.clear();
                         selected.clear();
