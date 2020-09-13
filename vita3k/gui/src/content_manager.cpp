@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -116,7 +116,7 @@ static void get_save_data_list(GuiState &gui, HostState &host) {
 static std::map<std::string, size_t> apps_size;
 static std::map<std::string, std::string> space;
 
-void get_contents_size(GuiState &gui, HostState &host) {
+void init_content_manager(GuiState &gui, HostState &host) {
     space.clear();
 
     size_t free_size = 0;
@@ -353,7 +353,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     fs::remove_all(SAVE_PATH);
                 }
             }
-            get_contents_size(gui, host);
+            init_content_manager(gui, host);
             contents_selected.clear();
             content_delete = false;
         }

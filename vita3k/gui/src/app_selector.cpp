@@ -107,13 +107,13 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id) {
         init_app_background(gui, host, title_id);
 
         if (title_id == "NPXS10008") {
-            get_trophy_np_com_id_list(gui, host);
+            init_trophy_collection(gui, host);
             gui.live_area.trophy_collection = true;
         } else if (title_id == "NPXS10015") {
-            get_themes_list(gui, host);
+            init_themes(gui, host);
             gui.live_area.theme_background = true;
         } else {
-            get_contents_size(gui, host);
+            init_content_manager(gui, host);
             gui.live_area.content_manager = true;
         }
     }
