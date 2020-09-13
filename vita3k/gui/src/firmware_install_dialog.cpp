@@ -24,6 +24,8 @@
 
 #include <nfd.h>
 
+#include <thread>
+
 namespace gui {
 
 std::string fw_version;
@@ -46,14 +48,21 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
 
     static bool draw_file_dialog = true;
+    static bool finished_installing = false;
+    static uint32_t progress;
 
     if (draw_file_dialog) {
         result = NFD_OpenDialog("PUP", nullptr, &pup_path);
         draw_file_dialog = false;
+        finished_installing = false;
 
         if (result == NFD_OKAY) {
-            install_pup(host.pref_path, pup_path);
-            get_firmware_version(host);
+            std::thread installation([&host]() {
+                install_pup(host.pref_path, pup_path, &progress);
+                finished_installing = true;
+                get_firmware_version(host);
+            });
+            installation.detach();
         } else if (result == NFD_CANCEL) {
             gui.file_menu.firmware_install_dialog = false;
             draw_file_dialog = true;
@@ -64,31 +73,43 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
         }
     }
 
-    static const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
-
-    ImGui::OpenPopup("Firmware Installation");
-    if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextColored(GUI_COLOR_TEXT, "Firmware successfully installed.");
-        if (!fw_version.empty())
-            ImGui::TextColored(GUI_COLOR_TEXT, "Firmware version: %s", fw_version.c_str());
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-        ImGui::Checkbox("Delete the firmware installation file?", &delete_pup_file);
-        ImGui::Spacing();
-        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
-        if (ImGui::Button("OK", BUTTON_SIZE)) {
-            if (delete_pup_file) {
-                fs::remove(fs::path(string_utils::utf_to_wide(pup_path)));
-                delete_pup_file = false;
-            }
-            fw_version.clear();
-            pup_path = nullptr;
-            get_modules_list(gui, host);
-            gui.file_menu.firmware_install_dialog = false;
-            draw_file_dialog = true;
+    if (!finished_installing) {
+        ImGui::OpenPopup("Firmware Installation");
+        if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::TextColored(GUI_COLOR_TEXT, "Installation in progress, please wait...");
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
+            ImGui::SetCursorPosX((ImGui::GetWindowContentRegionWidth() / 2) - (150 / 2) + 10);
+            ImGui::ProgressBar(progress / 100.f, ImVec2(150.f, 20.f), nullptr);
+            ImGui::PopStyleColor();
         }
+        ImGui::EndPopup();
+    } else {
+        static const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
+
+        ImGui::OpenPopup("Firmware Installation");
+        if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::TextColored(GUI_COLOR_TEXT, "Firmware successfully installed.");
+            if (!fw_version.empty())
+                ImGui::TextColored(GUI_COLOR_TEXT, "Firmware version: %s", fw_version.c_str());
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::Checkbox("Delete the firmware installation file?", &delete_pup_file);
+            ImGui::Spacing();
+            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
+            if (ImGui::Button("OK", BUTTON_SIZE)) {
+                if (delete_pup_file) {
+                    fs::remove(fs::path(string_utils::utf_to_wide(pup_path)));
+                    delete_pup_file = false;
+                }
+                fw_version.clear();
+                pup_path = nullptr;
+                get_modules_list(gui, host);
+                gui.file_menu.firmware_install_dialog = false;
+                draw_file_dialog = true;
+            }
+        }
+        ImGui::EndPopup();
     }
-    ImGui::EndPopup();
 }
 } // namespace gui

@@ -27,6 +27,8 @@
 
 #include <nfd.h>
 
+#include <thread>
+
 namespace gui {
 
 static nfdchar_t *pkg_path, *work_path;
@@ -36,6 +38,7 @@ static bool delete_pkg_file, delete_work_file;
 
 void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
+    static float progress;
 
     static const auto BUTTON_SIZE = ImVec2(120.f, 45.f);
 
@@ -102,12 +105,16 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             if (ImGui::Button("Ok", BUTTON_SIZE) && !zRIF.empty())
                 state = "install";
         } else if (state == "install") {
-            if (install_pkg(std::string(pkg_path), host, zRIF))
-                state = "succes";
-            else
-                state = "fail";
-            zRIF.clear();
-        } else if (state == "succes") {
+            std::thread installation(([&host]() {
+                if (install_pkg(std::string(pkg_path), host, zRIF, &progress))
+                    state = "success";
+                else
+                    state = "fail";
+                zRIF.clear();
+            }));
+            installation.detach();
+            state = "installing";
+        } else if (state == "success") {
             title = "PKG successfully installed";
             ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s]", host.app_title_id.c_str(), host.app_title.c_str());
             if (host.app_category == std::string("gd"))
@@ -150,6 +157,13 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                 work_path = nullptr;
                 state.clear();
             }
+        } else if (state == "installing") {
+            title = "Installing";
+            ImGui::TextColored(GUI_COLOR_TEXT, "Installation in progress, please wait...");
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
+            ImGui::SetCursorPosX((ImGui::GetWindowContentRegionWidth() / 2) - (150 / 2) + 10);
+            ImGui::ProgressBar(progress / 100.f, ImVec2(150.f, 20.f), nullptr);
+            ImGui::PopStyleColor();
         }
         ImGui::EndPopup();
     }

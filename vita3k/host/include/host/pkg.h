@@ -74,6 +74,6 @@ struct PkgEntry {
     uint32_t padding;
 };
 
-bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF);
+bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, float *progress = 0);
 
 bool decrypt_install_nonpdrm(std::string &drmlicpath, const std::string &title_path);
