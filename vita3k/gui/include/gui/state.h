@@ -82,6 +82,7 @@ struct LiveAreaState {
     bool start_screen = false;
     bool trophy_collection = false;
     bool user_management = false;
+    bool waiting_popup = false;
 };
 
 struct FileMenuState {

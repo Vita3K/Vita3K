@@ -28,7 +28,24 @@
 
 #include <util/safe_time.h>
 
+#include <thread>
+
 namespace gui {
+
+void delete_apps(GuiState &gui, HostState &host, const std::vector<std::string> &app_list) {
+    std::thread delete_apps([&gui, &host, &app_list]() {
+        gui.live_area.waiting_popup = true;
+        for (const auto &app : app_list) {
+            gui.app_selector.user_apps.erase(get_app_index(gui, app));
+            fs::remove_all(fs::path(host.pref_path) / "ux0/app" / app);
+            fs::remove_all(fs::path(host.pref_path) / "ux0/addcont" / app);
+            fs::remove_all(fs::path(host.base_path) / "shaderlog" / app);
+        }
+        gui.live_area.waiting_popup = false;
+    });
+    delete_apps.detach();
+}
+
 void get_app_info(GuiState &gui, HostState &host, const std::string &app_path) {
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
     gui.app_selector.app_info = {};
@@ -86,96 +103,148 @@ struct SaveData {
 };
 
 static std::vector<SaveData> save_data_list;
+static std::map<std::string, std::string> space;
+static std::map<std::string, bool> contents_selected, finished;
+static size_t apps_list_size, save_data_list_size;
+static std::map<std::string, bool> stop_thread;
+static std::map<std::string, std::mutex> init_content_mutex;
 
 static void get_save_data_list(GuiState &gui, HostState &host) {
+    std::thread get_save_data_size([&gui, &host]() {
+        init_content_mutex["save"].lock();
+        fs::path SAVE_PATH{ fs::path{ host.pref_path } / "ux0/user" / host.io.user_id / "savedata" };
+        if (!fs::exists(SAVE_PATH))
+            return;
+
+        for (const auto &save : fs::directory_iterator(SAVE_PATH)) {
+            if (stop_thread["general"])
+                break;
+
+            const auto title_id = save.path().stem().generic_string();
+            if (fs::is_directory(save.path()) && !fs::is_empty(save.path()) && (get_app_index(gui, title_id) != gui.app_selector.user_apps.end())) {
+                const auto last_writed = fs::last_write_time(save);
+                const auto updated = std::localtime(&last_writed);
+                const auto date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}", updated->tm_mday, updated->tm_mon + 1, updated->tm_year + 1900, updated->tm_hour, updated->tm_min);
+
+                size_t save_data_size = 0;
+                for (const auto &save_path : fs::recursive_directory_iterator(save)) {
+                    if (fs::is_regular_file(save_path.path()))
+                        save_data_size += fs::file_size(save_path.path());
+                }
+                save_data_list_size += save_data_size;
+
+                save_data_list.push_back({ get_app_index(gui, title_id)->title, title_id, save_data_size, date });
+            }
+        }
+        init_content_mutex["save"].unlock();
+        if (stop_thread["general"])
+            return;
+        space["savedata"] = save_data_list_size ? get_unit_size(save_data_list_size) : "-";
+        finished["savedata"] = true;
+        std::sort(save_data_list.begin(), save_data_list.end(), [](const SaveData &sa, const SaveData &sb) {
+            return sa.title < sb.title;
+        });
+    });
+
     save_data_list.clear();
 
-    fs::path SAVE_PATH{ fs::path{ host.pref_path } / "ux0/user" / host.io.user_id / "savedata" };
-    if (!fs::exists(SAVE_PATH))
-        return;
+    get_save_data_size.detach();
+}
 
-    for (const auto &save : fs::directory_iterator(SAVE_PATH)) {
-        const auto title_id = save.path().stem().generic_string();
-        if (fs::is_directory(save.path()) && !fs::is_empty(save.path()) && get_app_index(gui, title_id) != gui.app_selector.user_apps.end()) {
-            tm updated_tm = {};
-
-            const auto last_writen = fs::last_write_time(save);
-            SAFE_LOCALTIME(&last_writen, &updated_tm);
-            const auto date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}",
-                updated_tm.tm_mday, updated_tm.tm_mon + 1, updated_tm.tm_year + 1900, updated_tm.tm_hour, updated_tm.tm_min);
-
-            size_t size = 0;
-            for (const auto &save_path : fs::recursive_directory_iterator(save)) {
-                if (fs::is_regular_file(save_path.path()))
-                    size += fs::file_size(save_path.path());
+void get_themes_size(GuiState &gui, HostState &host) {
+    std::thread get_themes_size([&gui, &host]() {
+        init_content_mutex["themes"].lock();
+        const auto THEME_PATH{ fs::path(host.pref_path) / "ux0/theme" };
+        size_t themes_list_size = 0;
+        if (fs::exists(THEME_PATH) && !fs::is_empty(THEME_PATH)) {
+            for (const auto &themes_list : fs::directory_iterator(THEME_PATH)) {
+                if (stop_thread["general"] || stop_thread["themes"])
+                    break;
+                for (const auto &theme : fs::recursive_directory_iterator(themes_list)) {
+                    if (fs::is_regular_file(theme.path()))
+                        themes_list_size += fs::file_size(theme.path());
+                }
             }
-
-            save_data_list.push_back({ get_app_index(gui, title_id)->title, title_id, size, date });
         }
-    }
-    std::sort(save_data_list.begin(), save_data_list.end(), [](const SaveData &sa, const SaveData &sb) {
-        return sa.title < sb.title;
+        init_content_mutex["themes"].unlock();
+        if (stop_thread["general"] || stop_thread["themes"])
+            return;
+        space["themes"] = themes_list_size ? get_unit_size(themes_list_size) : "-";
+        finished["themes"] = true;
     });
+
+    finished["themes"] = false;
+    space["themes"].clear();
+    stop_thread["themes"] = false;
+
+    get_themes_size.detach();
 }
 
 static std::map<std::string, size_t> apps_size;
-static std::map<std::string, std::string> space;
 
 void init_content_manager(GuiState &gui, HostState &host) {
+    finished.clear();
     space.clear();
+    stop_thread["general"] = false;
 
-    size_t free_size = 0;
-    free_size = fs::space(host.pref_path).free;
-    space["free"] = get_unit_size(free_size);
+    space["free"] = get_unit_size(fs::space(host.pref_path).free);
 
-    size_t apps_list_size = 0;
-    for (const auto &app : gui.app_selector.user_apps) {
-        apps_size[app.path] = get_app_size(gui, host, app.path);
-        apps_list_size += apps_size[app.path];
-    }
-    space["app"] = apps_list_size ? get_unit_size(apps_list_size) : "-";
+    std::thread get_apps_size([&gui, &host]() {
+        init_content_mutex["apps"].lock();
+        for (const auto &app : gui.app_selector.user_apps) {
+            if (stop_thread["general"])
+                break;
+
+            apps_size[app.title_id] = get_app_size(gui, host, app.path);
+            apps_list_size += apps_size[app.title_id];
+        }
+        if (stop_thread["general"])
+            return;
+        space["app"] = apps_list_size ? get_unit_size(apps_list_size) : "-";
+        finished["app"] = true;
+        init_content_mutex["apps"].unlock();
+    });
+    get_apps_size.detach();
 
     get_save_data_list(gui, host);
-    size_t save_data_list_size = 0;
-    for (const auto &save : save_data_list) {
-        save_data_list_size += save.size;
-    }
-    space["savedata"] = save_data_list_size ? get_unit_size(save_data_list_size) : "-";
 
-    const auto THEME_PATH{ fs::path(host.pref_path) / "ux0/theme" };
-    size_t themes_list_size = 0;
-    if (fs::exists(THEME_PATH) && !fs::is_empty(THEME_PATH)) {
-        for (const auto &themes_list : fs::directory_iterator(THEME_PATH)) {
-            for (const auto &theme : fs::recursive_directory_iterator(themes_list)) {
-                if (fs::is_regular_file(theme.path()))
-                    themes_list_size += fs::file_size(theme.path());
-            }
-        }
-    }
-    space["themes"] = themes_list_size ? get_unit_size(themes_list_size) : "-";
+    get_themes_size(gui, host);
 }
 
-static std::map<std::string, bool> contents_selected;
 static std::string app_selected, size_selected_contents, menu, title;
 
-static bool get_size_selected_contents(GuiState &gui, HostState &host) {
-    size_selected_contents.clear();
-    size_t contents_size = 0;
-    for (const auto &content : contents_selected) {
-        if (content.second) {
-            if (menu == "app")
-                contents_size += apps_size[content.first];
-            else {
-                const auto save_index = std::find_if(save_data_list.begin(), save_data_list.end(), [&](const SaveData &s) {
-                    return s.title_id == content.first;
-                });
-                contents_size += save_index->size;
+static void get_size_selected_contents(GuiState &gui, HostState &host) {
+    std::thread get_size_selected([&gui, &host]() {
+        size_t contents_size = 0;
+        for (const auto &content : contents_selected) {
+            if (stop_thread["get_size"])
+                break;
+            if (content.second) {
+                if (menu == "app") {
+                    while (!apps_size[content.first]) {
+                    }
+                    contents_size += apps_size[content.first];
+                } else {
+                    const auto save_index = std::find_if(save_data_list.begin(), save_data_list.end(), [&](const SaveData &s) {
+                        return s.title_id == content.first;
+                    });
+                    while (!save_index->size) {
+                    }
+                    contents_size += save_index->size;
+                }
             }
         }
-    }
-    size_selected_contents = get_unit_size(contents_size);
+        if (stop_thread["get_size"])
+            return;
+        size_selected_contents = get_unit_size(contents_size);
+        finished["selected"] = true;
+    });
 
-    return contents_size;
+    finished["selected"] = false;
+    size_selected_contents.clear();
+    stop_thread["get_size"] = false;
+
+    get_size_selected.detach();
 }
 
 struct Dlc {
@@ -231,7 +300,7 @@ static void get_content_info(GuiState &gui, HostState &host) {
     }
 }
 
-static bool popup, content_delete, set_scroll_pos;
+static bool content_delete, set_scroll_pos;
 static float scroll_pos;
 static ImGuiTextFilter search_bar;
 
@@ -299,20 +368,22 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (menu == "info" ? 130.f : 102.0f) * SCAL.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
-    ImGui::BeginChild("##content_manager_child", menu == "info" ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##content_manager_child", menu == "info" ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     if (menu.empty()) {
         title = "Content Manager";
         ImGui::SetWindowFontScale(1.2f);
         ImGui::Columns(2, nullptr, false);
-        ImGui::SetColumnWidth(0, 630.f * SCAL.x);
+        ImGui::SetColumnWidth(0, 640.f * SCAL.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
         const auto SIZE_SELECT = 80.f * SCAL.y;
         if (ImGui::Selectable("Applications", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
             menu = "app";
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
-        ImGui::Selectable(space["app"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT));
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+        ImGui::Selectable(finished["app"] ? space["app"].c_str() : "Checking...", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT));
+        ImGui::PopStyleVar();
         ImGui::NextColumn();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
@@ -320,27 +391,31 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             menu = "save";
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
-        ImGui::Selectable(space["savedata"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT));
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+        ImGui::Selectable(finished["savedata"] ? space["savedata"].c_str() : "Checking...", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT));
+        ImGui::PopStyleVar();
         ImGui::NextColumn();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Selectable("Themes", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT))) {
             host.app_path = "NPXS10026";
             gui.live_area.content_manager = false;
+            stop_thread["themes"] = true;
             pre_run_app(gui, host, "NPXS10015");
         }
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
-        ImGui::Selectable(space["themes"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT));
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+        ImGui::Selectable(finished["themes"] ? space["themes"].c_str() : "Checking...", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT));
+        ImGui::PopStyleVar(2);
         ImGui::NextColumn();
-        ImGui::PopStyleVar();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
         ImGui::TextColored(GUI_COLOR_TEXT, "Free Space");
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
+        ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + ((ImGui::GetColumnWidth() / 2.f) - (ImGui::CalcTextSize(space["free"].c_str()).x / 2.f)), ImGui::GetCursorPosY() + (25.f * SCAL.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", space["free"].c_str());
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
         ImGui::SetWindowFontScale(1.2f);
@@ -348,24 +423,8 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         ImGui::NextColumn();
         ImGui::Columns(1);
     } else {
+        // Delete content
         if (content_delete) {
-            for (const auto &content : contents_selected) {
-                if (content.second) {
-                    if (menu == "app") {
-                        fs::remove_all(fs::path(host.pref_path) / "ux0/app" / content.first);
-                        fs::remove_all(fs::path(host.pref_path) / "ux0/addcont" / content.first);
-                        gui.app_selector.user_apps.erase(get_app_index(gui, content.first));
-                        gui.app_selector.user_apps_icon.erase(content.first);
-                    }
-                    const auto SAVE_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / content.first };
-                    fs::remove_all(SAVE_PATH);
-                }
-            }
-            init_content_manager(gui, host);
-            contents_selected.clear();
-            content_delete = false;
-        }
-        if (popup) {
             ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
             ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
             ImGui::Begin("##app_delete", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
@@ -380,21 +439,44 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, menu == "app" ? "The selected applications and all related data, including saved data, will be deleted." : "The selected saved data items wii be deleted");
             ImGui::PopTextWrapPos();
             ImGui::SetCursorPos(ImVec2(106.f * SCAL.x, ImGui::GetCursorPosY() + (76.f * SCAL.y)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "Data to be Deleted: %s", size_selected_contents.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "Data to be Deleted: %s", finished["selected"] ? size_selected_contents.c_str() : "Checking...");
             ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (10.f * SCAL.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCAL.y)));
             if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
-                popup = false;
+                stop_thread["get_size"] = true;
+                content_delete = false;
             }
             ImGui::SameLine(0, 20.f * SCAL.x);
-            if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
-                content_delete = true;
-                popup = false;
+            ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+            if (finished["selected"] ? (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) : ImGui::Selectable("Ok", false, ImGuiSelectableFlags_Disabled, BUTTON_SIZE)) {
+                content_delete = false;
+                std::vector<std::string> app_list;
+                for (const auto &content : contents_selected) {
+                    if (content.second) {
+                        if (menu == "app") {
+                            gui.app_selector.user_apps_icon.erase(content.first);
+                            apps_list_size -= apps_size[content.first];
+                            apps_size.erase(content.first);
+                            space["app"] = get_unit_size(apps_list_size);
+                            app_list.push_back(content.first);
+                        }
+                        const auto save_index = std::find_if(save_data_list.begin(), save_data_list.end(), [&](const SaveData &s) {
+                            return s.title_id == content.first;
+                        });
+                        if (save_index != save_data_list.end()) {
+                            fs::remove_all(fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / content.first);
+                            save_data_list_size -= save_index->size;
+                            save_data_list.erase(save_index);
+                            space["savedata"] = get_unit_size(save_data_list_size);
+                        }
+                    }
+                }
+                delete_apps(gui, host, app_list);
+                contents_selected.clear();
             }
-            ImGui::PopStyleVar(2);
+            ImGui::PopStyleVar(3);
             ImGui::EndChild();
             ImGui::End();
         }
-
         // Apps Menu
         if (menu == "app") {
             title = "Applications";
@@ -431,7 +513,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", app.title.c_str());
                     ImGui::SetCursorPosY(Title_POS + (46.f * SCAL.y));
                     ImGui::SetWindowFontScale(0.8f);
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_unit_size(apps_size[app.path]).c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", apps_size[app.path] ? get_unit_size(apps_size[app.path]).c_str() : "Checking...");
                     ImGui::NextColumn();
                     ImGui::SetWindowFontScale(1.2f);
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCAL.y));
@@ -535,7 +617,6 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             }
         }
     }
-
     ImGui::EndChild();
 
     ImGui::SetWindowFontScale(1.2f * SCAL.x);
@@ -554,6 +635,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     gui.live_area.live_area_screen = true;
                 else
                     gui.live_area.app_selector = true;
+                stop_thread["general"] = true;
                 gui.live_area.content_manager = false;
             }
         }
@@ -583,8 +665,10 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         }) != contents_selected.end();
         ImGui::SameLine();
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-        if (is_enable ? ImGui::Button("Delete", ImVec2(202.f * SCAL.x, 44.f * SCAL.y)) && get_size_selected_contents(gui, host) : ImGui::Selectable("Delete", false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCAL.x, 36.f * SCAL.y)))
-            popup = true;
+        if (is_enable ? ImGui::Button("Delete", ImVec2(202.f * SCAL.x, 44.f * SCAL.y)) : ImGui::Selectable("Delete", false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCAL.x, 36.f * SCAL.y))) {
+            get_size_selected_contents(gui, host);
+            content_delete = true;
+        }
         ImGui::PopStyleVar();
     }
     ImGui::PopStyleVar();

@@ -560,6 +560,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (!gui.trophy_unlock_display_requests.empty())
         gui::draw_trophies_unlocked(gui, host);
 
+    if (gui.live_area.waiting_popup)
+        draw_waiting_popup(gui, host);
+
     // System App
     if (gui.live_area.content_manager)
         draw_content_manager(gui, host);

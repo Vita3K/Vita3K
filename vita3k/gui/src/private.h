@@ -67,6 +67,7 @@ void draw_settings(GuiState &gui, HostState &host);
 void draw_start_screen(GuiState &gui, HostState &host);
 void draw_trophy_collection(GuiState &gui, HostState &host);
 void draw_user_management(GuiState &gui, HostState &host);
+void draw_waiting_popup(GuiState &gui, HostState &host);
 
 void reevaluate_code(GuiState &gui, HostState &host);
 

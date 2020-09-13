@@ -26,24 +26,11 @@
 
 namespace gui {
 
-void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
-    const fs::path APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
-    const auto APP_INDEX = get_app_index(gui, app_path);
-
-    LOG_INFO_IF(fs::remove_all(APP_PATH), "Application successfully deleted '{} [{}]'.", APP_INDEX->title_id, APP_INDEX->title);
-
-    if (!fs::exists(app_path)) {
-        gui.delete_app_icon = true;
-        gui.app_selector.user_apps.erase(APP_INDEX);
-    } else
-        LOG_ERROR("Failed to delete '{} [{}]'.", APP_INDEX->title_id, APP_INDEX->title);
-}
-
 static std::map<double, std::string> update_history_infos;
 
-static bool get_update_history(GuiState &gui, HostState &host, const std::string &title_id) {
+static bool get_update_history(GuiState &gui, HostState &host, const std::string &app_path) {
     update_history_infos.clear();
-    const auto change_info_path{ fs::path(host.pref_path) / "ux0/app" / title_id / "sce_sys/changeinfo/" };
+    const auto change_info_path{ fs::path(host.pref_path) / "ux0/app" / app_path / "sce_sys/changeinfo/" };
 
     std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", host.cfg.sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", host.cfg.sys_lang) : "changeinfo.xml";
 
@@ -241,12 +228,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
         }
         if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
             if (context_dialog == "app") {
-                fs::remove_all(DLC_PATH);
-                fs::remove_all(SAVE_DATA_PATH);
-                fs::remove_all(SHADER_LOG_PATH);
-                delete_app(gui, host, app_path);
-            } else if (context_dialog == "save")
-                fs::remove_all(SAVE_DATA_PATH);
+                delete_apps(gui, host, { app_path });
+                gui.delete_app_icon = true;
+            }
+            fs::remove_all(SAVE_DATA_PATH);
             context_dialog.clear();
         }
         ImGui::PopStyleVar();

@@ -233,6 +233,26 @@ void init_lang(GuiState &gui, HostState &host) {
     }
 }
 
+void draw_waiting_popup(GuiState &gui, HostState &host) {
+    const auto display_size = ImGui::GetIO().DisplaySize;
+    const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+    const auto WAITING_WINDOW = ImVec2(520.f * SCAL.x, 120.f * SCAL.y);
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+    ImGui::Begin("##delete_dialog", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
+    ImGui::BeginChild("##delete_dialog_child", WAITING_WINDOW, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::SetWindowFontScale(1.2f);
+    const auto calc_text = ImGui::CalcTextSize("Please wait...");
+    ImGui::SetCursorPos(ImVec2((WAITING_WINDOW.x / 2.f) - (calc_text.x / 2.f), (WAITING_WINDOW.y / 2.f) - (calc_text.y / 2.f)));
+    ImGui::TextColored(GUI_COLOR_TEXT, "Please wait...");
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::End();
+}
+
 bool get_live_area_sys_app_state(GuiState &gui) {
     return !gui.live_area.content_manager && !gui.live_area.settings && !gui.live_area.trophy_collection && !gui.live_area.manual && !gui.live_area.user_management;
 }

@@ -36,7 +36,7 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-void delete_app(GuiState &gui, HostState &host, const std::string &app_path);
+void delete_apps(GuiState &gui, HostState &host, const std::vector<std::string> &app_list);
 void get_app_info(GuiState &gui, HostState &host, const std::string &app_path);
 size_t get_app_size(GuiState &gui, HostState &host, const std::string &app_path);
 std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string &app_path);
@@ -45,6 +45,7 @@ std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const 
 std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host, const tm &date_time);
 bool get_live_area_sys_app_state(GuiState &gui);
 void get_modules_list(GuiState &gui, HostState &host);
+void get_themes_size(GuiState &gui, HostState &host);
 std::string get_unit_size(const size_t &size);
 void get_user_app_params(GuiState &gui, HostState &host, const std::string &app_path);
 void get_user_apps_title(GuiState &gui, HostState &host);

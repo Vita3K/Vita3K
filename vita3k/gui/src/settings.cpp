@@ -1172,6 +1172,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                 settings_menu.clear();
         } else {
             if (host.app_title_id == "NPXS10026") {
+                get_themes_size(gui, host);
                 gui.live_area.content_manager = true;
             } else {
                 if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10015")
