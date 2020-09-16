@@ -1,46 +1,70 @@
-#if DISCORD_RPC
+#if USE_DISCORD
 
 #include <app/discord.h>
-#include <discord_rpc.h>
+#include <util/log.h>
 
-#include <ctime>
+struct DiscordState {
+    std::unique_ptr<discord::Core> core;
+    bool running = false;
+};
 
-// Credits to the RPCS3 Project
+namespace discordrpc {
 
-namespace discord {
-void init(const std::string &application_id) {
-    DiscordEventHandlers handlers = {};
-    Discord_Initialize(application_id.c_str(), &handlers, 1, NULL);
+DiscordState discord_state{};
+
+bool init() {
+    discord::Core *core{};
+    auto result = discord::Core::Create(570296795943403530, DiscordCreateFlags_NoRequireDiscord, &core);
+    if (result != discord::Result::Ok) {
+        return false;
+    }
+    discord_state.core.reset(core);
+    if (!discord_state.core) {
+        LOG_ERROR("Failed to instantiate discord core, err_code: {}", static_cast<int>(result));
+        return false;
+    }
+    discord_state.running = true;
+    return true;
 }
 
 void shutdown() {
-    Discord_Shutdown();
+    discord_state.running = false;
+    discord_state.core.reset();
 }
 
 void update_init_status(bool discord_rich_presence, bool *discord_rich_presence_old) {
     if (*discord_rich_presence_old != discord_rich_presence) {
         if (discord_rich_presence) {
-            discord::init();
-            discord::update_presence("", "Idle");
+            discordrpc::init();
+            discordrpc::update_presence();
         } else {
-            discord::shutdown();
+            discordrpc::shutdown();
         }
         *discord_rich_presence_old = discord_rich_presence;
+    }
+    if (discord_state.running) {
+        discord_state.core->RunCallbacks();
     }
 }
 
 void update_presence(const std::string &state, const std::string &details, bool reset_timer) {
-    DiscordRichPresence discord_presence = {};
-    discord_presence.details = details.c_str();
-    discord_presence.state = state.c_str();
-    discord_presence.largeImageKey = "vita3k-logo";
-    discord_presence.largeImageText = "Vita3K is the world's first functional PlayStation Vita emulator";
+    discord::Activity activity{};
 
-    if (reset_timer) {
-        discord_presence.startTimestamp = time(0);
+    if (discord_state.running) {
+        activity.SetDetails(details.c_str());
+        activity.SetState(state.c_str());
+        activity.GetAssets().SetLargeImage("vita3k-logo");
+        activity.GetAssets().SetLargeText("Vita3K is the world's first functional PlayStation Vita emulator");
+        activity.SetType(discord::ActivityType::Playing);
+        if (reset_timer) {
+            activity.GetTimestamps().SetStart(time(nullptr));
+        }
+        discord_state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
+            if (result != discord::Result::Ok) {
+                LOG_ERROR("Error updating discord rich presence, err_code: {}", static_cast<int>(result));
+            }
+        });
     }
-
-    Discord_UpdatePresence(&discord_presence);
 }
-} // namespace discord
+} // namespace discordrpc
 #endif

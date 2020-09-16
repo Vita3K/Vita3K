@@ -14,9 +14,6 @@
 	path = external/dirent
 	url = https://github.com/tronkko/dirent
 	branch = v1.23
-[submodule "external/discord-rpc"]
-	path = external/discord-rpc
-	url = https://github.com/discordapp/discord-rpc
 [submodule "external/dlmalloc"]
 	path = external/dlmalloc
 	url = https://github.com/Vita3K/dlmalloc
