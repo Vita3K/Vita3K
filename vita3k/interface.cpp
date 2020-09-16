@@ -44,7 +44,7 @@
 #include <gdbstub/functions.h>
 #endif
 
-#if DISCORD_RPC
+#if USE_DISCORD
 #include <app/discord.h>
 #endif
 
@@ -471,9 +471,9 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
     server_open(host);
 #endif
 
-#if DISCORD_RPC
+#if USE_DISCORD
     if (host.cfg.discord_rich_presence)
-        discord::update_presence(host.io.title_id, host.current_app_title);
+        discordrpc::update_presence(host.io.title_id, host.current_app_title);
 #endif
 
     return Success;

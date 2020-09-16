@@ -139,18 +139,38 @@ target_link_libraries(yaml INTERFACE yaml-cpp)
 add_library(rpcs3 INTERFACE)
 target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")
 
-add_library(discord-rpc INTERFACE)
-if (USE_DISCORD_RICH_PRESENCE)
-	target_compile_definitions(discord-rpc INTERFACE DISCORD_RPC=NDEBUG)
-endif()
-target_include_directories(discord-rpc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/discord-rpc/include")
+message(STATUS "Downloading discord gamesdk...")
+file(DOWNLOAD https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip
+	"${CMAKE_BINARY_DIR}/external/discord.zip" SHOW_PROGRESS)
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/discord_game_sdk")
+execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/discord.zip"
+	WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/discord_game_sdk")
+file(REMOVE "${CMAKE_BINARY_DIR}/external/discord.zip")
+file(RENAME "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.so"
+	"${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so")
+add_library(discord-rpc STATIC 
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/achievement_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/activity_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/application_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/core.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/image_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/lobby_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/network_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/overlay_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/relationship_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/storage_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/store_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/types.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/user_manager.cpp
+${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/voice_manager.cpp)
 if(APPLE)
-	target_link_libraries(discord-rpc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/discord-rpc-lib/libdiscord-rpc-mac.a")
+	target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib")
 elseif(WIN32)
-	target_link_libraries(discord-rpc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/discord-rpc-lib/discord-rpc.lib")
+	target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dll.lib")
 elseif(UNIX)
-	target_link_libraries(discord-rpc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/discord-rpc-lib/libdiscord-rpc-linux.a")
+	target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so")
 endif()
+target_include_directories(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp")
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" OFF)
 option(SKIP_GLSLANG_INSTALL "Skip installation" ON)

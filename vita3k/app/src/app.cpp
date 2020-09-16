@@ -22,10 +22,6 @@
 #include <kernel/functions.h>
 #include <util/log.h>
 
-#if DISCORD_RPC
-#include <app/discord.h>
-#endif
-
 #include <SDL.h>
 
 namespace app {

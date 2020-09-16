@@ -32,7 +32,7 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#if DISCORD_RPC
+#if USE_DISCORD
 #include <app/discord.h>
 #endif
 
@@ -171,10 +171,9 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
-#if DISCORD_RPC
-    discord::init();
-    if (cfg.discord_rich_presence) {
-        discord::update_presence("");
+#if USE_DISCORD
+    if (discordrpc::init() && cfg.discord_rich_presence) {
+        discordrpc::update_presence();
     }
 #endif
 
@@ -216,8 +215,8 @@ void destroy(HostState &host, ImGui_State *imgui) {
     }
 #endif
 
-#ifdef USE_DISCORD_RICH_PRESENCE
-    discord::shutdown();
+#ifdef USE_DISCORD
+    discordrpc::shutdown();
 #endif
 
 #ifdef USE_GDBSTUB
