@@ -132,7 +132,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Module Mode");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select Automatic or Manuel mode for load modules list.");
+                ImGui::SetTooltip("Select Automatic or Manual mode for load modules list.");
             ImGui::Spacing();
             if (ImGui::RadioButton("Automatic", host.cfg.auto_lle))
                 host.cfg.auto_lle = true;
