@@ -417,8 +417,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     } else
         ImGui::PopStyleColor();
 
-    if (host.cfg.overwrite_config)
-        config::serialize_config(host.cfg, host.cfg.config_path);
+    if (host.cfg != host.cfg_temp)
+        if (host.cfg.overwrite_config) {
+            host.cfg_temp = host.cfg;
+            config::serialize_config(host.cfg, host.cfg.config_path);
+        }
 
     ImGui::EndTabBar();
     ImGui::End();

@@ -107,6 +107,89 @@ public:
         update_members();
     }
 
+    friend bool operator==(const Config &&lhs, const Config &rhs);
+
+    //Compare members of 2 Configs
+    bool operator==(const Config &rhs) {
+        if (this != &rhs) {
+            /*for (file_config fc = (file_config)0; fc != _INVALID; fc = (file_config)(fc + 1)) {
+                auto option = Config::operator[](fc);
+                auto element = this->yaml_node[option].Scalar();
+                auto temp = rhs.yaml_node[option].Scalar();
+                if (element != temp)
+                    return false;
+            }*/
+            // clang-format off
+            if (this->log_imports != rhs.log_imports ||
+                this->stack_traceback != rhs.stack_traceback ||
+                this->log_exports != rhs.log_exports ||
+                this->log_active_shaders != rhs.log_active_shaders ||
+                this->log_uniforms != rhs.log_uniforms ||
+                this->pstv_mode != rhs.pstv_mode ||
+                this->show_gui != rhs.show_gui ||
+                this->apps_list_grid != rhs.apps_list_grid ||
+                this->show_live_area_screen != rhs.show_live_area_screen ||
+                this->icon_size != rhs.icon_size ||
+                this->archive_log != rhs.archive_log ||
+                this->texture_cache != rhs.texture_cache ||
+                this->disable_ngs != rhs.disable_ngs ||
+                this->sys_button != rhs.sys_button ||
+                this->sys_lang != rhs.sys_lang ||
+                this->auto_lle != rhs.auto_lle ||
+                this->delay_background != rhs.delay_background ||
+                this->delay_start != rhs.delay_start ||
+                this->background_alpha != rhs.background_alpha ||
+                this->log_level != rhs.log_level ||
+                this->pref_path != rhs.pref_path ||
+                this->last_app != rhs.last_app ||
+                this->discord_rich_presence != rhs.discord_rich_presence ||
+                this->wait_for_debugger != rhs.wait_for_debugger ||
+                this->color_surface_debug != rhs.color_surface_debug ||
+                this->hardware_flip != rhs.hardware_flip ||
+                this->use_ubo != rhs.use_ubo ||
+                this->performance_overlay != rhs.performance_overlay ||
+                this->backend_renderer != rhs.backend_renderer ||
+                this->keyboard_button_select != rhs.keyboard_button_select ||
+                this->keyboard_button_start != rhs.keyboard_button_start ||
+                this->keyboard_button_up != rhs.keyboard_button_up ||
+                this->keyboard_button_right != rhs.keyboard_button_right ||
+                this->keyboard_button_down != rhs.keyboard_button_down ||
+                this->keyboard_button_left != rhs.keyboard_button_left ||
+                this->keyboard_button_l1 != rhs.keyboard_button_l1 ||
+                this->keyboard_button_r1 != rhs.keyboard_button_r1 ||
+                this->keyboard_button_l2 != rhs.keyboard_button_l2 ||
+                this->keyboard_button_r2 != rhs.keyboard_button_r2 ||
+                this->keyboard_button_l3 != rhs.keyboard_button_l3 ||
+                this->keyboard_button_r3 != rhs.keyboard_button_r3 ||
+                this->keyboard_button_triangle != rhs.keyboard_button_triangle ||
+                this->keyboard_button_circle != rhs.keyboard_button_circle ||
+                this->keyboard_button_cross != rhs.keyboard_button_cross ||
+                this->keyboard_button_square != rhs.keyboard_button_square ||
+                this->keyboard_leftstick_left != rhs.keyboard_leftstick_left ||
+                this->keyboard_leftstick_right != rhs.keyboard_leftstick_right ||
+                this->keyboard_leftstick_up != rhs.keyboard_leftstick_up ||
+                this->keyboard_leftstick_down != rhs.keyboard_leftstick_down ||
+                this->keyboard_rightstick_left != rhs.keyboard_rightstick_left ||
+                this->keyboard_rightstick_right != rhs.keyboard_rightstick_right ||
+                this->keyboard_rightstick_up != rhs.keyboard_rightstick_up ||
+                this->keyboard_rightstick_down != rhs.keyboard_rightstick_down ||
+                this->keyboard_button_psbutton != rhs.keyboard_button_psbutton ||
+                this->user_id != rhs.user_id ||
+                this->auto_user_login != rhs.auto_user_login ||
+                this->dump_textures != rhs.dump_textures ||
+                this->show_welcome != rhs.show_welcome ||
+                this->lle_modules != rhs.lle_modules)
+                return false;
+            // clang-format on
+        }
+        return true;
+    }
+
+    //Opposite compare between 2 configs
+    const bool operator!=(const Config &rhs) {
+        return !(*this == rhs);
+    }
+
     Config(Config &&rhs) noexcept {
         yaml_node = rhs.get();
         check_members(rhs);
