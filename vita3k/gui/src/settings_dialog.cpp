@@ -413,6 +413,19 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         config::serialize_config(host.cfg, host.cfg.config_path);
 
     ImGui::EndTabBar();
+
+    if (host.cfg.overwrite_config) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        static const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+        if (ImGui::Button("Save", BUTTON_SIZE))
+            config::serialize_config(host.cfg, host.cfg.config_path);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Click on Save is request keep change after reboot.");
+    }
+
     ImGui::End();
 }
 
