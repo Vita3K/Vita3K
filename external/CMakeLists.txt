@@ -139,15 +139,20 @@ target_link_libraries(yaml INTERFACE yaml-cpp)
 add_library(rpcs3 INTERFACE)
 target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")
 
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip")
 message(STATUS "Downloading discord gamesdk...")
 file(DOWNLOAD https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip
-	"${CMAKE_BINARY_DIR}/external/discord.zip" SHOW_PROGRESS)
+	"${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip" SHOW_PROGRESS)
+endif()
+
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk")
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/discord_game_sdk")
-execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/discord.zip"
+execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip"
 	WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/discord_game_sdk")
-file(REMOVE "${CMAKE_BINARY_DIR}/external/discord.zip")
 file(RENAME "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.so"
 	"${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so")
+endif()
+
 add_library(discord-rpc STATIC 
 ${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/achievement_manager.cpp
 ${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/activity_manager.cpp
