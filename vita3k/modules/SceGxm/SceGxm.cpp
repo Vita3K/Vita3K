@@ -1441,8 +1441,14 @@ EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
     renderer::set_cull_mode(*host.renderer, context->renderer.get(), &context->state, mode);
 }
 
-EXPORT(int, sceGxmSetDefaultRegionClipAndViewport) {
-    return UNIMPLEMENTED();
+EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, unsigned int xMax, unsigned int yMax) {
+    unsigned int xMin = 0, yMin = 0;
+
+    renderer::set_region_clip(*host.renderer, context->renderer.get(), &context->state, SCE_GXM_REGION_CLIP_OUTSIDE, xMin, xMax, yMin, yMax);
+
+    renderer::set_viewport(*host.renderer, context->renderer.get(), &context->state,
+        0.5f * static_cast<float>(1 + xMax + xMin), 0.5f * static_cast<float>(1 + yMax + yMin),
+        0.5f, 0.5f * static_cast<float>(1 + xMax - xMin), -0.5f * static_cast<float>(1 + yMax - yMin), 0.5f);
 }
 
 EXPORT(int, sceGxmSetDeferredContextFragmentBuffer) {
