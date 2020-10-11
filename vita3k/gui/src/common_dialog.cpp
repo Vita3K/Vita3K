@@ -104,6 +104,7 @@ static void draw_message_dialog(DialogState &common_dialog) {
         ImGui::EndGroup();
     }
     ImGui::End();
+    ImGui::PopStyleColor();
 }
 
 static void draw_trophy_setup_dialog(DialogState &common_dialog) {
