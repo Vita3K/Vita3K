@@ -139,7 +139,6 @@ def update_matcher():
 #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
         // clang-format off
 """ + out + "\n        // clang-format on\n"
-    import re
     replace_file('../../vita3k/shader/src/usse_translator_entry.cpp', entry_pat, r'\1'+out+r'    \2')
 
 def update_visitor():
