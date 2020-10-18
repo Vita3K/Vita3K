@@ -176,7 +176,7 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
 
         raise_waiting_threads(thread.get());
 
-        SDL_WaitThread(running_thread, nullptr);
+        SDL_WaitThread(running_thread, &thread->returned_value);
     };
 
     const ThreadPtr running_thread(SDL_CreateThread(&thread_function, waiting->second.name.c_str(), &params), delete_thread);

@@ -57,4 +57,5 @@ struct ThreadState {
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
     std::string name;
     Address entry_point;
+    int returned_value;
 };
