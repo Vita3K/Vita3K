@@ -34,11 +34,16 @@ static nfdchar_t *archive_path;
 void draw_archive_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
 
+    static std::mutex install_mutex;
     static bool draw_file_dialog = true;
     static bool content_install_confirm = false;
     static bool finished_installing = false;
-    static float progress;
-    static bool reinstalling;
+    static std::atomic<float> progress = 0;
+    static bool reinstalling = false;
+    static const auto progress_callback = [&](float updated_progress) {
+        progress = updated_progress;
+    };
+    std::lock_guard<std::mutex> lock(install_mutex);
 
     if (draw_file_dialog) {
         result = NFD_OpenDialog("vpk,zip", nullptr, &archive_path);
@@ -47,11 +52,16 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
 
         if (result == NFD_OKAY) {
             std::thread installation([&host, &gui]() {
-                if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path)), &progress))
+                if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path)), progress_callback)) {
+                    std::lock_guard<std::mutex> lock(install_mutex);
                     content_install_confirm = true;
-                else if (!gui.content_reinstall_confirm)
+                } else if (!gui.content_reinstall_confirm) {
                     ImGui::OpenPopup("Content installation failed");
-                finished_installing = true;
+                }
+                {
+                    std::lock_guard<std::mutex> lock(install_mutex);
+                    finished_installing = true;
+                }
             });
             installation.detach();
         } else {
@@ -63,12 +73,17 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
     if (reinstalling) {
         finished_installing = false;
         std::thread reinstallation([&host, &gui]() {
-            if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path)), &progress)) {
+            if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path)), progress_callback)) {
+                std::lock_guard<std::mutex> lock(install_mutex);
                 content_install_confirm = true;
-            } else if (!gui.content_reinstall_confirm)
+            } else if (!gui.content_reinstall_confirm) {
                 ImGui::OpenPopup("Content installation failed");
-            finished_installing = true;
-            gui.content_reinstall_confirm = false;
+            }
+            {
+                std::lock_guard<std::mutex> lock(install_mutex);
+                finished_installing = true;
+                gui.content_reinstall_confirm = false;
+            }
         });
         reinstalling = false;
         reinstallation.detach();
