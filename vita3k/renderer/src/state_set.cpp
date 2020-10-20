@@ -101,12 +101,11 @@ COMMAND_SET_STATE(uniform_buffer) {
     const bool is_vertex = helper.pop<bool>();
     const int block_num = helper.pop<int>();
     const std::uint32_t size = helper.pop<std::uint32_t>();
-    const void *data = helper.pop<const void *>();
+    std::uint8_t *data = helper.pop<std::uint8_t *>();
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), is_vertex, block_num, size, data, config.log_active_shaders);
-        delete data;
 
         break;
     }
@@ -115,6 +114,7 @@ COMMAND_SET_STATE(uniform_buffer) {
         REPORT_MISSING(renderer.current_backend);
         break;
     }
+    delete[] data;
 }
 
 COMMAND_SET_STATE(viewport) {
@@ -365,7 +365,7 @@ COMMAND_SET_STATE(cull_mode) {
 COMMAND_SET_STATE(vertex_stream) {
     const std::size_t stream_index = helper.pop<std::size_t>();
     const std::size_t stream_data_length = helper.pop<std::size_t>();
-    const void *stream_data = helper.pop<const void *>();
+    std::uint8_t *stream_data = helper.pop<std::uint8_t *>();
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
@@ -379,6 +379,7 @@ COMMAND_SET_STATE(vertex_stream) {
         REPORT_MISSING(renderer.current_backend);
         break;
     }
+    delete[] stream_data;
 }
 
 COMMAND(handle_set_state) {
