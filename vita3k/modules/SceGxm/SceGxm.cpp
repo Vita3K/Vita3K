@@ -615,8 +615,8 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     const SceGxmProgram &fragment_program_gxp = *fragment_program->program.get(host.mem);
 
     if (host.renderer->features.use_ubo) {
-        UniformBuffers vertex_uniform_buffers;
-        UniformBuffers fragment_uniform_buffers;
+        UniformBuffers vertex_uniform_buffers = {};
+        UniformBuffers fragment_uniform_buffers = {};
         vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = vertex_state->default_uniform_buffer;
         fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = fragment_state->default_uniform_buffer;
         renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
@@ -625,8 +625,8 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         // Update uniforms from this side. We should pass the pointer to parameter struct, since from there it can
         // find the name and other things based on the pointer in memory. The pointer should be persists until
         // the fragment is done, so we are guranteed to be safe.
-        UniformBuffers vertex_uniform_buffers;
-        UniformBuffers fragment_uniform_buffers;
+        UniformBuffers vertex_uniform_buffers = {};
+        UniformBuffers fragment_uniform_buffers = {};
         vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = vertex_state->default_uniform_buffer;
         fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = fragment_state->default_uniform_buffer;
         renderer::set_uniforms(*host.renderer, context->renderer.get(), vertex_program_gxp, vertex_uniform_buffers, host.mem);
