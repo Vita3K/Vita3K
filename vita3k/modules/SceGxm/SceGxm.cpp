@@ -570,11 +570,8 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
             const size_t data_length = max_data_length[stream_index];
             const std::uint8_t *const data = context->state.stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
 
-            std::uint8_t *a_copy = new std::uint8_t[data_length];
-            std::copy(data, data + data_length, a_copy);
-
             renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
-                data_length, a_copy);
+                data_length, data);
         }
     }
 
@@ -671,18 +668,14 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     auto &stream_data = *draw->stream_data.get(host.mem);
     // Copy and queue upload
     for (size_t stream_index = 0; stream_index < SCE_GXM_MAX_VERTEX_STREAMS; ++stream_index) {
-        //LOG_INFO("streams[{}] = {}", stream_index, log_hex(draw->vertex_streams.get(host.mem)[stream_index].address()));
         // Upload it
         if (stream_used & (1 << static_cast<std::uint16_t>(stream_index))) {
             const size_t data_length = max_data_length[stream_index];
 
             const std::uint8_t *const data = stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
 
-            std::uint8_t *a_copy = new std::uint8_t[data_length];
-            std::copy(data, data + data_length, a_copy);
-
             renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
-                data_length, a_copy);
+                data_length, data);
         }
     }
 

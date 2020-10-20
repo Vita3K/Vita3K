@@ -133,11 +133,15 @@ void set_context(State &state, Context *ctx, GxmContextState *gxm_context, Rende
     }
 }
 
-void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len, const void *data) {
+void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len, const std::uint8_t *data) {
     switch (state.current_backend) {
-    default:
-        renderer::add_state_set_command(ctx, renderer::GXMState::VertexStream, index, data_len, data);
+    default: {
+        std::uint8_t *a_copy = new std::uint8_t[data_len];
+        std::copy(data, data + data_len, a_copy);
+
+        renderer::add_state_set_command(ctx, renderer::GXMState::VertexStream, index, data_len, a_copy);
         break;
+    }
     }
 }
 

@@ -80,7 +80,7 @@ void set_uniform(State &state, Context *ctx, const bool is_vertex_uniform, const
 void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_num, const std::uint16_t buffer_size, const void *data);
 
 void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, SceGxmColorSurface *color_surface, SceGxmDepthStencilSurface *depth_stencil_surface);
-void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len, const void *data);
+void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len, const std::uint8_t *data);
 void draw(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count);
 void sync_surface_data(State &state, Context *ctx, GxmContextState *gxm_context);
 
