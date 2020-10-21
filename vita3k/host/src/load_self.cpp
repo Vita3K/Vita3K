@@ -400,33 +400,35 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         LOG_DEBUG_IF(LOG_MODULE_LOADING, "    [{}] (p_type: {}): p_offset: {}, p_vaddr: {}, p_paddr: {}, p_filesz: {}, p_memsz: {}, p_flags: {}, p_align: {}", get_seg_header_string(), log_hex(seg_header.p_type), log_hex(seg_header.p_offset), log_hex(seg_header.p_vaddr), log_hex(seg_header.p_paddr), log_hex(seg_header.p_filesz), log_hex(seg_header.p_memsz), log_hex(seg_header.p_flags), log_hex(seg_header.p_align));
         assert(seg_infos[seg_index].encryption == 2);
         if (seg_header.p_type == PT_LOAD) {
-            Address segment_address = 0;
-            auto alloc_name = fmt::format("SELF at {}", self_path);
-            if (elf.e_type == ET_SCE_EXEC) {
-                segment_address = alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
-            } else {
-                segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+            if (seg_header.p_memsz != 0) {
+                Address segment_address = 0;
+                auto alloc_name = fmt::format("SELF at {}", self_path);
+                if (elf.e_type == ET_SCE_EXEC) {
+                    segment_address = alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
+                } else {
+                    segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+                }
+                const Ptr<uint8_t> seg_addr(segment_address);
+                if (!seg_addr) {
+                    LOG_ERROR("Failed to allocate memory for segment.");
+                    return -1;
+                }
+
+                if (seg_infos[seg_index].compression == 2) {
+                    unsigned long dest_bytes = seg_header.p_filesz;
+                    const uint8_t *const compressed_segment_bytes = self_bytes + seg_infos[seg_index].offset;
+
+                    int res = mz_uncompress(reinterpret_cast<uint8_t *>(seg_addr.get(mem)), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
+                    assert(res == MZ_OK);
+                } else {
+                    memcpy(seg_addr.get(mem), seg_bytes, seg_header.p_filesz);
+                }
+
+                if (DUMP_SEGMENTS)
+                    dump_segment(seg_addr.get(mem));
+
+                segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, seg_header.p_memsz };
             }
-            const Ptr<uint8_t> seg_addr(segment_address);
-            if (!seg_addr) {
-                LOG_ERROR("Failed to allocate memory for segment.");
-                return -1;
-            }
-
-            if (seg_infos[seg_index].compression == 2) {
-                unsigned long dest_bytes = seg_header.p_filesz;
-                const uint8_t *const compressed_segment_bytes = self_bytes + seg_infos[seg_index].offset;
-
-                int res = mz_uncompress(reinterpret_cast<uint8_t *>(seg_addr.get(mem)), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
-                assert(res == MZ_OK);
-            } else {
-                memcpy(seg_addr.get(mem), seg_bytes, seg_header.p_filesz);
-            }
-
-            if (DUMP_SEGMENTS)
-                dump_segment(seg_addr.get(mem));
-
-            segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, seg_header.p_memsz };
         } else if (seg_header.p_type == PT_LOOS) {
             if (seg_infos[seg_index].compression == 2) {
                 unsigned long dest_bytes = seg_header.p_filesz;
