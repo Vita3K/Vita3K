@@ -725,8 +725,16 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     std::map<int, spv::Id> uniform_buffers;
 
     const auto program_input = shader::get_program_input(program);
+
+    int total_buffer_size = 0;
+    std::map<int, int> buffer_sizes;
+    std::map<int, int> buffer_bases;
+
     for (const auto &buffer : program_input.uniform_buffers) {
-        spv::Id block = create_uniform_block(b, features, buffer.index, (buffer.size + 3) / 4, !program.is_fragment());
+        const auto buffer_size = (buffer.size + 3) / 4;
+        total_buffer_size += buffer_size;
+        buffer_sizes.emplace(buffer.index, buffer_size);
+        spv::Id block = create_uniform_block(b, features, buffer.index, buffer_size, !program.is_fragment());
         uniform_buffers.emplace(buffer.index, block);
     }
 
@@ -738,6 +746,26 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset / 4, reg_block_size_in_f32v);
             }
         }
+    }
+
+    spv::Id memory_type = b.makeArrayType(f32_type, b.makeIntConstant(total_buffer_size * 4), 4);
+    spv_params.memory = b.createVariable(spv::StorageClassPrivate, memory_type, "memory");
+
+    int last_base = 0;
+    for (const auto [index, size] : buffer_sizes) {
+        const auto buffer = uniform_buffers.at(index);
+        utils::make_for_loop(b, ite_copy, b.makeIntConstant(0), b.makeIntConstant(size), [&]() {
+            spv::Id to_copy = b.createAccessChain(spv::StorageClassUniform, buffer, { b.makeIntConstant(0), b.createLoad(ite_copy) });
+            spv::Id offset_base = b.createBinOp(spv::OpIMul, i32_type, b.makeIntConstant(4), b.createLoad(ite_copy));
+            for (int i = 0; i < 4; ++i) {
+                spv::Id offset = b.createBinOp(spv::OpIAdd, i32_type, offset_base, b.makeIntConstant(i));
+                spv::Id src = b.createBinOp(spv::OpVectorExtractDynamic, f32_type, b.createLoad(to_copy), b.makeIntConstant(i));
+                spv::Id dest = b.createAccessChain(spv::StorageClassPrivate, spv_params.memory, { b.createBinOp(spv::OpIAdd, i32_type, offset, b.makeIntConstant(last_base)) });
+                b.createStore(src, dest);
+            }
+        });
+        buffer_bases.emplace(index, last_base);
+        last_base += size * 4;
     }
 
     const auto add_var_to_reg = [&](const Input &input, const std::string &name, bool pa) {
@@ -776,8 +804,12 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            }
                        },
                        [&](const UniformBufferInputSource &s) {
-                           const auto spv_buffer = uniform_buffers.at(s.index);
-                           spv_params.buffers.emplace(input.offset, std::make_tuple(s.base, spv_buffer));
+                           Operand reg;
+                           reg.bank = RegisterBank::SECATTR;
+                           reg.num = input.offset;
+                           reg.type = DataType::INT32;
+                           const auto base = buffer_bases.at(s.index) + s.base;
+                           utils::store(b, spv_params, utils, features, reg, b.makeIntConstant(base), 0b1, 0);
                        },
                        [&](const DependentSamplerInputSource &s) {
                            const auto spv_sampler = samplers.at(s.index);
