@@ -530,6 +530,12 @@ bool USSETranslatorVisitor::vldst(
     Imm7 src0_n,
     Imm7 src1_n,
     Imm7 src2_n) {
+    // TODO:
+    // - Store instruction
+    // - Post or pre or any increment mode.
+
+    Instruction inst;
+
     DataType type_to_ldst = DataType::UNK;
 
     switch (data_type) {
@@ -551,11 +557,6 @@ bool USSETranslatorVisitor::vldst(
 
     const int total_number_to_fetch = mask_count + 1;
     const int total_bytes_fo_fetch = get_data_type_size(type_to_ldst) * total_number_to_fetch;
-    const int total_number_to_fetch_in_vec4_granularity = total_bytes_fo_fetch / 16;
-    const int total_number_to_fetch_left_in_f32 = (total_bytes_fo_fetch - total_number_to_fetch_in_vec4_granularity * 16) / 4;
-    const int total_number_to_fetch_left_in_native_format = (total_bytes_fo_fetch - total_number_to_fetch_in_vec4_granularity * 16
-                                                                - total_number_to_fetch_left_in_f32 * 4)
-        / get_data_type_size(type_to_ldst);
 
     Operand to_store;
 
@@ -572,86 +573,27 @@ bool USSETranslatorVisitor::vldst(
     to_store.num = dest_n;
     to_store.type = DataType::F32;
 
-    SpirvUniformBuffrerBase buffer_and_base = m_spirv_params.buffers.at(src0_n);
-    const uint32_t buffer_base = std::get<0>(buffer_and_base) + src1_n;
-    const spv::Id buffer = std::get<1>(buffer_and_base);
-    const bool is_load = true;
-    spv::Id previous = spv::NoResult;
+    inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, false, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, false, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, false, 7, m_second_program);
 
-    // TODO (pent0, spoiler: I will never do it)
-    // First:
-    // - Store instruction is not supported yet. So complicated...
-    // - Post or pre or any increment mode are not supported. I dont want to increase the latency yet,
-    // since no compiler ever uses it with the vita. We have to track the buffer cursor.
-    spv::Id i32_type = m_b.makeIntegerType(32, true);
-    spv::Id ite = m_b.createVariable(spv::StorageClassFunction, i32_type, "i");
-    spv::Id friend1 = spv::NoResult;
-    spv::Id zero = m_b.makeIntConstant(0);
+    inst.opr.src0.type = DataType::INT32;
+    inst.opr.src1.type = DataType::INT32;
+    inst.opr.src2.type = DataType::INT32;
 
-    auto fetch_ublock_data = [&](int base, int off_vec4, int num_comp) {
-        spv::Id to_load = spv::NoResult;
+    spv::Id source_0 = load(inst.opr.src0, 0b1, 0);
+    spv::Id source_1 = load(inst.opr.src1, 0b1, 0);
+    spv::Id source_2 = load(inst.opr.src2, 0b1, 0);
 
-        if ((base & 3) == 0) {
-            // Aligned. We can load directly
-            to_load = m_b.createAccessChain(spv::StorageClassUniform, buffer, { zero, m_b.makeIntConstant(off_vec4) });
-            to_load = m_b.createLoad(to_load);
+    spv::Id base = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), source_0, source_1);
+    base = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, source_2);
 
-            if (num_comp != 4) {
-                std::vector<spv::Id> operands = { to_load, to_load };
-
-                for (int i = 0; i < num_comp; i++) {
-                    operands.push_back(i);
-                }
-
-                to_load = m_b.createOp(spv::OpVectorShuffle, type_f32_v[num_comp], operands);
-            }
-        } else {
-            if (!friend1) {
-                friend1 = m_b.createAccessChain(spv::StorageClassUniform, buffer, { zero, m_b.makeIntConstant(off_vec4) });
-            }
-
-            spv::Id friend2 = m_b.createAccessChain(spv::StorageClassUniform, buffer, { zero, m_b.makeIntConstant(off_vec4 + 1) });
-
-            // Do swizzling the load from aligned
-            const unsigned int unaligned_start = base & 3;
-            std::vector<spv::Id> operands = { friend1, friend2 };
-
-            for (int i = 0; i < num_comp; i++) {
-                operands.push_back(unaligned_start + i);
-            }
-
-            to_load = m_b.createOp(spv::OpVectorShuffle, type_f32_v[num_comp], operands);
-
-            friend1 = friend2;
-        }
-
-        return to_load;
-    };
-
-    to_store.type = DataType::F32;
-
-    // Since there is only maximum of 16 ints being fetched, not really hurt to not use loop
-    for (int i = buffer_base / 4; i < (buffer_base / 4) + total_number_to_fetch_in_vec4_granularity; i++) {
-        if (is_load) {
-            spv::Id to_load = fetch_ublock_data(buffer_base, i, 4);
-            store(to_store, to_load, 0b1111, 0);
-            to_store.num += 4;
-        }
+    for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
+        spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(i));
+        spv::Id src = m_b.createAccessChain(spv::StorageClassPrivate, m_spirv_params.memory, { offset });
+        store(to_store, m_b.createLoad(src), 0b1);
+        to_store.num += 1;
     }
-
-    static constexpr const std::uint8_t mask_fetch[3] = { 0b1, 0b11, 0b111 };
-
-    if (is_load && total_number_to_fetch_left_in_f32) {
-        // Load the rest of the one unaligned as F32 if possible
-        spv::Id to_load = fetch_ublock_data(buffer_base, (buffer_base / 4) + total_number_to_fetch_in_vec4_granularity, total_number_to_fetch_left_in_f32);
-        std::uint8_t mask = mask_fetch[total_number_to_fetch_left_in_f32];
-
-        store(to_store, to_load, mask);
-    }
-
-    // Load the rest in native format
-    // hard so give up. TODO
-    to_store.type = type_to_ldst;
 
     return true;
 }
