@@ -65,7 +65,7 @@ static constexpr int REG_I_COUNT = 3 * 4;
 static constexpr int REG_TEMP_COUNT = 20 * 4;
 static constexpr int REG_INDEX_COUNT = 2 * 4;
 static constexpr int REG_PRED_COUNT = 4 * 4;
-static constexpr int REG_O_COUNT = 11 * 4;
+static constexpr int REG_O_COUNT = 12 * 4;
 
 // **************
 // * Prototypes *
