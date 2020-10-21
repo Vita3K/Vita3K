@@ -246,7 +246,8 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
 
     auto output = b.createCompositeConstruct(b.makeVectorType(type_ui32, comp_count), comps);
     if (bias != 0) {
-        output = b.createUnaryOp(spv::OpSatConvertUToS, b.makeVectorType(type_i32, comp_count), output);
+        // TODO: we might want to use OpSatConvertUToS
+        output = b.createUnaryOp(spv::OpSConvert, b.makeVectorType(type_i32, comp_count), output);
         const auto bias_vec = b.createCompositeConstruct(b.makeVectorType(type_i32, comp_count), bias_comps);
         output = b.createBinOp(spv::OpISub, b.makeVectorType(type_i32, comp_count), output, bias_vec);
     }
@@ -324,7 +325,8 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
         }
         const auto bias_vec = b.createCompositeConstruct(b.makeVectorType(type_i32, comp_count), bias_comps);
         extracted = b.createBinOp(spv::OpIAdd, b.makeVectorType(type_i32, comp_count), extracted, bias_vec);
-        extracted = b.createUnaryOp(spv::OpSatConvertSToU, b.makeVectorType(type_ui32, comp_count), extracted);
+        // TODO: we might want to use OpSatConvertSToU
+        extracted = b.createUnaryOp(spv::OpUConvert, b.makeVectorType(type_ui32, comp_count), extracted);
     }
 
     auto output = b.makeUintConstant(0);
