@@ -38,7 +38,12 @@ static bool delete_pkg_file, delete_work_file;
 
 void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
-    static float progress;
+    static std::atomic<float> progress(0);
+    static std::mutex install_mutex;
+    static const auto progress_callback = [&](float updated_progress) {
+        progress = updated_progress;
+    };
+    std::lock_guard<std::mutex> lock(install_mutex);
 
     static const auto BUTTON_SIZE = ImVec2(120.f, 45.f);
 
@@ -106,10 +111,12 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                 state = "install";
         } else if (state == "install") {
             std::thread installation(([&host]() {
-                if (install_pkg(std::string(pkg_path), host, zRIF, &progress))
+                if (install_pkg(std::string(pkg_path), host, zRIF, progress_callback)) {
+                    std::lock_guard<std::mutex> lock(install_mutex);
                     state = "success";
-                else
+                } else {
                     state = "fail";
+                }
                 zRIF.clear();
             }));
             installation.detach();

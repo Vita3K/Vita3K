@@ -38,7 +38,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
     static bool draw_file_dialog = true;
     static bool content_install_confirm = false;
     static bool finished_installing = false;
-    static std::atomic<float> progress = 0;
+    static std::atomic<float> progress(0);
     static bool reinstalling = false;
     static const auto progress_callback = [&](float updated_progress) {
         progress = updated_progress;

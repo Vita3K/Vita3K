@@ -100,7 +100,7 @@ bool decrypt_install_nonpdrm(std::string &drmlicpath, const std::string &title_p
     return true;
 }
 
-bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, float *progress) {
+bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
     std::wstring pkg_path = string_utils::utf_to_wide(pkg);
     fs::ifstream infile(pkg_path, std::ios::binary);
     PkgHeader pkg_header;
@@ -109,7 +109,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, f
     infile.seekg(sizeof(PkgHeader));
     infile.read(reinterpret_cast<char *>(&ext_header), sizeof(PkgExtHeader));
 
-    *progress = 0;
+    progress_callback(0);
 
     if (byte_swap(pkg_header.magic) != 0x7F504b47 && byte_swap(ext_header.magic) != 0x7F657874) {
         LOG_ERROR("Not a valid pkg file!");
@@ -255,9 +255,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, f
             return false;
         }
         float file_count = byte_swap(pkg_header.file_count);
-        if (i % static_cast<int>(round(file_count / 100.f)) == 0) {
-            *progress = *progress + 0.6;
-        }
+        progress_callback(i / file_count * 100.f * 0.6f);
         std::vector<unsigned char> name(byte_swap(entry.name_size));
         infile.seekg(byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset));
         infile.read((char *)&name[0], byte_swap(entry.name_size));
@@ -300,7 +298,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, f
     register_keys(SCE_KEYS, 1);
     std::vector<uint8_t> temp_klicensee = get_temp_klicensee(zRIF);
 
-    *progress = 80;
+    progress_callback(80);
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
 
@@ -340,6 +338,6 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, f
         return true;
         break;
     }
-    *progress = 100;
+    progress_callback(100);
     return true;
 }

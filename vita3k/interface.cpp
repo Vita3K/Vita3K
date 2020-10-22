@@ -212,7 +212,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
         }
-        file_progress = i / num_files * 100.0;
+        file_progress = static_cast<float>(i) / num_files * 100.0f;
         update_progress();
         std::string m_filename = file_stat.m_filename;
         std::string replace_filename = m_filename.substr(extra_path.size());

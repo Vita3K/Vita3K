@@ -47,9 +47,14 @@ static void get_firmware_version(HostState &host) {
 void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
 
+    static std::mutex install_mutex;
     static bool draw_file_dialog = true;
     static bool finished_installing = false;
-    static uint32_t progress;
+    static std::atomic<uint32_t> progress(0);
+    static const auto progress_callback = [&](uint32_t updated_progress) {
+        progress = updated_progress;
+    };
+    std::lock_guard<std::mutex> lock(install_mutex);
 
     if (draw_file_dialog) {
         result = NFD_OpenDialog("PUP", nullptr, &pup_path);
@@ -58,7 +63,8 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
 
         if (result == NFD_OKAY) {
             std::thread installation([&host]() {
-                install_pup(host.pref_path, pup_path, &progress);
+                install_pup(host.pref_path, pup_path, progress_callback);
+                std::lock_guard<std::mutex> lock(install_mutex);
                 finished_installing = true;
                 get_firmware_version(host);
             });
