@@ -512,7 +512,27 @@ public:
 
     bool i16mad();
 
-    bool i32mad();
+    bool i32mad(ShortPredicate pred,
+        Imm1 src0_high,
+        Imm1 nosched,
+        Imm1 src1_high,
+        Imm1 src2_high,
+        bool dest_bank_ext,
+        Imm1 end,
+        bool src1_bank_ext,
+        bool src2_bank_ext,
+        RepeatCount repeat_count,
+        bool is_signed,
+        bool is_sat,
+        Imm2 src2_type,
+        Imm1 src0_bank,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm7 src0_n,
+        Imm7 src1_n,
+        Imm7 src2_n);
 
     bool illegal22();
 

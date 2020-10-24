@@ -458,9 +458,33 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
         // 32-bit Integer multiply-add
         /*
                                        10101 = opcode1
-                                            ----------------------------------------------------------- = don't care
+                                            pp = pred (2 bits, ShortPredicate)
+                                              s = src0_high (1 bit)
+                                               - = don't care
+                                                n = nosched (1 bit)
+                                                 r = src1_high (1 bit)
+                                                  c = src2_high (1 bit)
+                                                   d = dest_bank_ext (1 bit, bool)
+                                                    e = end (1 bit)
+                                                     b = src1_bank_ext (1 bit, bool)
+                                                      a = src2_bank_ext (1 bit, bool)
+                                                       0 = unk0
+                                                        ttt = repeat_count (3 bits, RepeatCount)
+                                                           i = is_signed (1 bit, bool)
+                                                            f = is_sat (1 bit, bool)
+                                                             00 = unk1
+                                                               yy = src2_type (2 bits)
+                                                                 000 = unk2
+                                                                    k = src0_bank (1 bit)
+                                                                     gg = dest_bank (2 bits)
+                                                                       hh = src1_bank (2 bits)
+                                                                         jj = src2_bank (2 bits)
+                                                                           lllllll = dest_n (7 bits)
+                                                                                  mmmmmmm = src0_n (7 bits)
+                                                                                         ooooooo = src1_n (7 bits)
+                                                                                                qqqqqqq = src2_n (7 bits)
         */
-        INST(&V::i32mad, "I32MAD ()", "10101-----------------------------------------------------------"),
+        INST(&V::i32mad, "I32MAD ()", "10101pps-nrcdeba0tttif00yy000kgghhjjlllllllmmmmmmmoooooooqqqqqqq"),
         // Illegal instruction
         /*
                                              10110 = opcode1
