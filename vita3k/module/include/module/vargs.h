@@ -25,6 +25,7 @@
 
 namespace module {
 class vargs {
+    Address currentVaList;
     LayoutArgsState layoutState;
     ArgLayout currentLayout;
 
@@ -32,17 +33,30 @@ public:
     vargs() {}
 
     explicit vargs(LayoutArgsState layoutState)
-        : layoutState(layoutState) {
+        : layoutState(layoutState)
+        , currentVaList(0) {
+    }
+
+    explicit vargs(Address addr)
+        : layoutState()
+        , currentVaList(addr) {
     }
 
     template <typename T>
     T next(CPUState &cpu, MemState &mem) {
-        const auto state_tuple = add_arg_to_layout<T>(layoutState);
+        if (!currentVaList) {
+            const auto state_tuple = add_arg_to_layout<T>(layoutState);
 
-        layoutState = std::move(std::get<1>(state_tuple));
-        currentLayout = std::move(std::get<0>(state_tuple));
+            layoutState = std::move(std::get<1>(state_tuple));
+            currentLayout = std::move(std::get<0>(state_tuple));
 
-        return read<T>(cpu, currentLayout, mem);
+            return read<T>(cpu, currentLayout, mem);
+        } else {
+            const auto out = *Ptr<T>(currentVaList).get(mem);
+            currentVaList += sizeof(T);
+            return out;
+        }
     }
 };
+
 } // namespace module
