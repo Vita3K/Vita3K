@@ -788,8 +788,61 @@ I32MAD:
     description: 32-bit Integer multiply-add
     members:
         - opcode1: '10101'
+        - pred:
+            size: 2
+            type: ShortPredicate
+        - src0_high:
+            size: 1
         - DONTCARE:
-            size: 59
+            size: 1
+        - nosched:
+            size: 1
+        - src1_high:
+            size: 1
+        - src2_high:
+            size: 1
+        - dest_bank_ext:
+            size: 1
+            type: bool
+        - end:
+            size: 1
+        - src1_bank_ext:
+            size: 1
+            type: bool
+        - src2_bank_ext:
+            size: 1
+            type: bool
+        - unk0: '0'
+        - repeat_count:
+            size: 3
+            type: RepeatCount
+        - is_signed:
+            size: 1
+            type: bool
+        - is_sat:
+            size: 1
+            type: bool
+        - unk1: '00'
+        - src2_type:
+            size: 2
+        - unk2: '000'
+        - src0_bank:
+            size: 1
+        - dest_bank:
+            size: 2
+        - src1_bank:
+            size: 2
+        - src2_bank:
+            size: 2
+        - dest_n:
+            size: 7
+        - src0_n:
+            size: 7
+        - src1_n:
+            size: 7
+        - src2_n:
+            size: 7
+
 ILLEGAL22:
     description: Illegal instruction
     members:
