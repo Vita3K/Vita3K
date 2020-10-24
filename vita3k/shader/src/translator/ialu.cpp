@@ -173,6 +173,8 @@ bool USSETranslatorVisitor::i32mad(
     Imm7 src0_n,
     Imm7 src1_n,
     Imm7 src2_n) {
+    // TODO: high and low modifier
+    // TODO: more data types for src2
     Instruction inst;
     inst.opcode = Opcode::IMAD;
 
@@ -199,7 +201,7 @@ bool USSETranslatorVisitor::i32mad(
         store(inst.opr.dest, add_result, 0b1, 0);
     }
 
-    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::s_predicate_str(pred), "IMAD", disasm::operand_to_str(inst.opr.dest, 0b1),
+    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::s_predicate_str(pred), "IMAD2", disasm::operand_to_str(inst.opr.dest, 0b1),
         disasm::operand_to_str(inst.opr.src0, 0b1), disasm::operand_to_str(inst.opr.src1, 0b1), disasm::operand_to_str(inst.opr.src2, 0b1));
     return true;
 }
@@ -249,20 +251,26 @@ bool USSETranslatorVisitor::i32mad2(
     }
 
     spv::Id vsrc0 = load(inst.opr.src0, 0b1, 0);
-    spv::Id vsrc1 = load(inst.opr.src0, 0b1, 0);
-    spv::Id vsrc2 = load(inst.opr.src0, 0b1, 0);
+    spv::Id vsrc1 = load(inst.opr.src1, 0b1, 0);
+    spv::Id vsrc2 = load(inst.opr.src2, 0b1, 0);
 
     auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
     auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
-    if (add_result != spv::NoResult) {
+    // sn is mysterious argument.
+    // These are confirmed by hw testing:
+    // - pa = x * y + z (sn = 0) => pa = x * y + z
+    // - i = x * y + z (sn = 0) and then pa = x * y + i (sn = 1) => pa = x * y + z
+    // - pa = x * y + z (sn = 1) => crash
+    // TODO: properly implement this when we get more powerful fuzzer that can handle fpinternal.
+    if (sn == 0) {
         store(inst.opr.dest, add_result, 0b1, 0);
+    } else {
+        store(inst.opr.dest, vsrc2, 0b1, 0);
     }
 
-    // TODO not sure about sn
-
-    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::e_predicate_str(pred), "IMAD", disasm::operand_to_str(inst.opr.dest, 0b1),
-        disasm::operand_to_str(inst.opr.src0, 0b1), disasm::operand_to_str(inst.opr.src1, 0b1), disasm::operand_to_str(inst.opr.src2, 0b1));
+    LOG_DISASM("{:016x}: {}{} {} {} {} {} [sn={}]", m_instr, disasm::e_predicate_str(pred), "IMAD", disasm::operand_to_str(inst.opr.dest, 0b1),
+        disasm::operand_to_str(inst.opr.src0, 0b1), disasm::operand_to_str(inst.opr.src1, 0b1), disasm::operand_to_str(inst.opr.src2, 0b1), sn);
 
     return true;
 }
