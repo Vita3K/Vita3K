@@ -329,9 +329,10 @@ EXPORT(int, sceClibVprintf) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibVsnprintf, char *dst, SceSize dst_max_size, const char *fmt, module::vargs args) {
+EXPORT(int, sceClibVsnprintf, char *dst, SceSize dst_max_size, const char *fmt, Address list) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
+    module::vargs args(list);
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
