@@ -24,6 +24,8 @@
 
 #include <nfd.h>
 
+#include <thread>
+
 namespace gui {
 
 static bool delete_archive_file;
@@ -32,27 +34,76 @@ static nfdchar_t *archive_path;
 void draw_archive_install_dialog(GuiState &gui, HostState &host) {
     nfdresult_t result = NFD_CANCEL;
 
+    static std::mutex install_mutex;
     static bool draw_file_dialog = true;
     static bool content_install_confirm = false;
+    static bool finished_installing = false;
+    static std::atomic<float> progress(0);
+    static bool reinstalling = false;
+    static const auto progress_callback = [&](float updated_progress) {
+        progress = updated_progress;
+    };
+    std::lock_guard<std::mutex> lock(install_mutex);
 
     if (draw_file_dialog) {
         result = NFD_OpenDialog("vpk,zip", nullptr, &archive_path);
         draw_file_dialog = false;
+        finished_installing = false;
 
         if (result == NFD_OKAY) {
-            if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path))))
-                content_install_confirm = true;
-            else if (!gui.content_reinstall_confirm)
-                ImGui::OpenPopup("Content installation failed");
+            std::thread installation([&host, &gui]() {
+                if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path)), progress_callback)) {
+                    std::lock_guard<std::mutex> lock(install_mutex);
+                    content_install_confirm = true;
+                } else if (!gui.content_reinstall_confirm) {
+                    ImGui::OpenPopup("Content installation failed");
+                }
+                {
+                    std::lock_guard<std::mutex> lock(install_mutex);
+                    finished_installing = true;
+                }
+            });
+            installation.detach();
         } else {
             gui.file_menu.archive_install_dialog = false;
             draw_file_dialog = true;
         }
     }
 
+    if (reinstalling) {
+        finished_installing = false;
+        std::thread reinstallation([&host, &gui]() {
+            if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path)), progress_callback)) {
+                std::lock_guard<std::mutex> lock(install_mutex);
+                content_install_confirm = true;
+            } else if (!gui.content_reinstall_confirm) {
+                ImGui::OpenPopup("Content installation failed");
+            }
+            {
+                std::lock_guard<std::mutex> lock(install_mutex);
+                finished_installing = true;
+                gui.content_reinstall_confirm = false;
+            }
+        });
+        reinstalling = false;
+        reinstallation.detach();
+    }
+
+    if (!finished_installing) {
+        ImGui::OpenPopup("Content Installation");
+        if (ImGui::BeginPopupModal("Content Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::TextColored(GUI_COLOR_TEXT, "Installation in progress, please wait...");
+            ImGui::SetCursorPosX((ImGui::GetWindowContentRegionWidth() / 2) - (150 / 2) + 10);
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
+            ImGui::ProgressBar(progress / 100.f, ImVec2(150.f, 20.f), nullptr);
+            ImGui::PopStyleColor();
+        }
+        ImGui::EndPopup();
+    }
+
     static const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
 
-    if (gui.content_reinstall_confirm)
+    if (gui.content_reinstall_confirm && finished_installing)
         ImGui::OpenPopup("Content reinstallation");
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginPopupModal("Content reinstallation", &gui.content_reinstall_confirm, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -65,11 +116,9 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 65);
-        if (ImGui::Button("Yes", BUTTON_SIZE))
-            if (install_archive(host, &gui, fs::path(string_utils::utf_to_wide(archive_path)))) {
-                gui.content_reinstall_confirm = false;
-                content_install_confirm = true;
-            }
+        if (ImGui::Button("Yes", BUTTON_SIZE)) {
+            reinstalling = true;
+        }
         ImGui::SameLine();
         if (ImGui::Button("No", BUTTON_SIZE)) {
             archive_path = nullptr;
@@ -82,12 +131,12 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
 
     if (content_install_confirm)
-        ImGui::OpenPopup("Content installation succes");
+        ImGui::OpenPopup("Content installation success");
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginPopupModal("Content installation succes", &content_install_confirm, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::BeginPopupModal("Content installation success", &content_install_confirm, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PopStyleColor();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 5);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Succesfully installed content.\n%s [%s] %s", host.app_title_id.c_str(), host.app_title.c_str(), host.app_version.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "Successfully installed content.\n%s [%s] %s", host.app_title_id.c_str(), host.app_title.c_str(), host.app_version.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

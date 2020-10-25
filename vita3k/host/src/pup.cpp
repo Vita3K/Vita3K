@@ -230,7 +230,7 @@ static void decrypt_pup_packages(const std::wstring &src, const std::wstring &de
     join_files(dest, "sa0-", dest + L"/sa0.img");
 }
 
-void install_pup(const std::wstring &pref_path, const std::string &pup_path) {
+void install_pup(const std::wstring &pref_path, const std::string &pup_path, const std::function<void(uint32_t)> &progress_callback) {
     if (fs::exists(pref_path + L"/PUP_DEC")) {
         LOG_WARN("Path already exists, deleting it and reinstalling");
         fs::remove_all(pref_path + L"/PUP_DEC");
@@ -241,6 +241,7 @@ void install_pup(const std::wstring &pref_path, const std::string &pup_path) {
     fs::create_directory(pref_path + L"/PUP_DEC");
     const auto pup_dest = fmt::format(L"{}/PUP", pref_path + L"/PUP_DEC");
     fs::create_directory(pup_dest);
+    progress_callback(10);
 
     extract_pup_files(string_utils::utf_to_wide(pup_path), pup_dest);
 
@@ -250,8 +251,10 @@ void install_pup(const std::wstring &pref_path, const std::string &pup_path) {
     KeyStore SCE_KEYS;
     register_keys(SCE_KEYS, 0);
 
+    progress_callback(30);
     decrypt_pup_packages(pup_dest, pup_dec, SCE_KEYS);
 
+    progress_callback(70);
     if (fs::file_size(pup_dec + L"/os0.img") > 0) {
         extract_fat(pup_dec, "os0.img", pref_path);
         for (const auto &file : fs::recursive_directory_iterator(pref_path + L"/os0")) {
@@ -286,4 +289,5 @@ void install_pup(const std::wstring &pref_path, const std::string &pup_path) {
             }
         }
     }
+    progress_callback(100);
 }

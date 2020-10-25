@@ -71,7 +71,7 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
     return true;
 }
 
-bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_path) {
+bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_path, const std::function<void(float)> &progress_callback) {
     if (!fs::exists(archive_path)) {
         LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());
         return false;
@@ -80,6 +80,10 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
     std::memset(zip.get(), 0, sizeof(*zip));
 
     FILE *vpk_fp;
+
+    if (progress_callback != nullptr) {
+        progress_callback(0);
+    }
 
 #ifdef WIN32
     _wfopen_s(&vpk_fp, archive_path.generic_path().wstring().c_str(), L"rb");
@@ -194,12 +198,22 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
         }
     }
 
+    float file_progress = 0;
+    float decrypt_progress = 0;
+
+    const auto update_progress = [&]() {
+        if (progress_callback != nullptr) {
+            progress_callback(file_progress * 0.7 + decrypt_progress * 0.3);
+        }
+    };
+
     for (auto i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
         }
-
+        file_progress = static_cast<float>(i) / num_files * 100.0f;
+        update_progress();
         std::string m_filename = file_stat.m_filename;
         std::string replace_filename = m_filename.substr(extra_path.size());
         const fs::path file_output = { output_path / replace_filename };
@@ -218,15 +232,19 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
     if (fs::exists(output_path / "sce_sys/package/")) {
         if (fs::exists(output_path / "sce_sys/package/work.bin")) {
             std::string licpath = output_path.string() + "/sce_sys/package/work.bin";
+            update_progress();
             if (!decrypt_install_nonpdrm(licpath, output_path.string())) {
                 LOG_ERROR("NoNpDrm installation failed, deleting data!");
                 fs::remove_all(output_path);
                 return false;
             }
+            decrypt_progress = 100;
         } else {
             LOG_WARN("The nonpdrm license file (work.bin) is missing! If you're trying to install a NoNpDrm dump, please make sure that it is present in /sce_sys/package/ folder. Otherwise, ignore this warning.");
         }
     }
+
+    update_progress();
 
     LOG_INFO("{} [{}] installed succesfully!", host.app_title_id, host.app_title);
     fclose(vpk_fp);
