@@ -41,20 +41,20 @@ jobs:
       - name: Set up build environment (macos-latest)
         run: |
           brew install ccache boost
-          echo "::add-path::/usr/local/opt/ccache/libexec"
-          echo "::set-env name=CCACHE_DIR::/tmp/ccache"
+          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+          echo "CCACHE_DIR=/tmp/ccache" >> $GITHUB_ENV
         if: matrix.os == 'macos-latest'
 
       - name: Set up build environment (ubuntu-latest)
         run: |
           sudo apt-get update
           sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev
-          echo "::set-env name=CCACHE_DIR::/tmp/ccache"
+          echo "CCACHE_DIR=/tmp/ccache" >> $GITHUB_ENV
         if: matrix.os == 'ubuntu-latest'
 
       - name: Set up build environment (windows-latest)
-        run: |
-          echo "::set-env name=BOOST_ROOT::$env:BOOST_ROOT_1_72_0"
+        shell: bash
+        run: echo "BOOST_ROOT=$BOOST_ROOT_1_72_0" >> $GITHUB_ENV
         if: matrix.os == 'windows-latest'
 
       - uses: actions/cache@v1
