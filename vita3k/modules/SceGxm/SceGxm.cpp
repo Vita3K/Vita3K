@@ -129,9 +129,6 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, unsigned int flags, const 
     // It's legal to set at client.
     host.gxm.is_in_scene = true;
 
-    // Reset command list and finish status
-    renderer::reset_command_list(context->renderer->command_list);
-
     SceGxmColorSurface *color_surface_copy = nullptr;
     SceGxmDepthStencilSurface *depth_stencil_surface_copy = nullptr;
 
@@ -737,6 +734,8 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *ve
     // Submit our command list
     renderer::submit_command_list(*host.renderer, context->renderer.get(), &context->state,
         context->renderer->command_list);
+
+    renderer::reset_command_list(context->renderer->command_list);
 
     host.gxm.is_in_scene = false;
     host.renderer->scene_processed_since_last_frame++;
