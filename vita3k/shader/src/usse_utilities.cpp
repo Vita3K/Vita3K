@@ -400,6 +400,62 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
     return f16_pack_func;
 }
 
+static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderParameters &params) {
+    // The address can be unaligned, so we load two words around address / 4 and combine them.
+    // | = address
+    // s = memory[address/4] (source)
+    // f = memory[address/4+1] (friend)
+    // sss|(sfff)f
+    // Data inside () is what we want.
+
+    spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_i32 = b.makeIntType(32);
+    spv::Block *func_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", { type_i32 },
+        {}, &func_block);
+
+    spv::Id addr = fetch_func->getParamId(0);
+    spv::Id base_offset = b.createBinOp(spv::OpSDiv, type_i32, addr, b.makeIntConstant(4));
+    spv::Id rem = b.createBinOp(spv::OpSRem, type_i32, addr, b.makeIntConstant(4));
+    spv::Id rem_inv = b.createBinOp(spv::OpISub, type_i32, b.makeIntConstant(4), rem);
+
+    // If int was shifted by more than 32 bits in nvidia glsl, the pipeline crashes.
+    // rem_inv_overflow is the flag used to make sure >> 32 is not executed.
+    spv::Id rem_inv_overflow = b.createBinOp(spv::OpIEqual, b.makeBoolType(), rem_inv, b.makeIntConstant(4));
+    rem_inv = b.createTriOp(spv::OpSelect, type_i32, rem_inv_overflow, b.makeIntConstant(0), rem_inv);
+
+    spv::Id rem_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem, b.makeIntConstant(8));
+    spv::Id rem_inv_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem_inv, b.makeIntConstant(8));
+
+    spv::Id src = b.createLoad(b.createAccessChain(spv::StorageClassPrivate, params.memory, { base_offset }));
+    spv::Id friend_offset = b.createBinOp(spv::OpIAdd, type_i32, base_offset, b.makeIntConstant(1));
+    spv::Id src_friend = b.createLoad(b.createAccessChain(spv::StorageClassPrivate, params.memory, { friend_offset }));
+    spv::Id src_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src);
+    spv::Id src_friend_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src_friend);
+
+    spv::Id high_part = b.createBinOp(spv::OpShiftLeftLogical, type_ui32, src_casted, rem_in_bits);
+    spv::Id low_part = b.createBinOp(spv::OpShiftRightLogical, type_ui32, src_friend_casted, rem_inv_in_bits);
+    low_part = b.createTriOp(spv::OpSelect, type_ui32, rem_inv_overflow, b.makeUintConstant(0), low_part);
+
+    spv::Id output = b.createBinOp(spv::OpBitwiseOr, type_ui32, high_part, low_part);
+    spv::Id output_casted = b.createUnaryOp(spv::OpBitcast, type_f32, output);
+
+    b.makeReturn(false, output_casted);
+    b.setBuildPoint(last_build_point);
+
+    return fetch_func;
+}
+
+spv::Id shader::usse::utils::fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr) {
+    if (!utils.fetch_memory) {
+        utils.fetch_memory = make_fetch_memory_func(b, params);
+    }
+
+    return b.createFunctionCall(utils.fetch_memory, { addr });
+}
+
 spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type) {
     switch (type) {
     case DataType::INT8:
