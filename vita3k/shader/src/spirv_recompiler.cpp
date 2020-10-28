@@ -748,7 +748,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    spv::Id memory_type = b.makeArrayType(f32_type, b.makeIntConstant(total_buffer_size * 4 + 100), 0);
+    spv::Id memory_type = b.makeArrayType(f32_type, b.makeIntConstant(total_buffer_size * 4 + 1), 0);
     spv_params.memory = b.createVariable(spv::StorageClassPrivate, memory_type, "memory");
 
     int last_base = 0;
