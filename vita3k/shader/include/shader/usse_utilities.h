@@ -14,6 +14,7 @@ namespace shader::usse::utils {
 struct SpirvUtilFunctions {
     std::map<DataType, spv::Function *> unpack_funcs;
     std::map<DataType, spv::Function *> pack_funcs;
+    spv::Function *fetch_memory{ nullptr };
     spv::Function *pack_fx8{ nullptr };
     spv::Function *unpack_fx8{ nullptr };
 };
@@ -27,6 +28,8 @@ spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &f
 
 spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type);
 spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id vec, const DataType source_type);
+
+spv::Id fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr);
 
 spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val);
 

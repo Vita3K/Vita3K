@@ -581,6 +581,7 @@ bool USSETranslatorVisitor::vldst(
     inst.opr.src1.type = DataType::INT32;
     inst.opr.src2.type = DataType::INT32;
 
+    // TODO: is source_2 in word or byte?
     spv::Id source_0 = load(inst.opr.src0, 0b1, 0);
     spv::Id source_1 = load(inst.opr.src1, 0b1, 0);
     spv::Id source_2 = load(inst.opr.src2, 0b1, 0);
@@ -589,9 +590,9 @@ bool USSETranslatorVisitor::vldst(
     base = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, source_2);
 
     for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
-        spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(i));
-        spv::Id src = m_b.createAccessChain(spv::StorageClassPrivate, m_spirv_params.memory, { offset });
-        store(to_store, m_b.createLoad(src), 0b1);
+        spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
+        spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
+        store(to_store, src, 0b1);
         to_store.num += 1;
     }
 

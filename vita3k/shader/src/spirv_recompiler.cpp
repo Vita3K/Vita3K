@@ -748,7 +748,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    spv::Id memory_type = b.makeArrayType(f32_type, b.makeIntConstant(total_buffer_size * 4), 4);
+    spv::Id memory_type = b.makeArrayType(f32_type, b.makeIntConstant(total_buffer_size * 4 + 100), 0);
     spv_params.memory = b.createVariable(spv::StorageClassPrivate, memory_type, "memory");
 
     int last_base = 0;
@@ -764,7 +764,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 b.createStore(src, dest);
             }
         });
-        buffer_bases.emplace(index, last_base);
+        buffer_bases.emplace(index, last_base * 4);
         last_base += size * 4;
     }
 
@@ -808,7 +808,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            reg.bank = RegisterBank::SECATTR;
                            reg.num = input.offset;
                            reg.type = DataType::INT32;
-                           const auto base = buffer_bases.at(s.index) + s.base;
+                           const auto base = buffer_bases.at(s.index) + 4 * s.base;
                            utils::store(b, spv_params, utils, features, reg, b.makeIntConstant(base), 0b1, 0);
                        },
                        [&](const DependentSamplerInputSource &s) {
