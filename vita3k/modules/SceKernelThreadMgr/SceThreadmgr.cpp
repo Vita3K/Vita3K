@@ -439,8 +439,16 @@ EXPORT(int, sceKernelClearEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelClearEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelClearEventFlag, SceUID eventid, unsigned int flags) {
+    const EventFlagPtr event = lock_and_find(eventid, host.kernel.eventflags, host.kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    }
+
+    const std::lock_guard<std::mutex> event_lock(event->mutex);
+    event->flags &= flags;
+
+    return 0;
 }
 
 EXPORT(int, sceKernelCloseCond) {
