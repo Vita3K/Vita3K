@@ -40,6 +40,7 @@ jobs:
     steps:
       - name: Set up build environment (macos-latest)
         run: |
+          sudo xcode-select -s "/Applications/Xcode_11.7.app"
           brew install ccache boost
           echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
           echo "CCACHE_DIR=/tmp/ccache" >> $GITHUB_ENV
