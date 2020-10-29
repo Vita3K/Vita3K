@@ -1009,7 +1009,7 @@ EXPORT(int, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED && host.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_FINISHED) {
+    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED || host.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_FINISHED) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
 
