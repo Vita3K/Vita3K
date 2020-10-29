@@ -103,11 +103,7 @@ static AttributeLocations attribute_locations(const SceGxmProgram &vertex_progra
     for (uint32_t i = 0; i < vertex_program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            std::string name = gxp::parameter_name_raw(parameter);
-            const auto struct_idx = name.find('.');
-            const bool is_struct_field = struct_idx != std::string::npos;
-            if (is_struct_field)
-                name.replace(struct_idx, 1, "_"); // GLSL vertex inputs can't be structs, replace them here and in shader translator
+            std::string name = gxp::parameter_name(parameter);
             locations.emplace(parameter.resource_index, name);
         }
     }
