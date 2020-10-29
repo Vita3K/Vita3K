@@ -1397,7 +1397,8 @@ struct SceGxmProgramParameter {
         bf_t<uint16_t, 8, 4> component_count; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
         bf_t<uint16_t, 12, 4> container_index; // applicable for constants, not applicable for samplers (buffer, default, texture)
     };
-    uint16_t semantic; // applicable only for for vertex attributes, for everything else it's 0
+    uint8_t semantic; // applicable only for for vertex attributes, for everything else it's 0
+    uint8_t pad;
     uint32_t array_size;
     int32_t resource_index;
 
