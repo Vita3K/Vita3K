@@ -681,7 +681,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         }
 
         if (wait & SCE_EVENT_WAITCLEAR_PAT) {
-            event->flags &= flags;
+            event->flags &= ~flags;
         }
     } else if (dowait) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
