@@ -137,8 +137,6 @@ static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user
     }
 
     func_trace(state);
-
-    log_stack_frames(state);
 }
 
 static void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset) {
