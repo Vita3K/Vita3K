@@ -204,7 +204,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
         std::string replace_filename = m_filename.substr(extra_path.size());
         const fs::path file_output = { output_path / replace_filename };
         if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
-            fs::create_directories(output_path);
+            fs::create_directories(file_output);
         } else {
             if (!fs::exists(file_output.parent_path())) {
                 fs::create_directories(file_output.parent_path());
