@@ -70,7 +70,8 @@ int main(int argc, char *argv[]) {
             }
             if (cfg.pkg_path.is_initialized() && cfg.pkg_zrif.is_initialized()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
-                install_pkg(*cfg.pkg_path, host, *cfg.pkg_zrif);
+                host.pref_path = string_utils::utf_to_wide(root_paths.get_pref_path_string());
+                install_pkg(*cfg.pkg_path, host, *cfg.pkg_zrif, [](float) {});
                 return Success;
             }
             return Success;
