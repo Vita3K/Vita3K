@@ -82,6 +82,7 @@ struct Context {
     bool init_info_from_trp();
     bool unlock_trophy(std::int32_t id, np::NpTrophyError *err, const bool force_unlock = false);
 
+    const bool is_trophy_hidden(const uint32_t &trophy_index);
     const bool is_trophy_unlocked(const uint32_t &trophy_index);
     const int total_trophy_unlocked();
     bool get_trophy_name(const std::int32_t id, std::string &name);

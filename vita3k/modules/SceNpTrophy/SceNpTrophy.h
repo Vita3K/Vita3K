@@ -22,6 +22,7 @@
 
 using SceNpTrophyHandle = std::int32_t;
 using SceNpTrophyID = std::int32_t;
+using SceNpTrophyGroupId = std::int32_t;
 
 #define SCE_NP_TROPHY_ERROR_UNKNOWN 0x80551600
 #define SCE_NP_TROPHY_ERROR_NOT_INITIALIZED 0x80551601
@@ -57,6 +58,51 @@ using SceNpTrophyID = std::int32_t;
 #define SCE_NP_TROPHY_ERROR_UNLOCK_DENIED 0x8055161f
 #define SCE_NP_TROPHY_ERROR_INSUFFICIENT_MC_SPACE 0x80551620
 #define SCE_NP_TROPHY_ERROR_DEBUG_FAILURE 0x80551621
+
+#define SCE_NP_TROPHY_GAME_TITLE_MAX_SIZE 128
+#define SCE_NP_TROPHY_GAME_DESCR_MAX_SIZE 1024
+#define SCE_NP_TROPHY_NAME_MAX_SIZE 128
+#define SCE_NP_TROPHY_DESCR_MAX_SIZE 1024
+
+struct SceNpTrophyGameDetails {
+    SceSize size;
+    SceUInt32 numGroups;
+    SceUInt32 numTrophies;
+    SceUInt32 numPlatinum;
+    SceUInt32 numGold;
+    SceUInt32 numSilver;
+    SceUInt32 numBronze;
+    SceChar8 title[SCE_NP_TROPHY_GAME_TITLE_MAX_SIZE];
+    SceChar8 description[SCE_NP_TROPHY_GAME_DESCR_MAX_SIZE];
+};
+
+struct SceNpTrophyGameData {
+    SceSize size;
+    SceUInt32 unlockedTrophies;
+    SceUInt32 unlockedPlatinum;
+    SceUInt32 unlockedGold;
+    SceUInt32 unlockedSilver;
+    SceUInt32 unlockedBronze;
+    SceUInt32 progressPercentage;
+};
+
+struct SceNpTrophyDetails {
+    SceSize size;
+    SceNpTrophyID trophyId;
+    np::trophy::SceNpTrophyGrade trophyGrade;
+    SceNpTrophyGroupId groupId;
+    SceBool hidden;
+    SceChar8 name[SCE_NP_TROPHY_NAME_MAX_SIZE];
+    SceChar8 description[SCE_NP_TROPHY_DESCR_MAX_SIZE];
+};
+
+struct SceNpTrophyData {
+    SceSize size;
+    SceNpTrophyID trophyId;
+    SceBool unlocked;
+    SceUInt8 reserved[4];
+    SceRtcTick timestamp;
+};
 
 BRIDGE_DECL(sceNpTrophyAbortHandle)
 BRIDGE_DECL(sceNpTrophyCreateContext)

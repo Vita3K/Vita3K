@@ -102,8 +102,78 @@ EXPORT(int, sceNpTrophyGetGameIcon, np::trophy::ContextHandle context_handle, Sc
     return context->copy_file_data_from_trophy_file("ICON0.PNG", buffer, size);
 }
 
-EXPORT(int, sceNpTrophyGetGameInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyGetGameInfo, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle, SceNpTrophyGameDetails *details, SceNpTrophyGameData *data) {
+    if (!host.np.trophy_state.inited) {
+        return RET_ERROR(SCE_NP_TROPHY_ERROR_NOT_INITIALIZED);
+    }
+
+    if ((context_handle == np::trophy::INVALID_CONTEXT_HANDLE)
+        || (api_handle == -1)
+        || (!details && !data)
+        || (details && (details->size != sizeof(SceNpTrophyGameDetails)))
+        || (data && (data->size != sizeof(SceNpTrophyGameData)))) {
+        return RET_ERROR(SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    }
+
+    np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
+    if (!context) {
+        return RET_ERROR(SCE_NP_TROPHY_ERROR_INVALID_CONTEXT);
+    }
+
+    if (details) {
+        details->numGroups = context->group_count;
+        details->numTrophies = context->trophy_count;
+
+        for (std::uint32_t i = 0; i < context->trophy_count; i++) {
+            switch (context->trophy_kinds[i]) {
+            case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
+                details->numPlatinum++;
+                break;
+            case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
+                details->numGold++;
+                break;
+            case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER:
+                details->numSilver++;
+                break;
+            case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE:
+                details->numBronze++;
+                break;
+            default:
+                break;
+            }
+        }
+
+        // TODO: set title and description
+    }
+
+    if (data) {
+        data->unlockedTrophies = context->total_trophy_unlocked();
+
+        for (std::uint32_t i = 0; i < context->trophy_count; i++) {
+            if (context->is_trophy_unlocked(i)) {
+                switch (context->trophy_kinds[i]) {
+                case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
+                    data->unlockedPlatinum++;
+                    break;
+                case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
+                    data->unlockedGold++;
+                    break;
+                case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER:
+                    data->unlockedSilver++;
+                    break;
+                case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE:
+                    data->unlockedBronze++;
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        data->progressPercentage = data->unlockedTrophies * 100 / context->trophy_count;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceNpTrophyGetGroupIcon) {
@@ -128,8 +198,39 @@ EXPORT(int, sceNpTrophyGetTrophyIcon, np::trophy::ContextHandle context_handle, 
     return context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), buffer, size);
 }
 
-EXPORT(int, sceNpTrophyGetTrophyInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyGetTrophyInfo, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle, SceNpTrophyID trophy_id, SceNpTrophyDetails *details, SceNpTrophyData *data) {
+    if (!host.np.trophy_state.inited) {
+        return RET_ERROR(SCE_NP_TROPHY_ERROR_NOT_INITIALIZED);
+    }
+
+    if ((context_handle == np::trophy::INVALID_CONTEXT_HANDLE)
+        || (api_handle == -1)
+        || ((trophy_id < 0) || (trophy_id >= np::trophy::MAX_TROPHIES))
+        || (!details && !data)
+        || (details && (details->size != sizeof(SceNpTrophyDetails)))
+        || (data && (data->size != sizeof(SceNpTrophyData)))) {
+        return RET_ERROR(SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    }
+
+    np::trophy::Context *context = get_trophy_context(host.np.trophy_state, context_handle);
+    if (!context) {
+        return RET_ERROR(SCE_NP_TROPHY_ERROR_INVALID_CONTEXT);
+    }
+
+    if (details) {
+        details->trophyId = trophy_id;
+        details->trophyGrade = context->trophy_kinds[trophy_id];
+        details->hidden = context->is_trophy_hidden(trophy_id);
+        // TODO: set groupId, name and description
+    }
+
+    if (data) {
+        data->trophyId = trophy_id;
+        data->unlocked = context->is_trophy_unlocked(trophy_id);
+        data->timestamp.tick = context->unlock_timestamps[trophy_id];
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceNpTrophyGetTrophyUnlockState, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
