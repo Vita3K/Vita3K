@@ -31,6 +31,7 @@ bool init(NpState &state, const np::CommunicationID *comm_id) {
 
 bool deinit(NpState &state) {
     // Reserved
+    state.inited = false;
     return true;
 }
 
@@ -40,5 +41,6 @@ bool init(NpTrophyState &state) {
 }
 
 bool deinit(NpTrophyState &state) {
+    state.inited = false;
     return true;
 }
