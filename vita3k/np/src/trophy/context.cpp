@@ -249,6 +249,10 @@ bool Context::unlock_trophy(std::int32_t id, np::NpTrophyError *err, const bool 
     return true;
 }
 
+const bool Context::is_trophy_hidden(const uint32_t &trophy_index) {
+    return trophy_availability[trophy_index >> 5] & (1 << (trophy_index & 31));
+}
+
 const bool Context::is_trophy_unlocked(const uint32_t &trophy_index) {
     return trophy_progress[trophy_index >> 5] & (1 << (trophy_index & 31));
 }
