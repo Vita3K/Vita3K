@@ -19,6 +19,8 @@
 
 #include <module/module.h>
 
+#define SCE_FIBER_CONTEXT_MINIMUM_SIZE 512
+
 enum SceFiberErrorCode {
     SCE_FIBER_OK = 0x00000000, //!< Success
     SCE_FIBER_ERROR_NULL = 0x80590001, //!< Some parameters are NULL.
