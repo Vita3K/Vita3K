@@ -72,7 +72,7 @@ int _fiberSwitch(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, 
     return suspended ? SCE_FIBER_OK : fiber->cpu.cpu_registers[0];
 }
 
-void _initializeFiber(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
+void _initializeFiber(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, const char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
     fiber->entry = entry;
     strncpy(fiber->name, name, 32);
     fiber->argOnInitialize = argOnInitialize;
@@ -103,10 +103,22 @@ void _initializeFiber(HostState &host, const ThreadStatePtr thread, SceFiber *fi
     host.kernel.initial_fibers.push_back(ifiber);
 }
 
-EXPORT(SceInt32, _sceFiberInitializeImpl, SceFiber *fiber, char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
+EXPORT(SceInt32, _sceFiberInitializeImpl, SceFiber *fiber, const char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
+    if (!fiber || !entry || !name) {
+        return RET_ERROR(SCE_FIBER_ERROR_NULL);
+    }
+
+    if ((sizeContext != 0) && (sizeContext < SCE_FIBER_CONTEXT_MINIMUM_SIZE)) {
+        return RET_ERROR(SCE_FIBER_ERROR_RANGE);
+    }
+
+    if ((!addrContext && (sizeContext != 0)) || (addrContext && (sizeContext == 0)) || ((sizeContext & 7) != 0)) {
+        return RET_ERROR(SCE_FIBER_ERROR_INVALID);
+    }
+
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (!thread) {
-        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
 
     _initializeFiber(host, thread, fiber, name, entry, argOnInitialize, addrContext, sizeContext, params);
@@ -114,11 +126,22 @@ EXPORT(SceInt32, _sceFiberInitializeImpl, SceFiber *fiber, char *name, Ptr<SceFi
     return SCE_FIBER_OK;
 }
 
-EXPORT(int, _sceFiberInitializeWithInternalOptionImpl, SceFiber *fiber, char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext) {
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+EXPORT(int, _sceFiberInitializeWithInternalOptionImpl, SceFiber *fiber, const char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext) {
+    if (!fiber || !entry || !name) {
+        return RET_ERROR(SCE_FIBER_ERROR_NULL);
+    }
 
+    if ((sizeContext != 0) && (sizeContext < SCE_FIBER_CONTEXT_MINIMUM_SIZE)) {
+        return RET_ERROR(SCE_FIBER_ERROR_RANGE);
+    }
+
+    if ((!addrContext && (sizeContext != 0)) || (addrContext && (sizeContext == 0)) || ((sizeContext & 7) != 0)) {
+        return RET_ERROR(SCE_FIBER_ERROR_INVALID);
+    }
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (!thread) {
-        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
 
     _initializeFiber(host, thread, fiber, name, entry, argOnInitialize, addrContext, sizeContext, nullptr);
@@ -127,6 +150,10 @@ EXPORT(int, _sceFiberInitializeWithInternalOptionImpl, SceFiber *fiber, char *na
 }
 
 EXPORT(SceInt32, sceFiberFinalize, SceFiber *fiber) {
+    if (!fiber) {
+        return RET_ERROR(SCE_FIBER_ERROR_NULL);
+    }
+
     return STUBBED("TODO CHECKS");
 }
 
@@ -135,8 +162,9 @@ EXPORT(int, sceFiberGetInfo) {
 }
 
 EXPORT(SceUInt32, sceFiberGetSelf, Ptr<SceFiber> *fiber) {
-    if (!fiber)
-        return SCE_FIBER_ERROR_NULL;
+    if (!fiber) {
+        return RET_ERROR(SCE_FIBER_ERROR_NULL);
+    }
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
 
@@ -181,6 +209,10 @@ EXPORT(SceInt32, sceFiberReturnToThread, SceUInt32 argOnReturn, Ptr<SceUInt32> a
 }
 
 EXPORT(SceUInt32, sceFiberRun, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
+    if (!fiber) {
+        return RET_ERROR(SCE_FIBER_ERROR_NULL);
+    }
+
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     auto res = _fiberSwitch(host, thread, fiber, *(thread->cpu_context), argOnRunTo, argOnRun, false);
     write_lr(*(thread->cpu), thread->cpu_context.get()->lr);
@@ -196,6 +228,10 @@ EXPORT(int, sceFiberStopContextSizeCheck) {
 }
 
 EXPORT(SceUInt32, sceFiberSwitch, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
+    if (!fiber) {
+        return RET_ERROR(SCE_FIBER_ERROR_NULL);
+    }
+
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     auto old_fiber = thread->fiber.cast<SceFiber>().get(host.mem);
     return _fiberSwitch(host, thread, fiber, old_fiber->cpu, argOnRunTo, argOnRun, true);
