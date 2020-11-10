@@ -177,7 +177,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the last firmware.");
             std::ostringstream link;
             if (ImGui::Button("Download Firmware")) {
-                std::string firmware_url = "https://www.playstation.com/en-us/support/system-updates/ps-vita/";
+                std::string firmware_url = "https://www.playstation.com/en-us/support/hardware/psvita/system-software/";
                 link << OS_PREFIX << firmware_url;
                 system(link.str().c_str());
             }
