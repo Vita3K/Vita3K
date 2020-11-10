@@ -96,7 +96,7 @@ static void gen_license_comment(std::ostream &dst) {
 }
 
 static void gen_nids_h(const Modules &modules) {
-    std::ofstream out("src/emulator/nids/include/nids/nids.h");
+    std::ofstream out("vita3k/nids/include/nids/nids.h");
     gen_license_comment(out);
 
     for (const Module &module : modules) {
@@ -143,7 +143,7 @@ static void gen_library_h(std::ostream &dst, const Library &library) {
 
 static void gen_module_stubs(const Modules &modules) {
     for (const Module &module : modules) {
-        const std::string module_path = "src/emulator/modules/" + module.first;
+        const std::string module_path = "vita3k/modules/" + module.first;
 
 #ifdef WIN32
         CreateDirectoryA(module_path.c_str(), nullptr);
@@ -164,7 +164,7 @@ static void gen_module_stubs(const Modules &modules) {
 }
 
 static void gen_modules_cmakelists(const Modules &modules) {
-    std::ofstream out("src/emulator/modules/CMakeLists.txt");
+    std::ofstream out("vita3k/modules/CMakeLists.txt");
     out << "add_library(modules STATIC";
 
     for (const Module &module : modules) {
