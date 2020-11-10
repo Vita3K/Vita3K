@@ -179,7 +179,12 @@ static void gen_modules_cmakelists(const Modules &modules) {
 }
 
 int main(int argc, const char *argv[]) {
-    const Node db = LoadFile("src/external/vita-headers/db.yml");
+    if (argc != 2) {
+        std::cout << "Usage: " << argv[0] << " <path_to_db.yml>" << std::endl;
+        return 0;
+    }
+
+    const Node db = LoadFile(argv[1]);
     const Modules modules = parse_db(db);
 
     gen_nids_h(modules);
