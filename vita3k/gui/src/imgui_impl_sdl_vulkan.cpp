@@ -279,11 +279,13 @@ static bool ImGui_ImplSdlVulkan_CreatePipeline(ImGui_VulkanState &state) {
         vk::Pipeline(),
         0);
 
-    state.pipeline = get_renderer(state).device.createGraphicsPipeline(vk::PipelineCache(), gui_pipeline_info, nullptr);
-    if (!state.pipeline) {
+    vk::ResultValue<vk::Pipeline> pipelineResultValue = get_renderer(state).device.createGraphicsPipeline(vk::PipelineCache(), gui_pipeline_info, nullptr);
+    if (pipelineResultValue.result != vk::Result::eSuccess) {
         LOG_ERROR("Failed to create Vulkan gui pipeline.");
         return false;
     }
+
+    state.pipeline = pipelineResultValue.value;
 
     return true;
 }
