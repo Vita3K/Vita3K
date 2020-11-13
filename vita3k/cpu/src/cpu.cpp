@@ -249,7 +249,10 @@ static void log_error_details(CPUState &state, uc_err code) {
         LOG_ERROR("r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}", a, registers[a], a + 6, registers[a + 6]);
     }
     LOG_ERROR("r12: 0x{:0>8x}", registers[12]);
-    LOG_ERROR("Executing: {}", disassemble(state, pc));
+    if (pc != 0)
+        LOG_ERROR("Executing: {}", disassemble(state, pc));
+    else
+        LOG_CRITICAL("PC IS 0");
     log_stack_frames(state);
 }
 
