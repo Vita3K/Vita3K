@@ -45,7 +45,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 
-    static const auto BUTTON_SIZE = ImVec2(120.f, 45.f);
+    static const auto BUTTON_SIZE = ImVec2(160.f, 45.f);
 
     if (draw_file_dialog) {
         result = NFD_OpenDialog("pkg", nullptr, &pkg_path);
@@ -63,21 +63,26 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     }
 
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(616.f, 264.f));
     if (ImGui::BeginPopupModal("install", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
+        const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + 10.f;
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
         if (state.empty()) {
+            ImGui::SetCursorPosX(POS_BUTTON);
             title = "Select key type";
             if (ImGui::Button("Select Work.bin", BUTTON_SIZE))
                 state = "work";
+            ImGui::SetCursorPosX(POS_BUTTON);
             if (ImGui::Button("Enter zRIF", BUTTON_SIZE))
                 state = "zrif";
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
+            ImGui::SetCursorPosX(POS_BUTTON);
             if (ImGui::Button("Cancel", BUTTON_SIZE)) {
                 gui.file_menu.pkg_install_dialog = false;
                 draw_file_dialog = true;
@@ -100,7 +105,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x + 10.f));
+            ImGui::SetCursorPosX(POS_BUTTON);
             if (ImGui::Button("Cancel", BUTTON_SIZE)) {
                 state.clear();
                 zRIF.clear();
@@ -133,7 +138,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             if (work_path)
                 ImGui::Checkbox("Delete the work.bin file?", &delete_work_file);
             ImGui::Spacing();
-            ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f));
+            ImGui::SetCursorPosX(POS_BUTTON);
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 if (delete_pkg_file) {
                     fs::remove(fs::path(string_utils::utf_to_wide(std::string(pkg_path))));
@@ -155,7 +160,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
         } else if (state == "fail") {
             title = "Failed to install the pkg";
             ImGui::TextColored(GUI_COLOR_TEXT, "Please check log for more details.");
-            ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f));
+            ImGui::SetCursorPosX(POS_BUTTON);
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 refresh_app_list(gui, host);
                 gui.file_menu.pkg_install_dialog = false;
@@ -166,10 +171,16 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             }
         } else if (state == "installing") {
             title = "Installing";
-            ImGui::TextColored(GUI_COLOR_TEXT, "Installation in progress, please wait...");
+            ImGui::SetCursorPos(ImVec2(178.f, ImGui::GetCursorPosY() + 30.f));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_title.c_str());
+            ImGui::SetCursorPos(ImVec2(178.f, ImGui::GetCursorPosY() + 30.f));
+            ImGui::TextColored(GUI_COLOR_TEXT, "Installing...");
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (502.f / 2.f), ImGui::GetCursorPosY() + 30.f));
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
-            ImGui::SetCursorPosX((ImGui::GetWindowContentRegionWidth() / 2) - (150 / 2) + 10);
-            ImGui::ProgressBar(progress / 100.f, ImVec2(150.f, 20.f), nullptr);
+            ImGui::ProgressBar(progress / 100.f, ImVec2(502.f, 15.f), "");
+            const auto progress_str = std::to_string(uint32_t(progress)).append("%");
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
             ImGui::PopStyleColor();
         }
         ImGui::EndPopup();
