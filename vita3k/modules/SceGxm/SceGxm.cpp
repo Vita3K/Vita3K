@@ -1316,8 +1316,8 @@ EXPORT(int, _sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *pa
     return export_sceGxmProgramParameterGetSemantic(host, thread_id, export_name, parameter);
 }
 
-EXPORT(int, sceGxmProgramParameterGetSemanticIndex, const SceGxmProgramParameter *parameter) {
-    return parameter->semantic & 0xF00;
+EXPORT(uint32_t, sceGxmProgramParameterGetSemanticIndex, const SceGxmProgramParameter *parameter) {
+    return parameter->semantic & 0xf;
 }
 
 EXPORT(int, sceGxmProgramParameterGetType, const SceGxmProgramParameter *parameter) {
