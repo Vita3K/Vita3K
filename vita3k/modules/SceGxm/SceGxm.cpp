@@ -375,13 +375,17 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, S
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceInitDisabled, SceGxmDepthStencilSurface *surface) {
-    memset(surface, 0, sizeof(*surface));
+    if (!surface) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
 
-    surface->control = alloc<SceGxmDepthStencilControl>(host.mem, __FUNCTION__);
-    auto control = surface->control.get(host.mem);
-    memset(control, 0, sizeof(*control));
-    control->disabled = true;
+    SceGxmDepthStencilSurface tmp_surface;
 
+    tmp_surface.control = alloc<SceGxmDepthStencilControl>(host.mem, "gxm depth stencil control");
+    SceGxmDepthStencilControl control;
+    control.disabled = true;
+    memcpy(tmp_surface.control.get(host.mem), &control, sizeof(SceGxmDepthStencilControl));
+    memcpy(surface, &tmp_surface, sizeof(SceGxmDepthStencilSurface));
     return 0;
 }
 
