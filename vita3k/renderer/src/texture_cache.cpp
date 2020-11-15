@@ -6,6 +6,7 @@
 #include <mem/ptr.h>
 #include <util/log.h>
 
+#include "../xxHash/xxh3.h"
 #include <algorithm> // find
 #include <cstring> // memcmp
 #include <numeric> // accumulate, reduce
@@ -17,14 +18,8 @@ namespace renderer {
 namespace texture {
 
 static TextureCacheHash hash_data(const void *data, size_t size) {
-    const uint8_t *const begin = static_cast<const uint8_t *>(data);
-    const uint8_t *const end = begin + size;
-
-#ifdef WIN32
-    return std::reduce(std::execution::par_unseq, begin, end, TextureCacheHash(0));
-#else
-    return std::accumulate(begin, end, TextureCacheHash(0));
-#endif
+    auto hash = XXH_INLINE_XXH3_64bits(data, size);
+    return TextureCacheHash(hash);
 }
 
 static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t count, const MemState &mem) {

@@ -81,3 +81,6 @@
 [submodule "external/psvpfstools"]
 	path = external/psvpfstools
 	url = https://github.com/Vita3K/psvpfstools.git
+[submodule "external/xxHash"]
+	path = external/xxHash
+	url = https://github.com/Cyan4973/xxHash
