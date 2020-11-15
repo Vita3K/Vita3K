@@ -2290,6 +2290,8 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     // Add supported formats here
 
     switch (tex_format) {
+    case SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1BGR:
+    case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ARGB:
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
     case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
     case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:

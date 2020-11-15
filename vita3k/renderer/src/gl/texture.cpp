@@ -24,7 +24,13 @@ void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, 
 }
 
 static bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt) {
-    return (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P8 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8 || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8);
+    return (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P4
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P8
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8);
 }
 
 void configure_bound_texture(const SceGxmTexture &gxm_texture) {
@@ -152,6 +158,20 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     while (mip_index < gxm_texture.mip_count + 1 && width && height) {
         pixels = texture_data;
 
+        if (gxm::is_paletted_format(fmt)) {
+            palette_texture_pixels.resize(width * height * 4);
+            if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
+                renderer::texture::palette_texture_to_rgba_8(palette_texture_pixels.data(),
+                    reinterpret_cast<const uint8_t *>(pixels), width, height, renderer::texture::get_texture_palette(gxm_texture, mem));
+            } else {
+                renderer::texture::palette_texture_to_rgba_4(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
+                    reinterpret_cast<const uint8_t *>(pixels), width, height, renderer::texture::get_texture_palette(gxm_texture, mem));
+            }
+            pixels = palette_texture_pixels.data();
+            bytes_per_pixel = 4;
+            bpp = 32;
+        }
+
         switch (texture_type) {
         case SCE_GXM_TEXTURE_SWIZZLED:
         case SCE_GXM_TEXTURE_TILED:
@@ -209,20 +229,6 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             pixels_per_stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
 
             break;
-        }
-
-        if (gxm::is_paletted_format(fmt)) {
-            const uint32_t *const palette_bytes = renderer::texture::get_texture_palette(gxm_texture, mem);
-            palette_texture_pixels.resize(width * height * 4);
-            if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
-                renderer::texture::palette_texture_to_rgba_8(palette_texture_pixels.data(),
-                    reinterpret_cast<const uint8_t *>(pixels), width, height, palette_bytes);
-            } else {
-                renderer::texture::palette_texture_to_rgba_4(palette_texture_pixels.data(),
-                    reinterpret_cast<const uint8_t *>(pixels), width, height, palette_bytes);
-            }
-            pixels = palette_texture_pixels.data();
-            pixels_per_stride = width;
         }
 
         if (gxm::is_yuv_format(fmt)) {
