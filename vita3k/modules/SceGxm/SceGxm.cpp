@@ -208,12 +208,12 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
     assert(data);
 
     if (!surface || !data)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     if (outputRegisterSize != SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     if (width <= 0 || height <= 0 || strideInPixels <= 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     memset(surface, 0, sizeof(*surface));
     surface->disabled = 0;
@@ -233,7 +233,7 @@ EXPORT(int, sceGxmColorSurfaceInitDisabled, SceGxmColorSurface *surface) {
     assert(surface);
 
     if (!surface)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     surface->disabled = 1;
     return 0;
@@ -243,7 +243,7 @@ EXPORT(int, sceGxmColorSurfaceIsEnabled, SceGxmColorSurface *surface) {
     assert(surface);
 
     if (!surface)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     return !surface->disabled;
 }
@@ -277,7 +277,7 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
     assert(context);
 
     if (!params || !context)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *context = alloc<SceGxmContext>(host.mem, __FUNCTION__);
     if (!*context) {
@@ -305,7 +305,7 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     assert(renderTarget);
 
     if (!params || !renderTarget)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *renderTarget = alloc<SceGxmRenderTarget>(host.mem, __FUNCTION__);
     if (!*renderTarget) {
@@ -357,9 +357,9 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, S
     assert(strideInSamples > 0);
 
     if (!surface)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (strideInSamples <= 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     SceGxmDepthStencilSurface tmp_surface;
     tmp_surface.depthData = depthData;
@@ -422,7 +422,7 @@ EXPORT(void, sceGxmDepthStencilSurfaceSetForceStoreMode, SceGxmDepthStencilSurfa
 EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
     assert(context);
     if (!context)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     free(host.mem, context);
 
@@ -437,7 +437,7 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
     MemState &mem = host.mem;
     assert(renderTarget);
     if (!renderTarget)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     renderer::destroy_render_target(*host.renderer, renderTarget.get(mem)->renderer);
 
@@ -452,7 +452,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     assert(callbackData);
 
     if (!oldBuffer || !newBuffer || !callbackData)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     DisplayCallback display_callback;
 
@@ -485,7 +485,7 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     assert(indexData);
 
     if (!context || !indexData)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     if (!host.gxm.is_in_scene) {
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
@@ -698,7 +698,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *ve
     //assert(fragmentNotification == nullptr);
 
     if (!context)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     //if (vertexNotification)
     //RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     //if (fragmentNotification)
@@ -755,7 +755,7 @@ EXPORT(void, sceGxmFinish, SceGxmContext *context) {
     assert(context);
 
     if (!context)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return;
     // Wait on this context's rendering finish code. There is one for sync object and one specifically
     // for SceGxmFinish.
     renderer::finish(*host.renderer, *context->renderer);
@@ -860,7 +860,7 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     assert(params);
 
     if (!params)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     host.gxm.params = *params;
     host.gxm.display_queue.maxPendingCount_ = params->displayQueueMaxPendingCount;
@@ -912,9 +912,9 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, SceSize size, unsigned 
     assert(offset);
 
     if (!base || !offset)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (size <= 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     // TODO What should this be?
     *offset = base.address();
@@ -929,9 +929,9 @@ EXPORT(int, sceGxmMapMemory, void *base, SceSize size, SceGxmMemoryAttribFlags a
     //assert((attr == SCE_GXM_MEMORY_ATTRIB_READ) || (attr == SCE_GXM_MEMORY_ATTRIB_RW));
 
     if (!base)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (size <= 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     return 0;
 }
@@ -943,9 +943,9 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, SceSize size, unsigned in
     assert(offset);
 
     if (!base || !offset)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (size <= 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     // TODO What should this be?
     *offset = base.address();
@@ -966,7 +966,7 @@ EXPORT(int, sceGxmPadHeartbeat, const SceGxmColorSurface *displaySurface, SceGxm
     assert(displaySyncObject);
 
     if (!displaySurface || !displaySyncObject)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     host.renderer->average_scene_per_frame = (host.renderer->average_scene_per_frame + host.renderer->scene_processed_since_last_frame + 1) >> 1;
 
@@ -1141,9 +1141,9 @@ EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
     assert(memcmp(&program->magic, "GXP", 4) == 0);
 
     if (!program)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (memcmp(&program->magic, "GXP", 4) != 0)
-        RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
+        return RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
 
     return 0;
 }
@@ -1153,7 +1153,7 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, const SceG
     assert(program);
     assert(name);
     if (!program || !name)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return Ptr<SceGxmProgramParameter>();
 
     const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
     for (uint32_t i = 0; i < program->parameter_count; ++i) {
@@ -1173,7 +1173,7 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const 
     const MemState &mem = host.mem;
     assert(program);
     if (!program)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return Ptr<SceGxmProgramParameter>();
 
     const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
     uint32_t current_index = 0;
@@ -1353,7 +1353,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     assert(uniformBuffer);
 
     if (!context || !uniformBuffer)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *uniformBuffer = context->state.params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
     context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Reserved;
@@ -1371,7 +1371,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     assert(uniformBuffer);
 
     if (!context || !uniformBuffer)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *uniformBuffer = context->state.params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
 
@@ -1468,7 +1468,7 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     assert(fragmentProgram);
 
     if (!context || !fragmentProgram)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return;
 
     context->record.fragment_program = fragmentProgram;
     renderer::set_program(*host.renderer, context->renderer.get(), &context->state, fragmentProgram, true);
@@ -1479,7 +1479,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, unsigned int textu
     assert(texture);
 
     if (!context || !texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     renderer::set_fragment_texture(*host.renderer, context->renderer.get(), &context->state, textureIndex, *texture);
 
@@ -1492,9 +1492,9 @@ EXPORT(int, sceGxmSetFragmentUniformBuffer, SceGxmContext *context, int index, P
     assert(data);
 
     if (!context || !data)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (index < 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     context->state.fragment_uniform_buffers[index] = data;
     return 0;
@@ -1597,9 +1597,9 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     if (!uniformBuffer || !parameter || !sourceData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (parameter->container_index != SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
     if (componentCount <= 0)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     size_t size = 0;
     size_t offset = 0;
@@ -1737,7 +1737,7 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVer
     assert(vertexProgram);
 
     if (!context || !vertexProgram)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return;
 
     context->record.vertex_program = vertexProgram;
     renderer::set_program(*host.renderer, context->renderer.get(), &context->state, vertexProgram, false);
@@ -1748,7 +1748,7 @@ EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, unsigned int streamIn
     assert(streamData);
 
     if (!context || !streamData)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     context->state.stream_data[streamIndex] = streamData;
 
@@ -1768,7 +1768,7 @@ EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, int index, Ptr
     assert(data);
 
     if (!context || !data)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     context->state.vertex_uniform_buffers[index] = data;
     return 0;
@@ -1813,7 +1813,7 @@ EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shade
     assert(fragmentProgram);
 
     if (!shaderPatcher || !fragmentProgram)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     ++fragmentProgram->reference_count;
 
@@ -1825,7 +1825,7 @@ EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram, SceGxmShaderPatcher *shaderP
     assert(vertexProgram);
 
     if (!shaderPatcher || !vertexProgram)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     ++vertexProgram->reference_count;
 
@@ -1837,7 +1837,7 @@ EXPORT(int, sceGxmShaderPatcherCreate, const SceGxmShaderPatcherParams *params, 
     assert(shaderPatcher);
 
     if (!params || !shaderPatcher)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *shaderPatcher = alloc<SceGxmShaderPatcher>(host.mem, __FUNCTION__);
     assert(*shaderPatcher);
@@ -1856,9 +1856,9 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     assert(fragmentProgram);
 
     if (!shaderPatcher || !programId || !fragmentProgram)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (multisampleMode != SCE_GXM_MULTISAMPLE_NONE)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
 
     static const SceGxmBlendInfo default_blend_info = {
         SCE_GXM_COLOR_MASK_ALL,
@@ -1905,7 +1905,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     assert(fragmentProgram);
 
     if (!shaderPatcher || !fragmentProgram)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
     assert(*fragmentProgram);
@@ -1932,7 +1932,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     assert(vertexProgram);
 
     if (!shaderPatcher || !programId || !vertexProgram)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *vertexProgram = alloc<SceGxmVertexProgram>(mem, __FUNCTION__);
     assert(*vertexProgram);
@@ -1962,7 +1962,7 @@ EXPORT(int, sceGxmShaderPatcherDestroy, Ptr<SceGxmShaderPatcher> shaderPatcher) 
     assert(shaderPatcher);
 
     if (!shaderPatcher)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     free(host.mem, shaderPatcher);
 
@@ -2015,7 +2015,7 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
     assert(programId);
 
     if (!shaderPatcher || !programHeader || !programId)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *programId = alloc<SceGxmRegisteredProgram>(host.mem, __FUNCTION__);
     assert(*programId);
@@ -2034,7 +2034,7 @@ EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shad
     assert(fragmentProgram);
 
     if (!shaderPatcher || !fragmentProgram)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     SceGxmFragmentProgram *const fp = fragmentProgram.get(host.mem);
     --fp->reference_count;
@@ -2056,7 +2056,7 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
     assert(vertexProgram);
 
     if (!shaderPatcher || !vertexProgram)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     SceGxmVertexProgram *const vp = vertexProgram.get(host.mem);
     --vp->reference_count;
@@ -2080,7 +2080,7 @@ EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPat
     assert(programId);
 
     if (!shaderPatcher || !programId)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     SceGxmRegisteredProgram *const rp = programId.get(host.mem);
     rp->program.reset();
@@ -2094,7 +2094,7 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
     assert(syncObject);
 
     if (!syncObject)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *syncObject = alloc<SceGxmSyncObject>(host.mem, __FUNCTION__);
     if (!*syncObject) {
@@ -2110,7 +2110,7 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
 EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
     assert(syncObject);
     if (!syncObject)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     free(host.mem, syncObject);
 
@@ -2147,36 +2147,26 @@ EXPORT(int, sceGxmTerminate) {
 
 EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return Ptr<void>(texture->data_addr << 2);
 }
 
 EXPORT(SceGxmTextureFormat, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return gxm::get_format(texture);
 }
 
 EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return (texture->gamma_mode << 27);
 }
 
 EXPORT(unsigned int, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return static_cast<unsigned int>(gxm::get_height(texture));
 }
 
 EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
     }
@@ -2185,8 +2175,6 @@ EXPORT(unsigned int, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
     }
@@ -2195,15 +2183,11 @@ EXPORT(unsigned int, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return texture->mag_filter;
 }
 
 EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return texture->mag_filter;
     }
@@ -2212,8 +2196,6 @@ EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
 
 EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
     }
@@ -2222,8 +2204,6 @@ EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const SceGxmTexture *t
 
 EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
     }
@@ -2232,30 +2212,22 @@ EXPORT(unsigned int, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) 
 
 EXPORT(unsigned int, sceGxmTextureGetMipmapCountUnsafe, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return texture->mip_count + 1;
 }
 
 EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return texture->normalize_mode << 31;
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     assert(gxm::is_paletted_format(gxm::get_format(texture)));
     return Ptr<void>(texture->palette_addr << 6);
 }
 
 EXPORT(uint32_t, sceGxmTextureGetStride, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (texture->texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED)
         return 0;
 
@@ -2264,22 +2236,16 @@ EXPORT(uint32_t, sceGxmTextureGetStride, const SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return (texture->type << 29);
 }
 
 EXPORT(int, sceGxmTextureGetUAddrMode, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return texture->uaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
@@ -2288,15 +2254,11 @@ EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
 
 EXPORT(int, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return texture->vaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
     }
@@ -2305,8 +2267,6 @@ EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
 
 EXPORT(unsigned int, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
     assert(texture);
-    if (!texture)
-        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     return static_cast<unsigned int>(gxm::get_width(texture));
 }
 
