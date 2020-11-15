@@ -809,7 +809,7 @@ EXPORT(int, sceGxmGetPrecomputedVertexStateSize) {
     return SEC_GXM_PRECOMPUTED_VERTEX_STATE_EXTRA_SIZE;
 }
 
-EXPORT(int, sceGxmGetRenderTargetMemSizes, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
+EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
     *hostMemSize = MB(2);
     return STUBBED("2MB host mem");
 }
@@ -2844,7 +2844,7 @@ BRIDGE_IMPL(sceGxmGetParameterBufferThreshold)
 BRIDGE_IMPL(sceGxmGetPrecomputedDrawSize)
 BRIDGE_IMPL(sceGxmGetPrecomputedFragmentStateSize)
 BRIDGE_IMPL(sceGxmGetPrecomputedVertexStateSize)
-BRIDGE_IMPL(sceGxmGetRenderTargetMemSizes)
+BRIDGE_IMPL(sceGxmGetRenderTargetMemSize)
 BRIDGE_IMPL(sceGxmInitialize)
 BRIDGE_IMPL(sceGxmIsDebugVersion)
 BRIDGE_IMPL(sceGxmMapFragmentUsseMemory)
