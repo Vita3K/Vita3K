@@ -203,7 +203,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
 
     const auto update_progress = [&]() {
         if (progress_callback != nullptr) {
-            progress_callback(file_progress * 0.7 + decrypt_progress * 0.3);
+            progress_callback(file_progress * 0.7f + decrypt_progress * 0.3f);
         }
     };
 

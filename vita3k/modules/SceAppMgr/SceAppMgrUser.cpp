@@ -477,7 +477,7 @@ EXPORT(int, sceAppMgrSaveDataAddMount) {
 }
 
 EXPORT(int, sceAppMgrSaveDataDataRemove, Ptr<SceAppMgrSaveDataDataDelete> data) {
-    for (unsigned int i = 0; i < data.get(host.mem)->fileNum; i++) {
+    for (int i = 0; i < data.get(host.mem)->fileNum; i++) {
         remove_file(host.io, construct_savedata0_path(data.get(host.mem)->files.get(host.mem)[i].dataPath.get(host.mem)).c_str(), host.pref_path, export_name);
     }
     return 0;
@@ -490,7 +490,7 @@ EXPORT(int, sceAppMgrSaveDataDataRemove2) {
 EXPORT(int, sceAppMgrSaveDataDataSave, Ptr<SceAppMgrSaveDataData> data) {
     SceUID fd;
 
-    for (unsigned int i = 0; i < data.get(host.mem)->fileNum; i++) {
+    for (int i = 0; i < data.get(host.mem)->fileNum; i++) {
         auto files = data.get(host.mem)->files.get(host.mem);
 
         const auto file_path = construct_savedata0_path(files[i].dataPath.get(host.mem));

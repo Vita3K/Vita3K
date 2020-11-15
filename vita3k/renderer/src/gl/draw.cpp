@@ -89,7 +89,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 
     const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_program_gxp);
     std::array<bool, SCE_GXM_MAX_TEXTURE_UNITS> sampler_slot_used = { false };
-    for (int i = 0; i < fragment_program_gxp.parameter_count; ++i) {
+    for (std::uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
         const SceGxmProgramParameter &param = fragment_params[i];
         if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
             continue;

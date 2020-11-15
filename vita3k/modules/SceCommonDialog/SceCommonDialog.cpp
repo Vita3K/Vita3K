@@ -972,7 +972,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
         host.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_LIST;
         slot_param.resize(host.common_dialog.savedata.slot_list_size);
         host.common_dialog.savedata.icon_loaded.resize(host.common_dialog.savedata.slot_list_size);
-        for (int i = 0; i < host.common_dialog.savedata.slot_list_size; i++) {
+        for (std::uint32_t i = 0; i < host.common_dialog.savedata.slot_list_size; i++) {
             fd = open_file(host.io, construct_slotparam_path(host.common_dialog.savedata.slot_id[i]).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
             check_save_file(fd, slot_param, i, host, export_name);
         }
@@ -1137,7 +1137,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
             }
         }
 
-        for (int i = 0; i < list_param->slotListSize; i++) {
+        for (SceUInt i = 0; i < list_param->slotListSize; i++) {
             slot_list[i] = list_param->slotList.get(host.mem)[i];
             host.common_dialog.savedata.slot_id[i] = slot_list[i].id;
             host.common_dialog.savedata.list_empty_param = slot_list[0].emptyParam.get(host.mem);

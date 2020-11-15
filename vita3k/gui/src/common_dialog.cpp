@@ -278,7 +278,7 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
         ImGui::SetNextWindowBgAlpha(0.f);
         ImGui::BeginChild("##Selectables", ImVec2(0, 0), false, ImGuiWindowFlags_NoDecoration);
         thumbnails_textures.resize(common_dialog.savedata.slot_list_size);
-        for (int i = 0; i < common_dialog.savedata.slot_list_size; i++) {
+        for (std::uint32_t i = 0; i < common_dialog.savedata.slot_list_size; i++) {
             switch (common_dialog.savedata.display_type) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
                 draw_savedata_dialog_list(common_dialog, gui, WINDOW_SIZE, THUMBNAIL_SIZE, i, i, thumbnails_textures);
