@@ -29,6 +29,7 @@
 #include <map>
 #include <mutex>
 #include <queue>
+#include <unordered_map>
 #include <vector>
 
 struct ThreadState;
@@ -54,7 +55,7 @@ typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 typedef std::shared_ptr<SceKernelModuleInfo> SceKernelModuleInfoPtr;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
-typedef std::map<uint32_t, Address> ExportNids;
+typedef std::unordered_map<uint32_t, Address> ExportNids;
 typedef std::map<Address, uint32_t> NidFromExport;
 typedef std::map<Address, uint32_t> NotFoundVars;
 typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
