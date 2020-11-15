@@ -180,7 +180,6 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
 
     std::string func_name;
     spv::Id output_type;
-    GLSLstd450 convert_func;
     int comp_count;
     int bias;
 
@@ -1162,7 +1161,6 @@ spv::Id shader::usse::utils::unwrap_type(spv::Builder &b, spv::Id type) {
 
 // will break in 32-bit host
 static std::tuple<float, float> get_int_normalize_constants(DataType type) {
-    float max_value;
     switch (type) {
     case DataType::UINT8:
         return std::make_tuple(255.0f, 0.0f);

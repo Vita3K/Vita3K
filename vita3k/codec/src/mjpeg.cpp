@@ -76,7 +76,7 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
 
         // Copy YUV444 data.
         for (uint32_t a = 0; a < 3; a++) {
-            for (uint32_t b = 0; b < frame->height; b++) {
+            for (int b = 0; b < frame->height; b++) {
                 std::memcpy(&channels[a][b * frame->width], &frame->data[a][b * frame->linesize[a]], frame->width);
             }
         }

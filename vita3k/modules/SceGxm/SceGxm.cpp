@@ -1581,7 +1581,7 @@ EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode
 template <typename T>
 static void convert_uniform_data(std::vector<std::uint8_t> &converted_data, const float *sourceData, unsigned int componentCount) {
     converted_data.resize(componentCount * sizeof(T));
-    for (int i = 0; i < componentCount; ++i) {
+    for (unsigned int i = 0; i < componentCount; ++i) {
         T converted = static_cast<T>(sourceData[i]);
         std::memcpy(&converted_data[i * sizeof(T)], &converted, sizeof(T));
     }

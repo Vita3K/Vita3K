@@ -163,8 +163,8 @@ std::vector<int16_t> PlayerState::receive_audio() {
 
         data.resize(frame->nb_samples * frame->channels);
 
-        for (uint32_t a = 0; a < frame->nb_samples; a++) {
-            for (uint32_t b = 0; b < frame->channels; b++) {
+        for (int a = 0; a < frame->nb_samples; a++) {
+            for (int b = 0; b < frame->channels; b++) {
                 auto *frame_data = reinterpret_cast<float *>(frame->data[b]);
                 float current_sample = frame_data[a];
                 int16_t pcm_sample = current_sample * INT16_MAX;
