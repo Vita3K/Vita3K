@@ -790,6 +790,35 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
+    // Log parameters
+    for (size_t i = 0; i < program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = gxp_parameters[i];
+        uint16_t curi = parameter.category;
+        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM || parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+            bool is_uniform = parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM;
+            std::string var_name = gxp::parameter_name(parameter);
+
+            auto container = gxp::get_container_by_index(program, parameter.container_index);
+            std::uint32_t offset = parameter.resource_index;
+
+            if (container) {
+                offset = container->base_sa_offset + parameter.resource_index;
+            }
+
+            const auto parameter_type = gxp::parameter_type(parameter);
+            const auto [store_type, param_type_name] = shader::get_parameter_type_store_and_name(parameter_type);
+            std::string param_log = fmt::format("[{} + {}] {}a{} = ({}{}) {}",
+                gxp::get_container_name(parameter.container_index), parameter.resource_index,
+                is_uniform ? "s" : "p", offset, param_type_name, parameter.component_count, var_name);
+
+            if (parameter.array_size > 1) {
+                param_log += fmt::format("[{}]", parameter.array_size);
+            }
+
+            LOG_DEBUG(param_log);
+        }
+    }
+
     for (const auto &input : program_input.inputs) {
         std::visit(overloaded{
                        [&](const LiteralInputSource &s) {

@@ -90,16 +90,6 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             const auto [store_type, param_type_name] = shader::get_parameter_type_store_and_name(parameter_type);
 
             // Make the type
-            std::string param_log = fmt::format("[{} + {}] {}a{} = ({}{}) {}",
-                gxp::get_container_name(parameter.container_index), parameter.resource_index,
-                is_uniform ? "s" : "p", offset, param_type_name, parameter.component_count, var_name);
-
-            if (parameter.array_size > 1) {
-                param_log += fmt::format("[{}]", parameter.array_size);
-            }
-
-            LOG_DEBUG(param_log);
-
             Input item;
             item.type = store_type;
             item.offset = offset;
