@@ -36,7 +36,7 @@ bool USSETranslatorVisitor::vmad(
     Imm1 dest_use_bank_ext,
     Imm1 end,
     Imm1 src0_bank_ext,
-    Imm2 increment_mode,
+    RepeatMode repeat_mode,
     Imm1 gpi0_abs,
     RepeatCount repeat_count,
     bool nosched,
@@ -116,15 +116,15 @@ bool USSETranslatorVisitor::vmad(
 
     // Write mask is a 4-bit immidiate
     // If a bit is one, a swizzle is active
-    BEGIN_REPEAT(repeat_count, 2)
-    GET_REPEAT(inst);
+    BEGIN_REPEAT(repeat_count)
+    GET_REPEAT(inst, repeat_mode);
 
-    LOG_DISASM("{} {} {} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask), disasm::operand_to_str(inst.opr.src1, write_mask, src1_repeat_offset),
-        disasm::operand_to_str(inst.opr.src2, write_mask));
+    LOG_DISASM("{} {} {} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, write_mask, src1_repeat_offset),
+        disasm::operand_to_str(inst.opr.src2, write_mask, src2_repeat_offset));
 
-    spv::Id vsrc0 = load(inst.opr.src0, write_mask, 0);
+    spv::Id vsrc0 = load(inst.opr.src0, write_mask, src0_repeat_offset);
     spv::Id vsrc1 = load(inst.opr.src1, write_mask, src1_repeat_offset);
-    spv::Id vsrc2 = load(inst.opr.src2, write_mask, 0);
+    spv::Id vsrc2 = load(inst.opr.src2, write_mask, src2_repeat_offset);
 
     if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
         LOG_ERROR("Source not loaded (vsrc0: {}, vsr1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
@@ -134,7 +134,7 @@ bool USSETranslatorVisitor::vmad(
     auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
     auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
-    store(inst.opr.dest, add_result, write_mask, dest_repeat_offset);
+    store(inst.opr.dest, add_result, write_mask, 0);
     END_REPEAT()
 
     return true;
@@ -272,7 +272,7 @@ bool USSETranslatorVisitor::vdp(
     Imm1 dest_use_bank_ext,
     Imm1 end,
     Imm1 src0_bank_ext,
-    Imm2 increment_mode,
+    RepeatMode repeat_mode,
     Imm1 gpi0_abs,
     RepeatCount repeat_count,
     bool nosched,
@@ -345,13 +345,13 @@ bool USSETranslatorVisitor::vdp(
     m_b.setLine(m_recompiler.cur_pc);
 
     // Decoding done
-    BEGIN_REPEAT_COMPLEX(repeat_count, 1, 4)
-    GET_REPEAT(inst)
+    BEGIN_REPEAT(repeat_count)
+    GET_REPEAT(inst, repeat_mode)
 
-    LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
-        disasm::operand_to_str(inst.opr.src0, src_mask, 0), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
+    LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, current_repeat),
+        disasm::operand_to_str(inst.opr.src0, src_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
 
-    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, 0);
+    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, src0_repeat_offset);
     spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
 
     if (lhs == spv::NoResult || rhs == spv::NoResult) {
@@ -361,7 +361,7 @@ bool USSETranslatorVisitor::vdp(
 
     spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
 
-    store(inst.opr.dest, result, write_mask, dest_repeat_offset);
+    store(inst.opr.dest, result, write_mask, current_repeat);
     END_REPEAT()
 
     return true;
@@ -689,8 +689,8 @@ bool USSETranslatorVisitor::vcomp(
     m_b.setLine(m_recompiler.cur_pc);
 
     // TODO: Log
-    BEGIN_REPEAT(repeat_count, 2)
-    GET_REPEAT(inst);
+    BEGIN_REPEAT(repeat_count)
+    GET_REPEAT(inst, RepeatMode::SLMSI);
     spv::Id result = load(inst.opr.src1, src_mask, src1_repeat_offset);
 
     if (result == spv::NoResult) {
@@ -948,9 +948,8 @@ bool USSETranslatorVisitor::sop(
         }
     };
 
-    // TODO: Not sure about the jump
-    BEGIN_REPEAT(count, 2)
-    GET_REPEAT(inst)
+    BEGIN_REPEAT(count)
+    GET_REPEAT(inst, RepeatMode::SLMSI)
 
     spv::Id src1_color = load(inst.opr.src1, 0b0111, src1_repeat_offset);
     spv::Id src2_color = load(inst.opr.src2, 0b0111, src2_repeat_offset);
