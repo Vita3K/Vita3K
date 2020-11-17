@@ -23,7 +23,7 @@ const char *data_type_str(DataType p);
 std::string reg_to_str(RegisterBank bank, uint32_t reg_num);
 std::string operand_to_str(Operand op, Imm4 write_mask, int32_t shift = 0);
 template <std::size_t s>
-std::string swizzle_to_str(Swizzle<s> swizz, const Imm4 write_mask, int32_t shift = 0);
+std::string swizzle_to_str(Swizzle<s> swizz, const Imm4 write_mask);
 
 } // namespace disasm
 } // namespace usse
