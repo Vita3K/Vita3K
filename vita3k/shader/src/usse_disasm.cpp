@@ -163,7 +163,7 @@ std::string operand_to_str(Operand op, Imm4 write_mask, int32_t shift) {
     }
 
     if (write_mask != 0) {
-        opstr += "." + swizzle_to_str<4>(op.swizzle, write_mask, shift);
+        opstr += "." + swizzle_to_str<4>(op.swizzle, write_mask);
     }
 
     if (op.flags & RegisterFlags::Negative) {
@@ -178,12 +178,12 @@ std::string operand_to_str(Operand op, Imm4 write_mask, int32_t shift) {
 }
 
 template <std::size_t s>
-std::string swizzle_to_str(Swizzle<s> swizz, Imm4 write_mask, int32_t shift) {
+std::string swizzle_to_str(Swizzle<s> swizz, Imm4 write_mask) {
     std::string swizzstr;
 
     for (std::size_t i = 0; i < s; i++) {
-        if (write_mask & (1 << ((i + shift) % s))) {
-            switch (swizz[(i + shift) % s]) {
+        if (write_mask & (1 << i)) {
+            switch (swizz[i]) {
             case SwizzleChannel::_X: {
                 swizzstr += "x";
                 break;
