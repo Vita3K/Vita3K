@@ -159,8 +159,8 @@ void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t
 
     const uint16_t width_in_tiles = (width + 31) >> 5;
 
-    for (uint16_t y = 0; y < width; y++) {
-        for (uint16_t x = 0; x < height; x++) {
+    for (uint16_t y = 0; y < height; y++) {
+        for (uint16_t x = 0; x < width; x++) {
             // Calculate texel address in title
             const uint16_t texel_offset_in_title = (x & 0b11111) | ((y & 0b11111) << 4);
             const uint16_t tile_address = (x & 0b111111100000) + width_in_tiles * (y & 0b111111100000);
