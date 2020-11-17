@@ -388,14 +388,14 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
         frag_program_gl->blend_enabled = true;
         frag_program_gl->color_func = translate_blend_func(blend->colorFunc);
         frag_program_gl->alpha_func = translate_blend_func(blend->alphaFunc);
-        if (blend->colorFunc == SCE_GXM_BLEND_FUNC_NONE) {
+        if (blend->colorFunc == SCE_GXM_BLEND_FUNC_NONE && blend->colorSrc == SCE_GXM_BLEND_FACTOR_ZERO && blend->colorDst == SCE_GXM_BLEND_FACTOR_ZERO) {
             frag_program_gl->color_src = GL_ONE;
             frag_program_gl->color_dst = GL_ZERO;
         } else {
             frag_program_gl->color_src = translate_blend_factor(blend->colorSrc);
             frag_program_gl->color_dst = translate_blend_factor(blend->colorDst);
         }
-        if (blend->alphaFunc == SCE_GXM_BLEND_FUNC_NONE) {
+        if (blend->alphaFunc == SCE_GXM_BLEND_FUNC_NONE && blend->alphaSrc == SCE_GXM_BLEND_FACTOR_ZERO && blend->alphaDst == SCE_GXM_BLEND_FACTOR_ZERO) {
             frag_program_gl->alpha_src = GL_ONE;
             frag_program_gl->alpha_dst = GL_ZERO;
         } else {
