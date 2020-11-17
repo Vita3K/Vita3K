@@ -132,30 +132,39 @@ private:
     //
     // Translation helpers
     //
-#define BEGIN_REPEAT_COMPLEX(repeat_count, dest_jump, src_jump) \
-    const auto repeat_count_num = (uint8_t)repeat_count + 1;    \
-    constexpr auto dest_repeat_jump = dest_jump;                \
-    constexpr auto src_repeat_jump = src_jump;                  \
+
+#define BEGIN_REPEAT(repeat_count)                           \
+    const auto repeat_count_num = (uint8_t)repeat_count + 1; \
     for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
-#define BEGIN_REPEAT(repeat_count, jump) BEGIN_REPEAT_COMPLEX(repeat_count, jump, jump)
 #define END_REPEAT() }
 
-#define GET_REPEAT(inst)                                                                          \
-    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat) * dest_repeat_jump; \
-    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat) * src_repeat_jump;  \
-    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat) * src_repeat_jump;  \
-    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat) * src_repeat_jump;  \
-    if (inst.opr.dest.bank == RegisterBank::FPINTERNAL)                                           \
-        dest_repeat_offset /= dest_repeat_jump;                                                   \
-    if (inst.opr.src0.bank == RegisterBank::FPINTERNAL)                                           \
-        src0_repeat_offset /= src_repeat_jump;                                                    \
-    if (inst.opr.src1.bank == RegisterBank::FPINTERNAL)                                           \
-        src1_repeat_offset /= src_repeat_jump;                                                    \
-    if (inst.opr.src2.bank == RegisterBank::FPINTERNAL)                                           \
-        src2_repeat_offset /= src_repeat_jump;
+#define GET_REPEAT(inst, repeat_mode)                                                                           \
+    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat, repeat_mode, inst.opr.dest.bank); \
+    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat, repeat_mode, inst.opr.src0.bank); \
+    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat, repeat_mode, inst.opr.src1.bank); \
+    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat, repeat_mode, inst.opr.src2.bank);
 
-    const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index) {
-        return repeat_increase[op.index][repeat_index];
+    const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index, RepeatMode repeat_mode, RegisterBank bank) {
+        if (repeat_mode == RepeatMode::INTERNAL) {
+            if (bank == RegisterBank::FPINTERNAL) {
+                return repeat_index;
+            }
+        }
+        if (repeat_mode == RepeatMode::BOTH) {
+            if (bank == RegisterBank::FPINTERNAL) {
+                return repeat_index;
+            } else {
+                return repeat_index * 4;
+            }
+        }
+        if (repeat_mode == RepeatMode::EXTERNAL && bank != RegisterBank::FPINTERNAL) {
+            return repeat_index * 4;
+        }
+
+        if (repeat_mode == RepeatMode::SLMSI && bank != RegisterBank::FPINTERNAL) {
+            return repeat_increase[op.index][repeat_index] * 2;
+        }
+        return 0;
     }
 
     void store(Operand dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int shift_offset = 0);

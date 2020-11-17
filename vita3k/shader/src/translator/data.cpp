@@ -148,8 +148,8 @@ bool USSETranslatorVisitor::vmov(
 
     m_b.setLine(m_recompiler.cur_pc);
 
-    BEGIN_REPEAT(repeat_count, 2)
-    GET_REPEAT(inst);
+    BEGIN_REPEAT(repeat_count)
+    GET_REPEAT(inst, RepeatMode::SLMSI);
 
     std::string conditional_str;
     if (is_conditional) {
@@ -457,8 +457,8 @@ bool USSETranslatorVisitor::vpck(
     // Recompile
     m_b.setLine(m_recompiler.cur_pc);
 
-    BEGIN_REPEAT(repeat_count, 2)
-    GET_REPEAT(inst);
+    BEGIN_REPEAT(repeat_count)
+    GET_REPEAT(inst, RepeatMode::SLMSI);
 
     if (should_use_src2) {
         // TODO correctly log
