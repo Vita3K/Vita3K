@@ -155,7 +155,7 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
     return opstr;
 }
 
-std::string operand_to_str(Operand op, Imm4 write_mask, std::uint32_t shift) {
+std::string operand_to_str(Operand op, Imm4 write_mask, int32_t shift) {
     std::string opstr = reg_to_str(op.bank, op.num + shift);
 
     if (op.bank == RegisterBank::IMMEDIATE) {
@@ -178,7 +178,7 @@ std::string operand_to_str(Operand op, Imm4 write_mask, std::uint32_t shift) {
 }
 
 template <std::size_t s>
-std::string swizzle_to_str(Swizzle<s> swizz, Imm4 write_mask, uint32_t shift) {
+std::string swizzle_to_str(Swizzle<s> swizz, Imm4 write_mask, int32_t shift) {
     std::string swizzstr;
 
     for (std::size_t i = 0; i < s; i++) {
