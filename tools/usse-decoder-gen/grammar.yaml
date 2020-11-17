@@ -162,7 +162,9 @@ VMAD:
         - dest_use_bank_ext: 1
         - end: 1
         - src0_bank_ext: 1
-        - increment_mode: 2
+        - repeat_mode: 
+            size: 2
+            type: RepeatMode
         - gpi0_abs: 1
         - repeat_count:
             size: 2
@@ -205,7 +207,9 @@ VDP:
         - dest_use_bank_ext: 1
         - end: 1
         - src0_bank_ext: 1
-        - increment_mode: 2
+        - repeat_mode: 
+            size: 2
+            type: RepeatMode
         - gpi0_abs: 1
         - repeat_count:
             size: 2

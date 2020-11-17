@@ -135,6 +135,13 @@ enum class CompareMethod : uint8_t {
     LTE_ZERO = 0b11,
 };
 
+enum class RepeatMode : uint8_t {
+    EXTERNAL,
+    INTERNAL,
+    BOTH,
+    SLMSI
+};
+
 enum class DataType : uint8_t {
     INT8,
     INT16,
