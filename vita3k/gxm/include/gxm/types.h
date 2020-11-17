@@ -13,7 +13,8 @@
 #define SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX 0xE
 #define SCE_GXM_MAX_VERTEX_STREAMS 16
 #define SCE_GXM_MAX_TEXTURE_UNITS 16
-#define SCE_GXM_REAL_MAX_UNIFORM_BUFFER 15 // Include default
+#define SCE_GXM_MAX_UNIFORM_BUFFERS 14
+#define SCE_GXM_REAL_MAX_UNIFORM_BUFFER (SCE_GXM_MAX_UNIFORM_BUFFERS + 1) // Include default
 #define SCE_GXM_TILE_SHIFTX 5U
 #define SCE_GXM_TILE_SHIFTY 5U
 #define SCE_GXM_TILE_SIZEX (1U << SCE_GXM_TILE_SHIFTX)
@@ -27,6 +28,11 @@ struct VertexProgram;
 struct SceGxmSyncObject;
 struct SceGxmPrecomputedVertexState;
 struct SceGxmPrecomputedFragmentState;
+
+enum SceGxmContextType {
+    SCE_GXM_CONTEXT_TYPE_IMMEDIATE,
+    SCE_GXM_CONTEXT_TYPE_DEFERRED
+};
 
 enum SceGxmColorMask {
     SCE_GXM_COLOR_MASK_NONE = 0,
@@ -1066,6 +1072,23 @@ struct SceGxmContextParams {
     Ptr<void> fragmentUsseRingBufferMem;
     uint32_t fragmentUsseRingBufferMemSize;
     uint32_t fragmentUsseRingBufferOffset;
+};
+
+typedef void *(*SceGxmDeferredContextCallback)(void *userData, uint32_t minSize, uint32_t *size);
+
+struct SceGxmDeferredContextParams {
+    Ptr<void> hostMem;
+    uint32_t hostMemSize;
+    SceGxmDeferredContextCallback vdmCallback;
+    SceGxmDeferredContextCallback vertexCallback;
+    SceGxmDeferredContextCallback fragmentCallback;
+    Ptr<void> userData;
+    Ptr<void> vdmBufferMem;
+    uint32_t vdmBufferMemSize;
+    Ptr<void> vertexBufferMem;
+    uint32_t vertexBufferMemSize;
+    Ptr<void> fragmentBufferMem;
+    uint32_t fragmentBufferMemSize;
 };
 
 typedef std::array<Ptr<const void>, 15> UniformBuffers;
