@@ -135,8 +135,8 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                d = dest_use_bank_ext (1 bit)
                                                 e = end (1 bit)
                                                  r = src0_bank_ext (1 bit)
-                                                  ii = increment_mode (2 bits)
-                                                    a = gpi0_abs (1 bit)
+                                                  aa = repeat_mode (2 bits, RepeatMode)
+                                                    i = gpi0_abs (1 bit)
                                                      tt = repeat_count (2 bits, RepeatCount)
                                                        n = nosched (1 bit, bool)
                                                         wwww = write_mask (4 bits)
@@ -157,7 +157,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                          AAAA = src0_swiz (4 bits)
                                                                                              BBBBBB = src0_n (6 bits)
         */
-        INST(&V::vmad, "VMAD ()", "00011pppsg1oderiiattnwwwwcbfhzkkjjllmmmmmmqqqquuuuvvxyAAAABBBBBB"),
+        INST(&V::vmad, "VMAD ()", "00011pppsg1oderaaittnwwwwcbfhzkkjjllmmmmmmqqqquuuuvvxyAAAABBBBBB"),
         // Vector Dot Product (single issue)
         /*
                                  00011 = opcode1
@@ -169,17 +169,17 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                              d = dest_use_bank_ext (1 bit)
                                               e = end (1 bit)
                                                r = src0_bank_ext (1 bit)
-                                                ii = increment_mode (2 bits)
+                                                aa = repeat_mode (2 bits, RepeatMode)
                                                   g = gpi0_abs (1 bit)
-                                                   aa = repeat_count (2 bits, RepeatCount)
+                                                   tt = repeat_count (2 bits, RepeatCount)
                                                      n = nosched (1 bit, bool)
                                                       wwww = write_mask (4 bits)
                                                           b = src0_neg (1 bit)
                                                            f = src0_abs (1 bit)
                                                             lll = clip_plane_n (3 bits)
-                                                               tt = dest_bank (2 bits)
-                                                                 kk = src0_bank (2 bits)
-                                                                   hh = gpi0_n (2 bits)
+                                                               kk = dest_bank (2 bits)
+                                                                 hh = src0_bank (2 bits)
+                                                                   ii = gpi0_n (2 bits)
                                                                      jjjjjj = dest_n (6 bits)
                                                                            zzzz = gpi0_swiz (4 bits)
                                                                                mmm = src0_swiz_w (3 bits)
@@ -188,7 +188,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                                                                         xxx = src0_swiz_x (3 bits)
                                                                                            uuuuuu = src0_n (6 bits)
         */
-        INST(&V::vdp, "VDP ()", "00011pppsc0oderiigaanwwwwbflllttkkhhjjjjjjzzzzmmmqqqyyyxxxuuuuuu"),
+        INST(&V::vdp, "VDP ()", "00011pppsc0oderaagttnwwwwbflllkkhhiijjjjjjzzzzmmmqqqyyyxxxuuuuuu"),
         // Dual issue instruction
         /*
                                      0010 = op1
