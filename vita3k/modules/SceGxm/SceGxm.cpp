@@ -2351,12 +2351,12 @@ EXPORT(uint32_t, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) {
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
     }
-    return texture->mip_count + 1;
+    return (texture->mip_count + 1) & 0xf;
 }
 
 EXPORT(uint32_t, sceGxmTextureGetMipmapCountUnsafe, const SceGxmTexture *texture) {
     assert(texture);
-    return texture->mip_count + 1;
+    return (texture->mip_count + 1) & 0xf;
 }
 
 EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
@@ -2656,6 +2656,10 @@ EXPORT(int, sceGxmTextureSetLodBias, SceGxmTexture *texture, uint32_t bias) {
         return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
     }
 
+    if (bias > 63) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -2713,6 +2717,10 @@ EXPORT(int, sceGxmTextureSetMipmapCount, SceGxmTexture *texture, uint32_t mipCou
 
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
+    }
+
+    if (mipCount > 13) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     texture->mip_count = (uint32_t)mipCount;
