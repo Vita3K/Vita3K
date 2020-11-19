@@ -40,3 +40,7 @@ void write_return_value(CPUState &cpu, uint64_t ret) {
 void write_return_value(CPUState &cpu, bool ret) {
     write_reg(cpu, 0, ret);
 }
+
+void write_return_value(CPUState &cpu, float ret) {
+    write_float_reg(cpu, 0, ret);
+}
