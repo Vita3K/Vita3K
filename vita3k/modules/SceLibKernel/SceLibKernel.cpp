@@ -1580,6 +1580,10 @@ int wait_thread_end(HostState &host, SceUID thread_id, SceUID thid, int *stat) {
 
     {
         const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+        if (!thread) {
+            return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+        }
+
         const std::lock_guard<std::mutex> thread_lock(thread->mutex);
 
         if (thread->to_do == ThreadToDo::exit) {
