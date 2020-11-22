@@ -216,13 +216,8 @@ EXPORT(SceGxmColorSurfaceType, sceGxmColorSurfaceGetType, const SceGxmColorSurfa
 }
 
 EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorFormat colorFormat, SceGxmColorSurfaceType surfaceType, SceGxmColorSurfaceScaleMode scaleMode, SceGxmOutputRegisterSize outputRegisterSize, uint32_t width, uint32_t height, uint32_t strideInPixels, Ptr<void> data) {
-    assert(outputRegisterSize == SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT);
-
     if (!surface || !data)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-
-    if (outputRegisterSize != SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
 
     if (width > 4096 || height > 4096)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
