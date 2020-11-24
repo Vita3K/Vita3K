@@ -164,6 +164,17 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         }
     }
 
+    const auto set_uniform_if_exists = [&](const std::string &name, float val) {
+        GLuint loc = glGetUniformLocation(program_id, name.c_str());
+        if (loc != -1) {
+            glUniform1f(loc, val);
+        }
+    };
+
+    set_uniform_if_exists("viewport_flag", state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED ? 1.0f : 0.0f);
+    set_uniform_if_exists("screen_width", state.color_surface.width);
+    set_uniform_if_exists("screen_height", state.color_surface.height);
+
     context.vertex_set_requests.clear();
     context.fragment_set_requests.clear();
 
