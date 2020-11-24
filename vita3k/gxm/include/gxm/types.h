@@ -1522,7 +1522,7 @@ struct SceGxmPrecomputedDraw {
     uint32_t vertex_count;
 };
 
-static constexpr size_t SCE_GXM_PRECOMPUTED_FRAGMENT_STATE_EXTRA_SIZE = sizeof(TextureDatas);
+static constexpr size_t SCE_GXM_PRECOMPUTED_FRAGMENT_STATE_EXTRA_SIZE = sizeof(TextureDatas) + sizeof(UniformBuffers);
 
 struct SceGxmPrecomputedFragmentState {
     Ptr<const SceGxmFragmentProgram> program;
@@ -1530,15 +1530,15 @@ struct SceGxmPrecomputedFragmentState {
     Ptr<TextureDatas> textures;
     uint16_t texture_count;
 
-    Ptr<const void> default_uniform_buffer;
+    Ptr<UniformBuffers> uniform_buffers;
 };
 
-static constexpr size_t SEC_GXM_PRECOMPUTED_VERTEX_STATE_EXTRA_SIZE = 0;
+static constexpr size_t SCE_GXM_PRECOMPUTED_VERTEX_STATE_EXTRA_SIZE = sizeof(UniformBuffers);
 
 struct SceGxmPrecomputedVertexState {
     Ptr<const SceGxmVertexProgram> program;
 
-    Ptr<const void> default_uniform_buffer;
+    Ptr<UniformBuffers> uniform_buffers;
 };
 
 static_assert(SCE_GXM_PRECOMPUTED_DRAW_WORD_COUNT * sizeof(uint32_t) >= sizeof(SceGxmPrecomputedDraw), "Precomputed Draw Size Too Big");
