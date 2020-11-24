@@ -159,7 +159,7 @@ std::string operand_to_str(Operand op, Imm4 write_mask, int32_t shift) {
     std::string opstr = reg_to_str(op.bank, op.num + shift);
 
     if (op.bank == RegisterBank::IMMEDIATE) {
-        return "0x" + opstr;
+        return opstr;
     }
 
     if (write_mask != 0) {
