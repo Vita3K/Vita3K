@@ -592,6 +592,8 @@ bool USSETranslatorVisitor::vldst(
     spv::Id source_1 = load(inst.opr.src1, 0b1, 0);
     spv::Id source_2 = load(inst.opr.src2, 0b1, 0);
 
+    source_1 = m_b.createBinOp(spv::OpIMul, m_b.makeIntType(32), source_1, m_b.makeIntConstant(4));
+
     spv::Id base = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), source_0, source_1);
     base = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, source_2);
 
