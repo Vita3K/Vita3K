@@ -280,6 +280,12 @@ void sync_texture(GLContext &context, const GxmContextState &state, const MemSta
         return;
     }
 
+    const SceGxmTextureFormat format = gxm::get_format(&texture);
+    if (gxm::is_paletted_format(format) && texture.palette_addr == 0) {
+        LOG_WARN("Ignoring null palette texture");
+        return;
+    }
+
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
 
     if (enable_texture_cache) {
