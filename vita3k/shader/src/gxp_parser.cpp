@@ -189,19 +189,22 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
 
         const uint32_t offset = base_offset + buffer_info->base_offset;
 
-        const auto buffer = uniform_buffers.at(buffer_info->reside_buffer);
+        const auto buffer = uniform_buffers.find(buffer_info->reside_buffer);
+        // buffer = null seems to happen when there's a leftover uniform buffer (uniform buffer that's not used in shader code)
+        // This case needs more invastigation
+        if (buffer != uniform_buffers.end()) {
+            Input item;
+            item.type = DataType::UINT32;
+            item.offset = offset;
+            item.component_count = 1;
+            item.array_size = 1;
+            UniformBufferInputSource source;
+            source.base = buffer->second.reg_block_size;
+            source.index = buffer->second.index;
+            item.source = source;
 
-        Input item;
-        item.type = DataType::UINT32;
-        item.offset = offset;
-        item.component_count = 1;
-        item.array_size = 1;
-        UniformBufferInputSource source;
-        source.base = buffer.reg_block_size;
-        source.index = buffer.index;
-        item.source = source;
-
-        program_input.inputs.push_back(item);
+            program_input.inputs.push_back(item);
+        }
     }
 
     const SceGxmProgramParameterContainer *container = gxp::get_container_by_index(program, 19);
