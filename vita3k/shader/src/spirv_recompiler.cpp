@@ -107,6 +107,9 @@ struct TranslationState {
     spv::Id last_frag_data_id = spv::NoResult;
     spv::Id color_attachment_id = spv::NoResult;
     spv::Id mask_id = spv::NoResult;
+    spv::Id viewport_flag_id = spv::NoResult;
+    spv::Id screen_width_id = spv::NoResult;
+    spv::Id screen_height_id = spv::NoResult;
     spv::Id frag_coord_id = spv::NoResult; ///< gl_FragCoord, not built-in in SPIR-V.
     spv::Id flip_vec_id = spv::NoResult;
     std::vector<VarToReg> var_to_regs;
@@ -892,6 +895,18 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
+    if (program_type == SceGxmProgramType::Vertex) {
+        spv::Id f32 = b.makeFloatType(32);
+        spv::Id flag_id = b.createVariable(spv::StorageClassUniformConstant, f32, "viewport_flag");
+        translation_state.viewport_flag_id = flag_id;
+
+        spv::Id width_id = b.createVariable(spv::StorageClassUniformConstant, f32, "screen_width");
+        translation_state.screen_width_id = width_id;
+
+        spv::Id height_id = b.createVariable(spv::StorageClassUniformConstant, f32, "screen_height");
+        translation_state.screen_height_id = height_id;
+    }
+
     if (program_type == SceGxmProgramType::Vertex && features.hardware_flip) {
         // Create variable that helps us do flipping
         // TODO: Not emit this on Vulkan or DirectX
@@ -1068,16 +1083,42 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
             // Do store
             spv::Id o_val = utils::load(b, parameters, utils, features, o_op, 0b1111, 0);
 
-            // TODO: More decorations needed?
             if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION) {
                 b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);
 
                 if (translation_state.flip_vec_id != spv::NoResult) {
                     o_val = b.createBinOp(spv::OpFMul, out_type, o_val, translation_state.flip_vec_id);
                 }
+
+                // Transform screen space coordinate to ndc when viewport is disabled.
+                spv::Id f32 = b.makeFloatType(32);
+                spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
+                spv::Id half = b.makeFloatConstant(0.5f);
+                spv::Id one = b.makeFloatConstant(1.0f);
+                spv::Id neg_one = b.makeFloatConstant(-1.0f);
+                spv::Id two = b.makeFloatConstant(2.0f);
+                spv::Id neg_two = b.makeFloatConstant(-2.0f);
+                spv::Id zero = b.makeFloatConstant(0.0f);
+
+                spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { b.createLoad(translation_state.viewport_flag_id), half });
+                spv::Builder::If cond_builder(pred, spv::SelectionControlMaskNone, b);
+
+                spv::Id width_recp = b.createBinOp(spv::OpFDiv, f32, two, b.createLoad(translation_state.screen_width_id));
+                spv::Id height_recp = b.createBinOp(spv::OpFDiv, f32, neg_two, b.createLoad(translation_state.screen_height_id));
+                spv::Id scale = b.createCompositeConstruct(v4, { width_recp, height_recp, one, one });
+                spv::Id constant = b.createCompositeConstruct(v4, { neg_one, one, zero, zero });
+                spv::Id o_val2 = b.createBinOp(spv::OpFMul, v4, o_val, scale);
+                o_val2 = b.createBinOp(spv::OpFAdd, v4, o_val2, constant);
+                // o_val2 = (x,y) * (2/width, -2/height) + (-1,1)
+                b.createStore(o_val2, out_var);
+
+                cond_builder.makeBeginElse();
+                b.createStore(o_val, out_var);
+                cond_builder.makeEndIf();
+            } else {
+                b.createStore(o_val, out_var);
             }
 
-            b.createStore(o_val, out_var);
             o_op.num += properties.component_count;
         }
     }
