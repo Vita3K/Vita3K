@@ -535,6 +535,7 @@ bool USSETranslatorVisitor::vldst(
     // - Post or pre or any increment mode.
 
     Instruction inst;
+    inst.opcode = Opcode::LDR;
 
     DataType type_to_ldst = DataType::UNK;
 
@@ -580,6 +581,11 @@ bool USSETranslatorVisitor::vldst(
     inst.opr.src0.type = DataType::INT32;
     inst.opr.src1.type = DataType::INT32;
     inst.opr.src2.type = DataType::INT32;
+
+    std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
+    LOG_DISASM("{} {} ({} + {} + {}) [{} bytes]", disasm_str, disasm::operand_to_str(to_store, 0b1, 0),
+        disasm::operand_to_str(inst.opr.src0, 0b1, 0),
+        disasm::operand_to_str(inst.opr.src1, 0b1, 0), disasm::operand_to_str(inst.opr.src2, 0b1, 0), total_bytes_fo_fetch);
 
     // TODO: is source_2 in word or byte?
     spv::Id source_0 = load(inst.opr.src0, 0b1, 0);
