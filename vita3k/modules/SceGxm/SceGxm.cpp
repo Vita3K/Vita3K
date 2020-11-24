@@ -1743,12 +1743,9 @@ static void convert_uniform_data(std::vector<std::uint8_t> &converted_data, cons
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, uint32_t componentOffset, uint32_t componentCount, const float *sourceData) {
     assert(parameter);
-    assert(parameter->container_index == SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX);
 
     if (!uniformBuffer || !parameter || !sourceData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    if (parameter->container_index != SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
 
     size_t size = 0;
     size_t offset = 0;
