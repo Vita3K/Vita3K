@@ -660,22 +660,11 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     const SceGxmProgram &fragment_program_gxp = *fragment_program->program.get(host.mem);
 
     if (host.renderer->features.use_ubo) {
-        UniformBuffers vertex_uniform_buffers = {};
-        UniformBuffers fragment_uniform_buffers = {};
-        vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = vertex_state->default_uniform_buffer;
-        fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = fragment_state->default_uniform_buffer;
-        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
-        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), fragment_program_gxp, fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
+        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
+        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
     } else {
-        // Update uniforms from this side. We should pass the pointer to parameter struct, since from there it can
-        // find the name and other things based on the pointer in memory. The pointer should be persists until
-        // the fragment is done, so we are guranteed to be safe.
-        UniformBuffers vertex_uniform_buffers = {};
-        UniformBuffers fragment_uniform_buffers = {};
-        vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = vertex_state->default_uniform_buffer;
-        fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = fragment_state->default_uniform_buffer;
-        renderer::set_uniforms(*host.renderer, context->renderer.get(), vertex_program_gxp, vertex_uniform_buffers, host.mem);
-        renderer::set_uniforms(*host.renderer, context->renderer.get(), fragment_program_gxp, fragment_uniform_buffers, host.mem);
+        renderer::set_uniforms(*host.renderer, context->renderer.get(), vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), host.mem);
+        renderer::set_uniforms(*host.renderer, context->renderer.get(), fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), host.mem);
     }
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
@@ -870,7 +859,7 @@ EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProg
 
 EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
     assert(vertexProgram);
-    return SEC_GXM_PRECOMPUTED_VERTEX_STATE_EXTRA_SIZE;
+    return SCE_GXM_PRECOMPUTED_VERTEX_STATE_EXTRA_SIZE;
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
@@ -1117,7 +1106,8 @@ EXPORT(int, sceGxmPrecomputedDrawSetVertexStream, SceGxmPrecomputedDraw *state, 
 }
 
 EXPORT(Ptr<const void>, sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer, const SceGxmPrecomputedFragmentState *state) {
-    return state->default_uniform_buffer;
+    UniformBuffers &uniform_buffers = *state->uniform_buffers.get(host.mem);
+    return uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX];
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateInit, SceGxmPrecomputedFragmentState *state, Ptr<const SceGxmFragmentProgram> program, Ptr<void> extra_data) {
@@ -1130,6 +1120,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateInit, SceGxmPrecomputedFragmentState *
 
     MempoolObject allocator(extra_data, SCE_GXM_PRECOMPUTED_FRAGMENT_STATE_EXTRA_SIZE);
     new_state.textures = allocator.alloc<TextureDatas>();
+    new_state.uniform_buffers = allocator.alloc<UniformBuffers>();
 
     const auto &fragment_program_gxp = *program.get(host.mem)->program.get(host.mem);
     const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
@@ -1173,7 +1164,8 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer, SceGxmPrecomp
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    state->default_uniform_buffer = buffer;
+    UniformBuffers &uniform_buffers = *state->uniform_buffers.get(host.mem);
+    uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = buffer;
 
     return 0;
 }
@@ -1214,7 +1206,8 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetUniformBuffer, SceGxmPrecomputedFra
 }
 
 EXPORT(Ptr<const void>, sceGxmPrecomputedVertexStateGetDefaultUniformBuffer, SceGxmPrecomputedVertexState *state) {
-    return state->default_uniform_buffer;
+    UniformBuffers &uniform_buffers = *state->uniform_buffers.get(host.mem);
+    return uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX];
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateInit, SceGxmPrecomputedVertexState *state, Ptr<const SceGxmVertexProgram> program, Ptr<void> extra_data) {
@@ -1222,8 +1215,10 @@ EXPORT(int, sceGxmPrecomputedVertexStateInit, SceGxmPrecomputedVertexState *stat
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
+    MempoolObject allocator(extra_data, SCE_GXM_PRECOMPUTED_VERTEX_STATE_EXTRA_SIZE);
     SceGxmPrecomputedVertexState new_state;
     new_state.program = program;
+    new_state.uniform_buffers = allocator.alloc<UniformBuffers>();
     *state = new_state;
 
     return 0;
@@ -1245,7 +1240,8 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetDefaultUniformBuffer, SceGxmPrecomput
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    state->default_uniform_buffer = buffer;
+    UniformBuffers &uniform_buffers = *state->uniform_buffers.get(host.mem);
+    uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = buffer;
 
     return 0;
 }
@@ -1270,7 +1266,10 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetUniformBuffer, SceGxmPrecomputedVerte
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    return UNIMPLEMENTED();
+    UniformBuffers &uniform_buffers = *precomputedState->uniform_buffers.get(host.mem);
+    uniform_buffers[bufferIndex] = bufferData;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
