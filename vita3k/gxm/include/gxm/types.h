@@ -1393,10 +1393,19 @@ struct SceGxmProgram {
     uint64_t *secondary_program_end() const {
         return (uint64_t *)((uint8_t *)&secondary_program_offset_end + secondary_program_offset_end);
     }
+    bool is_discard_used() const {
+        return ((type >> 3) & 1);
+    }
+    bool is_depth_replace_used() const {
+        return ((type >> 4) & 1);
+    }
+    bool is_sprite_coord_used() const {
+        return ((type >> 5) & 1);
+    }
     bool is_native_color() const {
         return ((type >> 6) & 1);
     }
-    bool is_reg_format() const {
+    bool is_frag_color_used() const {
         return ((type >> 7) & 1);
     }
     SceGxmParameterType get_fragment_output_type() const {
