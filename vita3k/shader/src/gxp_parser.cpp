@@ -241,9 +241,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         // Alternative is 19, which is DATA
         container = gxp::get_container_by_index(program, 19);
     }
-    if (!container) {
-        LOG_WARN("Container for literal not found, skipping creating literals!");
-    } else {
+    if (container) {
         for (std::uint32_t i = 0; i < program.literals_count * 2; i += 2) {
             auto literal_offset = container->base_sa_offset + literals[i];
             auto literal_data = *reinterpret_cast<const float *>(&literals[i + 1]);
@@ -261,8 +259,6 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             item.source = source;
 
             program_input.inputs.push_back(item);
-
-            LOG_TRACE("[LITERAL + {}] sa{} = {} (0x{:X})", literals[i], literal_offset, literal_data, literals[i + 1]);
         }
     }
 
