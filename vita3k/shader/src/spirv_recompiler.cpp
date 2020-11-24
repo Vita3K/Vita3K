@@ -1215,7 +1215,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     return spirv;
 }
 
-static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state) {
+static std::string convert_spirv_to_glsl(std::string shader_name, SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
@@ -1231,6 +1231,7 @@ static std::string convert_spirv_to_glsl(SpirvCode spirv_binary, const FeatureSt
     //options.vertex.flip_vert_y = true;
 
     glsl.set_common_options(options);
+    glsl.add_header_line("// Shader Name: " + shader_name);
 
     if (!features.direct_pack_unpack_half) {
         if (features.pack_unpack_half_through_ext) {
@@ -1384,7 +1385,7 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
     translation_state.is_maskupdate = maskupdate;
     std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, translation_state, force_shader_debug, dumper);
 
-    const auto source = convert_spirv_to_glsl(spirv_binary, features, translation_state);
+    const auto source = convert_spirv_to_glsl(shader_name, spirv_binary, features, translation_state);
 
     if (LOG_SHADER_CODE || force_shader_debug)
         LOG_DEBUG("Generated GLSL:\n{}", source);
