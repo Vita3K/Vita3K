@@ -1387,12 +1387,12 @@ EXPORT(uint32_t, sceGxmProgramGetVertexProgramOutputs, Ptr<const SceGxmProgram> 
 
 EXPORT(bool, sceGxmProgramIsDepthReplaceUsed, const SceGxmProgram *program) {
     assert(program);
-    return UNIMPLEMENTED();
+    return program->is_depth_replace_used();
 }
 
 EXPORT(bool, sceGxmProgramIsDiscardUsed, const SceGxmProgram *program) {
     assert(program);
-    return UNIMPLEMENTED();
+    return program->is_discard_used();
 }
 
 EXPORT(bool, sceGxmProgramIsEquivalent, const SceGxmProgram *programA, const SceGxmProgram *programB) {
@@ -1403,18 +1403,17 @@ EXPORT(bool, sceGxmProgramIsEquivalent, const SceGxmProgram *programA, const Sce
 
 EXPORT(bool, sceGxmProgramIsFragColorUsed, const SceGxmProgram *program) {
     assert(program);
-    return UNIMPLEMENTED();
+    return program->is_frag_color_used();
 }
 
-EXPORT(bool, sceGxmProgramIsNativeColorUsed, Ptr<const SceGxmProgram> program_) {
-    const auto program = program_.get(host.mem);
-
+EXPORT(bool, sceGxmProgramIsNativeColorUsed, const SceGxmProgram *program) {
+    assert(program);
     return program->is_native_color();
 }
 
 EXPORT(bool, sceGxmProgramIsSpriteCoordUsed, const SceGxmProgram *program) {
     assert(program);
-    return UNIMPLEMENTED();
+    return program->is_sprite_coord_used();
 }
 
 EXPORT(uint32_t, sceGxmProgramParameterGetArraySize, const SceGxmProgramParameter *parameter) {
