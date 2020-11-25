@@ -1215,7 +1215,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     return spirv;
 }
 
-static std::string convert_spirv_to_glsl(std::string shader_name, SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state) {
+static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;

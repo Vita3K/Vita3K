@@ -191,7 +191,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
 
         const auto buffer = uniform_buffers.find(buffer_info->reside_buffer);
         // buffer = null seems to happen when there's a leftover uniform buffer (uniform buffer that's not used in shader code)
-        // This case needs more invastigation
+        // This case needs more investigation
         if (buffer != uniform_buffers.end()) {
             Input item;
             item.type = DataType::UINT32;
