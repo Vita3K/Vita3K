@@ -92,6 +92,7 @@ struct HostState {
     bool renderer_focused;
     IOState io;
     NetState net;
+    NetCtlState netctl;
     ngs::State ngs;
     NpState np;
     DisplayState display;

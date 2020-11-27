@@ -283,7 +283,7 @@ struct SceNetEtherAddr {
 
 struct SceNetCtlCallback {
     Address pc;
-    Address data;
+    Address arg;
 };
 
 struct SceNetInAddr {
