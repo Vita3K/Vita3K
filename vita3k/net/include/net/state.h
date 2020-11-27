@@ -20,15 +20,22 @@
 #include <net/socket.h>
 #include <net/types.h>
 
+#include <array>
+
 struct Socket;
 
 typedef std::map<int, SocketPtr> NetSockets;
-typedef std::map<int, SceNetCtlCallback> NetCtlCallbacks;
 
 struct NetState {
     bool inited = false;
     int next_id = 0;
     NetSockets socks;
-    NetCtlCallbacks cbs;
     int state = -1;
+};
+
+struct NetCtlState {
+    std::array<SceNetCtlCallback, 8> adhocCallbacks;
+    std::array<SceNetCtlCallback, 8> callbacks;
+    bool inited = false;
+    std::mutex mutex;
 };
