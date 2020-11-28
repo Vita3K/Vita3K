@@ -323,7 +323,11 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
     size_t bpp = renderer::texture::bits_per_pixel(base_format);
     const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
     size_t size = (bpp * stride * height) / 8;
-    if (need_decompress_and_unswizzle_on_cpu) {
+
+    if (gxm::is_yuv_format(format)) {
+        bpp = 24;
+        size = width * height * 3;
+    } else if (need_decompress_and_unswizzle_on_cpu || gxm::is_paletted_format(format)) {
         bpp = 32;
         size = width * height * 4;
     }
