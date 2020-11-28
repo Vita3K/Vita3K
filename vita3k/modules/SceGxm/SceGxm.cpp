@@ -106,7 +106,6 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
 EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, Ptr<SceGxmSyncObject> fragmentSyncObject, const SceGxmColorSurface *colorSurface, const SceGxmDepthStencilSurface *depthStencil) {
     assert(flags == 0);
     assert(renderTarget);
-    assert(validRegion == nullptr);
     assert(vertexSyncObject == nullptr);
 
     if (!context) {
