@@ -106,7 +106,6 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
 EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, Ptr<SceGxmSyncObject> fragmentSyncObject, const SceGxmColorSurface *colorSurface, const SceGxmDepthStencilSurface *depthStencil) {
     assert(flags == 0);
     assert(renderTarget);
-    assert(validRegion == nullptr);
     assert(vertexSyncObject == nullptr);
 
     if (!context) {
@@ -224,6 +223,9 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
 
     if (strideInPixels & 1)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+
+    if ((strideInPixels < width) || ((data.address() & 3) != 0))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     memset(surface, 0, sizeof(*surface));
     surface->disabled = 0;
@@ -1998,12 +2000,9 @@ EXPORT(int, sceGxmShaderPatcherCreate, const SceGxmShaderPatcherParams *params, 
 
 EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, SceGxmOutputRegisterFormat outputFormat, SceGxmMultisampleMode multisampleMode, const SceGxmBlendInfo *blendInfo, Ptr<const SceGxmProgram> vertexProgram, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
     MemState &mem = host.mem;
-    assert(multisampleMode == SCE_GXM_MULTISAMPLE_NONE);
 
     if (!shaderPatcher || !programId || !fragmentProgram)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    if (multisampleMode != SCE_GXM_MULTISAMPLE_NONE)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
 
     static const SceGxmBlendInfo default_blend_info = {
         SCE_GXM_COLOR_MASK_ALL,
@@ -2743,6 +2742,8 @@ EXPORT(int, sceGxmTextureSetStride, SceGxmTexture *texture, uint32_t byteStride)
         return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
     if (byteStride & 3)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    if (byteStride > 131072)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     return UNIMPLEMENTED();
 }
