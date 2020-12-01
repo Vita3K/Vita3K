@@ -1468,7 +1468,7 @@ EXPORT(int, _sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *pa
 }
 
 EXPORT(uint32_t, sceGxmProgramParameterGetSemanticIndex, const SceGxmProgramParameter *parameter) {
-    return parameter->semantic & 0xf;
+    return parameter->semantic_index & 0xf;
 }
 
 EXPORT(int, sceGxmProgramParameterGetType, const SceGxmProgramParameter *parameter) {
