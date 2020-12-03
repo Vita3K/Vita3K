@@ -17,48 +17,128 @@
 
 #include "SceSblSsUpdateMgr.h"
 
-EXPORT(int, sceSblSsUpdateMgrGetBootMode) {
+EXPORT(int, sceSblUsAllocateBuffer) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblSsUpdateMgrGetSpkgInfo) {
+EXPORT(int, sceSblUsCheckSystemIntegrity) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblSsUpdateMgrSendCommand) {
+EXPORT(int, sceSblUsExtractSpackage) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblSsUpdateMgrSetBootMode) {
+EXPORT(int, sceSblUsGetApplicableVersion) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblSsUpdateMgrVerifyPup) {
+EXPORT(int, sceSblUsGetExtractSpackage) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblSsUpdateMgrVerifyPupAdditionalSign) {
+EXPORT(int, sceSblUsGetSpkgInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblSsUpdateMgrVerifyPupHeader) {
+EXPORT(int, sceSblUsGetStatus) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblSsUpdateMgrVerifyPupSegment) {
+EXPORT(int, sceSblUsGetUpdateMode) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblSsUpdateMgrVerifyPupWatermark) {
+EXPORT(int, sceSblUsInformUpdateFinished) {
     return UNIMPLEMENTED();
 }
 
-BRIDGE_IMPL(sceSblSsUpdateMgrGetBootMode)
-BRIDGE_IMPL(sceSblSsUpdateMgrGetSpkgInfo)
-BRIDGE_IMPL(sceSblSsUpdateMgrSendCommand)
-BRIDGE_IMPL(sceSblSsUpdateMgrSetBootMode)
-BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPup)
-BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPupAdditionalSign)
-BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPupHeader)
-BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPupSegment)
-BRIDGE_IMPL(sceSblSsUpdateMgrVerifyPupWatermark)
+EXPORT(int, sceSblUsInformUpdateOngoing) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsInformUpdateStarted) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsInspectSpackage) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsPowerControl) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsReleaseBuffer) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsSetSwInfoBin) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsSetSwInfoInt) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsSetSwInfoStr) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsSetUpdateMode) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsUpdateSpackage) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsVerifyPup) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsVerifyPupAdditionalSign) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsVerifyPupHeader) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsVerifyPupSegment) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsVerifyPupSegmentById) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblUsVerifyPupWatermark) {
+    return UNIMPLEMENTED();
+}
+
+BRIDGE_IMPL(sceSblUsAllocateBuffer)
+BRIDGE_IMPL(sceSblUsCheckSystemIntegrity)
+BRIDGE_IMPL(sceSblUsExtractSpackage)
+BRIDGE_IMPL(sceSblUsGetApplicableVersion)
+BRIDGE_IMPL(sceSblUsGetExtractSpackage)
+BRIDGE_IMPL(sceSblUsGetSpkgInfo)
+BRIDGE_IMPL(sceSblUsGetStatus)
+BRIDGE_IMPL(sceSblUsGetUpdateMode)
+BRIDGE_IMPL(sceSblUsInformUpdateFinished)
+BRIDGE_IMPL(sceSblUsInformUpdateOngoing)
+BRIDGE_IMPL(sceSblUsInformUpdateStarted)
+BRIDGE_IMPL(sceSblUsInspectSpackage)
+BRIDGE_IMPL(sceSblUsPowerControl)
+BRIDGE_IMPL(sceSblUsReleaseBuffer)
+BRIDGE_IMPL(sceSblUsSetSwInfoBin)
+BRIDGE_IMPL(sceSblUsSetSwInfoInt)
+BRIDGE_IMPL(sceSblUsSetSwInfoStr)
+BRIDGE_IMPL(sceSblUsSetUpdateMode)
+BRIDGE_IMPL(sceSblUsUpdateSpackage)
+BRIDGE_IMPL(sceSblUsVerifyPup)
+BRIDGE_IMPL(sceSblUsVerifyPupAdditionalSign)
+BRIDGE_IMPL(sceSblUsVerifyPupHeader)
+BRIDGE_IMPL(sceSblUsVerifyPupSegment)
+BRIDGE_IMPL(sceSblUsVerifyPupSegmentById)
+BRIDGE_IMPL(sceSblUsVerifyPupWatermark)

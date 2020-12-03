@@ -19,5 +19,11 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(sceJpegArmEncoderEncode)
+BRIDGE_DECL(sceJpegArmEncoderEnd)
+BRIDGE_DECL(sceJpegArmEncoderGetContextSize)
+BRIDGE_DECL(sceJpegArmEncoderInit)
+BRIDGE_DECL(sceJpegArmEncoderSetCompressionRatio)
+BRIDGE_DECL(sceJpegArmEncoderSetHeaderMode)
+BRIDGE_DECL(sceJpegArmEncoderSetOutputAddr)
+BRIDGE_DECL(sceJpegArmEncoderSetValidRegion)

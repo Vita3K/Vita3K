@@ -19,5 +19,8 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(sceGxmVshInitialize)
+BRIDGE_DECL(sceGxmVshSyncObjectClose)
+BRIDGE_DECL(sceGxmVshSyncObjectCreate)
+BRIDGE_DECL(sceGxmVshSyncObjectDestroy)
+BRIDGE_DECL(sceGxmVshSyncObjectOpen)

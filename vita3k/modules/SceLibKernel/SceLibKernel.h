@@ -19,11 +19,9 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(SceKernelStackChkGuard)
 BRIDGE_DECL(__sce_aeabi_idiv0)
 BRIDGE_DECL(__sce_aeabi_ldiv0)
 BRIDGE_DECL(__stack_chk_fail)
-BRIDGE_DECL(__stack_chk_guard)
 BRIDGE_DECL(_sceKernelCreateLwMutex)
 BRIDGE_DECL(sceClibAbort)
 BRIDGE_DECL(sceClibDprintf)

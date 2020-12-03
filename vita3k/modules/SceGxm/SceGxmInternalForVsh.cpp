@@ -15,9 +15,30 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "SceGxmInternalForVsh.h"
 
-#include <module/module.h>
+EXPORT(int, sceGxmVshInitialize) {
+    return UNIMPLEMENTED();
+}
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+EXPORT(int, sceGxmVshSyncObjectClose) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceGxmVshSyncObjectCreate) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceGxmVshSyncObjectDestroy) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceGxmVshSyncObjectOpen) {
+    return UNIMPLEMENTED();
+}
+
+BRIDGE_IMPL(sceGxmVshInitialize)
+BRIDGE_IMPL(sceGxmVshSyncObjectClose)
+BRIDGE_IMPL(sceGxmVshSyncObjectCreate)
+BRIDGE_IMPL(sceGxmVshSyncObjectDestroy)
+BRIDGE_IMPL(sceGxmVshSyncObjectOpen)

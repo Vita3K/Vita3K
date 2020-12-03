@@ -19,5 +19,14 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(sceTriggerUtilGetAutoStartStatus)
+BRIDGE_DECL(sceTriggerUtilGetDailyEventInfo)
+BRIDGE_DECL(sceTriggerUtilGetOneTimeEventInfo)
+BRIDGE_DECL(sceTriggerUtilGetRegisteredSystemTitleIdList)
+BRIDGE_DECL(sceTriggerUtilGetRegisteredUserTitleIdList)
+BRIDGE_DECL(sceTriggerUtilGetSystemAppInfo)
+BRIDGE_DECL(sceTriggerUtilGetUserAppInfo)
+BRIDGE_DECL(sceTriggerUtilRegisterDailyEvent)
+BRIDGE_DECL(sceTriggerUtilRegisterOneTimeEvent)
+BRIDGE_DECL(sceTriggerUtilUnregisterDailyEvent)
+BRIDGE_DECL(sceTriggerUtilUnregisterOneTimeEvent)

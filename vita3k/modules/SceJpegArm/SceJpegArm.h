@@ -19,5 +19,9 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(sceJpegArmCreateSplitDecoder)
+BRIDGE_DECL(sceJpegArmDecodeMJpeg)
+BRIDGE_DECL(sceJpegArmDecodeMJpegYCbCr)
+BRIDGE_DECL(sceJpegArmDeleteSplitDecoder)
+BRIDGE_DECL(sceJpegArmGetOutputInfo)
+BRIDGE_DECL(sceJpegArmSplitDecodeMJpeg)

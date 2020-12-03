@@ -19,5 +19,8 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(sceShaccCgCompileProgram)
+BRIDGE_DECL(sceShaccCgDestroyCompileOutput)
+BRIDGE_DECL(sceShaccCgInitializeCallbackList)
+BRIDGE_DECL(sceShaccCgInitializeCompileOptions)
+BRIDGE_DECL(sceShaccCgSetDefaultAllocator)

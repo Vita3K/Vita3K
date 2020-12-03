@@ -15,9 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "SceNotificationUtilProgress.h"
 
-#include <module/module.h>
+EXPORT(int, sceNotificationUtilProgressBegin) {
+    return UNIMPLEMENTED();
+}
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+EXPORT(int, sceNotificationUtilProgressFinish) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceNotificationUtilProgressUpdate) {
+    return UNIMPLEMENTED();
+}
+
+BRIDGE_IMPL(sceNotificationUtilProgressBegin)
+BRIDGE_IMPL(sceNotificationUtilProgressFinish)
+BRIDGE_IMPL(sceNotificationUtilProgressUpdate)

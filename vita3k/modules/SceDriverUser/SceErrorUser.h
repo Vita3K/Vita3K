@@ -19,5 +19,9 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(sceErrorGetExternalString)
+BRIDGE_DECL(sceErrorHistoryClearError)
+BRIDGE_DECL(sceErrorHistoryGetError)
+BRIDGE_DECL(sceErrorHistoryPostError)
+BRIDGE_DECL(sceErrorHistorySetDefaultFormat)
+BRIDGE_DECL(sceErrorHistoryUpdateSequenceInfo)

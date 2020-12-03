@@ -19,5 +19,9 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(sceIncomingDialogClose)
+BRIDGE_DECL(sceIncomingDialogFinish)
+BRIDGE_DECL(sceIncomingDialogGetStatus)
+BRIDGE_DECL(sceIncomingDialogInitialize)
+BRIDGE_DECL(sceIncomingDialogOpen)
+BRIDGE_DECL(sceIncomingDialogSwitchToDialog)

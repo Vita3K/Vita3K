@@ -19,5 +19,7 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(_sceDrmBridgeGetCurrentSecureTick)
+BRIDGE_DECL(_sceDrmBridgeIsAllowRemotePlayDebug)
+BRIDGE_DECL(_sceDrmBridgeMlnpsnlAuth1)
+BRIDGE_DECL(_sceDrmBridgeMlnpsnlAuth2)

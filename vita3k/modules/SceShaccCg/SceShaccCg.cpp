@@ -15,9 +15,30 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "SceShaccCg.h"
 
-#include <module/module.h>
+EXPORT(int, sceShaccCgCompileProgram) {
+    return UNIMPLEMENTED();
+}
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+EXPORT(int, sceShaccCgDestroyCompileOutput) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceShaccCgInitializeCallbackList) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceShaccCgInitializeCompileOptions) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceShaccCgSetDefaultAllocator) {
+    return UNIMPLEMENTED();
+}
+
+BRIDGE_IMPL(sceShaccCgCompileProgram)
+BRIDGE_IMPL(sceShaccCgDestroyCompileOutput)
+BRIDGE_IMPL(sceShaccCgInitializeCallbackList)
+BRIDGE_IMPL(sceShaccCgInitializeCompileOptions)
+BRIDGE_IMPL(sceShaccCgSetDefaultAllocator)

@@ -19,5 +19,5 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(sceNotificationUtilCleanHistory)
+BRIDGE_DECL(sceNotificationUtilSendNotification)

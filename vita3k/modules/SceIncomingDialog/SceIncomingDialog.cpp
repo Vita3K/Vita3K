@@ -15,9 +15,35 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "SceIncomingDialog.h"
 
-#include <module/module.h>
+EXPORT(int, sceIncomingDialogClose) {
+    return UNIMPLEMENTED();
+}
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+EXPORT(int, sceIncomingDialogFinish) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceIncomingDialogGetStatus) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceIncomingDialogInitialize) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceIncomingDialogOpen) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceIncomingDialogSwitchToDialog) {
+    return UNIMPLEMENTED();
+}
+
+BRIDGE_IMPL(sceIncomingDialogClose)
+BRIDGE_IMPL(sceIncomingDialogFinish)
+BRIDGE_IMPL(sceIncomingDialogGetStatus)
+BRIDGE_IMPL(sceIncomingDialogInitialize)
+BRIDGE_IMPL(sceIncomingDialogOpen)
+BRIDGE_IMPL(sceIncomingDialogSwitchToDialog)
