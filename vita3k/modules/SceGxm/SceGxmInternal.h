@@ -19,5 +19,17 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(scePsmDrmGetRifInfo)
-BRIDGE_DECL(scePsmDrmGetRifKey)
+BRIDGE_DECL(sceGxmCheckMemoryInternal)
+BRIDGE_DECL(sceGxmCreateRenderTargetInternal)
+BRIDGE_DECL(sceGxmGetDisplayQueueThreadIdInternal)
+BRIDGE_DECL(sceGxmGetRenderTargetMemSizeInternal)
+BRIDGE_DECL(sceGxmGetTopContextInternal)
+BRIDGE_DECL(sceGxmInitializedInternal)
+BRIDGE_DECL(sceGxmIsInitializationInternal)
+BRIDGE_DECL(sceGxmMapFragmentUsseMemoryInternal)
+BRIDGE_DECL(sceGxmMapVertexUsseMemoryInternal)
+BRIDGE_DECL(sceGxmRenderingContextIsWithinSceneInternal)
+BRIDGE_DECL(sceGxmSetCallbackInternal)
+BRIDGE_DECL(sceGxmSetInitializeParamInternal)
+BRIDGE_DECL(sceGxmUnmapFragmentUsseMemoryInternal)
+BRIDGE_DECL(sceGxmUnmapVertexUsseMemoryInternal)

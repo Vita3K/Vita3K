@@ -53,10 +53,6 @@ inline uint64_t get_current_time() {
         .count();
 }
 
-EXPORT(int, SceKernelStackChkGuard) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, __sce_aeabi_idiv0) {
     return UNIMPLEMENTED();
 }
@@ -66,10 +62,6 @@ EXPORT(int, __sce_aeabi_ldiv0) {
 }
 
 EXPORT(int, __stack_chk_fail) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, __stack_chk_guard) {
     return UNIMPLEMENTED();
 }
 
@@ -1635,11 +1627,9 @@ EXPORT(int, sceSblGcAuthMgrPcactActivation) {
     return UNIMPLEMENTED();
 }
 
-BRIDGE_IMPL(SceKernelStackChkGuard)
 BRIDGE_IMPL(__sce_aeabi_idiv0)
 BRIDGE_IMPL(__sce_aeabi_ldiv0)
 BRIDGE_IMPL(__stack_chk_fail)
-BRIDGE_IMPL(__stack_chk_guard)
 BRIDGE_IMPL(_sceKernelCreateLwMutex)
 BRIDGE_IMPL(sceClibAbort)
 BRIDGE_IMPL(sceClibDprintf)

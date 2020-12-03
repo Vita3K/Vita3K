@@ -189,7 +189,7 @@ EXPORT(int, _ZN3sce4Json5Value13referUIntegerEv) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _ZN3sce4Json5Value21setNullAccessCallBackEPFRKS1_NS0_9ValueTypeEPS2_PvES6_) {
+EXPORT(int, _ZN3sce4Json5Value21setNullAccessCallbackEPFRKS1_NS0_9ValueTypeEPS2_PvES6_) {
     return UNIMPLEMENTED();
 }
 
@@ -458,10 +458,6 @@ EXPORT(int, _ZN3sce4Json6Parser5parseERNS0_5ValueEPKc) {
 }
 
 EXPORT(int, _ZN3sce4Json6Parser5parseERNS0_5ValueEPKcj) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _ZN3sce4Json6String4nposE) {
     return UNIMPLEMENTED();
 }
 
@@ -780,7 +776,7 @@ BRIDGE_IMPL(_ZN3sce4Json5Value11referStringEv)
 BRIDGE_IMPL(_ZN3sce4Json5Value12referBooleanEv)
 BRIDGE_IMPL(_ZN3sce4Json5Value12referIntegerEv)
 BRIDGE_IMPL(_ZN3sce4Json5Value13referUIntegerEv)
-BRIDGE_IMPL(_ZN3sce4Json5Value21setNullAccessCallBackEPFRKS1_NS0_9ValueTypeEPS2_PvES6_)
+BRIDGE_IMPL(_ZN3sce4Json5Value21setNullAccessCallbackEPFRKS1_NS0_9ValueTypeEPS2_PvES6_)
 BRIDGE_IMPL(_ZN3sce4Json5Value3setENS0_9ValueTypeE)
 BRIDGE_IMPL(_ZN3sce4Json5Value3setERKNS0_5ArrayE)
 BRIDGE_IMPL(_ZN3sce4Json5Value3setERKNS0_6ObjectE)
@@ -848,7 +844,6 @@ BRIDGE_IMPL(_ZN3sce4Json6ObjectixERKNS0_6StringE)
 BRIDGE_IMPL(_ZN3sce4Json6Parser5parseERNS0_5ValueEPFiRcPvES5_)
 BRIDGE_IMPL(_ZN3sce4Json6Parser5parseERNS0_5ValueEPKc)
 BRIDGE_IMPL(_ZN3sce4Json6Parser5parseERNS0_5ValueEPKcj)
-BRIDGE_IMPL(_ZN3sce4Json6String4nposE)
 BRIDGE_IMPL(_ZN3sce4Json6String5clearEv)
 BRIDGE_IMPL(_ZN3sce4Json6String6appendEPKc)
 BRIDGE_IMPL(_ZN3sce4Json6String6appendEPKcj)

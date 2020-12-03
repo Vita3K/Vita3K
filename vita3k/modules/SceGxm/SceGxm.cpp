@@ -92,6 +92,26 @@ static bool operator<(const FragmentProgramCacheKey &a, const FragmentProgramCac
     return b.blend_info < a.blend_info;
 }
 
+EXPORT(int, _sceGxmBeginScene) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceGxmMidSceneFlush) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceGxmSetVertexTexture) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceGxmTextureSetHeight) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, _sceGxmTextureSetWidth) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return UNIMPLEMENTED();
 }
@@ -1915,10 +1935,6 @@ EXPORT(int, sceGxmSetVertexTexture, SceGxmContext *context, uint32_t textureInde
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceGxmSetVertexTexture) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t bufferIndex, Ptr<const void> bufferData) {
     if (!context || !bufferData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -2896,6 +2912,13 @@ EXPORT(int, sceGxmWaitEvent) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(_sceGxmBeginScene)
+BRIDGE_IMPL(_sceGxmMidSceneFlush)
+BRIDGE_IMPL(_sceGxmProgramFindParameterBySemantic)
+BRIDGE_IMPL(_sceGxmProgramParameterGetSemantic)
+BRIDGE_IMPL(_sceGxmSetVertexTexture)
+BRIDGE_IMPL(_sceGxmTextureSetHeight)
+BRIDGE_IMPL(_sceGxmTextureSetWidth)
 BRIDGE_IMPL(sceGxmAddRazorGpuCaptureBuffer)
 BRIDGE_IMPL(sceGxmBeginCommandList)
 BRIDGE_IMPL(sceGxmBeginScene)
@@ -2993,7 +3016,6 @@ BRIDGE_IMPL(sceGxmPrecomputedVertexStateSetUniformBuffer)
 BRIDGE_IMPL(sceGxmProgramCheck)
 BRIDGE_IMPL(sceGxmProgramFindParameterByName)
 BRIDGE_IMPL(sceGxmProgramFindParameterBySemantic)
-BRIDGE_IMPL(_sceGxmProgramFindParameterBySemantic)
 BRIDGE_IMPL(sceGxmProgramGetDefaultUniformBufferSize)
 BRIDGE_IMPL(sceGxmProgramGetFragmentProgramInputs)
 BRIDGE_IMPL(sceGxmProgramGetOutputRegisterFormat)
@@ -3016,7 +3038,6 @@ BRIDGE_IMPL(sceGxmProgramParameterGetIndex)
 BRIDGE_IMPL(sceGxmProgramParameterGetName)
 BRIDGE_IMPL(sceGxmProgramParameterGetResourceIndex)
 BRIDGE_IMPL(sceGxmProgramParameterGetSemantic)
-BRIDGE_IMPL(_sceGxmProgramParameterGetSemantic)
 BRIDGE_IMPL(sceGxmProgramParameterGetSemanticIndex)
 BRIDGE_IMPL(sceGxmProgramParameterGetType)
 BRIDGE_IMPL(sceGxmProgramParameterIsRegFormat)
@@ -3072,7 +3093,6 @@ BRIDGE_IMPL(sceGxmSetVertexDefaultUniformBuffer)
 BRIDGE_IMPL(sceGxmSetVertexProgram)
 BRIDGE_IMPL(sceGxmSetVertexStream)
 BRIDGE_IMPL(sceGxmSetVertexTexture)
-BRIDGE_IMPL(_sceGxmSetVertexTexture)
 BRIDGE_IMPL(sceGxmSetVertexUniformBuffer)
 BRIDGE_IMPL(sceGxmSetViewport)
 BRIDGE_IMPL(sceGxmSetViewportEnable)

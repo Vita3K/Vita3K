@@ -17,8 +17,13 @@
 
 #include "ScePsmDrm.h"
 
+EXPORT(int, scePsmDrmGetRifInfo) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, scePsmDrmGetRifKey) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(scePsmDrmGetRifInfo)
 BRIDGE_IMPL(scePsmDrmGetRifKey)

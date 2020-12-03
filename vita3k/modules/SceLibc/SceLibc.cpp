@@ -34,18 +34,6 @@ EXPORT(int, _Btowc) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _Ctype) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Dbl) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Denorm) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, _Exit) {
     return UNIMPLEMENTED();
 }
@@ -54,59 +42,11 @@ EXPORT(int, _FCbuild) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _FDenorm) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _FInf) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _FNan) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _FSnan) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Files) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Flt) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, _Fltrounds) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _Inf) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, _Iswctype) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _LDenorm) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _LInf) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _LNan) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _LSnan) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Ldbl) {
     return UNIMPLEMENTED();
 }
 
@@ -122,31 +62,7 @@ EXPORT(int, _Mbtowc) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _Nan) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _PJP_C_Copyright) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, _SCE_Assert) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Snan) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Stderr) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Stdin) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Stdout) {
     return UNIMPLEMENTED();
 }
 
@@ -199,14 +115,6 @@ EXPORT(int, _Stoullx) {
 }
 
 EXPORT(int, _Stoulx) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Tolotab) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _Touptab) {
     return UNIMPLEMENTED();
 }
 
@@ -807,6 +715,10 @@ EXPORT(int, mspace_calloc) {
 }
 
 EXPORT(int, mspace_create) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, mspace_create_internal) {
     return UNIMPLEMENTED();
 }
 
@@ -1561,35 +1473,14 @@ EXPORT(int, wscanf_s) {
 
 BRIDGE_IMPL(_Assert)
 BRIDGE_IMPL(_Btowc)
-BRIDGE_IMPL(_Ctype)
-BRIDGE_IMPL(_Dbl)
-BRIDGE_IMPL(_Denorm)
 BRIDGE_IMPL(_Exit)
 BRIDGE_IMPL(_FCbuild)
-BRIDGE_IMPL(_FDenorm)
-BRIDGE_IMPL(_FInf)
-BRIDGE_IMPL(_FNan)
-BRIDGE_IMPL(_FSnan)
-BRIDGE_IMPL(_Files)
-BRIDGE_IMPL(_Flt)
 BRIDGE_IMPL(_Fltrounds)
-BRIDGE_IMPL(_Inf)
 BRIDGE_IMPL(_Iswctype)
-BRIDGE_IMPL(_LDenorm)
-BRIDGE_IMPL(_LInf)
-BRIDGE_IMPL(_LNan)
-BRIDGE_IMPL(_LSnan)
-BRIDGE_IMPL(_Ldbl)
 BRIDGE_IMPL(_Lockfilelock)
 BRIDGE_IMPL(_Locksyslock)
 BRIDGE_IMPL(_Mbtowc)
-BRIDGE_IMPL(_Nan)
-BRIDGE_IMPL(_PJP_C_Copyright)
 BRIDGE_IMPL(_SCE_Assert)
-BRIDGE_IMPL(_Snan)
-BRIDGE_IMPL(_Stderr)
-BRIDGE_IMPL(_Stdin)
-BRIDGE_IMPL(_Stdout)
 BRIDGE_IMPL(_Stod)
 BRIDGE_IMPL(_Stodx)
 BRIDGE_IMPL(_Stof)
@@ -1603,8 +1494,6 @@ BRIDGE_IMPL(_Stoul)
 BRIDGE_IMPL(_Stoull)
 BRIDGE_IMPL(_Stoullx)
 BRIDGE_IMPL(_Stoulx)
-BRIDGE_IMPL(_Tolotab)
-BRIDGE_IMPL(_Touptab)
 BRIDGE_IMPL(_Towctrans)
 BRIDGE_IMPL(_Unlockfilelock)
 BRIDGE_IMPL(_Unlocksyslock)
@@ -1753,6 +1642,7 @@ BRIDGE_IMPL(memset)
 BRIDGE_IMPL(mktime)
 BRIDGE_IMPL(mspace_calloc)
 BRIDGE_IMPL(mspace_create)
+BRIDGE_IMPL(mspace_create_internal)
 BRIDGE_IMPL(mspace_create_with_flag)
 BRIDGE_IMPL(mspace_destroy)
 BRIDGE_IMPL(mspace_free)
