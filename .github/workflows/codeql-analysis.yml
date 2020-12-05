@@ -35,12 +35,11 @@ jobs:
       - name: Set up build environment (ubuntu-latest)
         run: |
           sudo apt-get update
-          sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev
-          echo "CCACHE_DIR=/tmp/ccache" >> $GITHUB_ENV
+          sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev ninja-build
       
       - uses: actions/cache@v1
         with:
-          path: /tmp/ccache
+          path: ~/.ccache
           key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
           
@@ -69,8 +68,8 @@ jobs:
 
       - name: Build
         run: |
-         cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }}
-         cmake --build build --config ${{ matrix.config }} --parallel 2
+         cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} -G Ninja
+         cmake --build build --config ${{ matrix.config }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v1
