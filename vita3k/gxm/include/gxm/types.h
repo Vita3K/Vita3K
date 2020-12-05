@@ -1435,7 +1435,7 @@ struct SceGxmProgramParameter {
     int32_t resource_index;
 
     bool is_sampler_cube() const {
-        return (semantic >> 12) & 1;
+        return (semantic_index >> 4) & 1;
     }
 };
 
