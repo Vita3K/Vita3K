@@ -18,11 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Move ci tag
-        uses: s3krit/walking-tag-action@d04f7a5
+        uses: weareyipyip/walking-tag-action@v2
         with:
           TAG_NAME: continous
-          TAG_MESSAGE: |
-            Last commit build by the CI
+          TAG_MESSAGE: Last commit build by the CI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: github.ref == 'refs/heads/master'
@@ -36,48 +35,63 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
         config: [Release]
+        include:
+          - os: macos-latest
+            cache_path: ~/Library/Caches/ccache
+          - os: ubuntu-latest
+            cache_path: ~/.ccache
+          - os: windows-latest
+            cache_path: ~\AppData\Local\Mozilla\sccache
 
     steps:
       - name: Set up build environment (macos-latest)
         run: |
-          brew install ccache boost
+          brew install boost ccache ninja
           echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
-          echo "CCACHE_DIR=/tmp/ccache" >> $GITHUB_ENV
         if: matrix.os == 'macos-latest'
 
       - name: Set up build environment (ubuntu-latest)
         run: |
           sudo apt-get update
-          sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev
-          echo "CCACHE_DIR=/tmp/ccache" >> $GITHUB_ENV
+          sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev ninja-build
         if: matrix.os == 'ubuntu-latest'
 
       - name: Set up build environment (windows-latest)
-        shell: bash
-        run: echo "BOOST_ROOT=$BOOST_ROOT_1_72_0" >> $GITHUB_ENV
+        run: |
+          echo "BOOST_ROOT=$env:BOOST_ROOT_1_72_0" >> ${env:GITHUB_ENV}
+          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          scoop install ninja sccache --global
+          echo "${env:PATH}" >> ${env:GITHUB_PATH}
         if: matrix.os == 'windows-latest'
 
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
-          path: /tmp/ccache
+          path: ${{ matrix.cache_path }}
           key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
-        if: matrix.os != 'windows-latest'
 
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
           submodules: recursive
 
-      - name: CMake configure
-        run: cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+      - name: CMake
+        run: |
+          cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} -G Ninja
+          cmake --build build --config ${{ matrix.config }}
+        if: matrix.os != 'windows-latest'
 
-      - name: CMake build
-        run: cmake --build build --config ${{ matrix.config }} --parallel 2
+      - name: CMake
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
+          cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -G Ninja
+          cmake --build build --config ${{ matrix.config }}
+        if: matrix.os == 'windows-latest'
 
       - name: CTest
         working-directory: build
-        run: ctest --build-config ${{ matrix.config }} --output-on-failure --parallel 2
+        run: ctest --build-config ${{ matrix.config }} --output-on-failure
 
       - name: Compute git short sha
         id: git_short_sha
@@ -89,7 +103,7 @@ jobs:
           path: build/bin
 
       - name: Zip Artifacts
-        uses: papeloto/action-zip@5f1c4aa
+        uses: papeloto/action-zip@v1
         with:
           files: build/bin
           dest: ${{ matrix.os }}.zip
