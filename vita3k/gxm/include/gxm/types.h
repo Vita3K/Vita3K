@@ -1039,10 +1039,8 @@ struct SceGxmColorSurface {
 static_assert(sizeof(SceGxmColorSurface) == (32 + sizeof(SceGxmTexture)), "Incorrect size.");
 
 struct SceGxmValidRegion {
-    unsigned int xMin;
-    unsigned int yMin;
-    unsigned int xMax;
-    unsigned int yMax;
+    uint32_t xMax;
+    uint32_t yMax;
 };
 
 struct SceGxmDepthStencilControl {
