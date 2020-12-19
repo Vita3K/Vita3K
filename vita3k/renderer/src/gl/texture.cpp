@@ -225,10 +225,14 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
             break;
         default:
-            LOG_ERROR("Uniplemented Texture type: {} ", log_hex(gxm_texture.texture_type()));
+            LOG_ERROR("Unimplemented Texture type: {} ", log_hex(gxm_texture.texture_type()));
             pixels_per_stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
 
             break;
+        }
+
+        if (gxm::is_paletted_format(fmt)) {
+            pixels_per_stride = width;
         }
 
         if (gxm::is_yuv_format(fmt)) {
@@ -321,7 +325,10 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
     const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !can_texture_be_unswizzled_without_decode(base_format);
 
     size_t bpp = renderer::texture::bits_per_pixel(base_format);
-    const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
+    size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
+    if (gxm::is_paletted_format(format)) {
+        stride = width;
+    }
     size_t size = (bpp * stride * height) / 8;
 
     if (gxm::is_yuv_format(format)) {
