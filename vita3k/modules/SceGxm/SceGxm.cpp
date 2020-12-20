@@ -2137,7 +2137,9 @@ EXPORT(int, sceGxmShaderPatcherGetFragmentProgramRefCount, const SceGxmShaderPat
     if (!shaderPatcher || !fragmentProgram || !refCount) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    *refCount = fragmentProgram->reference_count;
+    return 0;
 }
 
 EXPORT(uint32_t, sceGxmShaderPatcherGetFragmentUsseMemAllocated, const SceGxmShaderPatcher *shaderPatcher) {
@@ -2164,7 +2166,9 @@ EXPORT(int, sceGxmShaderPatcherGetVertexProgramRefCount, const SceGxmShaderPatch
     if (!shaderPatcher || !vertexProgram || !refCount) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    *refCount = vertexProgram->reference_count;
+    return 0;
 }
 
 EXPORT(uint32_t, sceGxmShaderPatcherGetVertexUsseMemAllocated, const SceGxmShaderPatcher *shaderPatcher) {
