@@ -101,11 +101,11 @@ EXPORT(int, sceAppUtilDrmClose) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilDrmOpen, SceAppUtilDrmAddcontId *dirName, SceAppUtilMountPoint *mountPoint) {
-    const auto drm_content_id_path{ fs::path(host.pref_path) / (+VitaIoDevice::ux0)._to_string() / host.io.device_paths.addcont0 / reinterpret_cast<char *>(dirName->data) };
+EXPORT(SceInt32, sceAppUtilDrmOpen, const SceAppUtilDrmAddcontId *dirName, const SceAppUtilMountPoint *mountPoint) {
+    if (!dirName)
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
-    if (dirName == nullptr)
-        return RET_ERROR(SCE_APPUTIL_ERROR_NOT_INITIALIZED);
+    const auto drm_content_id_path{ fs::path(host.pref_path) / (+VitaIoDevice::ux0)._to_string() / host.io.device_paths.addcont0 / reinterpret_cast<const char *>(dirName->data) };
 
     if (!fs::exists(drm_content_id_path) || (fs::is_empty(drm_content_id_path)))
         return SCE_ERROR_ERRNO_ENOENT;
