@@ -45,8 +45,6 @@ static GLenum translate_blend_func(SceGxmBlendFunc src) {
     R_PROFILE(__func__);
 
     switch (src) {
-    case SCE_GXM_BLEND_FUNC_NONE:
-        return GL_FUNC_ADD; // TODO Disable blending? Warn?
     case SCE_GXM_BLEND_FUNC_ADD:
         return GL_FUNC_ADD;
     case SCE_GXM_BLEND_FUNC_SUBTRACT:
@@ -57,9 +55,9 @@ static GLenum translate_blend_func(SceGxmBlendFunc src) {
         return GL_MIN;
     case SCE_GXM_BLEND_FUNC_MAX:
         return GL_MAX;
+    default:
+        return GL_FUNC_ADD;
     }
-
-    return GL_FUNC_ADD;
 }
 
 static GLenum translate_blend_factor(SceGxmBlendFactor src) {
@@ -90,9 +88,9 @@ static GLenum translate_blend_factor(SceGxmBlendFactor src) {
         return GL_SRC_ALPHA_SATURATE;
     case SCE_GXM_BLEND_FACTOR_DST_ALPHA_SATURATE:
         return GL_DST_ALPHA; // TODO Not supported.
+    default:
+        return GL_ZERO;
     }
-
-    return GL_ONE;
 }
 
 static AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
@@ -385,23 +383,13 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
         frag_program_gl->color_mask_green = ((blend->colorMask & SCE_GXM_COLOR_MASK_G) != 0) ? GL_TRUE : GL_FALSE;
         frag_program_gl->color_mask_blue = ((blend->colorMask & SCE_GXM_COLOR_MASK_B) != 0) ? GL_TRUE : GL_FALSE;
         frag_program_gl->color_mask_alpha = ((blend->colorMask & SCE_GXM_COLOR_MASK_A) != 0) ? GL_TRUE : GL_FALSE;
-        frag_program_gl->blend_enabled = true;
+        frag_program_gl->blend_enabled = (blend->colorFunc != SCE_GXM_BLEND_FUNC_NONE) || (blend->alphaFunc != SCE_GXM_BLEND_FUNC_NONE);
         frag_program_gl->color_func = translate_blend_func(blend->colorFunc);
+        frag_program_gl->color_src = translate_blend_factor(blend->colorSrc);
+        frag_program_gl->color_dst = translate_blend_factor(blend->colorDst);
         frag_program_gl->alpha_func = translate_blend_func(blend->alphaFunc);
-        if (blend->colorFunc == SCE_GXM_BLEND_FUNC_NONE) {
-            frag_program_gl->color_src = GL_ONE;
-            frag_program_gl->color_dst = GL_ZERO;
-        } else {
-            frag_program_gl->color_src = translate_blend_factor(blend->colorSrc);
-            frag_program_gl->color_dst = translate_blend_factor(blend->colorDst);
-        }
-        if (blend->alphaFunc == SCE_GXM_BLEND_FUNC_NONE) {
-            frag_program_gl->alpha_src = GL_ONE;
-            frag_program_gl->alpha_dst = GL_ZERO;
-        } else {
-            frag_program_gl->alpha_src = translate_blend_factor(blend->alphaSrc);
-            frag_program_gl->alpha_dst = translate_blend_factor(blend->alphaDst);
-        }
+        frag_program_gl->alpha_src = translate_blend_factor(blend->alphaSrc);
+        frag_program_gl->alpha_dst = translate_blend_factor(blend->alphaDst);
     }
     shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
 
