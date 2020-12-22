@@ -125,6 +125,7 @@ inline uint64_t current_time() {
         .count();
 }
 
+static float scroll_type, current_scroll_pos, max_scroll_pos;
 void draw_app_selector(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
@@ -368,6 +369,16 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         const auto SIZE_APP_LIST = ImVec2((host.cfg.apps_list_grid ? 840.f : 900.f) * scal.x, display_size.y - POS_APP_LIST.y);
         ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
         ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+
+        // Set Scroll Pos
+        current_scroll_pos = ImGui::GetScrollY();
+        max_scroll_pos = ImGui::GetScrollMaxY();
+        if (scroll_type != 0) {
+            const float scroll_move = (scroll_type == -1 ? 340.f : -340.f) * scal.y;
+            ImGui::SetScrollY(ImGui::GetScrollY() + scroll_move);
+            scroll_type = 0;
+        }
+
         const auto GRID_ICON_SIZE = ImVec2(128.f * scal.x, 128.f * scal.y);
         const auto GRID_COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * scal.x);
         if (!host.cfg.apps_list_grid) {
@@ -457,20 +468,33 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         break;
     }
 
+    const auto SELECT_SIZE = ImVec2(50.f * scal.x, 60.f * scal.y);
+    ImGui::SetWindowFontScale(2.f * scal.x);
+    ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+    if (current_scroll_pos > 0) {
+        ImGui::SetCursorPos(ImVec2(display_size.x - SELECT_SIZE.x - (5.f * scal.x), 48.f));
+        if ((ImGui::Selectable("^", false, ImGuiSelectableFlags_None, SELECT_SIZE))
+            || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_up) || ImGui::IsKeyPressed(host.cfg.keyboard_button_up))
+            scroll_type = 1;
+    }
     if (!gui.apps_list_opened.empty()) {
-        const auto SELECT_SIZE = ImVec2(50.f * scal.x, 60.f * scal.y);
-        ImGui::SetWindowFontScale(2.f * scal.x);
-        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
         ImGui::SetCursorPos(ImVec2(display_size.x - SELECT_SIZE.x - (5.f * scal.x), (display_size.y / 2.f) - (SELECT_SIZE.y / 2.f)));
-        if ((ImGui::Selectable(">", false, ImGuiSelectableFlags_None, SELECT_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right)) {
+        if ((ImGui::Selectable(">", false, ImGuiSelectableFlags_None, SELECT_SIZE))
+            || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right)) {
             last_time["start"] = 0;
             ++gui.current_app_selected;
             gui.live_area.app_selector = false;
             gui.live_area.live_area_screen = true;
         }
-        ImGui::PopStyleVar();
-        ImGui::SetWindowFontScale(1.f * scal.x);
     }
+    if (current_scroll_pos < max_scroll_pos) {
+        ImGui::SetCursorPos(ImVec2(display_size.x - SELECT_SIZE.x - (5.f * scal.x), display_size.y - SELECT_SIZE.y - (34.f * scal.y)));
+        if ((ImGui::Selectable("v", false, ImGuiSelectableFlags_None, SELECT_SIZE))
+            || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_down) || ImGui::IsKeyPressed(host.cfg.keyboard_button_down))
+            scroll_type = -1;
+    }
+    ImGui::SetWindowFontScale(1.f * scal.x);
+    ImGui::PopStyleVar();
     ImGui::End();
     ImGui::PopStyleVar();
 }
