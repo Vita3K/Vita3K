@@ -12,8 +12,6 @@
 
 #include <cmath>
 
-static constexpr bool dump_textures = false;
-
 namespace renderer::gl {
 
 static GLenum translate_depth_func(SceGxmDepthFunc depth_func) {
@@ -272,7 +270,7 @@ void sync_front_depth_bias(const GxmContextState &state) {
 }
 
 void sync_texture(GLContext &context, const GxmContextState &state, const MemState &mem, std::size_t index,
-    bool enable_texture_cache, const std::string &base_path, const std::string &title_id) {
+    const Config &config, const std::string &base_path, const std::string &title_id) {
     const SceGxmTexture &texture = state.fragment_textures[index];
 
     if (texture.data_addr == 0) {
@@ -288,13 +286,13 @@ void sync_texture(GLContext &context, const GxmContextState &state, const MemSta
 
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
 
-    if (enable_texture_cache) {
+    if (config.texture_cache) {
         renderer::texture::cache_and_bind_texture(context.texture_cache, texture, mem);
     } else {
         texture::bind_texture(context.texture_cache, texture, mem);
     }
 
-    if (dump_textures) {
+    if (config.dump_textures) {
         auto frag_program = state.fragment_program.get(mem);
         auto program = frag_program->program.get(mem);
         const auto program_hash = sha256(program, program->size);
@@ -349,7 +347,7 @@ void sync_vertex_attributes(GLContext &context, const GxmContextState &state, co
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, bool enable_texture_cache, bool hardware_flip, const std::string &base_path, const std::string &title_id) {
+bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, const Config &config, const std::string &base_path, const std::string &title_id) {
     R_PROFILE(__func__);
 
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
@@ -358,8 +356,8 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
     const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
         gxm_fragment_program.renderer_data.get());
 
-    sync_viewport(context, state, hardware_flip);
-    sync_clipping(context, state, hardware_flip);
+    sync_viewport(context, state, config.hardware_flip);
+    sync_clipping(context, state, config.hardware_flip);
     sync_cull(context, state);
 
     glEnable(GL_DEPTH_TEST);
@@ -395,7 +393,7 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
             LOG_WARN("Texture unit index ({}) out of range. SCE_GXM_MAX_TEXTURE_UNITS is {}.", texture_unit, SCE_GXM_MAX_TEXTURE_UNITS);
             continue;
         }
-        sync_texture(context, state, mem, texture_unit, enable_texture_cache, base_path, title_id);
+        sync_texture(context, state, mem, texture_unit, config, base_path, title_id);
     }
     glActiveTexture(GL_TEXTURE0);
 

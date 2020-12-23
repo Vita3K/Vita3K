@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <config/state.h>
 #include <crypto/hash.h>
 #include <glutil/object.h>
 #include <gxm/types.h>
@@ -58,8 +59,7 @@ void sync_rendertarget(const GLRenderTarget &rt);
 void set_context(GLContext &ctx, GxmContextState &state, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format, const bool do_flip);
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
-    const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id,
-    const bool log_active_shaders, const bool log_uniforms, const bool do_hardware_flip, const bool texture_cache);
+    const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id, const Config &config);
 
 void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);
 
@@ -78,7 +78,7 @@ void sync_front_point_line_width(const GxmContextState &state);
 void sync_front_depth_bias(const GxmContextState &state);
 void sync_blending(const GxmContextState &state, const MemState &mem);
 void sync_texture(GLContext &context, const GxmContextState &state, const MemState &mem, std::size_t index,
-    bool enable_texture_cache, const std::string &base_path, const std::string &title_id);
+    const Config &config, const std::string &base_path, const std::string &title_id);
 void sync_vertex_attributes(GLContext &context, const GxmContextState &state, const MemState &mem);
 void bind_fundamental(GLContext &context);
 

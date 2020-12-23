@@ -387,6 +387,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
         ImGui::Spacing();
+        ImGui::Checkbox("Dump textures", &host.cfg.dump_textures);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Dump textures to files");
+        ImGui::Spacing();
         if (ImGui::Button(host.kernel.watch_code ? "Unwatch code" : "Watch code")) {
             host.kernel.watch_code = !host.kernel.watch_code;
             update_watches(host.kernel);
