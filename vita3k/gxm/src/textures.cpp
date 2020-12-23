@@ -28,6 +28,22 @@ size_t get_stride_in_bytes(const SceGxmTexture *texture) {
     return ((texture->mip_filter | (texture->min_filter << 1) | (texture->mip_count << 3) | (texture->lod_bias << 7)) + 1) * 4;
 }
 
+bool is_block_compressed_format(SceGxmTextureFormat src) {
+    const auto base_format = get_base_format(src);
+
+    return ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC2)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC3)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC4)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC5)
+        || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC5));
+}
+
 bool is_paletted_format(SceGxmTextureFormat src) {
     const auto base_format = get_base_format(src);
 

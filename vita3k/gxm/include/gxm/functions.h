@@ -11,6 +11,7 @@ size_t get_height(const SceGxmTexture *texture);
 SceGxmTextureFormat get_format(const SceGxmTexture *texture);
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
 size_t get_stride_in_bytes(const SceGxmTexture *texture);
+bool is_block_compressed_format(SceGxmTextureFormat src);
 bool is_paletted_format(SceGxmTextureFormat src);
 bool is_yuv_format(SceGxmTextureFormat src);
 size_t attribute_format_size(SceGxmAttributeFormat format);
