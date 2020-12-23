@@ -74,6 +74,12 @@ size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
         return 8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return 4;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return 8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
         return 12;
