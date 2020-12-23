@@ -328,7 +328,7 @@ COMMAND_SET_STATE(fragment_texture) {
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::sync_texture(*reinterpret_cast<gl::GLContext *>(render_context), *state, mem, texture_index,
-            config.texture_cache, base_path, title_id);
+            config, base_path, title_id);
 
         break;
     }

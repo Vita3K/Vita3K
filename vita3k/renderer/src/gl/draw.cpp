@@ -40,7 +40,7 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
 }
 
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, const MemState &mem,
-    const char *base_path, const char *title_id, const bool log_active_shaders, const bool log_uniforms, const bool do_hardware_flip, const bool texture_cache) {
+    const char *base_path, const char *title_id, const Config &config) {
     R_PROFILE(__func__);
 
     GLuint program_id = context.last_draw_program;
@@ -67,7 +67,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         program_id = context.last_draw_program;
     }
 
-    if (log_active_shaders) {
+    if (config.log_active_shaders) {
         const std::string hash_text_f = hex_string(state.fragment_program.get(mem)->renderer_data->hash);
         const std::string hash_text_v = hex_string(state.vertex_program.get(mem)->renderer_data->hash);
 
@@ -95,7 +95,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
             continue;
         }
         if (context.need_resync_texture_slots.find(param.resource_index) != context.need_resync_texture_slots.end()) {
-            sync_texture(context, state, mem, param.resource_index, texture_cache, base_path, title_id);
+            sync_texture(context, state, mem, param.resource_index, config, base_path, title_id);
             context.need_resync_texture_slots.erase(param.resource_index);
         }
         sampler_slot_used[param.resource_index] = true;
@@ -141,20 +141,20 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 
         for (auto &vertex_uniform : context.vertex_set_requests) {
             gl::set_uniform(program_id, vertex_program_gxp, vertex_gl_statics, mem, vertex_uniform.parameter, vertex_uniform.data,
-                log_uniforms);
+                config.log_uniforms);
 
             delete vertex_uniform.data;
         }
 
         for (auto &fragment_uniform : context.fragment_set_requests) {
             gl::set_uniform(program_id, fragment_program_gxp, fragment_gl_statics, mem, fragment_uniform.parameter,
-                fragment_uniform.data, log_uniforms);
+                fragment_uniform.data, config.log_uniforms);
 
             delete fragment_uniform.data;
         }
     }
 
-    if (do_hardware_flip) {
+    if (config.hardware_flip) {
         // Try to configure the vertex shader, to output coordinates suited for GXM viewport
         GLuint flip_vec_loc = glGetUniformLocation(program_id, "flip_vec");
 
