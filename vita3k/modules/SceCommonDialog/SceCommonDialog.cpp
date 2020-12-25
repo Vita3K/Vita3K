@@ -1009,27 +1009,27 @@ EXPORT(int, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED || host.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_FINISHED) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
-    }
-
     if (strcmp(reinterpret_cast<char *>(result.get(host.mem)->reserved), "\0") != 0) {
         return RET_ERROR(SCE_SAVEDATA_DIALOG_ERROR_PARAM);
     }
 
-    auto save_dialog = host.common_dialog.savedata;
-    auto result_slotinfo = result.get(host.mem)->slotInfo.get(host.mem);
+    if (host.common_dialog.status == SCE_COMMON_DIALOG_STATUS_FINISHED || host.common_dialog.substatus == SCE_COMMON_DIALOG_STATUS_FINISHED) {
+        auto save_dialog = host.common_dialog.savedata;
+        auto result_slotinfo = result.get(host.mem)->slotInfo.get(host.mem);
 
-    result.get(host.mem)->mode = save_dialog.mode;
-    result.get(host.mem)->result = host.common_dialog.result;
-    result.get(host.mem)->buttonId = save_dialog.button_id;
-    result.get(host.mem)->slotId = save_dialog.slot_id[save_dialog.selected_save];
-    if (result.get(host.mem)->slotInfo) {
-        result_slotinfo->isExist = save_dialog.slot_info[save_dialog.selected_save].isExist;
-        result_slotinfo->slotParam = save_dialog.slot_info[save_dialog.selected_save].slotParam;
+        result.get(host.mem)->mode = save_dialog.mode;
+        result.get(host.mem)->result = host.common_dialog.result;
+        result.get(host.mem)->buttonId = save_dialog.button_id;
+        result.get(host.mem)->slotId = save_dialog.slot_id[save_dialog.selected_save];
+        if (result.get(host.mem)->slotInfo) {
+            result_slotinfo->isExist = save_dialog.slot_info[save_dialog.selected_save].isExist;
+            result_slotinfo->slotParam = save_dialog.slot_info[save_dialog.selected_save].slotParam;
+        }
+        result.get(host.mem)->userdata = save_dialog.userdata;
+        return 0;
+    } else {
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
-    result.get(host.mem)->userdata = save_dialog.userdata;
-    return 0;
 }
 
 EXPORT(int, sceSaveDataDialogGetStatus) {
