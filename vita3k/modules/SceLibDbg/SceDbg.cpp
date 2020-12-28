@@ -48,8 +48,35 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
     return 0;
 }
 
-EXPORT(int, sceDbgLoggingHandler) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceDbgLoggingHandler, const char *pFile, int line, int severity, const char *pComponent, module::vargs messages) {
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+
+    std::string output = fmt::format("SCE libdbg LOG, LEVEL: {}", severity);
+
+    if (pComponent && (strlen(pComponent) > 0)) {
+        output += fmt::format(", COMPONENT: {}", pComponent);
+    }
+
+    if (pFile && (strlen(pFile) > 0)) {
+        output += fmt::format(", FILE:{}, LINE:{}", pFile, line);
+    }
+
+    std::vector<char> buffer(KB(1));
+
+    const char *main_message = messages.next<Ptr<const char>>(*(thread->cpu), host.mem).get(host.mem);
+    const int result = utils::snprintf(buffer.data(), buffer.size(), main_message, *(thread->cpu), host.mem, messages);
+
+    if (result) {
+        output += fmt::format(" {}", buffer.data());
+    }
+
+    LOG_INFO(output);
+
+    return 0;
 }
 
 EXPORT(int, sceDbgSetBreakOnErrorState) {
