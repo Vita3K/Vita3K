@@ -181,6 +181,7 @@ bool USSETranslatorVisitor::smp(
     spv::Id result = do_fetch_texture(sampler, { coord, static_cast<int>(DataType::F32) }, DataType::F32);
 
     switch (sb_mode) {
+    case 0:
     case 1: {
         store(inst.opr.dest, result, 0b1111);
         break;
@@ -194,6 +195,7 @@ bool USSETranslatorVisitor::smp(
         store(inst.opr.dest, result, 0b1111);
         break;
     }
+
     default: {
         LOG_ERROR("Unsupported sb_mode: {}", sb_mode);
     }
