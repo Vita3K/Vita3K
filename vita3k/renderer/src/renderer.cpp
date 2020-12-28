@@ -2,6 +2,8 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 
+#include <gxm/functions.h>
+
 #include <cstring>
 
 namespace renderer {
@@ -147,9 +149,15 @@ void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context,
 
 void draw(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count) {
     switch (state.current_backend) {
-    default:
-        renderer::add_command(ctx, renderer::CommandOpcode::Draw, nullptr, prim_type, index_type, index_data, index_count);
+    default: {
+        const std::size_t copy_size = gxm::index_element_size(index_type) * index_count;
+        std::uint8_t *a_copy = new std::uint8_t[copy_size];
+
+        std::memcpy(a_copy, index_data, copy_size);
+
+        renderer::add_command(ctx, renderer::CommandOpcode::Draw, nullptr, prim_type, index_type, a_copy, index_count);
         break;
+    }
     }
 }
 

@@ -15,6 +15,7 @@ bool is_block_compressed_format(SceGxmTextureFormat src);
 bool is_paletted_format(SceGxmTextureFormat src);
 bool is_yuv_format(SceGxmTextureFormat src);
 size_t attribute_format_size(SceGxmAttributeFormat format);
+size_t index_element_size(SceGxmIndexFormat format);
 } // namespace gxm
 
 namespace gxp {

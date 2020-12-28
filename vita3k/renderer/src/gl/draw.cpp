@@ -181,8 +181,12 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     // Upload index data.
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.element_buffer[0]);
     const GLsizeiptr index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
+
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, nullptr, GL_DYNAMIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, indices, GL_DYNAMIC_DRAW);
+
+    const std::uint8_t *indicies_u8 = reinterpret_cast<const std::uint8_t *>(indices);
+    delete indicies_u8;
 
     if (fragment_program_gxp.is_native_color()) {
         if (features.should_use_texture_barrier()) {
