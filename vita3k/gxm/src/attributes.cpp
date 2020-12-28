@@ -22,4 +22,8 @@ size_t attribute_format_size(SceGxmAttributeFormat format) {
         return 4;
     }
 }
+
+size_t index_element_size(SceGxmIndexFormat format) {
+    return (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
+}
 } // namespace gxm
