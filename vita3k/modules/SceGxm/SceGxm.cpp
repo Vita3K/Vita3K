@@ -124,18 +124,20 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
 }
 
 EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, Ptr<SceGxmSyncObject> fragmentSyncObject, const SceGxmColorSurface *colorSurface, const SceGxmDepthStencilSurface *depthStencil) {
-    assert(flags == 0);
-    assert(renderTarget);
-    assert(vertexSyncObject == nullptr);
-
     if (!context) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+
+    if (flags & 0xFFFFFFF0) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (!renderTarget || (vertexSyncObject != nullptr)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
     if (host.gxm.is_in_scene) {
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
-    }
-    if (depthStencil == nullptr && colorSurface == nullptr) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     context->state.fragment_sync_object = fragmentSyncObject;
@@ -189,6 +191,19 @@ EXPORT(int, sceGxmBeginSceneEx, SceGxmContext *immediateContext, uint32_t flags,
     if (!immediateContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+
+    if (flags & 0xFFFFFFF0) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (!renderTarget || (vertexSyncObject != nullptr)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    if (host.gxm.is_in_scene) {
+        return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -279,9 +294,13 @@ EXPORT(void, sceGxmColorSurfaceSetClip, SceGxmColorSurface *surface, uint32_t xM
     UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmColorSurfaceSetData, SceGxmColorSurface *surface, void *data) {
+EXPORT(int, sceGxmColorSurfaceSetData, SceGxmColorSurface *surface, Ptr<void> data) {
     if (!surface) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    if (data.address() & 3) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
     return UNIMPLEMENTED();
@@ -349,7 +368,7 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (params->flags & 0xffff00ec) {
+    if (params->flags & 0xFFFF00EC) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
@@ -416,11 +435,13 @@ EXPORT(uint32_t, sceGxmDepthStencilSurfaceGetStrideInSamples, const SceGxmDepthS
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, uint32_t strideInSamples, Ptr<void> depthData, Ptr<void> stencilData) {
-    if (!surface)
+    if (!surface) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
 
-    if (strideInSamples == 0)
+    if ((strideInSamples == 0) || ((strideInSamples % SCE_GXM_TILE_SIZEX) != 0)) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
 
     SceGxmDepthStencilSurface tmp_surface;
     tmp_surface.depthData = depthData;
@@ -748,15 +769,10 @@ EXPORT(int, sceGxmEndCommandList) {
 
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *vertexNotification, const SceGxmNotification *fragmentNotification) {
     const MemState &mem = host.mem;
-    //assert(vertexNotification == nullptr);
-    //assert(fragmentNotification == nullptr);
 
-    if (!context)
+    if (!context) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    //if (vertexNotification)
-    //return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    //if (fragmentNotification)
-    //return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
 
     if (!host.gxm.is_in_scene) {
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
@@ -815,9 +831,10 @@ EXPORT(void, sceGxmFinish, SceGxmContext *context) {
     renderer::finish(*host.renderer, *context->renderer);
 }
 
-EXPORT(int, sceGxmFragmentProgramGetPassType, const SceGxmFragmentProgram *fragmentProgram) {
+EXPORT(SceGxmPassType, sceGxmFragmentProgramGetPassType, const SceGxmFragmentProgram *fragmentProgram) {
     assert(fragmentProgram);
-    return UNIMPLEMENTED();
+    STUBBED("SCE_GXM_PASS_TYPE_OPAQUE");
+    return SceGxmPassType::SCE_GXM_PASS_TYPE_OPAQUE;
 }
 
 EXPORT(Ptr<const SceGxmProgram>, sceGxmFragmentProgramGetProgram, const SceGxmFragmentProgram *fragmentProgram) {
@@ -834,7 +851,10 @@ EXPORT(int, sceGxmGetContextType, const SceGxmContext *context, SceGxmContextTyp
     if (!context || !type) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    STUBBED("SCE_GXM_CONTEXT_TYPE_IMMEDIATE");
+    *type = SCE_GXM_CONTEXT_TYPE_IMMEDIATE;
+    return 0;
 }
 
 EXPORT(int, sceGxmGetDeferredContextFragmentBuffer, const SceGxmContext *deferredContext, Ptr<void> *mem) {
@@ -935,8 +955,17 @@ static int SDLCALL thread_function(void *data) {
 }
 
 EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
-    if (!params)
+    if (!params) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    if (((params->flags != 0x00000000U) && (params->flags != 0x00010000U) && (params->flags != 0x00020000U)) || (params->parameterBufferSize & 0x3FFFF)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if ((params->displayQueueMaxPendingCount * params->displayQueueCallbackDataSize) > 0x200) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
 
     host.gxm.params = *params;
     host.gxm.display_queue.maxPendingCount_ = params->displayQueueMaxPendingCount;
@@ -1021,6 +1050,15 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
     if (!immediateContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+
+    if (flags & 0xFFFFFFFE) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (vertexSyncObject != nullptr) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -1563,11 +1601,11 @@ EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthW
     renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), &context->state, false, enable);
 }
 
-EXPORT(void, sceGxmSetBackFragmentProgramEnable) {
+EXPORT(void, sceGxmSetBackFragmentProgramEnable, SceGxmContext *context, SceGxmFragmentProgramMode enable) {
     UNIMPLEMENTED();
 }
 
-EXPORT(void, sceGxmSetBackLineFillLastPixelEnable) {
+EXPORT(void, sceGxmSetBackLineFillLastPixelEnable, SceGxmContext *context, SceGxmLineFillLastPixelMode enable) {
     UNIMPLEMENTED();
 }
 
@@ -1587,7 +1625,7 @@ EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, uint8_t sref) {
     renderer::set_stencil_ref(*host.renderer, context->renderer.get(), &context->state, false, sref);
 }
 
-EXPORT(void, sceGxmSetBackVisibilityTestEnable) {
+EXPORT(void, sceGxmSetBackVisibilityTestEnable, SceGxmContext *context, SceGxmVisibilityTestMode enable) {
     UNIMPLEMENTED();
 }
 
@@ -1595,7 +1633,7 @@ EXPORT(void, sceGxmSetBackVisibilityTestIndex, SceGxmContext *context, uint32_t 
     UNIMPLEMENTED();
 }
 
-EXPORT(void, sceGxmSetBackVisibilityTestOp) {
+EXPORT(void, sceGxmSetBackVisibilityTestOp, SceGxmContext *context, SceGxmVisibilityTestOp op) {
     UNIMPLEMENTED();
 }
 
@@ -1690,11 +1728,11 @@ EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepth
     renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), &context->state, true, enable);
 }
 
-EXPORT(void, sceGxmSetFrontFragmentProgramEnable) {
+EXPORT(void, sceGxmSetFrontFragmentProgramEnable, SceGxmContext *context, SceGxmFragmentProgramMode enable) {
     UNIMPLEMENTED();
 }
 
-EXPORT(void, sceGxmSetFrontLineFillLastPixelEnable) {
+EXPORT(void, sceGxmSetFrontLineFillLastPixelEnable, SceGxmContext *context, SceGxmLineFillLastPixelMode enable) {
     UNIMPLEMENTED();
 }
 
@@ -1714,7 +1752,7 @@ EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, uint8_t sref) {
     renderer::set_stencil_ref(*host.renderer, context->renderer.get(), &context->state, true, sref);
 }
 
-EXPORT(void, sceGxmSetFrontVisibilityTestEnable) {
+EXPORT(void, sceGxmSetFrontVisibilityTestEnable, SceGxmContext *context, SceGxmVisibilityTestMode enable) {
     UNIMPLEMENTED();
 }
 
@@ -1722,7 +1760,7 @@ EXPORT(void, sceGxmSetFrontVisibilityTestIndex, SceGxmContext *context, uint32_t
     UNIMPLEMENTED();
 }
 
-EXPORT(void, sceGxmSetFrontVisibilityTestOp) {
+EXPORT(void, sceGxmSetFrontVisibilityTestOp, SceGxmContext *context, SceGxmVisibilityTestOp op) {
     UNIMPLEMENTED();
 }
 
@@ -2551,8 +2589,17 @@ EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const vo
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (width > 4096 || height > 4096 || byteStride == 0)
+    if ((width > 4096) || (height > 4096)) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (byteStride & 3) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    }
+
+    if ((byteStride < 4) || (byteStride > 131072)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
 
     const uint32_t stride_compressed = (byteStride >> 2) - 1;
     texture->mip_filter = stride_compressed & 1;
@@ -2745,13 +2792,13 @@ EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture, SceGxmTexture
     return 0;
 }
 
-EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<void> paletteData) {
+EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<const void> paletteData) {
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    if ((uint8_t)paletteData.address() & 0x3F)
+    if (paletteData.address() & 0x3F)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
 
-    texture->palette_addr = ((unsigned int)paletteData.address() >> 6);
+    texture->palette_addr = (paletteData.address() >> 6);
     return 0;
 }
 
@@ -2762,7 +2809,7 @@ EXPORT(int, sceGxmTextureSetStride, SceGxmTexture *texture, uint32_t byteStride)
         return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
     if (byteStride & 3)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
-    if (byteStride > 131072)
+    if ((byteStride < 4) || (byteStride > 131072))
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     return UNIMPLEMENTED();
