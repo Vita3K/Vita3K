@@ -130,7 +130,7 @@ struct ControllerBinding {
     uint32_t button;
 };
 
-static const ControllerBinding controller_bindings[] = {
+static constexpr std::array<ControllerBinding, 13> controller_bindings = { {
     { SDL_CONTROLLER_BUTTON_BACK, SCE_CTRL_SELECT },
     { SDL_CONTROLLER_BUTTON_START, SCE_CTRL_START },
     { SDL_CONTROLLER_BUTTON_DPAD_UP, SCE_CTRL_UP },
@@ -144,9 +144,9 @@ static const ControllerBinding controller_bindings[] = {
     { SDL_CONTROLLER_BUTTON_A, SCE_CTRL_CROSS },
     { SDL_CONTROLLER_BUTTON_X, SCE_CTRL_SQUARE },
     { SDL_CONTROLLER_BUTTON_GUIDE, SCE_CTRL_PSBUTTON },
-};
+} };
 
-static const ControllerBinding controller_bindings_ext[] = {
+static constexpr std::array<ControllerBinding, 15> controller_bindings_ext = { {
     { SDL_CONTROLLER_BUTTON_BACK, SCE_CTRL_SELECT },
     { SDL_CONTROLLER_BUTTON_START, SCE_CTRL_START },
     { SDL_CONTROLLER_BUTTON_DPAD_UP, SCE_CTRL_UP },
@@ -162,9 +162,7 @@ static const ControllerBinding controller_bindings_ext[] = {
     { SDL_CONTROLLER_BUTTON_A, SCE_CTRL_CROSS },
     { SDL_CONTROLLER_BUTTON_X, SCE_CTRL_SQUARE },
     { SDL_CONTROLLER_BUTTON_GUIDE, SCE_CTRL_PSBUTTON },
-};
-
-static const size_t controller_binding_count = sizeof(controller_bindings) / sizeof(controller_bindings[0]);
+} };
 
 static bool operator<(const SDL_JoystickGUID &a, const SDL_JoystickGUID &b) {
     return memcmp(&a, &b, sizeof(a)) < 0;
@@ -247,19 +245,24 @@ static float axis_to_axis(int16_t axis) {
 }
 
 static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameController *controller, bool ext) {
-    for (int i = 0; i < controller_binding_count; ++i) {
-        const ControllerBinding &binding = ext ? controller_bindings_ext[i] : controller_bindings[i];
-        if (SDL_GameControllerGetButton(controller, binding.controller)) {
-            *buttons |= binding.button;
-        }
-    }
-
     if (ext) {
+        for (const auto &binding : controller_bindings_ext) {
+            if (SDL_GameControllerGetButton(controller, binding.controller)) {
+                *buttons |= binding.button;
+            }
+        }
+
         if (SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 0x3FFF) {
             *buttons |= SCE_CTRL_L2;
         }
         if (SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 0x3FFF) {
             *buttons |= SCE_CTRL_R2;
+        }
+    } else {
+        for (const auto &binding : controller_bindings) {
+            if (SDL_GameControllerGetButton(controller, binding.controller)) {
+                *buttons |= binding.button;
+            }
         }
     }
 
