@@ -184,15 +184,37 @@ bool USSETranslatorVisitor::i32mad(
     inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, false, 7, m_second_program);
 
     const DataType inst_dt = is_signed ? DataType::INT32 : DataType::UINT32;
+    const DataType inst_dt_16 = is_signed ? DataType::INT16 : DataType::UINT16;
+
+    shader::usse::Imm4 src0_mask = 0b1;
+    shader::usse::Imm4 src1_mask = 0b1;
+    shader::usse::Imm4 src2_mask = 0b1;
 
     inst.opr.dest.type = inst_dt;
-    inst.opr.src0.type = inst_dt;
-    inst.opr.src1.type = inst_dt;
-    inst.opr.src2.type = inst_dt;
+    inst.opr.src0.type = inst_dt_16;
+    inst.opr.src1.type = inst_dt_16;
 
-    spv::Id vsrc0 = load(inst.opr.src0, 0b1, 0);
-    spv::Id vsrc1 = load(inst.opr.src1, 0b1, 0);
-    spv::Id vsrc2 = load(inst.opr.src2, 0b1, 0);
+    if (src2_type == 2) {
+        inst.opr.src2.type = inst_dt;
+    } else {
+        inst.opr.src2.type = inst_dt_16;
+    }
+
+    if (src0_high) {
+        src0_mask = 0b10;
+    }
+
+    if (src1_high) {
+        src1_mask = 0b10;
+    }
+
+    if (src2_type != 2 && src2_high) {
+        src2_mask = 0b10;
+    }
+
+    spv::Id vsrc0 = load(inst.opr.src0, src0_mask, 0);
+    spv::Id vsrc1 = load(inst.opr.src1, src1_mask, 0);
+    spv::Id vsrc2 = load(inst.opr.src2, src2_mask, 0);
 
     auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
     auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
