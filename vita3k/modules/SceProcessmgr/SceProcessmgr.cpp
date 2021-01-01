@@ -20,7 +20,7 @@
 #include <io/functions.h>
 #include <rtc/rtc.h>
 
-#include <ctime>
+#include <util/safe_time.h>
 
 enum SceKernelPowerTickType {
     /** Cancel all timers */
@@ -148,7 +148,11 @@ EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAd
     }
     if (tzAddr != nullptr) {
         std::time_t t = std::time(nullptr);
-        std::time_t lt = mktime(std::localtime(&t));
+
+        tm localtime_tm = {};
+
+        SAFE_LOCALTIME(&t, &localtime_tm);
+        std::time_t lt = mktime(&localtime_tm);
         tzAddr->tz_minuteswest = static_cast<int>((lt - t) / 60);
     }
     return 0;
@@ -161,11 +165,7 @@ EXPORT(int, sceKernelLibcGmtime_r) {
 EXPORT(Ptr<struct tm>, sceKernelLibcLocaltime_r, const VitaTime *time, Ptr<struct tm> date) {
     const time_t plat_time = *time;
 
-#if defined(WIN32)
-    localtime_s(date.get(host.mem), &plat_time);
-#else
-    localtime_r(&plat_time, date.get(host.mem));
-#endif
+    SAFE_LOCALTIME(&plat_time, date.get(host.mem));
 
     return date;
 }

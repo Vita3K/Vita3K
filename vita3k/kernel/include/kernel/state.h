@@ -77,8 +77,7 @@ struct WaitingThreadData {
             int32_t wait;
             int32_t flags;
         };
-        struct { // condvar
-        };
+        // struct { }; // condvar
     };
 
     bool operator>(const WaitingThreadData &rhs) const {
