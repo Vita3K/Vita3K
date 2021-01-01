@@ -561,7 +561,7 @@ bool USSETranslatorVisitor::vldst(
 
     Operand to_store;
 
-    if (m_program.is_secondary_program_available()) {
+    if (is_translating_secondary_program()) {
         to_store.bank = RegisterBank::SECATTR;
     } else {
         if (dest_bank_primattr) {
