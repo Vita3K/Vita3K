@@ -48,6 +48,7 @@ struct DecoderState {
     virtual bool send(const uint8_t *data, uint32_t size) = 0;
     virtual bool receive(uint8_t *data, DecoderSize *size = nullptr) = 0;
     virtual void configure(void *options);
+    virtual uint32_t get_es_size(const uint8_t *data);
 
     virtual ~DecoderState();
 };
@@ -101,6 +102,18 @@ struct Atrac9DecoderState : public DecoderState {
     bool receive(uint8_t *data, DecoderSize *size) override;
 
     explicit Atrac9DecoderState(uint32_t config_data);
+};
+
+struct Mp3DecoderState : public DecoderState {
+    AVCodecContext *context{};
+
+    uint32_t get(DecoderQuery query) override;
+    uint32_t get_es_size(const uint8_t *data) override;
+
+    bool send(const uint8_t *data, uint32_t size) override;
+    bool receive(uint8_t *data, DecoderSize *size) override;
+
+    explicit Mp3DecoderState(uint32_t channels);
 };
 
 struct PlayerState {
