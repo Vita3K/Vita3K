@@ -225,7 +225,7 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     const auto make_mask = [](int n) {
         uint32_t out = 0;
         for (int i = 0; i < n; ++i) {
-            out = (out << 2) | 0xFF;
+            out = (out << 8) | 0xFF;
         }
         return out;
     };
@@ -311,7 +311,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     const auto make_mask = [](int n) {
         uint32_t out = 0;
         for (int i = 0; i < n; ++i) {
-            out = (out << 2) | 0xFF;
+            out = (out << 8) | 0xFF;
         }
         return out;
     };
