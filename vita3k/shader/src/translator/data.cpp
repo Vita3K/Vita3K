@@ -587,12 +587,24 @@ bool USSETranslatorVisitor::vldst(
         disasm::operand_to_str(inst.opr.src0, 0b1, 0),
         disasm::operand_to_str(inst.opr.src1, 0b1, 0), disasm::operand_to_str(inst.opr.src2, 0b1, 0), total_bytes_fo_fetch);
 
-    // TODO: is source_2 in word or byte?
+    // TODO: is source_2 in word or byte? Is it even used at all?
     spv::Id source_0 = load(inst.opr.src0, 0b1, 0);
+
+    if (inst.opr.src1.bank == RegisterBank::IMMEDIATE) {
+        inst.opr.src1.num *= get_data_type_size(type_to_ldst);
+    }
+
     spv::Id source_1 = load(inst.opr.src1, 0b1, 0);
     spv::Id source_2 = load(inst.opr.src2, 0b1, 0);
 
-    source_1 = m_b.createBinOp(spv::OpIMul, m_b.makeIntType(32), source_1, m_b.makeIntConstant(4));
+    // Seems that if it's indexed by register, offset is in bytes and based on 0x10000?
+    // Maybe that's just how the memory map operates. I'm not sure. However the literals on all shader so far is that
+    static constexpr std::uint32_t REG_INDEX_BASE = 0x10000;
+    spv::Id reg_index_base_cst = m_b.makeIntConstant(REG_INDEX_BASE);
+
+    if (inst.opr.src1.bank != shader::usse::RegisterBank::IMMEDIATE) {
+        source_1 = m_b.createBinOp(spv::OpISub, m_b.getTypeId(source_1), source_1, reg_index_base_cst);
+    }
 
     spv::Id base = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), source_0, source_1);
     base = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, source_2);
