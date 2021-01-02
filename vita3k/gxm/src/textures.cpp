@@ -21,7 +21,7 @@ SceGxmTextureFormat get_format(const SceGxmTexture *texture) {
 }
 
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src) {
-    return static_cast<SceGxmTextureBaseFormat>(src & 0xFF000000);
+    return static_cast<SceGxmTextureBaseFormat>(src & SCE_GXM_TEXTURE_BASE_FORMAT_MASK);
 }
 
 size_t get_stride_in_bytes(const SceGxmTexture *texture) {

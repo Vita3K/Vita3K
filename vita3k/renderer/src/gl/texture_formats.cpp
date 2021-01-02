@@ -447,7 +447,7 @@ GLenum translate_type(SceGxmTextureFormat format) {
 
 const GLint *translate_swizzle(SceGxmTextureFormat fmt) {
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
-    const uint32_t swizzle = fmt & 0x0000f000;
+    const uint32_t swizzle = fmt & SCE_GXM_TEXTURE_SWIZZLE_MASK;
     switch (base_format) {
     // 1 Component.
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
