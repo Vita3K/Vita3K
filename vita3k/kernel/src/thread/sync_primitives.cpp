@@ -331,6 +331,22 @@ int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id,
     return SCE_KERNEL_OK;
 }
 
+MutexPtr mutex_get(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight) {
+    assert(mutexid >= 0);
+
+    MutexPtr mutex;
+    MutexPtrs *mutexes;
+    if (auto error = find_mutex(mutex, &mutexes, kernel, export_name, mutexid, weight))
+        return nullptr;
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} lock_count: {} waiting_threads: {}",
+            export_name, mutexid, thread_id, mutex->name, mutex->attr, mutex->lock_count,
+            mutex->waiting_threads.size());
+    }
+    return mutex;
+}
+
 // **************
 // * Sempaphore *
 // **************

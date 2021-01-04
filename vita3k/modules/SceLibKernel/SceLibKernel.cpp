@@ -1024,12 +1024,16 @@ EXPORT(int, sceKernelGetLwCondInfoById) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetLwMutexInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKernelLwMutexInfo> info) {
+    SceSize size = 0;
+    if (info) {
+        size = info.get(host.mem)->size;
+    }
+    return CALL_EXPORT(_sceKernelGetLwMutexInfoById, lightweight_mutex_id, info, size);
 }
 
-EXPORT(int, sceKernelGetLwMutexInfoById) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetLwMutexInfo, Ptr<SceKernelLwMutexWork> workarea, Ptr<SceKernelLwMutexInfo> info) {
+    return CALL_EXPORT(sceKernelGetLwMutexInfoById, workarea.get(host.mem)->uid, info);
 }
 
 EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, SceKernelModuleInfo *info) {

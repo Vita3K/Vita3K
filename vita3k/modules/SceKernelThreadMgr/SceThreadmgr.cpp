@@ -168,8 +168,49 @@ EXPORT(int, _sceKernelGetLwCondInfoById) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetLwMutexInfoById) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKernelLwMutexInfo> info, SceSize size) {
+    SceKernelLwMutexInfo *info_data = info.get(host.mem);
+    SceSize info_size = info_data->size;
+    SceKernelLwMutexInfo info_data_local;
+    if (info_size < sizeof(SceKernelLwMutexInfo)) {
+        info_data = &info_data_local;
+        info_data_local.size = info_size;
+    }
+    MutexPtr mutex = mutex_get(host.kernel, export_name, thread_id, lightweight_mutex_id, SyncWeight::Light);
+    if (mutex) {
+        info_data->uid = lightweight_mutex_id;
+        std::copy(mutex->name, mutex->name + KERNELOBJECT_MAX_NAME_LENGTH, info_data->name);
+        info_data->attr = mutex->attr;
+        info_data->pWork = mutex->workarea;
+        info_data->initCount = mutex->init_count;
+        info_data->currentCount = mutex->lock_count;
+        if (mutex->owner == 0) {
+            info_data->currentOwnerId = 0;
+        } else {
+            auto workarea_mutex_owner = mutex->workarea.get(host.mem)->owner;
+            auto threads = host.kernel.threads;
+            if (threads[workarea_mutex_owner] == mutex->owner) { //something like optimisation
+                info_data->currentOwnerId = workarea_mutex_owner;
+            } else {
+                info_data->currentOwnerId = -1;
+                for (auto it = threads.begin(); it != threads.end(); ++it) {
+                    if (it->second == mutex->owner) {
+                        info_data->currentOwnerId = it->first;
+                        break;
+                    }
+                }
+            }
+        }
+        info_data->numWaitThreads = static_cast<SceUInt32>(mutex->waiting_threads.size());
+        if (info_size < sizeof(SceKernelLwMutexInfo)) {
+            memcpy(info.get(host.mem), &info_data_local, info_size);
+        } else {
+            info_data->size = sizeof(SceKernelLwMutexInfo);
+        }
+        return SCE_KERNEL_OK;
+    } else {
+        return SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID;
+    }
 }
 
 EXPORT(int, _sceKernelGetMsgPipeInfo) {
