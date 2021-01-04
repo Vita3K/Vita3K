@@ -250,7 +250,7 @@ std::int64_t byte_swap(std::int64_t val) {
     return byte_swap(static_cast<std::uint64_t>(val));
 }
 
-void float_to_half(const float *src, std::uint16_t *dest, const int total) {
+void float_to_half_AVX_F16C(const float *src, std::uint16_t *dest, const int total) {
     float toconvert[8] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     int i = 0;
 
@@ -266,6 +266,48 @@ void float_to_half(const float *src, std::uint16_t *dest, const int total) {
         dest += 8;
     }
 }
+
+#if (defined(__AVX__) && defined(__F16C__)) || defined(__AVX2__)
+//forced use AVX+F16C instruction set
+//AVX2 checked intentionally cause MSVC does not have __F16C__ macros
+//and checking AVX is not enough for some CPU architectures (Intel Sandy bridge)
+void float_to_half(const float *src, std::uint16_t *dest, const int total) {
+    float_to_half_AVX_F16C(src, dest, total);
+}
+#else
+//check and use AVX+F16C instruction set if possible
+#include <util/instrset_detect.h>
+
+void float_to_half_basic(const float *src, std::uint16_t *dest, const int total) {
+    int i = 0;
+    while (i < total) {
+        uint32_t x = *((uint32_t *)&src[i]);
+        dest[i] = ((x >> 16) & 0x8000) | ((((x & 0x7f800000) - 0x38000000) >> 13) & 0x7c00) | ((x >> 13) & 0x03ff);
+        i++;
+    }
+}
+
+// use function variable as imitation of self-modifying code.
+// on first use we check processor features and set appropriate realisation, later we immediately use appropriate realisation
+void float_to_half_init(const float *src, std::uint16_t *dest, const int total);
+
+void (*float_to_half_var)(const float *src, std::uint16_t *dest, const int total) = float_to_half_init;
+
+void float_to_half_init(const float *src, std::uint16_t *dest, const int total) {
+    if (util::instrset::hasF16C()) {
+        float_to_half_var = float_to_half_AVX_F16C;
+        LOG_INFO("AVX+F16C instruction set supported. Use fast f32 to f16 conversion");
+    } else {
+        float_to_half_var = float_to_half_basic;
+        LOG_INFO("AVX+F16C instruction set not supported. Use basic f32 to f16 conversion");
+    }
+    (*float_to_half_var)(src, dest, total);
+}
+
+void float_to_half(const float *src, std::uint16_t *dest, const int total) {
+    (*float_to_half_var)(src, dest, total);
+}
+#endif
 
 // pent0 found on stackoverflow
 // https://stackoverflow.com/questions/4398711/round-to-the-nearest-power-of-two/4398799

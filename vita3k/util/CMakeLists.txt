@@ -10,6 +10,7 @@ add_library(
     include/util/find.h
     include/util/fs.h
     include/util/function_info.h
+    include/util/instrset_detect.h
     include/util/semaphore.h
     include/util/lock_and_find.h
     include/util/log.h
@@ -20,6 +21,7 @@ add_library(
     include/util/types.h
     include/util/vector_utils.h
     src/util.cpp
+    src/instrset_detect.cpp
 )
 
 target_include_directories(util PUBLIC include)
