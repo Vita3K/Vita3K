@@ -1101,8 +1101,15 @@ EXPORT(int, sceKernelGetThreadEventInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetThreadExitStatus) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetThreadExitStatus, SceUID thid) {
+    const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+    if (thread->to_do != ThreadToDo::exit) {
+        return SCE_KERNEL_ERROR_NOT_DORMANT;
+    }
+    return thread->returned_value;
 }
 
 EXPORT(int, sceKernelGetThreadId) {
