@@ -540,6 +540,20 @@ struct SceKernelLwMutexWork {
     std::uint32_t unknown1[3];
 };
 
+static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
+
+struct SceKernelLwMutexInfo {
+    SceSize size; /**< Size of this structure (sizeof(SceKernelLwMutexInfo)) */
+    SceUID uid; /**< Lightweight mutex identifier */
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1]; /**< Name of the mutex specified by sceKernelCreateLwMutex() */
+    SceUInt32 attr; /**< Mutex attributes specified with sceKernelCreateLwMutex() */
+    Ptr<SceKernelLwMutexWork> pWork; /**< Mutex work area specified by sceKernelCreateLwMutex() */
+    SceInt32 initCount; /**< Initial number of lw mutex locks specified by sceKernelCreateLwMutex() */
+    SceInt32 currentCount; /**< Current lock count of lightweight mutex */
+    SceUID currentOwnerId; /**< Identifier of the thread that currently owns the lightweight mutex */
+    SceUInt32 numWaitThreads; /**< Number of threads waiting for the lightweight mutex */
+};
+
 // We only use workarea for uid
 struct SceKernelLwCondWork {
     SceUID uid;
@@ -629,5 +643,3 @@ struct SceKernelCreateThread_opt {
     int cpu_affinity_mask;
     Ptr<SceKernelThreadOptParam> option;
 };
-
-static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
