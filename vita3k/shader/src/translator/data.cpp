@@ -148,6 +148,12 @@ bool USSETranslatorVisitor::vmov(
 
     m_b.setLine(m_recompiler.cur_pc);
 
+    if ((move_data_type == DataType::F16) || (move_data_type == DataType::F32)) {
+        set_repeat_multiplier(2, 2, 2, 2);
+    } else {
+        set_repeat_multiplier(1, 1, 1, 1);
+    }
+
     BEGIN_REPEAT(repeat_count)
     GET_REPEAT(inst, RepeatMode::SLMSI);
 
@@ -260,6 +266,7 @@ bool USSETranslatorVisitor::vmov(
 
     END_REPEAT()
 
+    reset_repeat_multiplier();
     return true;
 }
 
@@ -457,6 +464,21 @@ bool USSETranslatorVisitor::vpck(
     // Recompile
     m_b.setLine(m_recompiler.cur_pc);
 
+    // Doing this extra dest type check for future change in case I'm wrong (pent0)
+    if (is_integer_data_type(inst.opr.dest.type)) {
+        if (is_float_data_type(inst.opr.src1.type)) {
+            set_repeat_multiplier(1, 2, 2, 1);
+        } else {
+            set_repeat_multiplier(1, 1, 1, 1);
+        }
+    } else {
+        if (is_float_data_type(inst.opr.src1.type)) {
+            set_repeat_multiplier(1, 2, 2, 1);
+        } else {
+            set_repeat_multiplier(1, 1, 1, 1);
+        }
+    }
+
     BEGIN_REPEAT(repeat_count)
     GET_REPEAT(inst, RepeatMode::SLMSI);
 
@@ -499,6 +521,8 @@ bool USSETranslatorVisitor::vpck(
 
     store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
     END_REPEAT()
+
+    reset_repeat_multiplier();
 
     return true;
 }

@@ -60,6 +60,7 @@ public:
 
     // Contains repeat increasement offset
     int repeat_increase[4][4];
+    int repeat_multiplier[4];
 
     void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
     spv::Id do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type);
@@ -76,12 +77,7 @@ public:
         , m_recompiler(_recompiler)
         , m_program(program)
         , m_features(features) {
-        // Default increase mode
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                repeat_increase[i][j] = j;
-            }
-        }
+        reset_for_new_session();
 
         out = spv::NoResult;
 
@@ -128,6 +124,11 @@ public:
     */
     spv::Id load(Operand op, const Imm4 dest_mask, int shift_offset = 0);
 
+    void reset_for_new_session() {
+        reset_repeat_multiplier();
+        reset_repeat_increase();
+    }
+
 private:
     //
     // Translation helpers
@@ -136,6 +137,7 @@ private:
 #define BEGIN_REPEAT(repeat_count)                           \
     const auto repeat_count_num = (uint8_t)repeat_count + 1; \
     for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
+
 #define END_REPEAT() }
 
 #define GET_REPEAT(inst, repeat_mode)                                                                           \
@@ -160,11 +162,34 @@ private:
         if (repeat_mode == RepeatMode::EXTERNAL && bank != RegisterBank::FPINTERNAL) {
             return repeat_index * 4;
         }
+        if (repeat_mode == RepeatMode::SLMSI) {
+            auto inc = repeat_increase[op.index][repeat_index];
 
-        if (repeat_mode == RepeatMode::SLMSI && bank != RegisterBank::FPINTERNAL) {
-            return repeat_increase[op.index][repeat_index] * 2;
+            if (((bank >= RegisterBank::TEMP) && (bank <= RegisterBank::SECATTR)) || bank == RegisterBank::PREDICATE)
+                inc *= repeat_multiplier[op.index];
+            
+            return inc;
         }
         return 0;
+    }
+
+    void set_repeat_multiplier(const int p0, const int p1, const int p2, const int p3) {
+        repeat_multiplier[0] = p0;
+        repeat_multiplier[1] = p1;
+        repeat_multiplier[2] = p2;
+        repeat_multiplier[3] = p3;
+    }
+
+    void reset_repeat_multiplier() {
+        std::fill(repeat_multiplier, repeat_multiplier + 4, 2);
+    }
+
+    void reset_repeat_increase() {
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                repeat_increase[i][j] = j;
+            }
+        }
     }
 
     void store(Operand dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int shift_offset = 0);

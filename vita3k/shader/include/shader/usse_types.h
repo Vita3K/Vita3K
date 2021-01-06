@@ -237,6 +237,10 @@ inline bool is_signed_integer_data_type(const DataType dtype) {
     return (dtype == DataType::INT16) || (dtype == DataType::INT8) || (dtype == DataType::INT32);
 }
 
+inline bool is_integer_data_type(const DataType dtype) {
+    return is_unsigned_integer_data_type(dtype) || is_signed_integer_data_type(dtype);
+}
+
 inline bool is_float_data_type(const DataType dtype) {
     return (dtype == DataType::C10) || (dtype == DataType::F16) || (dtype == DataType::F32);
 }
